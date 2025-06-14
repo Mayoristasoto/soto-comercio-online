@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Menu } from 'lucide-react';
 
 const Header = () => {
@@ -27,9 +26,6 @@ const Header = () => {
             </a>
           </nav>
           <div className="flex items-center space-x-2">
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm sm:text-base px-3 sm:px-4 py-2">
-              Ver Precios
-            </Button>
             <button className="md:hidden p-2">
               <Menu size={24} className="text-gray-700" />
             </button>
