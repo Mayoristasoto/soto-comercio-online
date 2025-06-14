@@ -14,7 +14,8 @@ const PriceListsSection = () => {
         "Local Juan B. Justo - Juan B. Justo Rotonda El Gaucho"
       ],
       badge: "Comercio",
-      badgeColor: "bg-blue-500"
+      badgeColor: "bg-blue-500",
+      pdfUrl: "https://drive.google.com/file/d/1DLeBquIPiqdM9EwRpTRC5LN9Cldf7ALy/view"
     },
     {
       title: "Lista Distribución",
@@ -25,7 +26,8 @@ const PriceListsSection = () => {
         "Otras localidades: llevamos al expreso"
       ],
       badge: "Comercio",
-      badgeColor: "bg-purple-500"
+      badgeColor: "bg-purple-500",
+      pdfUrl: "https://drive.google.com/file/d/15J4hJ-1zyAV98vOim7zoa1QxxnEDKE5n/view"
     },
     {
       title: "Lista de Ofertas",
@@ -36,9 +38,14 @@ const PriceListsSection = () => {
         "Oportunidades limitadas"
       ],
       badge: "Ofertas",
-      badgeColor: "bg-red-500"
+      badgeColor: "bg-red-500",
+      pdfUrl: "https://drive.google.com/file/d/1SaN_owL5V38t5syfRcGxLDVMxU4ElKZa/view"
     }
   ];
+
+  const handlePdfClick = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <section id="precios" className="py-12 sm:py-20 bg-gray-50">
@@ -78,7 +85,10 @@ const PriceListsSection = () => {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm sm:text-base">
+                <Button 
+                  onClick={() => handlePdfClick(list.pdfUrl)}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm sm:text-base"
+                >
                   Ver Precios PDF
                 </Button>
               </CardContent>
