@@ -15,7 +15,7 @@ const HeroSection = () => {
             Mayorista Soto
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
-            Accede a nuestras <span className="font-semibold text-purple-600">listas de precios exclusivas</span> para comerciantes. 
+            Accede a nuestras <span className="font-semibold text-purple-600">listas de precios</span> para comerciantes. 
             Precios especiales para salones, distribución y ofertas únicas.
           </p>
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-purple-100">
@@ -26,8 +26,8 @@ const HeroSection = () => {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Envío GRATIS</h3>
-            <p className="text-lg text-gray-600">En compras desde <span className="font-bold text-green-600">$20.000</span></p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Envío GRATIS en Mar del Plata</h3>
+            <p className="text-lg text-gray-600">Lista Distribución: envío gratis desde <span className="font-bold text-green-600">$20.000</span></p>
           </div>
           <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-8 py-3 text-lg">
             Ver Listas de Precios

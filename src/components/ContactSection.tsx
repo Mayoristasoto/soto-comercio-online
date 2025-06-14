@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Facebook, Instagram } from 'lucide-react';
 
@@ -10,24 +9,41 @@ const ContactSection = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4 text-gray-800">¿Listo para Comenzar?</h2>
+            <h2 className="text-4xl font-bold mb-4 text-gray-800">Nuestros Locales</h2>
             <p className="text-xl text-gray-600">
-              Solicita acceso a nuestras listas de precios exclusivas para comerciantes
+              Visita nuestros locales para compras con Lista Salón
             </p>
           </div>
-          <Card className="mb-12 shadow-xl border-0">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl text-gray-800">Solicitar Acceso</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-gray-600 mb-6 text-lg">
-                Completa el formulario y te contactaremos en menos de 24 horas para darte acceso a nuestras listas de precios.
-              </p>
-              <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-8 py-3 text-lg">
-                Solicitar Acceso Ahora
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            <Card className="shadow-xl border-0">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-gray-800">Local José Martí</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-gray-600 mb-4 text-lg">
+                  Fortunato de la Plaza 4798
+                </p>
+                <p className="text-purple-600 font-semibold">
+                  Mar del Plata
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="shadow-xl border-0">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-gray-800">Local Juan B. Justo</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-gray-600 mb-4 text-lg">
+                  Juan B. Justo Rotonda El Gaucho
+                </p>
+                <p className="text-purple-600 font-semibold">
+                  Mar del Plata
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-6 text-gray-800">Síguenos en Redes Sociales</h3>
             <div className="flex justify-center space-x-6">

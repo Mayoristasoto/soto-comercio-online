@@ -22,11 +22,11 @@ const Header = () => {
               Envíos
             </a>
             <a href="#contacto" className="text-gray-700 hover:text-purple-600 font-medium transition-colors">
-              Contacto
+              Locales
             </a>
           </nav>
           <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white">
-            Solicitar Acceso
+            Ver Precios
           </Button>
         </div>
       </div>

@@ -7,39 +7,35 @@ import { Badge } from "@/components/ui/badge";
 const PriceListsSection = () => {
   const priceLists = [
     {
-      title: "Salones Comerciales",
-      description: "Precios especiales para salones de belleza y peluquerías",
-      features: [
-        "Descuentos por volumen",
-        "Productos profesionales",
-        "Asesoramiento técnico",
-        "Entrega programada"
+      title: "Lista Salón",
+      description: "Comprando en los salones",
+      locations: [
+        "Local José Martí - Fortunato de la Plaza 4798",
+        "Local Juan B. Justo - Juan B. Justo Rotonda El Gaucho"
       ],
-      badge: "Popular",
+      badge: "Locales",
       badgeColor: "bg-blue-500"
     },
     {
-      title: "Distribución",
-      description: "Precios mayoristas para distribuidores autorizados",
-      features: [
-        "Márgenes competitivos",
-        "Territorios exclusivos",
-        "Soporte de marketing",
-        "Capacitación de producto"
+      title: "Lista Distribución",
+      description: "Envío gratis comprando $20.000",
+      locations: [
+        "Precios mayoristas",
+        "Envío gratuito en Mar del Plata desde $20.000",
+        "Otras localidades: llevamos al expreso"
       ],
       badge: "Mayorista",
       badgeColor: "bg-purple-500"
     },
     {
-      title: "Ofertas Especiales",
-      description: "Promociones y liquidaciones por tiempo limitado",
-      features: [
-        "Descuentos hasta 50%",
-        "Productos estacionales",
-        "Liquidación de stock",
-        "Oportunidades únicas"
+      title: "Lista de Ofertas",
+      description: "Promociones especiales",
+      locations: [
+        "Descuentos especiales",
+        "Productos en promoción",
+        "Oportunidades limitadas"
       ],
-      badge: "Limitado",
+      badge: "Ofertas",
       badgeColor: "bg-red-500"
     }
   ];
@@ -50,7 +46,7 @@ const PriceListsSection = () => {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4 text-gray-800">Listas de Precios</h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Elige la lista de precios que mejor se adapte a tu tipo de negocio
+            Acceso directo a nuestras listas de precios en PDF
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
@@ -71,19 +67,19 @@ const PriceListsSection = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  {list.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-gray-700">
-                      <div className="bg-green-100 rounded-full p-1 mr-3">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {list.locations.map((location, locationIndex) => (
+                    <li key={locationIndex} className="flex items-start text-gray-700 text-sm">
+                      <div className="bg-green-100 rounded-full p-1 mr-3 mt-0.5 flex-shrink-0">
+                        <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                       </div>
-                      {feature}
+                      {location}
                     </li>
                   ))}
                 </ul>
                 <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white">
-                  Solicitar Acceso
+                  Ver Precios PDF
                 </Button>
               </CardContent>
             </Card>
