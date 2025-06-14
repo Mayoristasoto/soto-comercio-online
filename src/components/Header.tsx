@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { Menu } from 'lucide-react';
 
 const Header = () => {
   return (
@@ -11,7 +12,7 @@ const Header = () => {
             <img 
               src="/lovable-uploads/4070ebac-75fa-40a1-a6a6-59de784f9cb2.png" 
               alt="Mayorista Soto Logo" 
-              className="h-12 w-auto"
+              className="h-8 sm:h-12 w-auto"
             />
           </div>
           <nav className="hidden md:flex items-center space-x-8">
@@ -25,9 +26,14 @@ const Header = () => {
               Locales
             </a>
           </nav>
-          <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white">
-            Ver Precios
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm sm:text-base px-3 sm:px-4 py-2">
+              Ver Precios
+            </Button>
+            <button className="md:hidden p-2">
+              <Menu size={24} className="text-gray-700" />
+            </button>
+          </div>
         </div>
       </div>
     </header>

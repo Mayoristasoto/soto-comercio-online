@@ -41,27 +41,27 @@ const PriceListsSection = () => {
   ];
 
   return (
-    <section id="precios" className="py-20 bg-gray-50">
+    <section id="precios" className="py-12 sm:py-20 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4 text-gray-800">Listas de Precios</h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">Listas de Precios</h2>
+          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-2">
             Acceso directo a nuestras listas de precios en PDF
           </p>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {priceLists.map((list, index) => (
             <Card key={index} className="relative overflow-hidden hover:shadow-xl transition-shadow duration-300 border-0 shadow-lg">
               <div className="absolute top-4 right-4">
-                <Badge className={`${list.badgeColor} text-white`}>
+                <Badge className={`${list.badgeColor} text-white text-xs sm:text-sm`}>
                   {list.badge}
                 </Badge>
               </div>
               <CardHeader className="pb-4">
-                <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 pr-16">
                   {list.title}
                 </CardTitle>
-                <CardDescription className="text-gray-600 text-lg">
+                <CardDescription className="text-gray-600 text-base sm:text-lg">
                   {list.description}
                 </CardDescription>
               </CardHeader>
@@ -74,11 +74,11 @@ const PriceListsSection = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                       </div>
-                      {location}
+                      <span className="text-xs sm:text-sm">{location}</span>
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white">
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm sm:text-base">
                   Ver Precios PDF
                 </Button>
               </CardContent>
