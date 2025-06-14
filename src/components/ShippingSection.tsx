@@ -1,13 +1,9 @@
+
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck, MapPin, Clock } from 'lucide-react';
 
 const ShippingSection = () => {
-  const handleDistributionPdfClick = () => {
-    window.open('https://drive.google.com/file/d/15J4hJ-1zyAV98vOim7zoa1QxxnEDKE5n/view', '_blank', 'noopener,noreferrer');
-  };
-
   return (
     <section id="envio" className="py-12 sm:py-20 bg-white">
       <div className="container mx-auto px-4">
@@ -31,12 +27,6 @@ const ShippingSection = () => {
               <p className="text-gray-600 text-sm">
                 Realizamos entregas gratuitas en toda la ciudad de Mar del Plata para compras superiores a $20.000.
               </p>
-              <Button 
-                onClick={handleDistributionPdfClick}
-                className="mt-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white"
-              >
-                Ver Lista de Precios
-              </Button>
             </CardContent>
           </Card>
           
