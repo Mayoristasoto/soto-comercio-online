@@ -1,64 +1,75 @@
 
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Truck, MapPin, Clock } from 'lucide-react';
 
 const ShippingSection = () => {
+  const handleDistributionPdfClick = () => {
+    window.open('https://drive.google.com/file/d/15J4hJ-1zyAV98vOim7zoa1QxxnEDKE5n/view', '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <section id="envio" className="py-12 sm:py-20 bg-white">
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">Información de Envíos</h2>
-            <p className="text-lg sm:text-xl text-gray-600 px-2">
-              Conoce nuestras modalidades de entrega
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex items-center mb-4 sm:mb-6">
-                  <div className="bg-green-500 rounded-full p-2 sm:p-3 mr-3 sm:mr-4 flex-shrink-0">
-                    <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-800">Mar del Plata</h3>
-                    <p className="text-green-600 font-semibold text-sm sm:text-base">Envío GRATIS</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 text-base sm:text-lg mb-3 sm:mb-4">
-                  Envío gratuito en Mar del Plata para la Lista Distribución desde $20.000
-                </p>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  Entrega rápida y segura en toda la ciudad
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex items-center mb-4 sm:mb-6">
-                  <div className="bg-blue-500 rounded-full p-2 sm:p-3 mr-3 sm:mr-4 flex-shrink-0">
-                    <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-800">Otras Localidades</h3>
-                    <p className="text-blue-600 font-semibold text-sm sm:text-base">Al Expreso</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 text-base sm:text-lg mb-3 sm:mb-4">
-                  Llevamos tu pedido al expreso que elijas
-                </p>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  El cliente paga el flete en destino
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">Envíos y Distribución</h2>
+          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-2">
+            Llevamos nuestros productos directamente a tu comercio
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-12">
+          <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+            <CardHeader>
+              <div className="mx-auto bg-purple-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
+                <Truck className="h-8 w-8 text-purple-600" />
+              </div>
+              <CardTitle className="text-xl font-bold">Envío Gratis</CardTitle>
+              <CardDescription>En Mar del Plata desde $20.000</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 text-sm">
+                Realizamos entregas gratuitas en toda la ciudad de Mar del Plata para compras superiores a $20.000.
+              </p>
+              <Button 
+                onClick={handleDistributionPdfClick}
+                className="mt-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white"
+              >
+                Ver Lista de Precios
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+            <CardHeader>
+              <div className="mx-auto bg-blue-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
+                <MapPin className="h-8 w-8 text-blue-600" />
+              </div>
+              <CardTitle className="text-xl font-bold">Otras Localidades</CardTitle>
+              <CardDescription>Envío por expreso</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 text-sm">
+                Para localidades fuera de Mar del Plata, coordinamos el envío a través de servicios de expreso confiables.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+            <CardHeader>
+              <div className="mx-auto bg-green-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
+                <Clock className="h-8 w-8 text-green-600" />
+              </div>
+              <CardTitle className="text-xl font-bold">Entrega Rápida</CardTitle>
+              <CardDescription>24-48 horas hábiles</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 text-sm">
+                Procesamos y despachamos los pedidos en un máximo de 48 horas hábiles desde la confirmación.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
