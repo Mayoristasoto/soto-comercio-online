@@ -13,18 +13,18 @@ const PriceListsSection = () => {
         "Local José Martí - Fortunato de la Plaza 4798",
         "Local Juan B. Justo - Juan B. Justo Rotonda El Gaucho"
       ],
-      badge: "Locales",
+      badge: "Comercio",
       badgeColor: "bg-blue-500"
     },
     {
       title: "Lista Distribución",
       description: "Envío gratis comprando $20.000",
       locations: [
-        "Precios mayoristas",
+        "Precios para comercios",
         "Envío gratuito en Mar del Plata desde $20.000",
         "Otras localidades: llevamos al expreso"
       ],
-      badge: "Mayorista",
+      badge: "Comercio",
       badgeColor: "bg-purple-500"
     },
     {
