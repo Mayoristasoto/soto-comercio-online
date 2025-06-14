@@ -1,11 +1,8 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
 const HeroSection = () => {
-  return (
-    <section className="bg-gradient-to-br from-purple-50 via-white to-pink-50 py-12 sm:py-20">
+  return <section className="bg-gradient-to-br from-purple-50 via-white to-pink-50 py-12 sm:py-20">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-4xl mx-auto">
           <Badge className="mb-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-sm">
@@ -29,13 +26,9 @@ const HeroSection = () => {
             <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Envío GRATIS en Mar del Plata</h3>
             <p className="text-base sm:text-lg text-gray-600">Lista Distribución: envío gratis desde <span className="font-bold text-green-600">$20.000</span></p>
           </div>
-          <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-6 sm:px-8 py-3 text-base sm:text-lg w-full sm:w-auto">
-            Ver Listas de Precios
-          </Button>
+          
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
