@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +31,7 @@ const Gulero = () => {
       image: "/lovable-uploads/ed82b997-8af8-40ba-9a65-08219685711e.png"
     },
     {
-      name: "Marley 75g + Tribajón 100g",
+      name: "Marley 75g",
       variants: "Blanco y Negro",
       description: "Alfajor crocante y potente",
       image: "/lovable-uploads/4733c895-6dc4-49b0-ad37-f1a68dcb4e76.png"
@@ -116,7 +115,7 @@ const Gulero = () => {
             ¡Todos los alfajores virales en una sola caja!
           </p>
           <p className="text-lg sm:text-xl text-green-800 mb-8 max-w-4xl mx-auto leading-relaxed drop-shadow-sm">
-            Llevate los alfajores que la están rompiendo: <span className="font-bold text-red-700">Barrigón, Gula, Juana La Loca, Love 420, Marley, Mufaso y Rasta</span>. Blanco y negro. Todo junto. Para el bajón perfecto 🌿
+            Llevate los alfajores que la están rompiendo: <span className="font-bold text-red-700">Barrigón, Gula, Juana La Loca, Love 420, Marley, Mufaso y Rasta</span>. Mix completo bañado en chocolate blanco y negro. Todo junto. Para el bajón perfecto 🌿
           </p>
           
           {/* Collage de productos destacados */}
@@ -259,7 +258,7 @@ const Gulero = () => {
             ¡No te quedes sin tu Combo GULERO!
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto drop-shadow-md">
-            Los alfajores más virales del momento, todos juntos en una sola compra. Perfecto para tu negocio o para satisfacer el bajón perfecto 🌿
+            Los alfajores más virales del momento, todos juntos en una sola compra. Mix completo bañado en chocolate blanco y negro. Perfecto para tu negocio o para satisfacer el bajón perfecto 🌿
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
