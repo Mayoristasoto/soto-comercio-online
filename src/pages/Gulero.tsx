@@ -10,37 +10,44 @@ const Gulero = () => {
     {
       name: "Barrigón Mega 100g",
       variants: "Blanco y Negro",
-      description: "El alfajor XXL viral que todos buscan"
+      description: "El alfajor XXL viral que todos buscan",
+      image: "/lovable-uploads/44620e54-a86a-4599-85e8-9d728d3cb25c.png"
     },
     {
       name: "Gula 72g",
       variants: "Blanco y Chocolate",
-      description: "Equilibrio dulce perfecto"
+      description: "Equilibrio dulce perfecto",
+      image: "/lovable-uploads/4052ff3f-5ccf-4fd0-b3f6-2ba4500aefe5.png"
     },
     {
       name: "Juana La Loca Salchichón 92g",
       variants: "Blanco y Chocolate",
-      description: "Formato salame dulce único"
+      description: "Formato salame dulce único",
+      image: "/lovable-uploads/157b8b92-c95f-44fc-979c-eb601335d923.png"
     },
     {
       name: "Love 420 67g",
       variants: "Blanco y Negro",
-      description: "Sabor moderno y envoltorio llamativo"
+      description: "Sabor moderno y envoltorio llamativo",
+      image: "/lovable-uploads/ed82b997-8af8-40ba-9a65-08219685711e.png"
     },
     {
       name: "Marley 75g + Tribajón 100g",
       variants: "Blanco y Negro",
-      description: "Alfajor crocante y potente"
+      description: "Alfajor crocante y potente",
+      image: "/lovable-uploads/4733c895-6dc4-49b0-ad37-f1a68dcb4e76.png"
     },
     {
       name: "Mufaso 65g",
       variants: "Blanco y Negro",
-      description: "Sabor fuerte y dulce de leche intenso"
+      description: "Sabor fuerte y dulce de leche intenso",
+      image: "/lovable-uploads/e94f7375-36f5-4bf1-ba5a-34607d773c17.png"
     },
     {
       name: "Rasta 70g",
       variants: "Blanco y Negro",
-      description: "Clásico dulce cremoso con estilo"
+      description: "Clásico dulce cremoso con estilo",
+      image: "/lovable-uploads/8e587c09-5d79-45a4-8e63-9fdfeffe3c57.png"
     }
   ];
 
@@ -112,12 +119,26 @@ const Gulero = () => {
             Llevate los alfajores que la están rompiendo: <span className="font-bold text-red-700">Barrigón, Gula, Juana La Loca, Love 420, Marley, Mufaso y Rasta</span>. Blanco y negro. Todo junto. Para el bajón perfecto 🌿
           </p>
           
-          {/* Imagen destacada placeholder */}
-          <div className="bg-gradient-to-r from-green-200/80 to-yellow-200/80 rounded-3xl p-8 mb-8 mx-auto max-w-2xl border-4 border-green-400 shadow-xl backdrop-blur-sm">
-            <div className="bg-white/90 rounded-2xl p-8 text-center">
-              <Package size={80} className="mx-auto mb-4 text-green-600" />
-              <p className="text-green-800 text-lg font-semibold">Combo GULERO Bajonero</p>
-              <p className="text-sm text-green-600">Collage reggae de todos los alfajores incluidos</p>
+          {/* Collage de productos destacados */}
+          <div className="bg-gradient-to-r from-green-200/80 to-yellow-200/80 rounded-3xl p-8 mb-8 mx-auto max-w-6xl border-4 border-green-400 shadow-xl backdrop-blur-sm">
+            <div className="bg-white/90 rounded-2xl p-6">
+              <h3 className="text-2xl font-bold text-green-800 mb-6">Los alfajores más buscados del momento</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                {products.slice(0, 7).map((product, index) => (
+                  <div key={index} className="flex flex-col items-center group">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-3 border-green-400 shadow-lg group-hover:scale-110 transition-transform">
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p className="text-xs sm:text-sm font-semibold text-green-700 mt-2 text-center leading-tight">
+                      {product.name.split(' ')[0]}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -186,7 +207,14 @@ const Gulero = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow border-2 border-green-200 bg-white/90 backdrop-blur-sm">
+              <Card key={index} className="hover:shadow-lg transition-shadow border-2 border-green-200 bg-white/90 backdrop-blur-sm overflow-hidden">
+                <div className="h-48 overflow-hidden">
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform"
+                  />
+                </div>
                 <CardHeader>
                   <CardTitle className="text-lg text-green-700">{product.name}</CardTitle>
                   <Badge variant="secondary" className="w-fit bg-yellow-200 text-yellow-800">{product.variants}</Badge>
