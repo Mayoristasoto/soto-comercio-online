@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,12 @@ const Gulero = () => {
       variants: "Blanco y Chocolate",
       description: "Formato salame dulce único",
       image: "/lovable-uploads/157b8b92-c95f-44fc-979c-eb601335d923.png"
+    },
+    {
+      name: "Juana La Loca Merengue",
+      variants: "Blanco y Chocolate",
+      description: "Con merengue suave y cremoso",
+      image: "/lovable-uploads/3cdfe2a4-9aaa-4883-b75f-2ab55e82d3a9.png"
     },
     {
       name: "Love 420 67g",
@@ -59,7 +66,7 @@ const Gulero = () => {
   const faqs = [
     {
       question: "¿Hacen envíos a todo el país?",
-      answer: "Sí, enviamos a todo el país. Los costos varían según la ubicación."
+      answer: "Sí, enviamos a todo el país. Los costos varían según la ubicación. ¡Comprando 4 combos el envío es GRATIS!"
     },
     {
       question: "¿Hay descuentos para revendedores?",
@@ -112,18 +119,25 @@ const Gulero = () => {
             Combo GULERO
           </h1>
           <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900 mb-4 drop-shadow-md">
-            ¡Todos los alfajores virales en una sola caja!
+            ¡16 alfajores virales en una sola caja!
           </p>
+          <div className="bg-gradient-to-r from-yellow-400 to-red-400 text-green-900 rounded-full px-8 py-3 mb-6 inline-block shadow-lg border-2 border-green-600">
+            <span className="text-2xl sm:text-3xl font-bold">💰 $25.000</span>
+          </div>
           <p className="text-lg sm:text-xl text-green-800 mb-8 max-w-4xl mx-auto leading-relaxed drop-shadow-sm">
-            Llevate los alfajores que la están rompiendo: <span className="font-bold text-red-700">Barrigón, Gula, Juana La Loca, Love 420, Marley, Mufaso y Rasta</span>. Mix completo bañado en chocolate blanco y negro. Todo junto. Para el bajón perfecto 🌿
+            Llevate los alfajores que la están rompiendo: <span className="font-bold text-red-700">Barrigón, Gula, Juana La Loca Salchichón, Juana La Loca Merengue, Love 420, Marley, Mufaso y Rasta</span>. Mix completo bañado en chocolate blanco y negro. Todo junto. Para el bajón perfecto 🌿
           </p>
+          
+          <div className="bg-gradient-to-r from-green-600 to-red-600 text-white rounded-2xl p-4 mb-8 inline-block shadow-lg">
+            <p className="text-lg font-bold">🚚 COMPRANDO 4 COMBOS = ENVÍO GRATIS A TODO EL PAÍS</p>
+          </div>
           
           {/* Collage de productos destacados */}
           <div className="bg-gradient-to-r from-green-200/80 to-yellow-200/80 rounded-3xl p-8 mb-8 mx-auto max-w-6xl border-4 border-green-400 shadow-xl backdrop-blur-sm">
             <div className="bg-white/90 rounded-2xl p-6">
               <h3 className="text-2xl font-bold text-green-800 mb-6">Los alfajores más buscados del momento</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                {products.slice(0, 7).map((product, index) => (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                {products.slice(0, 8).map((product, index) => (
                   <div key={index} className="flex flex-col items-center group">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-3 border-green-400 shadow-lg group-hover:scale-110 transition-transform">
                       <img 
@@ -170,7 +184,7 @@ const Gulero = () => {
               <div className="bg-green-200 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg">
                 <CheckCircle size={32} className="text-green-700" />
               </div>
-              <h3 className="font-bold text-lg mb-2 text-green-800">Todos los guleros</h3>
+              <h3 className="font-bold text-lg mb-2 text-green-800">16 alfajores guleros</h3>
               <p className="text-green-700">Los alfajores más virales del mercado</p>
             </div>
             <div className="text-center">
@@ -178,7 +192,7 @@ const Gulero = () => {
                 <Truck size={32} className="text-yellow-700" />
               </div>
               <h3 className="font-bold text-lg mb-2 text-yellow-800">Envíos nacionales</h3>
-              <p className="text-yellow-700">Llegamos a todo el país</p>
+              <p className="text-yellow-700">4 combos = envío gratis</p>
             </div>
             <div className="text-center">
               <div className="bg-red-200 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg">
@@ -204,7 +218,7 @@ const Gulero = () => {
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-green-800 drop-shadow-md">
             ¿Qué incluye el Combo GULERO?
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map((product, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow border-2 border-green-200 bg-white/90 backdrop-blur-sm overflow-hidden">
                 <div className="h-48 overflow-hidden">
@@ -258,7 +272,7 @@ const Gulero = () => {
             ¡No te quedes sin tu Combo GULERO!
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto drop-shadow-md">
-            Los alfajores más virales del momento, todos juntos en una sola compra. Mix completo bañado en chocolate blanco y negro. Perfecto para tu negocio o para satisfacer el bajón perfecto 🌿
+            Los alfajores más virales del momento, todos juntos en una sola compra. Mix completo bañado en chocolate blanco y negro. 16 alfajores por solo $25.000. Perfecto para tu negocio o para satisfacer el bajón perfecto 🌿
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
