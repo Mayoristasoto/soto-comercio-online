@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Facebook, Instagram } from 'lucide-react';
+import { Facebook, Instagram, MapPin, Clock } from 'lucide-react';
 
 const ContactSection = () => {
   return (
@@ -11,35 +11,54 @@ const ContactSection = () => {
           <div className="text-center mb-8 sm:mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">Nuestros Locales</h2>
             <p className="text-lg sm:text-xl text-gray-600 px-2">
-              Visita nuestros locales para compras con Lista Salón
+              Visitanos en nuestras sucursales
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-12">
             <Card className="shadow-xl border-0">
               <CardHeader className="text-center">
-                <CardTitle className="text-xl sm:text-2xl text-gray-800">Local José Martí</CardTitle>
+                <div className="mx-auto mb-4 p-3 bg-green-100 rounded-full w-12 h-12 flex items-center justify-center">
+                  <MapPin size={24} className="text-green-600" />
+                </div>
+                <CardTitle className="text-xl sm:text-2xl text-gray-800">Sucursal José Martí</CardTitle>
               </CardHeader>
-              <CardContent className="text-center">
+              <CardContent className="text-center space-y-3">
                 <p className="text-gray-600 mb-4 text-base sm:text-lg px-2">
-                  Fortunato de la Plaza 4798
+                  Fortunato de la Plaza 4798 – Mar del Plata
                 </p>
-                <p className="text-purple-600 font-semibold">
-                  Mar del Plata
-                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center text-gray-600">
+                    <Clock size={16} className="mr-2" />
+                    <span className="text-sm">Lunes a viernes: 7:30 a 18:00</span>
+                  </div>
+                  <div className="flex items-center justify-center text-gray-600">
+                    <Clock size={16} className="mr-2" />
+                    <span className="text-sm">Sábados: 7:30 a 16:00</span>
+                  </div>
+                  <div className="flex items-center justify-center text-red-600">
+                    <span className="text-sm font-medium">Domingos: Cerrado</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
             
             <Card className="shadow-xl border-0">
               <CardHeader className="text-center">
-                <CardTitle className="text-xl sm:text-2xl text-gray-800">Local Juan B. Justo</CardTitle>
+                <div className="mx-auto mb-4 p-3 bg-green-100 rounded-full w-12 h-12 flex items-center justify-center">
+                  <MapPin size={24} className="text-green-600" />
+                </div>
+                <CardTitle className="text-xl sm:text-2xl text-gray-800">Sucursal Juan B. Justo</CardTitle>
               </CardHeader>
-              <CardContent className="text-center">
+              <CardContent className="text-center space-y-3">
                 <p className="text-gray-600 mb-4 text-base sm:text-lg px-2">
-                  Juan B. Justo Rotonda El Gaucho
+                  Juan B. Justo 6076 (Rotonda El Gaucho) – Mar del Plata
                 </p>
-                <p className="text-purple-600 font-semibold">
-                  Mar del Plata
-                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center text-gray-600">
+                    <Clock size={16} className="mr-2" />
+                    <span className="text-sm">Lunes a sábados: 8:00 a 18:00</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -48,21 +67,27 @@ const ContactSection = () => {
             <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800">Síguenos en Redes Sociales</h3>
             <div className="flex justify-center space-x-4 sm:space-x-6">
               <a 
-                href="#" 
+                href="https://www.facebook.com/Mayoristasoto" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-blue-600 hover:bg-blue-700 text-white p-3 sm:p-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl"
                 aria-label="Facebook"
               >
                 <Facebook size={20} className="sm:w-6 sm:h-6" />
               </a>
               <a 
-                href="#" 
+                href="https://www.instagram.com/Mayoristasoto/" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white p-3 sm:p-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl"
                 aria-label="Instagram"
               >
                 <Instagram size={20} className="sm:w-6 sm:h-6" />
               </a>
               <a 
-                href="#" 
+                href="https://wa.me/5492234266910" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-green-500 hover:bg-green-600 text-white p-3 sm:p-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl"
                 aria-label="WhatsApp"
               >
