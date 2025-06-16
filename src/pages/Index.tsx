@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,12 +90,14 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
-              <Button 
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                size="lg"
-              >
-                Ver lista para distribuidores
-              </Button>
+              <Link to="/reventa">
+                <Button 
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                  size="lg"
+                >
+                  Ver lista para distribuidores
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -102,7 +105,7 @@ const Index = () => {
         {/* Pie de página */}
         <footer className="text-center mt-16 pt-8 border-t border-gray-200">
           <p className="text-gray-600 mb-2">
-            <strong>Mayorista Soto</strong> - Tu distribuidora de confianza
+            <strong>Mayorista Soto</strong>
           </p>
           <p className="text-sm text-gray-500">
             Para consultas: contacto@mayoristasoto.com

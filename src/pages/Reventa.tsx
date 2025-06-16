@@ -4,17 +4,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
-import { ArrowLeft, User, FileText, Tag } from 'lucide-react';
+import { ArrowLeft, Truck, FileText, Cigarette, Tag } from 'lucide-react';
 
-const Particular = () => {
+const Reventa = () => {
   const priceLists = [
     {
       title: "Lista Completa",
-      description: "Todos nuestros productos con precios para particulares",
-      icon: <FileText size={32} className="text-blue-600" />,
-      badge: "Particular",
-      badgeColor: "bg-blue-500",
-      pdfUrl: "https://drive.google.com/file/d/1Jl0LxeoNuEJ4F3xzKy9tw_MpwngGS6dr/view"
+      description: "Todos nuestros productos con precios para reventa",
+      icon: <FileText size={32} className="text-orange-600" />,
+      badge: "Completa",
+      badgeColor: "bg-orange-500",
+      pdfUrl: "https://drive.google.com/file/d/1fcUubLTdmq5UA4yc1U0na6PPzmLp2dIG/view?usp=sharing"
+    },
+    {
+      title: "Lista Cigarrillos",
+      description: "Productos de cigarrillos y tabacalería",
+      icon: <Cigarette size={32} className="text-gray-600" />,
+      badge: "Cigarrillos",
+      badgeColor: "bg-gray-500",
+      pdfUrl: "https://drive.google.com/file/d/1A95Rnd3nPfoGG4fmp06-tUMb5ldqbjdW/view?usp=sharing"
     },
     {
       title: "Lista de Ofertas",
@@ -22,7 +30,7 @@ const Particular = () => {
       icon: <Tag size={32} className="text-red-600" />,
       badge: "Ofertas",
       badgeColor: "bg-red-500",
-      pdfUrl: "https://drive.google.com/file/d/1SaN_owL5V38t5syfRcGxLDVMxU4ElKZa/view"
+      pdfUrl: "https://drive.google.com/file/d/1SaN_owL5V38t5syfRcGxLDVMxU4ElKZa/view?usp=sharing"
     }
   ];
 
@@ -31,12 +39,12 @@ const Particular = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
       {/* Header con logo */}
       <header className="pt-8 pb-4">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
+            <Link to="/" className="flex items-center text-gray-600 hover:text-orange-600 transition-colors">
               <ArrowLeft size={20} className="mr-2" />
               Volver al inicio
             </Link>
@@ -53,24 +61,24 @@ const Particular = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center max-w-4xl mx-auto mb-12">
-          <Badge className="mb-4 bg-blue-500 text-white text-sm">
-            Para Particulares
+          <Badge className="mb-4 bg-orange-500 text-white text-sm">
+            Para Reventa
           </Badge>
           <div className="flex items-center justify-center mb-4">
-            <div className="bg-blue-100 rounded-full p-4">
-              <User size={40} className="text-blue-600" />
+            <div className="bg-orange-100 rounded-full p-4">
+              <Truck size={40} className="text-orange-600" />
             </div>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
-            Listas de Precios para Particulares
+          <h1 className="text-3xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-500 bg-clip-text text-transparent">
+            Listas de Precios para Reventa
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
-            Accede a nuestras listas de precios especiales para compradores particulares.
+            Accede a nuestras listas de precios especiales para distribuidores y revendedores.
           </p>
         </div>
 
         {/* Cards de listas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {priceLists.map((list, index) => (
             <Card key={index} className="relative overflow-hidden hover:shadow-xl transition-shadow duration-300 border-0 shadow-lg">
               <div className="absolute top-4 right-4">
@@ -92,7 +100,7 @@ const Particular = () => {
               <CardContent>
                 <Button 
                   onClick={() => handlePdfClick(list.pdfUrl)}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-500 hover:from-blue-700 hover:to-purple-600 text-white text-sm sm:text-base"
+                  className="w-full bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-600 text-white text-sm sm:text-base"
                 >
                   Ver Precios PDF
                 </Button>
@@ -103,7 +111,7 @@ const Particular = () => {
 
         {/* Información adicional */}
         <div className="text-center mt-12 max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-blue-100">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
             <h3 className="text-xl font-bold text-gray-800 mb-2">¿Necesitás ayuda?</h3>
             <p className="text-gray-600 mb-4">
               Si tenés alguna consulta sobre nuestros productos o precios, no dudes en contactarnos.
@@ -125,4 +133,4 @@ const Particular = () => {
   );
 };
 
-export default Particular;
+export default Reventa;
