@@ -155,6 +155,9 @@ const Particular = () => {
                         <Clock size={16} className="mr-2" />
                         <span className="text-sm">Lunes a sábados: 8:00 a 18:00</span>
                       </div>
+                      <div className="flex items-center justify-center text-red-600">
+                        <span className="text-sm font-medium">Domingos: Cerrado</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -182,7 +185,7 @@ const Particular = () => {
                     <Instagram size={24} />
                   </a>
                   <a 
-                    href="https://wa.me/5492234266910" 
+                    href="https://wa.me/5492234266910?text=Hola%20soy%20particular%20quiero%20informaci%C3%B3n" 
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl"
