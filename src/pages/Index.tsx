@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,12 +43,14 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
-              <Button 
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                size="lg"
-              >
-                Ver lista para particulares
-              </Button>
+              <Link to="/particular">
+                <Button 
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                  size="lg"
+                >
+                  Ver lista para particulares
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
