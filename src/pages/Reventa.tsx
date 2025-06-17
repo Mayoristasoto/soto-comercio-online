@@ -1,24 +1,47 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Truck, FileText, Cigarette, Tag, Facebook, Instagram, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Truck, FileText, Cigarette, Tag, Facebook, Instagram, MapPin, Clock, CheckCircle, Star, Package, TrendingUp, Users, Target } from 'lucide-react';
 
 const Reventa = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedList, setSelectedList] = useState<string | null>(null);
+
+  const steps = [
+    { id: 1, title: "Elegir lista", completed: false },
+    { id: 2, title: "Ver productos", completed: false },
+    { id: 3, title: "Realizar pedido", completed: false }
+  ];
+
+  const benefits = [
+    { icon: <Package size={16} />, text: "Volúmenes grandes" },
+    { icon: <TrendingUp size={16} />, text: "Mejores márgenes" },
+    { icon: <Users size={16} />, text: "Soporte comercial" },
+    { icon: <Target size={16} />, text: "Precios competitivos" }
+  ];
+
+  const testimonials = [
+    { name: "Distribuidora Norte", text: "Excelentes precios para reventa", rating: 5, category: "Distribuidor" },
+    { name: "Revendedor Central", text: "Muy buenos márgenes de ganancia", rating: 5, category: "Revendedor" },
+    { name: "Comercial Sur", text: "Servicio confiable y puntual", rating: 5, category: "Mayorista" }
+  ];
+
   const priceLists = [
     {
       title: "Lista Completa",
-      description: "Todos nuestros productos con precios para reventa",
+      description: "Todos nuestros products con precios para reventa",
       icon: <FileText size={32} className="text-orange-600" />,
       badge: "Completa",
       badgeColor: "bg-orange-500",
-      pdfUrl: "https://drive.google.com/file/d/1fcUubLTdmq5UA4yc1U0na6PPzmLp2dIG/view?usp=sharing"
+      pdfUrl: "https://drive.google.com/file/d/1fcUubLTdmq5UA4yc1U0na6PPzmLp2dIG/view?usp=sharing",
+      popular: true
     },
     {
       title: "Lista Cigarrillos",
-      description: "Productos de cigarrillos y tabacalería",
+      description: "Productos de cigarrillos y tabacalería especializados",
       icon: <Cigarette size={32} className="text-gray-600" />,
       badge: "Cigarrillos",
       badgeColor: "bg-gray-500",
@@ -26,7 +49,7 @@ const Reventa = () => {
     },
     {
       title: "Lista de Ofertas",
-      description: "Promociones especiales y descuentos",
+      description: "Promociones especiales y descuentos exclusivos",
       icon: <Tag size={32} className="text-red-600" />,
       badge: "Ofertas",
       badgeColor: "bg-red-500",
@@ -34,63 +57,150 @@ const Reventa = () => {
     }
   ];
 
-  const handlePdfClick = (url: string) => {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentStep((prev) => (prev + 1) % steps.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handlePdfClick = (url: string, title: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
+    setCurrentStep(1);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
-      {/* Header con logo */}
-      <header className="pt-8 pb-4">
+      {/* Header mejorado con navegación */}
+      <header className="pt-6 pb-4 sticky top-0 bg-white/90 backdrop-blur-sm z-50 border-b border-orange-100">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center text-gray-600 hover:text-orange-600 transition-colors">
-              <ArrowLeft size={20} className="mr-2" />
-              Volver al inicio
+            <Link to="/" className="flex items-center text-gray-600 hover:text-orange-600 transition-colors group">
+              <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" />
+              <span className="hidden sm:inline">Volver al inicio</span>
+              <span className="sm:hidden">Volver</span>
             </Link>
-            <img 
-              src="/lovable-uploads/4070ebac-75fa-40a1-a6a6-59de784f9cb2.png" 
-              alt="Mayorista Soto Logo" 
-              className="h-12 w-auto"
-            />
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/4070ebac-75fa-40a1-a6a6-59de784f9cb2.png" 
+                alt="Mayorista Soto Logo" 
+                className="h-10 sm:h-12 w-auto"
+              />
+              <div className="hidden sm:block">
+                <h1 className="font-bold text-lg text-gray-800">Mayorista Soto</h1>
+                <p className="text-xs text-gray-600">Para Reventa</p>
+              </div>
+            </div>
+            <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs sm:text-sm">
+              <Truck size={14} className="mr-1" />
+              Reventa
+            </Badge>
           </div>
         </div>
       </header>
 
-      {/* Contenido principal */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="text-center max-w-4xl mx-auto mb-12">
-          <Badge className="mb-4 bg-orange-500 text-white text-sm">
-            Para Reventa
-          </Badge>
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-orange-100 rounded-full p-4">
-              <Truck size={40} className="text-orange-600" />
+      <div className="container mx-auto px-4 py-6">
+        {/* Progreso visible */}
+        <div className="max-w-3xl mx-auto mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-orange-100">
+            <h2 className="text-center text-sm font-medium text-gray-600 mb-4">Tu proceso de compra</h2>
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                    index === currentStep 
+                      ? 'bg-orange-600 text-white scale-110 shadow-lg' 
+                      : index < currentStep 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {index < currentStep ? <CheckCircle size={16} /> : step.id}
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-16 sm:w-24 h-1 mx-2 transition-all duration-300 ${
+                      index < currentStep ? 'bg-orange-500' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between mt-2">
+              {steps.map((step, index) => (
+                <span key={step.id} className={`text-xs transition-all duration-300 ${
+                  index === currentStep ? 'text-orange-600 font-medium' : 'text-gray-500'
+                }`}>
+                  {step.title}
+                </span>
+              ))}
             </div>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-500 bg-clip-text text-transparent">
-            Listas de Precios para Reventa
-          </h1>
-          <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
-            Accede a nuestras listas de precios especiales para distribuidores y revendedores.
-          </p>
         </div>
 
-        {/* Cards de listas */}
+        {/* Hero Section personalizado */}
+        <div className="text-center max-w-4xl mx-auto mb-12">
+          <div className="inline-flex items-center bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <Truck size={16} className="mr-2" />
+            Para Distribuidores y Revendedores
+          </div>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-orange-600 via-red-500 to-orange-600 bg-clip-text text-transparent leading-tight">
+            Listas de Precios para Reventa
+          </h1>
+          <p className="text-lg sm:text-xl text-gray-600 leading-relaxed mb-8">
+            Accede a nuestros <span className="font-semibold text-orange-600">precios especiales</span> para distribuidores y revendedores mayoristas
+          </p>
+          
+          {/* Beneficios destacados con interacción */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-xl px-3 py-3 border border-orange-100 hover:shadow-md hover:scale-105 transition-all duration-200">
+                <div className="text-orange-500 flex-shrink-0">{benefit.icon}</div>
+                <span className="text-sm font-medium text-gray-700">{benefit.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Destacado especial */}
+          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-white/20 rounded-full p-3">
+                <Package size={32} className="text-white" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold mb-2">Volúmenes Mayoristas</h3>
+            <p className="text-lg opacity-90">
+              Mejores precios para distribuidores y <span className="font-bold">términos preferenciales</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Cards de listas con interactividad mejorada */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
           {priceLists.map((list, index) => (
-            <Card key={index} className="relative overflow-hidden hover:shadow-xl transition-shadow duration-300 border-0 shadow-lg">
+            <Card 
+              key={index} 
+              className={`relative overflow-hidden hover:shadow-2xl transition-all duration-300 border-2 cursor-pointer group ${
+                selectedList === list.title 
+                  ? 'border-orange-400 shadow-xl scale-105' 
+                  : 'border-transparent hover:border-orange-200 hover:-translate-y-1'
+              }`}
+              onMouseEnter={() => setSelectedList(list.title)}
+              onMouseLeave={() => setSelectedList(null)}
+            >
+              {list.popular && (
+                <Badge className="absolute -top-2 -right-2 bg-orange-500 text-white z-10 shadow-lg">
+                  Más usada
+                </Badge>
+              )}
               <div className="absolute top-4 right-4">
-                <Badge className={`${list.badgeColor} text-white text-xs sm:text-sm`}>
+                <Badge className={`${list.badgeColor} text-white text-xs sm:text-sm shadow-md`}>
                   {list.badge}
                 </Badge>
               </div>
               <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 p-4 bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center">
+                <div className="mx-auto mb-4 p-4 bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-orange-50 transition-colors">
                   {list.icon}
                 </div>
-                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 pr-16">
+                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 pr-16 group-hover:text-orange-600 transition-colors">
                   {list.title}
                 </CardTitle>
                 <CardDescription className="text-gray-600 text-base sm:text-lg">
@@ -99,28 +209,59 @@ const Reventa = () => {
               </CardHeader>
               <CardContent>
                 <Button 
-                  onClick={() => handlePdfClick(list.pdfUrl)}
-                  className="w-full bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-600 text-white text-sm sm:text-base"
+                  onClick={() => handlePdfClick(list.pdfUrl, list.title)}
+                  className="w-full bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-600 text-white text-sm sm:text-base group-hover:shadow-lg transition-all duration-200"
                 >
                   Ver Precios PDF
+                  <FileText size={16} className="ml-2 group-hover:rotate-12 transition-transform" />
                 </Button>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Nuestros Locales */}
-        <section className="py-12 bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl mb-12">
+        {/* Testimonios motivacionales */}
+        <section className="py-12 bg-gradient-to-r from-orange-50 to-red-50 rounded-3xl mb-12">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+                Lo que dicen nuestros distribuidores
+              </h2>
+              <p className="text-gray-600">Más de 200 distribuidores activos en todo el país</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-orange-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star key={i} size={14} className="text-yellow-400 fill-current" />
+                      ))}
+                    </div>
+                    <Badge variant="outline" className="text-xs border-orange-200 text-orange-700">
+                      {testimonial.category}
+                    </Badge>
+                  </div>
+                  <p className="text-gray-700 mb-3 italic">"{testimonial.text}"</p>
+                  <p className="font-medium text-orange-600">{testimonial.name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Nuestros Locales con diseño moderno */}
+        <section className="py-12 bg-white rounded-3xl shadow-sm border border-orange-100 mb-12">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-8">
-                <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">Nuestros Locales</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">Visitanos en Nuestros Locales</h2>
                 <p className="text-lg sm:text-xl text-gray-600">
-                  Visitanos en nuestras sucursales
+                  Atención especializada para distribuidores
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card className="shadow-xl border-0">
+                <Card className="shadow-lg border-0 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
                   <CardHeader className="text-center">
                     <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center">
                       <MapPin size={24} className="text-orange-600" />
@@ -128,16 +269,16 @@ const Reventa = () => {
                     <CardTitle className="text-xl sm:text-2xl text-gray-800">Sucursal José Martí</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-3">
-                    <p className="text-gray-600 text-base sm:text-lg">
+                    <p className="text-gray-600 text-base sm:text-lg font-medium">
                       Fortunato de la Plaza 4798 – Mar del Plata
                     </p>
                     <div className="space-y-2">
                       <div className="flex items-center justify-center text-gray-600">
-                        <Clock size={16} className="mr-2" />
+                        <Clock size={16} className="mr-2 text-orange-500" />
                         <span className="text-sm">Lunes a viernes: 7:30 a 18:00</span>
                       </div>
                       <div className="flex items-center justify-center text-gray-600">
-                        <Clock size={16} className="mr-2" />
+                        <Clock size={16} className="mr-2 text-orange-500" />
                         <span className="text-sm">Sábados: 7:30 a 16:00</span>
                       </div>
                       <div className="flex items-center justify-center text-red-600">
@@ -147,7 +288,7 @@ const Reventa = () => {
                   </CardContent>
                 </Card>
                 
-                <Card className="shadow-xl border-0">
+                <Card className="shadow-lg border-0 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
                   <CardHeader className="text-center">
                     <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center">
                       <MapPin size={24} className="text-orange-600" />
@@ -155,12 +296,12 @@ const Reventa = () => {
                     <CardTitle className="text-xl sm:text-2xl text-gray-800">Sucursal Juan B. Justo</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-3">
-                    <p className="text-gray-600 text-base sm:text-lg">
+                    <p className="text-gray-600 text-base sm:text-lg font-medium">
                       Juan B. Justo 6076 (Rotonda El Gaucho) – Mar del Plata
                     </p>
                     <div className="space-y-2">
                       <div className="flex items-center justify-center text-gray-600">
-                        <Clock size={16} className="mr-2" />
+                        <Clock size={16} className="mr-2 text-orange-500" />
                         <span className="text-sm">Lunes a sábados: 8:00 a 18:00</span>
                       </div>
                       <div className="flex items-center justify-center text-red-600">
@@ -171,14 +312,14 @@ const Reventa = () => {
                 </Card>
               </div>
               
-              <div className="text-center mt-8">
-                <h3 className="text-xl sm:text-2xl font-bold mb-6 text-gray-800">Síguenos en Redes Sociales</h3>
-                <div className="flex justify-center space-x-6">
+              <div className="text-center mt-12">
+                <h3 className="text-xl sm:text-2xl font-bold mb-6 text-gray-800">Seguinos y Contactanos</h3>
+                <div className="flex justify-center space-x-6 mb-6">
                   <a 
                     href="https://www.facebook.com/Mayoristasoto" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl"
+                    className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
                     aria-label="Facebook"
                   >
                     <Facebook size={24} />
@@ -187,7 +328,7 @@ const Reventa = () => {
                     href="https://www.instagram.com/Mayoristasoto/" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white p-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl"
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white p-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
                     aria-label="Instagram"
                   >
                     <Instagram size={24} />
@@ -196,7 +337,7 @@ const Reventa = () => {
                     href="https://wa.me/5492234266910?text=Hola%20soy%20revendedor%20quiero%20informaci%C3%B3n" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl"
+                    className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
                     aria-label="WhatsApp"
                   >
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -204,28 +345,34 @@ const Reventa = () => {
                     </svg>
                   </a>
                 </div>
+                <p className="text-sm text-gray-600">
+                  Consultas comerciales: <span className="font-medium text-orange-600">contacto@mayoristasoto.com</span>
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Información adicional */}
+        {/* Información adicional moderna */}
         <div className="text-center mt-12 max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
-            <h3 className="text-xl font-bold text-gray-800 mb-2">¿Necesitás ayuda?</h3>
-            <p className="text-gray-600 mb-4">
-              Si tenés alguna consulta sobre nuestros productos o precios, no dudes en contactarnos.
+          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl shadow-lg p-6 text-white">
+            <h3 className="text-xl font-bold mb-2">¿Sos distribuidor y necesitás volúmenes grandes?</h3>
+            <p className="mb-4 opacity-90">
+              Nuestro equipo comercial está especializado en atender distribuidores. Te ofrecemos los mejores términos.
             </p>
-            <p className="text-sm text-gray-500">
-              Contacto: contacto@mayoristasoto.com
-            </p>
+            <Button className="bg-white text-orange-600 hover:bg-gray-100 font-medium">
+              Contactar Comercial
+            </Button>
           </div>
         </div>
 
         {/* Pie de página */}
         <footer className="text-center mt-16 pt-8 border-t border-gray-200">
           <p className="text-gray-600 mb-2">
-            <strong>Mayorista Soto</strong>
+            <strong>Mayorista Soto</strong> - Tu socio de negocios de confianza
+          </p>
+          <p className="text-sm text-gray-500">
+            Especialistas en distribución mayorista desde 1995
           </p>
         </footer>
       </div>
