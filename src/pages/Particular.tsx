@@ -31,7 +31,7 @@ const Particular = () => {
 
   const priceLists = [
     {
-      title: "Lista Completa",
+      title: "Lista de Precios Particulares",
       description: "Todos nuestros productos con precios para particulares",
       icon: <FileText size={32} className="text-blue-600" />,
       badge: "Particular",
@@ -352,7 +352,10 @@ const Particular = () => {
             <p className="mb-4 opacity-90">
               Nuestro equipo está aquí para ayudarte a encontrar exactamente lo que buscás para tu familia.
             </p>
-            <Button className="bg-white text-blue-600 hover:bg-gray-100 font-medium">
+            <Button 
+              className="bg-white text-blue-600 hover:bg-gray-100 font-medium"
+              onClick={() => window.open('https://wa.me/5492234266910?text=Hola%20soy%20particular%20quiero%20informaci%C3%B3n', '_blank')}
+            >
               Contactar Ahora
             </Button>
           </div>

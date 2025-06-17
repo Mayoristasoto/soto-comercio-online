@@ -31,7 +31,7 @@ const Reventa = () => {
 
   const priceLists = [
     {
-      title: "Lista Completa",
+      title: "Lista de Precios Revendedores y Distribuidores",
       description: "Todos nuestros products con precios para reventa",
       icon: <FileText size={32} className="text-orange-600" />,
       badge: "Completa",
@@ -360,7 +360,10 @@ const Reventa = () => {
             <p className="mb-4 opacity-90">
               Nuestro equipo comercial está especializado en atender distribuidores. Te ofrecemos los mejores términos.
             </p>
-            <Button className="bg-white text-orange-600 hover:bg-gray-100 font-medium">
+            <Button 
+              className="bg-white text-orange-600 hover:bg-gray-100 font-medium"
+              onClick={() => window.open('https://wa.me/5492234266910?text=Hola%20soy%20revendedor%20quiero%20informaci%C3%B3n', '_blank')}
+            >
               Contactar Comercial
             </Button>
           </div>

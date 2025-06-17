@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 const PriceListsSection = () => {
   const priceLists = [
     {
-      title: "Lista Salón",
+      title: "Lista de Precios Comercios",
       description: "Comprando en los salones",
       locations: [
         "Local José Martí - Fortunato de la Plaza 4798",
@@ -18,7 +18,7 @@ const PriceListsSection = () => {
       pdfUrl: "https://drive.google.com/file/d/1DLeBquIPiqdM9EwRpTRC5LN9Cldf7ALy/view"
     },
     {
-      title: "Lista Distribución",
+      title: "Lista de Precios Revendedores y Distribuidores",
       description: "Envío gratis comprando $20.000",
       locations: [
         "Precios para comercios",

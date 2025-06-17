@@ -31,7 +31,7 @@ const Comercio = () => {
 
   const priceLists = [
     {
-      title: "Lista Completa",
+      title: "Lista de Precios Comercios",
       description: "Todos nuestros productos con precios para comercio",
       icon: <FileText size={32} className="text-green-600" />,
       badge: "Mayorista",
@@ -361,7 +361,10 @@ const Comercio = () => {
             <p className="mb-4 opacity-90">
               Nuestro equipo está especializado en atender comerciantes. Te ayudamos a encontrar los mejores productos y precios.
             </p>
-            <Button className="bg-white text-green-600 hover:bg-gray-100 font-medium">
+            <Button 
+              className="bg-white text-green-600 hover:bg-gray-100 font-medium"
+              onClick={() => window.open('https://wa.me/5492234266910?text=Hola%20soy%20comerciante%20quiero%20informaci%C3%B3n', '_blank')}
+            >
               Contactar Ahora
             </Button>
           </div>
