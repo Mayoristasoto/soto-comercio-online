@@ -198,27 +198,32 @@ const Comercio = () => {
               onMouseEnter={() => setSelectedList(list.title)}
               onMouseLeave={() => setSelectedList(null)}
             >
-              {list.popular && (
-                <Badge className="absolute -top-2 -right-2 bg-green-500 text-white z-10 shadow-lg">
-                  Más usada
-                </Badge>
-              )}
-              {list.hasDelivery && (
-                <Badge className="absolute -top-2 -left-2 bg-blue-500 text-white z-10 shadow-lg">
-                  Envío gratis
-                </Badge>
-              )}
-              {list.isLocal && (
-                <Badge className="absolute -top-2 -left-2 bg-orange-500 text-white z-10 shadow-lg">
-                  Solo en local
-                </Badge>
-              )}
+              {/* Badges organizados para evitar superposición */}
+              <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                {list.popular && (
+                  <Badge className="bg-green-500 text-white shadow-lg text-xs">
+                    Más usada
+                  </Badge>
+                )}
+                {list.hasDelivery && (
+                  <Badge className="bg-blue-500 text-white shadow-lg text-xs">
+                    Envío gratis
+                  </Badge>
+                )}
+                {list.isLocal && (
+                  <Badge className="bg-orange-500 text-white shadow-lg text-xs">
+                    Solo en local
+                  </Badge>
+                )}
+              </div>
+              
               <div className="absolute top-4 right-4">
                 <Badge className={`${list.badgeColor} text-white text-xs sm:text-sm shadow-md`}>
                   {list.badge}
                 </Badge>
               </div>
-              <CardHeader className="text-center pb-4">
+              
+              <CardHeader className="text-center pb-4 pt-12">
                 <div className="mx-auto mb-4 p-4 bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-green-50 transition-colors">
                   {list.icon}
                 </div>
