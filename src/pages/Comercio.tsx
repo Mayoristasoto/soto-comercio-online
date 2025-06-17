@@ -31,21 +31,32 @@ const Comercio = () => {
 
   const priceLists = [
     {
-      title: "Lista de Precios Comercios",
-      description: "Todos nuestros productos con precios para comercio",
+      title: "Lista Completa Salón",
+      description: "Todos nuestros productos - Solo compras en el local",
       icon: <FileText size={32} className="text-green-600" />,
-      badge: "Mayorista",
+      badge: "Salón",
       badgeColor: "bg-green-500",
-      pdfUrl: "https://drive.google.com/file/d/1fcUubLTdmq5UA4yc1U0na6PPzmLp2dIG/view?usp=sharing",
-      popular: true
+      pdfUrl: "https://drive.google.com/file/d/1DLeBquIPiqdM9EwRpTRC5LN9Cldf7ALy/view?usp=sharing",
+      popular: true,
+      isLocal: true
     },
     {
-      title: "Lista Cigarrillos",
-      description: "Productos de cigarrillos y tabacalería especializados",
+      title: "Lista Cigarrillos Salón",
+      description: "Productos de cigarrillos y tabacalería - Solo en el local",
       icon: <Cigarette size={32} className="text-gray-600" />,
-      badge: "Especializada",
+      badge: "Salón",
       badgeColor: "bg-gray-500",
-      pdfUrl: "https://drive.google.com/file/d/1A95Rnd3nPfoGG4fmp06-tUMb5ldqbjdW/view?usp=sharing"
+      pdfUrl: "https://drive.google.com/file/d/1Wg_qk5GPpqorwZAna1xqlyzZdxINZU-c/view?usp=sharing",
+      isLocal: true
+    },
+    {
+      title: "Lista Comercio Distribución",
+      description: "Para distribución - Envío gratis desde $20.000",
+      icon: <Truck size={32} className="text-blue-600" />,
+      badge: "Distribución",
+      badgeColor: "bg-blue-500",
+      pdfUrl: "https://drive.google.com/file/d/15J4hJ-1zyAV98vOim7zoa1QxxnEDKE5n/view?usp=sharing",
+      hasDelivery: true
     },
     {
       title: "Lista de Ofertas",
@@ -175,7 +186,7 @@ const Comercio = () => {
         </div>
 
         {/* Cards de listas con interactividad mejorada */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto mb-16">
           {priceLists.map((list, index) => (
             <Card 
               key={index} 
@@ -190,6 +201,16 @@ const Comercio = () => {
               {list.popular && (
                 <Badge className="absolute -top-2 -right-2 bg-green-500 text-white z-10 shadow-lg">
                   Más usada
+                </Badge>
+              )}
+              {list.hasDelivery && (
+                <Badge className="absolute -top-2 -left-2 bg-blue-500 text-white z-10 shadow-lg">
+                  Envío gratis
+                </Badge>
+              )}
+              {list.isLocal && (
+                <Badge className="absolute -top-2 -left-2 bg-orange-500 text-white z-10 shadow-lg">
+                  Solo en local
                 </Badge>
               )}
               <div className="absolute top-4 right-4">
@@ -209,6 +230,22 @@ const Comercio = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {list.isLocal && (
+                  <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center text-orange-700 text-sm">
+                      <MapPin size={16} className="mr-2 flex-shrink-0" />
+                      <span className="font-medium">Exclusiva para compras en nuestros locales</span>
+                    </div>
+                  </div>
+                )}
+                {list.hasDelivery && (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center text-blue-700 text-sm">
+                      <Truck size={16} className="mr-2 flex-shrink-0" />
+                      <span className="font-medium">Envío gratis en Mar del Plata desde $20.000</span>
+                    </div>
+                  </div>
+                )}
                 <Button 
                   onClick={() => handlePdfClick(list.pdfUrl, list.title)}
                   className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white text-sm sm:text-base group-hover:shadow-lg transition-all duration-200"
