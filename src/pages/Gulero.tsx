@@ -17,7 +17,7 @@ const Gulero = () => {
   const products = [
     {
       name: "Barrigón Mega 100g",
-      variants: "Blanco y Negro",
+      variants: "Blanco",
       description: "El alfajor XXL viral que todos buscan",
       image: "/lovable-uploads/44620e54-a86a-4599-85e8-9d728d3cb25c.png"
     },
@@ -35,7 +35,7 @@ const Gulero = () => {
     },
     {
       name: "Juana La Loca Merengue",
-      variants: "Blanco y Chocolate",
+      variants: "Una variedad",
       description: "Con merengue suave y cremoso",
       image: "/lovable-uploads/3cdfe2a4-9aaa-4883-b75f-2ab55e82d3a9.png"
     },
@@ -43,7 +43,7 @@ const Gulero = () => {
       name: "Love 420 67g",
       variants: "Blanco y Negro",
       description: "Sabor moderno y envoltorio llamativo",
-      image: "/lovable-uploads/ed82b997-8af8-40ba-9a65-08219685711e.png"
+      image: "/lovable-uploads/dc68c33d-d423-49d7-87c6-2909b92ede5f.png"
     },
     {
       name: "Marley 75g",
@@ -62,6 +62,12 @@ const Gulero = () => {
       variants: "Blanco y Negro",
       description: "Clásico dulce cremoso con estilo",
       image: "/lovable-uploads/8e587c09-5d79-45a4-8e63-9fdfeffe3c57.png"
+    },
+    {
+      name: "Gulero",
+      variants: "Chocolate Negro y Blanco",
+      description: "Chocolate negro por fuera y blanco por dentro",
+      image: "/lovable-uploads/dc68c33d-d423-49d7-87c6-2909b92ede5f.png"
     }
   ];
 
@@ -169,7 +175,7 @@ const Gulero = () => {
               
               <div className="space-y-4">
                 <p className="text-xl sm:text-2xl font-bold text-green-900 drop-shadow-md">
-                  ¡16 alfajores virales en una sola caja!
+                  ¡15 alfajores virales en una sola caja!
                 </p>
                 
                 <div className="bg-gradient-to-r from-yellow-400 to-red-400 text-green-900 rounded-full px-6 py-3 inline-block shadow-lg border-2 border-green-600">
@@ -240,8 +246,8 @@ const Gulero = () => {
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-                {products.slice(0, 8).map((product, index) => (
+              <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4">
+                {products.map((product, index) => (
                   <div key={index} className="flex flex-col items-center group">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-3 border-green-400 shadow-lg group-hover:scale-110 transition-transform duration-300">
                       <img 
@@ -254,7 +260,7 @@ const Gulero = () => {
                       {product.name.split(' ')[0]}
                     </p>
                     <Badge className="text-xs mt-1 bg-yellow-200 text-yellow-800">
-                      {product.variants.includes('Blanco') ? '🤍' : '🤎'}
+                      {product.variants.includes('Blanco') ? '🤍' : product.variants.includes('Negro') ? '🤎' : '🍫'}
                     </Badge>
                   </div>
                 ))}
@@ -325,7 +331,7 @@ const Gulero = () => {
               <div className="bg-green-200 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg">
                 <CheckCircle size={32} className="text-green-700" />
               </div>
-              <h3 className="font-bold text-lg mb-2 text-green-800">16 alfajores guleros</h3>
+              <h3 className="font-bold text-lg mb-2 text-green-800">15 alfajores guleros</h3>
               <p className="text-green-700">Los alfajores más virales del mercado</p>
             </div>
             <div className="text-center">
@@ -347,7 +353,7 @@ const Gulero = () => {
                 <Gift size={32} className="text-green-700" />
               </div>
               <h3 className="font-bold text-lg mb-2 text-green-800">Surtido completo</h3>
-              <p className="text-green-700">Blanco y negro incluidos</p>
+              <p className="text-green-700">Todos los sabores incluidos</p>
             </div>
           </div>
         </div>
@@ -413,7 +419,7 @@ const Gulero = () => {
             ¡No te quedes sin tu Combo GULERO!
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto drop-shadow-md">
-            Los alfajores más virales del momento, todos juntos en una sola compra. Mix completo bañado en chocolate blanco y negro. 16 alfajores por solo $25.000. Perfecto para tu negocio o para satisfacer el bajón perfecto 🌿
+            Los alfajores más virales del momento, todos juntos en una sola compra. Mix completo con todos los sabores. 15 alfajores por solo $25.000. Perfecto para tu negocio o para satisfacer el bajón perfecto 🌿
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
