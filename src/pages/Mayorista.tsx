@@ -45,14 +45,14 @@ const Mayorista = () => {
     {
       name: "Marley",
       description: "Clásico reggae, sabor auténtico",
-      image: "/lovable-uploads/e94f7375-36f5-4bf1-ba5a-34607d773c17.png",
+      image: "/lovable-uploads/65766c5c-6bd7-444c-b27f-937f241eb499.png",
       highlight: "🎵 ICON",
       demand: "Fiel clientela"
     },
     {
       name: "Mufaso",
       description: "El sabor que marca la diferencia",
-      image: "/lovable-uploads/8e587c09-5d79-45a4-8e63-9fdfeffe3c57.png",
+      image: "/lovable-uploads/73d47798-3460-4f6f-99ac-498b7c85e523.png",
       highlight: "💎 PREMIUM",
       demand: "Calidad superior"
     },
@@ -178,53 +178,52 @@ const Mayorista = () => {
               </p>
             </div>
             
+            {/* Centered Photo Section */}
+            <div className="text-center mb-12">
+              <div className="inline-block w-48 h-48 rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 p-1">
+                <img 
+                  src="/lovable-uploads/f3da61ee-27f8-4759-9e26-b2fdb92f87c2.png"
+                  alt="Andrés Voikli"
+                  className="w-full h-full rounded-full object-cover bg-slate-800"
+                />
+              </div>
+            </div>
+            
             <Card className="bg-gradient-to-br from-slate-800/80 to-purple-900/80 border-2 border-cyan-400/30 backdrop-blur-sm">
               <CardContent className="p-8 sm:p-12">
-                <div className="flex flex-col lg:flex-row items-center gap-8">
-                  <div className="flex-shrink-0">
-                    <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 p-1">
-                      <img 
-                        src="/lovable-uploads/f3da61ee-27f8-4759-9e26-b2fdb92f87c2.png"
-                        alt="Andrés Voikli"
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    </div>
+                <div className="text-center">
+                  <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">
+                    ANDRÉS VOIKLI
+                  </h3>
+                  <p className="text-xl text-cyan-400 font-semibold mb-6">
+                    Ejecutivo Comercial
+                  </p>
+                  
+                  <div className="bg-black/40 rounded-lg p-4 mb-6">
+                    <p className="text-lg text-gray-300 mb-2">
+                      <strong className="text-white">¿Tenés dudas o querés precios mayoristas?</strong>
+                    </p>
+                    <p className="text-cyan-400 font-semibold">
+                      Contactá directo con Andrés y te atiende al toque 🚀
+                    </p>
                   </div>
                   
-                  <div className="flex-1 text-center lg:text-left">
-                    <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">
-                      ANDRÉS VOIKLI
-                    </h3>
-                    <p className="text-xl text-cyan-400 font-semibold mb-4">
-                      Ejecutivo Comercial
-                    </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button 
+                      onClick={handleWhatsAppContact}
+                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      <MessageCircle className="mr-2" size={24} />
+                      HABLAR CON ANDRÉS
+                    </Button>
                     
-                    <div className="bg-black/40 rounded-lg p-4 mb-6">
-                      <p className="text-lg text-gray-300 mb-2">
-                        <strong className="text-white">¿Tenés dudas o querés precios mayoristas?</strong>
-                      </p>
-                      <p className="text-cyan-400 font-semibold">
-                        Contactá directo con Andrés y te atiende al toque 🚀
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                      <Button 
-                        onClick={handleWhatsAppContact}
-                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        <MessageCircle className="mr-2" size={24} />
-                        HABLAR CON ANDRÉS
-                      </Button>
-                      
-                      <Button 
-                        variant="outline"
-                        className="border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold text-lg px-8 py-6 rounded-xl"
-                      >
-                        <Mail className="mr-2" size={20} />
-                        PEDIR CATÁLOGO
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="outline"
+                      className="border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold text-lg px-8 py-6 rounded-xl"
+                    >
+                      <Mail className="mr-2" size={20} />
+                      PEDIR CATÁLOGO
+                    </Button>
                   </div>
                 </div>
               </CardContent>
