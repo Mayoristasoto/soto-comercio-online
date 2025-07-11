@@ -31,7 +31,7 @@ const Mayorista = () => {
     {
       name: "Gulero",
       description: "El que todos buscan y pocos tienen",
-      image: "/lovable-uploads/dc68c33d-d423-49d7-87c6-2909b92ede5f.png",
+      image: "/lovable-uploads/ef8afbc4-f284-4ead-8530-b2c88c534043.png",
       highlight: "🚀 TREND",
       demand: "Más buscado"
     },
@@ -59,7 +59,7 @@ const Mayorista = () => {
     {
       name: "Rasta",
       description: "Auténtico sabor jamaiquino",
-      image: "/lovable-uploads/157b8b92-c95f-44fc-979c-eb601335d923.png",
+      image: "/lovable-uploads/c1b3e115-6a8c-4840-ba83-57e79de8d6bb.png",
       highlight: "🏴‍☠️ REBEL",
       demand: "Estilo único"
     }
@@ -165,7 +165,7 @@ const Mayorista = () => {
         </div>
       </section>
 
-      {/* Contact Section - Andrés Volki */}
+      {/* Contact Section - Andrés Voikli */}
       <section className="py-12 sm:py-20 bg-black/40">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -183,15 +183,17 @@ const Mayorista = () => {
                 <div className="flex flex-col lg:flex-row items-center gap-8">
                   <div className="flex-shrink-0">
                     <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 p-1">
-                      <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center">
-                        <div className="text-6xl">👨‍💼</div>
-                      </div>
+                      <img 
+                        src="/lovable-uploads/f3da61ee-27f8-4759-9e26-b2fdb92f87c2.png"
+                        alt="Andrés Voikli"
+                        className="w-full h-full rounded-full object-cover"
+                      />
                     </div>
                   </div>
                   
                   <div className="flex-1 text-center lg:text-left">
                     <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">
-                      ANDRÉS VOLKI
+                      ANDRÉS VOIKLI
                     </h3>
                     <p className="text-xl text-cyan-400 font-semibold mb-4">
                       Ejecutivo Comercial
