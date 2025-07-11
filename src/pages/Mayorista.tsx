@@ -14,7 +14,7 @@ const Mayorista = () => {
       demand: "Alta demanda"
     },
     {
-      name: "Juana La Loca",
+      name: "Juana La Loca", 
       description: "Cremoso y adictivo, el favorito de los jóvenes",
       image: "/lovable-uploads/3cdfe2a4-9aaa-4883-b75f-2ab55e82d3a9.png",
       highlight: "💥 TOP",
@@ -181,7 +181,7 @@ const Mayorista = () => {
             <div className="text-center mb-12">
               <div className="inline-block">
                 <img 
-                  src="/lovable-uploads/bb8e9640-3a5d-4d92-a02d-59f0d3fd186b.png"
+                  src="/lovable-uploads/eaaa8fa7-bc4e-4b28-93aa-7e1abfafc559.png"
                   alt="Andrés Voikli"
                   className="w-48 h-48 rounded-full object-cover"
                 />
