@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -180,11 +179,11 @@ const Mayorista = () => {
             
             {/* Centered Photo Section */}
             <div className="text-center mb-12">
-              <div className="inline-block w-48 h-48 rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 p-1">
+              <div className="inline-block">
                 <img 
-                  src="/lovable-uploads/f3da61ee-27f8-4759-9e26-b2fdb92f87c2.png"
+                  src="/lovable-uploads/bb8e9640-3a5d-4d92-a02d-59f0d3fd186b.png"
                   alt="Andrés Voikli"
-                  className="w-full h-full rounded-full object-cover bg-slate-800"
+                  className="w-48 h-48 rounded-full object-cover"
                 />
               </div>
             </div>
