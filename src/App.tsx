@@ -10,6 +10,7 @@ import Particular from "./pages/Particular";
 import Reventa from "./pages/Reventa";
 import Gulero from "./pages/Gulero";
 import Mayorista from "./pages/Mayorista";
+import Centum from "./pages/Centum";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/reventa" element={<Reventa />} />
           <Route path="/gulero" element={<Gulero />} />
           <Route path="/mayorista" element={<Mayorista />} />
+          <Route path="/centum" element={<Centum />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
