@@ -66,8 +66,14 @@ const Mayorista = () => {
 
   const handleWhatsAppContact = () => {
     const message = "Hola Andrés! Soy mayorista y me interesa conocer los precios de los alfajores bajoneros. ¿Podrías enviarme el catálogo?";
-    const phoneNumber = "5492234266910";
+    const phoneNumber = "5492236152289";
     window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleEmailContact = () => {
+    const subject = "Consulta sobre catálogo mayorista - Alfajores Bajoneros";
+    const body = "Hola Andrés!\n\nSoy mayorista y me interesa conocer los precios de los alfajores bajoneros. ¿Podrías enviarme el catálogo?\n\nGracias!";
+    window.open(`mailto:andresv@mayoristasoto.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_self');
   };
 
   return (
@@ -197,8 +203,19 @@ const Mayorista = () => {
                   <p className="text-xl text-cyan-400 font-semibold mb-6">
                     Ejecutivo Comercial
                   </p>
-                  
-                  <div className="bg-black/40 rounded-lg p-4 mb-6">
+
+                  {/* Contact Info Visible */}
+                  <div className="bg-black/40 rounded-lg p-6 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <Phone size={20} className="text-cyan-400" />
+                        <span className="text-white font-semibold">+54 9 2236 15-2289</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-3">
+                        <Mail size={20} className="text-cyan-400" />
+                        <span className="text-white font-semibold">andresv@mayoristasoto.com</span>
+                      </div>
+                    </div>
                     <p className="text-lg text-gray-300 mb-2">
                       <strong className="text-white">¿Tenés dudas o querés precios mayoristas?</strong>
                     </p>
@@ -217,6 +234,7 @@ const Mayorista = () => {
                     </Button>
                     
                     <Button 
+                      onClick={handleEmailContact}
                       variant="outline"
                       className="border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold text-lg px-8 py-6 rounded-xl"
                     >
