@@ -230,7 +230,7 @@ const Mayorista = () => {
                       className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <MessageCircle className="mr-2" size={24} />
-                      HABLAR CON ANDRÉS
+                      HABLAR POR WHATSAPP
                     </Button>
                     
                     <Button 
@@ -239,7 +239,7 @@ const Mayorista = () => {
                       className="border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold text-lg px-8 py-6 rounded-xl"
                     >
                       <Mail className="mr-2" size={20} />
-                      PEDIR CATÁLOGO
+                      ENVIAR EMAIL
                     </Button>
                   </div>
                 </div>
