@@ -50,12 +50,21 @@ const Comercio = () => {
       isLocal: true
     },
     {
-      title: "Lista Comercio Distribución",
-      description: "Para distribución - Envío gratis desde $20.000",
+      title: "Lista Completa Distribución",
+      description: "Todos los productos - Envío gratis desde $20.000",
       icon: <Truck size={32} className="text-blue-600" />,
       badge: "Distribución",
       badgeColor: "bg-blue-500",
-      pdfUrl: "https://drive.google.com/file/d/15J4hJ-1zyAV98vOim7zoa1QxxnEDKE5n/view?usp=sharing",
+      pdfUrl: "https://drive.google.com/file/d/1QkjoW3IHwJa9BoD5rkcqcEsRrX77wCox/view?usp=sharing",
+      hasDelivery: true
+    },
+    {
+      title: "Lista Cigarrillos Distribución",
+      description: "Solo cigarrillos - Envío gratis desde $20.000",
+      icon: <Cigarette size={32} className="text-blue-600" />,
+      badge: "Distribución",
+      badgeColor: "bg-blue-600",
+      pdfUrl: "https://drive.google.com/file/d/1q2dmZtakJVfGLvdij2jBoWWBNz6HjbW9/view?usp=sharing",
       hasDelivery: true
     },
     {
