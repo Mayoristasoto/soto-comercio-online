@@ -7,27 +7,52 @@ import { Badge } from "@/components/ui/badge";
 const PriceListsSection = () => {
   const priceLists = [
     {
-      title: "Lista de Precios Comercios",
+      title: "Lista Completa Salón",
       description: "Comprando en los salones",
       locations: [
         "Local José Martí - Fortunato de la Plaza 4798",
-        "Local Juan B. Justo - Juan B. Justo Rotonda El Gaucho"
+        "Local Juan B. Justo - Juan B. Justo Rotonda El Gaucho",
+        "Todos los productos disponibles"
       ],
-      badge: "Comercio",
+      badge: "Salón",
       badgeColor: "bg-blue-500",
       pdfUrl: "https://drive.google.com/file/d/1DLeBquIPiqdM9EwRpTRC5LN9Cldf7ALy/view"
     },
     {
-      title: "Lista de Precios Revendedores y Distribuidores",
-      description: "Envío gratis comprando $20.000",
+      title: "Lista Cigarrillos Salón",
+      description: "Solo cigarrillos en salones",
       locations: [
-        "Precios para comercios",
+        "Local José Martí - Fortunato de la Plaza 4798",
+        "Local Juan B. Justo - Juan B. Justo Rotonda El Gaucho",
+        "Productos de tabaquería exclusivamente"
+      ],
+      badge: "Salón",
+      badgeColor: "bg-blue-600",
+      pdfUrl: "https://drive.google.com/file/d/15J4hJ-1zyAV98vOim7zoa1QxxnEDKE5n/view"
+    },
+    {
+      title: "Lista Completa Distribución",
+      description: "Con envío gratis en Mar del Plata más de $20.000",
+      locations: [
+        "Todos los productos disponibles",
         "Envío gratuito en Mar del Plata desde $20.000",
         "Otras localidades: llevamos al expreso"
       ],
-      badge: "Comercio",
+      badge: "Distribución",
       badgeColor: "bg-purple-500",
-      pdfUrl: "https://drive.google.com/file/d/15J4hJ-1zyAV98vOim7zoa1QxxnEDKE5n/view"
+      pdfUrl: "https://drive.google.com/file/d/1QkjoW3IHwJa9BoD5rkcqcEsRrX77wCox/view"
+    },
+    {
+      title: "Lista Cigarrillos Distribución",
+      description: "Solo cigarrillos con envío",
+      locations: [
+        "Productos de tabaquería exclusivamente",
+        "Envío gratuito en Mar del Plata desde $20.000",
+        "Otras localidades: llevamos al expreso"
+      ],
+      badge: "Distribución",
+      badgeColor: "bg-purple-600",
+      pdfUrl: "https://drive.google.com/file/d/1q2dmZtakJVfGLvdij2jBoWWBNz6HjbW9/view"
     },
     {
       title: "Lista de Ofertas",
