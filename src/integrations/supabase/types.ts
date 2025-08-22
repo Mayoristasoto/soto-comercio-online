@@ -240,47 +240,19 @@ export type Database = {
       }
     }
     Views: {
-      gondolas_public: {
-        Row: {
-          category: string | null
-          id: string | null
-          position_height: number | null
-          position_width: number | null
-          position_x: number | null
-          position_y: number | null
-          section: string | null
-          status: string | null
-          type: string | null
-        }
-        Insert: {
-          category?: never
-          id?: string | null
-          position_height?: number | null
-          position_width?: number | null
-          position_x?: number | null
-          position_y?: number | null
-          section?: string | null
-          status?: string | null
-          type?: string | null
-        }
-        Update: {
-          category?: never
-          id?: string | null
-          position_height?: number | null
-          position_width?: number | null
-          position_x?: number | null
-          position_y?: number | null
-          section?: string | null
-          status?: string | null
-          type?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       current_user_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      detect_insecure_views: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          security_risk: string
+          view_name: unknown
+        }[]
       }
       get_current_user_profile: {
         Args: Record<PropertyKey, never>
@@ -298,6 +270,20 @@ export type Database = {
           active_users: number
           admin_users: number
           total_users: number
+        }[]
+      }
+      get_public_gondolas: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          category: string
+          id: string
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
         }[]
       }
       is_admin_user: {
