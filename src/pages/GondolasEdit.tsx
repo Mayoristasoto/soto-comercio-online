@@ -129,7 +129,7 @@ const GondolasEdit = () => {
                 <div>
                   <h2 className="text-xl font-semibold">Editor del Layout</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Modo edición activo - Arrastra, redimensiona y crea nuevas góndolas
+                    Arrastra, redimensiona y crea góndolas • Usa ← → ↑ ↓ para mover • Ctrl + flechas para redimensionar
                   </p>
                 </div>
                 

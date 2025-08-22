@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Gondola } from "@/pages/Gondolas";
 
 interface InteractiveMapProps {
@@ -30,12 +30,90 @@ export const InteractiveMap = ({
   const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!selectedGondola) return;
+
+      const gondola = gondolas.find(g => g.id === selectedGondola);
+      if (!gondola) return;
+
+      const step = 5;
+      const resizeStep = 10;
+      let shouldUpdate = false;
+      let updatedGondola = { ...gondola };
+
+      // Movement with arrow keys
+      if (!event.ctrlKey && !event.metaKey) {
+        switch (event.key) {
+          case 'ArrowUp':
+            event.preventDefault();
+            updatedGondola.position.y = Math.max(0, gondola.position.y - step);
+            shouldUpdate = true;
+            break;
+          case 'ArrowDown':
+            event.preventDefault();
+            updatedGondola.position.y = gondola.position.y + step;
+            shouldUpdate = true;
+            break;
+          case 'ArrowLeft':
+            event.preventDefault();
+            updatedGondola.position.x = Math.max(0, gondola.position.x - step);
+            shouldUpdate = true;
+            break;
+          case 'ArrowRight':
+            event.preventDefault();
+            updatedGondola.position.x = gondola.position.x + step;
+            shouldUpdate = true;
+            break;
+        }
+      }
+      
+      // Resizing with Ctrl/Cmd + arrow keys
+      if ((event.ctrlKey || event.metaKey)) {
+        switch (event.key) {
+          case 'ArrowUp':
+            event.preventDefault();
+            updatedGondola.position.height = Math.max(20, gondola.position.height - resizeStep);
+            shouldUpdate = true;
+            break;
+          case 'ArrowDown':
+            event.preventDefault();
+            updatedGondola.position.height = gondola.position.height + resizeStep;
+            shouldUpdate = true;
+            break;
+          case 'ArrowLeft':
+            event.preventDefault();
+            updatedGondola.position.width = Math.max(20, gondola.position.width - resizeStep);
+            shouldUpdate = true;
+            break;
+          case 'ArrowRight':
+            event.preventDefault();
+            updatedGondola.position.width = gondola.position.width + resizeStep;
+            shouldUpdate = true;
+            break;
+        }
+      }
+
+      if (shouldUpdate) {
+        onGondolaUpdate(updatedGondola);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditMode, selectedGondola, gondolas, onGondolaUpdate]);
+
   const handleMouseEnter = (gondola: Gondola, event: React.MouseEvent) => {
+    if (isDragging || isResizing) return;
     onGondolaHover(gondola);
     onMouseMove({ x: event.clientX, y: event.clientY });
   };
 
   const handleMouseLeave = () => {
+    if (isDragging || isResizing) return;
     onGondolaHover(null);
   };
 
@@ -78,8 +156,8 @@ export const InteractiveMap = ({
           ...gondola,
           position: {
             ...gondola.position,
-            x: Math.max(0, gondola.position.x + deltaX * 0.5),
-            y: Math.max(0, gondola.position.y + deltaY * 0.5)
+            x: Math.max(0, Math.min(1000 - gondola.position.width, gondola.position.x + deltaX * 0.8)),
+            y: Math.max(0, Math.min(700 - gondola.position.height, gondola.position.y + deltaY * 0.8))
           }
         };
         
@@ -97,49 +175,101 @@ export const InteractiveMap = ({
         let newWidth = gondola.position.width;
         let newHeight = gondola.position.height;
         
-        if (isResizing.handle.includes('right')) {
+        if (isResizing.handle.includes('top-left')) {
+          const widthDelta = -deltaX * 0.8;
+          const heightDelta = -deltaY * 0.8;
+          newWidth = Math.max(20, gondola.position.width + widthDelta);
+          newHeight = Math.max(20, gondola.position.height + heightDelta);
+          const updatedGondola = {
+            ...gondola,
+            position: {
+              ...gondola.position,
+              x: Math.max(0, gondola.position.x - widthDelta),
+              y: Math.max(0, gondola.position.y - heightDelta),
+              width: newWidth,
+              height: newHeight
+            }
+          };
+          onGondolaUpdate(updatedGondola);
+          setDragStart({ x: event.clientX, y: event.clientY });
+          return;
+        }
+        if (isResizing.handle.includes('top-right')) {
+          const heightDelta = -deltaY * 0.8;
           newWidth = Math.max(20, gondola.position.width + deltaX * 0.8);
+          newHeight = Math.max(20, gondola.position.height + heightDelta);
+          const updatedGondola = {
+            ...gondola,
+            position: {
+              ...gondola.position,
+              y: Math.max(0, gondola.position.y - heightDelta),
+              width: newWidth,
+              height: newHeight
+            }
+          };
+          onGondolaUpdate(updatedGondola);
+          setDragStart({ x: event.clientX, y: event.clientY });
+          return;
         }
-        if (isResizing.handle.includes('bottom')) {
-          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
-        }
-        if (isResizing.handle.includes('left')) {
+        if (isResizing.handle.includes('bottom-left')) {
           const widthDelta = -deltaX * 0.8;
           newWidth = Math.max(20, gondola.position.width + widthDelta);
-          if (newWidth > 20) {
-            // Move position when resizing from left
-            const updatedGondola = {
-              ...gondola,
-              position: {
-                ...gondola.position,
-                x: Math.max(0, gondola.position.x - widthDelta),
-                width: newWidth,
-                height: newHeight
-              }
-            };
-            onGondolaUpdate(updatedGondola);
-            setDragStart({ x: event.clientX, y: event.clientY });
-            return;
-          }
+          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
+          const updatedGondola = {
+            ...gondola,
+            position: {
+              ...gondola.position,
+              x: Math.max(0, gondola.position.x - widthDelta),
+              width: newWidth,
+              height: newHeight
+            }
+          };
+          onGondolaUpdate(updatedGondola);
+          setDragStart({ x: event.clientX, y: event.clientY });
+          return;
         }
-        if (isResizing.handle.includes('top')) {
+        if (isResizing.handle.includes('bottom-right')) {
+          newWidth = Math.max(20, gondola.position.width + deltaX * 0.8);
+          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
+        }
+        
+        if (isResizing.handle === 'right') {
+          newWidth = Math.max(20, gondola.position.width + deltaX * 0.8);
+        }
+        if (isResizing.handle === 'left') {
+          const widthDelta = -deltaX * 0.8;
+          newWidth = Math.max(20, gondola.position.width + widthDelta);
+          const updatedGondola = {
+            ...gondola,
+            position: {
+              ...gondola.position,
+              x: Math.max(0, gondola.position.x - widthDelta),
+              width: newWidth,
+              height: newHeight
+            }
+          };
+          onGondolaUpdate(updatedGondola);
+          setDragStart({ x: event.clientX, y: event.clientY });
+          return;
+        }
+        if (isResizing.handle === 'bottom') {
+          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
+        }
+        if (isResizing.handle === 'top') {
           const heightDelta = -deltaY * 0.8;
           newHeight = Math.max(20, gondola.position.height + heightDelta);
-          if (newHeight > 20) {
-            // Move position when resizing from top
-            const updatedGondola = {
-              ...gondola,
-              position: {
-                ...gondola.position,
-                y: Math.max(0, gondola.position.y - heightDelta),
-                width: newWidth,
-                height: newHeight
-              }
-            };
-            onGondolaUpdate(updatedGondola);
-            setDragStart({ x: event.clientX, y: event.clientY });
-            return;
-          }
+          const updatedGondola = {
+            ...gondola,
+            position: {
+              ...gondola.position,
+              y: Math.max(0, gondola.position.y - heightDelta),
+              width: newWidth,
+              height: newHeight
+            }
+          };
+          onGondolaUpdate(updatedGondola);
+          setDragStart({ x: event.clientX, y: event.clientY });
+          return;
         }
         
         const updatedGondola = {
@@ -169,7 +299,8 @@ export const InteractiveMap = ({
   };
 
   const handleSvgClick = (event: React.MouseEvent) => {
-    if (!isCreating || !svgRef.current) return;
+    if (!isCreating || !svgRef.current || isDragging || isResizing) return;
+    
     
     const rect = svgRef.current.getBoundingClientRect();
     const x = (event.clientX - rect.left - pan.x) / zoom;
