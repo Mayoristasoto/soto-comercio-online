@@ -1,12 +1,12 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
-import { FilterPanel } from "@/components/gondolas/FilterPanel";
 import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Copy, Trash2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Copy, Trash2, Store } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -36,10 +36,15 @@ const GondolasEdit = () => {
   };
 
   const [gondolas, setGondolas] = useState<Gondola[]>(loadGondolas());
-  const [filteredGondolas, setFilteredGondolas] = useState<Gondola[]>(gondolas);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Calculate statistics
+  const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
+  const availableCount = gondolas.filter(g => g.status === 'available').length;
+  const gondolaCount = gondolas.filter(g => g.type === 'gondola').length;
+  const punteraCount = gondolas.filter(g => g.type === 'puntera').length;
 
   // Función para guardar en localStorage
   const saveGondolas = (newGondolas: Gondola[]) => {
@@ -54,21 +59,18 @@ const GondolasEdit = () => {
     );
     console.log('New gondolas array:', newGondolas);
     setGondolas(newGondolas);
-    setFilteredGondolas(newGondolas);
     saveGondolas(newGondolas);
   };
 
   const addGondola = (newGondola: Gondola) => {
     const newGondolas = [...gondolas, newGondola];
     setGondolas(newGondolas);
-    setFilteredGondolas(newGondolas);
     saveGondolas(newGondolas);
   };
 
   const deleteGondola = (gondolaId: string) => {
     const newGondolas = gondolas.filter(g => g.id !== gondolaId);
     setGondolas(newGondolas);
-    setFilteredGondolas(newGondolas);
     setSelectedGondola(null);
     saveGondolas(newGondolas);
   };
@@ -100,7 +102,6 @@ const GondolasEdit = () => {
   const resetToOriginal = () => {
     const originalData = gondolasData.gondolas as Gondola[];
     setGondolas(originalData);
-    setFilteredGondolas(originalData);
     saveGondolas(originalData);
     setSelectedGondola(null);
   };
@@ -150,16 +151,37 @@ const GondolasEdit = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-1">
-            <FilterPanel 
-              gondolas={gondolas}
-              brands={gondolasData.brands}
-              categories={gondolasData.categories}
-              onFilterChange={setFilteredGondolas}
-            />
-          </div>
+        {/* Summary Statistics */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Store className="h-5 w-5" />
+              Resumen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-red-50 dark:bg-red-950 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{occupiedCount}</div>
+                <div className="text-sm text-red-600">Ocupadas</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{availableCount}</div>
+                <div className="text-sm text-green-600">Disponibles</div>
+              </div>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-xl font-semibold">{gondolaCount}</div>
+                <div className="text-sm text-muted-foreground">Góndolas</div>
+              </div>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-xl font-semibold">{punteraCount}</div>
+                <div className="text-sm text-muted-foreground">Punteras</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="bg-card rounded-lg border p-6">
               <div className="mb-4 flex items-center justify-between">
@@ -195,7 +217,7 @@ const GondolasEdit = () => {
               </div>
               
               <InteractiveMap
-                gondolas={filteredGondolas}
+                gondolas={gondolas}
                 onGondolaHover={setHoveredGondola}
                 onGondolaSelect={setSelectedGondola}
                 onGondolaUpdate={updateGondola}
