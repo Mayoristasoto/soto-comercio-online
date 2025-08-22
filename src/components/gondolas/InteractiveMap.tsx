@@ -127,6 +127,8 @@ export const InteractiveMap = ({
     event.preventDefault();
     event.stopPropagation();
     
+    console.log('handleClick triggered for:', gondola.id, 'currently selected:', selectedGondola);
+    
     // Solo manejar selección si no estamos arrastrando o redimensionando
     if (!isDragging && !isResizing && selectedGondola !== gondola.id) {
       console.log('Selecting gondola:', gondola.id);
@@ -140,6 +142,8 @@ export const InteractiveMap = ({
     
     event.preventDefault();
     event.stopPropagation();
+    
+    console.log('handleMouseDown triggered for:', gondola.id);
     
     // Solo configurar el arrastre, la selección se maneja en onClick
     setIsDragging(true);
