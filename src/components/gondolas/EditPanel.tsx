@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Save, RotateCcw, Copy, Trash2, FileText } from "lucide-react";
+import { ImageUpload } from "./ImageUpload";
 
 interface EditPanelProps {
   gondola: Gondola;
@@ -101,6 +102,10 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
     setEditedGondola(newGondola);
     // Auto-guardar inmediatamente
     onUpdate(newGondola);
+  };
+
+  const handleImageUpload = (imageUrl: string | null) => {
+    updateField('image_url', imageUrl);
   };
 
   return (
@@ -270,6 +275,17 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
             Las anotaciones se guardan automáticamente
           </p>
         </div>
+
+        {/* Image Upload - Solo para punteras */}
+        {editedGondola.type === 'puntera' && (
+          <div className="space-y-3 bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-200 dark:border-green-800">
+            <ImageUpload
+              currentImageUrl={editedGondola.image_url || undefined}
+              onImageUpload={handleImageUpload}
+              gondolaId={editedGondola.id}
+            />
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="space-y-2 pt-4">

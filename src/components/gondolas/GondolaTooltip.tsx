@@ -67,6 +67,20 @@ export const GondolaTooltip = ({ gondola, position }: GondolaTooltipProps) => {
               <span className="capitalize">{gondola.type}</span>
             </div>
 
+            {/* Imagen si existe (solo para punteras) */}
+            {gondola.type === 'puntera' && gondola.image_url && (
+              <div className="mt-2 mb-2">
+                <img
+                  src={gondola.image_url}
+                  alt={`Imagen de ${gondola.section}`}
+                  className="w-full h-24 object-cover rounded border"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
             {gondola.brand && (
               <div className="flex items-center gap-2 text-sm">
                 <Package className="h-4 w-4 text-muted-foreground" />

@@ -18,6 +18,7 @@ export interface Gondola {
   category: string;
   section: string;
   endDate?: string; // Fecha de fin de ocupación (ISO string)
+  image_url?: string | null; // URL de la imagen subida
 }
 
 const Gondolas = () => {
@@ -105,7 +106,8 @@ const Gondolas = () => {
           brand: dbGondola.brand,
           category: dbGondola.category,
           section: dbGondola.section,
-          endDate: dbGondola.end_date
+          endDate: dbGondola.end_date,
+          image_url: dbGondola.image_url
         }));
         
         console.log('✅ Góndolas formateadas:', formattedGondolas.length, '- Primer elemento:', formattedGondolas[0]);

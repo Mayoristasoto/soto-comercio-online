@@ -21,6 +21,7 @@ export type Database = {
           created_at: string | null
           end_date: string | null
           id: string
+          image_url: string | null
           notes: string | null
           position_height: number
           position_width: number
@@ -37,6 +38,7 @@ export type Database = {
           created_at?: string | null
           end_date?: string | null
           id: string
+          image_url?: string | null
           notes?: string | null
           position_height: number
           position_width: number
@@ -53,6 +55,7 @@ export type Database = {
           created_at?: string | null
           end_date?: string | null
           id?: string
+          image_url?: string | null
           notes?: string | null
           position_height?: number
           position_width?: number

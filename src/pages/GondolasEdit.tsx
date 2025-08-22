@@ -23,6 +23,7 @@ export interface Gondola {
   section: string;
   endDate?: string;
   notes?: string; // Individual notes for each gondola/puntera
+  image_url?: string | null; // URL de la imagen subida
 }
 
 const GondolasEdit = () => {
@@ -75,7 +76,8 @@ const GondolasEdit = () => {
           category: dbGondola.category,
           section: dbGondola.section,
           endDate: dbGondola.end_date,
-          notes: dbGondola.notes
+          notes: dbGondola.notes,
+          image_url: dbGondola.image_url
         }));
         setGondolas(formattedGondolas);
       } else {
@@ -116,7 +118,8 @@ const GondolasEdit = () => {
         category: gondola.category,
         section: gondola.section,
         end_date: gondola.endDate || null,
-        notes: gondola.notes || null
+        notes: gondola.notes || null,
+        image_url: gondola.image_url || null
       };
 
       const { error } = await supabase
