@@ -170,8 +170,8 @@ export const InteractiveMap = ({
           ...gondola,
           position: {
             ...gondola.position,
-            x: Math.max(0, Math.min(1000 - gondola.position.width, gondola.position.x + deltaX * 0.8)),
-            y: Math.max(0, Math.min(700 - gondola.position.height, gondola.position.y + deltaY * 0.8))
+            x: Math.max(0, Math.min(1000 - gondola.position.width, gondola.position.x + deltaX * 1.5)),
+            y: Math.max(0, Math.min(700 - gondola.position.height, gondola.position.y + deltaY * 1.5))
           }
         };
         
@@ -190,8 +190,8 @@ export const InteractiveMap = ({
         let newHeight = gondola.position.height;
         
         if (isResizing.handle.includes('top-left')) {
-          const widthDelta = -deltaX * 0.8;
-          const heightDelta = -deltaY * 0.8;
+          const widthDelta = -deltaX * 1.2;
+          const heightDelta = -deltaY * 1.2;
           newWidth = Math.max(20, gondola.position.width + widthDelta);
           newHeight = Math.max(20, gondola.position.height + heightDelta);
           const updatedGondola = {
@@ -209,8 +209,8 @@ export const InteractiveMap = ({
           return;
         }
         if (isResizing.handle.includes('top-right')) {
-          const heightDelta = -deltaY * 0.8;
-          newWidth = Math.max(20, gondola.position.width + deltaX * 0.8);
+          const heightDelta = -deltaY * 1.2;
+          newWidth = Math.max(20, gondola.position.width + deltaX * 1.2);
           newHeight = Math.max(20, gondola.position.height + heightDelta);
           const updatedGondola = {
             ...gondola,
@@ -226,9 +226,9 @@ export const InteractiveMap = ({
           return;
         }
         if (isResizing.handle.includes('bottom-left')) {
-          const widthDelta = -deltaX * 0.8;
+          const widthDelta = -deltaX * 1.2;
           newWidth = Math.max(20, gondola.position.width + widthDelta);
-          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
+          newHeight = Math.max(20, gondola.position.height + deltaY * 1.2);
           const updatedGondola = {
             ...gondola,
             position: {
@@ -243,15 +243,15 @@ export const InteractiveMap = ({
           return;
         }
         if (isResizing.handle.includes('bottom-right')) {
-          newWidth = Math.max(20, gondola.position.width + deltaX * 0.8);
-          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
+          newWidth = Math.max(20, gondola.position.width + deltaX * 1.2);
+          newHeight = Math.max(20, gondola.position.height + deltaY * 1.2);
         }
         
         if (isResizing.handle === 'right') {
-          newWidth = Math.max(20, gondola.position.width + deltaX * 0.8);
+          newWidth = Math.max(20, gondola.position.width + deltaX * 1.2);
         }
         if (isResizing.handle === 'left') {
-          const widthDelta = -deltaX * 0.8;
+          const widthDelta = -deltaX * 1.2;
           newWidth = Math.max(20, gondola.position.width + widthDelta);
           const updatedGondola = {
             ...gondola,
@@ -267,10 +267,10 @@ export const InteractiveMap = ({
           return;
         }
         if (isResizing.handle === 'bottom') {
-          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
+          newHeight = Math.max(20, gondola.position.height + deltaY * 1.2);
         }
         if (isResizing.handle === 'top') {
-          const heightDelta = -deltaY * 0.8;
+          const heightDelta = -deltaY * 1.2;
           newHeight = Math.max(20, gondola.position.height + heightDelta);
           const updatedGondola = {
             ...gondola,
