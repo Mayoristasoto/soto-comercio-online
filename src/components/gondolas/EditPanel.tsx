@@ -53,6 +53,35 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
     onUpdate(newGondola);
   };
 
+  // Nueva función para manejar cambios de posición con validación suave
+  const handlePositionChange = (field: string, inputValue: string) => {
+    // Permitir campo vacío temporalmente
+    if (inputValue === '') {
+      const newGondola = {
+        ...editedGondola,
+        position: {
+          ...editedGondola.position,
+          [field]: 0
+        }
+      };
+      setEditedGondola(newGondola);
+      return;
+    }
+    
+    const numValue = Number(inputValue);
+    if (!isNaN(numValue)) {
+      updatePosition(field, numValue);
+    }
+  };
+
+  // Función para validar al salir del campo
+  const handlePositionBlur = (field: string, inputValue: string) => {
+    const numValue = Number(inputValue);
+    const minValue = (field === 'width' || field === 'height') ? 20 : 0;
+    const validValue = isNaN(numValue) || numValue < minValue ? minValue : numValue;
+    updatePosition(field, validValue);
+  };
+
   const updateField = (field: keyof Gondola, value: any) => {
     const newGondola = {
       ...editedGondola,
@@ -166,8 +195,9 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
               <Input
                 id="x"
                 type="number"
-                value={editedGondola.position.x}
-                onChange={(e) => updatePosition('x', Number(e.target.value))}
+                value={editedGondola.position.x || ''}
+                onChange={(e) => handlePositionChange('x', e.target.value)}
+                onBlur={(e) => handlePositionBlur('x', e.target.value)}
                 min="0"
               />
             </div>
@@ -176,8 +206,9 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
               <Input
                 id="y"
                 type="number"
-                value={editedGondola.position.y}
-                onChange={(e) => updatePosition('y', Number(e.target.value))}
+                value={editedGondola.position.y || ''}
+                onChange={(e) => handlePositionChange('y', e.target.value)}
+                onBlur={(e) => handlePositionBlur('y', e.target.value)}
                 min="0"
               />
             </div>
@@ -189,8 +220,9 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
               <Input
                 id="width"
                 type="number"
-                value={editedGondola.position.width}
-                onChange={(e) => updatePosition('width', Math.max(20, Number(e.target.value)))}
+                value={editedGondola.position.width || ''}
+                onChange={(e) => handlePositionChange('width', e.target.value)}
+                onBlur={(e) => handlePositionBlur('width', e.target.value)}
                 min="20"
                 step="10"
                 className="text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
@@ -201,8 +233,9 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
               <Input
                 id="height"
                 type="number"
-                value={editedGondola.position.height}
-                onChange={(e) => updatePosition('height', Math.max(20, Number(e.target.value)))}
+                value={editedGondola.position.height || ''}
+                onChange={(e) => handlePositionChange('height', e.target.value)}
+                onBlur={(e) => handlePositionBlur('height', e.target.value)}
                 min="20"
                 step="10"
                 className="text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
