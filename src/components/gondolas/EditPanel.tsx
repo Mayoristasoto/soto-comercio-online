@@ -193,7 +193,7 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
                 onChange={(e) => updatePosition('width', Math.max(20, Number(e.target.value)))}
                 min="20"
                 step="10"
-                className="text-center"
+                className="text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
               />
             </div>
             <div className="bg-background p-3 rounded border">
@@ -205,7 +205,7 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
                 onChange={(e) => updatePosition('height', Math.max(20, Number(e.target.value)))}
                 min="20"
                 step="10"
-                className="text-center"
+                className="text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
               />
             </div>
           </div>
