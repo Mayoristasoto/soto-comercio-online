@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      gondolas: {
+        Row: {
+          brand: string | null
+          category: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          created_at?: string | null
+          end_date?: string | null
+          id: string
+          notes?: string | null
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          position_height?: number
+          position_width?: number
+          position_x?: number
+          position_y?: number
+          section?: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
