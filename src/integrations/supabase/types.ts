@@ -97,10 +97,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      gondolas_public: {
+        Row: {
+          category: string | null
+          id: string | null
+          position_height: number | null
+          position_width: number | null
+          position_x: number | null
+          position_y: number | null
+          section: string | null
+          status: string | null
+          type: string | null
+        }
+        Insert: {
+          category?: never
+          id?: string | null
+          position_height?: number | null
+          position_width?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          section?: string | null
+          status?: string | null
+          type?: string | null
+        }
+        Update: {
+          category?: never
+          id?: string | null
+          position_height?: number | null
+          position_width?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          section?: string | null
+          status?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
