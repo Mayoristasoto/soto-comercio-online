@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Copy, Trash2, Store, Download, Upload } from "lucide-react";
+import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { User, Session } from '@supabase/supabase-js';
 
 export interface Gondola {
   id: string;
@@ -23,6 +25,9 @@ export interface Gondola {
 }
 
 const GondolasEdit = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [gondolas, setGondolas] = useState<Gondola[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
@@ -273,10 +278,38 @@ const GondolasEdit = () => {
     event.target.value = '';
   };
 
-  // Load data on component mount
+  // Authentication and data loading
   useEffect(() => {
-    loadGondolas();
-  }, []);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session?.user) {
+          navigate('/auth');
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session?.user) {
+        navigate('/auth');
+        return;
+      }
+      
+      // Load gondolas if authenticated
+      loadGondolas();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  // Load data on component mount
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -305,12 +338,32 @@ const GondolasEdit = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedGondola, gondolas]);
 
-  if (isLoading) {
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        toast("Error al cerrar sesión");
+      } else {
+        toast("Sesión cerrada");
+        navigate('/auth');
+      }
+    } catch (error) {
+      console.error('Error in handleSignOut:', error);
+      toast("Error al cerrar sesión");
+    }
+  };
+
+  if (!user || isLoading) {
     return (
       <div className="min-h-screen bg-background p-4 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg font-semibold mb-2">Cargando góndolas...</div>
-          <div className="text-muted-foreground">Conectando a la base de datos</div>
+          <div className="text-lg font-semibold mb-2">
+            {!user ? "Verificando autenticación..." : "Cargando góndolas..."}
+          </div>
+          <div className="text-muted-foreground">
+            {!user ? "Redirigiendo al login" : "Conectando a la base de datos"}
+          </div>
         </div>
       </div>
     );
@@ -320,50 +373,69 @@ const GondolasEdit = () => {
     <div className="min-h-screen bg-background p-4">
       <main className="container mx-auto">
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Link to="/gondolas">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver a Vista Cliente
-              </Button>
-            </Link>
-            
-            {/* Export/Import buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportData}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Exportar
-              </Button>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importData}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  id="import-file"
-                />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <Link to="/gondolas">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Volver a Vista Cliente
+                </Button>
+              </Link>
+              
+              {/* Export/Import buttons */}
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={exportData}
                   className="flex items-center gap-2"
-                  asChild
                 >
-                  <label htmlFor="import-file" className="cursor-pointer">
-                    <Upload className="h-4 w-4" />
-                    Importar
-                  </label>
+                  <Download className="h-4 w-4" />
+                  Exportar
                 </Button>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importData}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    id="import-file"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    asChild
+                  >
+                    <label htmlFor="import-file" className="cursor-pointer">
+                      <Upload className="h-4 w-4" />
+                      Importar
+                    </label>
+                  </Button>
+                </div>
               </div>
+              
+              <Button variant="secondary" size="sm" onClick={resetToOriginal}>
+                Resetear a Original
+              </Button>
             </div>
-            
-            <Button variant="secondary" size="sm" onClick={resetToOriginal}>
-              Resetear a Original
-            </Button>
+
+            {/* User info and logout */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <UserIcon className="h-4 w-4" />
+                {user.email}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Salir
+              </Button>
+            </div>
           </div>
           <h1 className="text-3xl font-bold text-primary mb-2">
             Editor de Góndolas - Mayorista Soto

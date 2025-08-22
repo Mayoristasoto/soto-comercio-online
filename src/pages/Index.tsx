@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from 'react-router-dom';
 import { User, Store, Truck, ChevronRight, CheckCircle, Star, ArrowDown } from 'lucide-react';
 
 const Index = () => {
@@ -52,6 +52,13 @@ const Index = () => {
                 <h1 className="font-bold text-lg sm:text-xl text-gray-800">Mayorista Soto</h1>
                 <p className="text-sm text-gray-600">Tu distribuidora de confianza</p>
               </div>
+            </div>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth">
+                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                  Acceder al Sistema de Gestión
+                </Button>
+              </Link>
             </div>
             <Badge className="bg-green-100 text-green-800 border-green-200">
               Envío gratis MDQ
