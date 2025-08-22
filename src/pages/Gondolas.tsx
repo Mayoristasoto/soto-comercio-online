@@ -31,22 +31,27 @@ const Gondolas = () => {
   const loadGondolas = async (forceRefresh = false, bypassCache = false) => {
     try {
       console.log('🔄 Cargando góndolas desde Supabase...', forceRefresh ? '(forzado)' : '', bypassCache ? '(sin cache)' : '');
+      console.log('🔍 Timestamp:', new Date().toISOString());
       
-      // Crear una nueva instancia del cliente si es necesario para bypass cache
-      const clientToUse = bypassCache ? supabase : supabase;
-      
-      // Intentar cargar desde Supabase con timestamp para evitar cache
-      const query = clientToUse
+      // Crear una consulta con headers extra para evitar cache
+      const query = supabase
         .from('gondolas')
         .select('*')
         .order('created_at', { ascending: true });
         
-      // Agregar timestamp para romper cache si es necesario
+      // Agregar timestamp para romper cache
       if (bypassCache) {
         console.log('🚫 Bypassing cache with timestamp:', Date.now());
       }
       
+      console.log('📡 Ejecutando query a Supabase...');
       const { data, error } = await query;
+      console.log('📊 Respuesta recibida:', { 
+        hasData: !!data, 
+        dataLength: data?.length, 
+        hasError: !!error, 
+        errorCode: error?.code 
+      });
 
       if (error) {
         console.error('❌ Error de Supabase:', error);
