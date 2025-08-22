@@ -41,7 +41,7 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
   };
 
   const updatePosition = (field: string, value: number) => {
-    const minValue = (field === 'width' || field === 'height') ? 5 : 0;
+    const minValue = (field === 'width' || field === 'height') ? 1 : 0;
     const validValue = Math.max(minValue, value);
     
     const newGondola = {
@@ -81,7 +81,7 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
   // Función para validar al salir del campo
   const handlePositionBlur = (field: string, inputValue: string) => {
     const numValue = Number(inputValue);
-    const minValue = (field === 'width' || field === 'height') ? 5 : 0;
+    const minValue = (field === 'width' || field === 'height') ? 1 : 0;
     const validValue = isNaN(numValue) || numValue < minValue ? minValue : numValue;
     updatePosition(field, validValue);
   };
@@ -233,7 +233,7 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
                 value={editedGondola.position.width || ''}
                 onChange={(e) => handlePositionChange('width', e.target.value)}
                 onBlur={(e) => handlePositionBlur('width', e.target.value)}
-                min="5"
+                min="1"
                 step="10"
                 className="text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
               />
@@ -246,7 +246,7 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
                 value={editedGondola.position.height || ''}
                 onChange={(e) => handlePositionChange('height', e.target.value)}
                 onBlur={(e) => handlePositionBlur('height', e.target.value)}
-                min="5"
+                min="1"
                 step="10"
                 className="text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
               />
