@@ -41,14 +41,17 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
   };
 
   const updatePosition = (field: string, value: number) => {
+    const minValue = (field === 'width' || field === 'height') ? 5 : 0;
+    const validValue = Math.max(minValue, value);
+    
     const newGondola = {
       ...editedGondola,
       position: {
         ...editedGondola.position,
-        [field]: Math.max(0, value)
+        [field]: validValue
       }
     };
-    console.log('Updating position:', field, value, newGondola);
+    console.log('Updating position:', field, validValue, newGondola);
     setEditedGondola(newGondola);
     // Auto-guardar inmediatamente
     onUpdate(newGondola);
@@ -84,11 +87,17 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
   };
 
   const updateField = (field: keyof Gondola, value: any) => {
+    // Handle empty string for brand field specifically
+    let processedValue = value;
+    if (field === 'brand' && value === '') {
+      processedValue = null;
+    }
+    
     const newGondola = {
       ...editedGondola,
-      [field]: value
+      [field]: processedValue
     };
-    console.log('Updating field:', field, value, newGondola);
+    console.log('Updating field:', field, processedValue, newGondola);
     setEditedGondola(newGondola);
     // Auto-guardar inmediatamente
     onUpdate(newGondola);

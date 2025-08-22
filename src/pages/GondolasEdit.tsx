@@ -86,7 +86,9 @@ const GondolasEdit = () => {
       section: newId.toUpperCase(),
       status: 'available',
       brand: null,
-      category: 'Disponible'
+      category: 'Disponible',
+      endDate: null,
+      notes: null // Clear notes for duplicated item
     };
     
     addGondola(duplicated);
