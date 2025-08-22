@@ -348,6 +348,15 @@ export const InteractiveMap = ({
   };
 
   const handlePanStart = (event: React.MouseEvent) => {
+    // Allow panning with right mouse button or when holding space key
+    if (event.button === 2 || event.shiftKey) {
+      event.preventDefault();
+      setIsPanning(true);
+      setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y });
+      return;
+    }
+    
+    // Original logic for non-edit mode
     if (isEditMode || isCreating) return;
     setIsPanning(true);
     setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y });
@@ -405,6 +414,9 @@ export const InteractiveMap = ({
             >
               + Puntera
             </button>
+            <div className="text-xs text-muted-foreground mt-1 p-1">
+              Shift + arrastrar para mover vista
+            </div>
           </div>
         )}
       </div>
@@ -417,6 +429,7 @@ export const InteractiveMap = ({
         className={`border border-border rounded-lg bg-muted/20 ${
           isCreating ? 'cursor-crosshair' : isPanning ? 'cursor-move' : 'cursor-default'
         }`}
+        onContextMenu={(e) => e.preventDefault()}
         onMouseMove={(e) => {
           handleMouseMoveOnSvg(e);
           handlePan(e);
