@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { checkSyncStatus, forceSyncUpdate } from "@/utils/syncChecker";
+
 
 export interface Gondola {
   id: string;
@@ -41,16 +41,16 @@ const Gondolas = () => {
       if (error) {
         console.error('❌ Error de Supabase:', error);
         
-        // Si hay error de permisos, usar datos locales pero seguir intentando
+        // Si hay error de permisos, RLS podría estar mal configurado
         if (error.code === '42501') {
-          console.log('🔄 Error de permisos - usando datos por defecto');
+          console.log('🔄 Error de permisos - RLS mal configurado, usando datos por defecto');
+          // Usar datos locales como respaldo
           const defaultGondolas = gondolasData.gondolas as Gondola[];
           setGondolas(defaultGondolas);
           setFilteredGondolas(defaultGondolas);
           setIsLoading(false);
           
-          // Intentar de nuevo en 5 segundos
-          setTimeout(() => loadGondolas(true), 5000);
+          // NO reintentear automáticamente para evitar spam
           return;
         }
         
