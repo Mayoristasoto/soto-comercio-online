@@ -34,11 +34,12 @@ const Gondolas = () => {
       console.log('🔄 Cargando góndolas desde Supabase...', forceRefresh ? '(forzado)' : '', bypassCache ? '(sin cache)' : '');
       console.log('🔍 Timestamp:', new Date().toISOString());
       
-      // Crear una consulta con headers extra para evitar cache
+      // SEGURIDAD: Usar tabla de display pública que no expone información sensible
+      // En lugar de la tabla principal 'gondolas' que ahora requiere autenticación
       const query = supabase
-        .from('gondolas')
+        .from('gondolas_display')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('updated_at', { ascending: false });
         
       // Agregar timestamp para romper cache
       if (bypassCache) {
@@ -58,28 +59,8 @@ const Gondolas = () => {
         console.error('❌ Error de Supabase:', error);
         console.log('📊 Error details:', { code: error.code, message: error.message });
         
-        // Si hay error de permisos, puede ser cache viejo o RLS mal configurado
-        if (error.code === '42501') {
-          console.log('🔒 Error de permisos - RLS o configuración');
-          
-          // Si no hemos intentado bypass cache, intentarlo una vez
-          if (!bypassCache) {
-            console.log('🔄 Reintentando con bypass de cache...');
-            setTimeout(() => loadGondolas(true, true), 1000);
-          } else {
-            console.log('⚠️ Bypass falló también - usando datos por defecto');
-          }
-          
-          // Usar datos locales como respaldo
-          const defaultGondolas = gondolasData.gondolas as Gondola[];
-          setGondolas(defaultGondolas);
-          setFilteredGondolas(defaultGondolas);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Para otros errores, usar datos por defecto
-        console.log('🔄 Usando datos por defecto por error:', error.code);
+        // Fallback to default data on any error
+        console.log('⚠️ Usando datos por defecto por error');
         const defaultGondolas = gondolasData.gondolas as Gondola[];
         setGondolas(defaultGondolas);
         setFilteredGondolas(defaultGondolas);
@@ -87,12 +68,15 @@ const Gondolas = () => {
         return;
       }
 
-      console.log('✅ Datos cargados desde Supabase:', data?.length || 0, 'elementos');
-
       if (data && data.length > 0) {
-        console.log('🎯 Primeras góndolas de BD:', data.slice(0, 3).map(g => ({ id: g.id, brand: g.brand, status: g.status })));
-        
-        // Convert database format to app format
+        // Usar datos de la tabla de display (información no sensible)
+        console.log('✅ Datos cargados desde Supabase:', data.length, 'elementos');
+        console.log('🎯 Primeras góndolas de BD:', data.slice(0, 3).map(g => ({
+          id: g.id,
+          status: g.status
+        })));
+
+        // Convert display format to app format  
         const formattedGondolas: Gondola[] = data.map(dbGondola => ({
           id: dbGondola.id,
           type: dbGondola.type as 'gondola' | 'puntera',
@@ -103,11 +87,11 @@ const Gondolas = () => {
             height: Number(dbGondola.position_height)
           },
           status: dbGondola.status as 'occupied' | 'available',
-          brand: dbGondola.brand,
-          category: dbGondola.category,
+          brand: null, // No expuesto en vista pública por seguridad
+          category: dbGondola.display_category || 'Disponible',
           section: dbGondola.section,
-          endDate: dbGondola.end_date,
-          image_url: dbGondola.image_url
+          endDate: undefined, // No expuesto en vista pública por seguridad
+          image_url: undefined // No expuesto en vista pública por seguridad
         }));
         
         console.log('✅ Góndolas formateadas:', formattedGondolas.length, '- Primer elemento:', formattedGondolas[0]);
@@ -143,14 +127,15 @@ const Gondolas = () => {
     const maxRetries = 3;
     
     const setupRealtime = () => {
+      // SEGURIDAD: Escuchar cambios en tabla de display (información no sensible)
       const channel = supabase
-        .channel('gondolas-changes')
+        .channel('gondolas-display-changes')
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
-            table: 'gondolas'
+            table: 'gondolas_display'
           },
           (payload) => {
             console.log('📡 Evento realtime recibido:', payload);

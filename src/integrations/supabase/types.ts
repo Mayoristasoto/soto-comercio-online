@@ -68,6 +68,45 @@ export type Database = {
         }
         Relationships: []
       }
+      gondolas_display: {
+        Row: {
+          display_category: string | null
+          id: string
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          display_category?: string | null
+          id: string
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          display_category?: string | null
+          id?: string
+          position_height?: number
+          position_width?: number
+          position_x?: number
+          position_y?: number
+          section?: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

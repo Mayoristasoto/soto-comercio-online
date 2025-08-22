@@ -4,6 +4,7 @@ import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import { GondolasList } from "@/components/gondolas/GondolasList";
+import { AuthPrompt } from "@/components/AuthPrompt";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,7 @@ const GondolasEdit = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(true);
   const [gondolas, setGondolas] = useState<Gondola[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
@@ -341,27 +343,26 @@ const GondolasEdit = () => {
         setUser(session?.user ?? null);
         
         if (!session?.user) {
-          navigate('/auth');
+          setShowAuthPrompt(true);
         }
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (!session?.user) {
-        navigate('/auth');
-        return;
-      }
-      
-      // Load gondolas if authenticated
-      loadGondolas();
-      
-      // Test realtime connection
-      testRealtimeConnection();
-    });
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setShowAuthPrompt(false);
+          // Load gondolas if authenticated
+          loadGondolas();
+          // Test realtime connection
+          testRealtimeConnection();
+        } else {
+          setShowAuthPrompt(true);
+        }
+      });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -410,6 +411,18 @@ const GondolasEdit = () => {
       toast("Error al cerrar sesión");
     }
   };
+
+  // Mostrar prompt de autenticación si no hay usuario
+  if (!user && showAuthPrompt) {
+    return (
+      <AuthPrompt 
+        onAuthSuccess={() => {
+          setShowAuthPrompt(false);
+          loadGondolas();
+        }}
+      />
+    );
+  }
 
   if (!user || isLoading) {
     return (
