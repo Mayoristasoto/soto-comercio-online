@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import Header from "@/components/Header";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Copy, Trash2, Store } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Copy, Trash2, Store, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export interface Gondola {
@@ -38,12 +38,22 @@ const GondolasEdit = () => {
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [notes, setNotes] = useState<string>(() => {
+    const savedNotes = localStorage.getItem('gondolas-notes');
+    return savedNotes || '';
+  });
 
   // Calculate statistics
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
   const gondolaCount = gondolas.filter(g => g.type === 'gondola').length;
   const punteraCount = gondolas.filter(g => g.type === 'puntera').length;
+
+  // Save notes to localStorage
+  const saveNotes = (newNotes: string) => {
+    setNotes(newNotes);
+    localStorage.setItem('gondolas-notes', newNotes);
+  };
 
   // Función para guardar en localStorage
   const saveGondolas = (newGondolas: Gondola[]) => {
@@ -126,10 +136,8 @@ const GondolasEdit = () => {
   }, [selectedGondola, gondolas]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background p-4">
+      <main className="container mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <Link to="/gondolas">
@@ -149,6 +157,27 @@ const GondolasEdit = () => {
             Gestiona la ocupación y configuración de góndolas y punteras • Los cambios se guardan automáticamente
           </p>
         </div>
+
+        {/* Notes/Agreements Section */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Anotaciones y Acuerdos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              placeholder="Escribe aquí los acuerdos, anotaciones o detalles importantes sobre las góndolas..."
+              value={notes}
+              onChange={(e) => saveNotes(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Las anotaciones se guardan automáticamente
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Summary Statistics */}
         <Card className="mb-6">
