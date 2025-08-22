@@ -48,16 +48,28 @@ const Gondolas = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <Building2 className="h-8 w-8 text-primary" />
+              <div className="flex-shrink-0">
+                <img 
+                  src="/lovable-uploads/1c6d82f7-0b7a-49f9-a323-180bf84cb38d.png" 
+                  alt="Mayorista Soto Logo" 
+                  className="h-16 w-auto"
+                />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-primary">
-                  Góndolas Disponibles
-                </h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-3xl font-bold text-primary">
                   Mayorista Soto - Local José Martí
+                </h1>
+                <p className="text-lg text-muted-foreground">
+                  Góndolas Disponibles
                 </p>
+              </div>
+            </div>
+            
+            {/* Info adicional para desktop */}
+            <div className="hidden md:flex items-center gap-6">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-primary">Local Premium</div>
+                <div className="text-xs text-muted-foreground">Mar del Plata</div>
               </div>
             </div>
           </div>
