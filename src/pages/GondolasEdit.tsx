@@ -43,13 +43,16 @@ const GondolasEdit = () => {
 
   // Función para guardar en localStorage
   const saveGondolas = (newGondolas: Gondola[]) => {
+    console.log('Saving to localStorage:', newGondolas);
     localStorage.setItem('gondolas', JSON.stringify(newGondolas));
   };
 
   const updateGondola = (updatedGondola: Gondola) => {
+    console.log('updateGondola called:', updatedGondola);
     const newGondolas = gondolas.map(g => 
       g.id === updatedGondola.id ? updatedGondola : g
     );
+    console.log('New gondolas array:', newGondolas);
     setGondolas(newGondolas);
     setFilteredGondolas(newGondolas);
     saveGondolas(newGondolas);

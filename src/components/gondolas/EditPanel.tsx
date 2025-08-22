@@ -24,8 +24,15 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
   }, [gondola]);
 
   const handleSave = () => {
+    console.log('Saving gondola:', editedGondola);
     onUpdate(editedGondola);
     onClose();
+  };
+
+  // Auto-guardar cuando se modifica algo
+  const handleAutoSave = () => {
+    console.log('Auto-saving gondola:', editedGondola);
+    onUpdate(editedGondola);
   };
 
   const handleReset = () => {
@@ -33,20 +40,28 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
   };
 
   const updatePosition = (field: string, value: number) => {
-    setEditedGondola({
+    const newGondola = {
       ...editedGondola,
       position: {
         ...editedGondola.position,
         [field]: Math.max(0, value)
       }
-    });
+    };
+    console.log('Updating position:', field, value, newGondola);
+    setEditedGondola(newGondola);
+    // Auto-guardar inmediatamente
+    onUpdate(newGondola);
   };
 
   const updateField = (field: keyof Gondola, value: any) => {
-    setEditedGondola({
+    const newGondola = {
       ...editedGondola,
       [field]: value
-    });
+    };
+    console.log('Updating field:', field, value, newGondola);
+    setEditedGondola(newGondola);
+    // Auto-guardar inmediatamente
+    onUpdate(newGondola);
   };
 
   return (
