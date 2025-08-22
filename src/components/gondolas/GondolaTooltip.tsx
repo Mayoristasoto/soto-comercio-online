@@ -9,16 +9,44 @@ interface GondolaTooltipProps {
 }
 
 export const GondolaTooltip = ({ gondola, position }: GondolaTooltipProps) => {
+  // Detectar si está en mobile y ajustar posición
+  const isMobile = window.innerWidth <= 768;
+  
+  // Calcular posición para evitar que se salga de la pantalla
+  const tooltipWidth = 280;
+  const tooltipHeight = 160;
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  
+  let left = position.x + 10;
+  let top = position.y - 10;
+  
+  // Ajustar para que no se salga por la derecha
+  if (left + tooltipWidth > screenWidth) {
+    left = position.x - tooltipWidth - 10;
+  }
+  
+  // Ajustar para que no se salga por arriba
+  if (top - tooltipHeight < 0) {
+    top = position.y + 20;
+  }
+  
+  // En móvil, centrar el tooltip
+  if (isMobile) {
+    left = (screenWidth - tooltipWidth) / 2;
+    top = Math.max(20, Math.min(top, screenHeight - tooltipHeight - 20));
+  }
+  
   return (
     <div
       className="fixed z-50 pointer-events-none"
       style={{
-        left: position.x + 10,
-        top: position.y - 10,
-        transform: 'translateY(-100%)'
+        left: left,
+        top: top,
+        transform: isMobile ? 'none' : 'translateY(-100%)'
       }}
     >
-      <Card className="w-64 shadow-lg border-2">
+      <Card className={`shadow-lg border-2 ${isMobile ? 'w-72' : 'w-64'}`}>
         <CardContent className="p-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between">

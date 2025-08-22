@@ -451,25 +451,38 @@ export const InteractiveMap = ({
     <div className={`relative w-full overflow-hidden ${
       isMobile && !isEditMode ? 'h-screen flex items-center justify-center' : ''
     }`}>
-      {/* Controles de zoom y creación */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-        <div className="flex gap-1 bg-background/90 rounded-lg p-1 border">
+      {/* Controles de zoom mejorados para móvil */}
+      <div className={`absolute ${isMobile ? 'bottom-4 right-4' : 'top-4 left-4'} z-10 flex flex-col gap-2`}>
+        <div className={`flex ${isMobile ? 'flex-row' : 'flex-row'} gap-1 bg-background/90 rounded-lg p-2 border shadow-lg`}>
           <button
             onClick={() => handleZoom(0.2)}
-            className="w-8 h-8 flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-sm font-bold"
+            className={`${isMobile ? 'w-12 h-12' : 'w-8 h-8'} flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-lg font-bold`}
           >
             +
           </button>
           <button
             onClick={() => handleZoom(-0.2)}
-            className="w-8 h-8 flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-sm font-bold"
+            className={`${isMobile ? 'w-12 h-12' : 'w-8 h-8'} flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-lg font-bold`}
           >
             -
           </button>
-          <span className="w-12 h-8 flex items-center justify-center text-xs bg-muted rounded">
+          <span className={`${isMobile ? 'w-16 h-12' : 'w-12 h-8'} flex items-center justify-center text-xs bg-muted rounded font-medium`}>
             {Math.round(zoom * 100)}%
           </span>
         </div>
+        
+        {/* Botón de centrar para móvil */}
+        {isMobile && (
+          <button
+            onClick={() => {
+              setZoom(1);
+              setPan({ x: 0, y: 0 });
+            }}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-2 text-sm font-medium"
+          >
+            Centrar
+          </button>
+        )}
         
         {isEditMode && (
           <div className="flex flex-col gap-1 bg-background/90 rounded-lg p-2 border">
@@ -498,8 +511,19 @@ export const InteractiveMap = ({
             </div>
           </div>
         )}
+        
+        {/* Instrucciones para móvil */}
+        {isMobile && !isEditMode && (
+          <div className="absolute top-4 left-4 bg-background/90 rounded-lg p-3 border shadow-lg max-w-64">
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>📱 <strong>Un dedo:</strong> Desplazar mapa</div>
+              <div>🔍 <strong>Dos dedos:</strong> Zoom</div>
+              <div>👆 <strong>Toca góndola:</strong> Ver info</div>
+            </div>
+          </div>
+        )}
       </div>
-
+      
       <svg
         ref={svgRef}
         width="1000"
