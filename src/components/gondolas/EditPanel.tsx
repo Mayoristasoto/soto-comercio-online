@@ -186,67 +186,27 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-background p-3 rounded border">
               <Label htmlFor="width" className="text-xs font-semibold text-blue-600">📏 Ancho</Label>
-              <div className="flex gap-1">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => updatePosition('width', editedGondola.position.width - 10)}
-                  className="px-2 h-8"
-                >
-                  -
-                </Button>
-                <Input
-                  id="width"
-                  type="number"
-                  value={editedGondola.position.width}
-                  onChange={(e) => updatePosition('width', Math.max(20, Number(e.target.value)))}
-                  min="20"
-                  step="10"
-                  className="text-center h-8"
-                />
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => updatePosition('width', editedGondola.position.width + 10)}
-                  className="px-2 h-8"
-                >
-                  +
-                </Button>
-              </div>
+              <Input
+                id="width"
+                type="number"
+                value={editedGondola.position.width}
+                onChange={(e) => updatePosition('width', Math.max(20, Number(e.target.value)))}
+                min="20"
+                step="10"
+                className="text-center"
+              />
             </div>
             <div className="bg-background p-3 rounded border">
               <Label htmlFor="height" className="text-xs font-semibold text-green-600">📐 Alto</Label>
-              <div className="flex gap-1">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => updatePosition('height', editedGondola.position.height - 10)}
-                  className="px-2 h-8"
-                >
-                  -
-                </Button>
-                <Input
-                  id="height"
-                  type="number"
-                  value={editedGondola.position.height}
-                  onChange={(e) => updatePosition('height', Math.max(20, Number(e.target.value)))}
-                  min="20"
-                  step="10"
-                  className="text-center h-8"
-                />
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => updatePosition('height', editedGondola.position.height + 10)}
-                  className="px-2 h-8"
-                >
-                  +
-                </Button>
-              </div>
+              <Input
+                id="height"
+                type="number"
+                value={editedGondola.position.height}
+                onChange={(e) => updatePosition('height', Math.max(20, Number(e.target.value)))}
+                min="20"
+                step="10"
+                className="text-center"
+              />
             </div>
           </div>
         </div>
