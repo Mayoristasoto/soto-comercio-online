@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Gondola {
   id: string;
@@ -19,27 +20,108 @@ export interface Gondola {
 }
 
 const Gondolas = () => {
-  // Cargar datos desde localStorage o usar datos por defecto
-  const loadGondolas = (): Gondola[] => {
-    const saved = localStorage.getItem('gondolas');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (error) {
-        console.error('Error loading saved gondolas:', error);
-      }
-    }
-    return gondolasData.gondolas as Gondola[];
-  };
-
-  const [gondolas] = useState<Gondola[]>(loadGondolas());
-  const [filteredGondolas, setFilteredGondolas] = useState<Gondola[]>(gondolas);
+  const [gondolas, setGondolas] = useState<Gondola[]>([]);
+  const [filteredGondolas, setFilteredGondolas] = useState<Gondola[]>([]);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load gondolas from Supabase
+  const loadGondolas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('gondolas')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading gondolas:', error);
+        // Fallback to default data if Supabase fails
+        const defaultGondolas = gondolasData.gondolas as Gondola[];
+        setGondolas(defaultGondolas);
+        setFilteredGondolas(defaultGondolas);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Convert database format to app format
+        const formattedGondolas: Gondola[] = data.map(dbGondola => ({
+          id: dbGondola.id,
+          type: dbGondola.type as 'gondola' | 'puntera',
+          position: {
+            x: Number(dbGondola.position_x),
+            y: Number(dbGondola.position_y),
+            width: Number(dbGondola.position_width),
+            height: Number(dbGondola.position_height)
+          },
+          status: dbGondola.status as 'occupied' | 'available',
+          brand: dbGondola.brand,
+          category: dbGondola.category,
+          section: dbGondola.section,
+          endDate: dbGondola.end_date
+        }));
+        setGondolas(formattedGondolas);
+        setFilteredGondolas(formattedGondolas);
+      } else {
+        // Use default data if no data in database
+        const defaultGondolas = gondolasData.gondolas as Gondola[];
+        setGondolas(defaultGondolas);
+        setFilteredGondolas(defaultGondolas);
+      }
+    } catch (error) {
+      console.error('Error loading gondolas:', error);
+      // Fallback to default data
+      const defaultGondolas = gondolasData.gondolas as Gondola[];
+      setGondolas(defaultGondolas);
+      setFilteredGondolas(defaultGondolas);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadGondolas();
+  }, []);
+
+  // Set up real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('gondolas-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'gondolas'
+        },
+        () => {
+          // Reload data when changes occur
+          loadGondolas();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const availableSpaces = gondolas.filter(g => g.status === 'available').length;
   const totalSpaces = gondolas.length;
   const occupiedSpaces = totalSpaces - availableSpaces;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-semibold mb-2">Cargando layout del local...</div>
+          <div className="text-muted-foreground">Obteniendo información actualizada</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
