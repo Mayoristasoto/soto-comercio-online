@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Copy, Trash2, Store, Download, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Gondola {
   id: string;
@@ -22,19 +23,8 @@ export interface Gondola {
 }
 
 const GondolasEdit = () => {
-  const loadGondolas = (): Gondola[] => {
-    const saved = localStorage.getItem('gondolas');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (error) {
-        console.error('Error loading saved gondolas:', error);
-      }
-    }
-    return gondolasData.gondolas as Gondola[];
-  };
-
-  const [gondolas, setGondolas] = useState<Gondola[]>(loadGondolas());
+  const [gondolas, setGondolas] = useState<Gondola[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -43,32 +33,141 @@ const GondolasEdit = () => {
   const gondolaCount = gondolas.filter(g => g.type === 'gondola').length;
   const punteraCount = gondolas.filter(g => g.type === 'puntera').length;
 
-  const saveGondolas = (newGondolas: Gondola[]) => {
-    console.log('Saving to localStorage:', newGondolas);
-    localStorage.setItem('gondolas', JSON.stringify(newGondolas));
+  // Load gondolas from Supabase
+  const loadGondolas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('gondolas')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading gondolas:', error);
+        // If no data in Supabase, initialize with default data
+        await initializeDefaultData();
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Convert database format to app format
+        const formattedGondolas: Gondola[] = data.map(dbGondola => ({
+          id: dbGondola.id,
+          type: dbGondola.type as 'gondola' | 'puntera',
+          position: {
+            x: Number(dbGondola.position_x),
+            y: Number(dbGondola.position_y),
+            width: Number(dbGondola.position_width),
+            height: Number(dbGondola.position_height)
+          },
+          status: dbGondola.status as 'occupied' | 'available',
+          brand: dbGondola.brand,
+          category: dbGondola.category,
+          section: dbGondola.section,
+          endDate: dbGondola.end_date,
+          notes: dbGondola.notes
+        }));
+        setGondolas(formattedGondolas);
+      } else {
+        await initializeDefaultData();
+      }
+    } catch (error) {
+      console.error('Error loading gondolas:', error);
+      toast("Error al cargar las góndolas");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateGondola = (updatedGondola: Gondola) => {
-    console.log('updateGondola called:', updatedGondola);
-    const newGondolas = gondolas.map(g => 
-      g.id === updatedGondola.id ? updatedGondola : g
-    );
-    console.log('New gondolas array:', newGondolas);
-    setGondolas(newGondolas);
-    saveGondolas(newGondolas);
+  // Initialize with default data from JSON
+  const initializeDefaultData = async () => {
+    const defaultGondolas = gondolasData.gondolas as Gondola[];
+    setGondolas(defaultGondolas);
+    
+    // Save to database
+    for (const gondola of defaultGondolas) {
+      await saveGondolaToDb(gondola);
+    }
   };
 
-  const addGondola = (newGondola: Gondola) => {
-    const newGondolas = [...gondolas, newGondola];
-    setGondolas(newGondolas);
-    saveGondolas(newGondolas);
+  // Save individual gondola to database
+  const saveGondolaToDb = async (gondola: Gondola) => {
+    try {
+      const dbFormat = {
+        id: gondola.id,
+        type: gondola.type,
+        position_x: gondola.position.x,
+        position_y: gondola.position.y,
+        position_width: gondola.position.width,
+        position_height: gondola.position.height,
+        status: gondola.status,
+        brand: gondola.brand,
+        category: gondola.category,
+        section: gondola.section,
+        end_date: gondola.endDate || null,
+        notes: gondola.notes || null
+      };
+
+      const { error } = await supabase
+        .from('gondolas')
+        .upsert(dbFormat, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Error saving gondola:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in saveGondolaToDb:', error);
+      throw error;
+    }
   };
 
-  const deleteGondola = (gondolaId: string) => {
-    const newGondolas = gondolas.filter(g => g.id !== gondolaId);
-    setGondolas(newGondolas);
-    setSelectedGondola(null);
-    saveGondolas(newGondolas);
+  const updateGondola = async (updatedGondola: Gondola) => {
+    try {
+      await saveGondolaToDb(updatedGondola);
+      const newGondolas = gondolas.map(g => 
+        g.id === updatedGondola.id ? updatedGondola : g
+      );
+      setGondolas(newGondolas);
+      toast("Góndola actualizada");
+    } catch (error) {
+      console.error('Error updating gondola:', error);
+      toast("Error al actualizar la góndola");
+    }
+  };
+
+  const addGondola = async (newGondola: Gondola) => {
+    try {
+      await saveGondolaToDb(newGondola);
+      const newGondolas = [...gondolas, newGondola];
+      setGondolas(newGondolas);
+      toast("Góndola agregada");
+    } catch (error) {
+      console.error('Error adding gondola:', error);
+      toast("Error al agregar la góndola");
+    }
+  };
+
+  const deleteGondola = async (gondolaId: string) => {
+    try {
+      const { error } = await supabase
+        .from('gondolas')
+        .delete()
+        .eq('id', gondolaId);
+
+      if (error) {
+        console.error('Error deleting gondola:', error);
+        toast("Error al eliminar la góndola");
+        return;
+      }
+
+      const newGondolas = gondolas.filter(g => g.id !== gondolaId);
+      setGondolas(newGondolas);
+      setSelectedGondola(null);
+      toast("Góndola eliminada");
+    } catch (error) {
+      console.error('Error in deleteGondola:', error);
+      toast("Error al eliminar la góndola");
+    }
   };
 
   const duplicateGondola = (gondola: Gondola) => {
@@ -96,11 +195,28 @@ const GondolasEdit = () => {
     setSelectedGondola(duplicated);
   };
 
-  const resetToOriginal = () => {
-    const originalData = gondolasData.gondolas as Gondola[];
-    setGondolas(originalData);
-    saveGondolas(originalData);
-    setSelectedGondola(null);
+  const resetToOriginal = async () => {
+    try {
+      // Delete all existing gondolas
+      const { error: deleteError } = await supabase
+        .from('gondolas')
+        .delete()
+        .neq('id', ''); // Delete all rows
+
+      if (deleteError) {
+        console.error('Error deleting gondolas:', deleteError);
+        toast("Error al resetear las góndolas");
+        return;
+      }
+
+      // Initialize with default data
+      await initializeDefaultData();
+      setSelectedGondola(null);
+      toast("Datos reseteados al original");
+    } catch (error) {
+      console.error('Error in resetToOriginal:', error);
+      toast("Error al resetear las góndolas");
+    }
   };
 
   // Export/Import functions for data backup
@@ -120,17 +236,34 @@ const GondolasEdit = () => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const importedData = JSON.parse(e.target?.result as string);
           if (Array.isArray(importedData)) {
+            // Delete all existing gondolas first
+            const { error: deleteError } = await supabase
+              .from('gondolas')
+              .delete()
+              .neq('id', '');
+
+            if (deleteError) {
+              console.error('Error deleting gondolas:', deleteError);
+              toast("Error al importar: No se pudieron eliminar los datos existentes");
+              return;
+            }
+
+            // Save imported data to database
+            for (const gondola of importedData) {
+              await saveGondolaToDb(gondola);
+            }
+
             setGondolas(importedData);
-            saveGondolas(importedData);
             toast("Datos importados correctamente");
           } else {
             toast("Error: Formato de archivo inválido");
           }
         } catch (error) {
+          console.error('Error importing data:', error);
           toast("Error: No se pudo leer el archivo");
         }
       };
@@ -139,6 +272,11 @@ const GondolasEdit = () => {
     // Reset input value
     event.target.value = '';
   };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadGondolas();
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -166,6 +304,17 @@ const GondolasEdit = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedGondola, gondolas]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-semibold mb-2">Cargando góndolas...</div>
+          <div className="text-muted-foreground">Conectando a la base de datos</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">
