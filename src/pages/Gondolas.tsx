@@ -29,13 +29,15 @@ const Gondolas = () => {
   // Load gondolas from Supabase
   const loadGondolas = async () => {
     try {
+      console.log('🔄 Intentando cargar góndolas desde Supabase...');
       const { data, error } = await supabase
         .from('gondolas')
         .select('*')
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error loading gondolas:', error);
+        console.error('❌ Error loading gondolas:', error);
+        console.log('🔄 Usando datos por defecto como respaldo...');
         // Fallback to default data if Supabase fails
         const defaultGondolas = gondolasData.gondolas as Gondola[];
         setGondolas(defaultGondolas);
@@ -43,6 +45,8 @@ const Gondolas = () => {
         setIsLoading(false);
         return;
       }
+
+      console.log('✅ Datos cargados desde Supabase:', data?.length || 0, 'elementos');
 
       if (data && data.length > 0) {
         // Convert database format to app format
