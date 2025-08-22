@@ -17,11 +17,10 @@ export interface Gondola {
   brand: string | null;
   category: string;
   section: string;
-  endDate?: string; // Fecha de fin de ocupación (ISO string)
+  endDate?: string;
 }
 
 const GondolasEdit = () => {
-  // Cargar datos desde localStorage o usar datos por defecto
   const loadGondolas = (): Gondola[] => {
     const saved = localStorage.getItem('gondolas');
     if (saved) {
@@ -43,19 +42,16 @@ const GondolasEdit = () => {
     return savedNotes || '';
   });
 
-  // Calculate statistics
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
   const gondolaCount = gondolas.filter(g => g.type === 'gondola').length;
   const punteraCount = gondolas.filter(g => g.type === 'puntera').length;
 
-  // Save notes to localStorage
   const saveNotes = (newNotes: string) => {
     setNotes(newNotes);
     localStorage.setItem('gondolas-notes', newNotes);
   };
 
-  // Función para guardar en localStorage
   const saveGondolas = (newGondolas: Gondola[]) => {
     console.log('Saving to localStorage:', newGondolas);
     localStorage.setItem('gondolas', JSON.stringify(newGondolas));
@@ -107,7 +103,6 @@ const GondolasEdit = () => {
     setSelectedGondola(duplicated);
   };
 
-  // Función para resetear a datos originales
   const resetToOriginal = () => {
     const originalData = gondolasData.gondolas as Gondola[];
     setGondolas(originalData);
@@ -115,7 +110,6 @@ const GondolasEdit = () => {
     setSelectedGondola(null);
   };
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!selectedGondola) return;
@@ -158,7 +152,6 @@ const GondolasEdit = () => {
           </p>
         </div>
 
-        {/* Notes/Agreements Section */}
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -179,7 +172,6 @@ const GondolasEdit = () => {
           </CardContent>
         </Card>
 
-        {/* Summary Statistics */}
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
