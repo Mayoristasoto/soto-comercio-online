@@ -50,15 +50,18 @@ const Gondolas = () => {
 
       if (error) {
         console.error('❌ Error de Supabase:', error);
+        console.log('📊 Error details:', { code: error.code, message: error.message });
         
         // Si hay error de permisos, puede ser cache viejo o RLS mal configurado
         if (error.code === '42501') {
-          console.log('🔄 Error de permisos - puede ser cache viejo o RLS');
+          console.log('🔒 Error de permisos - RLS o configuración');
           
-          // Si no hemos intentado bypass cache, intentarlo
+          // Si no hemos intentado bypass cache, intentarlo una vez
           if (!bypassCache) {
             console.log('🔄 Reintentando con bypass de cache...');
             setTimeout(() => loadGondolas(true, true), 1000);
+          } else {
+            console.log('⚠️ Bypass falló también - usando datos por defecto');
           }
           
           // Usar datos locales como respaldo
@@ -70,6 +73,7 @@ const Gondolas = () => {
         }
         
         // Para otros errores, usar datos por defecto
+        console.log('🔄 Usando datos por defecto por error:', error.code);
         const defaultGondolas = gondolasData.gondolas as Gondola[];
         setGondolas(defaultGondolas);
         setFilteredGondolas(defaultGondolas);
@@ -80,6 +84,8 @@ const Gondolas = () => {
       console.log('✅ Datos cargados desde Supabase:', data?.length || 0, 'elementos');
 
       if (data && data.length > 0) {
+        console.log('🎯 Primeras góndolas de BD:', data.slice(0, 3).map(g => ({ id: g.id, brand: g.brand, status: g.status })));
+        
         // Convert database format to app format
         const formattedGondolas: Gondola[] = data.map(dbGondola => ({
           id: dbGondola.id,
@@ -97,7 +103,7 @@ const Gondolas = () => {
           endDate: dbGondola.end_date
         }));
         
-        console.log('✅ Góndolas formateadas:', formattedGondolas.length);
+        console.log('✅ Góndolas formateadas:', formattedGondolas.length, '- Primer elemento:', formattedGondolas[0]);
         setGondolas(formattedGondolas);
         setFilteredGondolas(formattedGondolas);
       } else {
