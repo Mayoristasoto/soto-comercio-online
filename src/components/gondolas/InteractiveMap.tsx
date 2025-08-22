@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Gondola } from "@/pages/Gondolas";
 
 interface InteractiveMapProps {
@@ -6,6 +6,7 @@ interface InteractiveMapProps {
   onGondolaHover: (gondola: Gondola | null) => void;
   onGondolaSelect: (gondola: Gondola | null) => void;
   onGondolaUpdate: (gondola: Gondola) => void;
+  onGondolaAdd: (gondola: Gondola) => void;
   onMouseMove: (position: { x: number; y: number }) => void;
   isEditMode: boolean;
 }
@@ -14,7 +15,8 @@ export const InteractiveMap = ({
   gondolas, 
   onGondolaHover, 
   onGondolaSelect, 
-  onGondolaUpdate, 
+  onGondolaUpdate,
+  onGondolaAdd, 
   onMouseMove, 
   isEditMode 
 }: InteractiveMapProps) => {
@@ -22,6 +24,11 @@ export const InteractiveMap = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<{ gondolaId: string; handle: string } | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const handleMouseEnter = (gondola: Gondola, event: React.MouseEvent) => {
     onGondolaHover(gondola);
@@ -118,16 +125,129 @@ export const InteractiveMap = ({
     setDragStart({ x: event.clientX, y: event.clientY });
   };
 
+  const handleZoom = (delta: number) => {
+    const newZoom = Math.max(0.5, Math.min(3, zoom + delta));
+    setZoom(newZoom);
+  };
+
+  const handleSvgClick = (event: React.MouseEvent) => {
+    if (!isCreating || !svgRef.current) return;
+    
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = (event.clientX - rect.left - pan.x) / zoom;
+    const y = (event.clientY - rect.top - pan.y) / zoom;
+    
+    const newId = isCreating === 'gondola' ? 
+      `g${gondolas.filter(g => g.type === 'gondola').length + 1}` : 
+      `p${gondolas.filter(g => g.type === 'puntera').length + 1}`;
+    
+    const newGondola: Gondola = {
+      id: newId,
+      type: isCreating,
+      position: { 
+        x: Math.max(0, x - 70), 
+        y: Math.max(0, y - 30), 
+        width: isCreating === 'gondola' ? 140 : 40, 
+        height: 60 
+      },
+      status: 'available',
+      brand: null,
+      category: 'Disponible',
+      section: newId.toUpperCase()
+    };
+    
+    onGondolaAdd(newGondola);
+    setIsCreating(null);
+  };
+
+  const handlePanStart = (event: React.MouseEvent) => {
+    if (isEditMode || isCreating) return;
+    setIsPanning(true);
+    setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y });
+  };
+
+  const handlePan = (event: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPan({
+      x: event.clientX - dragStart.x,
+      y: event.clientY - dragStart.y
+    });
+  };
+
   return (
-    <div className="relative w-full overflow-auto">
+    <div className="relative w-full overflow-hidden">
+      {/* Controles de zoom y creación */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+        <div className="flex gap-1 bg-background/90 rounded-lg p-1 border">
+          <button
+            onClick={() => handleZoom(0.2)}
+            className="w-8 h-8 flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-sm font-bold"
+          >
+            +
+          </button>
+          <button
+            onClick={() => handleZoom(-0.2)}
+            className="w-8 h-8 flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-sm font-bold"
+          >
+            -
+          </button>
+          <span className="w-12 h-8 flex items-center justify-center text-xs bg-muted rounded">
+            {Math.round(zoom * 100)}%
+          </span>
+        </div>
+        
+        {isEditMode && (
+          <div className="flex flex-col gap-1 bg-background/90 rounded-lg p-2 border">
+            <button
+              onClick={() => setIsCreating(isCreating === 'gondola' ? null : 'gondola')}
+              className={`px-3 py-1 text-xs rounded transition-colors ${
+                isCreating === 'gondola' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-secondary hover:bg-secondary/80'
+              }`}
+            >
+              + Góndola
+            </button>
+            <button
+              onClick={() => setIsCreating(isCreating === 'puntera' ? null : 'puntera')}
+              className={`px-3 py-1 text-xs rounded transition-colors ${
+                isCreating === 'puntera' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-secondary hover:bg-secondary/80'
+              }`}
+            >
+              + Puntera
+            </button>
+          </div>
+        )}
+      </div>
+
       <svg
+        ref={svgRef}
         width="1000"
         height="700"
         viewBox="0 0 1000 700"
-        className="border border-border rounded-lg bg-muted/20 cursor-default"
-        onMouseMove={handleMouseMoveOnSvg}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        className={`border border-border rounded-lg bg-muted/20 ${
+          isCreating ? 'cursor-crosshair' : isPanning ? 'cursor-move' : 'cursor-default'
+        }`}
+        onMouseMove={(e) => {
+          handleMouseMoveOnSvg(e);
+          handlePan(e);
+        }}
+        onMouseUp={() => {
+          handleMouseUp();
+          setIsPanning(false);
+        }}
+        onMouseLeave={() => {
+          handleMouseUp();
+          setIsPanning(false);
+        }}
+        onMouseDown={handlePanStart}
+        onClick={handleSvgClick}
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: '0 0'
+        }}
       >
         {/* Background floor plan */}
         <image

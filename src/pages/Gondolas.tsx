@@ -32,6 +32,12 @@ const Gondolas = () => {
     setFilteredGondolas(newGondolas);
   };
 
+  const addGondola = (newGondola: Gondola) => {
+    const newGondolas = [...gondolas, newGondola];
+    setGondolas(newGondolas);
+    setFilteredGondolas(newGondolas);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -89,6 +95,7 @@ const Gondolas = () => {
                 onGondolaHover={setHoveredGondola}
                 onGondolaSelect={setSelectedGondola}
                 onGondolaUpdate={updateGondola}
+                onGondolaAdd={addGondola}
                 onMouseMove={setMousePosition}
                 isEditMode={isEditMode}
               />
