@@ -1,0 +1,149 @@
+{
+  "gondolas": [
+    {
+      "id": "g1",
+      "type": "gondola",
+      "position": { "x": 350, "y": 180, "width": 140, "height": 60 },
+      "status": "occupied",
+      "brand": "Coca Cola",
+      "category": "Bebidas",
+      "section": "A1"
+    },
+    {
+      "id": "g2", 
+      "type": "gondola",
+      "position": { "x": 620, "y": 180, "width": 140, "height": 60 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "A2"
+    },
+    {
+      "id": "g3",
+      "type": "gondola", 
+      "position": { "x": 350, "y": 280, "width": 140, "height": 60 },
+      "status": "occupied",
+      "brand": "Pepsico",
+      "category": "Snacks",
+      "section": "B1"
+    },
+    {
+      "id": "g4",
+      "type": "gondola",
+      "position": { "x": 620, "y": 280, "width": 140, "height": 60 },
+      "status": "occupied", 
+      "brand": "Mondelez",
+      "category": "Golosinas",
+      "section": "B2"
+    },
+    {
+      "id": "g5",
+      "type": "gondola",
+      "position": { "x": 350, "y": 430, "width": 140, "height": 60 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible", 
+      "section": "C1"
+    },
+    {
+      "id": "g6",
+      "type": "gondola",
+      "position": { "x": 620, "y": 430, "width": 140, "height": 60 },
+      "status": "occupied",
+      "brand": "Unilever",
+      "category": "Limpieza",
+      "section": "C2"
+    },
+    {
+      "id": "g7",
+      "type": "gondola", 
+      "position": { "x": 350, "y": 530, "width": 140, "height": 60 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "D1"
+    },
+    {
+      "id": "g8",
+      "type": "gondola",
+      "position": { "x": 620, "y": 530, "width": 140, "height": 60 },
+      "status": "occupied",
+      "brand": "Nestle",
+      "category": "Lácteos",
+      "section": "D2"
+    },
+    {
+      "id": "p1",
+      "type": "puntera",
+      "position": { "x": 300, "y": 180, "width": 40, "height": 60 },
+      "status": "occupied", 
+      "brand": "Arcor",
+      "category": "Golosinas",
+      "section": "PA1"
+    },
+    {
+      "id": "p2",
+      "type": "puntera",
+      "position": { "x": 770, "y": 180, "width": 40, "height": 60 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "PA2"
+    },
+    {
+      "id": "p3",
+      "type": "puntera",
+      "position": { "x": 300, "y": 280, "width": 40, "height": 60 },
+      "status": "occupied",
+      "brand": "Ferrero",
+      "category": "Chocolates",
+      "section": "PB1"
+    },
+    {
+      "id": "p4", 
+      "type": "puntera",
+      "position": { "x": 770, "y": 280, "width": 40, "height": 60 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "PB2"
+    },
+    {
+      "id": "p5",
+      "type": "puntera",
+      "position": { "x": 300, "y": 430, "width": 40, "height": 60 },
+      "status": "occupied",
+      "brand": "P&G",
+      "category": "Cuidado Personal",
+      "section": "PC1"
+    },
+    {
+      "id": "p6",
+      "type": "puntera", 
+      "position": { "x": 770, "y": 430, "width": 40, "height": 60 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "PC2"
+    }
+  ],
+  "brands": [
+    "Coca Cola",
+    "Pepsico", 
+    "Mondelez",
+    "Unilever",
+    "Nestle",
+    "Arcor",
+    "Ferrero",
+    "P&G"
+  ],
+  "categories": [
+    "Bebidas",
+    "Snacks", 
+    "Golosinas",
+    "Limpieza",
+    "Lácteos",
+    "Chocolates",
+    "Cuidado Personal"
+  ]
+}
