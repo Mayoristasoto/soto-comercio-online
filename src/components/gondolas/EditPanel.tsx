@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Save, RotateCcw, Copy, Trash2 } from "lucide-react";
+import { X, Save, RotateCcw, Copy, Trash2, FileText } from "lucide-react";
 
 interface EditPanelProps {
   gondola: Gondola;
@@ -242,6 +243,23 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
               />
             </div>
           </div>
+        </div>
+
+        {/* Notes/Annotations Section */}
+        <div className="space-y-3 bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+          <Label className="text-sm font-medium flex items-center gap-2 text-blue-700 dark:text-blue-300">
+            <FileText className="h-4 w-4" />
+            Anotaciones y Acuerdos
+          </Label>
+          <Textarea
+            placeholder="Escribe aquí anotaciones, acuerdos o detalles específicos para esta góndola/puntera..."
+            value={editedGondola.notes || ''}
+            onChange={(e) => updateField('notes', e.target.value)}
+            className="min-h-[80px] resize-none border-blue-200 dark:border-blue-700 focus:border-blue-400 dark:focus:border-blue-500"
+          />
+          <p className="text-xs text-blue-600 dark:text-blue-400">
+            Las anotaciones se guardan automáticamente
+          </p>
         </div>
 
         {/* Action Buttons */}

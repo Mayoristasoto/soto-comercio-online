@@ -5,8 +5,7 @@ import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Copy, Trash2, Store, FileText } from "lucide-react";
+import { ArrowLeft, Copy, Trash2, Store } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export interface Gondola {
@@ -18,6 +17,7 @@ export interface Gondola {
   category: string;
   section: string;
   endDate?: string;
+  notes?: string; // Individual notes for each gondola/puntera
 }
 
 const GondolasEdit = () => {
@@ -37,20 +37,10 @@ const GondolasEdit = () => {
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [notes, setNotes] = useState<string>(() => {
-    const savedNotes = localStorage.getItem('gondolas-notes');
-    return savedNotes || '';
-  });
-
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
   const gondolaCount = gondolas.filter(g => g.type === 'gondola').length;
   const punteraCount = gondolas.filter(g => g.type === 'puntera').length;
-
-  const saveNotes = (newNotes: string) => {
-    setNotes(newNotes);
-    localStorage.setItem('gondolas-notes', newNotes);
-  };
 
   const saveGondolas = (newGondolas: Gondola[]) => {
     console.log('Saving to localStorage:', newGondolas);
@@ -152,25 +142,6 @@ const GondolasEdit = () => {
           </p>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Anotaciones y Acuerdos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="Escribe aquí los acuerdos, anotaciones o detalles importantes sobre las góndolas..."
-              value={notes}
-              onChange={(e) => saveNotes(e.target.value)}
-              className="min-h-[100px] resize-none"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Las anotaciones se guardan automáticamente
-            </p>
-          </CardContent>
-        </Card>
 
         <Card className="mb-6">
           <CardHeader className="pb-3">
