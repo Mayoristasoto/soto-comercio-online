@@ -107,9 +107,16 @@ const Gondolas = () => {
         console.log('Realtime subscription status:', status);
       });
 
+    // Configurar polling como respaldo para móvil
+    const pollInterval = setInterval(() => {
+      console.log('Polling for updates (mobile backup)...');
+      loadGondolas();
+    }, 10000); // Cada 10 segundos
+
     return () => {
       console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -174,6 +181,17 @@ const Gondolas = () => {
 
 
         {/* Stats Cards */}
+        {/* Botón de actualización para móvil */}
+        <div className="md:hidden mb-6 text-center">
+          <Button 
+            onClick={loadGondolas} 
+            disabled={isLoading}
+            className="w-full bg-primary hover:bg-primary/90"
+          >
+            {isLoading ? "Actualizando..." : "🔄 Actualizar Layout"}
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="p-6 text-center">
