@@ -310,7 +310,8 @@ export const InteractiveMap = ({
   };
 
   const handleZoom = (delta: number) => {
-    const newZoom = Math.max(0.5, Math.min(3, zoom + delta));
+    // Aumentar el rango de zoom para mejor experiencia móvil
+    const newZoom = Math.max(0.3, Math.min(4, zoom + delta));
     setZoom(newZoom);
   };
 
@@ -354,41 +355,35 @@ export const InteractiveMap = ({
 
   const handleTouchMove = (event: React.TouchEvent) => {
     if (event.touches.length === 1 && isPanning) {
-      // Single touch - pan optimizado
+      // Single touch - pan optimizado y más responsivo
       const touch = event.touches[0];
       const newPan = {
         x: touch.clientX - dragStart.x,
         y: touch.clientY - dragStart.y
       };
       
-      // Usar requestAnimationFrame para suavizar la animación
-      requestAnimationFrame(() => {
-        setPan(newPan);
-      });
+      // Aplicar pan inmediatamente para mejor respuesta
+      setPan(newPan);
     } else if (event.touches.length === 2) {
       event.preventDefault();
-      // Two touches - zoom and pan con throttling
+      // Two touches - zoom and pan con mayor sensibilidad
       const distance = getTouchDistance(event.touches);
       const center = getTouchCenter(event.touches);
       
       if (lastTouchDistance > 0) {
-        // Reducir sensibilidad del zoom para mayor control
-        const zoomDelta = (distance - lastTouchDistance) * 0.003;
-        requestAnimationFrame(() => {
-          handleZoom(zoomDelta);
-        });
+        // Aumentar sensibilidad del zoom para móvil
+        const zoomDelta = (distance - lastTouchDistance) * 0.008; // Aumentado de 0.003
+        handleZoom(zoomDelta);
       }
       
-      // Pan suavizado basado en movimiento del centro
+      // Pan más responsivo basado en movimiento del centro
       const centerDeltaX = center.x - lastTouchCenter.x;
       const centerDeltaY = center.y - lastTouchCenter.y;
       
-      requestAnimationFrame(() => {
-        setPan(prev => ({
-          x: prev.x + centerDeltaX * 0.8, // Reducir sensibilidad del pan
-          y: prev.y + centerDeltaY * 0.8
-        }));
-      });
+      setPan(prev => ({
+        x: prev.x + centerDeltaX * 1.2, // Aumentar sensibilidad del pan
+        y: prev.y + centerDeltaY * 1.2
+      }));
       
       setLastTouchDistance(distance);
       setLastTouchCenter(center);
@@ -482,36 +477,36 @@ export const InteractiveMap = ({
           height: isMobile && !isEditMode ? '100vw' : 'auto',
         }}
       >
-      {/* Controles de zoom mejorados para móvil */}
-      <div className={`absolute ${isMobile ? 'bottom-4 right-4' : 'top-4 left-4'} z-10 flex flex-col gap-2`}>
-        <div className={`flex ${isMobile ? 'flex-row' : 'flex-row'} gap-1 bg-background/90 rounded-lg p-2 border shadow-lg`}>
+      {/* Controles de zoom optimizados para móvil */}
+      <div className={`absolute ${isMobile ? 'bottom-4 right-4' : 'top-4 left-4'} z-10 flex flex-col gap-3`}>
+        <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-2 bg-background/95 rounded-xl p-3 border shadow-lg backdrop-blur-sm`}>
           <button
-            onClick={() => handleZoom(0.2)}
-            className={`${isMobile ? 'w-12 h-12' : 'w-8 h-8'} flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-lg font-bold`}
+            onClick={() => handleZoom(0.3)}
+            className={`${isMobile ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-lg'} flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold shadow-md transition-all duration-200 active:scale-95`}
           >
             +
           </button>
           <button
-            onClick={() => handleZoom(-0.2)}
-            className={`${isMobile ? 'w-12 h-12' : 'w-8 h-8'} flex items-center justify-center bg-secondary hover:bg-secondary/80 rounded text-lg font-bold`}
+            onClick={() => handleZoom(-0.3)}
+            className={`${isMobile ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-lg'} flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold shadow-md transition-all duration-200 active:scale-95`}
           >
-            -
+            −
           </button>
-          <span className={`${isMobile ? 'w-16 h-12' : 'w-12 h-8'} flex items-center justify-center text-xs bg-muted rounded font-medium`}>
+          <div className={`${isMobile ? 'w-14 h-12 text-sm' : 'w-12 h-10 text-xs'} flex items-center justify-center bg-muted rounded-xl font-medium border`}>
             {Math.round(zoom * 100)}%
-          </span>
+          </div>
         </div>
         
-        {/* Botón de centrar para móvil */}
+        {/* Botón de centrar mejorado para móvil */}
         {isMobile && (
           <button
             onClick={() => {
               setZoom(1);
               setPan({ x: 0, y: 0 });
             }}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-2 text-sm font-medium"
+            className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-xl px-4 py-3 text-sm font-medium shadow-md transition-all duration-200 active:scale-95"
           >
-            Centrar
+            🎯 Centrar Vista
           </button>
         )}
         
@@ -543,13 +538,19 @@ export const InteractiveMap = ({
           </div>
         )}
         
-        {/* Instrucciones para móvil */}
+        {/* Instrucciones optimizadas para móvil */}
         {isMobile && !isEditMode && (
-          <div className="absolute top-4 left-4 bg-background/90 rounded-lg p-3 border shadow-lg max-w-64">
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div>📱 <strong>Un dedo:</strong> Desplazar mapa</div>
-              <div>🔍 <strong>Dos dedos:</strong> Zoom</div>
-              <div>👆 <strong>Toca góndola:</strong> Ver info</div>
+          <div className="absolute top-4 left-4 bg-background/95 rounded-xl p-4 border shadow-lg max-w-72 backdrop-blur-sm">
+            <div className="text-sm text-foreground space-y-2">
+              <div className="font-semibold text-primary flex items-center gap-2">
+                📱 <span>Controles Táctiles</span>
+              </div>
+              <div className="text-xs space-y-1">
+                <div>👆 <strong>Un dedo:</strong> Mover mapa</div>
+                <div>🤏 <strong>Pinch:</strong> Zoom (pellizcar)</div>
+                <div>🎯 <strong>Botón derecha:</strong> Centrar vista</div>
+                <div>👇 <strong>Toca góndola:</strong> Ver información</div>
+              </div>
             </div>
           </div>
         )}
@@ -584,9 +585,10 @@ export const InteractiveMap = ({
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '50% 50%',
-          touchAction: 'pan-x pan-y', // Permitir pan nativo para mejor rendimiento
+          touchAction: isMobile ? 'none' : 'pan-x pan-y', // Prevenir scroll nativo en móvil
           willChange: 'transform', // Optimizar para animaciones
-          backfaceVisibility: 'hidden' // Acelerar con GPU
+          backfaceVisibility: 'hidden', // Acelerar con GPU
+          userSelect: 'none' // Prevenir selección de texto en móvil
         }}
       >
         {/* Background floor plan */}
