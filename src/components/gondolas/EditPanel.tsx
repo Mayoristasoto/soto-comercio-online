@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Gondola } from "@/pages/Gondolas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ interface EditPanelProps {
 
 export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }: EditPanelProps) => {
   const [editedGondola, setEditedGondola] = useState<Gondola>(gondola);
+
+  // Sincronizar el estado interno cuando la góndola cambia desde afuera
+  useEffect(() => {
+    setEditedGondola(gondola);
+  }, [gondola]);
 
   const handleSave = () => {
     onUpdate(editedGondola);
