@@ -22,11 +22,29 @@ export interface Gondola {
 }
 
 const GondolasEdit = () => {
-  const [gondolas, setGondolas] = useState<Gondola[]>(gondolasData.gondolas as Gondola[]);
+  // Cargar datos desde localStorage o usar datos por defecto
+  const loadGondolas = (): Gondola[] => {
+    const saved = localStorage.getItem('gondolas');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Error loading saved gondolas:', error);
+      }
+    }
+    return gondolasData.gondolas as Gondola[];
+  };
+
+  const [gondolas, setGondolas] = useState<Gondola[]>(loadGondolas());
   const [filteredGondolas, setFilteredGondolas] = useState<Gondola[]>(gondolas);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Función para guardar en localStorage
+  const saveGondolas = (newGondolas: Gondola[]) => {
+    localStorage.setItem('gondolas', JSON.stringify(newGondolas));
+  };
 
   const updateGondola = (updatedGondola: Gondola) => {
     const newGondolas = gondolas.map(g => 
@@ -34,12 +52,14 @@ const GondolasEdit = () => {
     );
     setGondolas(newGondolas);
     setFilteredGondolas(newGondolas);
+    saveGondolas(newGondolas);
   };
 
   const addGondola = (newGondola: Gondola) => {
     const newGondolas = [...gondolas, newGondola];
     setGondolas(newGondolas);
     setFilteredGondolas(newGondolas);
+    saveGondolas(newGondolas);
   };
 
   const deleteGondola = (gondolaId: string) => {
@@ -47,6 +67,7 @@ const GondolasEdit = () => {
     setGondolas(newGondolas);
     setFilteredGondolas(newGondolas);
     setSelectedGondola(null);
+    saveGondolas(newGondolas);
   };
 
   const duplicateGondola = (gondola: Gondola) => {
@@ -70,6 +91,15 @@ const GondolasEdit = () => {
     
     addGondola(duplicated);
     setSelectedGondola(duplicated);
+  };
+
+  // Función para resetear a datos originales
+  const resetToOriginal = () => {
+    const originalData = gondolasData.gondolas as Gondola[];
+    setGondolas(originalData);
+    setFilteredGondolas(originalData);
+    saveGondolas(originalData);
+    setSelectedGondola(null);
   };
 
   // Keyboard shortcuts
@@ -105,12 +135,15 @@ const GondolasEdit = () => {
                 Volver a Vista Cliente
               </Button>
             </Link>
+            <Button variant="secondary" size="sm" onClick={resetToOriginal}>
+              Resetear a Original
+            </Button>
           </div>
           <h1 className="text-3xl font-bold text-primary mb-2">
             Editor de Góndolas - Mayorista Soto
           </h1>
           <p className="text-muted-foreground">
-            Gestiona la ocupación y configuración de góndolas y punteras
+            Gestiona la ocupación y configuración de góndolas y punteras • Los cambios se guardan automáticamente
           </p>
         </div>
 

@@ -20,7 +20,20 @@ export interface Gondola {
 }
 
 const Gondolas = () => {
-  const [gondolas] = useState<Gondola[]>(gondolasData.gondolas as Gondola[]);
+  // Cargar datos desde localStorage o usar datos por defecto
+  const loadGondolas = (): Gondola[] => {
+    const saved = localStorage.getItem('gondolas');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Error loading saved gondolas:', error);
+      }
+    }
+    return gondolasData.gondolas as Gondola[];
+  };
+
+  const [gondolas] = useState<Gondola[]>(loadGondolas());
   const [filteredGondolas, setFilteredGondolas] = useState<Gondola[]>(gondolas);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
