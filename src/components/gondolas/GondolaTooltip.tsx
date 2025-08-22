@@ -1,7 +1,7 @@
 import { Gondola } from "@/pages/Gondolas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Package, Tag, Building } from "lucide-react";
+import { MapPin, Package, Tag, Building, Calendar } from "lucide-react";
 
 interface GondolaTooltipProps {
   gondola: Gondola;
@@ -50,6 +50,13 @@ export const GondolaTooltip = ({ gondola, position }: GondolaTooltipProps) => {
               <Tag className="h-4 w-4 text-muted-foreground" />
               <span>{gondola.category}</span>
             </div>
+
+            {gondola.status === 'occupied' && gondola.endDate && (
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs">Hasta: {new Date(gondola.endDate).toLocaleDateString('es-ES')}</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
