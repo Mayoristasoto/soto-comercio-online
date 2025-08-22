@@ -125,6 +125,24 @@
       "brand": null,
       "category": "Disponible",
       "section": "PC2"
+    },
+    {
+      "id": "p7",
+      "type": "puntera", 
+      "position": { "x": 300, "y": 530, "width": 40, "height": 60 },
+      "status": "occupied",
+      "brand": "Johnson & Johnson",
+      "category": "Farmacia",
+      "section": "PD1"
+    },
+    {
+      "id": "p8",
+      "type": "puntera", 
+      "position": { "x": 770, "y": 530, "width": 40, "height": 60 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "PD2"
     }
   ],
   "brands": [

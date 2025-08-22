@@ -121,21 +121,35 @@ export const InteractiveMap = ({
     onMouseMove({ x: event.clientX, y: event.clientY });
   };
 
-  const handleClick = (gondola: Gondola) => {
-    if (isEditMode) {
-      setSelectedGondola(selectedGondola === gondola.id ? null : gondola.id);
-      onGondolaSelect(selectedGondola === gondola.id ? null : gondola);
+  const handleClick = (gondola: Gondola, event: React.MouseEvent) => {
+    if (!isEditMode) return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (selectedGondola === gondola.id) {
+      // Si ya está seleccionado, mantenerlo seleccionado
+      return;
     }
+    
+    setSelectedGondola(gondola.id);
+    onGondolaSelect(gondola);
   };
 
   const handleMouseDown = (gondola: Gondola, event: React.MouseEvent) => {
     if (!isEditMode) return;
     
     event.preventDefault();
+    event.stopPropagation();
+    
+    // Seleccionar la góndola si no está seleccionada
+    if (selectedGondola !== gondola.id) {
+      setSelectedGondola(gondola.id);
+      onGondolaSelect(gondola);
+    }
+    
     setIsDragging(true);
     setDragStart({ x: event.clientX, y: event.clientY });
-    setSelectedGondola(gondola.id);
-    onGondolaSelect(gondola);
   };
 
   const handleMouseUp = () => {
@@ -299,34 +313,38 @@ export const InteractiveMap = ({
   };
 
   const handleSvgClick = (event: React.MouseEvent) => {
-    if (!isCreating || !svgRef.current || isDragging || isResizing) return;
-    
-    
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = (event.clientX - rect.left - pan.x) / zoom;
-    const y = (event.clientY - rect.top - pan.y) / zoom;
-    
-    const newId = isCreating === 'gondola' ? 
-      `g${gondolas.filter(g => g.type === 'gondola').length + 1}` : 
-      `p${gondolas.filter(g => g.type === 'puntera').length + 1}`;
-    
-    const newGondola: Gondola = {
-      id: newId,
-      type: isCreating,
-      position: { 
-        x: Math.max(0, x - 70), 
-        y: Math.max(0, y - 30), 
-        width: isCreating === 'gondola' ? 140 : 40, 
-        height: 60 
-      },
-      status: 'available',
-      brand: null,
-      category: 'Disponible',
-      section: newId.toUpperCase()
-    };
-    
-    onGondolaAdd(newGondola);
-    setIsCreating(null);
+    // Solo crear nuevas góndolas si estamos en modo creación
+    if (isCreating && !isDragging && !isResizing && svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const x = (event.clientX - rect.left - pan.x) / zoom;
+      const y = (event.clientY - rect.top - pan.y) / zoom;
+      
+      const newId = isCreating === 'gondola' ? 
+        `g${gondolas.filter(g => g.type === 'gondola').length + 1}` : 
+        `p${gondolas.filter(g => g.type === 'puntera').length + 1}`;
+      
+      const newGondola: Gondola = {
+        id: newId,
+        type: isCreating,
+        position: { 
+          x: Math.max(0, x - 70), 
+          y: Math.max(0, y - 30), 
+          width: isCreating === 'gondola' ? 140 : 40, 
+          height: 60 
+        },
+        status: 'available',
+        brand: null,
+        category: 'Disponible',
+        section: newId.toUpperCase()
+      };
+      
+      onGondolaAdd(newGondola);
+      setIsCreating(null);
+    } else if (!isCreating && !isDragging && !isResizing) {
+      // Deseleccionar si hacemos click en el fondo
+      setSelectedGondola(null);
+      onGondolaSelect(null);
+    }
   };
 
   const handlePanStart = (event: React.MouseEvent) => {
@@ -460,7 +478,7 @@ export const InteractiveMap = ({
                 onMouseEnter={(e) => !isDragging && !isResizing && handleMouseEnter(gondola, e)}
                 onMouseLeave={() => !isDragging && !isResizing && handleMouseLeave()}
                 onMouseDown={(e) => handleMouseDown(gondola, e)}
-                onClick={() => handleClick(gondola)}
+                onClick={(e) => handleClick(gondola, e)}
               />
               
               {/* Label */}
