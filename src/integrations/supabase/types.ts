@@ -181,6 +181,36 @@ export type Database = {
           },
         ]
       }
+      profile_security_log: {
+        Row: {
+          event_details: Json | null
+          event_type: string | null
+          id: string
+          ip_address: unknown | null
+          timestamp: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          event_details?: Json | null
+          event_type?: string | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          event_details?: Json | null
+          event_type?: string | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -262,9 +292,27 @@ export type Database = {
           role: string
         }[]
       }
+      get_profile_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_users: number
+          admin_users: number
+          total_users: number
+        }[]
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          p_details?: Json
+          p_event_type: string
+          p_ip?: unknown
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
