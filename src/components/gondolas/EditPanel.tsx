@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Gondola } from "@/pages/Gondolas";
+import { Gondola } from "@/pages/GondolasEdit";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,6 +125,19 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
             placeholder="Ej: Bebidas"
           />
         </div>
+
+        {/* End Date - solo para ocupadas */}
+        {editedGondola.status === 'occupied' && (
+          <div>
+            <Label htmlFor="endDate">Fecha de Fin de Ocupación</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={editedGondola.endDate || ''}
+              onChange={(e) => updateField('endDate', e.target.value || null)}
+            />
+          </div>
+        )}
 
         {/* Position and Size */}
         <div className="space-y-3">

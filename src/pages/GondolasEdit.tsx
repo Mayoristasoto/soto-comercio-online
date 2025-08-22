@@ -18,6 +18,7 @@ export interface Gondola {
   brand: string | null;
   category: string;
   section: string;
+  endDate?: string; // Fecha de fin de ocupación (ISO string)
 }
 
 const GondolasEdit = () => {

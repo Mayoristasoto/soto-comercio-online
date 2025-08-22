@@ -7,7 +7,8 @@
       "status": "occupied",
       "brand": "Coca Cola",
       "category": "Bebidas",
-      "section": "A1"
+      "section": "A1",
+      "endDate": "2024-12-31"
     },
     {
       "id": "g2", 
@@ -25,7 +26,8 @@
       "status": "occupied",
       "brand": "Pepsico",
       "category": "Snacks",
-      "section": "B1"
+      "section": "B1",
+      "endDate": "2024-11-15"
     },
     {
       "id": "g4",
@@ -34,7 +36,8 @@
       "status": "occupied", 
       "brand": "Mondelez",
       "category": "Golosinas",
-      "section": "B2"
+      "section": "B2",
+      "endDate": "2025-01-20"
     },
     {
       "id": "g5",
@@ -52,7 +55,8 @@
       "status": "occupied",
       "brand": "Unilever",
       "category": "Limpieza",
-      "section": "C2"
+      "section": "C2",
+      "endDate": "2024-10-30"
     },
     {
       "id": "g7",
@@ -70,7 +74,8 @@
       "status": "occupied",
       "brand": "Nestle",
       "category": "Lácteos",
-      "section": "D2"
+      "section": "D2",
+      "endDate": "2024-12-15"
     },
     {
       "id": "p1",
@@ -79,7 +84,8 @@
       "status": "occupied", 
       "brand": "Arcor",
       "category": "Golosinas",
-      "section": "PA1"
+      "section": "PA1",
+      "endDate": "2024-11-30"
     },
     {
       "id": "p2",
@@ -97,7 +103,8 @@
       "status": "occupied",
       "brand": "Ferrero",
       "category": "Chocolates",
-      "section": "PB1"
+      "section": "PB1",
+      "endDate": "2025-02-14"
     },
     {
       "id": "p4", 
@@ -115,7 +122,8 @@
       "status": "occupied",
       "brand": "P&G",
       "category": "Cuidado Personal",
-      "section": "PC1"
+      "section": "PC1",
+      "endDate": "2024-12-01"
     },
     {
       "id": "p6",
@@ -133,7 +141,8 @@
       "status": "occupied",
       "brand": "Johnson & Johnson",
       "category": "Farmacia",
-      "section": "PD1"
+      "section": "PD1",
+      "endDate": "2025-03-10"
     },
     {
       "id": "p8",
