@@ -482,10 +482,22 @@ export const InteractiveMap = ({
                 className={`transition-all duration-200 hover:opacity-90 ${
                   isEditMode ? 'cursor-move' : 'cursor-pointer'
                 }`}
-                onMouseEnter={(e) => !isDragging && !isResizing && handleMouseEnter(gondola, e)}
-                onMouseLeave={() => !isDragging && !isResizing && handleMouseLeave()}
-                onMouseDown={(e) => handleMouseDown(gondola, e)}
-                onClick={(e) => handleClick(gondola, e)}
+                onMouseEnter={(e) => {
+                  e.stopPropagation();
+                  !isDragging && !isResizing && handleMouseEnter(gondola, e);
+                }}
+                onMouseLeave={(e) => {
+                  e.stopPropagation();
+                  !isDragging && !isResizing && handleMouseLeave();
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  handleMouseDown(gondola, e);
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClick(gondola, e);
+                }}
               />
               
               {/* Label */}
