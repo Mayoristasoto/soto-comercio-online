@@ -28,18 +28,33 @@ const Gondolas = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Load gondolas from Supabase
-  const loadGondolas = async () => {
+  const loadGondolas = async (forceRefresh = false) => {
     try {
-      console.log('🔄 Intentando cargar góndolas desde Supabase...');
+      console.log('🔄 Cargando góndolas desde Supabase...', forceRefresh ? '(forzado)' : '');
+      
+      // Intentar cargar desde Supabase
       const { data, error } = await supabase
         .from('gondolas')
         .select('*')
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('❌ Error loading gondolas:', error);
-        console.log('🔄 Usando datos por defecto como respaldo...');
-        // Fallback to default data if Supabase fails
+        console.error('❌ Error de Supabase:', error);
+        
+        // Si hay error de permisos, usar datos locales pero seguir intentando
+        if (error.code === '42501') {
+          console.log('🔄 Error de permisos - usando datos por defecto');
+          const defaultGondolas = gondolasData.gondolas as Gondola[];
+          setGondolas(defaultGondolas);
+          setFilteredGondolas(defaultGondolas);
+          setIsLoading(false);
+          
+          // Intentar de nuevo en 5 segundos
+          setTimeout(() => loadGondolas(true), 5000);
+          return;
+        }
+        
+        // Para otros errores, usar datos por defecto
         const defaultGondolas = gondolasData.gondolas as Gondola[];
         setGondolas(defaultGondolas);
         setFilteredGondolas(defaultGondolas);
@@ -66,16 +81,19 @@ const Gondolas = () => {
           section: dbGondola.section,
           endDate: dbGondola.end_date
         }));
+        
+        console.log('✅ Góndolas formateadas:', formattedGondolas.length);
         setGondolas(formattedGondolas);
         setFilteredGondolas(formattedGondolas);
       } else {
+        console.log('⚠️ No hay datos en Supabase, usando datos por defecto');
         // Use default data if no data in database
         const defaultGondolas = gondolasData.gondolas as Gondola[];
         setGondolas(defaultGondolas);
         setFilteredGondolas(defaultGondolas);
       }
     } catch (error) {
-      console.error('Error loading gondolas:', error);
+      console.error('💥 Error catch:', error);
       // Fallback to default data
       const defaultGondolas = gondolasData.gondolas as Gondola[];
       setGondolas(defaultGondolas);

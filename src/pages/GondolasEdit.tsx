@@ -45,19 +45,21 @@ const GondolasEdit = () => {
   // Load gondolas from Supabase
   const loadGondolas = async () => {
     try {
+      console.log('🔄 [EDITOR] Cargando góndolas desde Supabase...');
       const { data, error } = await supabase
         .from('gondolas')
         .select('*')
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error loading gondolas:', error);
+        console.error('❌ [EDITOR] Error loading gondolas:', error);
         // If no data in Supabase, initialize with default data
         await initializeDefaultData();
         return;
       }
 
       if (data && data.length > 0) {
+        console.log('✅ [EDITOR] Cargadas', data.length, 'góndolas desde BD');
         // Convert database format to app format
         const formattedGondolas: Gondola[] = data.map(dbGondola => ({
           id: dbGondola.id,
@@ -77,6 +79,7 @@ const GondolasEdit = () => {
         }));
         setGondolas(formattedGondolas);
       } else {
+        console.log('⚠️ [EDITOR] Sin datos en BD, inicializando con datos por defecto');
         await initializeDefaultData();
       }
     } catch (error) {
