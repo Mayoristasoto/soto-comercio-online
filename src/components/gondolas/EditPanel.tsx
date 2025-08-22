@@ -155,8 +155,10 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
         )}
 
         {/* Position and Size */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Posición y Tamaño</Label>
+        <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <span>📐</span> Posición y Tamaño
+          </Label>
           
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -182,8 +184,8 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="width" className="text-xs">Ancho</Label>
+            <div className="bg-background p-3 rounded border">
+              <Label htmlFor="width" className="text-xs font-semibold text-blue-600">📏 Ancho</Label>
               <div className="flex gap-1">
                 <Button 
                   type="button"
@@ -214,8 +216,8 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
                 </Button>
               </div>
             </div>
-            <div>
-              <Label htmlFor="height" className="text-xs">Alto</Label>
+            <div className="bg-background p-3 rounded border">
+              <Label htmlFor="height" className="text-xs font-semibold text-green-600">📐 Alto</Label>
               <div className="flex gap-1">
                 <Button 
                   type="button"

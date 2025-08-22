@@ -206,8 +206,8 @@ const GondolasEdit = () => {
             </div>
           </div>
 
-          {selectedGondola && (
-            <div className="lg:col-span-1">
+          <div className="lg:col-span-1">
+            {selectedGondola ? (
               <EditPanel 
                 gondola={selectedGondola}
                 onUpdate={updateGondola}
@@ -215,8 +215,17 @@ const GondolasEdit = () => {
                 onDuplicate={duplicateGondola}
                 onClose={() => setSelectedGondola(null)}
               />
-            </div>
-          )}
+            ) : (
+              <div className="bg-card rounded-lg border p-6">
+                <h3 className="text-lg font-semibold text-muted-foreground text-center">
+                  Selecciona una góndola para editarla
+                </h3>
+                <p className="text-sm text-muted-foreground text-center mt-2">
+                  Haz click en cualquier góndola del mapa para ver sus opciones de edición
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {hoveredGondola && (
