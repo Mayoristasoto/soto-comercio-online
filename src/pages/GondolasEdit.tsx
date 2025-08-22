@@ -5,8 +5,9 @@ import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Copy, Trash2, Store } from "lucide-react";
+import { ArrowLeft, Copy, Trash2, Store, Download, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export interface Gondola {
   id: string;
@@ -102,6 +103,43 @@ const GondolasEdit = () => {
     setSelectedGondola(null);
   };
 
+  // Export/Import functions for data backup
+  const exportData = () => {
+    const dataStr = JSON.stringify(gondolas, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gondolas-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast("Datos exportados correctamente");
+  };
+
+  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedData = JSON.parse(e.target?.result as string);
+          if (Array.isArray(importedData)) {
+            setGondolas(importedData);
+            saveGondolas(importedData);
+            toast("Datos importados correctamente");
+          } else {
+            toast("Error: Formato de archivo inválido");
+          }
+        } catch (error) {
+          toast("Error: No se pudo leer el archivo");
+        }
+      };
+      reader.readAsText(file);
+    }
+    // Reset input value
+    event.target.value = '';
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!selectedGondola) return;
@@ -132,6 +170,40 @@ const GondolasEdit = () => {
                 Volver a Vista Cliente
               </Button>
             </Link>
+            
+            {/* Export/Import buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportData}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Exportar
+              </Button>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importData}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  id="import-file"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  asChild
+                >
+                  <label htmlFor="import-file" className="cursor-pointer">
+                    <Upload className="h-4 w-4" />
+                    Importar
+                  </label>
+                </Button>
+              </div>
+            </div>
+            
             <Button variant="secondary" size="sm" onClick={resetToOriginal}>
               Resetear a Original
             </Button>
