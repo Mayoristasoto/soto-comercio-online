@@ -336,14 +336,15 @@ export const InteractiveMap = ({
   };
 
   const handleTouchStart = (event: React.TouchEvent) => {
-    event.preventDefault();
+    // Permitir el comportamiento por defecto para mejorar el rendimiento
     if (event.touches.length === 1) {
-      // Single touch - pan
+      // Single touch - pan con throttling mejorado
       const touch = event.touches[0];
       setIsPanning(true);
       setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
     } else if (event.touches.length === 2) {
       // Two touches - zoom
+      event.preventDefault(); // Solo prevenir cuando es necesario
       const distance = getTouchDistance(event.touches);
       const center = getTouchCenter(event.touches);
       setLastTouchDistance(distance);
@@ -352,32 +353,42 @@ export const InteractiveMap = ({
   };
 
   const handleTouchMove = (event: React.TouchEvent) => {
-    event.preventDefault();
-    
     if (event.touches.length === 1 && isPanning) {
-      // Single touch - pan
+      // Single touch - pan optimizado
       const touch = event.touches[0];
-      setPan({
+      const newPan = {
         x: touch.clientX - dragStart.x,
         y: touch.clientY - dragStart.y
+      };
+      
+      // Usar requestAnimationFrame para suavizar la animación
+      requestAnimationFrame(() => {
+        setPan(newPan);
       });
     } else if (event.touches.length === 2) {
-      // Two touches - zoom and pan
+      event.preventDefault();
+      // Two touches - zoom and pan con throttling
       const distance = getTouchDistance(event.touches);
       const center = getTouchCenter(event.touches);
       
       if (lastTouchDistance > 0) {
-        const zoomDelta = (distance - lastTouchDistance) * 0.005;
-        handleZoom(zoomDelta);
+        // Reducir sensibilidad del zoom para mayor control
+        const zoomDelta = (distance - lastTouchDistance) * 0.003;
+        requestAnimationFrame(() => {
+          handleZoom(zoomDelta);
+        });
       }
       
-      // Pan based on center movement
+      // Pan suavizado basado en movimiento del centro
       const centerDeltaX = center.x - lastTouchCenter.x;
       const centerDeltaY = center.y - lastTouchCenter.y;
-      setPan(prev => ({
-        x: prev.x + centerDeltaX,
-        y: prev.y + centerDeltaY
-      }));
+      
+      requestAnimationFrame(() => {
+        setPan(prev => ({
+          x: prev.x + centerDeltaX * 0.8, // Reducir sensibilidad del pan
+          y: prev.y + centerDeltaY * 0.8
+        }));
+      });
       
       setLastTouchDistance(distance);
       setLastTouchCenter(center);
@@ -573,7 +584,9 @@ export const InteractiveMap = ({
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '50% 50%',
-          touchAction: 'none' // Prevents default mobile scrolling
+          touchAction: 'pan-x pan-y', // Permitir pan nativo para mejor rendimiento
+          willChange: 'transform', // Optimizar para animaciones
+          backfaceVisibility: 'hidden' // Acelerar con GPU
         }}
       >
         {/* Background floor plan */}
@@ -612,9 +625,12 @@ export const InteractiveMap = ({
                 strokeWidth={isSelected ? "3" : "1"}
                 rx="4"
                 opacity={isSelected ? "0.9" : "0.7"}
-                className={`transition-all duration-200 hover:opacity-90 ${
+                className={`transition-opacity duration-150 hover:opacity-90 ${
                   isEditMode ? 'cursor-move' : 'cursor-pointer'
                 }`}
+                style={{
+                  willChange: 'opacity, transform'
+                }}
                 onMouseEnter={(e) => {
                   e.stopPropagation();
                   !isDragging && !isResizing && handleMouseEnter(gondola, e);
