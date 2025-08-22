@@ -127,13 +127,12 @@ export const InteractiveMap = ({
     event.preventDefault();
     event.stopPropagation();
     
-    if (selectedGondola === gondola.id) {
-      // Si ya está seleccionado, mantenerlo seleccionado
-      return;
+    // Solo manejar selección si no estamos arrastrando o redimensionando
+    if (!isDragging && !isResizing && selectedGondola !== gondola.id) {
+      console.log('Selecting gondola:', gondola.id);
+      setSelectedGondola(gondola.id);
+      onGondolaSelect(gondola);
     }
-    
-    setSelectedGondola(gondola.id);
-    onGondolaSelect(gondola);
   };
 
   const handleMouseDown = (gondola: Gondola, event: React.MouseEvent) => {
@@ -142,12 +141,7 @@ export const InteractiveMap = ({
     event.preventDefault();
     event.stopPropagation();
     
-    // Seleccionar la góndola si no está seleccionada
-    if (selectedGondola !== gondola.id) {
-      setSelectedGondola(gondola.id);
-      onGondolaSelect(gondola);
-    }
-    
+    // Solo configurar el arrastre, la selección se maneja en onClick
     setIsDragging(true);
     setDragStart({ x: event.clientX, y: event.clientY });
   };
