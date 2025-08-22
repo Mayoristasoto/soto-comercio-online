@@ -476,8 +476,8 @@ const GondolasEdit = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-          <div className="lg:col-span-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
             <div className="bg-card rounded-lg border p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -523,14 +523,6 @@ const GondolasEdit = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-1 space-y-4">
-            <GondolasList
-              gondolas={gondolas}
-              selectedGondola={selectedGondola}
-              onGondolaSelect={setSelectedGondola}
-            />
-          </div>
-
           <div className="lg:col-span-1">
             {selectedGondola ? (
               <EditPanel 
@@ -541,14 +533,11 @@ const GondolasEdit = () => {
                 onClose={() => setSelectedGondola(null)}
               />
             ) : (
-              <div className="bg-card rounded-lg border p-6">
-                <h3 className="text-lg font-semibold text-muted-foreground text-center">
-                  Selecciona una góndola para editarla
-                </h3>
-                <p className="text-sm text-muted-foreground text-center mt-2">
-                  Haz click en cualquier góndola del mapa para ver sus opciones de edición
-                </p>
-              </div>
+              <GondolasList
+                gondolas={gondolas}
+                selectedGondola={selectedGondola}
+                onGondolaSelect={setSelectedGondola}
+              />
             )}
           </div>
         </div>
