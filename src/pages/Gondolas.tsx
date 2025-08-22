@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { checkSyncStatus, forceSyncUpdate } from "@/utils/syncChecker";
 
 export interface Gondola {
   id: string;
@@ -89,38 +90,63 @@ const Gondolas = () => {
     loadGondolas();
   }, []);
 
-  // Set up real-time updates
+  // Set up real-time updates with retry logic
   useEffect(() => {
-    console.log('Setting up realtime subscription...');
-    const channel = supabase
-      .channel('gondolas-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'gondolas'
-        },
-        (payload) => {
-          console.log('Realtime event received:', payload);
-          // Reload data when changes occur
-          loadGondolas();
-        }
-      )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-      });
+    console.log('🔄 Configurando suscripción realtime...');
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const setupRealtime = () => {
+      const channel = supabase
+        .channel('gondolas-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'gondolas'
+          },
+          (payload) => {
+            console.log('📡 Evento realtime recibido:', payload);
+            // Dar un pequeño delay para evitar conflictos
+            setTimeout(() => {
+              loadGondolas();
+            }, 500);
+          }
+        )
+        .subscribe((status) => {
+          console.log('📡 Estado de suscripción realtime:', status);
+          if (status === 'SUBSCRIBED') {
+            retryCount = 0; // Reset retry count on success
+          }
+        });
+      
+      return channel;
+    };
 
-    // Configurar polling como respaldo para móvil
+    const channel = setupRealtime();
+
+    // Polling como respaldo más frecuente en caso de fallos RLS
     const pollInterval = setInterval(() => {
-      console.log('Polling for updates (mobile backup)...');
+      console.log('🔄 Polling de respaldo ejecutándose...');
       loadGondolas();
-    }, 10000); // Cada 10 segundos
+    }, 8000); // Cada 8 segundos
+
+    // Retry mechanism para reconectar realtime si falla
+    const retryInterval = setInterval(() => {
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Reintentando conexión realtime (${retryCount + 1}/${maxRetries})...`);
+        supabase.removeChannel(channel);
+        const newChannel = setupRealtime();
+        retryCount++;
+      }
+    }, 30000); // Retry cada 30 segundos
 
     return () => {
-      console.log('Cleaning up realtime subscription');
+      console.log('🧹 Limpiando suscripciones...');
       supabase.removeChannel(channel);
       clearInterval(pollInterval);
+      clearInterval(retryInterval);
     };
   }, []);
 
@@ -185,15 +211,32 @@ const Gondolas = () => {
 
 
         {/* Stats Cards */}
-        {/* Botón de actualización para móvil */}
-        <div className="md:hidden mb-6 text-center">
+        {/* Botón de actualización manual mejorado */}
+        <div className="mb-6 text-center">
           <Button 
-            onClick={loadGondolas} 
+            onClick={() => {
+              console.log('🔄 Actualización manual iniciada...');
+              setIsLoading(true);
+              loadGondolas();
+            }} 
             disabled={isLoading}
-            className="w-full bg-primary hover:bg-primary/90"
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 px-6 py-3"
+            size="lg"
           >
-            {isLoading ? "Actualizando..." : "🔄 Actualizar Layout"}
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Actualizando...
+              </>
+            ) : (
+              <>
+                🔄 Actualizar Layout
+              </>
+            )}
           </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Última actualización: {new Date().toLocaleTimeString('es-ES')}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
