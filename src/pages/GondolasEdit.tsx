@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
+import { GondolasList } from "@/components/gondolas/GondolasList";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -475,8 +476,8 @@ const GondolasEdit = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+          <div className="lg:col-span-4">
             <div className="bg-card rounded-lg border p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -520,6 +521,14 @@ const GondolasEdit = () => {
                 isEditMode={true}
               />
             </div>
+          </div>
+
+          <div className="lg:col-span-1 space-y-4">
+            <GondolasList
+              gondolas={gondolas}
+              selectedGondola={selectedGondola}
+              onGondolaSelect={setSelectedGondola}
+            />
           </div>
 
           <div className="lg:col-span-1">
