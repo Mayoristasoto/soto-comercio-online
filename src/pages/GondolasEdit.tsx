@@ -5,6 +5,7 @@ import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import { GondolasList } from "@/components/gondolas/GondolasList";
 import { AuthPrompt } from "@/components/AuthPrompt";
+import { SecureProfile } from "@/components/SecureProfile";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ const GondolasEdit = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -531,6 +533,18 @@ const GondolasEdit = () => {
                   </span>
                 )}
               </div>
+              
+              {/* Botón de perfil seguro */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProfile(!showProfile)}
+                className="flex items-center gap-2"
+              >
+                <UserIcon className="h-4 w-4" />
+                Perfil
+              </Button>
+              
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -550,6 +564,13 @@ const GondolasEdit = () => {
             Gestiona la ocupación y configuración de góndolas y punteras • Los cambios se guardan automáticamente
           </p>
         </div>
+
+        {/* Perfil de usuario seguro */}
+        {showProfile && user && (
+          <div className="mb-6">
+            <SecureProfile user={user} />
+          </div>
+        )}
 
 
         <Card className="mb-6">

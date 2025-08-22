@@ -107,6 +107,41 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_access_audit: {
+        Row: {
+          action: string | null
+          id: string
+          ip_address: unknown | null
+          timestamp: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_access_audit_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_access_log: {
         Row: {
           access_timestamp: string | null
