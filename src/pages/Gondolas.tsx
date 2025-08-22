@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
-import { FilterPanel } from "@/components/gondolas/FilterPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
@@ -73,51 +72,37 @@ const Gondolas = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Filters */}
-          <div className="lg:col-span-1">
-            <FilterPanel 
-              gondolas={gondolas}
-              brands={gondolasData.brands}
-              categories={gondolasData.categories}
-              onFilterChange={setFilteredGondolas}
-            />
-          </div>
-
+        <div className="max-w-6xl mx-auto">
           {/* Main Layout View */}
-          <div className="lg:col-span-3">
-            <div className="bg-card rounded-lg border p-6">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold text-primary mb-2">
-                    Layout Interactivo del Local
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Explora las ubicaciones disponibles y encuentra el espacio perfecto para tu marca
-                  </p>
+          <div className="bg-card rounded-lg border p-8">
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-bold text-primary mb-3">
+                Layout Interactivo del Local
+              </h2>
+              <p className="text-muted-foreground text-lg mb-6">
+                Explora las ubicaciones disponibles y encuentra el espacio perfecto para tu marca
+              </p>
+              <div className="flex items-center justify-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-500 rounded"></div>
+                  <span className="font-medium">Disponible</span>
                 </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded"></div>
-                    <span>Disponible</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-500 rounded"></div>
-                    <span>Ocupada</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-red-500 rounded"></div>
+                  <span className="font-medium">Ocupada</span>
                 </div>
               </div>
-              
-              <InteractiveMap
-                gondolas={filteredGondolas}
-                onGondolaHover={setHoveredGondola}
-                onGondolaSelect={() => {}} // No selection in view mode
-                onGondolaUpdate={() => {}} // No updates in view mode
-                onGondolaAdd={() => {}} // No adding in view mode
-                onMouseMove={setMousePosition}
-                isEditMode={false}
-              />
             </div>
+            
+            <InteractiveMap
+              gondolas={filteredGondolas}
+              onGondolaHover={setHoveredGondola}
+              onGondolaSelect={() => {}} // No selection in view mode
+              onGondolaUpdate={() => {}} // No updates in view mode
+              onGondolaAdd={() => {}} // No adding in view mode
+              onMouseMove={setMousePosition}
+              isEditMode={false}
+            />
           </div>
         </div>
 
