@@ -40,7 +40,7 @@ export const InteractiveMap = ({
       const gondola = gondolas.find(g => g.id === selectedGondola);
       if (!gondola) return;
 
-      const step = 5;
+      const step = 1;
       const resizeStep = 10;
       let shouldUpdate = false;
       let updatedGondola = { ...gondola };
