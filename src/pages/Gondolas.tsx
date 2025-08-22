@@ -1,12 +1,11 @@
 import { useState } from "react";
-import Header from "@/components/Header";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Building2, Eye, Phone, Mail } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp } from "lucide-react";
 
 export interface Gondola {
   id: string;
@@ -44,22 +43,56 @@ const Gondolas = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Building2 className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold text-primary">
-              Góndolas Disponibles
-            </h1>
+      {/* Header simplificado con logo */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-primary/10 p-3 rounded-lg">
+                <Building2 className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-primary">
+                  Góndolas Disponibles
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Mayorista Soto - Local José Martí
+                </p>
+              </div>
+            </div>
+            
+            {/* Datos de interés */}
+            <div className="hidden md:flex items-center gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">50K+</div>
+                <div className="text-xs text-muted-foreground">Clientes/mes</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">10K+</div>
+                <div className="text-xs text-muted-foreground">Tickets/mes</div>
+              </div>
+            </div>
           </div>
-          <h2 className="text-2xl font-semibold text-foreground mb-2">
-            Local José Martí - Mayorista Soto
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Descubre las mejores ubicaciones para exhibir tu marca en nuestro local premium. 
+        </div>
+      </header>
+      
+      <main className="container mx-auto px-4 py-8">{/* ... keep existing code */}
+
+        {/* Hero Section con datos de interés para móvil */}
+        <div className="text-center mb-8">
+          <div className="md:hidden flex justify-center gap-4 mb-6">
+            <Badge variant="secondary" className="px-4 py-2">
+              <Users className="h-4 w-4 mr-2" />
+              +50K clientes/mes
+            </Badge>
+            <Badge variant="secondary" className="px-4 py-2">
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              +10K tickets/mes
+            </Badge>
+          </div>
+          
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+            Descubre las mejores ubicaciones para exhibir tu marca. 
             Espacios estratégicos con alta visibilidad y flujo de clientes.
           </p>
         </div>
@@ -128,32 +161,45 @@ const Gondolas = () => {
               <p className="text-muted-foreground mb-6">
                 Contáctanos para conocer disponibilidad, precios y condiciones especiales
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Llamar Ahora
+              
+              <a 
+                href="https://wa.me/5491145492234890963"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex"
+              >
+                <Button size="lg" className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
+                  <MessageCircle className="h-5 w-5" />
+                  Contactar por WhatsApp
                 </Button>
-                <Button variant="outline" size="lg" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Enviar Consulta
-                </Button>
+              </a>
+              
+              <div className="mt-6 space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>Fortunato de la Plaza 4798 - Mar del Plata</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <MessageCircle className="h-4 w-4" />
+                  <span>WhatsApp: +54 9 11 4549-2234-890963</span>
+                </div>
               </div>
-              <div className="mt-4 text-sm text-muted-foreground flex items-center justify-center gap-1">
-                <MapPin className="h-4 w-4" />
-                José Martí 123, Centro - Mayorista Soto
+              
+              {/* Destacados adicionales */}
+              <div className="mt-6 pt-6 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <span className="font-medium">Alto flujo de clientes</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <Building2 className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">Ubicación estratégica</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Admin Access */}
-        <div className="mt-8 text-center">
-          <Link to="/gondolasedit">
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
-              <Eye className="h-4 w-4 mr-2" />
-              Acceso Administrador
-            </Button>
-          </Link>
         </div>
 
         {hoveredGondola && (
