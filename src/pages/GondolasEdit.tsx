@@ -180,9 +180,21 @@ const GondolasEdit = () => {
   };
 
   const duplicateGondola = (gondola: Gondola) => {
+    // Generar ID único para duplicados sin límites
+    const existingGondolaIds = gondolas.filter(g => g.type === 'gondola').map(g => parseInt(g.id.replace('g', '')) || 0);
+    const existingPunteraIds = gondolas.filter(g => g.type === 'puntera').map(g => parseInt(g.id.replace('p', '')) || 0);
+    
+    const getNextId = (existingIds: number[], prefix: string) => {
+      let nextNum = 1;
+      while (existingIds.includes(nextNum)) {
+        nextNum++;
+      }
+      return `${prefix}${nextNum}`;
+    };
+    
     const newId = gondola.type === 'gondola' ? 
-      `g${gondolas.filter(g => g.type === 'gondola').length + 1}` : 
-      `p${gondolas.filter(g => g.type === 'puntera').length + 1}`;
+      getNextId(existingGondolaIds, 'g') : 
+      getNextId(existingPunteraIds, 'p');
     
     const duplicated: Gondola = {
       ...gondola,

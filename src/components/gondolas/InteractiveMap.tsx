@@ -396,9 +396,21 @@ export const InteractiveMap = ({
       const x = (event.clientX - rect.left - pan.x) / zoom;
       const y = (event.clientY - rect.top - pan.y) / zoom;
       
+      // Generar ID único sin límites
+      const existingGondolaIds = gondolas.filter(g => g.type === 'gondola').map(g => parseInt(g.id.replace('g', '')) || 0);
+      const existingPunteraIds = gondolas.filter(g => g.type === 'puntera').map(g => parseInt(g.id.replace('p', '')) || 0);
+      
+      const getNextId = (existingIds: number[], prefix: string) => {
+        let nextNum = 1;
+        while (existingIds.includes(nextNum)) {
+          nextNum++;
+        }
+        return `${prefix}${nextNum}`;
+      };
+      
       const newId = isCreating === 'gondola' ? 
-        `g${gondolas.filter(g => g.type === 'gondola').length + 1}` : 
-        `p${gondolas.filter(g => g.type === 'puntera').length + 1}`;
+        getNextId(existingGondolaIds, 'g') : 
+        getNextId(existingPunteraIds, 'p');
       
       const newGondola: Gondola = {
         id: newId,
