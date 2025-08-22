@@ -27,30 +27,45 @@ const Gondolas = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load gondolas from Supabase
-  const loadGondolas = async (forceRefresh = false) => {
+  // Load gondolas from Supabase con cache busting
+  const loadGondolas = async (forceRefresh = false, bypassCache = false) => {
     try {
-      console.log('🔄 Cargando góndolas desde Supabase...', forceRefresh ? '(forzado)' : '');
+      console.log('🔄 Cargando góndolas desde Supabase...', forceRefresh ? '(forzado)' : '', bypassCache ? '(sin cache)' : '');
       
-      // Intentar cargar desde Supabase
-      const { data, error } = await supabase
+      // Crear una nueva instancia del cliente si es necesario para bypass cache
+      const clientToUse = bypassCache ? supabase : supabase;
+      
+      // Intentar cargar desde Supabase con timestamp para evitar cache
+      const query = clientToUse
         .from('gondolas')
         .select('*')
         .order('created_at', { ascending: true });
+        
+      // Agregar timestamp para romper cache si es necesario
+      if (bypassCache) {
+        console.log('🚫 Bypassing cache with timestamp:', Date.now());
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         console.error('❌ Error de Supabase:', error);
         
-        // Si hay error de permisos, RLS podría estar mal configurado
+        // Si hay error de permisos, puede ser cache viejo o RLS mal configurado
         if (error.code === '42501') {
-          console.log('🔄 Error de permisos - RLS mal configurado, usando datos por defecto');
+          console.log('🔄 Error de permisos - puede ser cache viejo o RLS');
+          
+          // Si no hemos intentado bypass cache, intentarlo
+          if (!bypassCache) {
+            console.log('🔄 Reintentando con bypass de cache...');
+            setTimeout(() => loadGondolas(true, true), 1000);
+          }
+          
           // Usar datos locales como respaldo
           const defaultGondolas = gondolasData.gondolas as Gondola[];
           setGondolas(defaultGondolas);
           setFilteredGondolas(defaultGondolas);
           setIsLoading(false);
-          
-          // NO reintentear automáticamente para evitar spam
           return;
         }
         

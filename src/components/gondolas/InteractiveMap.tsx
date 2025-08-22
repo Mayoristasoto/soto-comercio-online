@@ -463,6 +463,14 @@ export const InteractiveMap = ({
     <div className={`relative w-full overflow-hidden ${
       isMobile && !isEditMode ? 'h-screen flex items-center justify-center' : ''
     }`}>
+      {/* Rotación aplicada solo al contenedor en móvil */}
+      <div 
+        className={`${isMobile && !isEditMode ? 'transform rotate-90 origin-center' : ''}`}
+        style={{
+          width: isMobile && !isEditMode ? '100vh' : '100%',
+          height: isMobile && !isEditMode ? '100vw' : 'auto',
+        }}
+      >
       {/* Controles de zoom mejorados para móvil */}
       <div className={`absolute ${isMobile ? 'bottom-4 right-4' : 'top-4 left-4'} z-10 flex flex-col gap-2`}>
         <div className={`flex ${isMobile ? 'flex-row' : 'flex-row'} gap-1 bg-background/90 rounded-lg p-2 border shadow-lg`}>
@@ -563,9 +571,7 @@ export const InteractiveMap = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) ${
-            isMobile && !isEditMode ? 'rotate(90deg)' : ''
-          }`,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '50% 50%',
           touchAction: 'none' // Prevents default mobile scrolling
         }}
@@ -762,6 +768,7 @@ export const InteractiveMap = ({
           <text x="10" y="82" fontSize="8" fill="hsl(var(--muted-foreground))">P = Puntera</text>
         </g>
       </svg>
+      </div>
     </div>
   );
 };
