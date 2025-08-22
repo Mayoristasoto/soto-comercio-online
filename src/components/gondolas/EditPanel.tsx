@@ -5,15 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Save, RotateCcw } from "lucide-react";
+import { X, Save, RotateCcw, Copy, Trash2 } from "lucide-react";
 
 interface EditPanelProps {
   gondola: Gondola;
   onUpdate: (gondola: Gondola) => void;
+  onDelete: (gondolaId: string) => void;
+  onDuplicate: (gondola: Gondola) => void;
   onClose: () => void;
 }
 
-export const EditPanel = ({ gondola, onUpdate, onClose }: EditPanelProps) => {
+export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }: EditPanelProps) => {
   const [editedGondola, setEditedGondola] = useState<Gondola>(gondola);
 
   const handleSave = () => {
@@ -215,14 +217,43 @@ export const EditPanel = ({ gondola, onUpdate, onClose }: EditPanelProps) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-4">
-          <Button onClick={handleSave} className="flex-1">
-            <Save className="h-4 w-4 mr-2" />
-            Guardar
-          </Button>
-          <Button variant="outline" onClick={handleReset}>
-            <RotateCcw className="h-4 w-4" />
-          </Button>
+        <div className="space-y-2 pt-4">
+          <div className="flex gap-2">
+            <Button onClick={handleSave} className="flex-1">
+              <Save className="h-4 w-4 mr-2" />
+              Guardar
+            </Button>
+            <Button variant="outline" onClick={handleReset}>
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => onDuplicate(editedGondola)}
+              className="flex-1"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Duplicar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                onDelete(gondola.id);
+                onClose();
+              }}
+              className="flex-1"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Eliminar
+            </Button>
+          </div>
+          
+          <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+            <div>• <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Delete</kbd> para eliminar</div>
+            <div>• <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+D</kbd> para duplicar</div>
+          </div>
         </div>
       </CardContent>
     </Card>

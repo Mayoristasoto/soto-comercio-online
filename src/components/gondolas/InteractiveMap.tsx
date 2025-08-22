@@ -98,10 +98,48 @@ export const InteractiveMap = ({
         let newHeight = gondola.position.height;
         
         if (isResizing.handle.includes('right')) {
-          newWidth = Math.max(50, gondola.position.width + deltaX * 0.5);
+          newWidth = Math.max(20, gondola.position.width + deltaX * 0.8);
         }
         if (isResizing.handle.includes('bottom')) {
-          newHeight = Math.max(30, gondola.position.height + deltaY * 0.5);
+          newHeight = Math.max(20, gondola.position.height + deltaY * 0.8);
+        }
+        if (isResizing.handle.includes('left')) {
+          const widthDelta = -deltaX * 0.8;
+          newWidth = Math.max(20, gondola.position.width + widthDelta);
+          if (newWidth > 20) {
+            // Move position when resizing from left
+            const updatedGondola = {
+              ...gondola,
+              position: {
+                ...gondola.position,
+                x: Math.max(0, gondola.position.x - widthDelta),
+                width: newWidth,
+                height: newHeight
+              }
+            };
+            onGondolaUpdate(updatedGondola);
+            setDragStart({ x: event.clientX, y: event.clientY });
+            return;
+          }
+        }
+        if (isResizing.handle.includes('top')) {
+          const heightDelta = -deltaY * 0.8;
+          newHeight = Math.max(20, gondola.position.height + heightDelta);
+          if (newHeight > 20) {
+            // Move position when resizing from top
+            const updatedGondola = {
+              ...gondola,
+              position: {
+                ...gondola.position,
+                y: Math.max(0, gondola.position.y - heightDelta),
+                width: newWidth,
+                height: newHeight
+              }
+            };
+            onGondolaUpdate(updatedGondola);
+            setDragStart({ x: event.clientX, y: event.clientY });
+            return;
+          }
         }
         
         const updatedGondola = {
@@ -325,38 +363,88 @@ export const InteractiveMap = ({
               {/* Resize handles for edit mode */}
               {isEditMode && isSelected && (
                 <>
-                  {/* Bottom-right resize handle */}
+                  {/* Corner handles */}
+                  <circle
+                    cx={gondola.position.x}
+                    cy={gondola.position.y}
+                    r="6"
+                    fill="hsl(var(--primary))"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="cursor-nw-resize"
+                    onMouseDown={(e) => handleResizeStart(gondola.id, 'top-left', e)}
+                  />
+                  <circle
+                    cx={gondola.position.x + gondola.position.width}
+                    cy={gondola.position.y}
+                    r="6"
+                    fill="hsl(var(--primary))"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="cursor-ne-resize"
+                    onMouseDown={(e) => handleResizeStart(gondola.id, 'top-right', e)}
+                  />
+                  <circle
+                    cx={gondola.position.x}
+                    cy={gondola.position.y + gondola.position.height}
+                    r="6"
+                    fill="hsl(var(--primary))"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="cursor-sw-resize"
+                    onMouseDown={(e) => handleResizeStart(gondola.id, 'bottom-left', e)}
+                  />
                   <circle
                     cx={gondola.position.x + gondola.position.width}
                     cy={gondola.position.y + gondola.position.height}
-                    r="4"
+                    r="6"
                     fill="hsl(var(--primary))"
                     stroke="white"
-                    strokeWidth="1"
+                    strokeWidth="2"
                     className="cursor-se-resize"
                     onMouseDown={(e) => handleResizeStart(gondola.id, 'bottom-right', e)}
                   />
-                  {/* Right resize handle */}
+                  
+                  {/* Side handles */}
+                  <circle
+                    cx={gondola.position.x + gondola.position.width / 2}
+                    cy={gondola.position.y}
+                    r="5"
+                    fill="hsl(var(--primary))"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="cursor-n-resize"
+                    onMouseDown={(e) => handleResizeStart(gondola.id, 'top', e)}
+                  />
                   <circle
                     cx={gondola.position.x + gondola.position.width}
                     cy={gondola.position.y + gondola.position.height / 2}
-                    r="4"
+                    r="5"
                     fill="hsl(var(--primary))"
                     stroke="white"
-                    strokeWidth="1"
+                    strokeWidth="2"
                     className="cursor-e-resize"
                     onMouseDown={(e) => handleResizeStart(gondola.id, 'right', e)}
                   />
-                  {/* Bottom resize handle */}
                   <circle
                     cx={gondola.position.x + gondola.position.width / 2}
                     cy={gondola.position.y + gondola.position.height}
-                    r="4"
+                    r="5"
                     fill="hsl(var(--primary))"
                     stroke="white"
-                    strokeWidth="1"
+                    strokeWidth="2"
                     className="cursor-s-resize"
                     onMouseDown={(e) => handleResizeStart(gondola.id, 'bottom', e)}
+                  />
+                  <circle
+                    cx={gondola.position.x}
+                    cy={gondola.position.y + gondola.position.height / 2}
+                    r="5"
+                    fill="hsl(var(--primary))"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="cursor-w-resize"
+                    onMouseDown={(e) => handleResizeStart(gondola.id, 'left', e)}
                   />
                 </>
               )}

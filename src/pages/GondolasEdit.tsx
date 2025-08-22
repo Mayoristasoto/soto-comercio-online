@@ -6,8 +6,9 @@ import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 
 export interface Gondola {
   id: string;
@@ -39,6 +40,56 @@ const GondolasEdit = () => {
     setGondolas(newGondolas);
     setFilteredGondolas(newGondolas);
   };
+
+  const deleteGondola = (gondolaId: string) => {
+    const newGondolas = gondolas.filter(g => g.id !== gondolaId);
+    setGondolas(newGondolas);
+    setFilteredGondolas(newGondolas);
+    setSelectedGondola(null);
+  };
+
+  const duplicateGondola = (gondola: Gondola) => {
+    const newId = gondola.type === 'gondola' ? 
+      `g${gondolas.filter(g => g.type === 'gondola').length + 1}` : 
+      `p${gondolas.filter(g => g.type === 'puntera').length + 1}`;
+    
+    const duplicated: Gondola = {
+      ...gondola,
+      id: newId,
+      position: {
+        ...gondola.position,
+        x: gondola.position.x + 20,
+        y: gondola.position.y + 20
+      },
+      section: newId.toUpperCase(),
+      status: 'available',
+      brand: null,
+      category: 'Disponible'
+    };
+    
+    addGondola(duplicated);
+    setSelectedGondola(duplicated);
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!selectedGondola) return;
+      
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        deleteGondola(selectedGondola.id);
+      }
+      
+      if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+        event.preventDefault();
+        duplicateGondola(selectedGondola);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedGondola, gondolas]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,11 +125,36 @@ const GondolasEdit = () => {
 
           <div className="lg:col-span-3">
             <div className="bg-card rounded-lg border p-6">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold">Editor del Layout</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Modo edición activo - Arrastra, redimensiona y crea nuevas góndolas
-                </p>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Editor del Layout</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Modo edición activo - Arrastra, redimensiona y crea nuevas góndolas
+                  </p>
+                </div>
+                
+                {selectedGondola && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => duplicateGondola(selectedGondola)}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Duplicar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteGondola(selectedGondola.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Eliminar
+                    </Button>
+                  </div>
+                )}
               </div>
               
               <InteractiveMap
@@ -98,6 +174,8 @@ const GondolasEdit = () => {
               <EditPanel 
                 gondola={selectedGondola}
                 onUpdate={updateGondola}
+                onDelete={deleteGondola}
+                onDuplicate={duplicateGondola}
                 onClose={() => setSelectedGondola(null)}
               />
             </div>
