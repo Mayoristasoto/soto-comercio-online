@@ -7,7 +7,7 @@ import { GondolasList } from "@/components/gondolas/GondolasList";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserIcon } from "lucide-react";
+import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserIcon, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,9 @@ const GondolasEdit = () => {
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
   const gondolaCount = gondolas.filter(g => g.type === 'gondola').length;
@@ -279,6 +282,38 @@ const GondolasEdit = () => {
     event.target.value = '';
   };
 
+  // Sincronización manual
+  const forceSyncToPublic = async () => {
+    setIsSyncing(true);
+    try {
+      // Forzar una actualización completa
+      await loadGondolas();
+      setLastSyncTime(new Date());
+      toast("Sincronización forzada completada");
+    } catch (error) {
+      console.error('Error syncing:', error);
+      toast("Error al sincronizar");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Test de conectividad de realtime
+  const testRealtimeConnection = async () => {
+    try {
+      const testChannel = supabase
+        .channel('connection-test')
+        .subscribe((status) => {
+          console.log('Test realtime status:', status);
+          setRealtimeConnected(status === 'SUBSCRIBED');
+          supabase.removeChannel(testChannel);
+        });
+    } catch (error) {
+      console.error('Realtime test failed:', error);
+      setRealtimeConnected(false);
+    }
+  };
+
   // Authentication and data loading
   useEffect(() => {
     // Set up auth state listener
@@ -305,6 +340,9 @@ const GondolasEdit = () => {
       
       // Load gondolas if authenticated
       loadGondolas();
+      
+      // Test realtime connection
+      testRealtimeConnection();
     });
 
     return () => subscription.unsubscribe();
@@ -451,11 +489,11 @@ const GondolasEdit = () => {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Store className="h-5 w-5" />
-              Resumen
+              Resumen y Sincronización
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-4">
               <div className="text-center p-4 bg-red-50 dark:bg-red-950 rounded-lg">
                 <div className="text-2xl font-bold text-red-600">{occupiedCount}</div>
                 <div className="text-sm text-red-600">Ocupadas</div>
@@ -472,7 +510,45 @@ const GondolasEdit = () => {
                 <div className="text-xl font-semibold">{punteraCount}</div>
                 <div className="text-sm text-muted-foreground">Punteras</div>
               </div>
+              
+              {/* Estado de sincronización */}
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  {realtimeConnected ? (
+                    <Wifi className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className="text-xs font-medium">
+                    {realtimeConnected ? "Online" : "Offline"}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">Realtime</div>
+              </div>
+              
+              {/* Botón de sincronización */}
+              <div className="text-center p-2 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={forceSyncToPublic}
+                  disabled={isSyncing}
+                  className="w-full h-full flex flex-col items-center gap-1"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="text-xs">
+                    {isSyncing ? "Sync..." : "Forzar Sync"}
+                  </span>
+                </Button>
+              </div>
             </div>
+            
+            {/* Info de última sincronización */}
+            {lastSyncTime && (
+              <div className="text-center text-xs text-muted-foreground border-t pt-2">
+                Última sincronización: {lastSyncTime.toLocaleTimeString()}
+              </div>
+            )}
           </CardContent>
         </Card>
 

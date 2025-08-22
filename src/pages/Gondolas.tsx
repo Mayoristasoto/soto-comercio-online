@@ -87,6 +87,7 @@ const Gondolas = () => {
 
   // Set up real-time updates
   useEffect(() => {
+    console.log('Setting up realtime subscription...');
     const channel = supabase
       .channel('gondolas-changes')
       .on(
@@ -96,14 +97,18 @@ const Gondolas = () => {
           schema: 'public',
           table: 'gondolas'
         },
-        () => {
+        (payload) => {
+          console.log('Realtime event received:', payload);
           // Reload data when changes occur
           loadGondolas();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   }, []);
