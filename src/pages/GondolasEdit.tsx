@@ -144,6 +144,14 @@ const GondolasEdit = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!selectedGondola) return;
       
+      // Don't trigger shortcuts if user is typing in an input field
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.tagName === 'INPUT' || 
+                      activeElement?.tagName === 'TEXTAREA' || 
+                      activeElement?.getAttribute('contenteditable') === 'true';
+      
+      if (isTyping) return;
+      
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
         deleteGondola(selectedGondola.id);
