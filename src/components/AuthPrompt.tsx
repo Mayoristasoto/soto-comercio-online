@@ -25,12 +25,24 @@ export const AuthPrompt = ({ onAuthSuccess }: AuthPromptProps) => {
     setError(null);
 
     try {
+      // Limpiar estado de autenticación previo para evitar conflictos
+      localStorage.removeItem('supabase.auth.token');
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+
       if (isSignUp) {
+        // SEGURIDAD: Registro con metadata mínima para evitar exposición
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/gondolasedit`
+            emailRedirectTo: `${window.location.origin}/gondolasedit`,
+            data: {
+              full_name: email.split('@')[0] // Usar parte del email como nombre inicial
+            }
           }
         });
 
@@ -38,19 +50,36 @@ export const AuthPrompt = ({ onAuthSuccess }: AuthPromptProps) => {
         
         toast.success("Cuenta creada exitosamente. Revisa tu email para confirmar.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        // SEGURIDAD: Login con limpieza previa del estado
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
         
-        toast.success("Inicio de sesión exitoso");
-        onAuthSuccess();
+        // Verificar que el perfil del usuario está creado
+        if (data.user) {
+          console.log('✅ Usuario autenticado:', data.user.id);
+          toast.success("Inicio de sesión exitoso");
+          onAuthSuccess();
+        }
       }
     } catch (error: any) {
       console.error('Error de autenticación:', error);
-      setError(error.message || 'Error de autenticación');
+      
+      // Manejo mejorado de errores para proteger información
+      let userFriendlyMessage = 'Error de autenticación';
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        userFriendlyMessage = 'Email o contraseña incorrectos';
+      } else if (error.message?.includes('Email not confirmed')) {
+        userFriendlyMessage = 'Por favor confirma tu email antes de iniciar sesión';
+      } else if (error.message?.includes('User already registered')) {
+        userFriendlyMessage = 'Este email ya está registrado';
+      }
+      
+      setError(userFriendlyMessage);
     } finally {
       setIsLoading(false);
     }

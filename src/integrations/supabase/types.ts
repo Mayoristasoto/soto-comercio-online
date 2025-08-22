@@ -107,6 +107,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_access_log: {
+        Row: {
+          access_timestamp: string | null
+          access_type: string | null
+          accessed_profile_id: string | null
+          accessor_user_id: string | null
+          id: string
+        }
+        Insert: {
+          access_timestamp?: string | null
+          access_type?: string | null
+          accessed_profile_id?: string | null
+          accessor_user_id?: string | null
+          id?: string
+        }
+        Update: {
+          access_timestamp?: string | null
+          access_type?: string | null
+          accessed_profile_id?: string | null
+          accessor_user_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_access_log_accessed_profile_id_fkey"
+            columns: ["accessed_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_access_log_accessor_user_id_fkey"
+            columns: ["accessor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -174,6 +213,20 @@ export type Database = {
       }
     }
     Functions: {
+      current_user_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      get_current_user_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: string
+        }[]
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean

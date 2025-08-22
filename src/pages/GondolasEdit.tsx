@@ -12,6 +12,7 @@ import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserI
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUserProfile, checkIfUserIsAdmin, secureSignOut, type UserProfile } from "@/lib/authUtils";
 import type { User, Session } from '@supabase/supabase-js';
 
 export interface Gondola {
@@ -32,6 +33,7 @@ const GondolasEdit = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [gondolas, setGondolas] = useState<Gondola[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
@@ -318,8 +320,32 @@ const GondolasEdit = () => {
     }
   };
 
-  // Test de conectividad de realtime
+  // SEGURIDAD: Cargar perfil de usuario de manera segura
+  const loadUserProfile = async () => {
+    try {
+      const profile = await getCurrentUserProfile();
+      setUserProfile(profile);
+      
+      if (profile) {
+        console.log('✅ Perfil de usuario cargado:', profile.role);
+      }
+    } catch (error) {
+      console.error('Error cargando perfil:', error);
+    }
+  };
+
+  // SEGURIDAD: Función de logout mejorada
+  const handleLogout = async () => {
+    console.log('🚪 Iniciando logout seguro...');
+    await secureSignOut();
+  };
+
+  // Enhanced realtime connection test with security check
   const testRealtimeConnection = async () => {
+    if (!user) {
+      console.log('🔒 No hay usuario para test realtime');
+      return;
+    }
     try {
       const testChannel = supabase
         .channel('connection-test')
@@ -355,6 +381,8 @@ const GondolasEdit = () => {
         
         if (session?.user) {
           setShowAuthPrompt(false);
+          // Cargar perfil de usuario de manera segura
+          loadUserProfile();
           // Load gondolas if authenticated
           loadGondolas();
           // Test realtime connection
@@ -492,19 +520,27 @@ const GondolasEdit = () => {
 
             {/* User info and logout */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <UserIcon className="h-4 w-4" />
-                {user.email}
+            <div className="flex items-center gap-3">
+              <div className="text-sm">
+                <span className="font-medium">
+                  {userProfile?.full_name || userProfile?.email || 'Usuario'}
+                </span>
+                {userProfile?.role === 'admin' && (
+                  <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded">
+                    Admin
+                  </span>
+                )}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="flex items-center gap-2"
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLogout}
+                className="p-2"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 mr-2" />
                 Salir
               </Button>
+            </div>
             </div>
           </div>
           <h1 className="text-3xl font-bold text-primary mb-2">
