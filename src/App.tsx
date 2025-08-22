@@ -12,6 +12,7 @@ import Gulero from "./pages/Gulero";
 import Mayorista from "./pages/Mayorista";
 import Centum from "./pages/Centum";
 import Gondolas from "./pages/Gondolas";
+import GondolasEdit from "./pages/GondolasEdit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/mayorista" element={<Mayorista />} />
           <Route path="/centum" element={<Centum />} />
           <Route path="/gondolas" element={<Gondolas />} />
+          <Route path="/gondolasedit" element={<GondolasEdit />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
