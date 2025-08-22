@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Gondola } from "@/pages/Gondolas";
+import { useMobileDetection } from "@/hooks/use-mobile-detection";
 
 interface InteractiveMapProps {
   gondolas: Gondola[];
@@ -28,7 +29,10 @@ export const InteractiveMap = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | null>(null);
+  const [lastTouchDistance, setLastTouchDistance] = useState(0);
+  const [lastTouchCenter, setLastTouchCenter] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
+  const isMobile = useMobileDetection();
 
   // Keyboard navigation
   useEffect(() => {
@@ -310,6 +314,81 @@ export const InteractiveMap = ({
     setZoom(newZoom);
   };
 
+  // Touch event handlers for mobile support
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) + 
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+  };
+
+  const getTouchCenter = (touches: React.TouchList) => {
+    if (touches.length < 2) return { x: 0, y: 0 };
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2
+    };
+  };
+
+  const handleTouchStart = (event: React.TouchEvent) => {
+    event.preventDefault();
+    if (event.touches.length === 1) {
+      // Single touch - pan
+      const touch = event.touches[0];
+      setIsPanning(true);
+      setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+    } else if (event.touches.length === 2) {
+      // Two touches - zoom
+      const distance = getTouchDistance(event.touches);
+      const center = getTouchCenter(event.touches);
+      setLastTouchDistance(distance);
+      setLastTouchCenter(center);
+    }
+  };
+
+  const handleTouchMove = (event: React.TouchEvent) => {
+    event.preventDefault();
+    
+    if (event.touches.length === 1 && isPanning) {
+      // Single touch - pan
+      const touch = event.touches[0];
+      setPan({
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y
+      });
+    } else if (event.touches.length === 2) {
+      // Two touches - zoom and pan
+      const distance = getTouchDistance(event.touches);
+      const center = getTouchCenter(event.touches);
+      
+      if (lastTouchDistance > 0) {
+        const zoomDelta = (distance - lastTouchDistance) * 0.005;
+        handleZoom(zoomDelta);
+      }
+      
+      // Pan based on center movement
+      const centerDeltaX = center.x - lastTouchCenter.x;
+      const centerDeltaY = center.y - lastTouchCenter.y;
+      setPan(prev => ({
+        x: prev.x + centerDeltaX,
+        y: prev.y + centerDeltaY
+      }));
+      
+      setLastTouchDistance(distance);
+      setLastTouchCenter(center);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsPanning(false);
+    setLastTouchDistance(0);
+  };
+
   const handleSvgClick = (event: React.MouseEvent) => {
     // Solo crear nuevas góndolas si estamos en modo creación
     if (isCreating && !isDragging && !isResizing && svgRef.current) {
@@ -369,7 +448,9 @@ export const InteractiveMap = ({
   };
 
   return (
-    <div className="relative w-full overflow-hidden">
+    <div className={`relative w-full overflow-hidden ${
+      isMobile && !isEditMode ? 'h-screen flex items-center justify-center' : ''
+    }`}>
       {/* Controles de zoom y creación */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
         <div className="flex gap-1 bg-background/90 rounded-lg p-1 border">
@@ -426,7 +507,7 @@ export const InteractiveMap = ({
         viewBox="0 0 1000 700"
         className={`border border-border rounded-lg bg-muted/20 ${
           isCreating ? 'cursor-crosshair' : isPanning ? 'cursor-move' : 'cursor-default'
-        }`}
+        } ${isMobile && !isEditMode ? 'transform transition-transform duration-300' : ''}`}
         onContextMenu={(e) => e.preventDefault()}
         onMouseMove={(e) => {
           handleMouseMoveOnSvg(e);
@@ -442,9 +523,15 @@ export const InteractiveMap = ({
         }}
         onMouseDown={handlePanStart}
         onClick={handleSvgClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: '0 0'
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) ${
+            isMobile && !isEditMode ? 'rotate(90deg)' : ''
+          }`,
+          transformOrigin: '50% 50%',
+          touchAction: 'none' // Prevents default mobile scrolling
         }}
       >
         {/* Background floor plan */}
