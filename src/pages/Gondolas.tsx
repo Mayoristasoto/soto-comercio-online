@@ -60,42 +60,19 @@ const Gondolas = () => {
                 </p>
               </div>
             </div>
-            
-            {/* Datos de interés */}
-            <div className="hidden md:flex items-center gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">50K+</div>
-                <div className="text-xs text-muted-foreground">Clientes/mes</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">10K+</div>
-                <div className="text-xs text-muted-foreground">Tickets/mes</div>
-              </div>
-            </div>
           </div>
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-8">{/* ... keep existing code */}
-
-        {/* Hero Section con datos de interés para móvil */}
-        <div className="text-center mb-8">
-          <div className="md:hidden flex justify-center gap-4 mb-6">
-            <Badge variant="secondary" className="px-4 py-2">
-              <Users className="h-4 w-4 mr-2" />
-              +50K clientes/mes
-            </Badge>
-            <Badge variant="secondary" className="px-4 py-2">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              +10K tickets/mes
-            </Badge>
-          </div>
-          
+      <main className="container mx-auto px-4 py-8">
+        {/* Hero Section simplificado */}
+        <div className="text-center mb-8">          
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
             Descubre las mejores ubicaciones para exhibir tu marca. 
             Espacios estratégicos con alta visibilidad y flujo de clientes.
           </p>
         </div>
+
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -153,6 +130,34 @@ const Gondolas = () => {
           </div>
         </div>
 
+        {/* Datos de interés como tarjeta */}
+        <div className="mt-8 mb-8">
+          <Card className="max-w-4xl mx-auto">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="bg-primary/10 p-3 rounded-full">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-primary">+50K</div>
+                    <div className="text-sm text-muted-foreground">Clientes al mes</div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="bg-primary/10 p-3 rounded-full">
+                    <ShoppingCart className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-primary">+10K</div>
+                    <div className="text-sm text-muted-foreground">Tickets mensuales</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Contact Section */}
         <div className="mt-12 text-center">
           <Card className="max-w-2xl mx-auto">
@@ -163,7 +168,7 @@ const Gondolas = () => {
               </p>
               
               <a 
-                href="https://wa.me/5491145492234890963"
+                href="https://wa.me/5492234890963"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex"
@@ -181,7 +186,7 @@ const Gondolas = () => {
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <MessageCircle className="h-4 w-4" />
-                  <span>WhatsApp: +54 9 11 4549-2234-890963</span>
+                  <span>WhatsApp: +5492234890963</span>
                 </div>
               </div>
               
