@@ -28,20 +28,26 @@ export const InteractiveMap = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<{ gondolaId: string; handle: string } | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  // Zoom inicial más grande en móvil
-  const [zoom, setZoom] = useState(isMobile ? 1.4 : 1);
+  // Zoom inicial más grande en móvil con límites como Google Maps
+  const [zoom, setZoom] = useState(isMobile ? 1.2 : 1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | null>(null);
-  // Enhanced mobile and touch optimizations
+  
+  // Enhanced mobile touch optimizations como Google Maps
   const [touchStartDistance, setTouchStartDistance] = useState<number | null>(null);
   const [touchStartCenter, setTouchStartCenter] = useState<{ x: number; y: number } | null>(null);
   const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
   const [panInitialOffset, setPanInitialOffset] = useState<{ x: number; y: number } | null>(null);
   const [lastTouchTime, setLastTouchTime] = useState(0);
-  const [touchSensitivity] = useState(1.5);
-  const [minZoom] = useState(0.3);
-  const [maxZoom] = useState(4);
+  const [velocity, setVelocity] = useState({ x: 0, y: 0 });
+  const [lastPanPosition, setLastPanPosition] = useState({ x: 0, y: 0 });
+  const [lastPanTime, setLastPanTime] = useState(0);
+  const [momentumAnimation, setMomentumAnimation] = useState<number | null>(null);
+  
+  // Límites como Google Maps
+  const minZoom = 0.5;
+  const maxZoom = 3;
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [selectedMobileGondola, setSelectedMobileGondola] = useState<Gondola | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -343,9 +349,76 @@ export const InteractiveMap = ({
     setDragStart({ x: event.clientX, y: event.clientY });
   };
 
-  const handleZoom = (delta: number) => {
-    // Aumentar el rango de zoom para mejor experiencia móvil
-    const newZoom = Math.max(0.3, Math.min(4, zoom + delta));
+  // Momentum y inercia como Google Maps
+  useEffect(() => {
+    if (momentumAnimation) {
+      clearInterval(momentumAnimation);
+    }
+    
+    if (!isPanning && (Math.abs(velocity.x) > 0.1 || Math.abs(velocity.y) > 0.1)) {
+      const interval = setInterval(() => {
+        setVelocity(prev => {
+          const friction = 0.95; // Factor de fricción
+          const newVelocity = {
+            x: prev.x * friction,
+            y: prev.y * friction
+          };
+          
+          // Aplicar momentum al pan con límites
+          setPan(currentPan => {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            const mapWidth = 1000 * zoom;
+            const mapHeight = 700 * zoom;
+            
+            const maxPanX = Math.max(0, (mapWidth - screenWidth) / 2 + 100);
+            const maxPanY = Math.max(0, (mapHeight - screenHeight) / 2 + 100);
+            const minPanX = -maxPanX;
+            const minPanY = -maxPanY;
+            
+            const newPanX = Math.max(minPanX, Math.min(maxPanX, currentPan.x + newVelocity.x));
+            const newPanY = Math.max(minPanY, Math.min(maxPanY, currentPan.y + newVelocity.y));
+            
+            return { x: newPanX, y: newPanY };
+          });
+          
+          // Parar si la velocidad es muy baja
+          if (Math.abs(newVelocity.x) < 0.1 && Math.abs(newVelocity.y) < 0.1) {
+            clearInterval(interval);
+            setMomentumAnimation(null);
+            return { x: 0, y: 0 };
+          }
+          
+          return newVelocity;
+        });
+      }, 16); // 60fps
+      
+      setMomentumAnimation(interval as unknown as number);
+    }
+    
+    return () => {
+      if (momentumAnimation) {
+        clearInterval(momentumAnimation);
+      }
+    };
+  }, [isPanning, velocity, zoom]);
+
+  const handleZoom = (delta: number, centerPoint?: { x: number; y: number }) => {
+    const newZoom = Math.max(minZoom, Math.min(maxZoom, zoom + delta));
+    
+    if (centerPoint && svgRef.current) {
+      // Zoom centrado en el punto como Google Maps
+      const rect = svgRef.current.getBoundingClientRect();
+      const centerX = centerPoint.x - rect.left;
+      const centerY = centerPoint.y - rect.top;
+      
+      const zoomRatio = newZoom / zoom;
+      const newPanX = centerX - (centerX - pan.x) * zoomRatio;
+      const newPanY = centerY - (centerY - pan.y) * zoomRatio;
+      
+      setPan({ x: newPanX, y: newPanY });
+    }
+    
     setZoom(newZoom);
   };
 
@@ -371,80 +444,106 @@ export const InteractiveMap = ({
   };
 
   const handleTouchStart = (event: React.TouchEvent) => {
-    // Permitir el comportamiento por defecto para mejorar el rendimiento
+    // Parar momentum
+    if (momentumAnimation) {
+      clearInterval(momentumAnimation);
+      setMomentumAnimation(null);
+    }
+    setVelocity({ x: 0, y: 0 });
+    
     if (event.touches.length === 1) {
-      // Single touch - pan con throttling mejorado
+      // Single touch - iniciar pan
       const touch = event.touches[0];
       setIsPanning(true);
       setPanStart({ x: touch.clientX, y: touch.clientY });
       setPanInitialOffset({ x: pan.x, y: pan.y });
+      setLastPanPosition({ x: touch.clientX, y: touch.clientY });
+      setLastPanTime(Date.now());
     } else if (event.touches.length === 2) {
-      // Two touches - zoom
-      event.preventDefault(); // Solo prevenir cuando es necesario
+      // Two touches - iniciar zoom
+      event.preventDefault();
       const distance = getTouchDistance(event.touches);
       const center = getTouchCenter(event.touches);
       setTouchStartDistance(distance);
       setTouchStartCenter(center);
-      setIsPanning(false); // Deshabilitar pan durante zoom
+      setIsPanning(false);
     }
   };
 
   const handleTouchMove = (event: React.TouchEvent) => {
     if (event.touches.length === 1 && isPanning && panStart && panInitialOffset) {
-      // Single touch - pan optimizado con límites para evitar "ir al otro lado"
+      // Single touch - pan suave como Google Maps
       const touch = event.touches[0];
       const deltaX = touch.clientX - panStart.x;
       const deltaY = touch.clientY - panStart.y;
       
-      // Límites del pan para evitar que se vaya demasiado lejos
-      const maxPanX = 200;
-      const maxPanY = 200;
-      const minPanX = -500;
-      const minPanY = -300;
+      // Calcular velocidad para momentum
+      const currentTime = Date.now();
+      const timeDelta = currentTime - lastPanTime;
+      if (timeDelta > 0) {
+        const velocityX = (touch.clientX - lastPanPosition.x) / timeDelta * 16;
+        const velocityY = (touch.clientY - lastPanPosition.y) / timeDelta * 16;
+        setVelocity({ x: velocityX, y: velocityY });
+      }
+      setLastPanPosition({ x: touch.clientX, y: touch.clientY });
+      setLastPanTime(currentTime);
       
-      const newPan = {
-        x: Math.max(minPanX, Math.min(maxPanX, panInitialOffset.x + deltaX)),
-        y: Math.max(minPanY, Math.min(maxPanY, panInitialOffset.y + deltaY))
-      };
+      // Aplicar pan con límites suaves
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const mapWidth = 1000 * zoom;
+      const mapHeight = 700 * zoom;
       
-      setPan(newPan);
+      const maxPanX = Math.max(0, (mapWidth - screenWidth) / 2 + 100);
+      const maxPanY = Math.max(0, (mapHeight - screenHeight) / 2 + 100);
+      const minPanX = -maxPanX;
+      const minPanY = -maxPanY;
+      
+      const newPanX = panInitialOffset.x + deltaX;
+      const newPanY = panInitialOffset.y + deltaY;
+      
+      // Resistencia en los bordes como Google Maps
+      const clampedX = Math.max(minPanX - 50, Math.min(maxPanX + 50, newPanX));
+      const clampedY = Math.max(minPanY - 50, Math.min(maxPanY + 50, newPanY));
+      
+      setPan({ x: clampedX, y: clampedY });
+      
     } else if (event.touches.length === 2) {
       event.preventDefault();
-      // Two touches - zoom and pan con mayor sensibilidad
+      // Two touches - zoom suave centrado como Google Maps
       const distance = getTouchDistance(event.touches);
       const center = getTouchCenter(event.touches);
       
       if (touchStartDistance && touchStartDistance > 0) {
-        // Aumentar sensibilidad del zoom para móvil
-        const zoomDelta = (distance - touchStartDistance) * 0.008;
-        handleZoom(zoomDelta);
+        const zoomDelta = (distance - touchStartDistance) * 0.005; // Sensibilidad perfecta
+        handleZoom(zoomDelta, center);
+        setTouchStartDistance(distance);
       }
       
-      // Pan más responsivo basado en movimiento del centro con límites
+      // Pan durante zoom si el centro se mueve
       if (touchStartCenter) {
         const centerDeltaX = center.x - touchStartCenter.x;
         const centerDeltaY = center.y - touchStartCenter.y;
         
-        const maxPanX = 200;
-        const maxPanY = 200;
-        const minPanX = -500;
-        const minPanY = -300;
-      
         setPan(prev => ({
-          x: Math.max(minPanX, Math.min(maxPanX, prev.x + centerDeltaX * 1.2)),
-          y: Math.max(minPanY, Math.min(maxPanY, prev.y + centerDeltaY * 1.2))
+          x: prev.x + centerDeltaX * 0.8,
+          y: prev.y + centerDeltaY * 0.8
         }));
+        
+        setTouchStartCenter(center);
       }
-      
-      setTouchStartDistance(distance);
-      setTouchStartCenter(center);
     }
   };
 
   const handleTouchEnd = () => {
-    setIsPanning(false);
+    // No resetear pan aquí para mantener momentum
+    if (isPanning) {
+      setIsPanning(false);
+    }
     setTouchStartDistance(null);
     setTouchStartCenter(null);
+    setPanStart(null);
+    setPanInitialOffset(null);
   };
 
   const handleSvgClick = (event: React.MouseEvent) => {
@@ -511,143 +610,90 @@ export const InteractiveMap = ({
 
   const handlePan = (event: React.MouseEvent) => {
     if (!isPanning) return;
+    
+    const deltaX = event.clientX - dragStart.x;
+    const deltaY = event.clientY - dragStart.y;
+    
     setPan({
-      x: event.clientX - dragStart.x,
-      y: event.clientY - dragStart.y
+      x: pan.x + deltaX,
+      y: pan.y + deltaY
     });
+    
+    setDragStart({ x: event.clientX, y: event.clientY });
+  };
+
+  // Zoom con rueda del mouse en desktop
+  const handleWheel = (event: React.WheelEvent) => {
+    if (!isMobile) {
+      event.preventDefault();
+      const zoomDelta = -event.deltaY * 0.001;
+      const centerPoint = { x: event.clientX, y: event.clientY };
+      handleZoom(zoomDelta, centerPoint);
+    }
   };
 
   return (
-    <div className="relative w-full">
-      {/* Mobile Top Controls Card with +/- buttons */}
-      {isMobile && (
-        <div className="bg-card border border-border rounded-lg p-4 mb-4 shadow-sm">
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={() => handleZoom(0.4)}
-              className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xl font-bold shadow-lg hover:bg-primary/90 transition-colors"
-              aria-label="Acercar"
-            >
-              +
-            </button>
-            <button
-              onClick={() => handleZoom(-0.4)}
-              className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xl font-bold shadow-lg hover:bg-primary/90 transition-colors"
-              aria-label="Alejar"
-            >
-              −
-            </button>
-            <button
-              onClick={() => {
-                setZoom(1);
-                setPan({ x: 0, y: 0 });
-              }}
-              className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-lg shadow-lg hover:bg-secondary/90 transition-colors"
-              aria-label="Centrar"
-              title="Centrar mapa"
-            >
-              ⌂
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Map Container - Full width on mobile */}
-      <div className={`relative overflow-hidden touch-optimized ${
-        isMobile ? 'h-[70vh] w-full bg-muted/20 border border-border rounded-lg' : 'h-[600px]'
-      }`}>
-        
-        {/* Desktop Controls - Simplified */}
-        {!isMobile && (
-          <div className="absolute top-4 right-4 z-20 flex flex-col gap-3">
-            <button
-              onClick={() => handleZoom(0.4)}
-              className="w-12 h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl"
-              aria-label="Zoom in"
-            >
-              +
-            </button>
-            <button
-              onClick={() => handleZoom(-0.4)}
-              className="w-12 h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl"
-              aria-label="Zoom out"
-            >
-              −
-            </button>
-            <button
-              onClick={() => {
-                setZoom(1);
-                setPan({ x: 0, y: 0 });
-              }}
-              className="w-12 h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground text-lg"
-              aria-label="Center map"
-            >
-              ⌂
-            </button>
-          </div>
-        )}
-        
-        {/* Edit Mode Controls - Only for desktop */}
-        {isEditMode && !isMobile && (
-          <div className="absolute top-4 left-4 z-20 flex flex-col gap-1 bg-background/90 rounded-lg p-2 border">
-            <button
-              onClick={() => setIsCreating(isCreating === 'gondola' ? null : 'gondola')}
-              className={`px-3 py-1 text-xs rounded transition-colors ${
-                isCreating === 'gondola' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-secondary hover:bg-secondary/80'
-              }`}
-            >
-              + Góndola
-            </button>
-            <button
-              onClick={() => setIsCreating(isCreating === 'puntera' ? null : 'puntera')}
-              className={`px-3 py-1 text-xs rounded transition-colors ${
-                isCreating === 'puntera' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-secondary hover:bg-secondary/80'
-              }`}
-            >
-              + Puntera
-            </button>
-          </div>
-        )}
-      
+    <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg overflow-hidden shadow-inner">
+      <div 
+        className="w-full h-[600px] relative overflow-hidden cursor-grab active:cursor-grabbing"
+        onMouseDown={handlePanStart}
+        onMouseMove={handlePan}
+        onMouseUp={() => setIsPanning(false)}
+        onMouseLeave={() => setIsPanning(false)}
+        onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 25px 25px, rgba(0,0,0,0.1) 1px, transparent 1px),
+            radial-gradient(circle at 75px 75px, rgba(0,0,0,0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '100px 100px',
+          backgroundPosition: `${pan.x}px ${pan.y}px`,
+          transition: isPanning ? 'none' : 'background-position 0.3s ease-out'
+        }}
+      >
         <svg
           ref={svgRef}
           width="1000"
           height="700"
           viewBox="0 0 1000 700"
-          className={`w-full h-full border border-border rounded-lg bg-muted/20 gpu-accelerated ${
-            isCreating ? 'cursor-crosshair' : isPanning ? 'cursor-move' : 'cursor-default'
-          }`}
-          onContextMenu={(e) => e.preventDefault()}
-          onMouseMove={(e) => {
-            handleMouseMoveOnSvg(e);
-            handlePan(e);
-          }}
-          onMouseUp={() => {
-            handleMouseUp();
-            setIsPanning(false);
-          }}
-          onMouseLeave={() => {
-            handleMouseUp();
-            setIsPanning(false);
-          }}
-          onMouseDown={handlePanStart}
+          className="absolute inset-0 w-full h-full"
+          onMouseMove={handleMouseMoveOnSvg}
+          onMouseUp={handleMouseUp}
           onClick={handleSvgClick}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
           style={{
-            transform: `${isMobile ? 'rotate(90deg) ' : ''}translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: '50% 50%',
-            touchAction: 'none',
-            willChange: 'transform',
-            backfaceVisibility: 'hidden',
-            userSelect: 'none'
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
+            transition: isPanning || momentumAnimation ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+            cursor: isCreating ? 'crosshair' : 'inherit'
           }}
         >
+        {/* Controles de zoom estilo Google Maps para móvil */}
+        {isMobile && (
+          <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-40">
+            <button
+              onClick={() => handleZoom(0.2)}
+              className="w-10 h-10 bg-white shadow-lg rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+              disabled={zoom >= maxZoom}
+            >
+              <span className="text-xl font-bold text-gray-700">+</span>
+            </button>
+            <button
+              onClick={() => handleZoom(-0.2)}
+              className="w-10 h-10 bg-white shadow-lg rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+              disabled={zoom <= minZoom}
+            >
+              <span className="text-xl font-bold text-gray-700">−</span>
+            </button>
+          </div>
+        )}
+
+        {/* Indicador de zoom */}
+        <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium z-40">
+          {(zoom * 100).toFixed(0)}%
+        </div>
         {/* Background floor plan */}
         <image
           href="/lovable-uploads/d3b32fd2-a19d-44d5-a8e2-b167fe688726.png"
@@ -864,28 +910,22 @@ export const InteractiveMap = ({
         }}
       />
 
-      {/* Mobile Bottom Instructions Card */}
+      {/* Mobile Instructions Card */}
       {isMobile && (
         <div className="mt-4 bg-card border border-border rounded-lg p-4 shadow-sm">
-          <h3 className="font-semibold text-card-foreground mb-3">Cómo navegar el mapa</h3>
+          <h3 className="font-semibold text-card-foreground mb-3">Navegación del mapa</h3>
           <div className="space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
+              <span className="text-lg">🤏</span>
+              <span>Pellizca para hacer zoom</span>
+            </div>
+            <div className="flex items-center gap-2">
               <span className="text-lg">👆</span>
-              <span>Pellizca con dos dedos para hacer zoom</span>
+              <span>Arrastra con un dedo para mover</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-lg">✋</span>
-              <span>Arrastra con un dedo para moverte por el plano</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🎯</span>
-              <span>Toca una góndola para ver más información</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-3 bg-green-500 rounded"></span>
-              <span>Verde = Disponible</span>
-              <span className="w-4 h-3 bg-red-500 rounded ml-4"></span>
-              <span>Rojo = Ocupado</span>
+              <span className="text-lg">📍</span>
+              <span>Toca una góndola para ver detalles</span>
             </div>
           </div>
         </div>
