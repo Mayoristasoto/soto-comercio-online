@@ -598,7 +598,7 @@ export const InteractiveMap = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transform: `${isMobile ? 'rotate(90deg) ' : ''}translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: '50% 50%',
             touchAction: 'none',
             willChange: 'transform',

@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, MessageCircle, Phone, Star, Calendar } from "lucide-react";
+import { MapPin, MessageCircle, Phone, Star, Calendar, Store } from "lucide-react";
 import { Gondola } from "@/pages/Gondolas";
 import { useMobileDetection } from "@/hooks/use-mobile-detection";
 
@@ -114,6 +114,17 @@ export const GondolaMobilePopup: React.FC<GondolaMobilePopupProps> = ({
               </Badge>
             </div>
 
+            {/* Image */}
+            {gondola.image_url && (
+              <div className="w-full h-24 rounded-md overflow-hidden bg-muted">
+                <img 
+                  src={gondola.image_url} 
+                  alt={`Imagen de ${gondola.section}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
             {/* Information */}
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
@@ -122,7 +133,23 @@ export const GondolaMobilePopup: React.FC<GondolaMobilePopupProps> = ({
                 <span>{gondola.category}</span>
               </div>
               
-              {gondola.status === 'available' && (
+              {gondola.brand && (
+                <div className="flex items-center gap-2">
+                  <Store className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">Marca:</span>
+                  <span>{gondola.brand}</span>
+                </div>
+              )}
+              
+              {gondola.endDate && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-orange-500" />
+                  <span className="font-medium">Fin de contrato:</span>
+                  <span>{new Date(gondola.endDate).toLocaleDateString()}</span>
+                </div>
+              )}
+              
+              {gondola.status === 'available' && !gondola.brand && (
                 <div className="flex items-center gap-2 text-green-600">
                   <Calendar className="h-4 w-4" />
                   <span className="font-medium">Disponible inmediatamente</span>
