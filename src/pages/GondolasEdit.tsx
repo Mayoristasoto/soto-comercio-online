@@ -4,12 +4,14 @@ import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import { GondolasList } from "@/components/gondolas/GondolasList";
+import { BrandManagement } from "@/components/gondolas/BrandManagement";
 import { AuthPrompt } from "@/components/AuthPrompt";
 import { SecureProfile } from "@/components/SecureProfile";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserIcon, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserIcon, RefreshCw, Wifi, WifiOff, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -640,71 +642,88 @@ const GondolasEdit = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-            <div className="bg-card rounded-lg border p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">Editor del Layout</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Arrastra, redimensiona y crea góndolas • Usa ← → ↑ ↓ para mover • Ctrl + flechas para redimensionar
-                  </p>
-                </div>
-                
-                {selectedGondola && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => duplicateGondola(selectedGondola)}
-                      className="flex items-center gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Duplicar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteGondola(selectedGondola.id)}
-                      className="flex items-center gap-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Eliminar
-                    </Button>
+        
+        <Tabs defaultValue="layout" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="layout">Layout de Góndolas</TabsTrigger>
+            <TabsTrigger value="brands">
+              <Tag className="h-4 w-4 mr-2" />
+              Marcas
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="layout" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-3">
+                <div className="bg-card rounded-lg border p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">Editor del Layout</h2>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Arrastra, redimensiona y crea góndolas • Usa ← → ↑ ↓ para mover • Ctrl + flechas para redimensionar
+                      </p>
+                    </div>
+                    
+                    {selectedGondola && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => duplicateGondola(selectedGondola)}
+                          className="flex items-center gap-2"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Duplicar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteGondola(selectedGondola.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Eliminar
+                        </Button>
+                      </div>
+                    )}
                   </div>
+                  
+                  <InteractiveMap
+                    gondolas={gondolas}
+                    onGondolaHover={setHoveredGondola}
+                    onGondolaSelect={setSelectedGondola}
+                    onGondolaUpdate={updateGondola}
+                    onGondolaAdd={addGondola}
+                    onMouseMove={setMousePosition}
+                    isEditMode={true}
+                  />
+                </div>
+              </div>
+
+              <div className="lg:col-span-1">
+                {selectedGondola ? (
+                  <EditPanel 
+                    gondola={selectedGondola}
+                    onUpdate={updateGondola}
+                    onDelete={deleteGondola}
+                    onDuplicate={duplicateGondola}
+                    onClose={() => setSelectedGondola(null)}
+                  />
+                ) : (
+                  <GondolasList
+                    gondolas={gondolas}
+                    selectedGondola={selectedGondola}
+                    onGondolaSelect={setSelectedGondola}
+                  />
                 )}
               </div>
-              
-              <InteractiveMap
-                gondolas={gondolas}
-                onGondolaHover={setHoveredGondola}
-                onGondolaSelect={setSelectedGondola}
-                onGondolaUpdate={updateGondola}
-                onGondolaAdd={addGondola}
-                onMouseMove={setMousePosition}
-                isEditMode={true}
-              />
             </div>
-          </div>
-
-          <div className="lg:col-span-1">
-            {selectedGondola ? (
-              <EditPanel 
-                gondola={selectedGondola}
-                onUpdate={updateGondola}
-                onDelete={deleteGondola}
-                onDuplicate={duplicateGondola}
-                onClose={() => setSelectedGondola(null)}
-              />
-            ) : (
-              <GondolasList
-                gondolas={gondolas}
-                selectedGondola={selectedGondola}
-                onGondolaSelect={setSelectedGondola}
-              />
-            )}
-          </div>
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="brands" className="space-y-6">
+            <BrandManagement />
+          </TabsContent>
+        </Tabs>
 
         {hoveredGondola && (
           <GondolaTooltip

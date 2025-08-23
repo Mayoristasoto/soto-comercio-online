@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
+import { BrandCarousel } from "@/components/gondolas/BrandCarousel";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -479,54 +480,18 @@ const Gondolas = () => {
           </div>
         </div>
 
-        {/* Casos de éxito / testimonios */}
+        {/* Marcas que confían en nosotros */}
         <div className="mt-12 mb-12">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-primary mb-4">
-              Casos de Éxito
+              Marcas que Confían en Nosotros
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Marcas líderes confían en nosotros para potenciar sus ventas
+              Empresas líderes que han elegido nuestros espacios para potenciar sus ventas
             </p>
           </div>
           
-          <Card className="max-w-4xl mx-auto bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-            <CardContent className="p-8">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="bg-green-600 p-4 rounded-full">
-                    <Star className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-                <blockquote className="text-xl italic text-green-800 dark:text-green-200 mb-4">
-                  "Con la puntera de lácteos, aumentamos nuestras ventas un 25% en 30 días"
-                </blockquote>
-                <p className="text-green-600 dark:text-green-400 font-medium">
-                  - Marca líder en lácteos
-                </p>
-              </div>
-              
-              <div className="border-t border-green-200 dark:border-green-800 pt-6">
-                <p className="text-center text-sm text-green-600 dark:text-green-400 mb-4 font-medium">
-                  Marcas que confían en Mayorista Soto:
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-8 opacity-70">
-                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
-                    <span className="text-sm font-medium">Marca Lácteos</span>
-                  </div>
-                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
-                    <span className="text-sm font-medium">Productos Premium</span>
-                  </div>
-                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
-                    <span className="text-sm font-medium">Bebidas Top</span>
-                  </div>
-                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
-                    <span className="text-sm font-medium">Snacks Elite</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <BrandCarousel />
         </div>
 
         {/* Contact Section */}
