@@ -778,6 +778,5 @@ export const InteractiveMap = ({
         </g>
         </svg>
       </div>
-    </div>
   );
 };
