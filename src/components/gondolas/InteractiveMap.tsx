@@ -634,6 +634,41 @@ export const InteractiveMap = ({
 
   return (
     <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg overflow-hidden shadow-inner">
+      {/* Tarjeta de controles para móvil */}
+      {isMobile && (
+        <div className="absolute top-4 left-4 z-50 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => handleZoom(0.3)}
+              className="w-10 h-10 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
+              disabled={zoom >= maxZoom}
+              aria-label="Acercar"
+            >
+              <span className="text-lg font-bold">+</span>
+            </button>
+            <button
+              onClick={() => handleZoom(-0.3)}
+              className="w-10 h-10 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
+              disabled={zoom <= minZoom}
+              aria-label="Alejar"
+            >
+              <span className="text-lg font-bold">−</span>
+            </button>
+            <button
+              onClick={() => {
+                setZoom(isMobile ? 1.2 : 1);
+                setPan({ x: 0, y: 0 });
+                setVelocity({ x: 0, y: 0 });
+              }}
+              className="w-10 h-10 bg-secondary text-secondary-foreground rounded-lg flex items-center justify-center hover:bg-secondary/90 transition-colors shadow-sm"
+              aria-label="Centrar mapa"
+            >
+              <span className="text-sm">🏠</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div 
         className="w-full h-[600px] relative overflow-hidden cursor-grab active:cursor-grabbing"
         onMouseDown={handlePanStart}
@@ -664,14 +699,14 @@ export const InteractiveMap = ({
           onMouseUp={handleMouseUp}
           onClick={handleSvgClick}
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: '0 0',
+            transform: `${isMobile ? 'rotate(90deg) ' : ''}translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: isMobile ? 'center center' : '0 0',
             transition: isPanning || momentumAnimation ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
             cursor: isCreating ? 'crosshair' : 'inherit'
           }}
         >
-        {/* Controles de zoom estilo Google Maps para móvil */}
-        {isMobile && (
+        {/* Controles de zoom estilo Google Maps para desktop */}
+        {!isMobile && (
           <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-40">
             <button
               onClick={() => handleZoom(0.2)}
@@ -687,11 +722,22 @@ export const InteractiveMap = ({
             >
               <span className="text-xl font-bold text-gray-700">−</span>
             </button>
+            <button
+              onClick={() => {
+                setZoom(1);
+                setPan({ x: 0, y: 0 });
+                setVelocity({ x: 0, y: 0 });
+              }}
+              className="w-10 h-10 bg-white shadow-lg rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+              aria-label="Centrar mapa"
+            >
+              <span className="text-sm">🏠</span>
+            </button>
           </div>
         )}
 
         {/* Indicador de zoom */}
-        <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium z-40">
+        <div className={`absolute ${isMobile ? 'top-4 right-4' : 'top-4 left-4'} bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium z-40`}>
           {(zoom * 100).toFixed(0)}%
         </div>
         {/* Background floor plan */}
