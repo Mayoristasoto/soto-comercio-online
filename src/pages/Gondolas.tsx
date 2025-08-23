@@ -29,6 +29,7 @@ const Gondolas = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isTooltipHovered, setIsTooltipHovered] = useState(false);
+  const [tooltipTimeoutId, setTooltipTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
   // Load gondolas from Supabase con cache busting
   const loadGondolas = async (forceRefresh = false, bypassCache = false) => {
@@ -90,7 +91,7 @@ const Gondolas = () => {
             height: Number(dbGondola.position_height)
           },
           status: dbGondola.status as 'occupied' | 'available',
-          brand: dbGondola.status === 'occupied' ? 'Marca Privada' : null,
+          brand: dbGondola.status === 'occupied' ? 'Espacio Ocupado' : null,
           category: dbGondola.display_category || 'Disponible',
           section: dbGondola.section,
           endDate: undefined,
@@ -264,7 +265,13 @@ const Gondolas = () => {
             <InteractiveMap
               gondolas={filteredGondolas}
               onGondolaHover={(gondola) => {
-                if (!isTooltipHovered) {
+                // Limpiar timeout previo si existe
+                if (tooltipTimeoutId) {
+                  clearTimeout(tooltipTimeoutId);
+                  setTooltipTimeoutId(null);
+                }
+                
+                if (gondola && !isTooltipHovered) {
                   setHoveredGondola(gondola);
                 }
               }}
@@ -491,14 +498,30 @@ const Gondolas = () => {
           </Card>
         </div>
 
+        {/* Tooltip que se puede interactuar */}
         {hoveredGondola && (
           <GondolaTooltip
             gondola={hoveredGondola}
             position={mousePosition}
-            onMouseEnter={() => setIsTooltipHovered(true)}
+            onClose={() => {
+              setHoveredGondola(null);
+              setIsTooltipHovered(false);
+            }}
+            onMouseEnter={() => {
+              setIsTooltipHovered(true);
+              // Limpiar cualquier timeout de cierre
+              if (tooltipTimeoutId) {
+                clearTimeout(tooltipTimeoutId);
+                setTooltipTimeoutId(null);
+              }
+            }}
             onMouseLeave={() => {
               setIsTooltipHovered(false);
-              setHoveredGondola(null);
+              // Configurar timeout para cerrar
+              const timeoutId = setTimeout(() => {
+                setHoveredGondola(null);
+              }, 300);
+              setTooltipTimeoutId(timeoutId);
             }}
           />
         )}

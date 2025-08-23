@@ -729,6 +729,7 @@ const GondolasEdit = () => {
           <GondolaTooltip
             gondola={hoveredGondola}
             position={mousePosition}
+            onClose={() => setHoveredGondola(null)}
           />
         )}
       </main>
