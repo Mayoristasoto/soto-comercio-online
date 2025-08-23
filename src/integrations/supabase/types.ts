@@ -294,6 +294,23 @@ export type Database = {
           role: string
         }[]
       }
+      get_gondolas_public_view: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          brand: string
+          category: string
+          end_date: string
+          id: string
+          image_url: string
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
+        }[]
+      }
       get_profile_stats: {
         Args: Record<PropertyKey, never>
         Returns: {

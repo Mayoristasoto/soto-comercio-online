@@ -37,20 +37,15 @@ const Gondolas = () => {
       console.log('🔄 Cargando góndolas desde Supabase...', forceRefresh ? '(forzado)' : '', bypassCache ? '(sin cache)' : '');
       console.log('🔍 Timestamp:', new Date().toISOString());
       
-      // SEGURIDAD: Usar tabla de display pública que no expone información sensible
-      // En lugar de la tabla principal 'gondolas' que ahora requiere autenticación
-      const query = supabase
-        .from('gondolas_display')
-        .select('*')
-        .order('updated_at', { ascending: false });
+      // Usar función pública que devuelve datos completos de forma segura
+      console.log('📡 Ejecutando función pública para obtener góndolas...');
+      const { data, error } = await supabase.rpc('get_gondolas_public_view');
         
       // Agregar timestamp para romper cache
       if (bypassCache) {
         console.log('🚫 Bypassing cache with timestamp:', Date.now());
       }
       
-      console.log('📡 Ejecutando query a Supabase...');
-      const { data, error } = await query;
       console.log('📊 Respuesta recibida:', { 
         hasData: !!data, 
         dataLength: data?.length, 
@@ -72,15 +67,8 @@ const Gondolas = () => {
       }
 
       if (data && data.length > 0) {
-        // Usar datos de la tabla de display (información no sensible)
-        console.log('✅ Datos cargados desde Supabase:', data.length, 'elementos');
-        console.log('🎯 Primeras góndolas de BD:', data.slice(0, 3).map(g => ({
-          id: g.id,
-          status: g.status
-        })));
-
-        // Usar solo datos de display para vista pública (información no sensible)
-        console.log('📊 Usando datos de display (públicos)...');
+        // Tenemos acceso a datos completos - formatear como en GondolasEdit
+        console.log('✅ Datos completos cargados vía función pública:', data.length, 'góndolas');
         const formattedGondolas: Gondola[] = data.map(dbGondola => ({
           id: dbGondola.id,
           type: dbGondola.type as 'gondola' | 'puntera',
@@ -91,11 +79,11 @@ const Gondolas = () => {
             height: Number(dbGondola.position_height)
           },
           status: dbGondola.status as 'occupied' | 'available',
-          brand: dbGondola.status === 'occupied' ? 'Espacio Ocupado' : null,
-          category: dbGondola.display_category || 'Disponible',
+          brand: dbGondola.brand,
+          category: dbGondola.category,
           section: dbGondola.section,
-          endDate: undefined,
-          image_url: undefined
+          endDate: dbGondola.end_date,
+          image_url: dbGondola.image_url
         }));
         setGondolas(formattedGondolas);
         setFilteredGondolas(formattedGondolas);
