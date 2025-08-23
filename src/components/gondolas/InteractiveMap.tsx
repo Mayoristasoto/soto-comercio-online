@@ -128,6 +128,21 @@ export const InteractiveMap = ({
     onGondolaHover(null);
   };
 
+  // Touch handlers para tooltips en móvil
+  const handleTouchStartOnGondola = (gondola: Gondola, event: React.TouchEvent) => {
+    if (isDragging || isResizing || isPanning || event.touches.length > 1) return;
+    
+    event.stopPropagation();
+    const touch = event.touches[0];
+    onGondolaHover(gondola);
+    onMouseMove({ x: touch.clientX, y: touch.clientY });
+    
+    // Ocultar tooltip después de 3 segundos en móvil
+    setTimeout(() => {
+      onGondolaHover(null);
+    }, 3000);
+  };
+
   const handleMouseMove = (event: React.MouseEvent) => {
     onMouseMove({ x: event.clientX, y: event.clientY });
   };
@@ -349,7 +364,8 @@ export const InteractiveMap = ({
       // Single touch - pan con throttling mejorado
       const touch = event.touches[0];
       setIsPanning(true);
-      setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+      setPanStart({ x: touch.clientX, y: touch.clientY });
+      setPanInitialOffset({ x: pan.x, y: pan.y });
     } else if (event.touches.length === 2) {
       // Two touches - zoom
       event.preventDefault(); // Solo prevenir cuando es necesario
@@ -357,16 +373,20 @@ export const InteractiveMap = ({
       const center = getTouchCenter(event.touches);
       setTouchStartDistance(distance);
       setTouchStartCenter(center);
+      setIsPanning(false); // Deshabilitar pan durante zoom
     }
   };
 
   const handleTouchMove = (event: React.TouchEvent) => {
-    if (event.touches.length === 1 && isPanning) {
+    if (event.touches.length === 1 && isPanning && panStart && panInitialOffset) {
       // Single touch - pan optimizado y más responsivo
       const touch = event.touches[0];
+      const deltaX = touch.clientX - panStart.x;
+      const deltaY = touch.clientY - panStart.y;
+      
       const newPan = {
-        x: touch.clientX - dragStart.x,
-        y: touch.clientY - dragStart.y
+        x: panInitialOffset.x + deltaX,
+        y: panInitialOffset.y + deltaY
       };
       
       // Aplicar pan inmediatamente para mejor respuesta
@@ -663,6 +683,9 @@ export const InteractiveMap = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   handleClick(gondola, e);
+                }}
+                onTouchStart={(e) => {
+                  handleTouchStartOnGondola(gondola, e);
                 }}
               />
               
