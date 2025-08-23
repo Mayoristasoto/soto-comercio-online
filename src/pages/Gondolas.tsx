@@ -76,20 +76,17 @@ const Gondolas = () => {
           status: g.status
         })));
 
-        // Para mostrar información completa, necesitamos obtener los datos de la tabla principal
-        // solo para el tooltip/popup, manteniendo la seguridad
-        const { data: fullData } = await supabase
+        // Cargar datos completos directamente desde la tabla principal
+        console.log('📊 Obteniendo datos completos de góndolas...');
+        const { data: fullData, error: fullError } = await supabase
           .from('gondolas')
-          .select('id, brand, end_date, image_url')
-          .in('id', data.map(g => g.id));
+          .select('*')
+          .order('created_at', { ascending: true });
 
-        // Crear un mapa de datos completos
-        const fullDataMap = new Map(fullData?.map(item => [item.id, item]) || []);
-
-        // Convert display format to app format  
-        const formattedGondolas: Gondola[] = data.map(dbGondola => {
-          const fullInfo = fullDataMap.get(dbGondola.id);
-          return {
+        if (fullError) {
+          console.error('❌ Error obteniendo datos completos:', fullError);
+          // Fallback to display data only
+          const formattedGondolas: Gondola[] = data.map(dbGondola => ({
             id: dbGondola.id,
             type: dbGondola.type as 'gondola' | 'puntera',
             position: {
@@ -99,17 +96,59 @@ const Gondolas = () => {
               height: Number(dbGondola.position_height)
             },
             status: dbGondola.status as 'occupied' | 'available',
-            brand: fullInfo?.brand || null,
+            brand: null,
             category: dbGondola.display_category || 'Disponible',
             section: dbGondola.section,
-            endDate: fullInfo?.end_date || undefined,
-            image_url: fullInfo?.image_url || undefined
-          };
-        });
-        
-        console.log('✅ Góndolas formateadas:', formattedGondolas.length, '- Primer elemento:', formattedGondolas[0]);
-        setGondolas(formattedGondolas);
-        setFilteredGondolas(formattedGondolas);
+            endDate: undefined,
+            image_url: undefined
+          }));
+          setGondolas(formattedGondolas);
+          setFilteredGondolas(formattedGondolas);
+          return;
+        }
+
+        // Si tenemos datos completos, usarlos (igual que en GondolasEdit)
+        if (fullData && fullData.length > 0) {
+          console.log('✅ Datos completos cargados:', fullData.length, 'góndolas');
+          const formattedGondolas: Gondola[] = fullData.map(dbGondola => ({
+            id: dbGondola.id,
+            type: dbGondola.type as 'gondola' | 'puntera',
+            position: {
+              x: Number(dbGondola.position_x),
+              y: Number(dbGondola.position_y),
+              width: Number(dbGondola.position_width),
+              height: Number(dbGondola.position_height)
+            },
+            status: dbGondola.status as 'occupied' | 'available',
+            brand: dbGondola.brand,
+            category: dbGondola.category,
+            section: dbGondola.section,
+            endDate: dbGondola.end_date,
+            image_url: dbGondola.image_url
+          }));
+          setGondolas(formattedGondolas);
+          setFilteredGondolas(formattedGondolas);
+        } else {
+          // Fallback to display data
+          const formattedGondolas: Gondola[] = data.map(dbGondola => ({
+            id: dbGondola.id,
+            type: dbGondola.type as 'gondola' | 'puntera',
+            position: {
+              x: Number(dbGondola.position_x),
+              y: Number(dbGondola.position_y),
+              width: Number(dbGondola.position_width),
+              height: Number(dbGondola.position_height)
+            },
+            status: dbGondola.status as 'occupied' | 'available',
+            brand: null,
+            category: dbGondola.display_category || 'Disponible',
+            section: dbGondola.section,
+            endDate: undefined,
+            image_url: undefined
+          }));
+          setGondolas(formattedGondolas);
+          setFilteredGondolas(formattedGondolas);
+        }
       } else {
         console.log('⚠️ No hay datos en Supabase, usando datos por defecto');
         // Use default data if no data in database
