@@ -3,7 +3,7 @@ import { Gondola } from "@/pages/Gondolas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Package, Tag, Building, Calendar, MessageCircle, X } from "lucide-react";
+import { MapPin, Package, Tag, Building, Calendar, MessageCircle, X, Star } from "lucide-react";
 
 interface GondolaTooltipProps {
   gondola: Gondola;
@@ -14,52 +14,44 @@ interface GondolaTooltipProps {
 }
 
 export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMouseLeave }: GondolaTooltipProps) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isFixed, setIsFixed] = useState(false);
+  const [fixedPosition, setFixedPosition] = useState({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
   
   // Detectar si está en mobile y ajustar posición
   const isMobile = window.innerWidth <= 768;
   
-  // Mantener el tooltip abierto cuando está siendo usado
+  // Fijar posición cuando se muestra por primera vez
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    
-    if (!isHovered) {
-      // Solo cerrar después de un delay si no está siendo hovereado
-      timeout = setTimeout(() => {
-        onClose();
-      }, 500);
+    if (!isFixed) {
+      const tooltipWidth = 320;
+      const tooltipHeight = 280;
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      
+      let left = position.x + 10;
+      let top = position.y - 10;
+      
+      // Ajustar para que no se salga por la derecha
+      if (left + tooltipWidth > screenWidth) {
+        left = position.x - tooltipWidth - 10;
+      }
+      
+      // Ajustar para que no se salga por arriba
+      if (top - tooltipHeight < 0) {
+        top = position.y + 20;
+      }
+      
+      // En móvil, centrar el tooltip
+      if (isMobile) {
+        left = (screenWidth - tooltipWidth) / 2;
+        top = Math.max(20, Math.min(top, screenHeight - tooltipHeight - 20));
+      }
+      
+      setFixedPosition({ x: left, y: top });
+      setIsFixed(true);
     }
-    
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [isHovered, onClose]);
-  
-  // Calcular posición para evitar que se salga de la pantalla
-  const tooltipWidth = 280;
-  const tooltipHeight = 200;
-  const screenWidth = window.innerWidth;
-  const screenHeight = window.innerHeight;
-  
-  let left = position.x + 10;
-  let top = position.y - 10;
-  
-  // Ajustar para que no se salga por la derecha
-  if (left + tooltipWidth > screenWidth) {
-    left = position.x - tooltipWidth - 10;
-  }
-  
-  // Ajustar para que no se salga por arriba
-  if (top - tooltipHeight < 0) {
-    top = position.y + 20;
-  }
-  
-  // En móvil, centrar el tooltip
-  if (isMobile) {
-    left = (screenWidth - tooltipWidth) / 2;
-    top = Math.max(20, Math.min(top, screenHeight - tooltipHeight - 20));
-  }
+  }, [position, isFixed, isMobile]);
   
   const handleWhatsApp = () => {
     const message = `Hola! Me interesa consultar sobre el espacio ${gondola.section} (${gondola.type === 'gondola' ? 'Góndola' : 'Puntera'}) en Mayorista Soto.`;
@@ -72,26 +64,24 @@ export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMou
       ref={tooltipRef}
       className="fixed z-[60] pointer-events-auto"
       style={{
-        left: left,
-        top: top,
-        transform: isMobile ? 'none' : 'translateY(-100%)'
+        left: fixedPosition.x,
+        top: fixedPosition.y,
+        transform: isMobile ? 'none' : 'translateY(-20px)'
       }}
       onMouseEnter={() => {
-        setIsHovered(true);
         onMouseEnter?.();
       }}
       onMouseLeave={() => {
-        setIsHovered(false);
         onMouseLeave?.();
       }}
     >
-      <Card className={`shadow-xl border-2 bg-background pointer-events-auto ${isMobile ? 'w-72' : 'w-64'}`}>
-        <CardContent className="p-3">
-          <div className="space-y-2">
+      <Card className={`shadow-xl border-2 bg-background pointer-events-auto ${isMobile ? 'w-80' : 'w-72'}`}>
+        <CardContent className="p-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold flex items-center gap-1">
+              <h3 className="font-semibold flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                {gondola.section}
+                Espacio {gondola.section}
               </h3>
               <div className="flex items-center gap-2">
                 <Badge 
@@ -113,16 +103,18 @@ export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMou
 
             <div className="flex items-center gap-2 text-sm">
               <Building className="h-4 w-4 text-muted-foreground" />
-              <span className="capitalize">{gondola.type}</span>
+              <span className="capitalize font-medium">
+                {gondola.type === 'gondola' ? 'Góndola' : 'Puntera'}
+              </span>
             </div>
 
-            {/* Imagen si existe (solo para punteras) */}
-            {gondola.type === 'puntera' && gondola.image_url && (
+            {/* Imagen si existe */}
+            {gondola.image_url && (
               <div className="mt-2 mb-2">
                 <img
                   src={gondola.image_url}
                   alt={`Imagen de ${gondola.section}`}
-                  className="w-full h-24 object-cover rounded border"
+                  className="w-full h-32 object-cover rounded border"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
@@ -130,18 +122,11 @@ export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMou
               </div>
             )}
 
-            {/* Mostrar información de marca solo si está ocupado */}
-            {gondola.status === 'occupied' && gondola.brand && gondola.brand !== 'Espacio Ocupado' && (
+            {/* Información de marca */}
+            {gondola.brand && gondola.status === 'occupied' && (
               <div className="flex items-center gap-2 text-sm">
                 <Package className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">{gondola.brand}</span>
-              </div>
-            )}
-
-            {gondola.status === 'occupied' && gondola.brand === 'Espacio Ocupado' && (
-              <div className="flex items-center gap-2 text-sm">
-                <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-orange-600">Espacio Ocupado</span>
               </div>
             )}
 
@@ -150,22 +135,25 @@ export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMou
               <span>{gondola.category}</span>
             </div>
 
+            {/* Fecha de fin si existe */}
             {gondola.status === 'occupied' && gondola.endDate && (
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs">Hasta: {new Date(gondola.endDate).toLocaleDateString('es-ES')}</span>
+                <span className="text-xs">
+                  Hasta: {new Date(gondola.endDate).toLocaleDateString('es-ES')}
+                </span>
               </div>
             )}
 
             {/* Llamada a la acción para espacios disponibles */}
             {gondola.status === 'available' && (
-              <div className="mt-3 pt-2 border-t">
+              <div className="mt-3 pt-3 border-t">
                 <Button 
                   size="sm" 
-                  className="w-full bg-green-600 hover:bg-green-700 text-xs pointer-events-auto"
+                  className="w-full bg-green-600 hover:bg-green-700 text-sm pointer-events-auto"
                   onClick={handleWhatsApp}
                 >
-                  <MessageCircle className="h-3 w-3 mr-1" />
+                  <MessageCircle className="h-4 w-4 mr-2" />
                   Solicitar este espacio
                 </Button>
               </div>
@@ -173,18 +161,24 @@ export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMou
 
             {/* Botón de consulta para espacios ocupados */}
             {gondola.status === 'occupied' && (
-              <div className="mt-3 pt-2 border-t">
+              <div className="mt-3 pt-3 border-t">
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="w-full text-xs pointer-events-auto"
+                  className="w-full text-sm pointer-events-auto"
                   onClick={handleWhatsApp}
                 >
-                  <MessageCircle className="h-3 w-3 mr-1" />
+                  <MessageCircle className="h-4 w-4 mr-2" />
                   Consultar disponibilidad
                 </Button>
               </div>
             )}
+
+            {/* Info de contacto */}
+            <div className="mt-3 pt-2 border-t text-center text-xs text-muted-foreground">
+              <div>📞 +54 9 223 489-0963</div>
+              <div>📍 Fortunato de la Plaza 4798</div>
+            </div>
           </div>
         </CardContent>
       </Card>

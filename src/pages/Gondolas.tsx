@@ -130,15 +130,15 @@ const Gondolas = () => {
     const maxRetries = 3;
     
     const setupRealtime = () => {
-      // SEGURIDAD: Escuchar cambios en tabla de display (información no sensible)
+      // SEGURIDAD: Escuchar cambios en tabla principal para usuarios públicos
       const channel = supabase
-        .channel('gondolas-display-changes')
+        .channel('gondolas-changes')
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
-            table: 'gondolas_display'
+            table: 'gondolas'
           },
           (payload) => {
             console.log('📡 Evento realtime recibido:', payload);
