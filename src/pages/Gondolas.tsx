@@ -5,7 +5,7 @@ import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp, CheckCircle, XCircle, Grid3X3, DollarSign } from "lucide-react";
+import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp, CheckCircle, XCircle, Grid3X3, DollarSign, Eye, Target, Star, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -273,23 +273,18 @@ const Gondolas = () => {
               </div>
             </div>
             
-            {/* Info adicional para desktop */}
-            <div className="hidden md:flex items-center gap-6">
-              <div className="text-center">
-                <div className="text-lg font-semibold text-primary">Local Premium</div>
-                <div className="text-xs text-muted-foreground">Mar del Plata</div>
-              </div>
-            </div>
           </div>
         </div>
       </header>
       
       <main className="container mx-auto px-4 py-8">
-        {/* Hero Section simplificado */}
-        <div className="text-center mb-8">          
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Descubre las mejores ubicaciones para exhibir tu marca. 
-            Espacios estratégicos con alta visibilidad y flujo de clientes.
+        {/* Hero Section fuerte */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">
+            Tu marca en la mejor ubicación del Mayorista Soto
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
+            Punteras, góndolas y exhibiciones exclusivas para aumentar tu visibilidad y ventas
           </p>
         </div>
 
@@ -404,6 +399,134 @@ const Gondolas = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Beneficios para la marca */}
+        <div className="mt-12 mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-primary mb-4">
+              ¿Por qué elegir Mayorista Soto?
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Tu marca merece la mejor exposición en el local líder de Mar del Plata
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-primary/10 p-3 rounded-full flex-shrink-0">
+                    <Eye className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Mayor visibilidad</h3>
+                    <p className="text-muted-foreground">
+                      Punteras y góndolas ubicadas al frente del local para máxima exposición de tu marca.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-green-600/10 p-3 rounded-full flex-shrink-0">
+                    <TrendingUp className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Incremento de ventas</h3>
+                    <p className="text-muted-foreground">
+                      Aumenta tu recordación de marca y ventas en un local con alto flujo de clientes.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-blue-600/10 p-3 rounded-full flex-shrink-0">
+                    <Target className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Doble audiencia</h3>
+                    <p className="text-muted-foreground">
+                      Llega tanto a clientes mayoristas como minoristas en un solo espacio estratégico.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-purple-600/10 p-3 rounded-full flex-shrink-0">
+                    <DollarSign className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Flexibilidad de pago</h3>
+                    <p className="text-muted-foreground">
+                      Canon fijo, mercadería bonificada o promociones conjuntas. Adaptamos la modalidad a tu negocio.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Casos de éxito / testimonios */}
+        <div className="mt-12 mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-primary mb-4">
+              Casos de Éxito
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Marcas líderes confían en nosotros para potenciar sus ventas
+            </p>
+          </div>
+          
+          <Card className="max-w-4xl mx-auto bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
+            <CardContent className="p-8">
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-green-600 p-4 rounded-full">
+                    <Star className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+                <blockquote className="text-xl italic text-green-800 dark:text-green-200 mb-4">
+                  "Con la puntera de lácteos, aumentamos nuestras ventas un 25% en 30 días"
+                </blockquote>
+                <p className="text-green-600 dark:text-green-400 font-medium">
+                  - Marca líder en lácteos
+                </p>
+              </div>
+              
+              <div className="border-t border-green-200 dark:border-green-800 pt-6">
+                <p className="text-center text-sm text-green-600 dark:text-green-400 mb-4 font-medium">
+                  Marcas que confían en Mayorista Soto:
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-8 opacity-70">
+                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
+                    <span className="text-sm font-medium">Marca Lácteos</span>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
+                    <span className="text-sm font-medium">Productos Premium</span>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
+                    <span className="text-sm font-medium">Bebidas Top</span>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-lg">
+                    <span className="text-sm font-medium">Snacks Elite</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Contact Section */}
