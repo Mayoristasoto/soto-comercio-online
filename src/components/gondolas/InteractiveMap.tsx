@@ -29,8 +29,15 @@ export const InteractiveMap = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | null>(null);
-  const [lastTouchDistance, setLastTouchDistance] = useState(0);
-  const [lastTouchCenter, setLastTouchCenter] = useState({ x: 0, y: 0 });
+  // Enhanced mobile and touch optimizations
+  const [touchStartDistance, setTouchStartDistance] = useState<number | null>(null);
+  const [touchStartCenter, setTouchStartCenter] = useState<{ x: number; y: number } | null>(null);
+  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
+  const [panInitialOffset, setPanInitialOffset] = useState<{ x: number; y: number } | null>(null);
+  const [lastTouchTime, setLastTouchTime] = useState(0);
+  const [touchSensitivity] = useState(1.5);
+  const [minZoom] = useState(0.3);
+  const [maxZoom] = useState(4);
   const svgRef = useRef<SVGSVGElement>(null);
   const isMobile = useMobileDetection();
 
@@ -348,8 +355,8 @@ export const InteractiveMap = ({
       event.preventDefault(); // Solo prevenir cuando es necesario
       const distance = getTouchDistance(event.touches);
       const center = getTouchCenter(event.touches);
-      setLastTouchDistance(distance);
-      setLastTouchCenter(center);
+      setTouchStartDistance(distance);
+      setTouchStartCenter(center);
     }
   };
 
@@ -370,29 +377,32 @@ export const InteractiveMap = ({
       const distance = getTouchDistance(event.touches);
       const center = getTouchCenter(event.touches);
       
-      if (lastTouchDistance > 0) {
+      if (touchStartDistance && touchStartDistance > 0) {
         // Aumentar sensibilidad del zoom para móvil
-        const zoomDelta = (distance - lastTouchDistance) * 0.008; // Aumentado de 0.003
+        const zoomDelta = (distance - touchStartDistance) * 0.008; // Aumentado de 0.003
         handleZoom(zoomDelta);
       }
       
       // Pan más responsivo basado en movimiento del centro
-      const centerDeltaX = center.x - lastTouchCenter.x;
-      const centerDeltaY = center.y - lastTouchCenter.y;
+      if (touchStartCenter) {
+        const centerDeltaX = center.x - touchStartCenter.x;
+        const centerDeltaY = center.y - touchStartCenter.y;
       
-      setPan(prev => ({
-        x: prev.x + centerDeltaX * 1.2, // Aumentar sensibilidad del pan
-        y: prev.y + centerDeltaY * 1.2
-      }));
+        setPan(prev => ({
+          x: prev.x + centerDeltaX * 1.2, // Aumentar sensibilidad del pan
+          y: prev.y + centerDeltaY * 1.2
+        }));
+      }
       
-      setLastTouchDistance(distance);
-      setLastTouchCenter(center);
+      setTouchStartDistance(distance);
+      setTouchStartCenter(center);
     }
   };
 
   const handleTouchEnd = () => {
     setIsPanning(false);
-    setLastTouchDistance(0);
+    setTouchStartDistance(null);
+    setTouchStartCenter(null);
   };
 
   const handleSvgClick = (event: React.MouseEvent) => {
@@ -466,49 +476,46 @@ export const InteractiveMap = ({
   };
 
   return (
-    <div className={`relative w-full overflow-hidden ${
-      isMobile && !isEditMode ? 'h-screen flex items-center justify-center' : ''
-    }`}>
-      {/* Rotación aplicada solo al contenedor en móvil */}
-      <div 
-        className={`${isMobile && !isEditMode ? 'transform rotate-90 origin-center' : ''}`}
-        style={{
-          width: isMobile && !isEditMode ? '100vh' : '100%',
-          height: isMobile && !isEditMode ? '100vw' : 'auto',
-        }}
-      >
-      {/* Controles de zoom optimizados para móvil */}
-      <div className={`absolute ${isMobile ? 'bottom-4 right-4' : 'top-4 left-4'} z-10 flex flex-col gap-3`}>
-        <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-2 bg-background/95 rounded-xl p-3 border shadow-lg backdrop-blur-sm`}>
+    <div className="relative w-full h-[400px] md:h-[600px] overflow-hidden touch-optimized">
+      <div className="w-full h-full">
+        {/* Enhanced Mobile Instructions */}
+        {isMobile && !isEditMode && (
+          <div className="absolute top-4 left-4 z-20">
+            <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg">
+              <p className="text-xs text-muted-foreground">
+                Pellizca para zoom • Arrastra para mover
+              </p>
+            </div>
+          </div>
+        )}
+        {/* Enhanced Zoom Controls for Mobile */}
+        <div className="absolute top-4 right-4 z-20 flex flex-col gap-3">
           <button
-            onClick={() => handleZoom(0.3)}
-            className={`${isMobile ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-lg'} flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold shadow-md transition-all duration-200 active:scale-95`}
+            onClick={() => handleZoom(0.4)}
+            className="w-14 h-14 md:w-12 md:h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl active:scale-95 active:shadow-lg touch-optimized"
+            aria-label="Zoom in"
           >
             +
           </button>
           <button
-            onClick={() => handleZoom(-0.3)}
-            className={`${isMobile ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-lg'} flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold shadow-md transition-all duration-200 active:scale-95`}
+            onClick={() => handleZoom(-0.4)}
+            className="w-14 h-14 md:w-12 md:h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl active:scale-95 active:shadow-lg touch-optimized"
+            aria-label="Zoom out"
           >
             −
           </button>
-          <div className={`${isMobile ? 'w-14 h-12 text-sm' : 'w-12 h-10 text-xs'} flex items-center justify-center bg-muted rounded-xl font-medium border`}>
-            {Math.round(zoom * 100)}%
-          </div>
-        </div>
-        
-        {/* Botón de centrar mejorado para móvil */}
-        {isMobile && (
           <button
             onClick={() => {
               setZoom(1);
               setPan({ x: 0, y: 0 });
             }}
-            className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-xl px-4 py-3 text-sm font-medium shadow-md transition-all duration-200 active:scale-95"
+            className="w-14 h-14 md:w-12 md:h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground text-lg active:scale-95 active:shadow-lg touch-optimized"
+            aria-label="Center map"
+            title="Centrar mapa"
           >
-            🎯 Centrar Vista
+            ⌂
           </button>
-        )}
+        </div>
         
         {isEditMode && (
           <div className="flex flex-col gap-1 bg-background/90 rounded-lg p-2 border">
@@ -538,59 +545,43 @@ export const InteractiveMap = ({
           </div>
         )}
         
-        {/* Instrucciones optimizadas para móvil */}
-        {isMobile && !isEditMode && (
-          <div className="absolute top-4 left-4 bg-background/95 rounded-xl p-4 border shadow-lg max-w-72 backdrop-blur-sm">
-            <div className="text-sm text-foreground space-y-2">
-              <div className="font-semibold text-primary flex items-center gap-2">
-                📱 <span>Controles Táctiles</span>
-              </div>
-              <div className="text-xs space-y-1">
-                <div>👆 <strong>Un dedo:</strong> Mover mapa</div>
-                <div>🤏 <strong>Pinch:</strong> Zoom (pellizcar)</div>
-                <div>🎯 <strong>Botón derecha:</strong> Centrar vista</div>
-                <div>👇 <strong>Toca góndola:</strong> Ver información</div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       
-      <svg
-        ref={svgRef}
-        width="1000"
-        height="700"
-        viewBox="0 0 1000 700"
-        className={`border border-border rounded-lg bg-muted/20 ${
-          isCreating ? 'cursor-crosshair' : isPanning ? 'cursor-move' : 'cursor-default'
-        } ${isMobile && !isEditMode ? 'transform transition-transform duration-300' : ''}`}
-        onContextMenu={(e) => e.preventDefault()}
-        onMouseMove={(e) => {
-          handleMouseMoveOnSvg(e);
-          handlePan(e);
-        }}
-        onMouseUp={() => {
-          handleMouseUp();
-          setIsPanning(false);
-        }}
-        onMouseLeave={() => {
-          handleMouseUp();
-          setIsPanning(false);
-        }}
-        onMouseDown={handlePanStart}
-        onClick={handleSvgClick}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: '50% 50%',
-          touchAction: isMobile ? 'none' : 'pan-x pan-y', // Prevenir scroll nativo en móvil
-          willChange: 'transform', // Optimizar para animaciones
-          backfaceVisibility: 'hidden', // Acelerar con GPU
-          userSelect: 'none' // Prevenir selección de texto en móvil
-        }}
-      >
+        <svg
+          ref={svgRef}
+          width="1000"
+          height="700"
+          viewBox="0 0 1000 700"
+          className={`w-full h-full border border-border rounded-lg bg-muted/20 gpu-accelerated ${
+            isCreating ? 'cursor-crosshair' : isPanning ? 'cursor-move' : 'cursor-default'
+          }`}
+          onContextMenu={(e) => e.preventDefault()}
+          onMouseMove={(e) => {
+            handleMouseMoveOnSvg(e);
+            handlePan(e);
+          }}
+          onMouseUp={() => {
+            handleMouseUp();
+            setIsPanning(false);
+          }}
+          onMouseLeave={() => {
+            handleMouseUp();
+            setIsPanning(false);
+          }}
+          onMouseDown={handlePanStart}
+          onClick={handleSvgClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '50% 50%',
+            touchAction: 'none',
+            willChange: 'transform',
+            backfaceVisibility: 'hidden',
+            userSelect: 'none'
+          }}
+        >
         {/* Background floor plan */}
         <image
           href="/lovable-uploads/d3b32fd2-a19d-44d5-a8e2-b167fe688726.png"
@@ -785,7 +776,7 @@ export const InteractiveMap = ({
           <text x="10" y="70" fontSize="8" fill="hsl(var(--muted-foreground))">G = Góndola</text>
           <text x="10" y="82" fontSize="8" fill="hsl(var(--muted-foreground))">P = Puntera</text>
         </g>
-      </svg>
+        </svg>
       </div>
     </div>
   );

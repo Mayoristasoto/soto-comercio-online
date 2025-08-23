@@ -101,3 +101,70 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Mobile-optimized touch interactions */
+  .touch-optimized {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth animations for mobile */
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Hardware acceleration for smooth interactions */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* Gesture-friendly hover states */
+  @media (hover: hover) {
+    .hover-scale:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    .mobile-fullwidth {
+      width: 100vw;
+      margin-left: calc(-50vw + 50%);
+    }
+    
+    .mobile-safe-area {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
