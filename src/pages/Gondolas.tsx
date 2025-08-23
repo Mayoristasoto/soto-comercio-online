@@ -242,33 +242,6 @@ const Gondolas = () => {
 
 
         {/* Stats Cards */}
-        {/* Botón de actualización manual mejorado */}
-        <div className="mb-6 text-center">
-          <Button 
-            onClick={() => {
-              console.log('🔄 Actualización manual iniciada...');
-              setIsLoading(true);
-              loadGondolas();
-            }} 
-            disabled={isLoading}
-            className="w-full md:w-auto bg-primary hover:bg-primary/90 px-6 py-3"
-            size="lg"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Actualizando...
-              </>
-            ) : (
-              <>
-                🔄 Actualizar Layout
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">
-            Última actualización: {new Date().toLocaleTimeString('es-ES')}
-          </p>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
