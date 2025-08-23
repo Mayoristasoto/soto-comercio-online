@@ -5,7 +5,7 @@ import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp, CheckCircle, XCircle, Grid3X3 } from "lucide-react";
+import { MapPin, Building2, MessageCircle, Users, ShoppingCart, TrendingUp, CheckCircle, XCircle, Grid3X3, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -333,44 +333,44 @@ const Gondolas = () => {
           </div>
         </div>
 
-        {/* Stats Cards - Debajo del layout con iconos mejorados */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 mb-8">
+        {/* Stats Cards - Debajo del layout con iconos mejorados - ACHICADAS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 mb-6">
           <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-            <CardContent className="p-6 text-center">
-              <div className="flex items-center justify-center mb-4">
-                <div className="bg-green-500 p-3 rounded-full">
-                  <CheckCircle className="h-8 w-8 text-white" />
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-3">
+                <div className="bg-green-500 p-2 rounded-full">
+                  <CheckCircle className="h-6 w-6 text-white" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-green-700 dark:text-green-300 mb-2">{availableSpaces}</div>
-              <div className="text-sm font-medium text-green-600 dark:text-green-400">Espacios Disponibles</div>
-              <div className="text-xs text-green-500 dark:text-green-500 mt-1">Listos para alquilar</div>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-300 mb-1">{availableSpaces}</div>
+              <div className="text-xs font-medium text-green-600 dark:text-green-400">Espacios Disponibles</div>
+              <div className="text-xs text-green-500 dark:text-green-500">Listos para alquilar</div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800">
-            <CardContent className="p-6 text-center">
-              <div className="flex items-center justify-center mb-4">
-                <div className="bg-red-500 p-3 rounded-full">
-                  <XCircle className="h-8 w-8 text-white" />
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-3">
+                <div className="bg-red-500 p-2 rounded-full">
+                  <XCircle className="h-6 w-6 text-white" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-red-700 dark:text-red-300 mb-2">{occupiedSpaces}</div>
-              <div className="text-sm font-medium text-red-600 dark:text-red-400">Espacios Ocupados</div>
-              <div className="text-xs text-red-500 dark:text-red-500 mt-1">En uso actualmente</div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300 mb-1">{occupiedSpaces}</div>
+              <div className="text-xs font-medium text-red-600 dark:text-red-400">Espacios Ocupados</div>
+              <div className="text-xs text-red-500 dark:text-red-500">En uso actualmente</div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-6 text-center">
-              <div className="flex items-center justify-center mb-4">
-                <div className="bg-blue-500 p-3 rounded-full">
-                  <Grid3X3 className="h-8 w-8 text-white" />
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-3">
+                <div className="bg-blue-500 p-2 rounded-full">
+                  <Grid3X3 className="h-6 w-6 text-white" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-2">{totalSpaces}</div>
-              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">Total de Espacios</div>
-              <div className="text-xs text-blue-500 dark:text-blue-500 mt-1">Superficie completa</div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-1">{totalSpaces}</div>
+              <div className="text-xs font-medium text-blue-600 dark:text-blue-400">Total de Espacios</div>
+              <div className="text-xs text-blue-500 dark:text-blue-500">Superficie completa</div>
             </CardContent>
           </Card>
         </div>
@@ -382,11 +382,11 @@ const Gondolas = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
                 <div className="flex items-center justify-center gap-3">
                   <div className="bg-primary/10 p-3 rounded-full">
-                    <Users className="h-6 w-6 text-primary" />
+                    <DollarSign className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary">+50K</div>
-                    <div className="text-sm text-muted-foreground">Clientes al mes</div>
+                    <div className="text-3xl font-bold text-primary">+100.000</div>
+                    <div className="text-sm text-muted-foreground">Ingresos al local</div>
                   </div>
                 </div>
                 <div className="flex items-center justify-center gap-3">
@@ -394,7 +394,7 @@ const Gondolas = () => {
                     <ShoppingCart className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary">+10K</div>
+                    <div className="text-3xl font-bold text-primary">+20.000</div>
                     <div className="text-sm text-muted-foreground">Tickets mensuales</div>
                   </div>
                 </div>
