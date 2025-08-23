@@ -7,9 +7,11 @@ import { MapPin, Package, Tag, Building, Calendar, MessageCircle } from "lucide-
 interface GondolaTooltipProps {
   gondola: Gondola;
   position: { x: number; y: number };
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
-export const GondolaTooltip = ({ gondola, position }: GondolaTooltipProps) => {
+export const GondolaTooltip = ({ gondola, position, onMouseEnter, onMouseLeave }: GondolaTooltipProps) => {
   // Detectar si está en mobile y ajustar posición
   const isMobile = window.innerWidth <= 768;
   
@@ -40,14 +42,18 @@ export const GondolaTooltip = ({ gondola, position }: GondolaTooltipProps) => {
   
   return (
     <div
-      className="fixed z-50 pointer-events-none"
+      className="fixed z-50"
       style={{
         left: left,
         top: top,
         transform: isMobile ? 'none' : 'translateY(-100%)'
       }}
     >
-      <Card className={`shadow-lg border-2 ${isMobile ? 'w-72' : 'w-64'}`}>
+      <Card 
+        className={`shadow-lg border-2 ${isMobile ? 'w-72' : 'w-64'}`}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
         <CardContent className="p-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -105,10 +111,10 @@ export const GondolaTooltip = ({ gondola, position }: GondolaTooltipProps) => {
             {gondola.status === 'available' && (
               <div className="mt-3 pt-2 border-t">
                 <a 
-                  href={`https://wa.me/5492234890963?text=Hola! Me interesa el espacio ${gondola.section} (${gondola.type}). ¿Podrían darme más información sobre disponibilidad y precios?`}
+                  href={`https://wa.me/5492234890963?text=Hola quiero solicitar el espacio de la ${gondola.type} ${gondola.section}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full"
+                  className="w-full pointer-events-auto"
                 >
                   <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-xs">
                     <MessageCircle className="h-3 w-3 mr-1" />

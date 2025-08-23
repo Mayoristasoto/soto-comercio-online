@@ -27,6 +27,7 @@ const Gondolas = () => {
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [isTooltipHovered, setIsTooltipHovered] = useState(false);
 
   // Load gondolas from Supabase con cache busting
   const loadGondolas = async (forceRefresh = false, bypassCache = false) => {
@@ -340,7 +341,11 @@ const Gondolas = () => {
             
             <InteractiveMap
               gondolas={filteredGondolas}
-              onGondolaHover={setHoveredGondola}
+              onGondolaHover={(gondola) => {
+                if (!isTooltipHovered) {
+                  setHoveredGondola(gondola);
+                }
+              }}
               onGondolaSelect={() => {}} // No selection in view mode
               onGondolaUpdate={() => {}} // No updates in view mode
               onGondolaAdd={() => {}} // No adding in view mode
@@ -431,6 +436,11 @@ const Gondolas = () => {
           <GondolaTooltip
             gondola={hoveredGondola}
             position={mousePosition}
+            onMouseEnter={() => setIsTooltipHovered(true)}
+            onMouseLeave={() => {
+              setIsTooltipHovered(false);
+              setHoveredGondola(null);
+            }}
           />
         )}
       </main>
