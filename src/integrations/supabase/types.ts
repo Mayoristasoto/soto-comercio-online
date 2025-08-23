@@ -320,6 +320,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_authenticated_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       log_security_event: {
         Args: {
           p_details?: Json
