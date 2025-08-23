@@ -375,32 +375,35 @@ const Gondolas = () => {
           </Card>
         </div>
 
-        {/* Datos de interés como tarjeta */}
+        {/* Datos de interés como tarjetas separadas */}
         <div className="mt-8 mb-8">
-          <Card className="max-w-4xl mx-auto">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
-                <div className="flex items-center justify-center gap-3">
-                  <div className="bg-primary/10 p-3 rounded-full">
-                    <DollarSign className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-primary">+100.000</div>
-                    <div className="text-sm text-muted-foreground">Ingresos al local</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-primary p-4 rounded-full">
+                    <Users className="h-8 w-8 text-white" />
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-3">
-                  <div className="bg-primary/10 p-3 rounded-full">
-                    <ShoppingCart className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-primary">+20.000</div>
-                    <div className="text-sm text-muted-foreground">Tickets mensuales</div>
+                <div className="text-4xl font-bold text-primary mb-2">100.000</div>
+                <div className="text-lg font-medium text-primary/80 mb-1">Ingresos al local</div>
+                <div className="text-sm text-muted-foreground">Personas mensuales</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-green-600 p-4 rounded-full">
+                    <ShoppingCart className="h-8 w-8 text-white" />
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="text-4xl font-bold text-green-700 dark:text-green-300 mb-2">20.000</div>
+                <div className="text-lg font-medium text-green-600 dark:text-green-400 mb-1">Tickets mensuales</div>
+                <div className="text-sm text-green-500 dark:text-green-500">Ventas registradas</div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Contact Section */}
