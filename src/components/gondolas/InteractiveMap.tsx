@@ -476,49 +476,78 @@ export const InteractiveMap = ({
   };
 
   return (
-    <div className="relative w-full h-[400px] md:h-[600px] overflow-hidden touch-optimized">
-      <div className="w-full h-full">
-        {/* Enhanced Mobile Instructions */}
-        {isMobile && !isEditMode && (
-          <div className="absolute top-4 left-4 z-20">
-            <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg">
-              <p className="text-xs text-muted-foreground">
-                Pellizca para zoom • Arrastra para mover
-              </p>
-            </div>
+    <div className="relative w-full">
+      {/* Mobile Top Controls Card with +/- buttons */}
+      {isMobile && (
+        <div className="bg-card border border-border rounded-lg p-4 mb-4 shadow-sm">
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => handleZoom(0.4)}
+              className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xl font-bold shadow-lg hover:bg-primary/90 transition-colors"
+              aria-label="Acercar"
+            >
+              +
+            </button>
+            <button
+              onClick={() => handleZoom(-0.4)}
+              className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xl font-bold shadow-lg hover:bg-primary/90 transition-colors"
+              aria-label="Alejar"
+            >
+              −
+            </button>
+            <button
+              onClick={() => {
+                setZoom(1);
+                setPan({ x: 0, y: 0 });
+              }}
+              className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-lg shadow-lg hover:bg-secondary/90 transition-colors"
+              aria-label="Centrar"
+              title="Centrar mapa"
+            >
+              ⌂
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Map Container - Full width on mobile */}
+      <div className={`relative overflow-hidden touch-optimized ${
+        isMobile ? 'h-[70vh] w-full bg-muted/20 border border-border rounded-lg' : 'h-[600px]'
+      }`}>
+        
+        {/* Desktop Controls - Simplified */}
+        {!isMobile && (
+          <div className="absolute top-4 right-4 z-20 flex flex-col gap-3">
+            <button
+              onClick={() => handleZoom(0.4)}
+              className="w-12 h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+            <button
+              onClick={() => handleZoom(-0.4)}
+              className="w-12 h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl"
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+            <button
+              onClick={() => {
+                setZoom(1);
+                setPan({ x: 0, y: 0 });
+              }}
+              className="w-12 h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground text-lg"
+              aria-label="Center map"
+            >
+              ⌂
+            </button>
           </div>
         )}
-        {/* Enhanced Zoom Controls for Mobile */}
-        <div className="absolute top-4 right-4 z-20 flex flex-col gap-3">
-          <button
-            onClick={() => handleZoom(0.4)}
-            className="w-14 h-14 md:w-12 md:h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl active:scale-95 active:shadow-lg touch-optimized"
-            aria-label="Zoom in"
-          >
-            +
-          </button>
-          <button
-            onClick={() => handleZoom(-0.4)}
-            className="w-14 h-14 md:w-12 md:h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground font-bold text-xl active:scale-95 active:shadow-lg touch-optimized"
-            aria-label="Zoom out"
-          >
-            −
-          </button>
-          <button
-            onClick={() => {
-              setZoom(1);
-              setPan({ x: 0, y: 0 });
-            }}
-            className="w-14 h-14 md:w-12 md:h-12 bg-card border border-border rounded-xl shadow-xl hover:bg-accent transition-all duration-200 flex items-center justify-center text-foreground text-lg active:scale-95 active:shadow-lg touch-optimized"
-            aria-label="Center map"
-            title="Centrar mapa"
-          >
-            ⌂
-          </button>
-        </div>
         
-        {isEditMode && (
-          <div className="flex flex-col gap-1 bg-background/90 rounded-lg p-2 border">
+        {/* Edit Mode Controls - Only for desktop */}
+        {isEditMode && !isMobile && (
+          <div className="absolute top-4 left-4 z-20 flex flex-col gap-1 bg-background/90 rounded-lg p-2 border">
             <button
               onClick={() => setIsCreating(isCreating === 'gondola' ? null : 'gondola')}
               className={`px-3 py-1 text-xs rounded transition-colors ${
@@ -539,13 +568,8 @@ export const InteractiveMap = ({
             >
               + Puntera
             </button>
-            <div className="text-xs text-muted-foreground mt-1 p-1">
-              Shift + arrastrar para mover vista
-            </div>
           </div>
         )}
-        
-      </div>
       
         <svg
           ref={svgRef}
@@ -778,5 +802,33 @@ export const InteractiveMap = ({
         </g>
         </svg>
       </div>
+
+      {/* Mobile Bottom Instructions Card */}
+      {isMobile && (
+        <div className="mt-4 bg-card border border-border rounded-lg p-4 shadow-sm">
+          <h3 className="font-semibold text-card-foreground mb-3">Cómo navegar el mapa</h3>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">👆</span>
+              <span>Pellizca con dos dedos para hacer zoom</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">✋</span>
+              <span>Arrastra con un dedo para moverte por el plano</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🎯</span>
+              <span>Toca una góndola para ver más información</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-3 bg-green-500 rounded"></span>
+              <span>Verde = Disponible</span>
+              <span className="w-4 h-3 bg-red-500 rounded ml-4"></span>
+              <span>Rojo = Ocupado</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
