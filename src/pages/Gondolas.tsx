@@ -76,23 +76,36 @@ const Gondolas = () => {
           status: g.status
         })));
 
+        // Para mostrar información completa, necesitamos obtener los datos de la tabla principal
+        // solo para el tooltip/popup, manteniendo la seguridad
+        const { data: fullData } = await supabase
+          .from('gondolas')
+          .select('id, brand, end_date, image_url')
+          .in('id', data.map(g => g.id));
+
+        // Crear un mapa de datos completos
+        const fullDataMap = new Map(fullData?.map(item => [item.id, item]) || []);
+
         // Convert display format to app format  
-        const formattedGondolas: Gondola[] = data.map(dbGondola => ({
-          id: dbGondola.id,
-          type: dbGondola.type as 'gondola' | 'puntera',
-          position: {
-            x: Number(dbGondola.position_x),
-            y: Number(dbGondola.position_y),
-            width: Number(dbGondola.position_width),
-            height: Number(dbGondola.position_height)
-          },
-          status: dbGondola.status as 'occupied' | 'available',
-          brand: null, // No expuesto en vista pública por seguridad
-          category: dbGondola.display_category || 'Disponible',
-          section: dbGondola.section,
-          endDate: undefined, // No expuesto en vista pública por seguridad
-          image_url: undefined // No expuesto en vista pública por seguridad
-        }));
+        const formattedGondolas: Gondola[] = data.map(dbGondola => {
+          const fullInfo = fullDataMap.get(dbGondola.id);
+          return {
+            id: dbGondola.id,
+            type: dbGondola.type as 'gondola' | 'puntera',
+            position: {
+              x: Number(dbGondola.position_x),
+              y: Number(dbGondola.position_y),
+              width: Number(dbGondola.position_width),
+              height: Number(dbGondola.position_height)
+            },
+            status: dbGondola.status as 'occupied' | 'available',
+            brand: fullInfo?.brand || null,
+            category: dbGondola.display_category || 'Disponible',
+            section: dbGondola.section,
+            endDate: fullInfo?.end_date || undefined,
+            image_url: fullInfo?.image_url || undefined
+          };
+        });
         
         console.log('✅ Góndolas formateadas:', formattedGondolas.length, '- Primer elemento:', formattedGondolas[0]);
         setGondolas(formattedGondolas);

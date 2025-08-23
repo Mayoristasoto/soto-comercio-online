@@ -1,7 +1,8 @@
 import { Gondola } from "@/pages/Gondolas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Package, Tag, Building, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Package, Tag, Building, Calendar, MessageCircle } from "lucide-react";
 
 interface GondolaTooltipProps {
   gondola: Gondola;
@@ -97,6 +98,23 @@ export const GondolaTooltip = ({ gondola, position }: GondolaTooltipProps) => {
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs">Hasta: {new Date(gondola.endDate).toLocaleDateString('es-ES')}</span>
+              </div>
+            )}
+
+            {/* Llamada a la acción para espacios disponibles */}
+            {gondola.status === 'available' && (
+              <div className="mt-3 pt-2 border-t">
+                <a 
+                  href={`https://wa.me/5492234890963?text=Hola! Me interesa el espacio ${gondola.section} (${gondola.type}). ¿Podrían darme más información sobre disponibilidad y precios?`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full"
+                >
+                  <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-xs">
+                    <MessageCircle className="h-3 w-3 mr-1" />
+                    Solicitar este espacio
+                  </Button>
+                </a>
               </div>
             )}
           </div>
