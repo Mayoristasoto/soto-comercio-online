@@ -78,79 +78,27 @@ const Gondolas = () => {
           status: g.status
         })));
 
-        // Cargar datos completos directamente desde la tabla principal
-        console.log('📊 Obteniendo datos completos de góndolas...');
-        const { data: fullData, error: fullError } = await supabase
-          .from('gondolas')
-          .select('*')
-          .order('created_at', { ascending: true });
+        // Usar solo datos de display para vista pública (información no sensible)
+        console.log('📊 Usando datos de display (públicos)...');
+        const formattedGondolas: Gondola[] = data.map(dbGondola => ({
+          id: dbGondola.id,
+          type: dbGondola.type as 'gondola' | 'puntera',
+          position: {
+            x: Number(dbGondola.position_x),
+            y: Number(dbGondola.position_y),
+            width: Number(dbGondola.position_width),
+            height: Number(dbGondola.position_height)
+          },
+          status: dbGondola.status as 'occupied' | 'available',
+          brand: dbGondola.status === 'occupied' ? 'Marca Privada' : null,
+          category: dbGondola.display_category || 'Disponible',
+          section: dbGondola.section,
+          endDate: undefined,
+          image_url: undefined
+        }));
+        setGondolas(formattedGondolas);
+        setFilteredGondolas(formattedGondolas);
 
-        if (fullError) {
-          console.error('❌ Error obteniendo datos completos:', fullError);
-          // Fallback to display data only
-          const formattedGondolas: Gondola[] = data.map(dbGondola => ({
-            id: dbGondola.id,
-            type: dbGondola.type as 'gondola' | 'puntera',
-            position: {
-              x: Number(dbGondola.position_x),
-              y: Number(dbGondola.position_y),
-              width: Number(dbGondola.position_width),
-              height: Number(dbGondola.position_height)
-            },
-            status: dbGondola.status as 'occupied' | 'available',
-            brand: null,
-            category: dbGondola.display_category || 'Disponible',
-            section: dbGondola.section,
-            endDate: undefined,
-            image_url: undefined
-          }));
-          setGondolas(formattedGondolas);
-          setFilteredGondolas(formattedGondolas);
-          return;
-        }
-
-        // Si tenemos datos completos, usarlos (igual que en GondolasEdit)
-        if (fullData && fullData.length > 0) {
-          console.log('✅ Datos completos cargados:', fullData.length, 'góndolas');
-          const formattedGondolas: Gondola[] = fullData.map(dbGondola => ({
-            id: dbGondola.id,
-            type: dbGondola.type as 'gondola' | 'puntera',
-            position: {
-              x: Number(dbGondola.position_x),
-              y: Number(dbGondola.position_y),
-              width: Number(dbGondola.position_width),
-              height: Number(dbGondola.position_height)
-            },
-            status: dbGondola.status as 'occupied' | 'available',
-            brand: dbGondola.brand,
-            category: dbGondola.category,
-            section: dbGondola.section,
-            endDate: dbGondola.end_date,
-            image_url: dbGondola.image_url
-          }));
-          setGondolas(formattedGondolas);
-          setFilteredGondolas(formattedGondolas);
-        } else {
-          // Fallback to display data
-          const formattedGondolas: Gondola[] = data.map(dbGondola => ({
-            id: dbGondola.id,
-            type: dbGondola.type as 'gondola' | 'puntera',
-            position: {
-              x: Number(dbGondola.position_x),
-              y: Number(dbGondola.position_y),
-              width: Number(dbGondola.position_width),
-              height: Number(dbGondola.position_height)
-            },
-            status: dbGondola.status as 'occupied' | 'available',
-            brand: null,
-            category: dbGondola.display_category || 'Disponible',
-            section: dbGondola.section,
-            endDate: undefined,
-            image_url: undefined
-          }));
-          setGondolas(formattedGondolas);
-          setFilteredGondolas(formattedGondolas);
-        }
       } else {
         console.log('⚠️ No hay datos en Supabase, usando datos por defecto');
         // Use default data if no data in database

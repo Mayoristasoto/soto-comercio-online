@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Gondola } from "@/pages/Gondolas";
 import { useMobileDetection } from "@/hooks/use-mobile-detection";
+import { MobileGondolaModal } from "./MobileGondolaModal";
 
 interface InteractiveMapProps {
   gondolas: Gondola[];
@@ -21,11 +22,14 @@ export const InteractiveMap = ({
   onMouseMove, 
   isEditMode 
 }: InteractiveMapProps) => {
+  const isMobile = useMobileDetection();
+  
   const [selectedGondola, setSelectedGondola] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<{ gondolaId: string; handle: string } | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  // Zoom inicial más grande en móvil
+  const [zoom, setZoom] = useState(isMobile ? 1.4 : 1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | null>(null);
@@ -38,8 +42,9 @@ export const InteractiveMap = ({
   const [touchSensitivity] = useState(1.5);
   const [minZoom] = useState(0.3);
   const [maxZoom] = useState(4);
+  const [showMobileModal, setShowMobileModal] = useState(false);
+  const [selectedMobileGondola, setSelectedMobileGondola] = useState<Gondola | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const isMobile = useMobileDetection();
 
   // Keyboard navigation
   useEffect(() => {
@@ -128,19 +133,26 @@ export const InteractiveMap = ({
     onGondolaHover(null);
   };
 
-  // Touch handlers para tooltips en móvil
+  // Touch handlers para tooltips en móvil - ahora abre modal
   const handleTouchStartOnGondola = (gondola: Gondola, event: React.TouchEvent) => {
     if (isDragging || isResizing || isPanning || event.touches.length > 1) return;
     
     event.stopPropagation();
-    const touch = event.touches[0];
-    onGondolaHover(gondola);
-    onMouseMove({ x: touch.clientX, y: touch.clientY });
     
-    // Ocultar tooltip después de 3 segundos en móvil
-    setTimeout(() => {
-      onGondolaHover(null);
-    }, 3000);
+    if (isMobile) {
+      // En móvil abrir modal en lugar de tooltip
+      setSelectedMobileGondola(gondola);
+      setShowMobileModal(true);
+    } else {
+      // En desktop mantener tooltip
+      const touch = event.touches[0];
+      onGondolaHover(gondola);
+      onMouseMove({ x: touch.clientX, y: touch.clientY });
+      
+      setTimeout(() => {
+        onGondolaHover(null);
+      }, 3000);
+    }
   };
 
   const handleMouseMove = (event: React.MouseEvent) => {
@@ -379,17 +391,22 @@ export const InteractiveMap = ({
 
   const handleTouchMove = (event: React.TouchEvent) => {
     if (event.touches.length === 1 && isPanning && panStart && panInitialOffset) {
-      // Single touch - pan optimizado y más responsivo
+      // Single touch - pan optimizado con límites para evitar "ir al otro lado"
       const touch = event.touches[0];
       const deltaX = touch.clientX - panStart.x;
       const deltaY = touch.clientY - panStart.y;
       
+      // Límites del pan para evitar que se vaya demasiado lejos
+      const maxPanX = 200;
+      const maxPanY = 200;
+      const minPanX = -500;
+      const minPanY = -300;
+      
       const newPan = {
-        x: panInitialOffset.x + deltaX,
-        y: panInitialOffset.y + deltaY
+        x: Math.max(minPanX, Math.min(maxPanX, panInitialOffset.x + deltaX)),
+        y: Math.max(minPanY, Math.min(maxPanY, panInitialOffset.y + deltaY))
       };
       
-      // Aplicar pan inmediatamente para mejor respuesta
       setPan(newPan);
     } else if (event.touches.length === 2) {
       event.preventDefault();
@@ -399,18 +416,23 @@ export const InteractiveMap = ({
       
       if (touchStartDistance && touchStartDistance > 0) {
         // Aumentar sensibilidad del zoom para móvil
-        const zoomDelta = (distance - touchStartDistance) * 0.008; // Aumentado de 0.003
+        const zoomDelta = (distance - touchStartDistance) * 0.008;
         handleZoom(zoomDelta);
       }
       
-      // Pan más responsivo basado en movimiento del centro
+      // Pan más responsivo basado en movimiento del centro con límites
       if (touchStartCenter) {
         const centerDeltaX = center.x - touchStartCenter.x;
         const centerDeltaY = center.y - touchStartCenter.y;
+        
+        const maxPanX = 200;
+        const maxPanY = 200;
+        const minPanX = -500;
+        const minPanY = -300;
       
         setPan(prev => ({
-          x: prev.x + centerDeltaX * 1.2, // Aumentar sensibilidad del pan
-          y: prev.y + centerDeltaY * 1.2
+          x: Math.max(minPanX, Math.min(maxPanX, prev.x + centerDeltaX * 1.2)),
+          y: Math.max(minPanY, Math.min(maxPanY, prev.y + centerDeltaY * 1.2))
         }));
       }
       
@@ -825,6 +847,22 @@ export const InteractiveMap = ({
         </g>
         </svg>
       </div>
+
+      {/* Modal para móvil */}
+      <MobileGondolaModal
+        gondola={selectedMobileGondola}
+        isOpen={showMobileModal}
+        onClose={() => {
+          setShowMobileModal(false);
+          setSelectedMobileGondola(null);
+        }}
+        onRequestSpace={(gondola) => {
+          const message = `Hola! Me interesa reservar el espacio ${gondola.section} (${gondola.type === 'gondola' ? 'Góndola' : 'Puntera'}) en Mayorista Soto.`;
+          const url = `https://wa.me/5492234890963?text=${encodeURIComponent(message)}`;
+          window.open(url, '_blank');
+          setShowMobileModal(false);
+        }}
+      />
 
       {/* Mobile Bottom Instructions Card */}
       {isMobile && (
