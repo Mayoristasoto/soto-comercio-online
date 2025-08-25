@@ -263,6 +263,7 @@ export const GraphicElementsEditor = ({
                     onChange={(e) => updateElement({ text_content: e.target.value })}
                     placeholder="Escribe el texto aquí..."
                     rows={3}
+                    className="resize-none"
                   />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
@@ -278,11 +279,21 @@ export const GraphicElementsEditor = ({
                    </div>
                    <div>
                      <Label>Color del texto</Label>
-                     <Input
-                       type="color"
-                       value={selectedElement.color || '#000000'}
-                       onChange={(e) => updateElement({ color: e.target.value })}
-                     />
+                     <div className="flex gap-2">
+                       <Input
+                         type="color"
+                         value={selectedElement.color || '#000000'}
+                         onChange={(e) => updateElement({ color: e.target.value })}
+                         className="w-16 h-9 p-1"
+                       />
+                       <Input
+                         type="text"
+                         value={selectedElement.color || '#000000'}
+                         onChange={(e) => updateElement({ color: e.target.value })}
+                         placeholder="#000000"
+                         className="flex-1"
+                       />
+                     </div>
                    </div>
                  </div>
                  <div>
@@ -295,11 +306,48 @@ export const GraphicElementsEditor = ({
                        <SelectValue />
                      </SelectTrigger>
                      <SelectContent>
-                       <SelectItem value="left">Izquierda</SelectItem>
-                       <SelectItem value="center">Centrado</SelectItem>
-                       <SelectItem value="right">Derecha</SelectItem>
+                       <SelectItem value="left">
+                         <div className="flex items-center gap-2">
+                           <AlignCenter className="h-4 w-4 rotate-180" />
+                           Izquierda
+                         </div>
+                       </SelectItem>
+                       <SelectItem value="center">
+                         <div className="flex items-center gap-2">
+                           <AlignCenter className="h-4 w-4" />
+                           Centrado
+                         </div>
+                       </SelectItem>
+                       <SelectItem value="right">
+                         <div className="flex items-center gap-2">
+                           <AlignCenter className="h-4 w-4 rotate-180 scale-x-[-1]" />
+                           Derecha
+                         </div>
+                       </SelectItem>
                      </SelectContent>
                    </Select>
+                 </div>
+                 
+                 {/* Ancho y alto para texto */}
+                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+                     <Label>Ancho del texto</Label>
+                     <Input
+                       type="number"
+                       value={selectedElement.width || 200}
+                       onChange={(e) => updateElement({ width: parseFloat(e.target.value) || 200 })}
+                       min="50"
+                     />
+                   </div>
+                   <div>
+                     <Label>Alto del texto</Label>
+                     <Input
+                       type="number"
+                       value={selectedElement.height || 50}
+                       onChange={(e) => updateElement({ height: parseFloat(e.target.value) || 50 })}
+                       min="20"
+                     />
+                   </div>
                  </div>
               </>
             )}

@@ -108,7 +108,8 @@ const GondolasEdit = () => {
           fill_color: el.fill_color || undefined,
           rotation: el.rotation ? Number(el.rotation) : undefined,
           z_index: el.z_index || undefined,
-          is_visible: el.is_visible ?? true
+          is_visible: el.is_visible ?? true,
+          text_align: el.text_align as 'left' | 'center' | 'right' || undefined
         }));
         setGraphicElements(formattedElements);
       }

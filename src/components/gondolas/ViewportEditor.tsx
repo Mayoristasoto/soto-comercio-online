@@ -68,6 +68,7 @@ export const ViewportEditor = ({ onViewportChange, currentViewport, onStartSelec
     const newViewport = { ...viewport, [field]: numValue };
     setViewport(newViewport);
     onViewportChange(newViewport);
+    console.log('Viewport changed:', newViewport);
   };
 
   const saveViewport = async () => {
@@ -111,6 +112,12 @@ export const ViewportEditor = ({ onViewportChange, currentViewport, onStartSelec
       console.log('Viewport guardado exitosamente:', data);
       toast("Viewport guardado correctamente");
       setHasChanges(false);
+      
+      // Update the parent component with the saved viewport
+      onViewportChange(viewport);
+      
+      // Reload the page viewport to reflect changes
+      window.location.reload();
     } catch (error) {
       console.error('Error saving viewport:', error);
       toast("Error al guardar viewport: " + (error as any)?.message);

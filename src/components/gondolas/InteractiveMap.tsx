@@ -28,6 +28,7 @@ interface GraphicElement {
   rotation?: number;
   z_index?: number;
   is_visible?: boolean;
+  text_align?: 'left' | 'center' | 'right';
 }
 
 interface InteractiveMapProps {
@@ -1124,24 +1125,60 @@ export const InteractiveMap = ({
               )}
               
               {element.type === 'text' && element.text_content && (
-                <text
-                  x={element.position_x}
-                  y={element.position_y}
-                  fontSize={element.font_size || 14}
-                  fill={element.color || '#000000'}
-                  opacity={element.opacity || 1}
-                  transform={`rotate(${element.rotation || 0} ${element.position_x} ${element.position_y})`}
-                  className={isEditMode ? 'cursor-move' : 'cursor-default'}
-                  style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
-                  onClick={(e) => {
-                    if (isEditMode) {
-                      e.stopPropagation();
-                      onGraphicElementSelect?.(element);
-                    }
-                  }}
-                >
-                  {element.text_content}
-                </text>
+                <g>
+                  <rect
+                    x={element.position_x}
+                    y={element.position_y - (element.font_size || 14)}
+                    width={element.width || 200}
+                    height={element.height || 50}
+                    fill="transparent"
+                    stroke={isSelected ? 'hsl(var(--primary))' : 'transparent'}
+                    strokeWidth="2"
+                    strokeDasharray={isSelected ? "5,5" : "0"}
+                    className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                    onClick={(e) => {
+                      if (isEditMode) {
+                        e.stopPropagation();
+                        onGraphicElementSelect?.(element);
+                      }
+                    }}
+                  />
+                  <text
+                    x={element.position_x + (
+                      element.text_align === 'center' ? (element.width || 200) / 2 :
+                      element.text_align === 'right' ? (element.width || 200) :
+                      0
+                    )}
+                    y={element.position_y}
+                    fontSize={element.font_size || 14}
+                    fill={element.color || '#000000'}
+                    opacity={element.opacity || 1}
+                    textAnchor={element.text_align || 'center'}
+                    dominantBaseline="middle"
+                    transform={`rotate(${element.rotation || 0} ${element.position_x + (element.width || 200) / 2} ${element.position_y})`}
+                    className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                    onClick={(e) => {
+                      if (isEditMode) {
+                        e.stopPropagation();
+                        onGraphicElementSelect?.(element);
+                      }
+                    }}
+                  >
+                    {element.text_content.split('\n').map((line, i) => (
+                      <tspan
+                        key={i}
+                        x={element.position_x + (
+                          element.text_align === 'center' ? (element.width || 200) / 2 :
+                          element.text_align === 'right' ? (element.width || 200) :
+                          0
+                        )}
+                        dy={i === 0 ? 0 : (element.font_size || 14) + 2}
+                      >
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                </g>
               )}
             </g>
           );
