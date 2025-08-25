@@ -50,6 +50,7 @@ interface InteractiveMapProps {
   onGraphicElementUpdate?: (element: GraphicElement) => void;
   isViewportSelecting?: boolean;
   onViewportChange?: (viewport: ViewportSettings) => void;
+  isCreating?: 'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso' | null;
 }
 
 export const InteractiveMap = ({ 
@@ -66,7 +67,8 @@ export const InteractiveMap = ({
   onGraphicElementSelect,
   onGraphicElementUpdate,
   isViewportSelecting = false,
-  onViewportChange
+  onViewportChange,
+  isCreating = null
 }: InteractiveMapProps) => {
   const isMobile = useMobileDetection();
   
@@ -78,7 +80,6 @@ export const InteractiveMap = ({
   const [zoom, setZoom] = useState(isMobile ? 1.2 : 1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso' | null>(null);
   const [isSelectingViewport, setIsSelectingViewport] = useState(false);
   const [viewportSelectionStart, setViewportSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [viewportSelectionCurrent, setViewportSelectionCurrent] = useState<{ x: number; y: number } | null>(null);
@@ -699,6 +700,8 @@ export const InteractiveMap = ({
       // Generar ID único sin límites
       const existingGondolaIds = gondolas.filter(g => g.type === 'gondola').map(g => parseInt(g.id.replace('g', '')) || 0);
       const existingPunteraIds = gondolas.filter(g => g.type === 'puntera').map(g => parseInt(g.id.replace('p', '')) || 0);
+      const existingCartelIds = gondolas.filter(g => g.type === 'cartel_exterior').map(g => parseInt(g.id.replace('ce', '')) || 0);
+      const existingExhibidorIds = gondolas.filter(g => g.type === 'exhibidor_impulso').map(g => parseInt(g.id.replace('ei', '')) || 0);
       
       const getNextId = (existingIds: number[], prefix: string) => {
         let nextNum = 1;
@@ -710,7 +713,11 @@ export const InteractiveMap = ({
       
       const newId = isCreating === 'gondola' ? 
         getNextId(existingGondolaIds, 'g') : 
-        getNextId(existingPunteraIds, 'p');
+        isCreating === 'puntera' ?
+        getNextId(existingPunteraIds, 'p') :
+        isCreating === 'cartel_exterior' ?
+        getNextId(existingCartelIds, 'ce') :
+        getNextId(existingExhibidorIds, 'ei');
       
       const newGondola: Gondola = {
         id: newId,
@@ -718,8 +725,13 @@ export const InteractiveMap = ({
         position: { 
           x: Math.max(0, x - 70), 
           y: Math.max(0, y - 30), 
-          width: isCreating === 'gondola' ? 140 : 40, 
-          height: 60 
+          width: isCreating === 'gondola' ? 140 : 
+                 isCreating === 'puntera' ? 40 :
+                 isCreating === 'cartel_exterior' ? 120 :
+                 80, // exhibidor_impulso
+          height: isCreating === 'cartel_exterior' ? 40 : 
+                  isCreating === 'exhibidor_impulso' ? 50 :
+                  60 // gondola and puntera
         },
         status: 'available',
         brand: null,
@@ -728,7 +740,7 @@ export const InteractiveMap = ({
       };
       
       onGondolaAdd(newGondola);
-      setIsCreating(null);
+      // Note: setIsCreating is now handled by parent component
     } else if (!isCreating && !isDragging && !isResizing) {
       // Deseleccionar si hacemos click en el fondo
       setSelectedGondola(null);

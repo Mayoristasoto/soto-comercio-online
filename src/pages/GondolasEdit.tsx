@@ -13,7 +13,7 @@ import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserIcon, RefreshCw, Wifi, WifiOff, Tag } from "lucide-react";
+import { ArrowLeft, Copy, Trash2, Store, Download, Upload, LogOut, User as UserIcon, RefreshCw, Wifi, WifiOff, Tag, Package2, Monitor, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +54,7 @@ const GondolasEdit = () => {
   const [graphicElements, setGraphicElements] = useState<GraphicElement[]>([]);
   const [selectedGraphicElement, setSelectedGraphicElement] = useState<GraphicElement | null>(null);
   const [isViewportSelecting, setIsViewportSelecting] = useState(false);
+  const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso' | null>(null);
   
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
@@ -813,28 +814,70 @@ const GondolasEdit = () => {
                       </p>
                     </div>
                     
-                    {selectedGondola && (
-                      <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                      {/* Botones para crear nuevos elementos */}
+                      <div className="flex gap-2 mr-4">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => duplicateGondola(selectedGondola)}
-                          className="flex items-center gap-2"
+                          onClick={() => setIsCreating('gondola')}
+                          className="flex items-center gap-1"
                         >
-                          <Copy className="h-4 w-4" />
-                          Duplicar
+                          <Package2 className="h-4 w-4" />
+                          + Góndola
                         </Button>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
-                          onClick={() => deleteGondola(selectedGondola.id)}
-                          className="flex items-center gap-2"
+                          onClick={() => setIsCreating('puntera')}
+                          className="flex items-center gap-1"
                         >
-                          <Trash2 className="h-4 w-4" />
-                          Eliminar
+                          <Store className="h-4 w-4" />
+                          + Puntera
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsCreating('cartel_exterior')}
+                          className="flex items-center gap-1"
+                        >
+                          <Monitor className="h-4 w-4" />
+                          + Cartel
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsCreating('exhibidor_impulso')}
+                          className="flex items-center gap-1"
+                        >
+                          <Zap className="h-4 w-4" />
+                          + Exhibidor
                         </Button>
                       </div>
-                    )}
+
+                      {selectedGondola && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => duplicateGondola(selectedGondola)}
+                            className="flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Duplicar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteGondola(selectedGondola.id)}
+                            className="flex items-center gap-2"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <InteractiveMap
@@ -842,7 +885,10 @@ const GondolasEdit = () => {
                     onGondolaHover={setHoveredGondola}
                     onGondolaSelect={setSelectedGondola}
                     onGondolaUpdate={updateGondola}
-                    onGondolaAdd={addGondola}
+                    onGondolaAdd={(newGondola) => {
+                      addGondola(newGondola);
+                      setIsCreating(null);
+                    }}
                     onMouseMove={setMousePosition}
                     isEditMode={true}
                     viewport={viewport}
@@ -850,6 +896,7 @@ const GondolasEdit = () => {
                     selectedGraphicElement={selectedGraphicElement}
                     onGraphicElementSelect={setSelectedGraphicElement}
                     onGraphicElementUpdate={updateGraphicElement}
+                    isCreating={isCreating}
                   />
                 </div>
               </div>
@@ -863,6 +910,29 @@ const GondolasEdit = () => {
                     onDuplicate={duplicateGondola}
                     onClose={() => setSelectedGondola(null)}
                   />
+                ) : isCreating ? (
+                  <Card className="h-fit">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Crear {
+                        isCreating === 'gondola' ? 'Góndola' : 
+                        isCreating === 'puntera' ? 'Puntera' :
+                        isCreating === 'cartel_exterior' ? 'Cartel Exterior' :
+                        'Exhibidor de Impulso'
+                      }</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Haz clic en el mapa para colocar el nuevo elemento
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsCreating(null)}
+                        className="w-full"
+                      >
+                        Cancelar
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ) : (
                   <GondolasList
                     gondolas={gondolas}
