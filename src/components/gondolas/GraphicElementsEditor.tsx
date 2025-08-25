@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Square, Circle, Minus, ArrowRight, Type, Trash2, Eye, EyeOff, Palette } from "lucide-react";
+import { Square, Circle, Minus, ArrowRight, Type, Trash2, Eye, EyeOff, Palette, RotateCcw, AlignCenter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -29,6 +29,7 @@ export interface GraphicElement {
   rotation?: number;
   z_index?: number;
   is_visible?: boolean;
+  text_align?: 'left' | 'center' | 'right';
 }
 
 interface GraphicElementsEditorProps {
@@ -73,6 +74,7 @@ export const GraphicElementsEditor = ({
       is_visible: true,
       text_content: activeType === 'text' ? 'Nuevo texto' : undefined,
       font_size: activeType === 'text' ? 14 : undefined,
+      text_align: activeType === 'text' ? 'center' : undefined,
     };
 
     onAddElement(baseElement);
@@ -263,26 +265,42 @@ export const GraphicElementsEditor = ({
                     rows={3}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Tamaño de fuente</Label>
-                    <Input
-                      type="number"
-                      value={selectedElement.font_size || 14}
-                      onChange={(e) => updateElement({ font_size: parseFloat(e.target.value) || 14 })}
-                      min="8"
-                      max="72"
-                    />
-                  </div>
-                  <div>
-                    <Label>Color del texto</Label>
-                    <Input
-                      type="color"
-                      value={selectedElement.color || '#000000'}
-                      onChange={(e) => updateElement({ color: e.target.value })}
-                    />
-                  </div>
-                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+                     <Label>Tamaño de fuente</Label>
+                     <Input
+                       type="number"
+                       value={selectedElement.font_size || 14}
+                       onChange={(e) => updateElement({ font_size: parseFloat(e.target.value) || 14 })}
+                       min="8"
+                       max="72"
+                     />
+                   </div>
+                   <div>
+                     <Label>Color del texto</Label>
+                     <Input
+                       type="color"
+                       value={selectedElement.color || '#000000'}
+                       onChange={(e) => updateElement({ color: e.target.value })}
+                     />
+                   </div>
+                 </div>
+                 <div>
+                   <Label>Alineación del texto</Label>
+                   <Select 
+                     value={selectedElement.text_align || 'center'} 
+                     onValueChange={(value) => updateElement({ text_align: value as 'left' | 'center' | 'right' })}
+                   >
+                     <SelectTrigger>
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="left">Izquierda</SelectItem>
+                       <SelectItem value="center">Centrado</SelectItem>
+                       <SelectItem value="right">Derecha</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
               </>
             )}
 
@@ -347,6 +365,18 @@ export const GraphicElementsEditor = ({
                 min={0}
                 max={100}
                 step={5}
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>Rotación: {selectedElement.rotation || 0}°</Label>
+              <Slider
+                value={[selectedElement.rotation || 0]}
+                onValueChange={([value]) => updateElement({ rotation: value })}
+                min={0}
+                max={360}
+                step={1}
                 className="mt-2"
               />
             </div>

@@ -49,6 +49,10 @@ export const ViewportEditor = ({ onViewportChange, currentViewport, onStartSelec
   }, []);
 
   useEffect(() => {
+    setViewport(currentViewport);
+  }, [currentViewport]);
+
+  useEffect(() => {
     const hasChanged = 
       viewport.x !== currentViewport.x ||
       viewport.y !== currentViewport.y ||
