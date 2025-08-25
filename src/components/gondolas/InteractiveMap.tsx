@@ -540,9 +540,16 @@ export const InteractiveMap = ({
     if (touches.length < 2) return 0;
     const touch1 = touches[0];
     const touch2 = touches[1];
+    
+    // Ajustar coordenadas para rotación de 90 grados en móvil
+    const touch1X = isMobile ? touch1.clientY : touch1.clientX;
+    const touch1Y = isMobile ? (window.innerWidth - touch1.clientX) : touch1.clientY;
+    const touch2X = isMobile ? touch2.clientY : touch2.clientX;
+    const touch2Y = isMobile ? (window.innerWidth - touch2.clientX) : touch2.clientY;
+    
     return Math.sqrt(
-      Math.pow(touch2.clientX - touch1.clientX, 2) + 
-      Math.pow(touch2.clientY - touch1.clientY, 2)
+      Math.pow(touch2X - touch1X, 2) + 
+      Math.pow(touch2Y - touch1Y, 2)
     );
   };
 
@@ -550,9 +557,16 @@ export const InteractiveMap = ({
     if (touches.length < 2) return { x: 0, y: 0 };
     const touch1 = touches[0];
     const touch2 = touches[1];
+    
+    // Ajustar coordenadas para rotación de 90 grados en móvil
+    const touch1X = isMobile ? touch1.clientY : touch1.clientX;
+    const touch1Y = isMobile ? (window.innerWidth - touch1.clientX) : touch1.clientY;
+    const touch2X = isMobile ? touch2.clientY : touch2.clientX;
+    const touch2Y = isMobile ? (window.innerWidth - touch2.clientX) : touch2.clientY;
+    
     return {
-      x: (touch1.clientX + touch2.clientX) / 2,
-      y: (touch1.clientY + touch2.clientY) / 2
+      x: (touch1X + touch2X) / 2,
+      y: (touch1Y + touch2Y) / 2
     };
   };
 
@@ -567,10 +581,15 @@ export const InteractiveMap = ({
     if (event.touches.length === 1) {
       // Single touch - iniciar pan
       const touch = event.touches[0];
+      
+      // Ajustar coordenadas para rotación de 90 grados en móvil
+      const touchX = isMobile ? touch.clientY : touch.clientX;
+      const touchY = isMobile ? (window.innerWidth - touch.clientX) : touch.clientY;
+      
       setIsPanning(true);
-      setPanStart({ x: touch.clientX, y: touch.clientY });
+      setPanStart({ x: touchX, y: touchY });
       setPanInitialOffset({ x: pan.x, y: pan.y });
-      setLastPanPosition({ x: touch.clientX, y: touch.clientY });
+      setLastPanPosition({ x: touchX, y: touchY });
       setLastPanTime(Date.now());
     } else if (event.touches.length === 2) {
       // Two touches - iniciar zoom
@@ -587,23 +606,28 @@ export const InteractiveMap = ({
     if (event.touches.length === 1 && isPanning && panStart && panInitialOffset) {
       // Single touch - pan suave como Google Maps
       const touch = event.touches[0];
-      const deltaX = touch.clientX - panStart.x;
-      const deltaY = touch.clientY - panStart.y;
+      
+      // Ajustar coordenadas para rotación de 90 grados en móvil
+      const touchX = isMobile ? touch.clientY : touch.clientX;
+      const touchY = isMobile ? (window.innerWidth - touch.clientX) : touch.clientY;
+      
+      const deltaX = touchX - panStart.x;
+      const deltaY = touchY - panStart.y;
       
       // Calcular velocidad para momentum
       const currentTime = Date.now();
       const timeDelta = currentTime - lastPanTime;
       if (timeDelta > 0) {
-        const velocityX = (touch.clientX - lastPanPosition.x) / timeDelta * 16;
-        const velocityY = (touch.clientY - lastPanPosition.y) / timeDelta * 16;
+        const velocityX = (touchX - lastPanPosition.x) / timeDelta * 16;
+        const velocityY = (touchY - lastPanPosition.y) / timeDelta * 16;
         setVelocity({ x: velocityX, y: velocityY });
       }
-      setLastPanPosition({ x: touch.clientX, y: touch.clientY });
+      setLastPanPosition({ x: touchX, y: touchY });
       setLastPanTime(currentTime);
       
-      // Aplicar pan con límites suaves
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
+      // Aplicar pan con límites suaves - ajustar dimensiones para rotación en móvil
+      const screenWidth = isMobile ? window.innerHeight : window.innerWidth;
+      const screenHeight = isMobile ? window.innerWidth : window.innerHeight;
       const mapWidth = 1000 * zoom;
       const mapHeight = 700 * zoom;
       
