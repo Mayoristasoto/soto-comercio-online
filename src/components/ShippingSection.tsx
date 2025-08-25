@@ -21,11 +21,11 @@ const ShippingSection = () => {
                 <Truck className="h-8 w-8 text-purple-600" />
               </div>
               <CardTitle className="text-xl font-bold">Envío Gratis</CardTitle>
-              <CardDescription>En Mar del Plata desde $20.000</CardDescription>
+              <CardDescription>En Mar del Plata desde $50.000</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 text-sm">
-                Realizamos entregas gratuitas en toda la ciudad de Mar del Plata para compras superiores a $20.000.
+                Realizamos entregas gratuitas en toda la ciudad de Mar del Plata para compras superiores a $50.000 o 5 cartones de cigarrillos.
               </p>
             </CardContent>
           </Card>
