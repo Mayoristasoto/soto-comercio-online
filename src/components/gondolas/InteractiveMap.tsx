@@ -83,6 +83,11 @@ export const InteractiveMap = ({
   const [viewportSelectionStart, setViewportSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [viewportSelectionCurrent, setViewportSelectionCurrent] = useState<{ x: number; y: number } | null>(null);
   
+  // Estados para arrastrar elementos gráficos
+  const [isDraggingGraphicElement, setIsDraggingGraphicElement] = useState(false);
+  const [draggedGraphicElement, setDraggedGraphicElement] = useState<GraphicElement | null>(null);
+  const [graphicElementDragStart, setGraphicElementDragStart] = useState({ x: 0, y: 0 });
+  
   // Enhanced mobile touch optimizations como Google Maps
   const [touchStartDistance, setTouchStartDistance] = useState<number | null>(null);
   const [touchStartCenter, setTouchStartCenter] = useState<{ x: number; y: number } | null>(null);
@@ -255,6 +260,31 @@ export const InteractiveMap = ({
   const handleMouseUp = () => {
     setIsDragging(false);
     setIsResizing(null);
+    setIsDraggingGraphicElement(false);
+    setDraggedGraphicElement(null);
+  };
+
+  // Función para iniciar el arrastre de elementos gráficos
+  const handleGraphicElementMouseDown = (element: GraphicElement, event: React.MouseEvent) => {
+    if (!isEditMode) return;
+    
+    event.stopPropagation();
+    
+    if (svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const x = (event.clientX - rect.left - pan.x) / zoom;
+      const y = (event.clientY - rect.top - pan.y) / zoom;
+      
+      setIsDraggingGraphicElement(true);
+      setDraggedGraphicElement(element);
+      setGraphicElementDragStart({
+        x: x - element.position_x,
+        y: y - element.position_y
+      });
+      
+      // Seleccionar el elemento al empezar a arrastrarlo
+      onGraphicElementSelect?.(element);
+    }
   };
 
   const handleMouseMoveOnSvg = (event: React.MouseEvent) => {
@@ -266,6 +296,22 @@ export const InteractiveMap = ({
       const x = (event.clientX - rect.left - pan.x) / zoom;
       const y = (event.clientY - rect.top - pan.y) / zoom;
       setViewportSelectionCurrent({ x, y });
+    }
+    
+    // Handle graphic element dragging
+    if (isDraggingGraphicElement && draggedGraphicElement && svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const x = (event.clientX - rect.left - pan.x) / zoom;
+      const y = (event.clientY - rect.top - pan.y) / zoom;
+      
+      const newElement = {
+        ...draggedGraphicElement,
+        position_x: x - graphicElementDragStart.x,
+        position_y: y - graphicElementDragStart.y
+      };
+      
+      onGraphicElementUpdate?.(newElement);
+      return;
     }
     
     if (isDragging && selectedGondola) {
@@ -1042,6 +1088,11 @@ export const InteractiveMap = ({
                   transform={`rotate(${element.rotation || 0} ${element.position_x + (element.width || 100) / 2} ${element.position_y + (element.height || 50) / 2})`}
                   className={isEditMode ? 'cursor-move' : 'cursor-default'}
                   style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                  onMouseDown={(e) => {
+                    if (isEditMode) {
+                      handleGraphicElementMouseDown(element, e);
+                    }
+                  }}
                   onClick={(e) => {
                     if (isEditMode) {
                       e.stopPropagation();
@@ -1062,6 +1113,11 @@ export const InteractiveMap = ({
                   opacity={element.opacity || 1}
                   className={isEditMode ? 'cursor-move' : 'cursor-default'}
                   style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                  onMouseDown={(e) => {
+                    if (isEditMode) {
+                      handleGraphicElementMouseDown(element, e);
+                    }
+                  }}
                   onClick={(e) => {
                     if (isEditMode) {
                       e.stopPropagation();
@@ -1083,6 +1139,11 @@ export const InteractiveMap = ({
                   transform={`rotate(${element.rotation || 0} ${element.position_x + (element.width || 100) / 2} ${element.position_y})`}
                   className={isEditMode ? 'cursor-move' : 'cursor-default'}
                   style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                  onMouseDown={(e) => {
+                    if (isEditMode) {
+                      handleGraphicElementMouseDown(element, e);
+                    }
+                  }}
                   onClick={(e) => {
                     if (isEditMode) {
                       e.stopPropagation();
@@ -1121,6 +1182,11 @@ export const InteractiveMap = ({
                     transform={`rotate(${element.rotation || 0} ${element.position_x + (element.width || 100) / 2} ${element.position_y})`}
                     className={isEditMode ? 'cursor-move' : 'cursor-default'}
                     style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                    onMouseDown={(e) => {
+                      if (isEditMode) {
+                        handleGraphicElementMouseDown(element, e);
+                      }
+                    }}
                     onClick={(e) => {
                       if (isEditMode) {
                         e.stopPropagation();
@@ -1143,6 +1209,11 @@ export const InteractiveMap = ({
                     strokeWidth="2"
                     strokeDasharray={isSelected ? "5,5" : "0"}
                     className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                    onMouseDown={(e) => {
+                      if (isEditMode) {
+                        handleGraphicElementMouseDown(element, e);
+                      }
+                    }}
                     onClick={(e) => {
                       if (isEditMode) {
                         e.stopPropagation();

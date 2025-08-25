@@ -478,28 +478,35 @@ export const GraphicElementsEditor = ({
               />
             </div>
 
-            <div>
-              <Label>Opacidad: {Math.round((selectedElement.opacity || 1) * 100)}%</Label>
-              <Slider
-                value={[(selectedElement.opacity || 1) * 100]}
-                onValueChange={([value]) => updateElement({ opacity: value / 100 })}
-                min={0}
-                max={100}
-                step={5}
-                className="mt-2"
-              />
-            </div>
-
-            <div>
-              <Label>Rotación: {selectedElement.rotation || 0}°</Label>
-              <Slider
-                value={[selectedElement.rotation || 0]}
-                onValueChange={([value]) => updateElement({ rotation: value })}
-                min={0}
-                max={360}
-                step={1}
-                className="mt-2"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Opacidad (%)</Label>
+                <Input
+                  type="number"
+                  value={Math.round((selectedElement.opacity || 1) * 100)}
+                  onChange={(e) => {
+                    const value = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                    updateElement({ opacity: value / 100 });
+                  }}
+                  min={0}
+                  max={100}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Rotación (°)</Label>
+                <Input
+                  type="number"
+                  value={selectedElement.rotation || 0}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    updateElement({ rotation: value % 360 });
+                  }}
+                  min={0}
+                  max={360}
+                  className="mt-1"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2">
