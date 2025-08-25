@@ -22,7 +22,7 @@ import type { User, Session } from '@supabase/supabase-js';
 
 export interface Gondola {
   id: string;
-  type: 'gondola' | 'puntera';
+  type: 'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso';
   position: { x: number; y: number; width: number; height: number };
   status: 'occupied' | 'available';
   brand: string | null;
@@ -217,7 +217,7 @@ const GondolasEdit = () => {
         // Convert database format to app format
         const formattedGondolas: Gondola[] = data.map(dbGondola => ({
           id: dbGondola.id,
-          type: dbGondola.type as 'gondola' | 'puntera',
+          type: dbGondola.type as 'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso',
           position: {
             x: Number(dbGondola.position_x),
             y: Number(dbGondola.position_y),

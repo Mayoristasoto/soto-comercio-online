@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Package2, Store, Filter } from "lucide-react";
+import { Search, Package2, Store, Filter, Monitor, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +42,13 @@ export const GondolasList = ({ gondolas, selectedGondola, onGondolaSelect }: Gon
   };
 
   const getTypeIcon = (type: string) => {
-    return type === "gondola" ? Package2 : Store;
+    switch (type) {
+      case "gondola": return Package2;
+      case "puntera": return Store;
+      case "cartel_exterior": return Monitor;
+      case "exhibidor_impulso": return Zap;
+      default: return Package2;
+    }
   };
 
   return (
@@ -75,6 +81,8 @@ export const GondolasList = ({ gondolas, selectedGondola, onGondolaSelect }: Gon
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="gondola">Góndolas</SelectItem>
                 <SelectItem value="puntera">Punteras</SelectItem>
+                <SelectItem value="cartel_exterior">Carteles Exteriores</SelectItem>
+                <SelectItem value="exhibidor_impulso">Exhibidores de Impulso</SelectItem>
               </SelectContent>
             </Select>
             

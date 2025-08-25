@@ -112,7 +112,13 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
     <Card className="h-fit">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Editar {editedGondola.type === 'gondola' ? 'Góndola' : 'Puntera'}</CardTitle>
+          <CardTitle className="text-lg">Editar {
+            editedGondola.type === 'gondola' ? 'Góndola' : 
+            editedGondola.type === 'puntera' ? 'Puntera' :
+            editedGondola.type === 'cartel_exterior' ? 'Cartel Exterior' :
+            editedGondola.type === 'exhibidor_impulso' ? 'Exhibidor de Impulso' :
+            'Elemento'
+          }</CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -142,6 +148,8 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
             <SelectContent>
               <SelectItem value="gondola">Góndola</SelectItem>
               <SelectItem value="puntera">Puntera</SelectItem>
+              <SelectItem value="cartel_exterior">Cartel Exterior</SelectItem>
+              <SelectItem value="exhibidor_impulso">Exhibidor de Impulso</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -276,8 +284,8 @@ export const EditPanel = ({ gondola, onUpdate, onDelete, onDuplicate, onClose }:
           </p>
         </div>
 
-        {/* Image Upload - Solo para punteras */}
-        {editedGondola.type === 'puntera' && (
+        {/* Image Upload - Para punteras, carteles exteriores y exhibidores */}
+        {(editedGondola.type === 'puntera' || editedGondola.type === 'cartel_exterior' || editedGondola.type === 'exhibidor_impulso') && (
           <div className="space-y-3 bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-200 dark:border-green-800">
             <ImageUpload
               currentImageUrl={editedGondola.image_url || undefined}

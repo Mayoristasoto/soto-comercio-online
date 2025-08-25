@@ -54,7 +54,13 @@ export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMou
   }, [position, isFixed, isMobile]);
   
   const handleWhatsApp = () => {
-    const message = `Hola! Me interesa consultar sobre el espacio ${gondola.section} (${gondola.type === 'gondola' ? 'Góndola' : 'Puntera'}) en Mayorista Soto.`;
+    const message = `Hola! Me interesa consultar sobre el espacio ${gondola.section} (${
+      gondola.type === 'gondola' ? 'Góndola' : 
+      gondola.type === 'puntera' ? 'Puntera' :
+      gondola.type === 'cartel_exterior' ? 'Cartel Exterior' :
+      gondola.type === 'exhibidor_impulso' ? 'Exhibidor de Impulso' :
+      'Espacio'
+    }) en Mayorista Soto.`;
     const url = `https://wa.me/5492234890963?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -104,7 +110,11 @@ export const GondolaTooltip = ({ gondola, position, onClose, onMouseEnter, onMou
             <div className="flex items-center gap-2 text-sm">
               <Building className="h-4 w-4 text-muted-foreground" />
               <span className="capitalize font-medium">
-                {gondola.type === 'gondola' ? 'Góndola' : 'Puntera'}
+                {gondola.type === 'gondola' ? 'Góndola' : 
+                 gondola.type === 'puntera' ? 'Puntera' :
+                 gondola.type === 'cartel_exterior' ? 'Cartel Exterior' :
+                 gondola.type === 'exhibidor_impulso' ? 'Exhibidor de Impulso' :
+                 'Espacio'}
               </span>
             </div>
 

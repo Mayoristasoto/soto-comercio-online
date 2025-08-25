@@ -152,6 +152,44 @@
       "brand": null,
       "category": "Disponible",
       "section": "PD2"
+    },
+    {
+      "id": "ce1",
+      "type": "cartel_exterior",
+      "position": { "x": 200, "y": 100, "width": 120, "height": 40 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "CE1"
+    },
+    {
+      "id": "ce2",
+      "type": "cartel_exterior",
+      "position": { "x": 800, "y": 100, "width": 120, "height": 40 },
+      "status": "occupied",
+      "brand": "Samsung",
+      "category": "Electrónicos",
+      "section": "CE2",
+      "endDate": "2024-12-31"
+    },
+    {
+      "id": "ei1",
+      "type": "exhibidor_impulso",
+      "position": { "x": 150, "y": 300, "width": 80, "height": 50 },
+      "status": "occupied",
+      "brand": "Red Bull",
+      "category": "Bebidas Energéticas",
+      "section": "EI1",
+      "endDate": "2024-11-20"
+    },
+    {
+      "id": "ei2",
+      "type": "exhibidor_impulso",
+      "position": { "x": 850, "y": 400, "width": 80, "height": 50 },
+      "status": "available",
+      "brand": null,
+      "category": "Disponible",
+      "section": "EI2"
     }
   ],
   "brands": [
