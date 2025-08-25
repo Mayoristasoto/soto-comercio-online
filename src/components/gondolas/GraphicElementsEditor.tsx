@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Square, Circle, Minus, ArrowRight, Type, Trash2, Eye, EyeOff, Palette, RotateCcw, AlignCenter } from "lucide-react";
+import { Square, Circle, Minus, ArrowRight, Type, Trash2, Eye, EyeOff, Palette, RotateCcw, AlignCenter, AlignLeft, AlignRight, Bold, Italic, Underline } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -23,6 +23,10 @@ export interface GraphicElement {
   opacity?: number;
   text_content?: string;
   font_size?: number;
+  font_family?: string;
+  font_weight?: 'normal' | 'bold';
+  font_style?: 'normal' | 'italic';
+  text_decoration?: 'none' | 'underline';
   stroke_width?: number;
   stroke_color?: string;
   fill_color?: string;
@@ -74,6 +78,10 @@ export const GraphicElementsEditor = ({
       is_visible: true,
       text_content: activeType === 'text' ? 'Nuevo texto' : undefined,
       font_size: activeType === 'text' ? 14 : undefined,
+      font_family: activeType === 'text' ? 'Arial' : undefined,
+      font_weight: activeType === 'text' ? 'normal' as 'normal' : undefined,
+      font_style: activeType === 'text' ? 'normal' as 'normal' : undefined,
+      text_decoration: activeType === 'text' ? 'none' as 'none' : undefined,
       text_align: activeType === 'text' ? 'center' as 'center' : undefined,
     };
 
@@ -262,93 +270,158 @@ export const GraphicElementsEditor = ({
                     value={selectedElement.text_content || ''}
                     onChange={(e) => updateElement({ text_content: e.target.value })}
                     placeholder="Escribe el texto aquí..."
-                    rows={3}
+                    rows={4}
                     className="resize-none"
                   />
                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <Label>Tamaño de fuente</Label>
-                     <Input
-                       type="number"
-                       value={selectedElement.font_size || 14}
-                       onChange={(e) => updateElement({ font_size: parseFloat(e.target.value) || 14 })}
-                       min="8"
-                       max="72"
-                     />
-                   </div>
-                   <div>
-                     <Label>Color del texto</Label>
-                     <div className="flex gap-2">
-                       <Input
-                         type="color"
-                         value={selectedElement.color || '#000000'}
-                         onChange={(e) => updateElement({ color: e.target.value })}
-                         className="w-16 h-9 p-1"
-                       />
-                       <Input
-                         type="text"
-                         value={selectedElement.color || '#000000'}
-                         onChange={(e) => updateElement({ color: e.target.value })}
-                         placeholder="#000000"
-                         className="flex-1"
-                       />
-                     </div>
-                   </div>
-                 </div>
-                 <div>
-                   <Label>Alineación del texto</Label>
-                   <Select 
-                     value={selectedElement.text_align || 'center'} 
-                     onValueChange={(value) => updateElement({ text_align: value as 'left' | 'center' | 'right' })}
-                   >
-                     <SelectTrigger>
-                       <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="left">
-                         <div className="flex items-center gap-2">
-                           <AlignCenter className="h-4 w-4 rotate-180" />
-                           Izquierda
-                         </div>
-                       </SelectItem>
-                       <SelectItem value="center">
-                         <div className="flex items-center gap-2">
-                           <AlignCenter className="h-4 w-4" />
-                           Centrado
-                         </div>
-                       </SelectItem>
-                       <SelectItem value="right">
-                         <div className="flex items-center gap-2">
-                           <AlignCenter className="h-4 w-4 rotate-180 scale-x-[-1]" />
-                           Derecha
-                         </div>
-                       </SelectItem>
-                     </SelectContent>
-                   </Select>
-                 </div>
+                
+                {/* Tipografía y tamaño */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Fuente</Label>
+                    <Select 
+                      value={selectedElement.font_family || 'Arial'} 
+                      onValueChange={(value) => updateElement({ font_family: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-48">
+                        <SelectItem value="Arial">Arial</SelectItem>
+                        <SelectItem value="Helvetica">Helvetica</SelectItem>
+                        <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                        <SelectItem value="Georgia">Georgia</SelectItem>
+                        <SelectItem value="Verdana">Verdana</SelectItem>
+                        <SelectItem value="Courier New">Courier New</SelectItem>
+                        <SelectItem value="Impact">Impact</SelectItem>
+                        <SelectItem value="Comic Sans MS">Comic Sans MS</SelectItem>
+                        <SelectItem value="Trebuchet MS">Trebuchet MS</SelectItem>
+                        <SelectItem value="Tahoma">Tahoma</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Tamaño: {selectedElement.font_size || 14}px</Label>
+                    <Slider
+                      value={[selectedElement.font_size || 14]}
+                      onValueChange={([value]) => updateElement({ font_size: value })}
+                      min={8}
+                      max={72}
+                      step={1}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Estilo de texto */}
+                <div>
+                  <Label>Estilo del texto</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant={selectedElement.font_weight === 'bold' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => updateElement({ 
+                        font_weight: selectedElement.font_weight === 'bold' ? 'normal' : 'bold' 
+                      })}
+                      className="w-10 h-10 p-0"
+                    >
+                      <Bold className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={selectedElement.font_style === 'italic' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => updateElement({ 
+                        font_style: selectedElement.font_style === 'italic' ? 'normal' : 'italic' 
+                      })}
+                      className="w-10 h-10 p-0"
+                    >
+                      <Italic className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={selectedElement.text_decoration === 'underline' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => updateElement({ 
+                        text_decoration: selectedElement.text_decoration === 'underline' ? 'none' : 'underline' 
+                      })}
+                      className="w-10 h-10 p-0"
+                    >
+                      <Underline className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Color del texto */}
+                <div>
+                  <Label>Color del texto</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      type="color"
+                      value={selectedElement.color || '#000000'}
+                      onChange={(e) => updateElement({ color: e.target.value })}
+                      className="w-16 h-9 p-1"
+                    />
+                    <Input
+                      type="text"
+                      value={selectedElement.color || '#000000'}
+                      onChange={(e) => updateElement({ color: e.target.value })}
+                      placeholder="#000000"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                {/* Alineación del texto */}
+                <div>
+                  <Label>Alineación del texto</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant={selectedElement.text_align === 'left' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => updateElement({ text_align: 'left' })}
+                      className="w-10 h-10 p-0"
+                    >
+                      <AlignLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={selectedElement.text_align === 'center' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => updateElement({ text_align: 'center' })}
+                      className="w-10 h-10 p-0"
+                    >
+                      <AlignCenter className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={selectedElement.text_align === 'right' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => updateElement({ text_align: 'right' })}
+                      className="w-10 h-10 p-0"
+                    >
+                      <AlignRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
                  
-                 {/* Ancho y alto para texto */}
-                 <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <Label>Ancho del texto</Label>
-                     <Input
-                       type="number"
-                       value={selectedElement.width || 200}
-                       onChange={(e) => updateElement({ width: parseFloat(e.target.value) || 200 })}
-                       min="50"
-                     />
-                   </div>
-                   <div>
-                     <Label>Alto del texto</Label>
-                     <Input
-                       type="number"
-                       value={selectedElement.height || 50}
-                       onChange={(e) => updateElement({ height: parseFloat(e.target.value) || 50 })}
-                       min="20"
-                     />
-                   </div>
-                 </div>
+                {/* Ancho y alto para texto */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Ancho del texto</Label>
+                    <Input
+                      type="number"
+                      value={selectedElement.width || 200}
+                      onChange={(e) => updateElement({ width: parseFloat(e.target.value) || 200 })}
+                      min="50"
+                    />
+                  </div>
+                  <div>
+                    <Label>Alto del texto</Label>
+                    <Input
+                      type="number"
+                      value={selectedElement.height || 50}
+                      onChange={(e) => updateElement({ height: parseFloat(e.target.value) || 50 })}
+                      min="20"
+                    />
+                  </div>
+                </div>
               </>
             )}
 
