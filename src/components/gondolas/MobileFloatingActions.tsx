@@ -40,8 +40,8 @@ export const MobileFloatingActions: React.FC<MobileFloatingActionsProps> = ({
 
   return (
     <>
-      {/* Compact Stats Bar */}
-      <div className="fixed top-16 left-0 right-0 z-20 px-4">
+      {/* Compact Stats Bar - moved down to avoid zoom controls */}
+      <div className="fixed top-28 left-0 right-0 z-20 px-4">
         <Card className="bg-card/95 backdrop-blur-sm border">
           <CardContent className="p-3">
             <div className="flex items-center justify-between text-sm">

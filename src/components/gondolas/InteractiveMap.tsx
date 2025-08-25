@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Gondola } from "@/pages/Gondolas";
 import { useMobileDetection } from "@/hooks/use-mobile-detection";
 import { MobileGondolaModal } from "./MobileGondolaModal";
+import { ZoomControls } from "./ZoomControls";
 
 interface ViewportSettings {
   x: number;
@@ -535,6 +536,21 @@ export const InteractiveMap = ({
     setZoom(newZoom);
   };
 
+  // Funciones de zoom con botones
+  const handleZoomIn = () => {
+    const center = isMobile 
+      ? { x: window.innerHeight / 2, y: window.innerWidth / 2 }
+      : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    handleZoom(0.2, center);
+  };
+
+  const handleZoomOut = () => {
+    const center = isMobile 
+      ? { x: window.innerHeight / 2, y: window.innerWidth / 2 }
+      : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    handleZoom(-0.2, center);
+  };
+
   // Touch event handlers for mobile support
   const getTouchDistance = (touches: React.TouchList) => {
     if (touches.length < 2) return 0;
@@ -592,12 +608,8 @@ export const InteractiveMap = ({
       setLastPanPosition({ x: touchX, y: touchY });
       setLastPanTime(Date.now());
     } else if (event.touches.length === 2) {
-      // Two touches - iniciar zoom
+      // Deshabilitar pinch to zoom - solo usar botones + y -
       event.preventDefault();
-      const distance = getTouchDistance(event.touches);
-      const center = getTouchCenter(event.touches);
-      setTouchStartDistance(distance);
-      setTouchStartCenter(center);
       setIsPanning(false);
     }
   };
@@ -645,31 +657,8 @@ export const InteractiveMap = ({
       
       setPan({ x: clampedX, y: clampedY });
       
-    } else if (event.touches.length === 2) {
-      event.preventDefault();
-      // Two touches - zoom suave centrado como Google Maps
-      const distance = getTouchDistance(event.touches);
-      const center = getTouchCenter(event.touches);
-      
-      if (touchStartDistance && touchStartDistance > 0) {
-        const zoomDelta = (distance - touchStartDistance) * 0.005; // Sensibilidad perfecta
-        handleZoom(zoomDelta, center);
-        setTouchStartDistance(distance);
-      }
-      
-      // Pan durante zoom si el centro se mueve
-      if (touchStartCenter) {
-        const centerDeltaX = center.x - touchStartCenter.x;
-        const centerDeltaY = center.y - touchStartCenter.y;
-        
-        setPan(prev => ({
-          x: prev.x + centerDeltaX * 0.8,
-          y: prev.y + centerDeltaY * 0.8
-        }));
-        
-        setTouchStartCenter(center);
-      }
     }
+    // Remover el pinch to zoom - solo permitir zoom con botones
   };
 
   const handleTouchEnd = () => {
@@ -1393,6 +1382,15 @@ export const InteractiveMap = ({
           </div>
         </div>
       )}
+
+      {/* Controles de Zoom */}
+      <ZoomControls
+        zoom={zoom}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        minZoom={minZoom}
+        maxZoom={maxZoom}
+      />
     </div>
   );
 };
