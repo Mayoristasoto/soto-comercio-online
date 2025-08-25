@@ -23,7 +23,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
 
   if (isMobile) {
     return (
-      <div className="fixed top-20 left-4 right-4 z-30">
+      <div className="px-4 pb-3">
         <Card className="bg-card/95 backdrop-blur-sm border">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">

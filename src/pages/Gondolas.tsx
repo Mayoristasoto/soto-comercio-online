@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { InteractiveMap } from "@/components/gondolas/InteractiveMap";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import { BrandCarousel } from "@/components/gondolas/BrandCarousel";
+import { ZoomControls } from "@/components/gondolas/ZoomControls";
 import gondolasData from "@/data/gondolas.json";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,6 +65,20 @@ const Gondolas = () => {
   const [tooltipTimeoutId, setTooltipTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [viewport, setViewport] = useState<ViewportSettings>({ x: 0, y: 0, width: 800, height: 600, zoom: 1 });
   const [graphicElements, setGraphicElements] = useState<GraphicElement[]>([]);
+  
+  // Estados para controles de zoom
+  const [currentZoom, setCurrentZoom] = useState(1);
+  const [zoomHandlers, setZoomHandlers] = useState<{
+    onZoomIn: () => void;
+    onZoomOut: () => void;
+    minZoom: number;
+    maxZoom: number;
+  }>({
+    onZoomIn: () => {},
+    onZoomOut: () => {},
+    minZoom: 0.5,
+    maxZoom: 3
+  });
 
   // Load gondolas from Supabase con cache busting
   const loadGondolas = async (forceRefresh = false, bypassCache = false) => {
@@ -349,6 +364,15 @@ const Gondolas = () => {
               </div>
             </div>
             
+            {/* Controles de Zoom - Integrados en el layout */}
+            <ZoomControls
+              zoom={currentZoom}
+              onZoomIn={zoomHandlers.onZoomIn}
+              onZoomOut={zoomHandlers.onZoomOut}
+              minZoom={zoomHandlers.minZoom}
+              maxZoom={zoomHandlers.maxZoom}
+            />
+            
             <InteractiveMap
               gondolas={filteredGondolas}
               onGondolaHover={(gondola) => {
@@ -369,6 +393,10 @@ const Gondolas = () => {
               isEditMode={false}
               viewport={viewport}
               graphicElements={graphicElements}
+              onZoomChange={(zoom, onZoomIn, onZoomOut, minZoom, maxZoom) => {
+                setCurrentZoom(zoom);
+                setZoomHandlers({ onZoomIn, onZoomOut, minZoom, maxZoom });
+              }}
             />
           </div>
         </div>

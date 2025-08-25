@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Gondola } from "@/pages/Gondolas";
 import { useMobileDetection } from "@/hooks/use-mobile-detection";
 import { MobileGondolaModal } from "./MobileGondolaModal";
-import { ZoomControls } from "./ZoomControls";
 
 interface ViewportSettings {
   x: number;
@@ -52,6 +51,7 @@ interface InteractiveMapProps {
   isViewportSelecting?: boolean;
   onViewportChange?: (viewport: ViewportSettings) => void;
   isCreating?: 'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso' | null;
+  onZoomChange?: (zoom: number, onZoomIn: () => void, onZoomOut: () => void, minZoom: number, maxZoom: number) => void;
 }
 
 export const InteractiveMap = ({ 
@@ -69,7 +69,8 @@ export const InteractiveMap = ({
   onGraphicElementUpdate,
   isViewportSelecting = false,
   onViewportChange,
-  isCreating = null
+  isCreating = null,
+  onZoomChange
 }: InteractiveMapProps) => {
   const isMobile = useMobileDetection();
   
@@ -550,6 +551,13 @@ export const InteractiveMap = ({
       : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     handleZoom(-0.2, center);
   };
+
+  // Exponer controles de zoom al componente padre
+  useEffect(() => {
+    if (onZoomChange) {
+      onZoomChange(zoom, handleZoomIn, handleZoomOut, minZoom, maxZoom);
+    }
+  }, [zoom, onZoomChange]);
 
   // Touch event handlers for mobile support
   const getTouchDistance = (touches: React.TouchList) => {
@@ -1382,15 +1390,6 @@ export const InteractiveMap = ({
           </div>
         </div>
       )}
-
-      {/* Controles de Zoom */}
-      <ZoomControls
-        zoom={zoom}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        minZoom={minZoom}
-        maxZoom={maxZoom}
-      />
     </div>
   );
 };
