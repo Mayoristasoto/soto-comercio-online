@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Crop, Eye, Save } from "lucide-react";
+import { Crop, Eye, Save, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface ViewportSettings {
   x: number;
@@ -25,6 +26,26 @@ export const ViewportEditor = ({ onViewportChange, currentViewport }: ViewportEd
   const [viewport, setViewport] = useState<ViewportSettings>(currentViewport);
   const [isSelecting, setIsSelecting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const hasChanged = 
@@ -45,6 +66,12 @@ export const ViewportEditor = ({ onViewportChange, currentViewport }: ViewportEd
   };
 
   const saveViewport = async () => {
+    if (!user) {
+      toast("Debes iniciar sesión para guardar la configuración");
+      navigate('/auth');
+      return;
+    }
+
     try {
       // First, set all existing viewports to inactive
       await supabase
@@ -163,8 +190,8 @@ export const ViewportEditor = ({ onViewportChange, currentViewport }: ViewportEd
             disabled={!hasChanges}
             className="flex-1"
           >
-            <Save className="h-4 w-4 mr-2" />
-            Guardar Viewport
+            {!user ? <Lock className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            {!user ? "Iniciar Sesión" : "Guardar Viewport"}
           </Button>
         </div>
 
