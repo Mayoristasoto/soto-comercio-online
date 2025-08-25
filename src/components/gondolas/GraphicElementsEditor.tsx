@@ -74,7 +74,7 @@ export const GraphicElementsEditor = ({
       is_visible: true,
       text_content: activeType === 'text' ? 'Nuevo texto' : undefined,
       font_size: activeType === 'text' ? 14 : undefined,
-      text_align: activeType === 'text' ? 'center' : undefined,
+      text_align: activeType === 'text' ? 'center' as 'center' : undefined,
     };
 
     onAddElement(baseElement);

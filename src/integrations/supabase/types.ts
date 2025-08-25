@@ -152,6 +152,7 @@ export type Database = {
           rotation: number | null
           stroke_color: string | null
           stroke_width: number | null
+          text_align: string | null
           text_content: string | null
           type: string
           updated_at: string
@@ -172,6 +173,7 @@ export type Database = {
           rotation?: number | null
           stroke_color?: string | null
           stroke_width?: number | null
+          text_align?: string | null
           text_content?: string | null
           type: string
           updated_at?: string
@@ -192,6 +194,7 @@ export type Database = {
           rotation?: number | null
           stroke_color?: string | null
           stroke_width?: number | null
+          text_align?: string | null
           text_content?: string | null
           type?: string
           updated_at?: string
