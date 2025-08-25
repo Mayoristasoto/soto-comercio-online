@@ -41,6 +41,10 @@ interface GraphicElement {
   opacity?: number;
   text_content?: string;
   font_size?: number;
+  font_family?: string;
+  font_weight?: 'normal' | 'bold';
+  font_style?: 'normal' | 'italic';
+  text_decoration?: 'none' | 'underline';
   stroke_width?: number;
   stroke_color?: string;
   fill_color?: string;
@@ -180,6 +184,10 @@ const Gondolas = () => {
           opacity: el.opacity ? Number(el.opacity) : undefined,
           text_content: el.text_content || undefined,
           font_size: el.font_size ? Number(el.font_size) : undefined,
+          font_family: el.font_family || undefined,
+          font_weight: el.font_weight as 'normal' | 'bold' || undefined,
+          font_style: el.font_style as 'normal' | 'italic' || undefined,
+          text_decoration: el.text_decoration as 'none' | 'underline' || undefined,
           stroke_width: el.stroke_width ? Number(el.stroke_width) : undefined,
           stroke_color: el.stroke_color || undefined,
           fill_color: el.fill_color || undefined,

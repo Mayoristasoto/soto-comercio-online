@@ -142,7 +142,10 @@ export type Database = {
           color: string | null
           created_at: string
           fill_color: string | null
+          font_family: string | null
           font_size: number | null
+          font_style: string | null
+          font_weight: string | null
           height: number | null
           id: string
           is_visible: boolean | null
@@ -154,6 +157,7 @@ export type Database = {
           stroke_width: number | null
           text_align: string | null
           text_content: string | null
+          text_decoration: string | null
           type: string
           updated_at: string
           width: number | null
@@ -163,7 +167,10 @@ export type Database = {
           color?: string | null
           created_at?: string
           fill_color?: string | null
+          font_family?: string | null
           font_size?: number | null
+          font_style?: string | null
+          font_weight?: string | null
           height?: number | null
           id?: string
           is_visible?: boolean | null
@@ -175,6 +182,7 @@ export type Database = {
           stroke_width?: number | null
           text_align?: string | null
           text_content?: string | null
+          text_decoration?: string | null
           type: string
           updated_at?: string
           width?: number | null
@@ -184,7 +192,10 @@ export type Database = {
           color?: string | null
           created_at?: string
           fill_color?: string | null
+          font_family?: string | null
           font_size?: number | null
+          font_style?: string | null
+          font_weight?: string | null
           height?: number | null
           id?: string
           is_visible?: boolean | null
@@ -196,6 +207,7 @@ export type Database = {
           stroke_width?: number | null
           text_align?: string | null
           text_content?: string | null
+          text_decoration?: string | null
           type?: string
           updated_at?: string
           width?: number | null

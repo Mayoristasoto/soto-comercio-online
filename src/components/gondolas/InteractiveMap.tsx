@@ -22,6 +22,10 @@ interface GraphicElement {
   opacity?: number;
   text_content?: string;
   font_size?: number;
+  font_family?: string;
+  font_weight?: 'normal' | 'bold';
+  font_style?: 'normal' | 'italic';
+  text_decoration?: 'none' | 'underline';
   stroke_width?: number;
   stroke_color?: string;
   fill_color?: string;
@@ -1151,6 +1155,10 @@ export const InteractiveMap = ({
                     )}
                     y={element.position_y}
                     fontSize={element.font_size || 14}
+                    fontFamily={element.font_family || 'Arial'}
+                    fontWeight={element.font_weight || 'normal'}
+                    fontStyle={element.font_style || 'normal'}
+                    textDecoration={element.text_decoration || 'none'}
                     fill={element.color || '#000000'}
                     opacity={element.opacity || 1}
                     textAnchor={element.text_align || 'center'}
