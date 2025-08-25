@@ -17,7 +17,7 @@ const Comercio = () => {
   ];
 
   const benefits = [
-    { icon: <Truck size={16} />, text: "Envío gratis Mar del Plata" },
+    { icon: <Truck size={16} />, text: "Envío gratis desde $50.000 o 5 cartones" },
     { icon: <TrendingUp size={16} />, text: "Descuentos por volumen" },
     { icon: <Users size={16} />, text: "Atención personalizada" },
     { icon: <ShoppingCart size={16} />, text: "Precios mayoristas" }
@@ -51,7 +51,7 @@ const Comercio = () => {
     },
     {
       title: "Lista Completa Distribución",
-      description: "Todos los productos - Envío gratis desde $20.000",
+      description: "Todos los productos - Envío gratis desde $50.000 o 5 cartones",
       icon: <Truck size={32} className="text-blue-600" />,
       badge: "Distribución",
       badgeColor: "bg-blue-500",
@@ -60,7 +60,7 @@ const Comercio = () => {
     },
     {
       title: "Lista Cigarrillos Distribución",
-      description: "Solo cigarrillos - Envío gratis desde $20.000",
+      description: "Solo cigarrillos - Envío gratis desde $50.000 o 5 cartones",
       icon: <Cigarette size={32} className="text-blue-600" />,
       badge: "Distribución",
       badgeColor: "bg-blue-600",
@@ -189,7 +189,7 @@ const Comercio = () => {
             </div>
             <h3 className="text-2xl font-bold mb-2">Envío GRATIS en Mar del Plata</h3>
             <p className="text-lg opacity-90">
-              Lista Distribución: envío gratis desde <span className="font-bold">$20.000</span>
+              Lista Distribución: envío gratis desde <span className="font-bold">$50.000 o 5 cartones de cigarrillos</span>
             </p>
           </div>
         </div>
@@ -256,7 +256,7 @@ const Comercio = () => {
                   <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center text-blue-700 text-sm">
                       <Truck size={16} className="mr-2 flex-shrink-0" />
-                      <span className="font-medium">Envío gratis en Mar del Plata desde $20.000</span>
+                      <span className="font-medium">Envío gratis en Mar del Plata desde $50.000 o 5 cartones</span>
                     </div>
                   </div>
                 )}
