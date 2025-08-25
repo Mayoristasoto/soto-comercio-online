@@ -790,7 +790,10 @@ export const InteractiveMap = ({
           ref={svgRef}
           width="1000"
           height="700"
-          viewBox="0 0 1000 700"
+          viewBox={!isEditMode && viewport 
+            ? `${viewport.x} ${viewport.y} ${viewport.width} ${viewport.height}` 
+            : "0 0 1000 700"
+          }
           className="absolute inset-0 w-full h-full"
           onMouseMove={handleMouseMoveOnSvg}
           onMouseUp={handleMouseUp}
