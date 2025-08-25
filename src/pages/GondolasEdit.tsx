@@ -343,6 +343,8 @@ const GondolasEdit = () => {
     // Generar ID único para duplicados sin límites
     const existingGondolaIds = gondolas.filter(g => g.type === 'gondola').map(g => parseInt(g.id.replace('g', '')) || 0);
     const existingPunteraIds = gondolas.filter(g => g.type === 'puntera').map(g => parseInt(g.id.replace('p', '')) || 0);
+    const existingCartelIds = gondolas.filter(g => g.type === 'cartel_exterior').map(g => parseInt(g.id.replace('c', '')) || 0);
+    const existingExhibidorIds = gondolas.filter(g => g.type === 'exhibidor_impulso').map(g => parseInt(g.id.replace('e', '')) || 0);
     
     const getNextId = (existingIds: number[], prefix: string) => {
       let nextNum = 1;
@@ -352,9 +354,22 @@ const GondolasEdit = () => {
       return `${prefix}${nextNum}`;
     };
     
-    const newId = gondola.type === 'gondola' ? 
-      getNextId(existingGondolaIds, 'g') : 
-      getNextId(existingPunteraIds, 'p');
+    const getNewId = (type: string) => {
+      switch (type) {
+        case 'gondola':
+          return getNextId(existingGondolaIds, 'g');
+        case 'puntera':
+          return getNextId(existingPunteraIds, 'p');
+        case 'cartel_exterior':
+          return getNextId(existingCartelIds, 'c');
+        case 'exhibidor_impulso':
+          return getNextId(existingExhibidorIds, 'e');
+        default:
+          return `${type[0]}${Date.now()}`;
+      }
+    };
+    
+    const newId = getNewId(gondola.type);
     
     const duplicated: Gondola = {
       ...gondola,
