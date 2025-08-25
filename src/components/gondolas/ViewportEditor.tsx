@@ -50,15 +50,22 @@ export const ViewportEditor = ({ onViewportChange, currentViewport, onStartSelec
 
   useEffect(() => {
     setViewport(currentViewport);
+    setHasChanges(false); // Reset changes when parent updates
   }, [currentViewport]);
 
   useEffect(() => {
     const hasChanged = 
-      viewport.x !== currentViewport.x ||
-      viewport.y !== currentViewport.y ||
-      viewport.width !== currentViewport.width ||
-      viewport.height !== currentViewport.height ||
-      viewport.zoom !== currentViewport.zoom;
+      Math.abs(viewport.x - currentViewport.x) > 0.01 ||
+      Math.abs(viewport.y - currentViewport.y) > 0.01 ||
+      Math.abs(viewport.width - currentViewport.width) > 0.01 ||
+      Math.abs(viewport.height - currentViewport.height) > 0.01 ||
+      Math.abs(viewport.zoom - currentViewport.zoom) > 0.01;
+    
+    console.log('Checking changes:', {
+      current: currentViewport,
+      new: viewport,
+      hasChanged
+    });
     
     setHasChanges(hasChanged);
   }, [viewport, currentViewport]);
@@ -67,8 +74,8 @@ export const ViewportEditor = ({ onViewportChange, currentViewport, onStartSelec
     const numValue = parseFloat(value) || 0;
     const newViewport = { ...viewport, [field]: numValue };
     setViewport(newViewport);
-    onViewportChange(newViewport);
-    console.log('Viewport changed:', newViewport);
+    // Don't update parent immediately - wait for save
+    console.log('Viewport changed locally:', newViewport);
   };
 
   const saveViewport = async () => {
@@ -211,11 +218,11 @@ export const ViewportEditor = ({ onViewportChange, currentViewport, onStartSelec
           
           <Button 
             onClick={saveViewport}
-            disabled={!hasChanges}
+            disabled={!hasChanges || !user}
             className="flex-1"
           >
             {!user ? <Lock className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            {!user ? "Iniciar Sesión" : "Guardar Viewport"}
+            {!user ? "Iniciar Sesión" : hasChanges ? "Guardar Viewport" : "Sin Cambios"}
           </Button>
         </div>
 
