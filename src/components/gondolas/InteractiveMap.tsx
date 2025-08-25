@@ -3,6 +3,33 @@ import { Gondola } from "@/pages/Gondolas";
 import { useMobileDetection } from "@/hooks/use-mobile-detection";
 import { MobileGondolaModal } from "./MobileGondolaModal";
 
+interface ViewportSettings {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zoom: number;
+}
+
+interface GraphicElement {
+  id: string;
+  type: 'rectangle' | 'circle' | 'line' | 'arrow' | 'text';
+  position_x: number;
+  position_y: number;
+  width?: number;
+  height?: number;
+  color?: string;
+  opacity?: number;
+  text_content?: string;
+  font_size?: number;
+  stroke_width?: number;
+  stroke_color?: string;
+  fill_color?: string;
+  rotation?: number;
+  z_index?: number;
+  is_visible?: boolean;
+}
+
 interface InteractiveMapProps {
   gondolas: Gondola[];
   onGondolaHover: (gondola: Gondola | null) => void;
@@ -11,6 +38,11 @@ interface InteractiveMapProps {
   onGondolaAdd: (gondola: Gondola) => void;
   onMouseMove: (position: { x: number; y: number }) => void;
   isEditMode: boolean;
+  viewport?: ViewportSettings;
+  graphicElements?: GraphicElement[];
+  selectedGraphicElement?: GraphicElement | null;
+  onGraphicElementSelect?: (element: GraphicElement | null) => void;
+  onGraphicElementUpdate?: (element: GraphicElement) => void;
 }
 
 export const InteractiveMap = ({ 
@@ -20,7 +52,12 @@ export const InteractiveMap = ({
   onGondolaUpdate,
   onGondolaAdd, 
   onMouseMove, 
-  isEditMode 
+  isEditMode,
+  viewport,
+  graphicElements = [],
+  selectedGraphicElement,
+  onGraphicElementSelect,
+  onGraphicElementUpdate
 }: InteractiveMapProps) => {
   const isMobile = useMobileDetection();
   
@@ -922,6 +959,154 @@ export const InteractiveMap = ({
             </g>
           );
         })}
+
+        {/* Graphic Elements */}
+        {graphicElements.filter(el => el.is_visible).map((element) => {
+          const isSelected = selectedGraphicElement?.id === element.id && isEditMode;
+          
+          return (
+            <g key={element.id}>
+              {element.type === 'rectangle' && (
+                <rect
+                  x={element.position_x}
+                  y={element.position_y}
+                  width={element.width || 100}
+                  height={element.height || 50}
+                  fill={element.fill_color || '#ffffff'}
+                  stroke={element.stroke_color || '#000000'}
+                  strokeWidth={element.stroke_width || 1}
+                  opacity={element.opacity || 1}
+                  transform={`rotate(${element.rotation || 0} ${element.position_x + (element.width || 100) / 2} ${element.position_y + (element.height || 50) / 2})`}
+                  className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                  style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                  onClick={(e) => {
+                    if (isEditMode) {
+                      e.stopPropagation();
+                      onGraphicElementSelect?.(element);
+                    }
+                  }}
+                />
+              )}
+              
+              {element.type === 'circle' && (
+                <circle
+                  cx={element.position_x + (element.width || 100) / 2}
+                  cy={element.position_y + (element.height || 100) / 2}
+                  r={Math.min((element.width || 100), (element.height || 100)) / 2}
+                  fill={element.fill_color || '#ffffff'}
+                  stroke={element.stroke_color || '#000000'}
+                  strokeWidth={element.stroke_width || 1}
+                  opacity={element.opacity || 1}
+                  className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                  style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                  onClick={(e) => {
+                    if (isEditMode) {
+                      e.stopPropagation();
+                      onGraphicElementSelect?.(element);
+                    }
+                  }}
+                />
+              )}
+              
+              {element.type === 'line' && (
+                <line
+                  x1={element.position_x}
+                  y1={element.position_y}
+                  x2={element.position_x + (element.width || 100)}
+                  y2={element.position_y}
+                  stroke={element.stroke_color || '#000000'}
+                  strokeWidth={element.stroke_width || 2}
+                  opacity={element.opacity || 1}
+                  transform={`rotate(${element.rotation || 0} ${element.position_x + (element.width || 100) / 2} ${element.position_y})`}
+                  className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                  style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                  onClick={(e) => {
+                    if (isEditMode) {
+                      e.stopPropagation();
+                      onGraphicElementSelect?.(element);
+                    }
+                  }}
+                />
+              )}
+              
+              {element.type === 'arrow' && (
+                <g>
+                  <defs>
+                    <marker
+                      id={`arrowhead-${element.id}`}
+                      markerWidth="10"
+                      markerHeight="7"
+                      refX="9"
+                      refY="3.5"
+                      orient="auto"
+                    >
+                      <polygon
+                        points="0 0, 10 3.5, 0 7"
+                        fill={element.stroke_color || '#000000'}
+                      />
+                    </marker>
+                  </defs>
+                  <line
+                    x1={element.position_x}
+                    y1={element.position_y}
+                    x2={element.position_x + (element.width || 100)}
+                    y2={element.position_y}
+                    stroke={element.stroke_color || '#000000'}
+                    strokeWidth={element.stroke_width || 2}
+                    opacity={element.opacity || 1}
+                    markerEnd={`url(#arrowhead-${element.id})`}
+                    transform={`rotate(${element.rotation || 0} ${element.position_x + (element.width || 100) / 2} ${element.position_y})`}
+                    className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                    style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                    onClick={(e) => {
+                      if (isEditMode) {
+                        e.stopPropagation();
+                        onGraphicElementSelect?.(element);
+                      }
+                    }}
+                  />
+                </g>
+              )}
+              
+              {element.type === 'text' && element.text_content && (
+                <text
+                  x={element.position_x}
+                  y={element.position_y}
+                  fontSize={element.font_size || 14}
+                  fill={element.color || '#000000'}
+                  opacity={element.opacity || 1}
+                  transform={`rotate(${element.rotation || 0} ${element.position_x} ${element.position_y})`}
+                  className={isEditMode ? 'cursor-move' : 'cursor-default'}
+                  style={{ outline: isSelected ? '2px solid hsl(var(--primary))' : 'none' }}
+                  onClick={(e) => {
+                    if (isEditMode) {
+                      e.stopPropagation();
+                      onGraphicElementSelect?.(element);
+                    }
+                  }}
+                >
+                  {element.text_content}
+                </text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Viewport outline in edit mode */}
+        {isEditMode && viewport && (
+          <rect
+            x={viewport.x}
+            y={viewport.y}
+            width={viewport.width}
+            height={viewport.height}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="3"
+            strokeDasharray="10,5"
+            opacity="0.8"
+            pointerEvents="none"
+          />
+        )}
 
         {/* Legend */}
         <g transform="translate(20, 20)">

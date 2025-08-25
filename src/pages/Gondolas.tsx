@@ -22,6 +22,33 @@ export interface Gondola {
   image_url?: string | null; // URL de la imagen subida
 }
 
+interface ViewportSettings {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zoom: number;
+}
+
+interface GraphicElement {
+  id: string;
+  type: 'rectangle' | 'circle' | 'line' | 'arrow' | 'text';
+  position_x: number;
+  position_y: number;
+  width?: number;
+  height?: number;
+  color?: string;
+  opacity?: number;
+  text_content?: string;
+  font_size?: number;
+  stroke_width?: number;
+  stroke_color?: string;
+  fill_color?: string;
+  rotation?: number;
+  z_index?: number;
+  is_visible?: boolean;
+}
+
 const Gondolas = () => {
   const [gondolas, setGondolas] = useState<Gondola[]>([]);
   const [filteredGondolas, setFilteredGondolas] = useState<Gondola[]>([]);
@@ -30,6 +57,8 @@ const Gondolas = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isTooltipHovered, setIsTooltipHovered] = useState(false);
   const [tooltipTimeoutId, setTooltipTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [viewport, setViewport] = useState<ViewportSettings>({ x: 0, y: 0, width: 800, height: 600, zoom: 1 });
+  const [graphicElements, setGraphicElements] = useState<GraphicElement[]>([]);
 
   // Load gondolas from Supabase con cache busting
   const loadGondolas = async (forceRefresh = false, bypassCache = false) => {
@@ -106,9 +135,69 @@ const Gondolas = () => {
     }
   };
 
+  // Load viewport from Supabase
+  const loadViewport = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('layout_viewport')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (!error && data) {
+        setViewport({
+          x: Number(data.x),
+          y: Number(data.y),
+          width: Number(data.width),
+          height: Number(data.height),
+          zoom: Number(data.zoom)
+        });
+      }
+    } catch (error) {
+      console.error('Error loading viewport:', error);
+    }
+  };
+
+  // Load graphic elements from Supabase
+  const loadGraphicElements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('graphic_elements')
+        .select('*')
+        .eq('is_visible', true)
+        .order('z_index', { ascending: true });
+
+      if (!error && data) {
+        const formattedElements: GraphicElement[] = data.map(el => ({
+          id: el.id,
+          type: el.type as GraphicElement['type'],
+          position_x: Number(el.position_x),
+          position_y: Number(el.position_y),
+          width: el.width ? Number(el.width) : undefined,
+          height: el.height ? Number(el.height) : undefined,
+          color: el.color || undefined,
+          opacity: el.opacity ? Number(el.opacity) : undefined,
+          text_content: el.text_content || undefined,
+          font_size: el.font_size ? Number(el.font_size) : undefined,
+          stroke_width: el.stroke_width ? Number(el.stroke_width) : undefined,
+          stroke_color: el.stroke_color || undefined,
+          fill_color: el.fill_color || undefined,
+          rotation: el.rotation ? Number(el.rotation) : undefined,
+          z_index: el.z_index || undefined,
+          is_visible: el.is_visible ?? true
+        }));
+        setGraphicElements(formattedElements);
+      }
+    } catch (error) {
+      console.error('Error loading graphic elements:', error);
+    }
+  };
+
   // Load data on component mount
   useEffect(() => {
     loadGondolas();
+    loadViewport();
+    loadGraphicElements();
   }, []);
 
   // Set up real-time updates with retry logic
@@ -268,6 +357,8 @@ const Gondolas = () => {
               onGondolaAdd={() => {}} // No adding in view mode
               onMouseMove={setMousePosition}
               isEditMode={false}
+              viewport={viewport}
+              graphicElements={graphicElements}
             />
           </div>
         </div>

@@ -137,6 +137,105 @@ export type Database = {
         }
         Relationships: []
       }
+      graphic_elements: {
+        Row: {
+          color: string | null
+          created_at: string
+          fill_color: string | null
+          font_size: number | null
+          height: number | null
+          id: string
+          is_visible: boolean | null
+          opacity: number | null
+          position_x: number
+          position_y: number
+          rotation: number | null
+          stroke_color: string | null
+          stroke_width: number | null
+          text_content: string | null
+          type: string
+          updated_at: string
+          width: number | null
+          z_index: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          fill_color?: string | null
+          font_size?: number | null
+          height?: number | null
+          id?: string
+          is_visible?: boolean | null
+          opacity?: number | null
+          position_x: number
+          position_y: number
+          rotation?: number | null
+          stroke_color?: string | null
+          stroke_width?: number | null
+          text_content?: string | null
+          type: string
+          updated_at?: string
+          width?: number | null
+          z_index?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          fill_color?: string | null
+          font_size?: number | null
+          height?: number | null
+          id?: string
+          is_visible?: boolean | null
+          opacity?: number | null
+          position_x?: number
+          position_y?: number
+          rotation?: number | null
+          stroke_color?: string | null
+          stroke_width?: number | null
+          text_content?: string | null
+          type?: string
+          updated_at?: string
+          width?: number | null
+          z_index?: number | null
+        }
+        Relationships: []
+      }
+      layout_viewport: {
+        Row: {
+          created_at: string
+          height: number
+          id: string
+          is_active: boolean
+          updated_at: string
+          width: number
+          x: number
+          y: number
+          zoom: number
+        }
+        Insert: {
+          created_at?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zoom?: number
+        }
+        Update: {
+          created_at?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zoom?: number
+        }
+        Relationships: []
+      }
       profile_access_audit: {
         Row: {
           action: string | null

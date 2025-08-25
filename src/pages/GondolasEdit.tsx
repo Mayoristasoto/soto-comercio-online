@@ -5,6 +5,8 @@ import { EditPanel } from "@/components/gondolas/EditPanel";
 import { GondolaTooltip } from "@/components/gondolas/GondolaTooltip";
 import { GondolasList } from "@/components/gondolas/GondolasList";
 import { BrandManagement } from "@/components/gondolas/BrandManagement";
+import { ViewportEditor } from "@/components/gondolas/ViewportEditor";
+import { GraphicElementsEditor, type GraphicElement } from "@/components/gondolas/GraphicElementsEditor";
 import { AuthPrompt } from "@/components/AuthPrompt";
 import { SecureProfile } from "@/components/SecureProfile";
 import gondolasData from "@/data/gondolas.json";
@@ -46,10 +48,147 @@ const GondolasEdit = () => {
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // New states for viewport and graphic elements
+  const [viewport, setViewport] = useState({ x: 0, y: 0, width: 800, height: 600, zoom: 1 });
+  const [graphicElements, setGraphicElements] = useState<GraphicElement[]>([]);
+  const [selectedGraphicElement, setSelectedGraphicElement] = useState<GraphicElement | null>(null);
+  
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
   const gondolaCount = gondolas.filter(g => g.type === 'gondola').length;
   const punteraCount = gondolas.filter(g => g.type === 'puntera').length;
+
+  // Load viewport from Supabase
+  const loadViewport = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('layout_viewport')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (!error && data) {
+        setViewport({
+          x: Number(data.x),
+          y: Number(data.y),
+          width: Number(data.width),
+          height: Number(data.height),
+          zoom: Number(data.zoom)
+        });
+      }
+    } catch (error) {
+      console.error('Error loading viewport:', error);
+    }
+  };
+
+  // Load graphic elements from Supabase
+  const loadGraphicElements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('graphic_elements')
+        .select('*')
+        .order('z_index', { ascending: true });
+
+      if (!error && data) {
+        const formattedElements: GraphicElement[] = data.map(el => ({
+          id: el.id,
+          type: el.type as GraphicElement['type'],
+          position_x: Number(el.position_x),
+          position_y: Number(el.position_y),
+          width: el.width ? Number(el.width) : undefined,
+          height: el.height ? Number(el.height) : undefined,
+          color: el.color || undefined,
+          opacity: el.opacity ? Number(el.opacity) : undefined,
+          text_content: el.text_content || undefined,
+          font_size: el.font_size ? Number(el.font_size) : undefined,
+          stroke_width: el.stroke_width ? Number(el.stroke_width) : undefined,
+          stroke_color: el.stroke_color || undefined,
+          fill_color: el.fill_color || undefined,
+          rotation: el.rotation ? Number(el.rotation) : undefined,
+          z_index: el.z_index || undefined,
+          is_visible: el.is_visible ?? true
+        }));
+        setGraphicElements(formattedElements);
+      }
+    } catch (error) {
+      console.error('Error loading graphic elements:', error);
+    }
+  };
+
+  // Add new graphic element
+  const addGraphicElement = async (elementData: Partial<GraphicElement>) => {
+    try {
+      const insertData = {
+        type: elementData.type!,
+        position_x: elementData.position_x!,
+        position_y: elementData.position_y!,
+        width: elementData.width,
+        height: elementData.height,
+        color: elementData.color,
+        opacity: elementData.opacity,
+        text_content: elementData.text_content,
+        font_size: elementData.font_size,
+        stroke_width: elementData.stroke_width,
+        stroke_color: elementData.stroke_color,
+        fill_color: elementData.fill_color,
+        rotation: elementData.rotation,
+        z_index: elementData.z_index,
+        is_visible: elementData.is_visible
+      };
+
+      const { data, error } = await supabase
+        .from('graphic_elements')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const formattedElement: GraphicElement = {
+        id: data.id,
+        type: data.type as GraphicElement['type'],
+        position_x: Number(data.position_x),
+        position_y: Number(data.position_y),
+        width: data.width ? Number(data.width) : undefined,
+        height: data.height ? Number(data.height) : undefined,
+        color: data.color || undefined,
+        opacity: data.opacity ? Number(data.opacity) : undefined,
+        text_content: data.text_content || undefined,
+        font_size: data.font_size ? Number(data.font_size) : undefined,
+        stroke_width: data.stroke_width ? Number(data.stroke_width) : undefined,
+        stroke_color: data.stroke_color || undefined,
+        fill_color: data.fill_color || undefined,
+        rotation: data.rotation ? Number(data.rotation) : undefined,
+        z_index: data.z_index || undefined,
+        is_visible: data.is_visible ?? true
+      };
+
+      setGraphicElements(prev => [...prev, formattedElement]);
+    } catch (error) {
+      console.error('Error adding graphic element:', error);
+      toast("Error al agregar elemento");
+    }
+  };
+
+  // Update graphic element
+  const updateGraphicElement = async (element: GraphicElement) => {
+    try {
+      const { error } = await supabase
+        .from('graphic_elements')
+        .update(element)
+        .eq('id', element.id);
+
+      if (error) throw error;
+
+      setGraphicElements(prev => 
+        prev.map(el => el.id === element.id ? element : el)
+      );
+    } catch (error) {
+      console.error('Error updating graphic element:', error);
+      toast("Error al actualizar elemento");
+    }
+  };
 
   // Load gondolas from Supabase
   const loadGondolas = async () => {
@@ -389,6 +528,9 @@ const GondolasEdit = () => {
           loadUserProfile();
           // Load gondolas if authenticated
           loadGondolas();
+          // Load viewport and graphic elements
+          loadViewport();
+          loadGraphicElements();
           // Test realtime connection
           testRealtimeConnection();
         } else {
@@ -644,8 +786,9 @@ const GondolasEdit = () => {
 
         
         <Tabs defaultValue="layout" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="layout">Layout de Góndolas</TabsTrigger>
+            <TabsTrigger value="viewport">Vista Pública</TabsTrigger>
             <TabsTrigger value="brands">
               <Tag className="h-4 w-4 mr-2" />
               Marcas
@@ -696,6 +839,11 @@ const GondolasEdit = () => {
                     onGondolaAdd={addGondola}
                     onMouseMove={setMousePosition}
                     isEditMode={true}
+                    viewport={viewport}
+                    graphicElements={graphicElements}
+                    selectedGraphicElement={selectedGraphicElement}
+                    onGraphicElementSelect={setSelectedGraphicElement}
+                    onGraphicElementUpdate={updateGraphicElement}
                   />
                 </div>
               </div>
@@ -720,6 +868,51 @@ const GondolasEdit = () => {
             </div>
           </TabsContent>
           
+          <TabsContent value="viewport" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <div className="bg-card rounded-lg border p-6">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-semibold">Editor de Vista Pública</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Define el viewport y agrega elementos gráficos que se mostrarán en /gondolas
+                    </p>
+                  </div>
+                  
+                  <InteractiveMap
+                    gondolas={gondolas}
+                    onGondolaHover={setHoveredGondola}
+                    onGondolaSelect={() => {}}
+                    onGondolaUpdate={() => {}}
+                    onGondolaAdd={() => {}}
+                    onMouseMove={setMousePosition}
+                    isEditMode={true}
+                    viewport={viewport}
+                    graphicElements={graphicElements}
+                    selectedGraphicElement={selectedGraphicElement}
+                    onGraphicElementSelect={setSelectedGraphicElement}
+                    onGraphicElementUpdate={updateGraphicElement}
+                  />
+                </div>
+              </div>
+
+              <div className="lg:col-span-1 space-y-4">
+                <ViewportEditor
+                  onViewportChange={setViewport}
+                  currentViewport={viewport}
+                />
+                
+                <GraphicElementsEditor
+                  elements={graphicElements}
+                  selectedElement={selectedGraphicElement}
+                  onElementsChange={setGraphicElements}
+                  onElementSelect={setSelectedGraphicElement}
+                  onAddElement={addGraphicElement}
+                />
+              </div>
+            </div>
+          </TabsContent>
+
           <TabsContent value="brands" className="space-y-6">
             <BrandManagement />
           </TabsContent>
