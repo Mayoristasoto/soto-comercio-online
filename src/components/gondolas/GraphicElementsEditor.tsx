@@ -260,37 +260,72 @@ export const GraphicElementsEditor = ({
                     value={selectedElement.text_content || ''}
                     onChange={(e) => updateElement({ text_content: e.target.value })}
                     placeholder="Escribe el texto aquí..."
+                    rows={3}
                   />
                 </div>
-                <div>
-                  <Label>Tamaño de fuente</Label>
-                  <Input
-                    type="number"
-                    value={selectedElement.font_size || 14}
-                    onChange={(e) => updateElement({ font_size: parseFloat(e.target.value) || 14 })}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Tamaño de fuente</Label>
+                    <Input
+                      type="number"
+                      value={selectedElement.font_size || 14}
+                      onChange={(e) => updateElement({ font_size: parseFloat(e.target.value) || 14 })}
+                      min="8"
+                      max="72"
+                    />
+                  </div>
+                  <div>
+                    <Label>Color del texto</Label>
+                    <Input
+                      type="color"
+                      value={selectedElement.color || '#000000'}
+                      onChange={(e) => updateElement({ color: e.target.value })}
+                    />
+                  </div>
                 </div>
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Color de relleno</Label>
-                <Input
-                  type="color"
-                  value={selectedElement.fill_color || '#ffffff'}
-                  onChange={(e) => updateElement({ fill_color: e.target.value })}
-                />
+            {selectedElement.type !== 'text' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Color de relleno</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={selectedElement.fill_color || '#ffffff'}
+                      onChange={(e) => updateElement({ fill_color: e.target.value })}
+                      className="w-16 h-9 p-1"
+                    />
+                    <Input
+                      type="text"
+                      value={selectedElement.fill_color || '#ffffff'}
+                      onChange={(e) => updateElement({ fill_color: e.target.value })}
+                      placeholder="#ffffff"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Color de borde</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={selectedElement.stroke_color || '#000000'}
+                      onChange={(e) => updateElement({ stroke_color: e.target.value })}
+                      className="w-16 h-9 p-1"
+                    />
+                    <Input
+                      type="text"
+                      value={selectedElement.stroke_color || '#000000'}
+                      onChange={(e) => updateElement({ stroke_color: e.target.value })}
+                      placeholder="#000000"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label>Color de borde</Label>
-                <Input
-                  type="color"
-                  value={selectedElement.stroke_color || '#000000'}
-                  onChange={(e) => updateElement({ stroke_color: e.target.value })}
-                />
-              </div>
-            </div>
+            )}
 
             <div>
               <Label>Grosor del borde: {selectedElement.stroke_width || 1}px</Label>

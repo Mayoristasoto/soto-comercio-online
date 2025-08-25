@@ -20,9 +20,10 @@ interface ViewportSettings {
 interface ViewportEditorProps {
   onViewportChange: (viewport: ViewportSettings) => void;
   currentViewport: ViewportSettings;
+  onStartSelection?: () => void;
 }
 
-export const ViewportEditor = ({ onViewportChange, currentViewport }: ViewportEditorProps) => {
+export const ViewportEditor = ({ onViewportChange, currentViewport, onStartSelection }: ViewportEditorProps) => {
   const [viewport, setViewport] = useState<ViewportSettings>(currentViewport);
   const [isSelecting, setIsSelecting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -73,14 +74,20 @@ export const ViewportEditor = ({ onViewportChange, currentViewport }: ViewportEd
     }
 
     try {
+      console.log('Guardando viewport:', viewport);
+      
       // First, set all existing viewports to inactive
-      await supabase
+      const { error: updateError } = await supabase
         .from('layout_viewport')
         .update({ is_active: false })
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to update all
+        .eq('is_active', true);
+
+      if (updateError) {
+        console.warn('Error updating existing viewports:', updateError);
+      }
 
       // Insert new active viewport
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('layout_viewport')
         .insert({
           x: viewport.x,
@@ -89,20 +96,26 @@ export const ViewportEditor = ({ onViewportChange, currentViewport }: ViewportEd
           height: viewport.height,
           zoom: viewport.zoom,
           is_active: true
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting viewport:', error);
+        throw error;
+      }
 
+      console.log('Viewport guardado exitosamente:', data);
       toast("Viewport guardado correctamente");
       setHasChanges(false);
     } catch (error) {
       console.error('Error saving viewport:', error);
-      toast("Error al guardar viewport");
+      toast("Error al guardar viewport: " + (error as any)?.message);
     }
   };
 
   const startSelection = () => {
     setIsSelecting(true);
+    onStartSelection?.();
     toast("Haz click y arrastra en el mapa para definir el área visible");
   };
 

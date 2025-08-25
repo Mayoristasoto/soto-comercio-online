@@ -53,6 +53,7 @@ const GondolasEdit = () => {
   const [viewport, setViewport] = useState({ x: 0, y: 0, width: 800, height: 600, zoom: 1 });
   const [graphicElements, setGraphicElements] = useState<GraphicElement[]>([]);
   const [selectedGraphicElement, setSelectedGraphicElement] = useState<GraphicElement | null>(null);
+  const [isViewportSelecting, setIsViewportSelecting] = useState(false);
   
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
@@ -892,6 +893,11 @@ const GondolasEdit = () => {
                     selectedGraphicElement={selectedGraphicElement}
                     onGraphicElementSelect={setSelectedGraphicElement}
                     onGraphicElementUpdate={updateGraphicElement}
+                    isViewportSelecting={isViewportSelecting}
+                    onViewportChange={(newViewport) => {
+                      setViewport(newViewport);
+                      setIsViewportSelecting(false);
+                    }}
                   />
                 </div>
               </div>
@@ -900,6 +906,7 @@ const GondolasEdit = () => {
                 <ViewportEditor
                   onViewportChange={setViewport}
                   currentViewport={viewport}
+                  onStartSelection={() => setIsViewportSelecting(true)}
                 />
                 
                 <GraphicElementsEditor

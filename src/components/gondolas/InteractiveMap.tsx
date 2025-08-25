@@ -43,6 +43,8 @@ interface InteractiveMapProps {
   selectedGraphicElement?: GraphicElement | null;
   onGraphicElementSelect?: (element: GraphicElement | null) => void;
   onGraphicElementUpdate?: (element: GraphicElement) => void;
+  isViewportSelecting?: boolean;
+  onViewportChange?: (viewport: ViewportSettings) => void;
 }
 
 export const InteractiveMap = ({ 
@@ -57,7 +59,9 @@ export const InteractiveMap = ({
   graphicElements = [],
   selectedGraphicElement,
   onGraphicElementSelect,
-  onGraphicElementUpdate
+  onGraphicElementUpdate,
+  isViewportSelecting = false,
+  onViewportChange
 }: InteractiveMapProps) => {
   const isMobile = useMobileDetection();
   
@@ -70,6 +74,9 @@ export const InteractiveMap = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | null>(null);
+  const [isSelectingViewport, setIsSelectingViewport] = useState(false);
+  const [viewportSelectionStart, setViewportSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [viewportSelectionCurrent, setViewportSelectionCurrent] = useState<{ x: number; y: number } | null>(null);
   
   // Enhanced mobile touch optimizations como Google Maps
   const [touchStartDistance, setTouchStartDistance] = useState<number | null>(null);
@@ -88,6 +95,15 @@ export const InteractiveMap = ({
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [selectedMobileGondola, setSelectedMobileGondola] = useState<Gondola | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Use effect to update viewport selection state when prop changes
+  useEffect(() => {
+    setIsSelectingViewport(isViewportSelecting);
+    if (!isViewportSelecting) {
+      setViewportSelectionStart(null);
+      setViewportSelectionCurrent(null);
+    }
+  }, [isViewportSelecting]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -238,6 +254,14 @@ export const InteractiveMap = ({
 
   const handleMouseMoveOnSvg = (event: React.MouseEvent) => {
     onMouseMove({ x: event.clientX, y: event.clientY });
+
+    // Handle viewport selection dragging
+    if (isSelectingViewport && viewportSelectionStart && svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const x = (event.clientX - rect.left - pan.x) / zoom;
+      const y = (event.clientY - rect.top - pan.y) / zoom;
+      setViewportSelectionCurrent({ x, y });
+    }
     
     if (isDragging && selectedGondola) {
       const gondola = gondolas.find(g => g.id === selectedGondola);
@@ -584,11 +608,42 @@ export const InteractiveMap = ({
   };
 
   const handleSvgClick = (event: React.MouseEvent) => {
+    if (!svgRef.current) return;
+    
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = (event.clientX - rect.left - pan.x) / zoom;
+    const y = (event.clientY - rect.top - pan.y) / zoom;
+
+    // Handle viewport selection
+    if (isSelectingViewport) {
+      if (!viewportSelectionStart) {
+        setViewportSelectionStart({ x, y });
+        setViewportSelectionCurrent({ x, y });
+      } else {
+        // Complete viewport selection
+        const startX = Math.min(viewportSelectionStart.x, x);
+        const startY = Math.min(viewportSelectionStart.y, y);
+        const width = Math.abs(x - viewportSelectionStart.x);
+        const height = Math.abs(y - viewportSelectionStart.y);
+        
+        const newViewport: ViewportSettings = {
+          x: startX,
+          y: startY,
+          width: Math.max(100, width), // Minimum viewport size
+          height: Math.max(100, height),
+          zoom: 1
+        };
+        
+        onViewportChange?.(newViewport);
+        setIsSelectingViewport(false);
+        setViewportSelectionStart(null);
+        setViewportSelectionCurrent(null);
+      }
+      return;
+    }
+
     // Solo crear nuevas góndolas si estamos en modo creación
-    if (isCreating && !isDragging && !isResizing && svgRef.current) {
-      const rect = svgRef.current.getBoundingClientRect();
-      const x = (event.clientX - rect.left - pan.x) / zoom;
-      const y = (event.clientY - rect.top - pan.y) / zoom;
+    if (isCreating && !isDragging && !isResizing) {
       
       // Generar ID único sin límites
       const existingGondolaIds = gondolas.filter(g => g.type === 'gondola').map(g => parseInt(g.id.replace('g', '')) || 0);
@@ -1104,6 +1159,22 @@ export const InteractiveMap = ({
             strokeWidth="3"
             strokeDasharray="10,5"
             opacity="0.8"
+            pointerEvents="none"
+          />
+        )}
+
+        {/* Viewport selection rectangle */}
+        {isSelectingViewport && viewportSelectionStart && viewportSelectionCurrent && (
+          <rect
+            x={Math.min(viewportSelectionStart.x, viewportSelectionCurrent.x)}
+            y={Math.min(viewportSelectionStart.y, viewportSelectionCurrent.y)}
+            width={Math.abs(viewportSelectionCurrent.x - viewportSelectionStart.x)}
+            height={Math.abs(viewportSelectionCurrent.y - viewportSelectionStart.y)}
+            fill="hsl(var(--primary))"
+            fillOpacity="0.2"
+            stroke="hsl(var(--primary))"
+            strokeWidth="2"
+            strokeDasharray="5,5"
             pointerEvents="none"
           />
         )}
