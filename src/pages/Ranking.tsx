@@ -108,7 +108,7 @@ export default function Ranking() {
       const periodo = periodos.find(p => p.value === selectedPeriodo)
       if (!periodo) return
 
-      // Obtener el usuario actual
+      // Obtener el usuario actual (opcional - si no está logueado, currentEmpleadoId será null)
       const { data: { user } } = await supabase.auth.getUser()
       let currentEmpleadoId = null
       

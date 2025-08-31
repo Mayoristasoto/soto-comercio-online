@@ -66,18 +66,22 @@ export default function Desafios() {
 
   const loadDesafios = async () => {
     try {
-      // Obtener empleado actual
+      // Obtener empleado actual (opcional - puede ser null si no está logueado)
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      let empleadoId = null
+      
+      if (user) {
+        const { data: empleado, error: empleadoError } = await supabase
+          .from('empleados')
+          .select('id, grupo_id')
+          .eq('user_id', user.id)
+          .single()
 
-      const { data: empleado, error: empleadoError } = await supabase
-        .from('empleados')
-        .select('id, grupo_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (empleadoError) throw empleadoError
-      setCurrentEmpleadoId(empleado.id)
+        if (!empleadoError && empleado) {
+          empleadoId = empleado.id
+          setCurrentEmpleadoId(empleado.id)
+        }
+      }
 
       // Cargar desafíos activos
       const { data: desafiosData, error: desafiosError } = await supabase
@@ -88,17 +92,22 @@ export default function Desafios() {
 
       if (desafiosError) throw desafiosError
 
-      // Cargar participaciones del empleado
-      const { data: participacionesData, error: participacionesError } = await supabase
-        .from('participaciones')
-        .select('*')
-        .eq('empleado_id', empleado.id)
+      // Cargar participaciones del empleado (solo si está logueado)
+      let participacionesData = []
+      if (empleadoId) {
+        const { data, error: participacionesError } = await supabase
+          .from('participaciones')
+          .select('*')
+          .eq('empleado_id', empleadoId)
 
-      if (participacionesError) throw participacionesError
+        if (!participacionesError) {
+          participacionesData = data || []
+        }
+      }
 
       // Combinar desafíos con participaciones
       const desafiosConParticipacion: DesafioConParticipacion[] = desafiosData?.map(desafio => {
-        const participacion = participacionesData?.find(p => p.desafio_id === desafio.id)
+        const participacion = participacionesData?.find((p: any) => p.desafio_id === desafio.id)
         
         // Calcular puntos disponibles y obtenidos
         const objetivos = Array.isArray(desafio.objetivos) ? desafio.objetivos : 

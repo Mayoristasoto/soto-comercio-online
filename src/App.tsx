@@ -11,7 +11,7 @@ import Layout from "./components/Layout";
 // Pages
 import Index from "./pages/Index";
 import SotoAuth from "./pages/SotoAuth";
-import Home from "./pages/Home";
+import HomePublico from "./pages/HomePublico";
 import Ranking from "./pages/Ranking";
 import Desafios from "./pages/Desafios";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -40,15 +40,17 @@ const App = () => (
           {/* Ruta principal como estaba antes */}
           <Route path="/" element={<Index />} />
           
-          {/* Sistema Soto Reconoce bajo /reconoce */}
+          {/* Sistema Soto Reconoce - Páginas públicas */}
+          <Route path="/reconoce" element={<HomePublico />} />
+          <Route path="/reconoce/home" element={<HomePublico />} />
+          <Route path="/reconoce/ranking" element={<Ranking />} />
+          <Route path="/reconoce/desafios" element={<Desafios />} />
+          
+          {/* Sistema Soto Reconoce - Páginas que requieren autenticación */}
           <Route path="/reconoce/auth" element={<SotoAuth />} />
-          <Route path="/reconoce" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="home" element={<Home />} />
-            <Route path="ranking" element={<Ranking />} />
-            <Route path="desafios" element={<Desafios />} />
-            <Route path="admin" element={<AdminDashboard />} />
-            {/* Aquí agregaremos más rutas de Soto Reconoce */}
+          <Route path="/reconoce/admin" element={<Layout />}>
+            <Route index element={<AdminDashboard />} />
+            {/* Aquí agregaremos más rutas de admin */}
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}
