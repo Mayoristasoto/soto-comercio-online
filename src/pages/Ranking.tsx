@@ -47,6 +47,7 @@ export default function Ranking() {
   const [selectedPeriodo, setSelectedPeriodo] = useState("mensual")
   const [selectedSucursal, setSelectedSucursal] = useState("todas")
   const [currentUserPosition, setCurrentUserPosition] = useState<number | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Generar períodos disponibles
   const periodos: Periodo[] = [
@@ -109,7 +110,7 @@ export default function Ranking() {
 
       // Obtener el usuario actual
       const { data: { user } } = await supabase.auth.getUser()
-      let currentUserId = null
+      let currentEmpleadoId = null
       
       if (user) {
         const { data: currentEmpleado } = await supabase
@@ -119,7 +120,8 @@ export default function Ranking() {
           .single()
         
         if (currentEmpleado) {
-          currentUserId = currentEmpleado.id
+          currentEmpleadoId = currentEmpleado.id
+          setCurrentUserId(currentEmpleado.id)
         }
       }
 
@@ -200,8 +202,8 @@ export default function Ranking() {
       setRankings(rankingData)
 
       // Encontrar posición del usuario actual
-      if (currentUserId) {
-        const userEntry = rankingData.find(entry => entry.empleado_id === currentUserId)
+      if (currentEmpleadoId) {
+        const userEntry = rankingData.find(entry => entry.empleado_id === currentEmpleadoId)
         setCurrentUserPosition(userEntry?.posicion || null)
       }
 
