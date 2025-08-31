@@ -53,10 +53,15 @@ const Index = () => {
                 <p className="text-sm text-gray-600">Tu distribuidora de confianza</p>
               </div>
             </div>
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link to="/auth">
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
-                  Acceder al Sistema de Gestión
+                <Button size="lg" variant="outline" className="bg-white/80 hover:bg-white">
+                  Sistema de Gestión
+                </Button>
+              </Link>
+              <Link to="/reconoce/auth">
+                <Button size="lg" className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg">
+                  🏆 Soto Reconoce
                 </Button>
               </Link>
             </div>

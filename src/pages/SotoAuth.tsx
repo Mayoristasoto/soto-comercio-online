@@ -28,7 +28,7 @@ export default function SotoAuth() {
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      navigate('/home')
+      navigate('/reconoce/home')
     }
   }
 
@@ -57,7 +57,7 @@ export default function SotoAuth() {
         description: "Has iniciado sesión exitosamente"
       })
       
-      navigate('/home')
+      navigate('/reconoce/home')
     } catch (error: any) {
       console.error('Error iniciando sesión:', error)
       toast({
@@ -98,7 +98,7 @@ export default function SotoAuth() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/home`,
+          emailRedirectTo: `${window.location.origin}/reconoce/home`,
           data: {
             nombre,
             apellido

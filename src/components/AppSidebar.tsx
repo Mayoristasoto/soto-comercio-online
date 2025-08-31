@@ -51,21 +51,21 @@ interface Empleado {
 
 // Items del menú para empleados
 const empleadoItems = [
-  { title: "Inicio", url: "/home", icon: Home },
-  { title: "Ranking", url: "/ranking", icon: Trophy },
-  { title: "Desafíos", url: "/desafios", icon: Target },
-  { title: "Mi Perfil", url: "/perfil", icon: User },
+  { title: "Inicio", url: "/reconoce/home", icon: Home },
+  { title: "Ranking", url: "/reconoce/ranking", icon: Trophy },
+  { title: "Desafíos", url: "/reconoce/desafios", icon: Target },
+  { title: "Mi Perfil", url: "/reconoce/perfil", icon: User },
 ]
 
 // Items del menú para administradores
 const adminItems = [
-  { title: "Dashboard", url: "/admin", icon: Home },
-  { title: "Empleados", url: "/admin/empleados", icon: Users },
-  { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
-  { title: "Desafíos", url: "/admin/desafios", icon: Target },
-  { title: "Premios", url: "/admin/premios", icon: Award },
-  { title: "Reportes", url: "/admin/reportes", icon: BarChart3 },
-  { title: "Configuración", url: "/admin/config", icon: Settings },
+  { title: "Dashboard", url: "/reconoce/admin", icon: Home },
+  { title: "Empleados", url: "/reconoce/admin/empleados", icon: Users },
+  { title: "Sucursales", url: "/reconoce/admin/sucursales", icon: Building2 },
+  { title: "Desafíos", url: "/reconoce/admin/desafios", icon: Target },
+  { title: "Premios", url: "/reconoce/admin/premios", icon: Award },
+  { title: "Reportes", url: "/reconoce/admin/reportes", icon: BarChart3 },
+  { title: "Configuración", url: "/reconoce/admin/config", icon: Settings },
 ]
 
 export function AppSidebar() {
@@ -86,7 +86,7 @@ export function AppSidebar() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
-        navigate('/auth')
+        navigate('/reconoce/auth')
         return
       }
 
@@ -119,7 +119,7 @@ export function AppSidebar() {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       
-      navigate('/auth')
+      navigate('/reconoce/auth')
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión exitosamente"

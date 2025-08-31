@@ -18,9 +18,9 @@ export default function Layout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_OUT' || !session) {
-          navigate('/auth')
-        } else if (event === 'SIGNED_IN' && location.pathname === '/auth') {
-          navigate('/home')
+          navigate('/reconoce/auth')
+        } else if (event === 'SIGNED_IN' && location.pathname === '/reconoce/auth') {
+          navigate('/reconoce/home')
         }
       }
     )
@@ -33,7 +33,7 @@ export default function Layout() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
-        navigate('/auth')
+        navigate('/reconoce/auth')
         return
       }
 
@@ -52,13 +52,13 @@ export default function Layout() {
           variant: "destructive"
         })
         await supabase.auth.signOut()
-        navigate('/auth')
+        navigate('/reconoce/auth')
         return
       }
 
     } catch (error) {
       console.error('Error verificando autenticación:', error)
-      navigate('/auth')
+      navigate('/reconoce/auth')
     } finally {
       setLoading(false)
     }

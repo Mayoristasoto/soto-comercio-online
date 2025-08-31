@@ -37,27 +37,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Ruta principal redirige al sistema Soto Reconoce */}
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          {/* Ruta principal como estaba antes */}
+          <Route path="/" element={<Index />} />
           
-          {/* Sistema Soto Reconoce */}
-          <Route path="/auth" element={<SotoAuth />} />
-          <Route path="/soto" element={<Layout />}>
+          {/* Sistema Soto Reconoce bajo /reconoce */}
+          <Route path="/reconoce/auth" element={<SotoAuth />} />
+          <Route path="/reconoce" element={<Layout />}>
+            <Route index element={<Home />} />
             <Route path="home" element={<Home />} />
+            <Route path="ranking" element={<Ranking />} />
+            <Route path="desafios" element={<Desafios />} />
             <Route path="admin" element={<AdminDashboard />} />
             {/* Aquí agregaremos más rutas de Soto Reconoce */}
           </Route>
-          
-          {/* Rutas directas del sistema Soto */}
-          <Route element={<Layout />}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/ranking" element={<Ranking />} />
-            <Route path="/desafios" element={<Desafios />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-          </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}
-          <Route path="/index" element={<Index />} />
           <Route path="/comercio" element={<Comercio />} />
           <Route path="/particular" element={<Particular />} />
           <Route path="/reventa" element={<Reventa />} />
@@ -65,7 +59,7 @@ const App = () => (
           <Route path="/mayorista" element={<Mayorista />} />
           <Route path="/centum" element={<Centum />} />
           <Route path="/gondolas" element={<Gondolas />} />
-          <Route path="/legacy-auth" element={<Auth />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/gondolasedit" element={<GondolasEdit />} />
           
           {/* 404 - debe ir al final */}
