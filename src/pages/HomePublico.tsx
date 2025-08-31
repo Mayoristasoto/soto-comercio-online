@@ -264,22 +264,22 @@ export default function HomePublico() {
         </Card>
 
         {/* Acciones rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Trophy className="h-5 w-5" />
-                <span>Ver Ranking</span>
+                <span>Ranking</span>
               </CardTitle>
               <CardDescription>
-                Consulta las posiciones y puntajes de todos los empleados
+                Posiciones y puntajes
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link to="/reconoce/ranking">
                 <Button className="w-full">
                   <Trophy className="h-4 w-4 mr-2" />
-                  Ver Ranking Completo
+                  Ver Ranking
                 </Button>
               </Link>
             </CardContent>
@@ -289,17 +289,57 @@ export default function HomePublico() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Target className="h-5 w-5" />
-                <span>Explorar Desafíos</span>
+                <span>Desafíos</span>
               </CardTitle>
               <CardDescription>
-                Ve todos los desafíos disponibles y sus detalles
+                Todos los desafíos activos
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link to="/reconoce/desafios">
                 <Button variant="outline" className="w-full">
                   <Target className="h-4 w-4 mr-2" />
-                  Ver Todos los Desafíos
+                  Ver Desafíos
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Award className="h-5 w-5" />
+                <span>Insignias</span>
+              </CardTitle>
+              <CardDescription>
+                Logros y reconocimientos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/reconoce/insignias">
+                <Button variant="outline" className="w-full">
+                  <Award className="h-4 w-4 mr-2" />
+                  Ver Insignias
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Star className="h-5 w-5" />
+                <span>Premios</span>
+              </CardTitle>
+              <CardDescription>
+                Canjea tus puntos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/reconoce/premios">
+                <Button variant="outline" className="w-full">
+                  <Star className="h-4 w-4 mr-2" />
+                  Ver Premios
                 </Button>
               </Link>
             </CardContent>

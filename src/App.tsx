@@ -14,6 +14,8 @@ import SotoAuth from "./pages/SotoAuth";
 import HomePublico from "./pages/HomePublico";
 import Ranking from "./pages/Ranking";
 import Desafios from "./pages/Desafios";
+import Insignias from "./pages/Insignias";
+import Premios from "./pages/Premios";
 import AdminDashboard from "./pages/AdminDashboard";
 
 // Legacy pages (mantener por compatibilidad)
@@ -45,6 +47,8 @@ const App = () => (
           <Route path="/reconoce/home" element={<HomePublico />} />
           <Route path="/reconoce/ranking" element={<Ranking />} />
           <Route path="/reconoce/desafios" element={<Desafios />} />
+          <Route path="/reconoce/insignias" element={<Insignias />} />
+          <Route path="/reconoce/premios" element={<Premios />} />
           
           {/* Sistema Soto Reconoce - Páginas que requieren autenticación */}
           <Route path="/reconoce/auth" element={<SotoAuth />} />
