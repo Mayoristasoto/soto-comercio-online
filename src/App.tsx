@@ -3,8 +3,20 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// Layout components
+import Layout from "./components/Layout";
+
+// Pages
 import Index from "./pages/Index";
+import SotoAuth from "./pages/SotoAuth";
+import Home from "./pages/Home";
+import Ranking from "./pages/Ranking";
+import Desafios from "./pages/Desafios";
+import AdminDashboard from "./pages/AdminDashboard";
+
+// Legacy pages (mantener por compatibilidad)
 import Comercio from "./pages/Comercio";
 import Particular from "./pages/Particular";
 import Reventa from "./pages/Reventa";
@@ -25,7 +37,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          {/* Ruta principal redirige al sistema Soto Reconoce */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          
+          {/* Sistema Soto Reconoce */}
+          <Route path="/auth" element={<SotoAuth />} />
+          <Route path="/soto" element={<Layout />}>
+            <Route path="home" element={<Home />} />
+            <Route path="admin" element={<AdminDashboard />} />
+            {/* Aquí agregaremos más rutas de Soto Reconoce */}
+          </Route>
+          
+          {/* Rutas directas del sistema Soto */}
+          <Route element={<Layout />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/ranking" element={<Ranking />} />
+            <Route path="/desafios" element={<Desafios />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
+
+          {/* Legacy routes (mantener por compatibilidad) */}
+          <Route path="/index" element={<Index />} />
           <Route path="/comercio" element={<Comercio />} />
           <Route path="/particular" element={<Particular />} />
           <Route path="/reventa" element={<Reventa />} />
@@ -33,9 +65,10 @@ const App = () => (
           <Route path="/mayorista" element={<Mayorista />} />
           <Route path="/centum" element={<Centum />} />
           <Route path="/gondolas" element={<Gondolas />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/legacy-auth" element={<Auth />} />
           <Route path="/gondolasedit" element={<GondolasEdit />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          
+          {/* 404 - debe ir al final */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
