@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Users, 
   Building2, 
@@ -12,10 +13,14 @@ import {
   Activity,
   Calendar,
   BarChart3,
-  Settings
+  Settings,
+  Shield
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import EmployeeManagement from "@/components/admin/EmployeeManagement"
+import BranchManagement from "@/components/admin/BranchManagement"
+import RoleManagement from "@/components/admin/RoleManagement"
 
 interface DashboardStats {
   total_empleados: number
@@ -254,57 +259,165 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Acciones Rápidas</CardTitle>
-            <CardDescription>
-              Gestiona los elementos principales del sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start">
-              <Users className="h-4 w-4 mr-2" />
-              Gestionar Empleados
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <Target className="h-4 w-4 mr-2" />
-              Crear Nuevo Desafío
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <Award className="h-4 w-4 mr-2" />
-              Configurar Premios
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Ver Reportes Detallados
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Management Tabs */}
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="employees">Empleados</TabsTrigger>
+          <TabsTrigger value="branches">Sucursales</TabsTrigger>
+          <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="activity">Actividad</TabsTrigger>
+        </TabsList>
 
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Activity className="h-5 w-5" />
-              <span>Actividad Reciente</span>
-            </CardTitle>
-            <CardDescription>
-              Últimas acciones en el sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentActivity.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No hay actividad reciente</p>
-              </div>
-            ) : (
+        <TabsContent value="dashboard">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Acciones Rápidas</CardTitle>
+                <CardDescription>
+                  Gestiona los elementos principales del sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full justify-start">
+                  <Users className="h-4 w-4 mr-2" />
+                  Gestionar Empleados
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Target className="h-4 w-4 mr-2" />
+                  Crear Nuevo Desafío
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Award className="h-4 w-4 mr-2" />
+                  Configurar Premios
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Ver Reportes Detallados
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Activity className="h-5 w-5" />
+                  <span>Actividad Reciente</span>
+                </CardTitle>
+                <CardDescription>
+                  Últimas acciones en el sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {recentActivity.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No hay actividad reciente</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-start space-x-3 p-2 rounded border">
+                        {getActivityIcon(activity.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm">{activity.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFecha(activity.fecha)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Summary Cards - moved to dashboard tab */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumen Semanal</CardTitle>
+                <CardDescription>
+                  Estadísticas de la semana actual
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Participaciones en desafíos</span>
+                    <Badge variant="secondary">+25%</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Nuevos registros</span>
+                    <Badge variant="secondary">+12%</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Premios entregados</span>
+                    <Badge variant="secondary">8</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Próximos Eventos</CardTitle>
+                <CardDescription>
+                  Fechas importantes y vencimientos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm">Cierre desafío mensual</p>
+                      <p className="text-xs text-muted-foreground">En 5 días</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm">Ranking semanal</p>
+                      <p className="text-xs text-muted-foreground">En 2 días</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="employees">
+          <EmployeeManagement />
+        </TabsContent>
+
+        <TabsContent value="branches">
+          <BranchManagement />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RoleManagement />
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Activity className="h-5 w-5" />
+                <span>Actividad Completa del Sistema</span>
+              </CardTitle>
+              <CardDescription>
+                Registro detallado de todas las acciones del sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
                 {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-2 rounded border">
+                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded border">
                     {getActivityIcon(activity.type)}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm">{activity.description}</p>
@@ -315,65 +428,10 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumen Semanal</CardTitle>
-            <CardDescription>
-              Estadísticas de la semana actual
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Participaciones en desafíos</span>
-                <Badge variant="secondary">+25%</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Nuevos registros</span>
-                <Badge variant="secondary">+12%</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Premios entregados</span>
-                <Badge variant="secondary">8</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Próximos Eventos</CardTitle>
-            <CardDescription>
-              Fechas importantes y vencimientos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm">Cierre desafío mensual</p>
-                  <p className="text-xs text-muted-foreground">En 5 días</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm">Ranking semanal</p>
-                  <p className="text-xs text-muted-foreground">En 2 días</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
