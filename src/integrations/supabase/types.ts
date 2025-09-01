@@ -645,6 +645,45 @@ export type Database = {
         }
         Relationships: []
       }
+      presupuesto_empresa: {
+        Row: {
+          activo: boolean
+          anio: number
+          created_at: string
+          descripcion: string | null
+          id: string
+          mes: number
+          presupuesto_disponible: number
+          presupuesto_inicial: number
+          presupuesto_utilizado: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          anio: number
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          mes: number
+          presupuesto_disponible?: number
+          presupuesto_inicial?: number
+          presupuesto_utilizado?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          anio?: number
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          mes?: number
+          presupuesto_disponible?: number
+          presupuesto_inicial?: number
+          presupuesto_utilizado?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profile_access_audit: {
         Row: {
           action: string | null
@@ -899,6 +938,16 @@ export type Database = {
           section: string
           status: string
           type: string
+        }[]
+      }
+      get_presupuesto_resumen: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          anual: number
+          disponible_mes: number
+          mes_actual: number
+          porcentaje_utilizado: number
+          utilizado_mes: number
         }[]
       }
       get_profile_stats: {
