@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      asignaciones_capacitacion: {
+        Row: {
+          capacitacion_id: string
+          created_at: string
+          empleado_id: string
+          estado: string
+          fecha_asignacion: string
+          fecha_completada: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          capacitacion_id: string
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          fecha_asignacion?: string
+          fecha_completada?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          capacitacion_id?: string
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          fecha_asignacion?: string
+          fecha_completada?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       asignaciones_premio: {
         Row: {
           beneficiario_id: string
@@ -87,6 +120,39 @@ export type Database = {
           is_active?: boolean | null
           logo_url?: string | null
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      capacitaciones: {
+        Row: {
+          activa: boolean
+          created_at: string
+          descripcion: string | null
+          duracion_estimada: number | null
+          id: string
+          obligatoria: boolean
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          descripcion?: string | null
+          duracion_estimada?: number | null
+          id?: string
+          obligatoria?: boolean
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          descripcion?: string | null
+          duracion_estimada?: number | null
+          id?: string
+          obligatoria?: boolean
+          titulo?: string
           updated_at?: string
         }
         Relationships: []
@@ -207,6 +273,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      evaluaciones_capacitacion: {
+        Row: {
+          activa: boolean
+          capacitacion_id: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          intentos_maximos: number
+          puntaje_minimo: number
+          tiempo_limite: number | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          capacitacion_id: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          intentos_maximos?: number
+          puntaje_minimo?: number
+          tiempo_limite?: number | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          capacitacion_id?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          intentos_maximos?: number
+          puntaje_minimo?: number
+          tiempo_limite?: number | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       gondolas: {
         Row: {
@@ -496,6 +601,51 @@ export type Database = {
           },
         ]
       }
+      intentos_evaluacion: {
+        Row: {
+          aprobado: boolean
+          created_at: string
+          empleado_id: string
+          evaluacion_id: string
+          fecha_finalizacion: string | null
+          fecha_inicio: string
+          id: string
+          porcentaje: number
+          puntaje_obtenido: number
+          puntaje_total: number
+          respuestas: Json
+          tiempo_empleado: number | null
+        }
+        Insert: {
+          aprobado: boolean
+          created_at?: string
+          empleado_id: string
+          evaluacion_id: string
+          fecha_finalizacion?: string | null
+          fecha_inicio?: string
+          id?: string
+          porcentaje: number
+          puntaje_obtenido: number
+          puntaje_total: number
+          respuestas: Json
+          tiempo_empleado?: number | null
+        }
+        Update: {
+          aprobado?: boolean
+          created_at?: string
+          empleado_id?: string
+          evaluacion_id?: string
+          fecha_finalizacion?: string | null
+          fecha_inicio?: string
+          id?: string
+          porcentaje?: number
+          puntaje_obtenido?: number
+          puntaje_total?: number
+          respuestas?: Json
+          tiempo_empleado?: number | null
+        }
+        Relationships: []
+      }
       layout_viewport: {
         Row: {
           created_at: string
@@ -529,6 +679,36 @@ export type Database = {
           x?: number
           y?: number
           zoom?: number
+        }
+        Relationships: []
+      }
+      materiales_capacitacion: {
+        Row: {
+          capacitacion_id: string
+          created_at: string
+          id: string
+          nombre: string
+          tamaño_archivo: number | null
+          tipo: string
+          url: string
+        }
+        Insert: {
+          capacitacion_id: string
+          created_at?: string
+          id?: string
+          nombre: string
+          tamaño_archivo?: number | null
+          tipo: string
+          url: string
+        }
+        Update: {
+          capacitacion_id?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          tamaño_archivo?: number | null
+          tipo?: string
+          url?: string
         }
         Relationships: []
       }
@@ -599,6 +779,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      preguntas_evaluacion: {
+        Row: {
+          created_at: string
+          evaluacion_id: string
+          id: string
+          opciones: Json
+          orden: number
+          pregunta: string
+          puntos: number
+          respuesta_correcta: number
+        }
+        Insert: {
+          created_at?: string
+          evaluacion_id: string
+          id?: string
+          opciones: Json
+          orden?: number
+          pregunta: string
+          puntos?: number
+          respuesta_correcta: number
+        }
+        Update: {
+          created_at?: string
+          evaluacion_id?: string
+          id?: string
+          opciones?: Json
+          orden?: number
+          pregunta?: string
+          puntos?: number
+          respuesta_correcta?: number
+        }
+        Relationships: []
       }
       premios: {
         Row: {

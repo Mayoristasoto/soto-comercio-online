@@ -23,6 +23,7 @@ import BranchManagement from "@/components/admin/BranchManagement"
 import RoleManagement from "@/components/admin/RoleManagement"
 import BudgetManagement from "@/components/admin/BudgetManagement"
 import ChallengeManagement from "@/components/admin/ChallengeManagement"
+import TrainingManagement from "@/components/admin/TrainingManagement"
 
 interface DashboardStats {
   total_empleados: number
@@ -263,12 +264,13 @@ export default function AdminDashboard() {
 
       {/* Management Tabs */}
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-8 w-full">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="employees">Empleados</TabsTrigger>
           <TabsTrigger value="branches">Sucursales</TabsTrigger>
           <TabsTrigger value="budget">Presupuesto</TabsTrigger>
           <TabsTrigger value="challenges">Desafíos</TabsTrigger>
+          <TabsTrigger value="training">Capacitaciones</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="activity">Actividad</TabsTrigger>
         </TabsList>
@@ -416,6 +418,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="challenges">
           <ChallengeManagement />
+        </TabsContent>
+
+        <TabsContent value="training">
+          <TrainingManagement />
         </TabsContent>
 
         <TabsContent value="roles">

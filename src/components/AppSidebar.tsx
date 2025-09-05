@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  User
+  User,
+  GraduationCap
 } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 
@@ -54,6 +55,7 @@ const empleadoItems = [
   { title: "Inicio", url: "/reconoce/home", icon: Home },
   { title: "Ranking", url: "/reconoce/ranking", icon: Trophy },
   { title: "Desafíos", url: "/reconoce/desafios", icon: Target },
+  { title: "Capacitaciones", url: "/reconoce/capacitaciones", icon: GraduationCap },
   { title: "Mi Perfil", url: "/reconoce/perfil", icon: User },
 ]
 
@@ -63,6 +65,7 @@ const adminItems = [
   { title: "Empleados", url: "/reconoce/admin/empleados", icon: Users },
   { title: "Sucursales", url: "/reconoce/admin/sucursales", icon: Building2 },
   { title: "Desafíos", url: "/reconoce/admin/desafios", icon: Target },
+  { title: "Capacitaciones", url: "/reconoce/admin/capacitaciones", icon: GraduationCap },
   { title: "Premios", url: "/reconoce/admin/premios", icon: Award },
   { title: "Reportes", url: "/reconoce/admin/reportes", icon: BarChart3 },
   { title: "Configuración", url: "/reconoce/admin/config", icon: Settings },
