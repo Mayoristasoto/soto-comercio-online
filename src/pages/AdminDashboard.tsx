@@ -306,7 +306,11 @@ export default function AdminDashboard() {
                   <Target className="h-4 w-4 mr-2" />
                   Crear Nuevo Desafío
                 </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50"
+                  onClick={() => window.location.href = '/reconoce/medals'}
+                >
                   <Award className="h-4 w-4 mr-2" />
                   Configurar Premios
                 </Button>

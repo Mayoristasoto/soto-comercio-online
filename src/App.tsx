@@ -18,6 +18,7 @@ import Insignias from "./pages/Insignias";
 import Premios from "./pages/Premios";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import MedalManagement from "./pages/MedalManagement";
 
 // Legacy pages (mantener por compatibilidad)
 import Comercio from "./pages/Comercio";
@@ -51,6 +52,7 @@ const App = () => (
           <Route path="/reconoce/insignias" element={<Insignias />} />
           <Route path="/reconoce/premios" element={<Premios />} />
           <Route path="/reconoce/dashboard" element={<Dashboard />} />
+          <Route path="/reconoce/medals" element={<MedalManagement />} />
           
           {/* Sistema Soto Reconoce - Páginas que requieren autenticación */}
           <Route path="/reconoce/auth" element={<SotoAuth />} />
