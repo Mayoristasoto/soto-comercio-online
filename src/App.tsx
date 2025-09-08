@@ -54,8 +54,10 @@ const App = () => (
           <Route path="/reconoce/auth" element={<SotoAuth />} />
           <Route path="/reconoce/admin" element={<Layout />}>
             <Route index element={<AdminDashboard />} />
-            {/* Aquí agregaremos más rutas de admin */}
           </Route>
+          
+          {/* Rutas directas de admin (redirigir al dashboard con tabs) */}
+          <Route path="/reconoce/capacitaciones" element={<Navigate to="/reconoce/admin?tab=training" replace />} />
 
           {/* Legacy routes (mantener por compatibilidad) */}
           <Route path="/comercio" element={<Comercio />} />

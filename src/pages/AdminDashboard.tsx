@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,8 @@ interface RecentActivity {
 
 export default function AdminDashboard() {
   const { toast } = useToast()
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard')
   const [stats, setStats] = useState<DashboardStats>({
     total_empleados: 0,
     total_sucursales: 0,
@@ -264,7 +267,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Management Tabs */}
-      <Tabs defaultValue="dashboard" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid grid-cols-9 w-full">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
