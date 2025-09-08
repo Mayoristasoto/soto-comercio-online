@@ -16,6 +16,7 @@ import Ranking from "./pages/Ranking";
 import Desafios from "./pages/Desafios";
 import Insignias from "./pages/Insignias";
 import Premios from "./pages/Premios";
+import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 
 // Legacy pages (mantener por compatibilidad)
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/reconoce/desafios" element={<Desafios />} />
           <Route path="/reconoce/insignias" element={<Insignias />} />
           <Route path="/reconoce/premios" element={<Premios />} />
+          <Route path="/reconoce/dashboard" element={<Dashboard />} />
           
           {/* Sistema Soto Reconoce - Páginas que requieren autenticación */}
           <Route path="/reconoce/auth" element={<SotoAuth />} />

@@ -56,6 +56,7 @@ const empleadoItems = [
   { title: "Ranking", url: "/reconoce/ranking", icon: Trophy },
   { title: "Desafíos", url: "/reconoce/desafios", icon: Target },
   { title: "Capacitaciones", url: "/reconoce/capacitaciones", icon: GraduationCap },
+  { title: "Dashboard", url: "/reconoce/dashboard", icon: BarChart3 },
   { title: "Mi Perfil", url: "/reconoce/perfil", icon: User },
 ]
 
