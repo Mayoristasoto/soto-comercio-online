@@ -264,7 +264,7 @@ export default function HomePublico() {
         </Card>
 
         {/* Acciones rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -340,6 +340,26 @@ export default function HomePublico() {
                 <Button variant="outline" className="w-full">
                   <Star className="h-4 w-4 mr-2" />
                   Ver Premios
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="h-5 w-5" />
+                <span>Panel Admin</span>
+              </CardTitle>
+              <CardDescription>
+                Administrar sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/reconoce/admin">
+                <Button variant="secondary" className="w-full">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Acceder
                 </Button>
               </Link>
             </CardContent>

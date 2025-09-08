@@ -191,6 +191,49 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Accesos rápidos para todos los usuarios */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Accesos Rápidos</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/reconoce/" className={getNavCls}>
+                    <Home className="h-4 w-4" />
+                    <span>Página Pública</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/reconoce/ranking" className={getNavCls}>
+                    <Trophy className="h-4 w-4" />
+                    <span>Ranking Global</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/reconoce/insignias" className={getNavCls}>
+                    <Award className="h-4 w-4" />
+                    <span>Insignias</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {empleado?.rol !== 'admin_rrhh' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/reconoce/admin" className={getNavCls}>
+                      <Settings className="h-4 w-4" />
+                      <span>Panel Admin</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4">
