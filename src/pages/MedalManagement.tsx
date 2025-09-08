@@ -45,11 +45,11 @@ interface MedalAssignment {
   empleado_id: string
   insignia_id: string
   fecha_otorgada: string
-  empleado: {
+  empleados?: {
     nombre: string
     apellido: string
   }
-  insignia: {
+  insignias?: {
     nombre: string
     icono: string
   }
@@ -155,8 +155,8 @@ export default function MedalManagement() {
             empleado_id,
             insignia_id,
             fecha_otorgada,
-            empleados!inner(nombre, apellido),
-            insignias!inner(nombre, icono)
+            empleados(nombre, apellido),
+            insignias(nombre, icono)
           `)
       ])
 
@@ -166,7 +166,12 @@ export default function MedalManagement() {
 
       setEmployees(employeesResult.data || [])
       setMedals(medalsResult.data || [])
-      setAssignments(assignmentsResult.data as any || [])
+      
+      // Filter out assignments with missing related data
+      const validAssignments = (assignmentsResult.data || []).filter(assignment => 
+        assignment.empleados && assignment.insignias
+      )
+      setAssignments(validAssignments as any)
 
     } catch (error) {
       console.error('Error cargando datos:', error)
@@ -503,7 +508,7 @@ export default function MedalManagement() {
                             {employeeMedals.length > 0 ? (
                               employeeMedals.map((assignment) => (
                                 <Badge key={assignment.id} variant="secondary" className="text-xs">
-                                  {assignment.insignia.icono} {assignment.insignia.nombre}
+                                  {assignment.insignias?.icono || '🏅'} {assignment.insignias?.nombre || 'Medalla'}
                                 </Badge>
                               ))
                             ) : (
@@ -562,12 +567,12 @@ export default function MedalManagement() {
                   .slice(0, 10)
                   .map((assignment) => (
                     <div key={assignment.id} className="flex items-center space-x-3 p-3 rounded border">
-                      <div className="text-2xl">{assignment.insignia.icono}</div>
+                      <div className="text-2xl">{assignment.insignias?.icono || '🏅'}</div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">
-                          {assignment.empleado.nombre} {assignment.empleado.apellido} 
+                          {assignment.empleados?.nombre || 'Empleado'} {assignment.empleados?.apellido || ''} 
                           <span className="font-normal"> recibió </span>
-                          {assignment.insignia.nombre}
+                          {assignment.insignias?.nombre || 'Medalla'}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(assignment.fecha_otorgada).toLocaleDateString('es-AR')}
