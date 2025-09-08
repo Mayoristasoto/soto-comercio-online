@@ -162,7 +162,13 @@ export default function Insignias() {
   }
 
   const getTipoInsignia = (criterio: any) => {
-    switch (criterio.tipo) {
+    switch (criterio?.tipo) {
+      case 'puntualidad': return { label: 'Puntualidad', color: 'bg-blue-100 text-blue-800' }
+      case 'ventas': return { label: 'Ventas', color: 'bg-green-100 text-green-800' }
+      case 'asistencia': return { label: 'Asistencia', color: 'bg-orange-100 text-orange-800' }
+      case 'innovacion': return { label: 'Innovación', color: 'bg-purple-100 text-purple-800' }
+      case 'teamwork': return { label: 'Trabajo en Equipo', color: 'bg-pink-100 text-pink-800' }
+      case 'custom': return { label: 'Reconocimiento', color: 'bg-yellow-100 text-yellow-800' }
       case 'puntos_total': return { label: 'Puntos', color: 'bg-blue-100 text-blue-800' }
       case 'desafios_completados': return { label: 'Desafíos', color: 'bg-green-100 text-green-800' }
       case 'racha_dias': return { label: 'Racha', color: 'bg-orange-100 text-orange-800' }
@@ -192,8 +198,8 @@ export default function Insignias() {
     )
   }
 
-  const insigniasObtenidas_ = insignias.filter(i => i.obtenida)
-  const insigniasPendientes = insignias.filter(i => !i.obtenida)
+  const insigniasObtenidasIds = insigniasObtenidas.map(ie => ie.insignia.id)
+  const insigniasPendientes = insignias.filter(i => !insigniasObtenidasIds.includes(i.id))
 
   return (
     <div className="p-6 space-y-6">
@@ -227,11 +233,11 @@ export default function Insignias() {
                   {empleadoActual.nombre} {empleadoActual.apellido}
                 </h3>
                 <p className="text-muted-foreground">
-                  {insigniasObtenidas_.length} de {insignias.length} insignias obtenidas
+                  {insigniasObtenidas.length} de {insignias.length} insignias obtenidas
                 </p>
                 <div className="mt-2">
                   <Progress 
-                    value={(insigniasObtenidas_.length / insignias.length) * 100} 
+                    value={insignias.length > 0 ? (insigniasObtenidas.length / insignias.length) * 100 : 0} 
                     className="w-full max-w-md"
                   />
                 </div>
@@ -239,7 +245,7 @@ export default function Insignias() {
               
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">
-                  {insigniasObtenidas_.length}
+                  {insigniasObtenidas.length}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Insignias
@@ -251,7 +257,7 @@ export default function Insignias() {
       )}
 
       {/* Insignias Obtenidas */}
-      {insigniasObtenidas_.length > 0 && (
+      {insigniasObtenidas.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -264,13 +270,13 @@ export default function Insignias() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {insigniasObtenidas_.map((insignia) => {
-                const tipoInsignia = getTipoInsignia(insignia.criterio)
-                const fechaObtenida = insigniasObtenidas.find(io => io.insignia.id === insignia.id)?.fecha_otorgada
+              {insigniasObtenidas.map((insigniaEmpleado) => {
+                const insignia = insigniaEmpleado.insignia
+                const tipoInsignia = getTipoInsignia(insignia.criterio || { tipo: 'custom' })
                 
                 return (
                   <div 
-                    key={insignia.id}
+                    key={insigniaEmpleado.id}
                     className="relative p-6 rounded-lg border-2 border-green-200 bg-green-50 text-center"
                   >
                     <div className="absolute top-2 right-2">
@@ -278,7 +284,9 @@ export default function Insignias() {
                     </div>
                     
                     <div className="flex justify-center mb-4 text-green-600">
-                      {getIconoComponent(insignia.icono)}
+                      <div className="text-4xl">
+                        {insignia.icono || '🏅'}
+                      </div>
                     </div>
                     
                     <h3 className="font-semibold text-lg mb-2">
@@ -293,11 +301,9 @@ export default function Insignias() {
                       {tipoInsignia.label}
                     </Badge>
                     
-                    {fechaObtenida && (
-                      <div className="mt-3 text-xs text-muted-foreground">
-                        Obtenida el {formatFecha(fechaObtenida)}
-                      </div>
-                    )}
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      Obtenida el {formatFecha(insigniaEmpleado.fecha_otorgada)}
+                    </div>
                   </div>
                 )
               })}
@@ -340,7 +346,9 @@ export default function Insignias() {
                     </div>
                     
                     <div className="flex justify-center mb-4 text-muted-foreground opacity-50">
-                      {getIconoComponent(insignia.icono)}
+                      <div className="text-4xl">
+                        {insignia.icono || '🏅'}
+                      </div>
                     </div>
                     
                     <h3 className="font-semibold text-lg mb-2">
@@ -368,13 +376,31 @@ export default function Insignias() {
                     
                     {/* Criterio de obtención */}
                     <div className="mt-3 text-xs text-muted-foreground">
-                      {insignia.criterio.tipo === 'puntos_total' && 
+                      {insignia.criterio?.tipo === 'puntualidad' && 
+                        'Por mantener puntualidad perfecta'
+                      }
+                      {insignia.criterio?.tipo === 'ventas' && 
+                        'Reconocimiento por mejores ventas'
+                      }
+                      {insignia.criterio?.tipo === 'asistencia' && 
+                        'Por asistencia perfecta'
+                      }
+                      {insignia.criterio?.tipo === 'innovacion' && 
+                        'Por aportar ideas innovadoras'
+                      }
+                      {insignia.criterio?.tipo === 'teamwork' && 
+                        'Por excelente trabajo en equipo'
+                      }
+                      {insignia.criterio?.tipo === 'custom' && 
+                        'Reconocimiento especial'
+                      }
+                      {insignia.criterio?.tipo === 'puntos_total' && 
                         `Alcanza ${insignia.criterio.valor} puntos totales`
                       }
-                      {insignia.criterio.tipo === 'desafios_completados' && 
+                      {insignia.criterio?.tipo === 'desafios_completados' && 
                         `Completa ${insignia.criterio.valor} desafíos`
                       }
-                      {insignia.criterio.tipo === 'racha_dias' && 
+                      {insignia.criterio?.tipo === 'racha_dias' && 
                         `Mantén una racha de ${insignia.criterio.valor} días`
                       }
                     </div>
