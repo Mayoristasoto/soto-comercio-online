@@ -296,14 +296,14 @@ export default function UserCreation() {
                   Sucursal (opcional)
                 </Label>
                 <Select 
-                  value={newUser.sucursal_id || ""} 
-                  onValueChange={(value) => setNewUser({ ...newUser, sucursal_id: value || undefined })}
+                  value={newUser.sucursal_id || "sin_asignar"} 
+                  onValueChange={(value) => setNewUser({ ...newUser, sucursal_id: value === "sin_asignar" ? undefined : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar sucursal" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
+                    <SelectItem value="sin_asignar">Sin asignar</SelectItem>
                     {sucursales.map((sucursal) => (
                       <SelectItem key={sucursal.id} value={sucursal.id}>
                         {sucursal.nombre}
