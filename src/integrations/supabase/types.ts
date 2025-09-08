@@ -1153,6 +1153,21 @@ export type Database = {
           type: string
         }[]
       }
+      get_manager_employee_view: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          activo: boolean
+          apellido: string
+          created_at: string
+          fecha_ingreso: string
+          grupo_id: string
+          id: string
+          nombre: string
+          rol: Database["public"]["Enums"]["user_role"]
+          sucursal_id: string
+          updated_at: string
+        }[]
+      }
       get_presupuesto_resumen: {
         Args: Record<PropertyKey, never>
         Returns: {
