@@ -155,10 +155,10 @@ export default function AdminDashboard() {
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'participacion': return <Target className="h-4 w-4 text-blue-600" />
-      case 'premio': return <Award className="h-4 w-4 text-yellow-600" />
-      case 'registro': return <Users className="h-4 w-4 text-green-600" />
-      default: return <Activity className="h-4 w-4" />
+      case 'participacion': return <Target className="h-4 w-4 text-blue-700" />
+      case 'premio': return <Award className="h-4 w-4 text-amber-600" />
+      case 'registro': return <Users className="h-4 w-4 text-green-700" />
+      default: return <Activity className="h-4 w-4 text-slate-700" />
     }
   }
 
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Empleados</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
+            <Users className="h-4 w-4 text-blue-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total_empleados}</div>
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sucursales</CardTitle>
-            <Building2 className="h-4 w-4 text-green-600" />
+            <Building2 className="h-4 w-4 text-green-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total_sucursales}</div>
@@ -224,7 +224,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Desafíos Activos</CardTitle>
-            <Target className="h-4 w-4 text-purple-600" />
+            <Target className="h-4 w-4 text-purple-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.desafios_activos}</div>
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Premios Pendientes</CardTitle>
-            <Award className="h-4 w-4 text-yellow-600" />
+            <Award className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.premios_pendientes}</div>
@@ -246,7 +246,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Participaciones</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-600" />
+            <TrendingUp className="h-4 w-4 text-orange-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.participaciones_mes}</div>
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Puntos Totales</CardTitle>
-            <DollarSign className="h-4 w-4 text-red-600" />
+            <DollarSign className="h-4 w-4 text-red-700" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.puntos_mes}</div>
@@ -291,13 +291,13 @@ export default function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full justify-start">
+                <Button className="w-full justify-start bg-primary hover:bg-primary/90">
                   <Users className="h-4 w-4 mr-2" />
                   Gestionar Empleados
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start"
+                  className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50"
                   onClick={() => {
                     const challengeTab = document.querySelector('[value="challenges"]') as HTMLElement
                     challengeTab?.click()
@@ -306,11 +306,11 @@ export default function AdminDashboard() {
                   <Target className="h-4 w-4 mr-2" />
                   Crear Nuevo Desafío
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50">
                   <Award className="h-4 w-4 mr-2" />
                   Configurar Premios
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Ver Reportes Detallados
                 </Button>
@@ -390,16 +390,16 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="h-4 w-4 text-slate-600" />
                     <div className="flex-1">
-                      <p className="text-sm">Cierre desafío mensual</p>
+                      <p className="text-sm font-medium">Cierre desafío mensual</p>
                       <p className="text-xs text-muted-foreground">En 5 días</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="h-4 w-4 text-slate-600" />
                     <div className="flex-1">
-                      <p className="text-sm">Ranking semanal</p>
+                      <p className="text-sm font-medium">Ranking semanal</p>
                       <p className="text-xs text-muted-foreground">En 2 días</p>
                     </div>
                   </div>
