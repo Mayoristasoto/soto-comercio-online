@@ -15,7 +15,10 @@ import {
   Users,
   Calendar,
   CheckCircle,
-  Lock
+  Lock,
+  Coins,
+  Gift,
+  ShoppingCart
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -27,6 +30,7 @@ interface Insignia {
   icono: string
   criterio: any
   activa: boolean
+  puntos_valor: number
   obtenida?: boolean
   progreso?: number
   fecha_otorgada?: string
@@ -44,6 +48,7 @@ export default function Insignias() {
   const [insigniasObtenidas, setInsigniasObtenidas] = useState<InsigniaEmpleado[]>([])
   const [loading, setLoading] = useState(true)
   const [empleadoActual, setEmpleadoActual] = useState<any>(null)
+  const [puntosDisponibles, setPuntosDisponibles] = useState(0)
 
   useEffect(() => {
     loadInsignias()
@@ -66,6 +71,15 @@ export default function Insignias() {
         if (empleado) {
           empleadoId = empleado.id
           setEmpleadoActual(empleado)
+
+          // Cargar puntos disponibles
+          const { data: puntos } = await supabase
+            .from('puntos')
+            .select('puntos')
+            .eq('empleado_id', empleado.id)
+
+          const totalPuntos = puntos?.reduce((sum, p) => sum + p.puntos, 0) || 0
+          setPuntosDisponibles(totalPuntos)
 
           // Cargar insignias obtenidas por el empleado
           const { data: insigniasEmp, error: insigniasEmpError } = await supabase
@@ -251,6 +265,15 @@ export default function Insignias() {
                   Insignias
                 </div>
               </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {puntosDisponibles}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Puntos Disponibles
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -297,13 +320,29 @@ export default function Insignias() {
                       {insignia.descripcion}
                     </p>
                     
-                    <Badge className={tipoInsignia.color}>
-                      {tipoInsignia.label}
-                    </Badge>
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <Badge className={tipoInsignia.color}>
+                        {tipoInsignia.label}
+                      </Badge>
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                        <Coins className="h-3 w-3 mr-1" />
+                        {insignia.puntos_valor} pts
+                      </Badge>
+                    </div>
                     
                     <div className="mt-3 text-xs text-muted-foreground">
                       Obtenida el {formatFecha(insigniaEmpleado.fecha_otorgada)}
                     </div>
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="mt-3 w-full"
+                      onClick={() => window.location.href = '/reconoce/premios'}
+                    >
+                      <Gift className="h-3 w-3 mr-1" />
+                      Canjear por Premio
+                    </Button>
                   </div>
                 )
               })}
@@ -359,9 +398,15 @@ export default function Insignias() {
                       {insignia.descripcion}
                     </p>
                     
-                    <Badge variant="outline" className={tipoInsignia.color}>
-                      {tipoInsignia.label}
-                    </Badge>
+                    <div className="flex items-center justify-center space-x-2">
+                      <Badge variant="outline" className={tipoInsignia.color}>
+                        {tipoInsignia.label}
+                      </Badge>
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                        <Coins className="h-3 w-3 mr-1" />
+                        {insignia.puntos_valor} pts
+                      </Badge>
+                    </div>
                     
                     {/* Barra de progreso */}
                     {insignia.progreso !== undefined && insignia.progreso > 0 && (

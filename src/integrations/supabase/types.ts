@@ -538,6 +538,7 @@ export type Database = {
           icono: string | null
           id: string
           nombre: string
+          puntos_valor: number | null
           updated_at: string
         }
         Insert: {
@@ -548,6 +549,7 @@ export type Database = {
           icono?: string | null
           id?: string
           nombre: string
+          puntos_valor?: number | null
           updated_at?: string
         }
         Update: {
@@ -558,6 +560,7 @@ export type Database = {
           icono?: string | null
           id?: string
           nombre?: string
+          puntos_valor?: number | null
           updated_at?: string
         }
         Relationships: []

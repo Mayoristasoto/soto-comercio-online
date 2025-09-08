@@ -49,6 +49,7 @@ export default function Premios() {
   const [loading, setLoading] = useState(true)
   const [empleadoActual, setEmpleadoActual] = useState<any>(null)
   const [puntosActuales, setPuntosActuales] = useState(0)
+  const [puntosInsignias, setPuntosInsignias] = useState(0)
 
   useEffect(() => {
     loadPremios()
@@ -80,6 +81,19 @@ export default function Premios() {
 
           const totalPuntos = puntos?.reduce((sum, p) => sum + p.puntos, 0) || 0
           setPuntosActuales(totalPuntos)
+
+          // Cargar puntos de insignias obtenidas
+          const { data: insigniasEmp } = await supabase
+            .from('insignias_empleado')
+            .select(`
+              insignia:insignias(puntos_valor)
+            `)
+            .eq('empleado_id', empleado.id)
+
+          const puntosDeInsignias = insigniasEmp?.reduce((sum, ie) => {
+            return sum + (ie.insignia?.puntos_valor || 0)
+          }, 0) || 0
+          setPuntosInsignias(puntosDeInsignias)
 
           // Cargar premios obtenidos por el empleado
           const { data: asignaciones, error: asignacionesError } = await supabase
@@ -154,7 +168,7 @@ export default function Premios() {
 
   const puedeReclamar = (premio: Premio) => {
     if (!empleadoActual) return false
-    if (premio.puntosRequeridos && puntosActuales < premio.puntosRequeridos) return false
+    if (premio.puntosRequeridos && puntosInsignias < premio.puntosRequeridos) return false
     if (premio.stock !== null && premio.stock <= 0) return false
     
     // Verificar si ya reclamó este premio
@@ -261,6 +275,16 @@ export default function Premios() {
                   Puntos totales
                 </div>
               </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600 flex items-center space-x-1">
+                  <Crown className="h-6 w-6" />
+                  <span>{puntosInsignias}</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Puntos de Insignias
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -351,7 +375,7 @@ export default function Premios() {
                 const IconComponent = tipoPremio.icon
                 const puedeReclamarPremio = puedeReclamar(premio)
                 const yaReclamado = premiosObtenidos.some(p => p.premio.id === premio.id)
-                const faltanPuntos = premio.puntosRequeridos ? premio.puntosRequeridos - puntosActuales : 0
+                const faltanPuntos = premio.puntosRequeridos ? premio.puntosRequeridos - puntosInsignias : 0
                 
                 return (
                   <div 
@@ -395,7 +419,7 @@ export default function Premios() {
                           <span>{premio.puntosRequeridos}</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          puntos requeridos
+                          puntos de insignias requeridos
                         </div>
                       </div>
                       
@@ -411,7 +435,7 @@ export default function Premios() {
                             Te faltan {faltanPuntos} puntos
                           </div>
                           <Progress 
-                            value={(puntosActuales / (premio.puntosRequeridos || 1)) * 100}
+                            value={(puntosInsignias / (premio.puntosRequeridos || 1)) * 100}
                             className="h-2"
                           />
                         </div>
@@ -461,7 +485,7 @@ export default function Premios() {
               </div>
               <div className="flex items-center space-x-2">
                 <Gift className="h-4 w-4 text-purple-600" />
-                <span>Canjea puntos por premios</span>
+                <span>Canjea puntos de insignias por premios</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-blue-600" />
