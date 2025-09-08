@@ -221,7 +221,7 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {empleado?.rol !== 'admin_rrhh' && (
+              {empleado?.rol === 'admin_rrhh' && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/reconoce/admin" className={getNavCls}>

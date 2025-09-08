@@ -333,26 +333,28 @@ export default function Home() {
         </Card>
 
         {/* Admin Access - Only show for admin users */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Shield className="h-5 w-5" />
-              <span>Administración</span>
-            </CardTitle>
-            <CardDescription>
-              Accede al panel de administración del sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => window.location.href = '/reconoce/admin'}
-            >
-              Ir al Panel Admin
-            </Button>
-          </CardContent>
-        </Card>
+        {empleado?.rol === 'admin_rrhh' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5" />
+                <span>Administración</span>
+              </CardTitle>
+              <CardDescription>
+                Accede al panel de administración del sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => window.location.href = '/reconoce/admin'}
+              >
+                Ir al Panel Admin
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
