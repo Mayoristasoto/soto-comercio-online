@@ -332,25 +332,30 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Admin Access - Only show for admin users */}
-        {empleado?.rol === 'admin_rrhh' && (
+        {/* Admin Access - Show for all authenticated users */}
+        {empleado && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Shield className="h-5 w-5" />
-                <span>Administración</span>
+                <span>
+                  {empleado.rol === 'admin_rrhh' ? 'Panel Administrador' : 'Panel de Usuario'}
+                </span>
               </CardTitle>
               <CardDescription>
-                Accede al panel de administración del sistema
+                {empleado.rol === 'admin_rrhh' 
+                  ? 'Accede al panel de administración completo del sistema'
+                  : 'Accede a las funciones administrativas disponibles'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button 
-                variant="outline" 
+                variant={empleado.rol === 'admin_rrhh' ? 'default' : 'outline'}
                 className="w-full"
                 onClick={() => window.location.href = '/reconoce/admin'}
               >
-                Ir al Panel Admin
+                {empleado.rol === 'admin_rrhh' ? 'Administrar Sistema' : 'Ver Panel'}
               </Button>
             </CardContent>
           </Card>
