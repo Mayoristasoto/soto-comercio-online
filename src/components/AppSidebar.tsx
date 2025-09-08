@@ -161,9 +161,9 @@ export function AppSidebar() {
     <Sidebar className="w-60">
       <SidebarHeader className="border-b p-4">
         <div className="flex flex-col space-y-2">
-          <h2 className="text-lg font-semibold text-primary">Soto Reconoce</h2>
+          <h2 className="text-lg font-semibold text-black">Soto Reconoce</h2>
           {empleado && (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-black">
               {empleado.sucursal?.nombre}
             </div>
           )}
@@ -172,7 +172,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>
+          <SidebarGroupLabel className="text-black">
             {empleado?.rol === 'admin_rrhh' ? 'Administración' : 'Menú Principal'}
           </SidebarGroupLabel>
 
@@ -182,8 +182,8 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4 w-4 text-black" />
+                      <span className="text-black">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -194,30 +194,30 @@ export function AppSidebar() {
 
         {/* Accesos rápidos para todos los usuarios */}
         <SidebarGroup>
-          <SidebarGroupLabel>Accesos Rápidos</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-black">Accesos Rápidos</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/reconoce/" className={getNavCls}>
-                    <Home className="h-4 w-4" />
-                    <span>Página Pública</span>
+                    <Home className="h-4 w-4 text-black" />
+                    <span className="text-black">Página Pública</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/reconoce/ranking" className={getNavCls}>
-                    <Trophy className="h-4 w-4" />
-                    <span>Ranking Global</span>
+                    <Trophy className="h-4 w-4 text-black" />
+                    <span className="text-black">Ranking Global</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/reconoce/insignias" className={getNavCls}>
-                    <Award className="h-4 w-4" />
-                    <span>Insignias</span>
+                    <Award className="h-4 w-4 text-black" />
+                    <span className="text-black">Insignias</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -225,8 +225,8 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/reconoce/admin" className={getNavCls}>
-                      <Settings className="h-4 w-4" />
-                      <span>Panel Admin</span>
+                      <Settings className="h-4 w-4 text-black" />
+                      <span className="text-black">Panel Admin</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -247,10 +247,10 @@ export function AppSidebar() {
             </Avatar>
             
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="text-sm font-medium truncate text-black">
                 {empleado.nombre} {empleado.apellido}
               </p>
-              <p className="text-xs text-muted-foreground capitalize">
+              <p className="text-xs text-black capitalize">
                 {empleado.rol.replace('_', ' ')}
               </p>
             </div>
@@ -261,9 +261,9 @@ export function AppSidebar() {
           variant="ghost"
           size="sm"
           onClick={handleSignOut}
-          className="mt-2 w-full justify-start"
+          className="mt-2 w-full justify-start text-black hover:text-black"
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut className="h-4 w-4 mr-2 text-black" />
           Cerrar Sesión
         </Button>
       </SidebarFooter>
