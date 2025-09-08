@@ -12,7 +12,8 @@ import {
   Users, 
   Building2,
   Calendar,
-  Star
+  Star,
+  Shield
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -300,7 +301,7 @@ export default function Home() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -328,6 +329,28 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full">Ver Mis Premios</Button>
+          </CardContent>
+        </Card>
+
+        {/* Admin Access - Only show for admin users */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Shield className="h-5 w-5" />
+              <span>Administración</span>
+            </CardTitle>
+            <CardDescription>
+              Accede al panel de administración del sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => window.location.href = '/reconoce/admin'}
+            >
+              Ir al Panel Admin
+            </Button>
           </CardContent>
         </Card>
       </div>

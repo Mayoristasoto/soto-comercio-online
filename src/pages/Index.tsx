@@ -64,6 +64,11 @@ const Index = () => {
                   🏆 Soto Reconoce
                 </Button>
               </Link>
+              <Link to="/reconoce/admin">
+                <Button size="lg" variant="outline" className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
+                  👤 Admin Panel
+                </Button>
+              </Link>
             </div>
             <Badge className="bg-green-100 text-green-800 border-green-200">
               Envío gratis MDQ
