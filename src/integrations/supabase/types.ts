@@ -1236,7 +1236,12 @@ export type Database = {
       desafio_estado: "borrador" | "activo" | "finalizado"
       desafio_tipo_periodo: "semanal" | "mensual" | "semestral" | "anual"
       movimiento_tipo: "egreso" | "ajuste" | "ingreso"
-      premio_tipo: "semanal" | "mensual" | "semestral" | "anual"
+      premio_tipo:
+        | "fisico"
+        | "digital"
+        | "experiencia"
+        | "descuento"
+        | "reconocimiento"
       user_role: "admin_rrhh" | "gerente_sucursal" | "lider_grupo" | "empleado"
     }
     CompositeTypes: {
@@ -1370,7 +1375,13 @@ export const Constants = {
       desafio_estado: ["borrador", "activo", "finalizado"],
       desafio_tipo_periodo: ["semanal", "mensual", "semestral", "anual"],
       movimiento_tipo: ["egreso", "ajuste", "ingreso"],
-      premio_tipo: ["semanal", "mensual", "semestral", "anual"],
+      premio_tipo: [
+        "fisico",
+        "digital",
+        "experiencia",
+        "descuento",
+        "reconocimiento",
+      ],
       user_role: ["admin_rrhh", "gerente_sucursal", "lider_grupo", "empleado"],
     },
   },
