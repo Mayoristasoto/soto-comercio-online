@@ -126,6 +126,10 @@ export default function TrainingManagement() {
     orden: 0
   });
 
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [showYoutubeDialog, setShowYoutubeDialog] = useState(false);
+  const [selectedTrainingForYoutube, setSelectedTrainingForYoutube] = useState<string>("");
+
   useEffect(() => {
     loadData();
   }, []);
@@ -317,6 +321,51 @@ export default function TrainingManagement() {
       console.error("Error uploading file:", error);
       toast.error("Error al subir el archivo");
     }
+  };
+
+  const handleAddYouTubeVideo = async () => {
+    if (!selectedTrainingForYoutube || !youtubeUrl) return;
+
+    try {
+      // Extract video ID from YouTube URL
+      const videoId = extractYouTubeVideoId(youtubeUrl);
+      if (!videoId) {
+        toast.error("URL de YouTube inválida");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("materiales_capacitacion")
+        .insert([{
+          capacitacion_id: selectedTrainingForYoutube,
+          nombre: `Video de YouTube - ${videoId}`,
+          tipo: 'youtube',
+          url: youtubeUrl,
+          tamaño_archivo: 0
+        }]);
+
+      if (error) throw error;
+
+      toast.success("Video de YouTube agregado exitosamente");
+      setShowYoutubeDialog(false);
+      setYoutubeUrl("");
+      setSelectedTrainingForYoutube("");
+      loadMaterials();
+    } catch (error) {
+      console.error("Error adding YouTube video:", error);
+      toast.error("Error al agregar el video de YouTube");
+    }
+  };
+
+  const extractYouTubeVideoId = (url: string): string | null => {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
+
+  const getEmbedUrl = (url: string): string => {
+    const videoId = extractYouTubeVideoId(url);
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
   };
 
   const handleAssignTraining = async (trainingId: string, employeeIds: string[]) => {
@@ -567,6 +616,17 @@ export default function TrainingManagement() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
+                          setSelectedTrainingForYoutube(training.id);
+                          setShowYoutubeDialog(true);
+                        }}
+                      >
+                        <Video className="w-4 h-4 mr-1" />
+                        YouTube
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
                           setSelectedTraining(training.id);
                           setShowAssignDialog(true);
                         }}
@@ -607,20 +667,48 @@ export default function TrainingManagement() {
                       <h4 className="font-medium mb-2">Materiales:</h4>
                       <div className="space-y-2">
                         {materials.filter(m => m.capacitacion_id === training.id).map((material) => (
-                          <div key={material.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                            <div className="flex items-center">
-                              {material.tipo === 'pdf' ? (
-                                <FileText className="w-4 h-4 mr-2 text-destructive" />
-                              ) : (
-                                <Video className="w-4 h-4 mr-2 text-primary" />
-                              )}
-                              <span className="text-sm">{material.nombre}</span>
-                              <Badge variant="outline" className="ml-2">{material.tipo}</Badge>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {(material.tamaño_archivo / 1024 / 1024).toFixed(2)} MB
-                            </span>
-                          </div>
+                           <div key={material.id} className="space-y-2">
+                             <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                               <div className="flex items-center">
+                                 {material.tipo === 'pdf' ? (
+                                   <FileText className="w-4 h-4 mr-2 text-destructive" />
+                                 ) : material.tipo === 'youtube' ? (
+                                   <Video className="w-4 h-4 mr-2 text-red-500" />
+                                 ) : (
+                                   <Video className="w-4 h-4 mr-2 text-primary" />
+                                 )}
+                                 <span className="text-sm">{material.nombre}</span>
+                                 <Badge variant="outline" className="ml-2">{material.tipo}</Badge>
+                                 {material.tipo === 'youtube' && (
+                                   <a 
+                                     href={material.url} 
+                                     target="_blank" 
+                                     rel="noopener noreferrer"
+                                     className="ml-2 text-blue-500 hover:text-blue-700"
+                                   >
+                                     Ver video
+                                   </a>
+                                 )}
+                               </div>
+                               <span className="text-xs text-muted-foreground">
+                                 {material.tipo === 'youtube' ? 'YouTube' : `${(material.tamaño_archivo / 1024 / 1024).toFixed(2)} MB`}
+                               </span>
+                             </div>
+                             {material.tipo === 'youtube' && (
+                               <div className="mt-2">
+                                 <iframe
+                                   width="100%"
+                                   height="200"
+                                   src={getEmbedUrl(material.url)}
+                                   title={material.nombre}
+                                   frameBorder="0"
+                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                   allowFullScreen
+                                   className="rounded"
+                                 ></iframe>
+                               </div>
+                             )}
+                           </div>
                         ))}
                       </div>
                     </div>
@@ -992,6 +1080,34 @@ export default function TrainingManagement() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Dialog para agregar video de YouTube */}
+      <Dialog open={showYoutubeDialog} onOpenChange={setShowYoutubeDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar Video de YouTube</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="youtube-url">URL del video de YouTube</Label>
+              <Input
+                id="youtube-url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowYoutubeDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddYouTubeVideo}>
+                Agregar Video
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
