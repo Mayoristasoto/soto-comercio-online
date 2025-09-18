@@ -119,6 +119,7 @@ export default function UserEmployeeManagement() {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/reconoce/home`,
           data: {
             nombre: formData.nombre,
             apellido: formData.apellido
@@ -376,7 +377,10 @@ export default function UserEmployeeManagement() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(isOpen) => {
+          setDialogOpen(isOpen)
+          if (!isOpen) closeDialog()
+        }}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>
