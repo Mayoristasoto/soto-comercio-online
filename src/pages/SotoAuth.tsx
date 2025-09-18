@@ -164,10 +164,9 @@ export default function SotoAuth() {
         <Card>
           <Tabs defaultValue="signin" className="w-full">
             <CardHeader className="pb-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
                 <TabsTrigger value="signup">Registrarse</TabsTrigger>
-                <TabsTrigger value="facial">Reconocimiento</TabsTrigger>
               </TabsList>
             </CardHeader>
 
@@ -177,50 +176,67 @@ export default function SotoAuth() {
                 <div className="space-y-2">
                   <CardTitle className="text-xl">Bienvenido de vuelta</CardTitle>
                   <CardDescription>
-                    Ingresa tu email y contraseña para acceder
+                    Ingresa con tu email y contraseña o usa reconocimiento facial
                   </CardDescription>
                 </div>
 
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
+                <Tabs defaultValue="email-login" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="email-login">Email</TabsTrigger>
+                    <TabsTrigger value="facial-login">Reconocimiento</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="email-login" className="mt-4">
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-email">Email</Label>
+                        <Input
+                          id="signin-email"
+                          type="email"
+                          placeholder="tu@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Contraseña</Label>
-                    <div className="relative">
-                      <Input
-                        id="signin-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-password">Contraseña</Label>
+                        <div className="relative">
+                          <Input
+                            id="signin-password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
                       </Button>
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
-                  </Button>
-                </form>
+                    </form>
+                  </TabsContent>
+                  
+                  <TabsContent value="facial-login" className="mt-4">
+                    <FacialRecognitionAuth
+                      mode="login"
+                      onRegisterSuccess={handleFacialRegister}
+                      onLoginSuccess={handleFacialLogin}
+                    />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               {/* Sign Up Tab */}
@@ -228,7 +244,7 @@ export default function SotoAuth() {
                 <div className="space-y-2">
                   <CardTitle className="text-xl">Crear cuenta nueva</CardTitle>
                   <CardDescription>
-                    Completa los datos para registrarte
+                    Completa los datos para registrarte y opcionalmente agrega tu foto para reconocimiento facial
                   </CardDescription>
                 </div>
 
@@ -294,47 +310,37 @@ export default function SotoAuth() {
                     </div>
                   </div>
 
-                  {faceDescriptor && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <div className="flex items-center space-x-2">
-                        <Award className="h-4 w-4 text-green-600" />
-                        <span className="text-green-800 text-sm font-medium">
-                          Rostro registrado - Reconocimiento facial habilitado
-                        </span>
+                  {/* Facial Recognition Registration */}
+                  <div className="space-y-2">
+                    <Label>Reconocimiento Facial (Opcional)</Label>
+                    <Card className="p-4">
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Registra tu rostro para poder iniciar sesión usando reconocimiento facial
+                        </p>
+                        <FacialRecognitionAuth
+                          mode="register"
+                          onRegisterSuccess={handleFacialRegister}
+                          onLoginSuccess={handleFacialLogin}
+                        />
+                        {faceDescriptor && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="flex items-center space-x-2">
+                              <Award className="h-4 w-4 text-green-600" />
+                              <span className="text-green-800 text-sm font-medium">
+                                ✓ Rostro registrado exitosamente
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    </Card>
+                  </div>
 
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Creando cuenta..." : "Crear Cuenta"}
                   </Button>
                 </form>
-              </TabsContent>
-
-              {/* Facial Recognition Tab */}
-              <TabsContent value="facial" className="space-y-4">
-                <Tabs defaultValue="facial-login" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="facial-login">Iniciar Sesión</TabsTrigger>
-                    <TabsTrigger value="facial-register">Registrarse</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="facial-login" className="mt-4">
-                    <FacialRecognitionAuth
-                      mode="login"
-                      onRegisterSuccess={handleFacialRegister}
-                      onLoginSuccess={handleFacialLogin}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="facial-register" className="mt-4">
-                    <FacialRecognitionAuth
-                      mode="register"
-                      onRegisterSuccess={handleFacialRegister}
-                      onLoginSuccess={handleFacialLogin}
-                    />
-                  </TabsContent>
-                </Tabs>
               </TabsContent>
             </CardContent>
           </Tabs>
