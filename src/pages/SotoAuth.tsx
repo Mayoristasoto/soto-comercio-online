@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Building2, Award } from "lucide-react"
+import FacialRecognitionAuth from "@/components/FacialRecognitionAuth"
 
 export default function SotoAuth() {
   const navigate = useNavigate()
@@ -20,6 +21,7 @@ export default function SotoAuth() {
   const [password, setPassword] = useState("")
   const [nombre, setNombre] = useState("")
   const [apellido, setApellido] = useState("")
+  const [faceDescriptor, setFaceDescriptor] = useState<Float32Array | null>(null)
 
   useEffect(() => {
     checkUser()
@@ -101,7 +103,8 @@ export default function SotoAuth() {
           emailRedirectTo: `${window.location.origin}/reconoce/home`,
           data: {
             nombre,
-            apellido
+            apellido,
+            face_descriptor: faceDescriptor ? Array.from(faceDescriptor) : null
           }
         }
       })
@@ -126,6 +129,20 @@ export default function SotoAuth() {
     }
   }
 
+  const handleFacialRegister = (descriptor: Float32Array) => {
+    setFaceDescriptor(descriptor)
+  }
+
+  const handleFacialLogin = async () => {
+    // In a real implementation, this would compare the captured face
+    // with stored descriptors from the database
+    toast({
+      title: "¡Acceso autorizado!",
+      description: "Rostro reconocido exitosamente"
+    })
+    navigate('/reconoce/home')
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
@@ -147,9 +164,10 @@ export default function SotoAuth() {
         <Card>
           <Tabs defaultValue="signin" className="w-full">
             <CardHeader className="pb-4">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
                 <TabsTrigger value="signup">Registrarse</TabsTrigger>
+                <TabsTrigger value="facial">Reconocimiento</TabsTrigger>
               </TabsList>
             </CardHeader>
 
@@ -280,6 +298,32 @@ export default function SotoAuth() {
                     {loading ? "Creando cuenta..." : "Crear Cuenta"}
                   </Button>
                 </form>
+              </TabsContent>
+
+              {/* Facial Recognition Tab */}
+              <TabsContent value="facial" className="space-y-4">
+                <Tabs defaultValue="facial-login" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="facial-login">Iniciar Sesión</TabsTrigger>
+                    <TabsTrigger value="facial-register">Registrarse</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="facial-login" className="mt-4">
+                    <FacialRecognitionAuth
+                      mode="login"
+                      onRegisterSuccess={handleFacialRegister}
+                      onLoginSuccess={handleFacialLogin}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="facial-register" className="mt-4">
+                    <FacialRecognitionAuth
+                      mode="register"
+                      onRegisterSuccess={handleFacialRegister}
+                      onLoginSuccess={handleFacialLogin}
+                    />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             </CardContent>
           </Tabs>
