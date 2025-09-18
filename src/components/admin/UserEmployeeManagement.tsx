@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Pencil, Trash2, Plus, User, UserPlus, Mail, Building2, Shield, Eye, Camera } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import UserCreationForm from "./UserCreationForm"
 
 interface Empleado {
   id: string
@@ -44,14 +45,13 @@ export default function UserEmployeeManagement() {
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [loading, setLoading] = useState(true)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [createUserOpen, setCreateUserOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Empleado | null>(null)
-  const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
     email: '',
-    password: '',
     rol: 'empleado' as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
     sucursal_id: ''
   })
@@ -86,106 +86,7 @@ export default function UserEmployeeManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (isCreatingNew) {
-      await handleCreateUser()
-    } else {
-      await handleUpdateEmployee()
-    }
-  }
-
-  const handleCreateUser = async () => {
-    if (!formData.email || !formData.password || !formData.nombre || !formData.apellido) {
-      toast({
-        title: "Error",
-        description: "Todos los campos obligatorios deben completarse",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (formData.password.length < 6) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 6 caracteres",
-        variant: "destructive"
-      })
-      return
-    }
-
-    try {
-      // Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/reconoce/home`,
-          data: {
-            nombre: formData.nombre,
-            apellido: formData.apellido
-          }
-        }
-      })
-
-      if (authError) {
-        toast({
-          title: "Error",
-          description: authError.message === 'User already registered' 
-            ? "Ya existe un usuario con este email" 
-            : "Error al crear el usuario",
-          variant: "destructive"
-        })
-        return
-      }
-
-      if (!authData.user) {
-        toast({
-          title: "Error",
-          description: "No se pudo crear el usuario",
-          variant: "destructive"
-        })
-        return
-      }
-
-      // Crear empleado en la tabla empleados
-      const { error: empleadoError } = await supabase
-        .from('empleados')
-        .insert({
-          user_id: authData.user.id,
-          email: formData.email,
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          rol: formData.rol,
-          sucursal_id: formData.sucursal_id || null,
-          activo: true
-        })
-
-      if (empleadoError) {
-        console.error('Error creando empleado:', empleadoError)
-        toast({
-          title: "Usuario creado parcialmente",
-          description: "El usuario fue creado pero hay problemas con el perfil.",
-          variant: "destructive"
-        })
-        return
-      }
-
-      toast({
-        title: "Usuario creado exitosamente",
-        description: `${formData.nombre} ${formData.apellido} fue agregado al sistema`,
-      })
-
-      closeDialog()
-      loadData()
-
-    } catch (error) {
-      console.error('Error inesperado:', error)
-      toast({
-        title: "Error",
-        description: "Ocurrió un error inesperado al crear el usuario",
-        variant: "destructive"
-      })
-    }
+    await handleUpdateEmployee()
   }
 
   const handleUpdateEmployee = async () => {
@@ -212,7 +113,7 @@ export default function UserEmployeeManagement() {
         description: "Los datos del empleado se actualizaron correctamente"
       })
 
-      closeDialog()
+      closeEditDialog()
       loadData()
     } catch (error) {
       console.error('Error actualizando empleado:', error)
@@ -226,16 +127,14 @@ export default function UserEmployeeManagement() {
 
   const handleEdit = (empleado: Empleado) => {
     setEditingEmployee(empleado)
-    setIsCreatingNew(false)
     setFormData({
       nombre: empleado.nombre,
       apellido: empleado.apellido,
       email: empleado.email,
-      password: '',
       rol: empleado.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
       sucursal_id: empleado.sucursal_id || ''
     })
-    setDialogOpen(true)
+    setEditDialogOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -266,31 +165,23 @@ export default function UserEmployeeManagement() {
   }
 
   const openCreateDialog = () => {
-    setEditingEmployee(null)
-    setIsCreatingNew(true)
-    setFormData({
-      nombre: '',
-      apellido: '',
-      email: '',
-      password: '',
-      rol: 'empleado',
-      sucursal_id: ''
-    })
-    setDialogOpen(true)
+    setCreateUserOpen(true)
   }
 
-  const closeDialog = () => {
-    setDialogOpen(false)
+  const closeEditDialog = () => {
+    setEditDialogOpen(false)
     setEditingEmployee(null)
-    setIsCreatingNew(false)
     setFormData({
       nombre: '',
       apellido: '',
       email: '',
-      password: '',
       rol: 'empleado',
       sucursal_id: ''
     })
+  }
+
+  const handleUserCreated = () => {
+    loadData()
   }
 
   const getRoleBadge = (rol: string) => {
@@ -377,20 +268,20 @@ export default function UserEmployeeManagement() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={dialogOpen} onOpenChange={(isOpen) => {
-          setDialogOpen(isOpen)
-          if (!isOpen) closeDialog()
-        }}>
+        {/* User Creation Dialog */}
+        <UserCreationForm 
+          open={createUserOpen}
+          onOpenChange={setCreateUserOpen}
+          onUserCreated={handleUserCreated}
+        />
+
+        {/* Edit Employee Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>
-                {isCreatingNew ? 'Crear Nuevo Usuario' : 'Editar Empleado'}
-              </DialogTitle>
+              <DialogTitle>Editar Empleado</DialogTitle>
               <DialogDescription>
-                {isCreatingNew 
-                  ? 'Completa la información para crear un nuevo usuario en el sistema'
-                  : 'Modifica los datos del empleado'
-                }
+                Modifica los datos del empleado
               </DialogDescription>
             </DialogHeader>
             
@@ -424,22 +315,9 @@ export default function UserEmployeeManagement() {
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   required
-                  disabled={!isCreatingNew}
+                  disabled
                 />
               </div>
-
-              {isCreatingNew && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña * (mín. 6 caracteres)</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    required
-                  />
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -474,11 +352,11 @@ export default function UserEmployeeManagement() {
               </div>
 
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={closeDialog}>
+                <Button type="button" variant="outline" onClick={closeEditDialog}>
                   Cancelar
                 </Button>
                 <Button type="submit">
-                  {isCreatingNew ? 'Crear Usuario' : 'Actualizar'}
+                  Actualizar
                 </Button>
               </div>
             </form>
