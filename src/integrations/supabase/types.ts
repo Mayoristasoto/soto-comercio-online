@@ -213,6 +213,7 @@ export type Database = {
           created_at: string
           dni: string | null
           email: string
+          face_descriptor: number[] | null
           fecha_ingreso: string
           grupo_id: string | null
           id: string
@@ -230,6 +231,7 @@ export type Database = {
           created_at?: string
           dni?: string | null
           email: string
+          face_descriptor?: number[] | null
           fecha_ingreso?: string
           grupo_id?: string | null
           id?: string
@@ -247,6 +249,7 @@ export type Database = {
           created_at?: string
           dni?: string | null
           email?: string
+          face_descriptor?: number[] | null
           fecha_ingreso?: string
           grupo_id?: string | null
           id?: string
