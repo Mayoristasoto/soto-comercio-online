@@ -95,6 +95,7 @@ export default function UserCreation() {
         email: newUser.email,
         password: newUser.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/reconoce/home`,
           data: {
             nombre: newUser.nombre,
             apellido: newUser.apellido
