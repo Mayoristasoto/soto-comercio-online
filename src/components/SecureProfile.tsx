@@ -5,17 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Shield, User, Mail, Calendar, Edit, Save, X } from "lucide-react";
+import { Shield, User, Mail, Calendar, Edit, Save, X, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
-interface UserProfile {
+interface EmpleadoProfile {
   id: string;
+  nombre: string;
+  apellido: string;
   email: string;
-  full_name: string;
-  role: string;
-  created_at: string;
+  rol: string;
+  sucursal_id: string | null;
+  grupo_id: string | null;
+  activo: boolean;
+  fecha_ingreso: string;
+  avatar_url: string | null;
 }
 
 interface SecureProfileProps {
@@ -23,39 +28,31 @@ interface SecureProfileProps {
 }
 
 export const SecureProfile = ({ user }: SecureProfileProps) => {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [empleado, setEmpleado] = useState<EmpleadoProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState("");
+  const [editedNombre, setEditedNombre] = useState("");
+  const [editedApellido, setEditedApellido] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Cargar perfil del usuario usando función segura
+  // Cargar perfil del empleado usando función segura
   const loadProfile = async () => {
     try {
       setLoading(true);
       
-      // Usar función SECURITY DEFINER que solo retorna el perfil del usuario actual
-      const { data, error } = await supabase.rpc('get_current_user_profile');
+      // Usar función SECURITY DEFINER que solo retorna el empleado del usuario actual
+      const { data, error } = await supabase.rpc('get_current_empleado_full');
       
       if (error) {
-        console.error('Error cargando perfil:', error);
-        toast.error('Error al cargar perfil de usuario');
+        console.error('Error cargando empleado:', error);
+        toast.error('Error al cargar perfil de empleado');
         return;
       }
 
       if (data && data.length > 0) {
-        setProfile(data[0]);
-        setEditedName(data[0].full_name || '');
-      } else {
-        // Si no hay perfil, crear uno básico
-        const newProfile: UserProfile = {
-          id: user.id,
-          email: user.email || '',
-          full_name: '',
-          role: 'user',
-          created_at: new Date().toISOString()
-        };
-        setProfile(newProfile);
+        setEmpleado(data[0]);
+        setEditedNombre(data[0].nombre || '');
+        setEditedApellido(data[0].apellido || '');
       }
     } catch (error) {
       console.error('Error en loadProfile:', error);
@@ -66,27 +63,32 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
   };
 
   const saveProfile = async () => {
-    if (!profile) return;
+    if (!empleado) return;
     
     try {
       setSaving(true);
       
-      // Solo permitir actualizar el nombre completo por seguridad
+      // Solo permitir actualizar nombre y apellido por seguridad
       const { error } = await supabase
-        .from('profiles')
+        .from('empleados')
         .update({ 
-          full_name: editedName.trim() 
+          nombre: editedNombre.trim(),
+          apellido: editedApellido.trim()
         })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error actualizando perfil:', error);
+        console.error('Error actualizando empleado:', error);
         toast.error('Error al actualizar perfil');
         return;
       }
 
       // Actualizar estado local
-      setProfile(prev => prev ? { ...prev, full_name: editedName.trim() } : null);
+      setEmpleado(prev => prev ? { 
+        ...prev, 
+        nombre: editedNombre.trim(),
+        apellido: editedApellido.trim()
+      } : null);
       setIsEditing(false);
       toast.success('Perfil actualizado exitosamente');
       
@@ -99,7 +101,8 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
   };
 
   const cancelEdit = () => {
-    setEditedName(profile?.full_name || '');
+    setEditedNombre(empleado?.nombre || '');
+    setEditedApellido(empleado?.apellido || '');
     setIsEditing(false);
   };
 
@@ -122,14 +125,14 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
     );
   }
 
-  if (!profile) {
+  if (!empleado) {
     return (
       <Card>
         <CardContent className="p-6">
           <Alert>
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              No se pudo cargar el perfil de usuario. Contacta al administrador.
+              No se pudo cargar el perfil de empleado. Contacta al administrador.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -137,12 +140,25 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
     );
   }
 
+  const getRoleName = (rol: string) => {
+    switch (rol) {
+      case 'admin_rrhh':
+        return 'Administrador RRHH';
+      case 'gerente_sucursal':
+        return 'Gerente de Sucursal';
+      case 'empleado':
+        return 'Empleado';
+      default:
+        return rol;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <User className="h-5 w-5" />
-          Mi Perfil
+          Mi Perfil de Empleado
         </CardTitle>
       </CardHeader>
       
@@ -152,15 +168,15 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
           <Shield className="h-4 w-4" />
           <AlertDescription>
             <strong>Información protegida:</strong> Solo tú puedes ver y editar tu perfil.
-            Los emails y datos personales están encriptados y protegidos.
+            Los datos de empleados están protegidos por Row Level Security.
           </AlertDescription>
         </Alert>
 
-        {/* ID de Usuario */}
+        {/* ID de Empleado */}
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">ID de Usuario</Label>
+          <Label className="text-sm font-medium text-muted-foreground">ID de Empleado</Label>
           <div className="font-mono text-xs bg-muted p-2 rounded">
-            {profile.id}
+            {empleado.id}
           </div>
         </div>
 
@@ -169,46 +185,56 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
           <Mail className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1">
             <Label className="text-sm font-medium">Email</Label>
-            <p className="text-sm">{profile.email}</p>
+            <p className="text-sm">{empleado.email}</p>
           </div>
           <Badge variant="secondary">Verificado</Badge>
         </div>
 
-        {/* Nombre completo */}
+        {/* Nombre y Apellido */}
         <div>
-          <Label className="text-sm font-medium">Nombre Completo</Label>
+          <Label className="text-sm font-medium">Nombre y Apellido</Label>
           {isEditing ? (
-            <div className="flex gap-2 mt-1">
-              <Input
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                placeholder="Tu nombre completo"
-                className="flex-1"
-              />
-              <Button 
-                size="sm" 
-                onClick={saveProfile}
-                disabled={saving}
-              >
-                {saving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={cancelEdit}
-                disabled={saving}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+            <div className="space-y-2 mt-1">
+              <div className="flex gap-2">
+                <Input
+                  value={editedNombre}
+                  onChange={(e) => setEditedNombre(e.target.value)}
+                  placeholder="Nombre"
+                  className="flex-1"
+                />
+                <Input
+                  value={editedApellido}
+                  onChange={(e) => setEditedApellido(e.target.value)}
+                  placeholder="Apellido"
+                  className="flex-1"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={saveProfile}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={cancelEdit}
+                  disabled={saving}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-2 mt-1">
               <p className="text-sm flex-1">
-                {profile.full_name || 'No especificado'}
+                {empleado.nombre} {empleado.apellido}
               </p>
               <Button 
                 size="sm" 
@@ -227,20 +253,48 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
           <div className="flex-1">
             <Label className="text-sm font-medium">Rol</Label>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={profile.role === 'admin' ? 'default' : 'secondary'}>
-                {profile.role === 'admin' ? 'Administrador' : 'Usuario'}
+              <Badge variant={empleado.rol === 'admin_rrhh' ? 'default' : 'secondary'}>
+                {getRoleName(empleado.rol)}
+              </Badge>
+              {empleado.rol === 'admin_rrhh' && (
+                <Badge variant="outline" className="text-xs">
+                  Acceso Completo
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Estado */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <Label className="text-sm font-medium">Estado</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={empleado.activo ? 'default' : 'destructive'}>
+                {empleado.activo ? 'Activo' : 'Inactivo'}
               </Badge>
             </div>
           </div>
         </div>
 
-        {/* Fecha de creación */}
+        {/* Sucursal */}
+        {empleado.sucursal_id && (
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <Label className="text-sm font-medium">Sucursal</Label>
+              <p className="text-sm">ID: {empleado.sucursal_id}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Fecha de ingreso */}
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <div>
-            <Label className="text-sm font-medium">Miembro desde</Label>
+            <Label className="text-sm font-medium">Fecha de Ingreso</Label>
             <p className="text-sm">
-              {new Date(profile.created_at).toLocaleDateString('es-ES', {
+              {new Date(empleado.fecha_ingreso).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -256,7 +310,7 @@ export const SecureProfile = ({ user }: SecureProfileProps) => {
             <p>✓ Acceso protegido con RLS (Row Level Security)</p>
             <p>✓ Datos encriptados en tránsito y en reposo</p>
             <p>✓ Solo tú puedes acceder a tu información personal</p>
-            <p>✓ Auditoría automática de accesos</p>
+            <p>✓ Sistema unificado de empleados y usuarios</p>
           </div>
         </div>
       </CardContent>

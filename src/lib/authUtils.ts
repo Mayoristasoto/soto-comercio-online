@@ -1,21 +1,26 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// SEGURIDAD: Funciones para manejo seguro de perfiles de usuario
-// Solo accede a información propia del usuario autenticado
+// SEGURIDAD: Funciones para manejo seguro de perfiles de empleados
+// Solo accede a información propia del empleado autenticado
 
-export interface UserProfile {
+export interface EmpleadoProfile {
   id: string;
+  nombre: string;
+  apellido: string;
   email: string;
-  full_name: string;
-  role: string;
-  created_at: string;
+  rol: string;
+  sucursal_id: string | null;
+  grupo_id: string | null;
+  activo: boolean;
+  fecha_ingreso: string;
+  avatar_url: string | null;
 }
 
 /**
- * Obtiene el perfil del usuario actual de manera segura
- * Solo retorna el perfil del usuario autenticado
+ * Obtiene el perfil del empleado actual de manera segura
+ * Solo retorna el perfil del empleado autenticado
  */
-export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
+export const getCurrentEmpleadoProfile = async (): Promise<EmpleadoProfile | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -24,22 +29,22 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
       return null;
     }
 
-    // SEGURIDAD: Usar función segura que solo retorna el perfil propio
-    const { data, error } = await supabase.rpc('get_current_user_profile');
+    // SEGURIDAD: Usar función segura que solo retorna el empleado propio
+    const { data, error } = await supabase.rpc('get_current_empleado_full');
 
     if (error) {
-      console.error('❌ Error obteniendo perfil:', error);
+      console.error('❌ Error obteniendo perfil empleado:', error);
       return null;
     }
 
     if (!data || data.length === 0) {
-      console.log('⚠️ No hay perfil para el usuario');
+      console.log('⚠️ No hay perfil de empleado para el usuario');
       return null;
     }
 
-    return data[0] as UserProfile;
+    return data[0] as EmpleadoProfile;
   } catch (error) {
-    console.error('💥 Error en getCurrentUserProfile:', error);
+    console.error('💥 Error en getCurrentEmpleadoProfile:', error);
     return null;
   }
 };
@@ -64,9 +69,9 @@ export const checkIfUserIsAdmin = async (): Promise<boolean> => {
 };
 
 /**
- * Actualiza el perfil del usuario actual
+ * Actualiza el perfil del empleado actual
  */
-export const updateCurrentUserProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
+export const updateCurrentEmpleadoProfile = async (updates: { nombre?: string; apellido?: string; }): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -77,19 +82,19 @@ export const updateCurrentUserProfile = async (updates: Partial<UserProfile>): P
 
     // SEGURIDAD: Solo permitir actualización del perfil propio
     const { error } = await supabase
-      .from('profiles')
+      .from('empleados')
       .update(updates)
-      .eq('id', user.id); // Restricción explícita por ID
+      .eq('user_id', user.id); // Restricción explícita por user_id
 
     if (error) {
-      console.error('❌ Error actualizando perfil:', error);
+      console.error('❌ Error actualizando perfil empleado:', error);
       return false;
     }
 
-    console.log('✅ Perfil actualizado exitosamente');
+    console.log('✅ Perfil de empleado actualizado exitosamente');
     return true;
   } catch (error) {
-    console.error('💥 Error en updateCurrentUserProfile:', error);
+    console.error('💥 Error en updateCurrentEmpleadoProfile:', error);
     return false;
   }
 };

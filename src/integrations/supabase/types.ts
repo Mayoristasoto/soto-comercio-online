@@ -900,137 +900,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profile_access_audit: {
-        Row: {
-          action: string | null
-          id: string
-          ip_address: unknown | null
-          timestamp: string | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action?: string | null
-          id?: string
-          ip_address?: unknown | null
-          timestamp?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action?: string | null
-          id?: string
-          ip_address?: unknown | null
-          timestamp?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_access_audit_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profile_access_log: {
-        Row: {
-          access_timestamp: string | null
-          access_type: string | null
-          accessed_profile_id: string | null
-          accessor_user_id: string | null
-          id: string
-        }
-        Insert: {
-          access_timestamp?: string | null
-          access_type?: string | null
-          accessed_profile_id?: string | null
-          accessor_user_id?: string | null
-          id?: string
-        }
-        Update: {
-          access_timestamp?: string | null
-          access_type?: string | null
-          accessed_profile_id?: string | null
-          accessor_user_id?: string | null
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_access_log_accessed_profile_id_fkey"
-            columns: ["accessed_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profile_access_log_accessor_user_id_fkey"
-            columns: ["accessor_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profile_security_log: {
-        Row: {
-          event_details: Json | null
-          event_type: string | null
-          id: string
-          ip_address: unknown | null
-          timestamp: string | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          event_details?: Json | null
-          event_type?: string | null
-          id?: string
-          ip_address?: unknown | null
-          timestamp?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          event_details?: Json | null
-          event_type?: string | null
-          id?: string
-          ip_address?: unknown | null
-          timestamp?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          id: string
-          role: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id: string
-          role?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          role?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       puntos: {
         Row: {
           created_at: string
@@ -1129,14 +998,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_current_user_profile: {
+      get_current_empleado_full: {
         Args: Record<PropertyKey, never>
         Returns: {
-          created_at: string
+          activo: boolean
+          apellido: string
+          avatar_url: string
           email: string
-          full_name: string
+          fecha_ingreso: string
+          grupo_id: string
           id: string
-          role: string
+          nombre: string
+          rol: Database["public"]["Enums"]["user_role"]
+          sucursal_id: string
         }[]
       }
       get_gondolas_public_view: {
@@ -1179,14 +1053,6 @@ export type Database = {
           mes_actual: number
           porcentaje_utilizado: number
           utilizado_mes: number
-        }[]
-      }
-      get_profile_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          active_users: number
-          admin_users: number
-          total_users: number
         }[]
       }
       get_public_gondolas: {
