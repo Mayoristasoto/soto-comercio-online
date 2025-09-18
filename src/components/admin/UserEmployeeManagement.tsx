@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Pencil, Trash2, Plus, User, UserPlus, Mail, Building2, Shield, Eye } from "lucide-react"
+import { Pencil, Trash2, Plus, User, UserPlus, Mail, Building2, Shield, Eye, Camera } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
@@ -22,6 +22,7 @@ interface Empleado {
   sucursal_id: string | null
   fecha_ingreso: string
   user_id: string | null
+  face_descriptor: number[] | null
 }
 
 interface Sucursal {
@@ -333,6 +334,7 @@ export default function UserEmployeeManagement() {
             <TabsTrigger value="all">Todos ({empleados.length})</TabsTrigger>
             <TabsTrigger value="with-auth">Con Acceso ({empleadosConAuth.length})</TabsTrigger>
             <TabsTrigger value="without-auth">Solo Empleados ({empleadosSinAuth.length})</TabsTrigger>
+            <TabsTrigger value="faces">Rostros Registrados ({empleados.filter(emp => emp.face_descriptor).length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
@@ -361,6 +363,14 @@ export default function UserEmployeeManagement() {
               sucursales={sucursales}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              getRoleBadge={getRoleBadge}
+            />
+          </TabsContent>
+
+          <TabsContent value="faces">
+            <FaceGallery 
+              empleados={empleados.filter(emp => emp.face_descriptor)}
+              sucursales={sucursales}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
@@ -494,6 +504,7 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, getRoleBadge }
           <TableHead>Acceso</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Sucursal</TableHead>
+          <TableHead>Rostro</TableHead>
           <TableHead>Acciones</TableHead>
         </TableRow>
       </TableHeader>
@@ -519,6 +530,16 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, getRoleBadge }
               {sucursales.find(s => s.id === empleado.sucursal_id)?.nombre || "Sin asignar"}
             </TableCell>
             <TableCell>
+              <Badge variant={empleado.face_descriptor ? "default" : "outline"}>
+                {empleado.face_descriptor ? (
+                  <>
+                    <Camera className="h-3 w-3 mr-1" />
+                    Registrado
+                  </>
+                ) : "Sin rostro"}
+              </Badge>
+            </TableCell>
+            <TableCell>
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm" onClick={() => onEdit(empleado)}>
                   <Pencil className="h-4 w-4" />
@@ -532,5 +553,108 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, getRoleBadge }
         ))}
       </TableBody>
     </Table>
+  )
+}
+
+interface FaceGalleryProps {
+  empleados: Empleado[]
+  sucursales: Sucursal[]
+  getRoleBadge: (rol: string) => JSX.Element
+}
+
+function FaceGallery({ empleados, sucursales, getRoleBadge }: FaceGalleryProps) {
+  const convertDescriptorToImageUrl = (descriptor: number[]) => {
+    // Create a visual representation of the face descriptor
+    // This is a simple visualization - in production you might want to store actual face images
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const ctx = canvas.getContext('2d')!
+    
+    // Create a simple pattern based on the descriptor values
+    const imageData = ctx.createImageData(64, 64)
+    for (let i = 0; i < descriptor.length && i < 1024; i++) {
+      const pixelIndex = i * 4
+      const value = Math.abs(descriptor[i % descriptor.length]) * 255
+      imageData.data[pixelIndex] = value // R
+      imageData.data[pixelIndex + 1] = value * 0.8 // G
+      imageData.data[pixelIndex + 2] = value * 0.6 // B
+      imageData.data[pixelIndex + 3] = 255 // A
+    }
+    
+    ctx.putImageData(imageData, 0, 0)
+    return canvas.toDataURL()
+  }
+
+  if (empleados.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Camera className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No hay rostros registrados</h3>
+        <p className="text-muted-foreground">
+          Los empleados pueden registrar sus rostros durante el proceso de registro
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {empleados.map((empleado) => (
+        <Card key={empleado.id} className="overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                {empleado.face_descriptor ? (
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                    <Camera className="h-8 w-8 text-primary" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                    <User className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1">
+                  <Badge variant="outline" className="text-xs">
+                    {empleado.face_descriptor ? (
+                      <Camera className="h-3 w-3" />
+                    ) : (
+                      <Eye className="h-3 w-3" />
+                    )}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex-1 space-y-1">
+                <h4 className="font-semibold text-sm">
+                  {empleado.nombre} {empleado.apellido}
+                </h4>
+                <p className="text-xs text-muted-foreground">{empleado.email}</p>
+                <div className="flex items-center space-x-2">
+                  {getRoleBadge(empleado.rol)}
+                  {empleado.face_descriptor && (
+                    <Badge variant="outline" className="text-xs">
+                      <Camera className="h-3 w-3 mr-1" />
+                      Rostro
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <span>
+                  {sucursales.find(s => s.id === empleado.sucursal_id)?.nombre || "Sin sucursal"}
+                </span>
+                {empleado.face_descriptor && (
+                  <span className="text-primary">
+                    Descriptor: {empleado.face_descriptor.length} puntos
+                  </span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   )
 }

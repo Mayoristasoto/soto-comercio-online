@@ -20,6 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import UserEmployeeManagement from "@/components/admin/UserEmployeeManagement"
+import FacialRecognitionStats from "@/components/admin/FacialRecognitionStats"
 import BranchManagement from "@/components/admin/BranchManagement"
 import RoleManagement from "@/components/admin/RoleManagement"
 import BudgetManagement from "@/components/admin/BudgetManagement"
@@ -414,7 +415,10 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="users">
-          <UserEmployeeManagement />
+          <div className="space-y-6">
+            <FacialRecognitionStats />
+            <UserEmployeeManagement />
+          </div>
         </TabsContent>
 
         <TabsContent value="branches">
