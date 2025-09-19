@@ -10,6 +10,7 @@ import Layout from "./components/Layout";
 
 // Pages
 import Index from "./pages/Index";
+import HomePublico from "./pages/HomePublico";
 import SotoAuth from "./pages/SotoAuth";
 import Fichero from "./pages/Fichero";
 import Ranking from "./pages/Ranking";
