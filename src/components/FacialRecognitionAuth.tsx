@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Camera, CameraOff, User, CheckCircle } from "lucide-react"
 import * as faceapi from '@vladmandic/face-api'
+import { supabase } from "@/integrations/supabase/client"
 
 interface FacialRecognitionAuthProps {
   onRegisterSuccess: (faceDescriptor: Float32Array) => void
-  onLoginSuccess: () => void
+  onLoginSuccess: (user: { nombre: string, apellido: string, email: string }) => void
   mode: 'register' | 'login'
 }
 
@@ -24,6 +25,7 @@ export default function FacialRecognitionAuth({
   const [isCapturing, setIsCapturing] = useState(false)
   const [capturedFace, setCapturedFace] = useState<Float32Array | null>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
+  const [recognizedUser, setRecognizedUser] = useState<{ nombre: string, apellido: string, email: string } | null>(null)
 
   useEffect(() => {
     loadModels()
@@ -134,12 +136,8 @@ export default function FacialRecognitionAuth({
           description: "Tu rostro ha sido capturado exitosamente"
         })
       } else {
-        // In login mode, we would compare with stored descriptors
-        onLoginSuccess()
-        toast({
-          title: "Rostro reconocido",
-          description: "Acceso autorizado"
-        })
+        // Login mode: compare with stored descriptors
+        await recognizeUser(faceDescriptor)
       }
       
     } catch (error) {
@@ -150,7 +148,82 @@ export default function FacialRecognitionAuth({
         variant: "destructive"
       })
     } finally {
-      setIsCapturing(false)
+    setIsCapturing(false)
+    }
+  }
+
+  const recognizeUser = async (capturedDescriptor: Float32Array) => {
+    try {
+      // Fetch all users with face descriptors
+      const { data: empleados, error } = await supabase
+        .from('empleados')
+        .select('id, nombre, apellido, email, face_descriptor')
+        .not('face_descriptor', 'is', null)
+        .eq('activo', true)
+
+      if (error) {
+        console.error('Error fetching users:', error)
+        toast({
+          title: "Error",
+          description: "Error al consultar usuarios registrados",
+          variant: "destructive"
+        })
+        return
+      }
+
+      if (!empleados || empleados.length === 0) {
+        toast({
+          title: "Sin usuarios registrados",
+          description: "No hay usuarios con reconocimiento facial registrado",
+          variant: "destructive"
+        })
+        return
+      }
+
+      let bestMatch = null
+      let bestDistance = 1.0 // Start with maximum distance
+
+      // Compare with each stored face descriptor
+      for (const empleado of empleados) {
+        if (empleado.face_descriptor && Array.isArray(empleado.face_descriptor)) {
+          const storedDescriptor = new Float32Array(empleado.face_descriptor)
+          const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
+          
+          // Lower distance means better match
+          if (distance < bestDistance && distance < 0.6) { // Threshold for recognition
+            bestDistance = distance
+            bestMatch = empleado
+          }
+        }
+      }
+
+      if (bestMatch) {
+        const user = {
+          nombre: bestMatch.nombre,
+          apellido: bestMatch.apellido,
+          email: bestMatch.email
+        }
+        setRecognizedUser(user)
+        onLoginSuccess(user)
+        toast({
+          title: "Rostro reconocido",
+          description: `Bienvenido, ${bestMatch.nombre} ${bestMatch.apellido}`,
+        })
+      } else {
+        toast({
+          title: "Rostro no reconocido",
+          description: "No se encontró coincidencia con usuarios registrados",
+          variant: "destructive"
+        })
+      }
+
+    } catch (error) {
+      console.error('Error recognizing user:', error)
+      toast({
+        title: "Error",
+        description: "Error durante el reconocimiento facial",
+        variant: "destructive"
+      })
     }
   }
 
@@ -262,6 +335,20 @@ export default function FacialRecognitionAuth({
                 </div>
                 <p className="text-green-700 text-sm mt-1">
                   Ahora puedes usar reconocimiento facial para iniciar sesión
+                </p>
+              </div>
+            )}
+
+            {mode === 'login' && recognizedUser && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-5 w-5 text-blue-600" />
+                  <p className="text-blue-800 font-medium">
+                    Usuario reconocido: {recognizedUser.nombre} {recognizedUser.apellido}
+                  </p>
+                </div>
+                <p className="text-blue-700 text-sm mt-1">
+                  Email: {recognizedUser.email}
                 </p>
               </div>
             )}

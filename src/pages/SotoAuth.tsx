@@ -133,12 +133,11 @@ export default function SotoAuth() {
     setFaceDescriptor(descriptor)
   }
 
-  const handleFacialLogin = async () => {
-    // In a real implementation, this would compare the captured face
-    // with stored descriptors from the database
+  const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string }) => {
+    // Handle successful facial login with user info
     toast({
       title: "¡Acceso autorizado!",
-      description: "Rostro reconocido exitosamente"
+      description: `Bienvenido, ${user.nombre} ${user.apellido}`
     })
     navigate('/reconoce/home')
   }
