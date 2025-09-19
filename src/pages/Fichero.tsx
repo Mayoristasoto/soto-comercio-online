@@ -22,6 +22,7 @@ import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import FicheroEstadisticas from "@/components/fichero/FicheroEstadisticas"
 import FicheroIncidencias from "@/components/fichero/FicheroIncidencias"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
+import FicheroHorarios from "@/components/fichero/FicheroHorarios"
 
 interface Empleado {
   id: string
@@ -55,7 +56,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'config'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'horarios' | 'config'>('fichaje')
 
   useEffect(() => {
     checkAuth()
@@ -413,6 +414,7 @@ export default function Fichero() {
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: FileText },
+            { key: 'horarios', label: 'Horarios', icon: Settings },
             { key: 'config', label: 'Configuración', icon: Settings },
           ].map(({ key, label, icon: Icon }) => (
             <Button
@@ -504,6 +506,10 @@ export default function Fichero() {
 
         {activeTab === 'incidencias' && (
           <FicheroIncidencias empleado={empleado} />
+        )}
+
+        {activeTab === 'horarios' && empleado?.rol === 'admin_rrhh' && (
+          <FicheroHorarios />
         )}
 
         {activeTab === 'config' && (
