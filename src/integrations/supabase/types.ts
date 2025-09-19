@@ -1406,6 +1406,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      aplicar_redondeo_fichaje: {
+        Args: { redondeo_minutos: number; timestamp_real: string }
+        Returns: string
+      }
       current_user_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1562,6 +1566,14 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      validar_geocerca: {
+        Args: {
+          lat_empleado: number
+          lng_empleado: number
+          ubicacion_id: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

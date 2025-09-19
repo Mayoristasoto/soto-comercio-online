@@ -11,7 +11,7 @@ import Layout from "./components/Layout";
 // Pages
 import Index from "./pages/Index";
 import SotoAuth from "./pages/SotoAuth";
-import HomePublico from "./pages/HomePublico";
+import Fichero from "./pages/Fichero";
 import Ranking from "./pages/Ranking";
 import Desafios from "./pages/Desafios";
 import Insignias from "./pages/Insignias";
