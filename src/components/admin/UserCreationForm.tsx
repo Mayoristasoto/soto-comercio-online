@@ -452,7 +452,7 @@ export default function UserCreationForm({ open, onOpenChange, onUserCreated }: 
                     <SelectValue placeholder="Seleccionar sucursal (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
+                    <SelectItem value="sin_asignar">Sin asignar</SelectItem>
                     {sucursales.map((sucursal) => (
                       <SelectItem key={sucursal.id} value={sucursal.id}>
                         {sucursal.nombre}
