@@ -144,10 +144,15 @@ export default function UserCreationForm({ open, onOpenChange, onUserCreated }: 
   }
 
   const handleNext = () => {
-    if (step === 1 && validateStep1()) {
-      setStep(2)
-    } else if (step === 2 && validateStep2()) {
-      setStep(3)
+    console.debug('[UserCreationForm] handleNext called', { step })
+    if (step === 1) {
+      const ok = validateStep1()
+      console.debug('[UserCreationForm] validateStep1', { ok })
+      if (ok) setStep(2)
+    } else if (step === 2) {
+      const ok = validateStep2()
+      console.debug('[UserCreationForm] validateStep2', { ok, email: formData.email })
+      if (ok) setStep(3)
     }
   }
 
@@ -496,7 +501,7 @@ export default function UserCreationForm({ open, onOpenChange, onUserCreated }: 
             </Button>
             
             {step < 3 ? (
-              <Button onClick={handleNext}>
+              <Button type="button" onClick={handleNext}>
                 Siguiente
               </Button>
             ) : (
