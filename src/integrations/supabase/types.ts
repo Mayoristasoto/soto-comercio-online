@@ -229,6 +229,54 @@ export type Database = {
         }
         Relationships: []
       }
+      empleado_turnos: {
+        Row: {
+          activo: boolean | null
+          created_at: string | null
+          empleado_id: string | null
+          fecha_fin: string | null
+          fecha_inicio: string
+          id: string
+          turno_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          created_at?: string | null
+          empleado_id?: string | null
+          fecha_fin?: string | null
+          fecha_inicio: string
+          id?: string
+          turno_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          created_at?: string | null
+          empleado_id?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          turno_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_turnos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_turnos_turno_id_fkey"
+            columns: ["turno_id"]
+            isOneToOne: false
+            referencedRelation: "fichado_turnos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleados: {
         Row: {
           activo: boolean
@@ -339,6 +387,354 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      fichado_configuracion: {
+        Row: {
+          clave: string
+          descripcion: string | null
+          id: string
+          tipo: string | null
+          updated_at: string | null
+          updated_by: string | null
+          valor: string
+        }
+        Insert: {
+          clave: string
+          descripcion?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          valor: string
+        }
+        Update: {
+          clave?: string
+          descripcion?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichado_configuracion_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fichado_turnos: {
+        Row: {
+          activo: boolean | null
+          created_at: string | null
+          hora_entrada: string
+          hora_pausa_fin: string | null
+          hora_pausa_inicio: string | null
+          hora_salida: string
+          id: string
+          nombre: string
+          permite_extras: boolean | null
+          redondeo_minutos: number | null
+          sucursal_id: string | null
+          tipo: Database["public"]["Enums"]["turno_tipo"] | null
+          tolerancia_entrada_minutos: number | null
+          tolerancia_salida_minutos: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          created_at?: string | null
+          hora_entrada: string
+          hora_pausa_fin?: string | null
+          hora_pausa_inicio?: string | null
+          hora_salida: string
+          id?: string
+          nombre: string
+          permite_extras?: boolean | null
+          redondeo_minutos?: number | null
+          sucursal_id?: string | null
+          tipo?: Database["public"]["Enums"]["turno_tipo"] | null
+          tolerancia_entrada_minutos?: number | null
+          tolerancia_salida_minutos?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          created_at?: string | null
+          hora_entrada?: string
+          hora_pausa_fin?: string | null
+          hora_pausa_inicio?: string | null
+          hora_salida?: string
+          id?: string
+          nombre?: string
+          permite_extras?: boolean | null
+          redondeo_minutos?: number | null
+          sucursal_id?: string | null
+          tipo?: Database["public"]["Enums"]["turno_tipo"] | null
+          tolerancia_entrada_minutos?: number | null
+          tolerancia_salida_minutos?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichado_turnos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fichado_ubicaciones: {
+        Row: {
+          activa: boolean | null
+          created_at: string | null
+          direccion: string | null
+          id: string
+          ip_whitelist: string[] | null
+          latitud: number | null
+          longitud: number | null
+          nombre: string
+          radio_metros: number | null
+          sucursal_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          created_at?: string | null
+          direccion?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          latitud?: number | null
+          longitud?: number | null
+          nombre: string
+          radio_metros?: number | null
+          sucursal_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          created_at?: string | null
+          direccion?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          latitud?: number | null
+          longitud?: number | null
+          nombre?: string
+          radio_metros?: number | null
+          sucursal_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichado_ubicaciones_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fichaje_auditoria: {
+        Row: {
+          accion: string
+          datos_anteriores: Json | null
+          datos_nuevos: Json | null
+          id: string
+          ip_address: unknown | null
+          registro_id: string
+          tabla_afectada: string
+          timestamp_accion: string | null
+          user_agent: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          accion: string
+          datos_anteriores?: Json | null
+          datos_nuevos?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          registro_id: string
+          tabla_afectada: string
+          timestamp_accion?: string | null
+          user_agent?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          accion?: string
+          datos_anteriores?: Json | null
+          datos_nuevos?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          registro_id?: string
+          tabla_afectada?: string
+          timestamp_accion?: string | null
+          user_agent?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichaje_auditoria_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fichaje_incidencias: {
+        Row: {
+          aprobado_por: string | null
+          comentarios_aprobador: string | null
+          created_at: string | null
+          descripcion: string
+          documentos_adjuntos: string[] | null
+          empleado_id: string | null
+          estado: Database["public"]["Enums"]["incidencia_estado"] | null
+          fecha_aprobacion: string | null
+          fecha_incidencia: string
+          fichaje_id: string | null
+          hora_propuesta: string | null
+          id: string
+          tipo: Database["public"]["Enums"]["incidencia_tipo"]
+          updated_at: string | null
+        }
+        Insert: {
+          aprobado_por?: string | null
+          comentarios_aprobador?: string | null
+          created_at?: string | null
+          descripcion: string
+          documentos_adjuntos?: string[] | null
+          empleado_id?: string | null
+          estado?: Database["public"]["Enums"]["incidencia_estado"] | null
+          fecha_aprobacion?: string | null
+          fecha_incidencia: string
+          fichaje_id?: string | null
+          hora_propuesta?: string | null
+          id?: string
+          tipo: Database["public"]["Enums"]["incidencia_tipo"]
+          updated_at?: string | null
+        }
+        Update: {
+          aprobado_por?: string | null
+          comentarios_aprobador?: string | null
+          created_at?: string | null
+          descripcion?: string
+          documentos_adjuntos?: string[] | null
+          empleado_id?: string | null
+          estado?: Database["public"]["Enums"]["incidencia_estado"] | null
+          fecha_aprobacion?: string | null
+          fecha_incidencia?: string
+          fichaje_id?: string | null
+          hora_propuesta?: string | null
+          id?: string
+          tipo?: Database["public"]["Enums"]["incidencia_tipo"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichaje_incidencias_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_incidencias_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_incidencias_fichaje_id_fkey"
+            columns: ["fichaje_id"]
+            isOneToOne: false
+            referencedRelation: "fichajes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fichajes: {
+        Row: {
+          confianza_facial: number | null
+          created_at: string | null
+          datos_adicionales: Json | null
+          empleado_id: string | null
+          estado: Database["public"]["Enums"]["fichaje_estado"] | null
+          id: string
+          ip_address: unknown | null
+          latitud: number | null
+          longitud: number | null
+          metodo: Database["public"]["Enums"]["fichaje_metodo"] | null
+          observaciones: string | null
+          sincronizado: boolean | null
+          timestamp_aplicado: string | null
+          timestamp_real: string
+          timestamp_teorico: string | null
+          tipo: Database["public"]["Enums"]["fichaje_tipo"]
+          ubicacion_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          confianza_facial?: number | null
+          created_at?: string | null
+          datos_adicionales?: Json | null
+          empleado_id?: string | null
+          estado?: Database["public"]["Enums"]["fichaje_estado"] | null
+          id?: string
+          ip_address?: unknown | null
+          latitud?: number | null
+          longitud?: number | null
+          metodo?: Database["public"]["Enums"]["fichaje_metodo"] | null
+          observaciones?: string | null
+          sincronizado?: boolean | null
+          timestamp_aplicado?: string | null
+          timestamp_real: string
+          timestamp_teorico?: string | null
+          tipo: Database["public"]["Enums"]["fichaje_tipo"]
+          ubicacion_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          confianza_facial?: number | null
+          created_at?: string | null
+          datos_adicionales?: Json | null
+          empleado_id?: string | null
+          estado?: Database["public"]["Enums"]["fichaje_estado"] | null
+          id?: string
+          ip_address?: unknown | null
+          latitud?: number | null
+          longitud?: number | null
+          metodo?: Database["public"]["Enums"]["fichaje_metodo"] | null
+          observaciones?: string | null
+          sincronizado?: boolean | null
+          timestamp_aplicado?: string | null
+          timestamp_real?: string
+          timestamp_teorico?: string | null
+          tipo?: Database["public"]["Enums"]["fichaje_tipo"]
+          ubicacion_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichajes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_ubicacion_id_fkey"
+            columns: ["ubicacion_id"]
+            isOneToOne: false
+            referencedRelation: "fichado_ubicaciones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gondolas: {
         Row: {
@@ -1173,6 +1569,15 @@ export type Database = {
       beneficiario_tipo: "empleado" | "grupo"
       desafio_estado: "borrador" | "activo" | "finalizado"
       desafio_tipo_periodo: "semanal" | "mensual" | "semestral" | "anual"
+      fichaje_estado: "valido" | "pendiente" | "rechazado" | "corregido"
+      fichaje_metodo: "facial" | "manual" | "automatico"
+      fichaje_tipo: "entrada" | "salida" | "pausa_inicio" | "pausa_fin"
+      incidencia_estado: "pendiente" | "aprobada" | "rechazada"
+      incidencia_tipo:
+        | "olvido"
+        | "error_tecnico"
+        | "justificacion"
+        | "correccion"
       movimiento_tipo: "egreso" | "ajuste" | "ingreso"
       premio_tipo:
         | "fisico"
@@ -1180,6 +1585,7 @@ export type Database = {
         | "experiencia"
         | "descuento"
         | "reconocimiento"
+      turno_tipo: "normal" | "nocturno" | "partido" | "flexible"
       user_role: "admin_rrhh" | "gerente_sucursal" | "lider_grupo" | "empleado"
     }
     CompositeTypes: {
@@ -1312,6 +1718,16 @@ export const Constants = {
       beneficiario_tipo: ["empleado", "grupo"],
       desafio_estado: ["borrador", "activo", "finalizado"],
       desafio_tipo_periodo: ["semanal", "mensual", "semestral", "anual"],
+      fichaje_estado: ["valido", "pendiente", "rechazado", "corregido"],
+      fichaje_metodo: ["facial", "manual", "automatico"],
+      fichaje_tipo: ["entrada", "salida", "pausa_inicio", "pausa_fin"],
+      incidencia_estado: ["pendiente", "aprobada", "rechazada"],
+      incidencia_tipo: [
+        "olvido",
+        "error_tecnico",
+        "justificacion",
+        "correccion",
+      ],
       movimiento_tipo: ["egreso", "ajuste", "ingreso"],
       premio_tipo: [
         "fisico",
@@ -1320,6 +1736,7 @@ export const Constants = {
         "descuento",
         "reconocimiento",
       ],
+      turno_tipo: ["normal", "nocturno", "partido", "flexible"],
       user_role: ["admin_rrhh", "gerente_sucursal", "lider_grupo", "empleado"],
     },
   },
