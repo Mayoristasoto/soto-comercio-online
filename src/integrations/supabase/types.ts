@@ -205,6 +205,30 @@ export type Database = {
         }
         Relationships: []
       }
+      empleado_access_log: {
+        Row: {
+          access_type: string | null
+          accessed_empleado_id: string | null
+          id: string
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_type?: string | null
+          accessed_empleado_id?: string | null
+          id?: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_type?: string | null
+          accessed_empleado_id?: string | null
+          id?: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       empleados: {
         Row: {
           activo: boolean
@@ -1021,6 +1045,38 @@ export type Database = {
         Returns: {
           activo: boolean
           apellido: string
+          email: string
+          fecha_ingreso: string
+          id: string
+          nombre: string
+          rol: Database["public"]["Enums"]["user_role"]
+          sucursal_id: string
+        }[]
+      }
+      get_empleado_full_admin_only: {
+        Args: { empleado_uuid: string }
+        Returns: {
+          activo: boolean
+          apellido: string
+          avatar_url: string
+          dni: string
+          email: string
+          face_descriptor: number[]
+          fecha_ingreso: string
+          grupo_id: string
+          id: string
+          legajo: string
+          nombre: string
+          rol: Database["public"]["Enums"]["user_role"]
+          sucursal_id: string
+        }[]
+      }
+      get_empleado_profile_limited: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          activo: boolean
+          apellido: string
+          avatar_url: string
           email: string
           fecha_ingreso: string
           id: string
