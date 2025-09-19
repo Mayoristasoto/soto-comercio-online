@@ -53,23 +53,6 @@ const Index = () => {
                 <p className="text-sm text-gray-600">Tu distribuidora de confianza</p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link to="/auth">
-                <Button size="lg" variant="outline" className="bg-white/80 hover:bg-white">
-                  Sistema de Gestión
-                </Button>
-              </Link>
-              <Link to="/reconoce/auth">
-                <Button size="lg" className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg">
-                  🏆 Soto Reconoce
-                </Button>
-              </Link>
-              <Link to="/reconoce/admin">
-                <Button size="lg" variant="outline" className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
-                  👤 Admin Panel
-                </Button>
-              </Link>
-            </div>
             <Badge className="bg-green-100 text-green-800 border-green-200">
               Envío gratis MDQ
             </Badge>
