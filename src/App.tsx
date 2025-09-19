@@ -57,6 +57,7 @@ const App = () => (
           
           {/* Sistema Soto Reconoce - Páginas que requieren autenticación */}
           <Route path="/reconoce/auth" element={<SotoAuth />} />
+          <Route path="/fichero" element={<Fichero />} />
           <Route path="/reconoce/admin" element={<Layout />}>
             <Route index element={<AdminDashboard />} />
           </Route>
