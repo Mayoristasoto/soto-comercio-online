@@ -1016,6 +1016,19 @@ export type Database = {
           sucursal_id: string
         }[]
       }
+      get_current_empleado_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          activo: boolean
+          apellido: string
+          email: string
+          fecha_ingreso: string
+          id: string
+          nombre: string
+          rol: Database["public"]["Enums"]["user_role"]
+          sucursal_id: string
+        }[]
+      }
       get_gondolas_public_view: {
         Args: Record<PropertyKey, never>
         Returns: {
