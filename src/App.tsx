@@ -6,13 +6,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Layout components
-import Layout from "./components/Layout";
+import UnifiedLayout from "./components/UnifiedLayout";
 
 // Pages
 import Index from "./pages/Index";
+import UnifiedAuth from "./pages/UnifiedAuth";
 import HomePublico from "./pages/HomePublico";
-import SotoAuth from "./pages/SotoAuth";
 import Fichero from "./pages/Fichero";
+import Tareas from "./pages/Tareas";
 import Ranking from "./pages/Ranking";
 import Desafios from "./pages/Desafios";
 import Insignias from "./pages/Insignias";
@@ -42,28 +43,38 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Ruta principal como estaba antes */}
+          {/* Página de inicio - redirige al login */}
           <Route path="/" element={<Index />} />
           
-          {/* Sistema Soto Reconoce - Páginas públicas */}
-          <Route path="/reconoce" element={<HomePublico />} />
-          <Route path="/reconoce/home" element={<HomePublico />} />
-          <Route path="/reconoce/ranking" element={<Ranking />} />
-          <Route path="/reconoce/desafios" element={<Desafios />} />
-          <Route path="/reconoce/insignias" element={<Insignias />} />
-          <Route path="/reconoce/premios" element={<Premios />} />
-          <Route path="/reconoce/dashboard" element={<Dashboard />} />
-          <Route path="/reconoce/medals" element={<MedalManagement />} />
+          {/* Autenticación unificada */}
+          <Route path="/auth" element={<UnifiedAuth />} />
           
-          {/* Sistema Soto Reconoce - Páginas que requieren autenticación */}
-          <Route path="/reconoce/auth" element={<SotoAuth />} />
-          <Route path="/fichero" element={<Fichero />} />
-          <Route path="/reconoce/admin" element={<Layout />}>
-            <Route index element={<AdminDashboard />} />
+          {/* Rutas protegidas con layout unificado */}
+          <Route path="/" element={<UnifiedLayout />}>
+            {/* Módulo Reconocimiento */}
+            <Route path="reconoce" element={<HomePublico />} />
+            <Route path="reconoce/dashboard" element={<Dashboard />} />
+            <Route path="reconoce/ranking" element={<Ranking />} />
+            <Route path="reconoce/desafios" element={<Desafios />} />
+            <Route path="reconoce/insignias" element={<Insignias />} />
+            <Route path="reconoce/premios" element={<Premios />} />
+            <Route path="reconoce/medals" element={<MedalManagement />} />
+            
+            {/* Módulo Control Horario */}
+            <Route path="fichero" element={<Fichero />} />
+            
+            {/* Módulo Gestión de Tareas */}
+            <Route path="tareas" element={<Tareas />} />
+            <Route path="tareas/mis-tareas" element={<Tareas />} />
+            <Route path="tareas/asignadas" element={<Tareas />} />
+            <Route path="tareas/calendario" element={<Tareas />} />
+            <Route path="tareas/reportes" element={<Tareas />} />
+            
+            {/* Administración */}
+            <Route path="admin/empleados" element={<AdminDashboard />} />
+            <Route path="admin/sucursales" element={<AdminDashboard />} />
+            <Route path="admin/configuracion" element={<AdminDashboard />} />
           </Route>
-          
-          {/* Rutas directas de admin (redirigir al dashboard con tabs) */}
-          <Route path="/reconoce/capacitaciones" element={<Navigate to="/reconoce/admin?tab=training" replace />} />
 
           {/* Legacy routes (mantener por compatibilidad) */}
           <Route path="/comercio" element={<Comercio />} />
@@ -73,8 +84,12 @@ const App = () => (
           <Route path="/mayorista" element={<Mayorista />} />
           <Route path="/centum" element={<Centum />} />
           <Route path="/gondolas" element={<Gondolas />} />
-          <Route path="/auth" element={<Auth />} />
           <Route path="/gondolasedit" element={<GondolasEdit />} />
+          
+          {/* Rutas de compatibilidad que redirigen al nuevo sistema */}
+          <Route path="/reconoce/auth" element={<Navigate to="/auth?redirect=/reconoce" replace />} />
+          <Route path="/reconoce/home" element={<Navigate to="/reconoce" replace />} />
+          <Route path="/reconoce/admin" element={<Navigate to="/admin/empleados" replace />} />
           
           {/* 404 - debe ir al final */}
           <Route path="*" element={<NotFound />} />
