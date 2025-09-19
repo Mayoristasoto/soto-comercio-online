@@ -61,15 +61,14 @@ export default function HomePublico() {
       if (desafiosError) throw desafiosError
       setDesafiosActivos(desafiosData || [])
 
-      // Cargar estadísticas públicas
-      const [empleadosResult, desafiosResult, participacionesResult] = await Promise.all([
-        supabase.from('empleados').select('id', { count: 'exact' }).eq('activo', true),
+      // Cargar estadísticas públicas (sin acceso a datos sensibles de empleados)
+      const [desafiosResult, participacionesResult] = await Promise.all([
         supabase.from('desafios').select('id', { count: 'exact' }).eq('estado', 'activo'),
         supabase.from('participaciones').select('id', { count: 'exact' })
       ])
 
       setEstadisticas({
-        total_empleados: empleadosResult.count || 0,
+        total_empleados: 0, // No mostrar datos sensibles en página pública
         desafios_activos: desafiosResult.count || 0,
         participaciones_totales: participacionesResult.count || 0
       })

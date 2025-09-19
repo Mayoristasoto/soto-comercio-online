@@ -44,8 +44,8 @@ interface Employee {
   id: string
   nombre: string
   apellido: string
-  email: string
-  sucursal_id: string | null
+  email?: string  // Opcional para seguridad
+  sucursal_id?: string | null  // Opcional para seguridad
 }
 
 interface Participation {
@@ -97,7 +97,7 @@ export default function ChallengeManagement() {
     try {
       const [challengesResult, employeesResult, participationsResult] = await Promise.all([
         supabase.from('desafios').select('*').order('created_at', { ascending: false }),
-        supabase.from('empleados').select('id, nombre, apellido, email, sucursal_id').eq('activo', true),
+        supabase.from('empleados').select('id, nombre, apellido').eq('activo', true),
         supabase.from('participaciones').select(`
           id, empleado_id, desafio_id, progreso, evidencia_url, created_at
         `)
