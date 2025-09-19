@@ -169,6 +169,9 @@ export default function Fichero() {
   const loadFichajes = async () => {
     if (!empleado) return
 
+    // Para empleado demo, no cargar desde base de datos
+    if (empleado.id === 'demo-empleado') return
+
     try {
       const hoy = new Date().toISOString().split('T')[0]
       
@@ -199,14 +202,8 @@ export default function Fichero() {
     setFichajeEnProceso(true)
 
     try {
-      // Obtener configuración de umbral de confianza
-      const { data: config } = await supabase
-        .from('fichado_configuracion')
-        .select('valor')
-        .eq('clave', 'umbral_confianza_facial')
-        .single()
-
-      const umbralConfianza = config ? parseFloat(config.valor) : 0.75
+      // Para modo demo, usar umbral fijo
+      const umbralConfianza = 0.75
 
       if (confianzaFacial < umbralConfianza) {
         toast({
@@ -217,23 +214,37 @@ export default function Fichero() {
         return
       }
 
-      // Crear el fichaje
-      const { data: fichaje, error } = await supabase
-        .from('fichajes')
-        .insert({
-          empleado_id: empleado.id,
+      // Si es empleado demo, simular el fichaje sin base de datos
+      if (empleado.id === 'demo-empleado') {
+        // Crear fichaje simulado
+        const fichajeSimulado = {
+          id: `demo-${Date.now()}`,
           tipo: tipoFichaje,
           timestamp_real: new Date().toISOString(),
-          latitud: coordenadas.lat,
-          longitud: coordenadas.lng,
-          confianza_facial: confianzaFacial,
-          metodo: 'facial',
-          estado: 'valido'
-        })
-        .select()
-        .single()
+          estado: 'valido',
+          confianza_facial: confianzaFacial
+        }
 
-      if (error) throw error
+        setFichajes(prev => [fichajeSimulado, ...prev])
+      } else {
+        // Crear el fichaje en la base de datos para empleados reales
+        const { data: fichaje, error } = await supabase
+          .from('fichajes')
+          .insert({
+            empleado_id: empleado.id,
+            tipo: tipoFichaje,
+            timestamp_real: new Date().toISOString(),
+            latitud: coordenadas.lat,
+            longitud: coordenadas.lng,
+            confianza_facial: confianzaFacial,
+            metodo: 'facial',
+            estado: 'valido'
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+      }
 
       // Actualizar estado
       switch (tipoFichaje) {
@@ -256,8 +267,10 @@ export default function Fichero() {
         description: `${tipoFichaje.replace('_', ' ')} registrada correctamente`,
       })
 
-      // Recargar fichajes
-      await loadFichajes()
+      // Recargar fichajes para empleados reales
+      if (empleado.id !== 'demo-empleado') {
+        await loadFichajes()
+      }
 
     } catch (error) {
       console.error('Error procesando fichaje:', error)
@@ -323,12 +336,40 @@ export default function Fichero() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <CardTitle>Acceso no autorizado</CardTitle>
+            <Shield className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+            <CardTitle>Sistema de Fichado</CardTitle>
             <CardDescription>
-              Debe iniciar sesión como empleado para usar el sistema de fichado
+              Acceso directo para empleados - Reconocimiento Facial
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-center text-sm text-muted-foreground">
+                Para demostración, puede acceder directamente al sistema de fichado facial
+              </p>
+              <Button 
+                className="w-full" 
+                onClick={() => {
+                  // Crear un empleado temporal para demostración
+                  setEmpleado({
+                    id: 'demo-empleado',
+                    nombre: 'Usuario',
+                    apellido: 'Demo',
+                    rol: 'empleado'
+                  })
+                  setLoading(false)
+                }}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Acceder como Empleado Demo
+              </Button>
+              <div className="text-xs text-center text-muted-foreground space-y-1">
+                <p>• Reconocimiento facial en tiempo real</p>
+                <p>• Validación de ubicación (GPS)</p>
+                <p>• Registro automático de horarios</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
       </div>
     )
