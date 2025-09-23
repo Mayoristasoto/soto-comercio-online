@@ -21,6 +21,7 @@ import Premios from "./pages/Premios";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import MedalManagement from "./pages/MedalManagement";
+import Nomina from "./pages/Nomina";
 
 // Legacy pages (mantener por compatibilidad)
 import Comercio from "./pages/Comercio";
@@ -74,6 +75,9 @@ const App = () => (
             <Route path="admin/empleados" element={<AdminDashboard />} />
             <Route path="admin/sucursales" element={<AdminDashboard />} />
             <Route path="admin/configuracion" element={<AdminDashboard />} />
+            
+            {/* Módulo de Nómina */}
+            <Route path="nomina" element={<Nomina />} />
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}

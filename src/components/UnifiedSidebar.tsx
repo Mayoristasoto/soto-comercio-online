@@ -10,7 +10,8 @@ import {
   Trophy,
   Target,
   Building2,
-  UserCheck
+  UserCheck,
+  FileText
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -84,6 +85,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
 
   const adminItems = [
     { title: "Gestión Empleados", url: "/admin/empleados", icon: Users },
+    { title: "Módulo Nómina", url: "/nomina", icon: FileText },
     { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
     { title: "Configuración", url: "/admin/configuracion", icon: Settings },
   ]
