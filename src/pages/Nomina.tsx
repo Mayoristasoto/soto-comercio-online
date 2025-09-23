@@ -17,7 +17,8 @@ import {
   Download,
   Search,
   Filter,
-  MoreVertical
+  MoreVertical,
+  KeyRound
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -33,6 +34,7 @@ import PermissionsManager from "@/components/admin/PermissionsManager"
 import { MandatoryDocuments } from "@/components/admin/MandatoryDocuments"
 import { DocumentAssignments } from "@/components/admin/DocumentAssignments"
 import { EmployeeDocumentView } from "@/components/admin/EmployeeDocumentView"
+import PasswordChange from "@/components/admin/PasswordChange"
 
 interface Employee {
   id: string
@@ -548,6 +550,18 @@ export default function Nomina() {
                               <DropdownMenuItem onClick={() => handleViewPermissions(employee.id)}>
                                 <Shield className="h-4 w-4 mr-2" />
                                 Permisos
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onSelect={(e) => e.preventDefault()}
+                                className="p-0"
+                              >
+                                <div className="w-full p-2">
+                                  <PasswordChange
+                                    employeeId={employee.id}
+                                    employeeName={`${employee.nombre} ${employee.apellido}`}
+                                    employeeEmail={employee.email}
+                                  />
+                                </div>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
