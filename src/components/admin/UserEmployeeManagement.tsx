@@ -100,7 +100,7 @@ export default function UserEmployeeManagement() {
         apellido: formData.apellido,
         email: formData.email,
         rol: formData.rol,
-        sucursal_id: formData.sucursal_id || null
+        sucursal_id: formData.sucursal_id && formData.sucursal_id.trim() !== '' ? formData.sucursal_id : null
       }
 
       const { error } = await supabase

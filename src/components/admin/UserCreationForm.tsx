@@ -212,7 +212,7 @@ export default function UserCreationForm({ open, onOpenChange, onUserCreated }: 
         nombre: formData.nombre,
         apellido: formData.apellido,
         rol: formData.rol,
-        sucursal_id: formData.sucursal_id || null,
+        sucursal_id: formData.sucursal_id && formData.sucursal_id.trim() !== '' ? formData.sucursal_id : null,
         dni: formData.dni || null,
         legajo: formData.legajo || null,
         activo: true,
