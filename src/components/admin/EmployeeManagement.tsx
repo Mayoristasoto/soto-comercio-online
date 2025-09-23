@@ -7,19 +7,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Pencil, Trash2, Plus, User } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Pencil, Trash2, Plus, User, Eye, Camera, FileText } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import EmployeeProfile from "./EmployeeProfile"
 
 interface Empleado {
   id: string
   nombre: string
   apellido: string
   email: string
+  telefono?: string
+  direccion?: string
+  puesto?: string
+  salario?: number
+  fecha_nacimiento?: string
+  estado_civil?: string
+  emergencia_contacto_nombre?: string
+  emergencia_contacto_telefono?: string
   rol: string
   activo: boolean
   sucursal_id: string | null
   fecha_ingreso: string
+  avatar_url?: string
 }
 
 interface Sucursal {
@@ -33,11 +44,15 @@ export default function EmployeeManagement() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Empleado | null>(null)
+  const [selectedEmployee, setSelectedEmployee] = useState<Empleado | null>(null)
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
     email: '',
+    puesto: '',
+    telefono: '',
     rol: 'empleado' as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
     sucursal_id: ''
   })
@@ -78,6 +93,8 @@ export default function EmployeeManagement() {
         nombre: formData.nombre,
         apellido: formData.apellido,
         email: formData.email,
+        puesto: formData.puesto || null,
+        telefono: formData.telefono || null,
         rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
         sucursal_id: formData.sucursal_id || null
       }
@@ -109,7 +126,7 @@ export default function EmployeeManagement() {
 
       setDialogOpen(false)
       setEditingEmployee(null)
-      setFormData({ nombre: '', apellido: '', email: '', rol: 'empleado' as 'empleado' | 'admin_rrhh' | 'gerente_sucursal', sucursal_id: '' })
+      setFormData({ nombre: '', apellido: '', email: '', puesto: '', telefono: '', rol: 'empleado' as 'empleado' | 'admin_rrhh' | 'gerente_sucursal', sucursal_id: '' })
       loadData()
     } catch (error) {
       console.error('Error guardando empleado:', error)
@@ -127,10 +144,17 @@ export default function EmployeeManagement() {
       nombre: empleado.nombre,
       apellido: empleado.apellido,
       email: empleado.email,
+      puesto: empleado.puesto || '',
+      telefono: empleado.telefono || '',
       rol: empleado.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
       sucursal_id: empleado.sucursal_id || ''
     })
     setDialogOpen(true)
+  }
+
+  const handleViewProfile = (empleado: Empleado) => {
+    setSelectedEmployee(empleado)
+    setProfileOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -191,7 +215,7 @@ export default function EmployeeManagement() {
             <DialogTrigger asChild>
               <Button onClick={() => {
                 setEditingEmployee(null)
-      setFormData({ nombre: '', apellido: '', email: '', rol: 'empleado' as 'empleado' | 'admin_rrhh' | 'gerente_sucursal', sucursal_id: '' })
+      setFormData({ nombre: '', apellido: '', email: '', puesto: '', telefono: '', rol: 'empleado' as 'empleado' | 'admin_rrhh' | 'gerente_sucursal', sucursal_id: '' })
               }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nuevo Empleado
@@ -236,6 +260,26 @@ export default function EmployeeManagement() {
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     required
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="puesto">Puesto</Label>
+                    <Input
+                      id="puesto"
+                      value={formData.puesto}
+                      onChange={(e) => setFormData(prev => ({ ...prev, puesto: e.target.value }))}
+                      placeholder="Cargo o posición"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="telefono">Teléfono</Label>
+                    <Input
+                      id="telefono"
+                      value={formData.telefono}
+                      onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                      placeholder="+54 11 1234-5678"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -285,8 +329,9 @@ export default function EmployeeManagement() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Empleado</TableHead>
+              <TableHead>Puesto</TableHead>
+              <TableHead>Contacto</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Sucursal</TableHead>
@@ -296,10 +341,44 @@ export default function EmployeeManagement() {
           <TableBody>
             {empleados.map((empleado) => (
               <TableRow key={empleado.id}>
-                <TableCell className="font-medium">
-                  {empleado.nombre} {empleado.apellido}
+                <TableCell>
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={empleado.avatar_url} />
+                      <AvatarFallback>
+                        {empleado.nombre?.charAt(0)}{empleado.apellido?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">
+                        {empleado.nombre} {empleado.apellido}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {empleado.email}
+                      </div>
+                    </div>
+                  </div>
                 </TableCell>
-                <TableCell>{empleado.email}</TableCell>
+                <TableCell>
+                  <div>
+                    <div className="font-medium">
+                      {empleado.puesto || 'Sin puesto'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Desde {new Date(empleado.fecha_ingreso).toLocaleDateString('es-AR')}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">
+                    {empleado.telefono && (
+                      <div className="flex items-center space-x-1">
+                        <span>📞</span>
+                        <span>{empleado.telefono}</span>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{getRoleBadge(empleado.rol)}</TableCell>
                 <TableCell>
                   <Badge variant={empleado.activo ? "default" : "secondary"}>
@@ -311,6 +390,9 @@ export default function EmployeeManagement() {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => handleViewProfile(empleado)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(empleado)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -323,6 +405,14 @@ export default function EmployeeManagement() {
             ))}
           </TableBody>
         </Table>
+
+        {/* Employee Profile Modal */}
+        <EmployeeProfile
+          empleado={selectedEmployee}
+          open={profileOpen}
+          onOpenChange={setProfileOpen}
+          onEmployeeUpdated={loadData}
+        />
       </CardContent>
     </Card>
   )

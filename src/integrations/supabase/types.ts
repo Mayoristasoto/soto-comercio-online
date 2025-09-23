@@ -229,6 +229,114 @@ export type Database = {
         }
         Relationships: []
       }
+      empleado_documentos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string | null
+          empleado_id: string
+          fecha_subida: string
+          id: string
+          nombre_archivo: string
+          subido_por: string | null
+          tipo_documento: string
+          updated_at: string
+          url_archivo: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          empleado_id: string
+          fecha_subida?: string
+          id?: string
+          nombre_archivo: string
+          subido_por?: string | null
+          tipo_documento: string
+          updated_at?: string
+          url_archivo: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          empleado_id?: string
+          fecha_subida?: string
+          id?: string
+          nombre_archivo?: string
+          subido_por?: string | null
+          tipo_documento?: string
+          updated_at?: string
+          url_archivo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_documentos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_documentos_subido_por_fkey"
+            columns: ["subido_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleado_permisos: {
+        Row: {
+          asignado_por: string | null
+          created_at: string
+          empleado_id: string
+          fecha_asignacion: string
+          habilitado: boolean
+          id: string
+          modulo: string
+          permiso: string
+          updated_at: string
+        }
+        Insert: {
+          asignado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          fecha_asignacion?: string
+          habilitado?: boolean
+          id?: string
+          modulo: string
+          permiso: string
+          updated_at?: string
+        }
+        Update: {
+          asignado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          fecha_asignacion?: string
+          habilitado?: boolean
+          id?: string
+          modulo?: string
+          permiso?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_permisos_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_permisos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleado_turnos: {
         Row: {
           activo: boolean | null
@@ -283,16 +391,24 @@ export type Database = {
           apellido: string
           avatar_url: string | null
           created_at: string
+          direccion: string | null
           dni: string | null
           email: string
+          emergencia_contacto_nombre: string | null
+          emergencia_contacto_telefono: string | null
+          estado_civil: string | null
           face_descriptor: number[] | null
           fecha_ingreso: string
+          fecha_nacimiento: string | null
           grupo_id: string | null
           id: string
           legajo: string | null
           nombre: string
+          puesto: string | null
           rol: Database["public"]["Enums"]["user_role"]
+          salario: number | null
           sucursal_id: string | null
+          telefono: string | null
           updated_at: string
           user_id: string | null
         }
@@ -301,16 +417,24 @@ export type Database = {
           apellido: string
           avatar_url?: string | null
           created_at?: string
+          direccion?: string | null
           dni?: string | null
           email: string
+          emergencia_contacto_nombre?: string | null
+          emergencia_contacto_telefono?: string | null
+          estado_civil?: string | null
           face_descriptor?: number[] | null
           fecha_ingreso?: string
+          fecha_nacimiento?: string | null
           grupo_id?: string | null
           id?: string
           legajo?: string | null
           nombre: string
+          puesto?: string | null
           rol?: Database["public"]["Enums"]["user_role"]
+          salario?: number | null
           sucursal_id?: string | null
+          telefono?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -319,16 +443,24 @@ export type Database = {
           apellido?: string
           avatar_url?: string | null
           created_at?: string
+          direccion?: string | null
           dni?: string | null
           email?: string
+          emergencia_contacto_nombre?: string | null
+          emergencia_contacto_telefono?: string | null
+          estado_civil?: string | null
           face_descriptor?: number[] | null
           fecha_ingreso?: string
+          fecha_nacimiento?: string | null
           grupo_id?: string | null
           id?: string
           legajo?: string | null
           nombre?: string
+          puesto?: string | null
           rol?: Database["public"]["Enums"]["user_role"]
+          salario?: number | null
           sucursal_id?: string | null
+          telefono?: string | null
           updated_at?: string
           user_id?: string | null
         }
