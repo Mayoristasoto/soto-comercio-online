@@ -12,6 +12,7 @@ import { Pencil, Trash2, Plus, User, UserPlus, Mail, Building2, Shield, Eye, Cam
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import UserCreationForm from "./UserCreationForm"
+import FacialRecognitionManagement from "./FacialRecognitionManagement"
 
 interface Empleado {
   id: string
@@ -47,6 +48,7 @@ export default function UserEmployeeManagement() {
   const [loading, setLoading] = useState(true)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [createUserOpen, setCreateUserOpen] = useState(false)
+  const [faceDialogOpen, setFaceDialogOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Empleado | null>(null)
   const [formData, setFormData] = useState({
     nombre: '',
@@ -184,6 +186,15 @@ export default function UserEmployeeManagement() {
     loadData()
   }
 
+  const handleManageFace = (empleado: Empleado) => {
+    setEditingEmployee(empleado)
+    setFaceDialogOpen(true)
+  }
+
+  const handleFaceUpdated = () => {
+    loadData()
+  }
+
   const getRoleBadge = (rol: string) => {
     const variants: Record<string, any> = {
       admin_rrhh: { variant: "destructive", label: "Admin RRHH" },
@@ -235,6 +246,7 @@ export default function UserEmployeeManagement() {
               sucursales={sucursales}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onManageFace={handleManageFace}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
@@ -245,6 +257,7 @@ export default function UserEmployeeManagement() {
               sucursales={sucursales}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onManageFace={handleManageFace}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
@@ -255,6 +268,7 @@ export default function UserEmployeeManagement() {
               sucursales={sucursales}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onManageFace={handleManageFace}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
@@ -273,6 +287,14 @@ export default function UserEmployeeManagement() {
           open={createUserOpen}
           onOpenChange={setCreateUserOpen}
           onUserCreated={handleUserCreated}
+        />
+
+        {/* Facial Recognition Management Dialog */}
+        <FacialRecognitionManagement
+          open={faceDialogOpen}
+          onOpenChange={setFaceDialogOpen}
+          empleado={editingEmployee}
+          onFaceUpdated={handleFaceUpdated}
         />
 
         {/* Edit Employee Dialog */}
@@ -372,10 +394,11 @@ interface EmployeeTableProps {
   sucursales: Sucursal[]
   onEdit: (empleado: Empleado) => void
   onDelete: (id: string) => void
+  onManageFace: (empleado: Empleado) => void
   getRoleBadge: (rol: string) => JSX.Element
 }
 
-function EmployeeTable({ empleados, sucursales, onEdit, onDelete, getRoleBadge }: EmployeeTableProps) {
+function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, getRoleBadge }: EmployeeTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -425,6 +448,9 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, getRoleBadge }
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm" onClick={() => onEdit(empleado)}>
                   <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => onManageFace(empleado)}>
+                  <Camera className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => onDelete(empleado.id)}>
                   <Trash2 className="h-4 w-4" />
