@@ -183,31 +183,8 @@ export default function UserCreationForm({ open, onOpenChange, onUserCreated }: 
         return
       }
 
-      // Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/reconoce/home`,
-          data: {
-            nombre: formData.nombre,
-            apellido: formData.apellido,
-            rol: formData.rol
-          }
-        }
-      })
-
-      if (authError) {
-        throw authError
-      }
-
-      if (!authData.user) {
-        throw new Error('No se pudo crear el usuario en autenticación')
-      }
-
-      // Crear empleado en la base de datos
+      // Crear empleado directamente en la base de datos (sin usar auth signup)
       const empleadoData = {
-        user_id: authData.user.id,
         email: formData.email,
         nombre: formData.nombre,
         apellido: formData.apellido,
@@ -219,14 +196,14 @@ export default function UserCreationForm({ open, onOpenChange, onUserCreated }: 
         fecha_ingreso: new Date().toISOString().split('T')[0]
       }
 
-      const { error: empleadoError } = await supabase
+      const { data: empleadoCreated, error: empleadoError } = await supabase
         .from('empleados')
         .insert(empleadoData)
+        .select()
+        .single()
 
       if (empleadoError) {
         console.error('Error creando empleado:', empleadoError)
-        // Intentar eliminar el usuario de auth si falló la creación del empleado
-        await supabase.auth.admin.deleteUser(authData.user.id)
         throw new Error('Error al crear el perfil del empleado')
       }
 
