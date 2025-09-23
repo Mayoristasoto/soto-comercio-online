@@ -23,6 +23,7 @@ import FicheroEstadisticas from "@/components/fichero/FicheroEstadisticas"
 import FicheroIncidencias from "@/components/fichero/FicheroIncidencias"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
 import FicheroHorarios from "@/components/fichero/FicheroHorarios"
+import AttendanceReports from "@/components/admin/AttendanceReports"
 
 interface Empleado {
   id: string
@@ -56,7 +57,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'horarios' | 'config'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'horarios' | 'config' | 'admin'>('fichaje')
 
   useEffect(() => {
     checkAuth()
@@ -191,10 +192,10 @@ export default function Fichero() {
   }
 
   const procesarFichaje = async (tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin', confianzaFacial: number) => {
-    if (!empleado || !coordenadas) {
+    if (!empleado) {
       toast({
         title: "Error",
-        description: "Faltan datos necesarios para el fichaje",
+        description: "Datos del empleado no disponibles",
         variant: "destructive"
       })
       return
@@ -203,13 +204,13 @@ export default function Fichero() {
     setFichajeEnProceso(true)
 
     try {
-      // Para modo demo, usar umbral fijo
-      const umbralConfianza = 0.75
+      // Umbral mínimo de confianza para reconocimiento facial
+      const umbralConfianza = 0.7
 
       if (confianzaFacial < umbralConfianza) {
         toast({
-          title: "Reconocimiento facial insuficiente",
-          description: `Confianza: ${(confianzaFacial * 100).toFixed(1)}%. Mínimo requerido: ${(umbralConfianza * 100).toFixed(1)}%`,
+          title: "⚠️ No se pudo reconocer el rostro",
+          description: "Inténtalo de nuevo o contacte RRHH",
           variant: "destructive"
         })
         return
@@ -235,8 +236,8 @@ export default function Fichero() {
             empleado_id: empleado.id,
             tipo: tipoFichaje,
             timestamp_real: new Date().toISOString(),
-            latitud: coordenadas.lat,
-            longitud: coordenadas.lng,
+            latitud: coordenadas?.lat,
+            longitud: coordenadas?.lng,
             confianza_facial: confianzaFacial,
             metodo: 'facial',
             estado: 'valido'
@@ -263,10 +264,22 @@ export default function Fichero() {
           break
       }
 
+      // Mensaje de confirmación personalizado
+      const accion = tipoFichaje === 'entrada' ? 'Check-in' : 
+                   tipoFichaje === 'salida' ? 'Check-out' : 
+                   tipoFichaje.replace('_', ' ')
+
       toast({
-        title: "Fichaje registrado",
-        description: `${tipoFichaje.replace('_', ' ')} registrada correctamente`,
+        title: `✅ ${accion} exitoso`,
+        description: `Bienvenido ${empleado.nombre} ${empleado.apellido}`,
       })
+
+      // Redirigir a /tareas después de entrada exitosa
+      if (tipoFichaje === 'entrada') {
+        setTimeout(() => {
+          window.location.href = '/tareas'
+        }, 2000)
+      }
 
       // Recargar fichajes para empleados reales
       if (empleado.id !== 'demo-empleado') {
@@ -409,18 +422,19 @@ export default function Fichero() {
 
       {/* Navigation Tabs */}
       <div className="container mx-auto px-4 py-4">
-        <div className="flex space-x-1 bg-white/60 backdrop-blur-sm rounded-lg p-1">
+        <div className="flex space-x-1 bg-white/60 backdrop-blur-sm rounded-lg p-1 overflow-x-auto">
           {[
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: FileText },
             { key: 'horarios', label: 'Horarios', icon: Settings },
             { key: 'config', label: 'Configuración', icon: Settings },
+            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'admin', label: 'Administrar', icon: Shield }] : []),
           ].map(({ key, label, icon: Icon }) => (
             <Button
               key={key}
               variant={activeTab === key ? "default" : "ghost"}
-              className="flex-1"
+              className="flex-1 whitespace-nowrap"
               onClick={() => setActiveTab(key as any)}
             >
               <Icon className="h-4 w-4 mr-2" />
@@ -514,6 +528,11 @@ export default function Fichero() {
 
         {activeTab === 'config' && (
           <FicheroConfiguracion empleado={empleado} />
+        )}
+        
+        {/* Vista de administrador */}
+        {empleado.rol === 'admin_rrhh' && activeTab === 'admin' && (
+          <AttendanceReports />
         )}
       </div>
     </div>
