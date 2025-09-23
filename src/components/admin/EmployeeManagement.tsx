@@ -8,10 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Pencil, Trash2, Plus, User, Eye, Camera, FileText } from "lucide-react"
+import { Pencil, Trash2, Plus, User, Eye, Camera, FileText, Shield, FolderOpen } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import EmployeeProfile from "./EmployeeProfile"
+import DocumentManager from "./DocumentManager"
+import PermissionsManager from "./PermissionsManager"
 
 interface Empleado {
   id: string
@@ -45,6 +47,8 @@ export default function EmployeeManagement() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [documentsOpen, setDocumentsOpen] = useState(false)
+  const [permissionsOpen, setPermissionsOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Empleado | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Empleado | null>(null)
   const [formData, setFormData] = useState({
@@ -155,6 +159,16 @@ export default function EmployeeManagement() {
   const handleViewProfile = (empleado: Empleado) => {
     setSelectedEmployee(empleado)
     setProfileOpen(true)
+  }
+
+  const handleViewDocuments = (empleado: Empleado) => {
+    setSelectedEmployee(empleado)
+    setDocumentsOpen(true)
+  }
+
+  const handleViewPermissions = (empleado: Empleado) => {
+    setSelectedEmployee(empleado)
+    setPermissionsOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -390,13 +404,19 @@ export default function EmployeeManagement() {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleViewProfile(empleado)}>
+                    <Button variant="outline" size="sm" onClick={() => handleViewProfile(empleado)} title="Ver perfil">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(empleado)}>
+                    <Button variant="outline" size="sm" onClick={() => handleViewDocuments(empleado)} title="Gestionar documentos">
+                      <FolderOpen className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleViewPermissions(empleado)} title="Gestionar permisos">
+                      <Shield className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(empleado)} title="Editar">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(empleado.id)}>
+                    <Button variant="outline" size="sm" onClick={() => handleDelete(empleado.id)} title="Eliminar">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -413,6 +433,36 @@ export default function EmployeeManagement() {
           onOpenChange={setProfileOpen}
           onEmployeeUpdated={loadData}
         />
+
+        {/* Document Manager Modal */}
+        <Dialog open={documentsOpen} onOpenChange={setDocumentsOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gestión de Documentos</DialogTitle>
+              <DialogDescription>
+                Administra los documentos de {selectedEmployee?.nombre} {selectedEmployee?.apellido}
+              </DialogDescription>
+            </DialogHeader>
+            {selectedEmployee && (
+              <DocumentManager empleadoId={selectedEmployee.id} />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Permissions Manager Modal */}
+        <Dialog open={permissionsOpen} onOpenChange={setPermissionsOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gestión de Permisos</DialogTitle>
+              <DialogDescription>
+                Administra los permisos de {selectedEmployee?.nombre} {selectedEmployee?.apellido}
+              </DialogDescription>
+            </DialogHeader>
+            {selectedEmployee && (
+              <PermissionsManager empleadoId={selectedEmployee.id} />
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )
