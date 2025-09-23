@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      asignaciones_documentos_obligatorios: {
+        Row: {
+          activa: boolean
+          asignado_por: string | null
+          created_at: string
+          documento_id: string
+          empleado_id: string
+          fecha_asignacion: string
+          fecha_limite_lectura: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          asignado_por?: string | null
+          created_at?: string
+          documento_id: string
+          empleado_id: string
+          fecha_asignacion?: string
+          fecha_limite_lectura?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          asignado_por?: string | null
+          created_at?: string
+          documento_id?: string
+          empleado_id?: string
+          fecha_asignacion?: string
+          fecha_limite_lectura?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       asignaciones_premio: {
         Row: {
           beneficiario_id: string
@@ -157,6 +193,36 @@ export type Database = {
         }
         Relationships: []
       }
+      confirmaciones_lectura: {
+        Row: {
+          asignacion_id: string
+          created_at: string
+          documento_id: string
+          empleado_id: string
+          fecha_confirmacion: string
+          id: string
+          ip_confirmacion: unknown | null
+        }
+        Insert: {
+          asignacion_id: string
+          created_at?: string
+          documento_id: string
+          empleado_id: string
+          fecha_confirmacion?: string
+          id?: string
+          ip_confirmacion?: unknown | null
+        }
+        Update: {
+          asignacion_id?: string
+          created_at?: string
+          documento_id?: string
+          empleado_id?: string
+          fecha_confirmacion?: string
+          id?: string
+          ip_confirmacion?: unknown | null
+        }
+        Relationships: []
+      }
       desafios: {
         Row: {
           created_at: string
@@ -202,6 +268,48 @@ export type Database = {
           tipo_periodo?: Database["public"]["Enums"]["desafio_tipo_periodo"]
           titulo?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      documentos_obligatorios: {
+        Row: {
+          activo: boolean
+          contenido: string | null
+          created_at: string
+          descripcion: string | null
+          fecha_vigencia_desde: string | null
+          fecha_vigencia_hasta: string | null
+          id: string
+          tipo_documento: string
+          titulo: string
+          updated_at: string
+          url_archivo: string | null
+        }
+        Insert: {
+          activo?: boolean
+          contenido?: string | null
+          created_at?: string
+          descripcion?: string | null
+          fecha_vigencia_desde?: string | null
+          fecha_vigencia_hasta?: string | null
+          id?: string
+          tipo_documento?: string
+          titulo: string
+          updated_at?: string
+          url_archivo?: string | null
+        }
+        Update: {
+          activo?: boolean
+          contenido?: string | null
+          created_at?: string
+          descripcion?: string | null
+          fecha_vigencia_desde?: string | null
+          fecha_vigencia_hasta?: string | null
+          id?: string
+          tipo_documento?: string
+          titulo?: string
+          updated_at?: string
+          url_archivo?: string | null
         }
         Relationships: []
       }

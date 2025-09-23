@@ -30,6 +30,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import EmployeeProfile from "@/components/admin/EmployeeProfile"
 import DocumentManager from "@/components/admin/DocumentManager"
 import PermissionsManager from "@/components/admin/PermissionsManager"
+import { MandatoryDocuments } from "@/components/admin/MandatoryDocuments"
+import { DocumentAssignments } from "@/components/admin/DocumentAssignments"
+import { EmployeeDocumentView } from "@/components/admin/EmployeeDocumentView"
 
 interface Employee {
   id: string
@@ -339,11 +342,14 @@ export default function Nomina() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-md">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="employees">Empleados</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
           <TabsTrigger value="permissions">Permisos</TabsTrigger>
+          <TabsTrigger value="mandatory-docs">Doc. Obligatorios</TabsTrigger>
+          <TabsTrigger value="assignments">Asignaciones</TabsTrigger>
+          <TabsTrigger value="employee-view">Vista Empleado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -587,6 +593,44 @@ export default function Nomina() {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mandatory-docs">
+          <MandatoryDocuments />
+        </TabsContent>
+
+        <TabsContent value="assignments">
+          <DocumentAssignments />
+        </TabsContent>
+
+        <TabsContent value="employee-view">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle>Seleccionar Empleado</CardTitle>
+                <CardDescription>
+                  Seleccione un empleado para ver sus documentos asignados
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select onValueChange={setSelectedEmployeeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar empleado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.nombre} {emp.apellido}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+            <div className="lg:col-span-2">
+              <EmployeeDocumentView empleadoId={selectedEmployeeId} />
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
