@@ -198,16 +198,14 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-black">Accesos Rápidos</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {empleado?.rol !== 'admin_rrhh' && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/reconoce/premios" className={getNavCls}>
-                      <Trophy className="h-4 w-4 text-black" />
-                      <span className="text-black">Canje de Premios</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/reconoce/premios" className={getNavCls}>
+                    <Trophy className="h-4 w-4 text-black" />
+                    <span className="text-black">Canje de Premios</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/reconoce/" className={getNavCls}>
