@@ -11,14 +11,14 @@ interface DocumentoAsignado {
   id: string;
   documento_id: string;
   fecha_asignacion: string;
-  fecha_limite_lectura: string;
+  fecha_limite_lectura: string | null;
   documento: {
     titulo: string;
     descripcion: string;
     contenido: string;
     url_archivo: string;
     tipo_documento: string;
-  };
+  } | null;
   confirmacion: {
     fecha_confirmacion: string;
   }[];
@@ -36,7 +36,9 @@ export function EmployeeDocuments({ empleadoId }: Props) {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadDocumentos();
+    if (empleadoId) {
+      loadDocumentos();
+    }
   }, [empleadoId]);
 
   const loadDocumentos = async () => {
@@ -58,7 +60,7 @@ export function EmployeeDocuments({ empleadoId }: Props) {
             .from('documentos_obligatorios')
             .select('titulo, descripcion, contenido, url_archivo, tipo_documento')
             .eq('id', asignacion.documento_id)
-            .single();
+            .maybeSingle();
 
           // Load confirmaciones
           const { data: confirmaciones } = await supabase
@@ -68,7 +70,7 @@ export function EmployeeDocuments({ empleadoId }: Props) {
 
           return {
             ...asignacion,
-            documento: documento || { titulo: '', descripcion: '', contenido: '', url_archivo: '', tipo_documento: '' },
+            documento: documento || null,
             confirmacion: confirmaciones || []
           };
         })
@@ -130,8 +132,8 @@ export function EmployeeDocuments({ empleadoId }: Props) {
     );
   }
 
-  const pendientes = documentos.filter(d => d.confirmacion.length === 0);
-  const confirmados = documentos.filter(d => d.confirmacion.length > 0);
+  const pendientes = documentos.filter(d => d?.confirmacion?.length === 0);
+  const confirmados = documentos.filter(d => d?.confirmacion?.length > 0);
 
   return (
     <div className="space-y-4">
@@ -162,10 +164,19 @@ export function EmployeeDocuments({ empleadoId }: Props) {
             <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg bg-destructive/5">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">{doc.documento.titulo}</span>
+                  <span className="font-medium text-sm">{doc.documento?.titulo || 'Sin título'}</span>
+                  <Badge variant="outline">{doc.documento?.tipo_documento || 'Documento'}</Badge>
                   <Badge variant="destructive" className="text-xs">Pendiente</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">{doc.documento.descripcion}</p>
+                <p className="text-xs text-muted-foreground">{doc.documento?.descripcion || 'Sin descripción'}</p>
+                <div className="text-xs text-muted-foreground">
+                  Asignado: {new Date(doc.fecha_asignacion).toLocaleDateString()}
+                  {doc.fecha_limite_lectura && (
+                    <span className="ml-4">
+                      Límite: {new Date(doc.fecha_limite_lectura).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
               </div>
               <Button size="sm" onClick={() => openDocument(doc)}>
                 <Eye className="h-3 w-3 mr-1" />
@@ -187,11 +198,13 @@ export function EmployeeDocuments({ empleadoId }: Props) {
             <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg bg-primary/5">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">{doc.documento.titulo}</span>
+                  <span className="font-medium text-sm">{doc.documento?.titulo || 'Sin título'}</span>
+                  <Badge variant="outline">{doc.documento?.tipo_documento || 'Documento'}</Badge>
                   <Badge className="text-xs">Leído</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Confirmado: {new Date(doc.confirmacion[0].fecha_confirmacion).toLocaleDateString()}
+                  Confirmado: {doc.confirmacion?.[0]?.fecha_confirmacion ? 
+                    new Date(doc.confirmacion[0].fecha_confirmacion).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
               <Button size="sm" variant="outline" onClick={() => openDocument(doc)}>
@@ -221,15 +234,15 @@ export function EmployeeDocuments({ empleadoId }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              {selectedDoc?.documento.titulo}
+              {selectedDoc?.documento?.titulo || 'Sin título'}
             </DialogTitle>
             <DialogDescription>
-              {selectedDoc?.documento.descripcion}
+              {selectedDoc?.documento?.descripcion || 'Sin descripción'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 overflow-y-auto">
-            {selectedDoc?.documento.url_archivo && (
+            {selectedDoc?.documento?.url_archivo && (
               <div className="flex items-center gap-2 p-2 bg-accent rounded">
                 <ExternalLink className="h-4 w-4" />
                 <a
@@ -243,7 +256,7 @@ export function EmployeeDocuments({ empleadoId }: Props) {
               </div>
             )}
 
-            {selectedDoc?.documento.contenido && (
+            {selectedDoc?.documento?.contenido && (
               <div className="prose max-w-none">
                 <div className="whitespace-pre-wrap p-4 border rounded-lg bg-background text-sm">
                   {selectedDoc.documento.contenido}
@@ -253,11 +266,12 @@ export function EmployeeDocuments({ empleadoId }: Props) {
 
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="text-sm text-muted-foreground">
-                {selectedDoc?.confirmacion.length === 0 ? (
+                {!selectedDoc?.confirmacion || selectedDoc.confirmacion.length === 0 ? (
                   <span className="text-destructive">Pendiente de confirmación</span>
                 ) : (
                   <span className="text-primary">
-                    Confirmado el {new Date(selectedDoc.confirmacion[0].fecha_confirmacion).toLocaleString()}
+                    Confirmado el {selectedDoc.confirmacion?.[0]?.fecha_confirmacion ? 
+                      new Date(selectedDoc.confirmacion[0].fecha_confirmacion).toLocaleString() : 'N/A'}
                   </span>
                 )}
               </div>
@@ -266,7 +280,7 @@ export function EmployeeDocuments({ empleadoId }: Props) {
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Cerrar
                 </Button>
-                {selectedDoc?.confirmacion.length === 0 && (
+                {(!selectedDoc?.confirmacion || selectedDoc.confirmacion.length === 0) && (
                   <Button onClick={() => selectedDoc && handleConfirmReading(selectedDoc.id, selectedDoc.documento_id)}>
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Confirmar Lectura
