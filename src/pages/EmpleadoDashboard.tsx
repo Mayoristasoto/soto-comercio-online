@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { EmployeeDocuments } from "@/components/employee/EmployeeDocuments"
 import { EmployeeTrainings } from "@/components/employee/EmployeeTrainings"
+import { EmployeeBadges } from "@/components/employee/EmployeeBadges"
 
 interface UserInfo {
   id: string
@@ -235,26 +236,11 @@ export default function EmpleadoDashboard() {
               <span>Mis Logros y Reconocimientos</span>
             </CardTitle>
             <CardDescription>
-              Galería personal de medallas, logros y reconocimientos obtenidos
+              Galería personal de medallas y reconocimientos obtenidos
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Trophy className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">Centro de Reconocimientos</p>
-              <p className="text-sm">
-                Visualiza todos tus logros, medallas y certificaciones
-              </p>
-              <p className="text-xs mt-2 text-primary">
-                ✓ Medallas por desafíos completados
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Certificados de capacitaciones
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Premios y reconocimientos especiales
-              </p>
-            </div>
+            <EmployeeBadges empleadoId={userInfo.id} />
           </CardContent>
         </Card>
       </div>
