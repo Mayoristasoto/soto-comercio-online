@@ -26,9 +26,18 @@ export default function UnifiedAuth() {
   useEffect(() => {
     // Verificar si ya está autenticado
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        navigate(redirectTo)
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error && error.message.includes('refresh_token_not_found')) {
+          await supabase.auth.signOut()
+          return
+        }
+        if (user) {
+          navigate(redirectTo)
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error)
+        await supabase.auth.signOut()
       }
     }
     

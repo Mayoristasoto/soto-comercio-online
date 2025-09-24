@@ -28,9 +28,18 @@ export default function SotoAuth() {
   }, [])
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      navigate('/reconoce/home')
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error && error.message.includes('refresh_token_not_found')) {
+        await supabase.auth.signOut()
+        return
+      }
+      if (user) {
+        navigate('/reconoce/home')
+      }
+    } catch (error) {
+      console.error('Error checking user:', error)
+      await supabase.auth.signOut()
     }
   }
 

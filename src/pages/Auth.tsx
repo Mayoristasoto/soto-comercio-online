@@ -19,9 +19,20 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        navigate("/gondolasedit");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error && error.message.includes('refresh_token_not_found')) {
+          // Clear invalid session
+          await supabase.auth.signOut();
+          return;
+        }
+        if (session?.user) {
+          navigate("/gondolasedit");
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        // Clear any corrupted session
+        await supabase.auth.signOut();
       }
     };
     checkUser();
@@ -29,6 +40,11 @@ const Auth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          // Token refresh failed, clear session
+          supabase.auth.signOut();
+          return;
+        }
         if (session?.user) {
           navigate("/gondolasedit");
         }
