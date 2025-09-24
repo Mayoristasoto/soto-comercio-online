@@ -15,6 +15,8 @@ import {
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { EmployeeDocuments } from "@/components/employee/EmployeeDocuments"
+import { EmployeeTrainings } from "@/components/employee/EmployeeTrainings"
 
 interface UserInfo {
   id: string
@@ -201,57 +203,27 @@ export default function EmpleadoDashboard() {
               <span>Mis Capacitaciones</span>
             </CardTitle>
             <CardDescription>
-              Completa cursos y entrenamientos para mejorar tus habilidades
+              Accede a tus capacitaciones y materiales de estudio
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">Centro de Formación Personal</p>
-              <p className="text-sm">
-                Accede a tus capacitaciones asignadas y materiales de estudio
-              </p>
-              <p className="text-xs mt-2 text-primary">
-                ✓ Progreso de capacitaciones en tiempo real
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Certificados digitales automáticos
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Evaluaciones integradas
-              </p>
-            </div>
+            <EmployeeTrainings empleadoId={userInfo.id} />
           </CardContent>
         </Card>
 
-        {/* Sección: Documentos Pendientes de Firma */}
+        {/* Sección: Documentos Asignados */}
         <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5 text-purple-600" />
-              <span>Documentos para Firmar</span>
+              <span>Mis Documentos</span>
             </CardTitle>
             <CardDescription>
-              Revisa y firma digitalmente documentos importantes
+              Revisa y confirma lectura de documentos asignados
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">Firma Digital Segura</p>
-              <p className="text-sm">
-                Sistema de confirmación de lectura y firma digital integrada
-              </p>
-              <p className="text-xs mt-2 text-primary">
-                ✓ Firma digital con validación biométrica
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Historial completo de documentos firmados
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Notificaciones de documentos urgentes
-              </p>
-            </div>
+            <EmployeeDocuments empleadoId={userInfo.id} />
           </CardContent>
         </Card>
 
