@@ -33,7 +33,8 @@ export default function UnifiedLayout() {
         if (event === 'SIGNED_OUT' || !session) {
           navigate('/auth')
         } else if (event === 'SIGNED_IN' && location.pathname === '/auth') {
-          navigate('/reconoce')
+          // La redirección se maneja en checkAuth() basada en el rol
+          checkAuth()
         }
       }
     )
@@ -80,6 +81,17 @@ export default function UnifiedLayout() {
         grupo_id: empleado.grupo_id,
         avatar_url: empleado.avatar_url
       })
+
+      // Redirección y control de acceso basado en rol
+      if (empleado.rol === 'empleado') {
+        // Los empleados solo pueden acceder a su dashboard personal
+        const allowedPaths = ['/mi-dashboard']
+        const currentPath = location.pathname
+        
+        if (!allowedPaths.includes(currentPath)) {
+          navigate('/mi-dashboard')
+        }
+      }
 
     } catch (error) {
       console.error('Error verificando autenticación:', error)

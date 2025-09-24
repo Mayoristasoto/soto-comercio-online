@@ -11,7 +11,8 @@ import {
   Target,
   Building2,
   UserCheck,
-  FileText
+  FileText,
+  User
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -124,31 +125,56 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Módulos Principales */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Módulos Principales</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainModules.map((item) => (
-                <SidebarMenuItem key={item.title}>
+        {/* Dashboard Personal - Solo para empleados */}
+        {userInfo?.rol === 'empleado' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Mi Espacio Personal</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    isActive={isActive(item.url)}
-                    tooltip={item.description}
+                    isActive={isActive("/mi-dashboard")}
+                    tooltip="Tu dashboard personalizado con tareas, capacitaciones y logros"
                   >
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                    <NavLink to="/mi-dashboard">
+                      <User className="h-4 w-4" />
+                      <span>Mi Dashboard</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        {/* Submenú Reconocimiento */}
-        {isActive("/reconoce") && (
+        {/* Módulos Principales - Solo para roles superiores */}
+        {userInfo?.rol !== 'empleado' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Módulos Principales</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {mainModules.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                      tooltip={item.description}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Submenú Reconocimiento - Solo para roles superiores */}
+        {userInfo?.rol !== 'empleado' && isActive("/reconoce") && (
           <SidebarGroup>
             <SidebarGroupLabel>Reconocimiento</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -171,8 +197,8 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
           </SidebarGroup>
         )}
 
-        {/* Submenú Tareas */}
-        {isActive("/tareas") && (
+        {/* Submenú Tareas - Solo para roles superiores */}
+        {userInfo?.rol !== 'empleado' && isActive("/tareas") && (
           <SidebarGroup>
             <SidebarGroupLabel>Gestión de Tareas</SidebarGroupLabel>
             <SidebarGroupContent>
