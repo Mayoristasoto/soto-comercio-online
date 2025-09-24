@@ -103,7 +103,8 @@ export default function MedalManagement() {
   const [newMedal, setNewMedal] = useState({
     nombre: "",
     descripcion: "",
-    icono: "🏅"
+    icono: "🏅",
+    puntos_valor: 0
   })
 
   useEffect(() => {
@@ -193,6 +194,7 @@ export default function MedalManagement() {
           nombre: newMedal.nombre,
           descripcion: newMedal.descripcion,
           icono: newMedal.icono,
+          puntos_valor: newMedal.puntos_valor,
           criterio: { tipo: "custom", valor: "manual" }
         }])
 
@@ -203,7 +205,7 @@ export default function MedalManagement() {
         description: `La medalla "${newMedal.nombre}" se ha creado exitosamente`,
       })
 
-      setNewMedal({ nombre: "", descripcion: "", icono: "🏅" })
+      setNewMedal({ nombre: "", descripcion: "", icono: "🏅", puntos_valor: 0 })
       setNewMedalDialog(false)
       loadData()
 
@@ -333,6 +335,17 @@ export default function MedalManagement() {
                     value={newMedal.icono}
                     onChange={(e) => setNewMedal({...newMedal, icono: e.target.value})}
                     placeholder="🏅"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="puntos">Puntos que otorga</Label>
+                  <Input
+                    id="puntos"
+                    type="number"
+                    min="0"
+                    value={newMedal.puntos_valor}
+                    onChange={(e) => setNewMedal({...newMedal, puntos_valor: parseInt(e.target.value) || 0})}
+                    placeholder="0"
                   />
                 </div>
               </div>
