@@ -16,13 +16,15 @@ import {
   Settings,
   FileText,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from "lucide-react"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import FicheroEstadisticas from "@/components/fichero/FicheroEstadisticas"
 import FicheroIncidencias from "@/components/fichero/FicheroIncidencias"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
 import FicheroHorarios from "@/components/fichero/FicheroHorarios"
+import FicheroHistorial from "@/components/fichero/FicheroHistorial"
 import AttendanceReports from "@/components/admin/AttendanceReports"
 
 interface Empleado {
@@ -57,7 +59,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'horarios' | 'config' | 'admin'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin'>('fichaje')
 
   useEffect(() => {
     checkAuth()
@@ -427,6 +429,7 @@ export default function Fichero() {
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: FileText },
+            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
             { key: 'config', label: 'Configuración', icon: Settings },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'admin', label: 'Administrar', icon: Shield }] : []),
@@ -520,6 +523,10 @@ export default function Fichero() {
 
         {activeTab === 'incidencias' && (
           <FicheroIncidencias empleado={empleado} />
+        )}
+
+        {activeTab === 'historial' && empleado?.rol === 'admin_rrhh' && (
+          <FicheroHistorial />
         )}
 
         {activeTab === 'horarios' && empleado?.rol === 'admin_rrhh' && (
