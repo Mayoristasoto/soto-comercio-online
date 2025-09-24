@@ -83,6 +83,7 @@ export default function Nomina() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [documentsOpen, setDocumentsOpen] = useState(false)
   const [permissionsOpen, setPermissionsOpen] = useState(false)
+  const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
 
@@ -240,6 +241,14 @@ export default function Nomina() {
   const handleViewPermissions = (employeeId: string) => {
     setSelectedEmployeeId(employeeId)
     setPermissionsOpen(true)
+  }
+
+  const handlePasswordChange = (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId)
+    if (employee) {
+      setSelectedEmployee(employee)
+      setPasswordChangeOpen(true)
+    }
   }
 
   const formatRole = (role: string) => {
@@ -551,17 +560,9 @@ export default function Nomina() {
                                 <Shield className="h-4 w-4 mr-2" />
                                 Permisos
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onSelect={(e) => e.preventDefault()}
-                                className="p-0"
-                              >
-                                <div className="w-full p-2">
-                                  <PasswordChange
-                                    employeeId={employee.id}
-                                    employeeName={`${employee.nombre} ${employee.apellido}`}
-                                    employeeEmail={employee.email}
-                                  />
-                                </div>
+                              <DropdownMenuItem onClick={() => handlePasswordChange(employee.id)}>
+                                <KeyRound className="h-4 w-4 mr-2" />
+                                Cambiar Contraseña
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -686,6 +687,16 @@ export default function Nomina() {
           )}
         </DialogContent>
       </Dialog>
+
+      {selectedEmployee && (
+        <PasswordChange
+          employeeId={selectedEmployee.id}
+          employeeName={`${selectedEmployee.nombre} ${selectedEmployee.apellido}`}
+          employeeEmail={selectedEmployee.email}
+          open={passwordChangeOpen}
+          onOpenChange={setPasswordChangeOpen}
+        />
+      )}
     </div>
   )
 }

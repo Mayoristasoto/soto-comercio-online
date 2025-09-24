@@ -12,11 +12,22 @@ interface PasswordChangeProps {
   employeeId: string
   employeeName: string
   employeeEmail: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export default function PasswordChange({ employeeId, employeeName, employeeEmail }: PasswordChangeProps) {
+export default function PasswordChange({ 
+  employeeId, 
+  employeeName, 
+  employeeEmail, 
+  open: externalOpen, 
+  onOpenChange: externalOnOpenChange 
+}: PasswordChangeProps) {
   const { toast } = useToast()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -126,12 +137,14 @@ export default function PasswordChange({ employeeId, employeeName, employeeEmail
       setOpen(open)
       if (!open) resetForm()
     }}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <KeyRound className="h-4 w-4 mr-2" />
-          Cambiar Contraseña
-        </Button>
-      </DialogTrigger>
+      {externalOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <KeyRound className="h-4 w-4 mr-2" />
+            Cambiar Contraseña
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Cambiar Contraseña</DialogTitle>
