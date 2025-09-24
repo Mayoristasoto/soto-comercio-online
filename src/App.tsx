@@ -22,6 +22,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import MedalManagement from "./pages/MedalManagement";
 import Nomina from "./pages/Nomina";
+import EmpleadoDashboard from "./pages/EmpleadoDashboard";
 
 // Legacy pages (mantener por compatibilidad)
 import Comercio from "./pages/Comercio";
