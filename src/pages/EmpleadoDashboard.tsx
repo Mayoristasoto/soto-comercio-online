@@ -19,6 +19,7 @@ import { EmployeeDocuments } from "@/components/employee/EmployeeDocuments"
 import { EmployeeTrainings } from "@/components/employee/EmployeeTrainings"
 import { EmployeeBadges } from "@/components/employee/EmployeeBadges"
 import { EmployeePrizes } from "@/components/employee/EmployeePrizes"
+import { EmployeeTasks } from "@/components/employee/EmployeeTasks"
 
 interface UserInfo {
   id: string
@@ -180,13 +181,10 @@ export default function EmpleadoDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">Sistema de Tareas Personalizado</p>
-              <p className="text-sm">
-                Aquí podrás ver y gestionar todas las tareas que te sean asignadas
-              </p>
-            </div>
+            <EmployeeTasks 
+              empleadoId={userInfo.id} 
+              onTasksUpdate={loadDashboardData}
+            />
           </CardContent>
         </Card>
 
