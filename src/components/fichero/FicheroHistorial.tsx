@@ -51,10 +51,10 @@ export default function FicheroHistorial() {
   const [empleados, setEmpleados] = useState<{id: string, nombre: string, apellido: string}[]>([])
   const [loading, setLoading] = useState(true)
   const [filtros, setFiltros] = useState({
-    empleado: '',
+    empleado: 'all',
     fechaInicio: undefined as Date | undefined,
     fechaFin: undefined as Date | undefined,
-    mes: '',
+    mes: 'all',
     ano: new Date().getFullYear().toString()
   })
   const [resumenEmpleados, setResumenEmpleados] = useState<EmpleadoResumen[]>([])
@@ -106,7 +106,7 @@ export default function FicheroHistorial() {
         .order('timestamp_real', { ascending: false })
 
       // Aplicar filtros
-      if (filtros.empleado) {
+      if (filtros.empleado && filtros.empleado !== 'all') {
         query = query.eq('empleado_id', filtros.empleado)
       }
 
@@ -120,7 +120,7 @@ export default function FicheroHistorial() {
         query = query.lte('timestamp_real', `${fechaFin}T23:59:59`)
       }
 
-      if (filtros.mes && filtros.ano) {
+      if (filtros.mes && filtros.mes !== 'all' && filtros.ano) {
         const mesFormatted = filtros.mes.padStart(2, '0')
         query = query
           .gte('timestamp_real', `${filtros.ano}-${mesFormatted}-01T00:00:00`)
@@ -283,7 +283,7 @@ export default function FicheroHistorial() {
                   <SelectValue placeholder="Todos los empleados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los empleados</SelectItem>
+                  <SelectItem value="all">Todos los empleados</SelectItem>
                   {empleados.map(empleado => (
                     <SelectItem key={empleado.id} value={empleado.id}>
                       {empleado.nombre} {empleado.apellido}
@@ -360,7 +360,7 @@ export default function FicheroHistorial() {
                   <SelectValue placeholder="Seleccionar mes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los meses</SelectItem>
+                  <SelectItem value="all">Todos los meses</SelectItem>
                   {meses.map(mes => (
                     <SelectItem key={mes.value} value={mes.value}>
                       {mes.label}
@@ -397,10 +397,10 @@ export default function FicheroHistorial() {
                 <Button
                   variant="outline"
                   onClick={() => setFiltros({
-                    empleado: '',
+                    empleado: 'all',
                     fechaInicio: undefined,
                     fechaFin: undefined,
-                    mes: '',
+                    mes: 'all',
                     ano: new Date().getFullYear().toString()
                   })}
                   className="flex-1"
