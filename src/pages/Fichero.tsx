@@ -20,6 +20,7 @@ import {
   History
 } from "lucide-react"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
+import FicheroManual from "@/components/fichero/FicheroManual"
 import FicheroEstadisticas from "@/components/fichero/FicheroEstadisticas"
 import FicheroIncidencias from "@/components/fichero/FicheroIncidencias"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
@@ -450,70 +451,77 @@ export default function Fichero() {
       {/* Content */}
       <div className="container mx-auto px-4 pb-8">
         {activeTab === 'fichaje' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Panel de Fichaje */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Clock className="h-5 w-5" />
-                  <span>Fichaje con Reconocimiento Facial</span>
-                </CardTitle>
-                <CardDescription>
-                  Use su rostro para registrar entrada, salida o pausas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FicheroFacialAuth
-                  empleado={empleado}
-                  tipoFichaje={obtenerTipoFichajeSiguiente()}
-                  onFichajeSuccess={(confianza) => procesarFichaje(obtenerTipoFichajeSiguiente(), confianza)}
-                  loading={fichajeEnProceso}
-                />
-              </CardContent>
-            </Card>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Panel de Fichaje */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Clock className="h-5 w-5" />
+                    <span>Fichaje con Reconocimiento Facial</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Use su rostro para registrar entrada, salida o pausas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FicheroFacialAuth
+                    empleado={empleado}
+                    tipoFichaje={obtenerTipoFichajeSiguiente()}
+                    onFichajeSuccess={(confianza) => procesarFichaje(obtenerTipoFichajeSiguiente(), confianza)}
+                    loading={fichajeEnProceso}
+                  />
+                </CardContent>
+              </Card>
 
-            {/* Fichajes del día */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Fichajes de hoy</CardTitle>
-                <CardDescription>Registro de movimientos del día actual</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {fichajes.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No hay fichajes registrados hoy
-                    </p>
-                  ) : (
-                    fichajes.map((fichaje) => (
-                      <div key={fichaje.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          {obtenerIconoFichaje(fichaje.tipo)}
-                          <div>
-                            <p className="font-medium capitalize">
-                              {fichaje.tipo.replace('_', ' ')}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(fichaje.timestamp_real).toLocaleTimeString()}
-                            </p>
+              {/* Fichajes del día */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Fichajes de hoy</CardTitle>
+                  <CardDescription>Registro de movimientos del día actual</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {fichajes.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        No hay fichajes registrados hoy
+                      </p>
+                    ) : (
+                      fichajes.map((fichaje) => (
+                        <div key={fichaje.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {obtenerIconoFichaje(fichaje.tipo)}
+                            <div>
+                              <p className="font-medium capitalize">
+                                {fichaje.tipo.replace('_', ' ')}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(fichaje.timestamp_real).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant={fichaje.estado === 'valido' ? 'default' : 'secondary'}>
+                              {fichaje.estado}
+                            </Badge>
+                            {fichaje.confianza_facial && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Confianza: {(fichaje.confianza_facial * 100).toFixed(1)}%
+                              </p>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Badge variant={fichaje.estado === 'valido' ? 'default' : 'secondary'}>
-                            {fichaje.estado}
-                          </Badge>
-                          {fichaje.confianza_facial && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Confianza: {(fichaje.confianza_facial * 100).toFixed(1)}%
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Registro Manual - Solo para administradores */}
+            {empleado.rol === 'admin_rrhh' && (
+              <FicheroManual onFichajeCreated={loadFichajes} />
+            )}
           </div>
         )}
 
