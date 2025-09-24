@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast"
 import { EmployeeDocuments } from "@/components/employee/EmployeeDocuments"
 import { EmployeeTrainings } from "@/components/employee/EmployeeTrainings"
 import { EmployeeBadges } from "@/components/employee/EmployeeBadges"
+import { EmployeePrizes } from "@/components/employee/EmployeePrizes"
 
 interface UserInfo {
   id: string
@@ -57,11 +58,13 @@ export default function EmpleadoDashboard() {
         supabase.from('puntos').select('puntos').eq('empleado_id', userInfo.id)
       ])
 
+      const totalPuntos = puntosRes.data?.reduce((sum, p) => sum + p.puntos, 0) || 0
+
       setStats({
         tareas: tareasRes.data?.length || 0,
         capacitaciones: capacitacionesRes.data?.length || 0,
         documentos: documentosRes.data?.length || 0,
-        puntos: puntosRes.data?.reduce((sum, p) => sum + p.puntos, 0) || 0
+        puntos: totalPuntos
       })
     } catch (error) {
       console.error('Error cargando datos:', error)
@@ -183,15 +186,6 @@ export default function EmpleadoDashboard() {
               <p className="text-sm">
                 Aquí podrás ver y gestionar todas las tareas que te sean asignadas
               </p>
-              <p className="text-xs mt-2 text-primary">
-                ✓ Filtros por prioridad y estado
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Actualización de progreso en tiempo real
-              </p>
-              <p className="text-xs text-primary">
-                ✓ Notificaciones de fechas límite
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -261,7 +255,27 @@ export default function EmpleadoDashboard() {
             🔒 <strong>Seguridad:</strong> Cada empleado solo puede acceder a su propia información personal
           </p>
         </CardContent>
-      </Card>
+        </Card>
+
+        {/* Sección: Canje de Premios */}
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Trophy className="h-5 w-5 text-orange-600" />
+              <span>Canje de Premios</span>
+            </CardTitle>
+            <CardDescription>
+              Utiliza tus puntos para obtener increíbles premios
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EmployeePrizes 
+              empleadoId={userInfo.id} 
+              userPoints={stats.puntos}
+              onPointsUpdate={loadDashboardData}
+            />
+          </CardContent>
+        </Card>
     </div>
   )
 }
