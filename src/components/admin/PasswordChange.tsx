@@ -82,25 +82,30 @@ export default function PasswordChange({
     setIsUpdating(true)
 
     try {
-      // Primero obtener el user_id del empleado
-      const { data: empleadoData, error: empleadoError } = await supabase
-        .from('empleados')
-        .select('user_id')
-        .eq('id', employeeId)
-        .single()
-
-      if (empleadoError || !empleadoData?.user_id) {
-        throw new Error("No se encontró el usuario asociado al empleado")
+      // Call the edge function to change password
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        throw new Error("No hay sesión activa")
       }
 
-      // Usar la API de admin para actualizar la contraseña
-      const { error } = await supabase.auth.admin.updateUserById(
-        empleadoData.user_id,
-        { password: newPassword }
-      )
+      const response = await fetch(`https://iizwnijtgfvanhqqjeyw.supabase.co/functions/v1/admin-change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpenduaWp0Z2Z2YW5ocXFqZXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4ODc1NzAsImV4cCI6MjA3MTQ2MzU3MH0.Ec7iJRVy0l2MgFHKVPi26AnRsXhFsUM7RhOOrE7eEvE'
+        },
+        body: JSON.stringify({
+          empleadoId: employeeId,
+          newPassword: newPassword
+        })
+      })
 
-      if (error) {
-        throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al cambiar contraseña')
       }
 
       toast({
