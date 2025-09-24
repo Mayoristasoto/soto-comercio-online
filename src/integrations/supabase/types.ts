@@ -1608,6 +1608,48 @@ export type Database = {
           },
         ]
       }
+      solicitudes_vacaciones: {
+        Row: {
+          aprobado_por: string | null
+          comentarios_aprobacion: string | null
+          created_at: string
+          empleado_id: string
+          estado: Database["public"]["Enums"]["solicitud_estado"]
+          fecha_aprobacion: string | null
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          motivo: string | null
+          updated_at: string
+        }
+        Insert: {
+          aprobado_por?: string | null
+          comentarios_aprobacion?: string | null
+          created_at?: string
+          empleado_id: string
+          estado?: Database["public"]["Enums"]["solicitud_estado"]
+          fecha_aprobacion?: string | null
+          fecha_fin: string
+          fecha_inicio: string
+          id?: string
+          motivo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aprobado_por?: string | null
+          comentarios_aprobacion?: string | null
+          created_at?: string
+          empleado_id?: string
+          estado?: Database["public"]["Enums"]["solicitud_estado"]
+          fecha_aprobacion?: string | null
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          motivo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sucursales: {
         Row: {
           activa: boolean
@@ -1637,6 +1679,48 @@ export type Database = {
           id?: string
           nombre?: string
           provincia?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tareas: {
+        Row: {
+          asignado_a: string
+          asignado_por: string | null
+          created_at: string
+          descripcion: string | null
+          estado: Database["public"]["Enums"]["tarea_estado"]
+          fecha_completada: string | null
+          fecha_limite: string | null
+          id: string
+          prioridad: Database["public"]["Enums"]["tarea_prioridad"]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          asignado_a: string
+          asignado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: Database["public"]["Enums"]["tarea_estado"]
+          fecha_completada?: string | null
+          fecha_limite?: string | null
+          id?: string
+          prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          asignado_a?: string
+          asignado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: Database["public"]["Enums"]["tarea_estado"]
+          fecha_completada?: string | null
+          fecha_limite?: string | null
+          id?: string
+          prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
+          titulo?: string
           updated_at?: string
         }
         Relationships: []
@@ -1837,6 +1921,9 @@ export type Database = {
         | "experiencia"
         | "descuento"
         | "reconocimiento"
+      solicitud_estado: "pendiente" | "aprobada" | "rechazada" | "cancelada"
+      tarea_estado: "pendiente" | "en_progreso" | "completada" | "cancelada"
+      tarea_prioridad: "baja" | "media" | "alta" | "urgente"
       turno_tipo: "normal" | "nocturno" | "partido" | "flexible"
       user_role: "admin_rrhh" | "gerente_sucursal" | "lider_grupo" | "empleado"
     }
@@ -1988,6 +2075,9 @@ export const Constants = {
         "descuento",
         "reconocimiento",
       ],
+      solicitud_estado: ["pendiente", "aprobada", "rechazada", "cancelada"],
+      tarea_estado: ["pendiente", "en_progreso", "completada", "cancelada"],
+      tarea_prioridad: ["baja", "media", "alta", "urgente"],
       turno_tipo: ["normal", "nocturno", "partido", "flexible"],
       user_role: ["admin_rrhh", "gerente_sucursal", "lider_grupo", "empleado"],
     },

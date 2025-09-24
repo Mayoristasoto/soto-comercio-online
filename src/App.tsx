@@ -78,6 +78,9 @@ const App = () => (
             
             {/* Módulo de Nómina */}
             <Route path="nomina" element={<Nomina />} />
+            
+            {/* Dashboard de Empleado */}
+            <Route path="mi-dashboard" element={<EmpleadoDashboard />} />
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}
