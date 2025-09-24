@@ -59,7 +59,8 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // First create the auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -70,15 +71,39 @@ const Auth = () => {
         }
       });
 
-      if (error) {
-        if (error.message.includes("User already registered")) {
+      if (authError) {
+        if (authError.message.includes("User already registered")) {
           toast("Este email ya está registrado. Intenta iniciar sesión.");
         } else {
-          toast(`Error al registrarse: ${error.message}`);
+          toast(`Error al registrarse: ${authError.message}`);
         }
-      } else {
-        toast("¡Registro exitoso! Revisa tu email para confirmar tu cuenta.");
+        return;
       }
+
+      // If auth user was created successfully, create the empleado record
+      if (authData.user) {
+        const [nombre, ...apellidoParts] = fullName.trim().split(' ');
+        const apellido = apellidoParts.join(' ') || 'Nuevo';
+
+        const { error: empleadoError } = await supabase
+          .from('empleados')
+          .insert({
+            user_id: authData.user.id,
+            nombre: nombre || 'Usuario',
+            apellido: apellido,
+            email: email,
+            rol: 'empleado',
+            fecha_ingreso: new Date().toISOString().split('T')[0],
+            sucursal_id: '9682b6cf-f904-4497-918c-d0c9c061b9ec' // Default sucursal
+          });
+
+        if (empleadoError) {
+          console.error('Error creating empleado:', empleadoError);
+          // Don't show this error to user as auth was successful
+        }
+      }
+
+      toast("¡Registro exitoso! Revisa tu email para confirmar tu cuenta.");
     } catch (error) {
       console.error("Error in signUp:", error);
       toast("Error inesperado al registrarse");
