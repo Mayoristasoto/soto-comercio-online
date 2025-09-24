@@ -77,6 +77,23 @@ export function EmployeePrizes({ empleadoId, userPoints, onPointsUpdate }: Props
 
     setCanjeando(true);
     try {
+      // Verificar que el usuario tenga suficientes puntos actualizados
+      const { data: puntosActuales } = await supabase
+        .from('puntos')
+        .select('puntos')
+        .eq('empleado_id', empleadoId);
+      
+      const totalPuntosActuales = puntosActuales?.reduce((sum, p) => sum + p.puntos, 0) || 0;
+      
+      if (totalPuntosActuales < premio.monto_presupuestado) {
+        toast({
+          title: "Puntos insuficientes",
+          description: `Tus puntos actuales (${totalPuntosActuales}) no son suficientes para canjear este premio.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Crear la asignación del premio
       const { error: asignacionError } = await supabase
         .from('asignaciones_premio')
@@ -88,7 +105,10 @@ export function EmployeePrizes({ empleadoId, userPoints, onPointsUpdate }: Props
           costo_real: premio.monto_presupuestado
         }]);
 
-      if (asignacionError) throw asignacionError;
+      if (asignacionError) {
+        console.error('Error creando asignación:', asignacionError);
+        throw new Error('No se pudo crear la asignación del premio');
+      }
 
       // Deducir puntos del empleado
       const { error: puntosError } = await supabase
@@ -99,16 +119,22 @@ export function EmployeePrizes({ empleadoId, userPoints, onPointsUpdate }: Props
           motivo: `Canje por premio: ${premio.nombre}`
         }]);
 
-      if (puntosError) throw puntosError;
+      if (puntosError) {
+        console.error('Error deduciendo puntos:', puntosError);
+        throw new Error('No se pudieron deducir los puntos');
+      }
 
       // Actualizar stock si aplica
-      if (premio.stock !== null) {
+      if (premio.stock !== null && premio.stock > 0) {
         const { error: stockError } = await supabase
           .from('premios')
           .update({ stock: premio.stock - 1 })
           .eq('id', premio.id);
 
-        if (stockError) throw stockError;
+        if (stockError) {
+          console.error('Error actualizando stock:', stockError);
+          // No bloquear el canje por error de stock
+        }
       }
 
       toast({
@@ -123,7 +149,7 @@ export function EmployeePrizes({ empleadoId, userPoints, onPointsUpdate }: Props
       console.error('Error en canje:', error);
       toast({
         title: "Error en el canje",
-        description: "No se pudo completar el canje. Inténtalo nuevamente.",
+        description: error instanceof Error ? error.message : "No se pudo completar el canje. Inténtalo nuevamente.",
         variant: "destructive"
       });
     } finally {
