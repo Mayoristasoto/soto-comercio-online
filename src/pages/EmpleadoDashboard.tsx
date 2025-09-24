@@ -52,14 +52,23 @@ export default function EmpleadoDashboard() {
   const loadDashboardData = async () => {
     try {
       // Cargar estadísticas básicas
-      const [tareasRes, capacitacionesRes, documentosRes, puntosRes] = await Promise.all([
+      const [tareasRes, capacitacionesRes, documentosRes, insigniasRes] = await Promise.all([
         supabase.from('tareas').select('id').eq('asignado_a', userInfo.id),
         supabase.from('asignaciones_capacitacion').select('id').eq('empleado_id', userInfo.id),
         supabase.from('asignaciones_documentos_obligatorios').select('id').eq('empleado_id', userInfo.id),
-        supabase.from('puntos').select('puntos').eq('empleado_id', userInfo.id)
+        supabase
+          .from('insignias_empleado')
+          .select(`
+            id,
+            insignias!inner(puntos_valor)
+          `)
+          .eq('empleado_id', userInfo.id)
       ])
 
-      const totalPuntos = puntosRes.data?.reduce((sum, p) => sum + p.puntos, 0) || 0
+      // Calcular puntos totales de las medallas obtenidas
+      const totalPuntos = insigniasRes.data?.reduce((sum, insignia) => {
+        return sum + (insignia.insignias?.puntos_valor || 0)
+      }, 0) || 0
 
       setStats({
         tareas: tareasRes.data?.length || 0,
