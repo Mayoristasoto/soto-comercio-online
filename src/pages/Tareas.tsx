@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle } from "lucide-react"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
 
 interface UserInfo {
   id: string
@@ -24,10 +25,21 @@ interface Tarea {
   descripcion: string
   prioridad: 'baja' | 'media' | 'alta' | 'urgente'
   estado: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada'
-  fecha_vencimiento: string
+  fecha_limite: string
+  fecha_completada: string | null
   asignado_a: string
-  creado_por: string
-  centro_costo?: string
+  asignado_por: string
+  created_at: string
+  updated_at: string
+  empleado_asignado?: {
+    nombre: string
+    apellido: string
+    email: string
+  }
+  empleado_creador?: {
+    nombre: string
+    apellido: string
+  }
 }
 
 export default function Tareas() {
@@ -35,6 +47,7 @@ export default function Tareas() {
   const { toast } = useToast()
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [loading, setLoading] = useState(true)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
   useEffect(() => {
     if (userInfo) {
@@ -44,42 +57,78 @@ export default function Tareas() {
 
   const loadTareas = async () => {
     try {
-      // Por ahora, datos simulados ya que necesitaríamos crear la tabla de tareas
-      const tareasSimuladas: Tarea[] = [
-        {
-          id: '1',
-          titulo: 'Revisar inventario',
-          descripcion: 'Verificar el stock de productos en góndola principal',
-          prioridad: 'alta',
-          estado: 'pendiente',
-          fecha_vencimiento: '2024-01-25',
-          asignado_a: userInfo.id,
-          creado_por: 'admin',
-          centro_costo: 'ventas'
-        },
-        {
-          id: '2',
-          titulo: 'Atención al cliente',
-          descripcion: 'Seguimiento de consultas pendientes',
-          prioridad: 'media',
-          estado: 'en_progreso',
-          fecha_vencimiento: '2024-01-24',
-          asignado_a: userInfo.id,
-          creado_por: 'gerente',
-          centro_costo: 'servicio'
-        }
-      ]
-      
-      setTareas(tareasSimuladas)
+      let query = supabase
+        .from('tareas')
+        .select(`
+          *,
+          empleados!tareas_asignado_a_fkey(nombre, apellido, email),
+          empleados!tareas_asignado_por_fkey(nombre, apellido)
+        `)
+        .order('created_at', { ascending: false });
+
+      // Si no es admin, solo mostrar tareas asignadas al usuario o creadas por él
+      if (userInfo.rol !== 'admin_rrhh') {
+        query = query.or(`asignado_a.eq.${userInfo.id},asignado_por.eq.${userInfo.id}`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Mapear los datos para que coincidan con la interfaz
+      const tareasFormateadas = (data || []).map((tarea: any) => ({
+        ...tarea,
+        empleado_asignado: tarea.empleados ? {
+          nombre: tarea.empleados.nombre,
+          apellido: tarea.empleados.apellido,
+          email: tarea.empleados.email
+        } : undefined,
+        empleado_creador: tarea.empleados_1 ? {
+          nombre: tarea.empleados_1.nombre,
+          apellido: tarea.empleados_1.apellido
+        } : undefined
+      }));
+
+      setTareas(tareasFormateadas);
     } catch (error) {
-      console.error('Error cargando tareas:', error)
+      console.error('Error cargando tareas:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar las tareas",
         variant: "destructive"
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
+    }
+  }
+
+  const updateTaskStatus = async (tareaId: string, nuevoEstado: string) => {
+    try {
+      const updates: any = { estado: nuevoEstado };
+      if (nuevoEstado === 'completada') {
+        updates.fecha_completada = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('tareas')
+        .update(updates)
+        .eq('id', tareaId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Tarea actualizada",
+        description: `La tarea ha sido marcada como ${nuevoEstado.replace('_', ' ')}`
+      });
+
+      loadTareas(); // Recargar las tareas
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la tarea",
+        variant: "destructive"
+      });
     }
   }
 
@@ -123,10 +172,12 @@ export default function Tareas() {
             Asignación y seguimiento de tareas por sucursal
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Tarea
-        </Button>
+        {userInfo.rol === 'admin_rrhh' && (
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Tarea
+          </Button>
+        )}
       </div>
 
       {/* Estadísticas rápidas */}
@@ -210,13 +261,18 @@ export default function Tareas() {
                 </CardContent>
               </Card>
             ) : (
-              tareas.map((tarea) => (
+              tareas.filter(t => t.asignado_a === userInfo.id).map((tarea) => (
                 <Card key={tarea.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
                         <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
-                        <CardDescription>{tarea.descripcion}</CardDescription>
+                        <CardDescription>{tarea.descripcion || 'Sin descripción'}</CardDescription>
+                        {tarea.empleado_creador && (
+                          <p className="text-xs text-muted-foreground">
+                            Asignada por: {tarea.empleado_creador.nombre} {tarea.empleado_creador.apellido}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2 ml-4">
                         <div className={`w-3 h-3 rounded-full ${getPrioridadColor(tarea.prioridad)}`} />
@@ -227,20 +283,32 @@ export default function Tareas() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Vence: {new Date(tarea.fecha_vencimiento).toLocaleDateString()}</span>
-                      {tarea.centro_costo && (
-                        <Badge variant="outline">{tarea.centro_costo}</Badge>
-                      )}
+                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                      <span>Vence: {new Date(tarea.fecha_limite).toLocaleDateString()}</span>
+                      <span>Creada: {new Date(tarea.created_at).toLocaleDateString()}</span>
                     </div>
-                    <div className="flex justify-end space-x-2 mt-4">
-                      <Button variant="outline" size="sm">
-                        Ver Detalles
-                      </Button>
-                      {tarea.estado !== 'completada' && (
-                        <Button size="sm">
-                          Marcar Completada
+                    <div className="flex justify-end space-x-2">
+                      {tarea.estado === 'pendiente' && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => updateTaskStatus(tarea.id, 'en_progreso')}
+                        >
+                          Iniciar
                         </Button>
+                      )}
+                      {tarea.estado === 'en_progreso' && (
+                        <Button 
+                          size="sm"
+                          onClick={() => updateTaskStatus(tarea.id, 'completada')}
+                        >
+                          Completar
+                        </Button>
+                      )}
+                      {tarea.estado === 'completada' && tarea.fecha_completada && (
+                        <p className="text-xs text-green-600">
+                          Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
+                        </p>
                       )}
                     </div>
                   </CardContent>
@@ -269,23 +337,65 @@ export default function Tareas() {
 
         {(userInfo.rol === 'gerente_sucursal' || userInfo.rol === 'admin_rrhh') && (
           <TabsContent value="asignadas" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tareas Asignadas a mi Equipo</CardTitle>
-                <CardDescription>
-                  Gestión de tareas asignadas a empleados bajo tu supervisión
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-64 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4" />
-                  <p>Gestión de tareas de equipo en desarrollo</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid gap-4">
+              {tareas.filter(t => t.asignado_por === userInfo.id).length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No has asignado tareas</h3>
+                    <p className="text-muted-foreground text-center">
+                      Las tareas que asignes a tu equipo aparecerán aquí
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                tareas.filter(t => t.asignado_por === userInfo.id).map((tarea) => (
+                  <Card key={tarea.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1 flex-1">
+                          <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
+                          <CardDescription>{tarea.descripcion || 'Sin descripción'}</CardDescription>
+                          {tarea.empleado_asignado && (
+                            <p className="text-sm text-primary">
+                              Asignada a: {tarea.empleado_asignado.nombre} {tarea.empleado_asignado.apellido}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2 ml-4">
+                          <div className={`w-3 h-3 rounded-full ${getPrioridadColor(tarea.prioridad)}`} />
+                          <Badge variant={getEstadoBadgeVariant(tarea.estado)}>
+                            {tarea.estado.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                        <span>Vence: {new Date(tarea.fecha_limite).toLocaleDateString()}</span>
+                        <span>Creada: {new Date(tarea.created_at).toLocaleDateString()}</span>
+                      </div>
+                      {tarea.estado === 'completada' && tarea.fecha_completada && (
+                        <div className="text-sm text-green-600 mb-2">
+                          ✅ Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Dialog para crear nueva tarea */}
+      <CreateTaskDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onTaskCreated={loadTareas}
+        userInfo={userInfo}
+      />
     </div>
   )
 }
