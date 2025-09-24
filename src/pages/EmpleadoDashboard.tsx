@@ -255,25 +255,6 @@ export default function EmpleadoDashboard() {
         </CardContent>
         </Card>
 
-        {/* Sección: Canje de Premios */}
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Trophy className="h-5 w-5 text-orange-600" />
-              <span>Canje de Premios</span>
-            </CardTitle>
-            <CardDescription>
-              Utiliza tus puntos para obtener increíbles premios
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EmployeePrizes 
-              empleadoId={userInfo.id} 
-              userPoints={stats.puntos}
-              onPointsUpdate={loadDashboardData}
-            />
-          </CardContent>
-        </Card>
     </div>
   )
 }

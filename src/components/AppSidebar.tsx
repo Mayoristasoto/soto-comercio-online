@@ -53,10 +53,10 @@ interface Empleado {
 // Items del menú para empleados
 const empleadoItems = [
   { title: "Inicio", url: "/reconoce/home", icon: Home },
+  { title: "Mi Dashboard", url: "/mi-dashboard", icon: BarChart3 },
   { title: "Ranking", url: "/reconoce/ranking", icon: Trophy },
   { title: "Desafíos", url: "/reconoce/desafios", icon: Target },
   { title: "Capacitaciones", url: "/reconoce/capacitaciones", icon: GraduationCap },
-  { title: "Dashboard", url: "/reconoce/dashboard", icon: BarChart3 },
   { title: "Mi Perfil", url: "/reconoce/perfil", icon: User },
 ]
 
@@ -198,6 +198,16 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-black">Accesos Rápidos</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {empleado?.rol !== 'admin_rrhh' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/reconoce/premios" className={getNavCls}>
+                      <Trophy className="h-4 w-4 text-black" />
+                      <span className="text-black">Canje de Premios</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/reconoce/" className={getNavCls}>
