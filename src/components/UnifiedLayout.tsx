@@ -84,8 +84,8 @@ export default function UnifiedLayout() {
 
       // Redirección y control de acceso basado en rol
       if (empleado.rol === 'empleado') {
-        // Los empleados solo pueden acceder a su dashboard personal
-        const allowedPaths = ['/mi-dashboard']
+        // Los empleados pueden acceder a su dashboard personal y al canje de premios
+        const allowedPaths = ['/mi-dashboard', '/reconoce/premios']
         const currentPath = location.pathname
         
         if (!allowedPaths.includes(currentPath)) {
