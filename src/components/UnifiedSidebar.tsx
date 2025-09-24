@@ -143,6 +143,18 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive("/reconoce/premios")}
+                    tooltip="Canjea tus puntos por premios"
+                  >
+                    <NavLink to="/reconoce/premios">
+                      <Trophy className="h-4 w-4" />
+                      <span>Canje de Premios</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
