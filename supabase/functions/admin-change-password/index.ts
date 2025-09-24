@@ -27,7 +27,7 @@ serve(async (req) => {
     // Create client for auth verification
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
     // Verify the user is authenticated and has admin permissions
