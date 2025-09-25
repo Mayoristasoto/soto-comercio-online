@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Camera, CameraOff, User, CheckCircle, AlertCircle, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import * as faceapi from '@vladmandic/face-api'
+import * as tf from '@tensorflow/tfjs'
 import { supabase } from "@/integrations/supabase/client"
 
 interface FicheroFacialAuthProps {
@@ -51,24 +52,33 @@ export default function FicheroFacialAuth({
 
   const loadModels = async () => {
     try {
+      // Inicializar TensorFlow.js backend primero
+      console.log('Kiosco: Inicializando backend de TensorFlow.js...')
+      await tf.ready()
+      
+      console.log('Kiosco: Cargando modelos de reconocimiento facial...')
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
         faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
         faceapi.nets.faceRecognitionNet.loadFromUri('/models')
       ])
       setIsModelLoaded(true)
-      // toast({
-      //   title: "Modelos cargados",
-      //   description: "Sistema de reconocimiento facial listo",
-      // })
+      console.log('Kiosco: ✅ Modelos cargados exitosamente')
+      
+      toast({
+        title: "✅ Sistema listo",
+        description: "Reconocimiento facial inicializado correctamente",
+        duration: 2000,
+      })
     } catch (error) {
-      console.error('Error cargando modelos:', error)
-      // For demo purposes, allow manual entry even if face recognition fails
+      console.error('Kiosco: ❌ Error cargando modelos:', error)
+      // Permitir modo demo solo como último recurso
       setIsModelLoaded(true)
       toast({
-        title: "Modo demo",
-        description: "Reconocimiento facial no disponible - usando modo demo",
-        variant: "default"
+        title: "⚠️ Modo demo activo",
+        description: "Error inicializando IA - funcionando en modo limitado",
+        variant: "destructive",
+        duration: 4000,
       })
     }
   }
