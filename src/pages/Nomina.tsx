@@ -138,28 +138,21 @@ export default function Nomina() {
       setLoading(true)
       
       // Cargar empleados
-      // Use admin-sensitive view for full employee data with sensitive information
+      // Use direct table access for basic employee data
       const { data: employeesData, error: employeesError } = await supabase
-        .from('empleados_admin_sensitive')
+        .from('empleados')
         .select(`
           id,
           nombre,
           apellido,
           email,
-          telefono,
-          direccion,
-          puesto,
-          salario,
-          dni,
-          estado_civil,
-          emergencia_contacto_nombre,
-          emergencia_contacto_telefono,
           rol,
           sucursal_id,
           activo,
           fecha_ingreso,
           avatar_url,
-          has_face_descriptor
+          legajo,
+          puesto
         `)
         .order('nombre', { ascending: true })
 

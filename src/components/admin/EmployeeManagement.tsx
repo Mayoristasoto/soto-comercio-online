@@ -68,8 +68,8 @@ export default function EmployeeManagement() {
   const loadData = async () => {
     try {
       const [empleadosResult, sucursalesResult] = await Promise.all([
-        // Use safe view for basic employee data, admin-sensitive view for full data
-        supabase.from('empleados_admin_sensitive').select('*').order('nombre'),
+        // Use direct table access with RLS protection
+        supabase.from('empleados').select('*').order('nombre'),
         supabase.from('sucursales').select('id, nombre').eq('activa', true)
       ])
 

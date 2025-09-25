@@ -86,9 +86,9 @@ const Gondolas = () => {
       console.log('🔄 Cargando góndolas desde Supabase...', forceRefresh ? '(forzado)' : '', bypassCache ? '(sin cache)' : '');
       console.log('🔍 Timestamp:', new Date().toISOString());
       
-      // Usar función pública que devuelve datos completos de forma segura
-      console.log('📡 Ejecutando función pública para obtener góndolas...');
-      const { data, error } = await supabase.rpc('get_gondolas_public_view');
+      // Direct access to gondolas table with RLS protection
+      console.log('📡 Accediendo directamente a tabla góndolas...');
+      const { data, error } = await supabase.from('gondolas').select('*');
         
       // Agregar timestamp para romper cache
       if (bypassCache) {
