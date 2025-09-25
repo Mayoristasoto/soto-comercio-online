@@ -56,13 +56,25 @@ export default function UnifiedLayout() {
         .from('empleados')
         .select('id, nombre, apellido, email, rol, sucursal_id, grupo_id, avatar_url')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
-      if (error || !empleado) {
+      if (error) {
         console.error('Error cargando empleado:', error)
         toast({
           title: "Error",
-          description: "Tu perfil de empleado no está configurado correctamente",
+          description: "Error al cargar tu perfil de empleado",
+          variant: "destructive"
+        })
+        await supabase.auth.signOut()
+        navigate('/auth')
+        return
+      }
+
+      if (!empleado) {
+        console.log('No se encontró empleado para el usuario:', user.id)
+        toast({
+          title: "Error",
+          description: "Tu perfil de empleado no está configurado. Contacta al administrador.",
           variant: "destructive"
         })
         await supabase.auth.signOut()
