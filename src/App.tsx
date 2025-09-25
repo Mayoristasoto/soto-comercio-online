@@ -35,6 +35,7 @@ import Gondolas from "./pages/Gondolas";
 import GondolasEdit from "./pages/GondolasEdit";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import KioscoCheckIn from "./pages/KioscoCheckIn";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,9 @@ const App = () => (
           <Route path="/centum" element={<Centum />} />
           <Route path="/gondolas" element={<Gondolas />} />
           <Route path="/gondolasedit" element={<GondolasEdit />} />
+          
+          {/* Kiosco Check-In Route */}
+          <Route path="/kiosco" element={<KioscoCheckIn />} />
           
           {/* Rutas de compatibilidad que redirigen al nuevo sistema */}
           <Route path="/reconoce/auth" element={<Navigate to="/auth?redirect=/reconoce" replace />} />
