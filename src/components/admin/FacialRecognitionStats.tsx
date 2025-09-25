@@ -31,26 +31,31 @@ export default function FacialRecognitionStats() {
   const loadStats = async () => {
     try {
       // Get employee counts from secure data sources
-      const [empleadosResult, faceDataResult] = await Promise.all([
+      const [empleadosResult, legacyFaceDataResult, newFaceDataResult] = await Promise.all([
         supabase.from('empleados').select('id, rol').eq('activo', true),
-        supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor')
+        supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor'),
+        supabase.from('empleados_rostros').select('empleado_id').eq('is_active', true)
       ])
 
       if (empleadosResult.error) throw empleadosResult.error
 
       const empleados = empleadosResult.data || []
-      const faceData = faceDataResult.data || []
+      const legacyFaceData = legacyFaceDataResult.data || []
+      const newFaceData = newFaceDataResult.data || []
       
       const totalEmployees = empleados.length
-      const withFacialRecognition = faceData.filter(fd => fd.face_descriptor && fd.face_descriptor.length > 0).length
+      
+      // Count employees with face recognition (either legacy or new system)
+      const employeesWithLegacyFace = legacyFaceData.filter(fd => fd.face_descriptor && fd.face_descriptor.length > 0).map(fd => fd.empleado_id)
+      const employeesWithNewFace = newFaceData.map(fd => fd.empleado_id)
+      const allEmployeesWithFace = new Set([...employeesWithLegacyFace, ...employeesWithNewFace])
+      
+      const withFacialRecognition = allEmployeesWithFace.size
       const withoutFacialRecognition = totalEmployees - withFacialRecognition
       
       // Get admin users with face recognition
       const adminEmployeeIds = empleados.filter(emp => emp.rol === 'admin_rrhh').map(emp => emp.id)
-      const adminUsersWithFace = faceData.filter(fd => 
-        fd.face_descriptor && fd.face_descriptor.length > 0 && 
-        adminEmployeeIds.includes(fd.empleado_id)
-      ).length
+      const adminUsersWithFace = adminEmployeeIds.filter(adminId => allEmployeesWithFace.has(adminId)).length
       
       const percentage = totalEmployees > 0 ? Math.round((withFacialRecognition / totalEmployees) * 100) : 0
 
