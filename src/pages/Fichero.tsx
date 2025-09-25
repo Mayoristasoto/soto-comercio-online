@@ -233,20 +233,18 @@ export default function Fichero() {
         setFichajes(prev => [fichajeSimulado, ...prev])
       } else {
         // Crear el fichaje en la base de datos para empleados reales
-        const { data: fichaje, error } = await supabase
-          .from('fichajes')
-          .insert({
-            empleado_id: empleado.id,
+        const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
+          p_empleado_id: empleado.id,
+          p_confianza: confianzaFacial,
+          p_lat: coordenadas?.lat || null,
+          p_lng: coordenadas?.lng || null,
+          p_datos: {
             tipo: tipoFichaje,
-            timestamp_real: new Date().toISOString(),
-            latitud: coordenadas?.lat,
-            longitud: coordenadas?.lng,
-            confianza_facial: confianzaFacial,
             metodo: 'facial',
-            estado: 'valido'
-          })
-          .select()
-          .single()
+            estado: 'valido',
+            timestamp_local: new Date().toISOString()
+          }
+        })
 
         if (error) throw error
       }
