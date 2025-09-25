@@ -412,25 +412,9 @@ export default function FicheroFacialAuth({
             console.log(`Kiosco: Empleado ${emp.nombre} sin versiones de rostro activas`)
           }
 
-          // Also check legacy face descriptor
-          const { data: legacyData, error: legacyError } = await supabase
-            .from('empleados_datos_sensibles')
-            .select('face_descriptor')
-            .eq('empleado_id', emp.id)
-            .maybeSingle()
-
-          if (legacyData?.face_descriptor && legacyData.face_descriptor.length > 0) {
-            const storedDescriptor = new Float32Array(legacyData.face_descriptor)
-            const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
-            
-            const confidence = Math.max(0, 1 - distance)
-            console.log(`Kiosco: Datos legacy ${emp.nombre} - Confianza: ${(confidence * 100).toFixed(1)}%`)
-            
-            if (confidence > bestGlobalConfidence && confidence > 0.35) {
-              bestGlobalConfidence = confidence
-              bestEmployeeMatch = emp
-            }
-          }
+          // Skip legacy face descriptor check for kiosk mode due to permissions
+          // Only use the new empleados_rostros table which has proper access control
+          console.log(`Kiosco: Empleado ${emp.nombre} verificado (sin acceso a datos sensibles)`)
         }
 
         console.log(`Kiosco: RESUMEN FINAL - Mejor confianza global: ${(bestGlobalConfidence * 100).toFixed(1)}%`)
@@ -504,32 +488,9 @@ export default function FicheroFacialAuth({
         }
       }
 
-      // Fallback: try legacy face descriptor from sensitive data table
-      const { data: empleadoData, error: legacyError } = await supabase
-        .from('empleados_datos_sensibles')
-        .select('face_descriptor')
-        .eq('empleado_id', empleado.id)
-        .maybeSingle()
-
-      if (empleadoData?.face_descriptor && empleadoData.face_descriptor.length > 0) {
-        console.log('Usando descriptor facial legacy')
-        const storedDescriptor = new Float32Array(empleadoData.face_descriptor)
-        const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
-        
-        // Convertir distancia a confianza (invertir y normalizar)
-        const legacyConfidence = Math.max(0, 1 - distance)
-
-        if (legacyConfidence > bestConfidence) {
-          bestConfidence = legacyConfidence
-          
-          // Log access to biometric data for audit
-          await supabase.rpc('log_empleado_access', {
-            p_empleado_id: empleado.id,
-            p_tipo_acceso: 'facial_recognition_legacy',
-            p_datos_accedidos: ['face_descriptor']
-          })
-        }
-      }
+      // Skip legacy face descriptor check for kiosk mode
+      // This prevents 401 errors as kiosk doesn't have access to sensitive data
+      console.log('Kiosk mode: Skipping legacy face descriptor check')
 
       // Si no encontramos ningún rostro registrado
       if (bestConfidence === 0) {
