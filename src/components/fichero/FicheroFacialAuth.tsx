@@ -248,15 +248,31 @@ export default function FicheroFacialAuth({
       canvas.height = video.videoHeight
       ctx.drawImage(video, 0, 0)
       
+      console.log('Video dimensions:', video.videoWidth, video.videoHeight)
+      console.log('Video ready state:', video.readyState)
+      console.log('Video src object:', video.srcObject)
+      
       const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+          inputSize: 416,
+          scoreThreshold: 0.5
+        }))
         .withFaceLandmarks()
         .withFaceDescriptors()
       
+      console.log('Detections found:', detections.length)
+      
       if (detections.length === 0) {
+        console.log('No face detected - video info:', {
+          width: video.videoWidth,
+          height: video.videoHeight,
+          readyState: video.readyState,
+          currentTime: video.currentTime,
+          paused: video.paused
+        })
         toast({
           title: "No se detectó rostro",
-          description: "Asegúrese de estar mirando directamente a la cámara",
+          description: "Asegúrese de estar mirando directamente a la cámara y que hay buena iluminación",
           variant: "destructive"
         })
         return
