@@ -57,7 +57,14 @@ export type Database = {
             foreignKeyName: "asignaciones_capacitacion_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_capacitacion_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -404,7 +411,14 @@ export type Database = {
             foreignKeyName: "empleado_documentos_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_documentos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -418,7 +432,14 @@ export type Database = {
             foreignKeyName: "empleado_documentos_subido_por_fkey"
             columns: ["subido_por"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_documentos_subido_por_fkey"
+            columns: ["subido_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -469,7 +490,14 @@ export type Database = {
             foreignKeyName: "empleado_permisos_asignado_por_fkey"
             columns: ["asignado_por"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_permisos_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -483,7 +511,14 @@ export type Database = {
             foreignKeyName: "empleado_permisos_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_permisos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -531,7 +566,14 @@ export type Database = {
             foreignKeyName: "empleado_turnos_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_turnos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -655,7 +697,14 @@ export type Database = {
             foreignKeyName: "fk_empleados_audit_empleado"
             columns: ["empleado_accedido_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_empleados_audit_empleado"
+            columns: ["empleado_accedido_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -718,7 +767,14 @@ export type Database = {
             foreignKeyName: "fk_empleados_datos_sensibles_empleado"
             columns: ["empleado_id"]
             isOneToOne: true
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_empleados_datos_sensibles_empleado"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -802,7 +858,14 @@ export type Database = {
             foreignKeyName: "fichado_configuracion_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichado_configuracion_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -968,7 +1031,14 @@ export type Database = {
             foreignKeyName: "fichaje_auditoria_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_auditoria_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1034,7 +1104,14 @@ export type Database = {
             foreignKeyName: "fichaje_incidencias_aprobado_por_fkey"
             columns: ["aprobado_por"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_incidencias_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -1048,7 +1125,14 @@ export type Database = {
             foreignKeyName: "fichaje_incidencias_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_incidencias_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -1133,7 +1217,14 @@ export type Database = {
             foreignKeyName: "fichajes_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -1356,7 +1447,14 @@ export type Database = {
             foreignKeyName: "fk_grupos_lider"
             columns: ["lider_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_grupos_lider"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -1438,7 +1536,14 @@ export type Database = {
             foreignKeyName: "insignias_empleado_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insignias_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -1617,7 +1722,14 @@ export type Database = {
             foreignKeyName: "participaciones_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -1638,7 +1750,14 @@ export type Database = {
             foreignKeyName: "participaciones_validado_por_fkey"
             columns: ["validado_por"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participaciones_validado_por_fkey"
+            columns: ["validado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1807,7 +1926,14 @@ export type Database = {
             foreignKeyName: "puntos_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "puntos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1939,7 +2065,14 @@ export type Database = {
             foreignKeyName: "tareas_asignado_a_fkey"
             columns: ["asignado_a"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_asignado_a_fkey"
+            columns: ["asignado_a"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
           {
@@ -1953,14 +2086,21 @@ export type Database = {
             foreignKeyName: "tareas_asignado_por_fkey"
             columns: ["asignado_por"]
             isOneToOne: false
-            referencedRelation: "empleados_secure_view"
+            referencedRelation: "empleados_admin_sensitive"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_safe_view"
             referencedColumns: ["id"]
           },
         ]
       }
     }
     Views: {
-      empleados_secure_view: {
+      empleados_admin_sensitive: {
         Row: {
           activo: boolean | null
           apellido: string | null
@@ -1985,6 +2125,72 @@ export type Database = {
           sucursal_id: string | null
           telefono: string | null
           updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleados_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleados_safe_view: {
+        Row: {
+          activo: boolean | null
+          apellido: string | null
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          fecha_ingreso: string | null
+          grupo_id: string | null
+          id: string | null
+          legajo: string | null
+          nombre: string | null
+          puesto: string | null
+          rol: Database["public"]["Enums"]["user_role"] | null
+          sucursal_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          apellido?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          fecha_ingreso?: string | null
+          grupo_id?: string | null
+          id?: string | null
+          legajo?: string | null
+          nombre?: string | null
+          puesto?: string | null
+          rol?: Database["public"]["Enums"]["user_role"] | null
+          sucursal_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          apellido?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          fecha_ingreso?: string | null
+          grupo_id?: string | null
+          id?: string | null
+          legajo?: string | null
+          nombre?: string | null
+          puesto?: string | null
+          rol?: Database["public"]["Enums"]["user_role"] | null
+          sucursal_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -2203,6 +2409,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      user_has_admin_role: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       validar_geocerca: {
         Args: {

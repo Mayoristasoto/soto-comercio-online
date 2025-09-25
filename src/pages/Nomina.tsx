@@ -138,9 +138,9 @@ export default function Nomina() {
       setLoading(true)
       
       // Cargar empleados
-      // Use secure view for employee data that only shows sensitive data to admins
+      // Use admin-sensitive view for full employee data with sensitive information
       const { data: employeesData, error: employeesError } = await supabase
-        .from('empleados_secure_view')
+        .from('empleados_admin_sensitive')
         .select(`
           id,
           nombre,
