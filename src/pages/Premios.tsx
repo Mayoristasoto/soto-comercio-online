@@ -31,14 +31,27 @@ export default function Premios() {
 
   const loadUserPoints = async () => {
     try {
-      const { data: puntosData, error } = await supabase
+      // Obtener puntos directos
+      const { data: puntosData, error: puntosError } = await supabase
         .from('puntos')
         .select('puntos')
         .eq('empleado_id', userInfo.id)
 
-      if (error) throw error
+      if (puntosError) throw puntosError
 
-      const totalPuntos = puntosData?.reduce((sum, p) => sum + p.puntos, 0) || 0
+      // Obtener puntos de insignias
+      const { data: insigniasData, error: insigniasError } = await supabase
+        .from('insignias_empleado')
+        .select('id, insignias!inner(puntos_valor)')
+        .eq('empleado_id', userInfo.id)
+
+      if (insigniasError) throw insigniasError
+
+      // Calcular total de puntos
+      const puntosDirectos = puntosData?.reduce((sum, p) => sum + p.puntos, 0) || 0
+      const puntosInsignias = insigniasData?.reduce((sum, ie) => sum + (ie.insignias?.puntos_valor || 0), 0) || 0
+      const totalPuntos = puntosDirectos + puntosInsignias
+      
       setUserPoints(totalPuntos)
     } catch (error) {
       console.error('Error cargando puntos:', error)
