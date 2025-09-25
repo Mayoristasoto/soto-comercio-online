@@ -32,6 +32,8 @@ export default function KioscoCheckIn() {
   const [showFacialAuth, setShowFacialAuth] = useState(false)
   const [registroExitoso, setRegistroExitoso] = useState<RegistroExitoso | null>(null)
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
+  const [showActionSelection, setShowActionSelection] = useState(false)
+  const [recognizedEmployee, setRecognizedEmployee] = useState<{ id: string, data: any, confidence: number } | null>(null)
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -57,6 +59,14 @@ export default function KioscoCheckIn() {
   }, [])
 
   const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any) => {
+    // Store recognized employee data and show action selection
+    if (empleadoId && empleadoData) {
+      setRecognizedEmployee({ id: empleadoId, data: empleadoData, confidence: confianza })
+      setShowActionSelection(true)
+      setShowFacialAuth(false)
+      return
+    }
+
     if (!selectedEmployee) return
 
     setLoading(true)
@@ -143,7 +153,98 @@ export default function KioscoCheckIn() {
       setShowFacialAuth(false)
       setRegistroExitoso(null)
       setTareasPendientes([])
+      setShowActionSelection(false)
+      setRecognizedEmployee(null)
     }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
+  }
+
+  const ejecutarAccion = async (tipoAccion: 'trabajo' | 'descanso') => {
+    if (!recognizedEmployee) return
+
+    setLoading(true)
+    try {
+      const empleadoParaFichaje = {
+        id: recognizedEmployee.id,
+        nombre: recognizedEmployee.data.nombre,
+        apellido: recognizedEmployee.data.apellido
+      }
+
+      // Obtener ubicación si está disponible
+      let ubicacion = null
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 5000,
+            enableHighAccuracy: false
+          })
+        })
+        ubicacion = {
+          latitud: position.coords.latitude,
+          longitud: position.coords.longitude
+        }
+      } catch (error) {
+        console.log('No se pudo obtener ubicación:', error)
+      }
+
+      // Registrar fichaje usando función segura del kiosco
+      const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
+        p_empleado_id: empleadoParaFichaje.id,
+        p_confianza: recognizedEmployee.confidence,
+        p_lat: ubicacion?.latitud || null,
+        p_lng: ubicacion?.longitud || null,
+        p_datos: {
+          dispositivo: 'kiosco',
+          tipo_accion: tipoAccion,
+          timestamp_local: new Date().toISOString()
+        }
+      })
+
+      if (error) throw error
+
+      // Obtener tareas pendientes del empleado solo si es trabajo
+      let tareas = []
+      if (tipoAccion === 'trabajo') {
+        const { data: tareasData } = await supabase
+          .from('tareas')
+          .select('id, titulo, prioridad, fecha_limite')
+          .eq('asignado_a', empleadoParaFichaje.id)
+          .eq('estado', 'pendiente')
+          .order('fecha_limite', { ascending: true })
+          .limit(5)
+
+        tareas = tareasData || []
+      }
+
+      setTareasPendientes(tareas)
+
+      // Mostrar tarjeta de confirmación
+      setRegistroExitoso({
+        empleado: empleadoParaFichaje,
+        timestamp: new Date()
+      })
+
+      const accionTexto = tipoAccion === 'trabajo' ? 'Entrada registrada' : 'Descanso iniciado'
+      
+      toast({
+        title: "✅ Registro exitoso",
+        description: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido} - ${accionTexto}`,
+        duration: 3000,
+      })
+
+      setShowActionSelection(false)
+      resetKiosco()
+
+    } catch (error) {
+      console.error('Error procesando fichaje:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo registrar el fichaje. Intente nuevamente.",
+        variant: "destructive",
+        duration: 5000,
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const iniciarCheckIn = () => {
@@ -286,6 +387,58 @@ export default function KioscoCheckIn() {
                 <div className="text-sm text-gray-600">
                   Volviendo al inicio en unos segundos...
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : showActionSelection ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center flex items-center justify-center space-x-2">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                <span>Empleado Reconocido</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="text-center space-y-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <div className="text-xl font-semibold text-gray-900 mb-2">
+                    {recognizedEmployee?.data.nombre} {recognizedEmployee?.data.apellido}
+                  </div>
+                  <p className="text-gray-600 mb-6">
+                    Seleccione el tipo de registro que desea realizar
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button
+                      onClick={() => ejecutarAccion('trabajo')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                      disabled={loading}
+                    >
+                      <Clock className="h-5 w-5" />
+                      <span>Iniciar Trabajo</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => ejecutarAccion('descanso')}
+                      className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                      disabled={loading}
+                    >
+                      <Users className="h-5 w-5" />
+                      <span>Iniciar Descanso</span>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowActionSelection(false)
+                    setRecognizedEmployee(null)
+                    setSelectedEmployee(null)
+                  }}
+                  className="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  Cancelar
+                </button>
               </div>
             </CardContent>
           </Card>
