@@ -57,10 +57,10 @@ export default function FicheroFacialAuth({
         faceapi.nets.faceRecognitionNet.loadFromUri('/models')
       ])
       setIsModelLoaded(true)
-      toast({
-        title: "Modelos cargados",
-        description: "Sistema de reconocimiento facial listo",
-      })
+      // toast({
+      //   title: "Modelos cargados",
+      //   description: "Sistema de reconocimiento facial listo",
+      // })
     } catch (error) {
       console.error('Error cargando modelos:', error)
       // For demo purposes, allow manual entry even if face recognition fails
