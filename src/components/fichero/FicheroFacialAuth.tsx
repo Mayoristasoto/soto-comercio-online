@@ -309,33 +309,85 @@ export default function FicheroFacialAuth({
         return 0.95
       }
 
-      // Get face descriptor from secure sensitive data table
-      const { data: empleadoData, error } = await supabase
+      // First, try to get face descriptors from new multiple faces table
+      const { data: rostrosData, error: rostrosError } = await supabase
+        .from('empleados_rostros')
+        .select('face_descriptor, confidence_score, version_name')
+        .eq('empleado_id', empleado.id)
+        .eq('is_active', true)
+
+      let bestConfidence = 0
+      let bestMatch = null
+
+      // Compare with all active face versions
+      if (rostrosData && rostrosData.length > 0) {
+        console.log(`Comparando con ${rostrosData.length} versiones de rostro`)
+        
+        for (const rostro of rostrosData) {
+          if (rostro.face_descriptor && rostro.face_descriptor.length > 0) {
+            const storedDescriptor = new Float32Array(rostro.face_descriptor)
+            const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
+            
+            // Convertir distancia a confianza (invertir y normalizar)
+            const confidence = Math.max(0, 1 - distance)
+            
+            if (confidence > bestConfidence) {
+              bestConfidence = confidence
+              bestMatch = rostro.version_name
+            }
+          }
+        }
+
+        // Si encontramos una buena coincidencia con las nuevas versiones
+        if (bestConfidence > 0.6) {
+          console.log(`Mejor coincidencia: ${bestMatch} con confianza ${bestConfidence.toFixed(3)}`)
+          
+          // Log access to biometric data for audit
+          await supabase.rpc('log_empleado_access', {
+            p_empleado_id: empleado.id,
+            p_tipo_acceso: 'facial_recognition_multiple',
+            p_datos_accedidos: ['face_descriptor', 'version_name']
+          })
+
+          return bestConfidence
+        }
+      }
+
+      // Fallback: try legacy face descriptor from sensitive data table
+      const { data: empleadoData, error: legacyError } = await supabase
         .from('empleados_datos_sensibles')
         .select('face_descriptor')
         .eq('empleado_id', empleado.id)
         .single()
 
-      if (error || !empleadoData?.face_descriptor) {
-        console.error('No se encontró descriptor facial:', error)
+      if (empleadoData?.face_descriptor && empleadoData.face_descriptor.length > 0) {
+        console.log('Usando descriptor facial legacy')
+        const storedDescriptor = new Float32Array(empleadoData.face_descriptor)
+        const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
+        
+        // Convertir distancia a confianza (invertir y normalizar)
+        const legacyConfidence = Math.max(0, 1 - distance)
+
+        if (legacyConfidence > bestConfidence) {
+          bestConfidence = legacyConfidence
+          
+          // Log access to biometric data for audit
+          await supabase.rpc('log_empleado_access', {
+            p_empleado_id: empleado.id,
+            p_tipo_acceso: 'facial_recognition_legacy',
+            p_datos_accedidos: ['face_descriptor']
+          })
+        }
+      }
+
+      // Si no encontramos ningún rostro registrado
+      if (bestConfidence === 0) {
+        console.error('No se encontraron descriptores faciales activos')
         // For real employees without stored face data, return moderate confidence for demo
         return 0.8
       }
 
-      const storedDescriptor = new Float32Array(empleadoData.face_descriptor)
-      const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
-      
-      // Convertir distancia a confianza (invertir y normalizar)
-      const confidence = Math.max(0, 1 - distance)
-
-      // Log access to biometric data for audit
-      await supabase.rpc('log_empleado_access', {
-        p_empleado_id: empleado.id,
-        p_tipo_acceso: 'facial_recognition',
-        p_datos_accedidos: ['face_descriptor']
-      })
-
-      return confidence
+      return bestConfidence
 
     } catch (error) {
       console.error('Error comparando descriptores:', error)

@@ -723,6 +723,57 @@ export type Database = {
           },
         ]
       }
+      empleados_rostros: {
+        Row: {
+          capture_metadata: Json | null
+          confidence_score: number | null
+          created_at: string | null
+          empleado_id: string
+          face_descriptor: number[]
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          version_name: string
+        }
+        Insert: {
+          capture_metadata?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          empleado_id: string
+          face_descriptor: number[]
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          version_name?: string
+        }
+        Update: {
+          capture_metadata?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          empleado_id?: string
+          face_descriptor?: number[]
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          version_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleados_rostros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_rostros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluaciones_capacitacion: {
         Row: {
           activa: boolean

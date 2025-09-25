@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import UserCreationForm from "./UserCreationForm"
 import FacialRecognitionManagement from "./FacialRecognitionManagement"
+import MultipleFaceManagement from "./MultipleFaceManagement"
 
 interface Empleado {
   id: string
@@ -49,6 +50,7 @@ export default function UserEmployeeManagement() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [createUserOpen, setCreateUserOpen] = useState(false)
   const [faceDialogOpen, setFaceDialogOpen] = useState(false)
+  const [multipleFaceDialogOpen, setMultipleFaceDialogOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Empleado | null>(null)
   const [formData, setFormData] = useState({
     nombre: '',
@@ -64,22 +66,28 @@ export default function UserEmployeeManagement() {
 
   const loadData = async () => {
     try {
-      const [empleadosResult, sucursalesResult, faceDataResult] = await Promise.all([
+      const [empleadosResult, sucursalesResult, faceDataResult, rostrosResult] = await Promise.all([
         supabase.from('empleados').select('*').order('nombre'),
         supabase.from('sucursales').select('id, nombre').eq('activa', true),
-        supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor')
+        supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor'),
+        supabase.from('empleados_rostros').select('empleado_id, is_active').eq('is_active', true)
       ])
 
       if (empleadosResult.error) throw empleadosResult.error
       if (sucursalesResult.error) throw sucursalesResult.error
 
-      // Merge employee data with face descriptor status
-      const empleadosWithFaceStatus = (empleadosResult.data || []).map(emp => ({
-        ...emp,
-        face_descriptor: !!(faceDataResult.data?.find(fd => 
+      // Merge employee data with face descriptor status (check both old and new tables)
+      const empleadosWithFaceStatus = (empleadosResult.data || []).map(emp => {
+        const hasOldFace = !!(faceDataResult.data?.find(fd => 
           fd.empleado_id === emp.id && fd.face_descriptor && fd.face_descriptor.length > 0
         ))
-      }))
+        const hasNewFaces = !!(rostrosResult.data?.find(fr => fr.empleado_id === emp.id))
+        
+        return {
+          ...emp,
+          face_descriptor: hasOldFace || hasNewFaces
+        }
+      })
 
       setEmpleados(empleadosWithFaceStatus)
       setSucursales(sucursalesResult.data || [])
@@ -197,7 +205,7 @@ export default function UserEmployeeManagement() {
 
   const handleManageFace = (empleado: Empleado) => {
     setEditingEmployee(empleado)
-    setFaceDialogOpen(true)
+    setMultipleFaceDialogOpen(true)
   }
 
   const handleFaceUpdated = () => {
@@ -298,7 +306,15 @@ export default function UserEmployeeManagement() {
           onUserCreated={handleUserCreated}
         />
 
-        {/* Facial Recognition Management Dialog */}
+        {/* Multiple Face Management Dialog */}
+        <MultipleFaceManagement
+          open={multipleFaceDialogOpen}
+          onOpenChange={setMultipleFaceDialogOpen}
+          empleado={editingEmployee}
+          onFaceUpdated={handleFaceUpdated}
+        />
+
+        {/* Legacy Facial Recognition Management Dialog */}
         <FacialRecognitionManagement
           open={faceDialogOpen}
           onOpenChange={setFaceDialogOpen}
@@ -451,9 +467,9 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, 
                 {empleado.face_descriptor ? (
                   <>
                     <Camera className="h-3 w-3 mr-1" />
-                    Registrado
+                    Con rostros
                   </>
-                ) : "Sin rostro"}
+                ) : "Sin rostros"}
               </Badge>
             </TableCell>
             <TableCell>
@@ -461,7 +477,12 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, 
                 <Button variant="outline" size="sm" onClick={() => onEdit(empleado)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => onManageFace(empleado)}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => onManageFace(empleado)}
+                  title="Gestionar versiones de rostro"
+                >
                   <Camera className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => onDelete(empleado.id)}>
