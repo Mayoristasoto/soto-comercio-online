@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, MessageCircle, Phone, Calendar, Store, X } from "lucide-react";
@@ -55,6 +55,9 @@ export const MobileGondolaModal: React.FC<MobileGondolaModalProps> = ({
           <DialogTitle className="text-lg font-semibold">
             Espacio {gondola.section}
           </DialogTitle>
+          <DialogDescription>
+            Información detallada del espacio comercial disponible
+          </DialogDescription>
           <Button
             variant="ghost"
             size="sm"
