@@ -54,14 +54,25 @@ export const getCurrentEmpleadoProfile = async (): Promise<EmpleadoProfile | nul
  */
 export const checkIfUserIsAdmin = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('current_user_is_admin');
+    // Check user role directly from empleados table instead of using the removed function
+    const { data: { user } } = await supabase.auth.getUser()
     
+    if (!user) {
+      return false
+    }
+
+    const { data: empleado, error } = await supabase
+      .from('empleados')
+      .select('rol, activo')
+      .eq('user_id', user.id)
+      .single()
+
     if (error) {
       console.error('❌ Error verificando rol admin:', error);
       return false;
     }
 
-    return data === true;
+    return empleado?.rol === 'admin_rrhh' && empleado?.activo === true;
   } catch (error) {
     console.error('💥 Error en checkIfUserIsAdmin:', error);
     return false;
