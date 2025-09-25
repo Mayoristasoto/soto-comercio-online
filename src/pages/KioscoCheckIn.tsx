@@ -124,11 +124,11 @@ export default function KioscoCheckIn() {
   }
 
   const iniciarCheckIn = () => {
-    // Para simplificar, usar empleado demo
+    // No usar empleado demo - el sistema reconocerá automáticamente al empleado
     setSelectedEmployee({
-      id: 'demo-empleado',
-      nombre: 'Usuario',
-      apellido: 'Demo'
+      id: 'recognition-mode',
+      nombre: 'Reconocimiento',
+      apellido: 'Facial'
     })
     setShowFacialAuth(true)
   }
@@ -201,7 +201,7 @@ export default function KioscoCheckIn() {
                     Registre su entrada
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Toque el botón para iniciar el reconocimiento facial
+                    El sistema identificará automáticamente su rostro
                   </p>
                   <button
                     onClick={iniciarCheckIn}
