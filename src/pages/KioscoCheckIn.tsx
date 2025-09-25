@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 
@@ -11,6 +11,11 @@ interface EmpleadoBasico {
   apellido: string
 }
 
+interface RegistroExitoso {
+  empleado: EmpleadoBasico
+  timestamp: Date
+}
+
 export default function KioscoCheckIn() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -18,6 +23,7 @@ export default function KioscoCheckIn() {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [selectedEmployee, setSelectedEmployee] = useState<EmpleadoBasico | null>(null)
   const [showFacialAuth, setShowFacialAuth] = useState(false)
+  const [registroExitoso, setRegistroExitoso] = useState<RegistroExitoso | null>(null)
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -85,6 +91,12 @@ export default function KioscoCheckIn() {
 
       if (error) throw error
 
+      // Mostrar tarjeta de confirmación
+      setRegistroExitoso({
+        empleado: empleadoParaFichaje,
+        timestamp: new Date()
+      })
+
       toast({
         title: "✅ Check-in exitoso",
         description: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido} - Entrada registrada`,
@@ -110,7 +122,8 @@ export default function KioscoCheckIn() {
     setTimeout(() => {
       setSelectedEmployee(null)
       setShowFacialAuth(false)
-    }, 2000)
+      setRegistroExitoso(null)
+    }, 4000) // Aumentado tiempo para mostrar confirmación
   }
 
   const iniciarCheckIn = () => {
@@ -175,7 +188,41 @@ export default function KioscoCheckIn() {
         </Card>
 
         {/* Área principal */}
-        {!showFacialAuth ? (
+        {registroExitoso ? (
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center space-x-2 text-green-800">
+                <CheckCircle className="h-8 w-8" />
+                <span>¡Registro Exitoso!</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="text-center space-y-4">
+                <div className="bg-white border border-green-200 rounded-lg p-6">
+                  <div className="text-2xl font-bold text-green-800 mb-2">
+                    {registroExitoso.empleado.nombre} {registroExitoso.empleado.apellido}
+                  </div>
+                  <div className="text-lg text-gray-700 mb-4">
+                    Entrada registrada correctamente
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {registroExitoso.timestamp.toLocaleString('es-ES', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  Volviendo al inicio en unos segundos...
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : !showFacialAuth ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-center flex items-center justify-center space-x-2">
