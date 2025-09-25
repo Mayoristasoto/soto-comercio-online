@@ -154,15 +154,14 @@ export default function FacialRecognitionAuth({
 
   const recognizeUser = async (capturedDescriptor: Float32Array) => {
     try {
-      // Fetch all users with face descriptors
+      // Get users with facial recognition from secure view
       const { data: empleados, error } = await supabase
         .from('empleados')
-        .select('id, nombre, apellido, email, face_descriptor')
-        .not('face_descriptor', 'is', null)
+        .select('id, nombre, apellido, email')
         .eq('activo', true)
 
       if (error) {
-        console.error('Error fetching users:', error)
+        console.error('Error fetching employees:', error)
         toast({
           title: "Error",
           description: "Error al consultar usuarios registrados",
@@ -174,7 +173,7 @@ export default function FacialRecognitionAuth({
       if (!empleados || empleados.length === 0) {
         toast({
           title: "Sin usuarios registrados",
-          description: "No hay usuarios con reconocimiento facial registrado",
+          description: "No hay usuarios registrados",
           variant: "destructive"
         })
         return
@@ -183,17 +182,28 @@ export default function FacialRecognitionAuth({
       let bestMatch = null
       let bestDistance = 1.0 // Start with maximum distance
 
-      // Compare with each stored face descriptor
+      // Check against employees with facial recognition data
       for (const empleado of empleados) {
-        if (empleado.face_descriptor && Array.isArray(empleado.face_descriptor)) {
-          const storedDescriptor = new Float32Array(empleado.face_descriptor)
-          const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
-          
-          // Lower distance means better match
-          if (distance < bestDistance && distance < 0.6) { // Threshold for recognition
-            bestDistance = distance
-            bestMatch = empleado
+        try {
+          // Get face descriptor from secure sensitive data table
+          const { data: faceData } = await supabase
+            .from('empleados_datos_sensibles')
+            .select('face_descriptor')
+            .eq('empleado_id', empleado.id)
+            .single()
+
+          if (faceData?.face_descriptor && Array.isArray(faceData.face_descriptor)) {
+            const storedDescriptor = new Float32Array(faceData.face_descriptor)
+            const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
+            
+            // Lower distance means better match
+            if (distance < bestDistance && distance < 0.6) { // Threshold for recognition
+              bestDistance = distance
+              bestMatch = empleado
+            }
           }
+        } catch (err) {
+          console.error('Error checking face descriptor for employee:', empleado.id, err)
         }
       }
 

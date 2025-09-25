@@ -13,7 +13,7 @@ interface Empleado {
   nombre: string
   apellido: string
   email: string
-  face_descriptor: number[] | null
+  face_descriptor?: number[] | null // Optional since it's now in separate table
 }
 
 interface FacialRecognitionManagementProps {
@@ -161,14 +161,22 @@ export default function FacialRecognitionManagement({
 
     setIsUpdating(true)
     try {
+      // Update face descriptor in secure sensitive data table
       const { error } = await supabase
-        .from('empleados')
-        .update({ 
+        .from('empleados_datos_sensibles')
+        .upsert({ 
+          empleado_id: empleado.id,
           face_descriptor: Array.from(capturedFace)
         })
-        .eq('id', empleado.id)
 
       if (error) throw error
+
+      // Log biometric data update for audit
+      await supabase.rpc('log_empleado_access', {
+        p_empleado_id: empleado.id,
+        p_tipo_acceso: 'update_biometric',
+        p_datos_accedidos: ['face_descriptor']
+      })
 
       toast({
         title: "Rostro actualizado",
@@ -196,14 +204,20 @@ export default function FacialRecognitionManagement({
 
     setIsUpdating(true)
     try {
+      // Delete face descriptor from secure sensitive data table  
       const { error } = await supabase
-        .from('empleados')
-        .update({ 
-          face_descriptor: null
-        })
-        .eq('id', empleado.id)
+        .from('empleados_datos_sensibles')
+        .update({ face_descriptor: null })
+        .eq('empleado_id', empleado.id)
 
       if (error) throw error
+
+      // Log biometric data deletion for audit
+      await supabase.rpc('log_empleado_access', {
+        p_empleado_id: empleado.id,
+        p_tipo_acceso: 'delete_biometric',
+        p_datos_accedidos: ['face_descriptor']
+      })
 
       toast({
         title: "Rostro eliminado",

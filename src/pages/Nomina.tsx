@@ -138,8 +138,9 @@ export default function Nomina() {
       setLoading(true)
       
       // Cargar empleados
+      // Use secure view for employee data that only shows sensitive data to admins
       const { data: employeesData, error: employeesError } = await supabase
-        .from('empleados')
+        .from('empleados_secure_view')
         .select(`
           id,
           nombre,
@@ -157,7 +158,8 @@ export default function Nomina() {
           sucursal_id,
           activo,
           fecha_ingreso,
-          avatar_url
+          avatar_url,
+          dni
         `)
         .order('nombre', { ascending: true })
 

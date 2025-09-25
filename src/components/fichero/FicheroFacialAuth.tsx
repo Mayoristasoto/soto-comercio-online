@@ -295,10 +295,11 @@ export default function FicheroFacialAuth({
         return 0.95
       }
 
+      // Get face descriptor from secure sensitive data table
       const { data: empleadoData, error } = await supabase
-        .from('empleados')
+        .from('empleados_datos_sensibles')
         .select('face_descriptor')
-        .eq('id', empleado.id)
+        .eq('empleado_id', empleado.id)
         .single()
 
       if (error || !empleadoData?.face_descriptor) {
@@ -312,6 +313,14 @@ export default function FicheroFacialAuth({
       
       // Convertir distancia a confianza (invertir y normalizar)
       const confidence = Math.max(0, 1 - distance)
+
+      // Log access to biometric data for audit
+      await supabase.rpc('log_empleado_access', {
+        p_empleado_id: empleado.id,
+        p_tipo_acceso: 'facial_recognition',
+        p_datos_accedidos: ['face_descriptor']
+      })
+
       return confidence
 
     } catch (error) {

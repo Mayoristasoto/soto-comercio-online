@@ -24,7 +24,7 @@ interface Empleado {
   sucursal_id: string | null
   fecha_ingreso: string
   user_id: string | null
-  face_descriptor: number[] | null
+  face_descriptor?: boolean // Will be calculated from sensitive data table
 }
 
 interface Sucursal {
@@ -64,15 +64,24 @@ export default function UserEmployeeManagement() {
 
   const loadData = async () => {
     try {
-      const [empleadosResult, sucursalesResult] = await Promise.all([
+      const [empleadosResult, sucursalesResult, faceDataResult] = await Promise.all([
         supabase.from('empleados').select('*').order('nombre'),
-        supabase.from('sucursales').select('id, nombre').eq('activa', true)
+        supabase.from('sucursales').select('id, nombre').eq('activa', true),
+        supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor')
       ])
 
       if (empleadosResult.error) throw empleadosResult.error
       if (sucursalesResult.error) throw sucursalesResult.error
 
-      setEmpleados(empleadosResult.data || [])
+      // Merge employee data with face descriptor status
+      const empleadosWithFaceStatus = (empleadosResult.data || []).map(emp => ({
+        ...emp,
+        face_descriptor: !!(faceDataResult.data?.find(fd => 
+          fd.empleado_id === emp.id && fd.face_descriptor && fd.face_descriptor.length > 0
+        ))
+      }))
+
+      setEmpleados(empleadosWithFaceStatus)
       setSucursales(sucursalesResult.data || [])
     } catch (error) {
       console.error('Error cargando datos:', error)
@@ -555,7 +564,7 @@ function FaceGallery({ empleados, sucursales, getRoleBadge }: FaceGalleryProps) 
                 </span>
                 {empleado.face_descriptor && (
                   <span className="text-primary">
-                    Descriptor: {empleado.face_descriptor.length} puntos
+                    Reconocimiento facial activo
                   </span>
                 )}
               </div>

@@ -95,16 +95,18 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
 
   const verificarDescriptorFacial = async () => {
     try {
+      // Check face descriptor from secure sensitive data table
       const { data, error } = await supabase
-        .from('empleados')
+        .from('empleados_datos_sensibles')
         .select('face_descriptor')
-        .eq('id', empleado.id)
+        .eq('empleado_id', empleado.id)
         .single()
 
-      if (error) throw error
+      if (error && error.code !== 'PGRST116') throw error // Ignore not found error
       setTieneDescriptorFacial(!!data?.face_descriptor)
     } catch (error) {
       console.error('Error verificando descriptor facial:', error)
+      setTieneDescriptorFacial(false)
     }
   }
 
@@ -185,10 +187,11 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
 
   const borrarDatosBiometricos = async () => {
     try {
+      // Delete face descriptor from secure sensitive data table
       const { error } = await supabase
-        .from('empleados')
+        .from('empleados_datos_sensibles')
         .update({ face_descriptor: null })
-        .eq('id', empleado.id)
+        .eq('empleado_id', empleado.id)
 
       if (error) throw error
 

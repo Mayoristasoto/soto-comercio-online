@@ -30,17 +30,28 @@ export default function FacialRecognitionStats() {
 
   const loadStats = async () => {
     try {
-      const { data: empleados, error } = await supabase
-        .from('empleados')
-        .select('face_descriptor, rol')
-        .eq('activo', true)
+      // Get employee counts from secure data sources
+      const [empleadosResult, faceDataResult] = await Promise.all([
+        supabase.from('empleados').select('id, rol').eq('activo', true),
+        supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor')
+      ])
 
-      if (error) throw error
+      if (empleadosResult.error) throw empleadosResult.error
 
-      const totalEmployees = empleados?.length || 0
-      const withFacialRecognition = empleados?.filter(emp => emp.face_descriptor && emp.face_descriptor.length > 0).length || 0
+      const empleados = empleadosResult.data || []
+      const faceData = faceDataResult.data || []
+      
+      const totalEmployees = empleados.length
+      const withFacialRecognition = faceData.filter(fd => fd.face_descriptor && fd.face_descriptor.length > 0).length
       const withoutFacialRecognition = totalEmployees - withFacialRecognition
-      const adminUsersWithFace = empleados?.filter(emp => emp.face_descriptor && emp.face_descriptor.length > 0 && emp.rol === 'admin_rrhh').length || 0
+      
+      // Get admin users with face recognition
+      const adminEmployeeIds = empleados.filter(emp => emp.rol === 'admin_rrhh').map(emp => emp.id)
+      const adminUsersWithFace = faceData.filter(fd => 
+        fd.face_descriptor && fd.face_descriptor.length > 0 && 
+        adminEmployeeIds.includes(fd.empleado_id)
+      ).length
+      
       const percentage = totalEmployees > 0 ? Math.round((withFacialRecognition / totalEmployees) * 100) : 0
 
       setStats({
