@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { BookOpen, Play, CheckCircle, Clock, FileText, Award } from "lucide-react";
+import { EvaluationModal } from "./EvaluationModal";
 
 interface CapacitacionAsignada {
   id: string;
@@ -40,6 +41,8 @@ export function EmployeeTrainings({ empleadoId }: Props) {
   const [loading, setLoading] = useState(false);
   const [selectedCapacitacion, setSelectedCapacitacion] = useState<CapacitacionAsignada | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [evaluationOpen, setEvaluationOpen] = useState(false);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -132,6 +135,17 @@ export function EmployeeTrainings({ empleadoId }: Props) {
   const openCapacitacion = (capacitacion: CapacitacionAsignada) => {
     setSelectedCapacitacion(capacitacion);
     setDialogOpen(true);
+  };
+
+  const startEvaluation = (evaluacion: any) => {
+    setSelectedEvaluation(evaluacion);
+    setEvaluationOpen(true);
+    setDialogOpen(false);
+  };
+
+  const handleEvaluationComplete = () => {
+    setEvaluationOpen(false);
+    loadCapacitaciones();
   };
 
   if (loading) {
@@ -318,6 +332,16 @@ export function EmployeeTrainings({ empleadoId }: Props) {
                 <p className="text-xs">
                   <strong>Puntaje mínimo:</strong> {selectedCapacitacion.evaluacion.puntaje_minimo}%
                 </p>
+                {selectedCapacitacion.estado === 'completada' && (
+                  <Button 
+                    size="sm" 
+                    className="w-full mt-2"
+                    onClick={() => startEvaluation(selectedCapacitacion.evaluacion)}
+                  >
+                    <Award className="h-4 w-4 mr-2" />
+                    Realizar Evaluación
+                  </Button>
+                )}
               </div>
             )}
 
@@ -341,6 +365,15 @@ export function EmployeeTrainings({ empleadoId }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Evaluation Modal */}
+      <EvaluationModal
+        evaluation={selectedEvaluation}
+        empleadoId={empleadoId}
+        open={evaluationOpen}
+        onClose={() => setEvaluationOpen(false)}
+        onComplete={handleEvaluationComplete}
+      />
     </div>
   );
 }
