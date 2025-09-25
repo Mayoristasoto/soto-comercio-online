@@ -365,14 +365,14 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                   <div className="space-y-2">
                     <Label htmlFor="sucursal">Sucursal</Label>
                     <Select 
-                      value={formData.sucursal_id || ''} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, sucursal_id: value }))}
+                      value={formData.sucursal_id || 'unassigned'} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, sucursal_id: value === 'unassigned' ? null : value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar sucursal" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin asignar</SelectItem>
+                        <SelectItem value="unassigned">Sin asignar</SelectItem>
                         {sucursales.map((sucursal) => (
                           <SelectItem key={sucursal.id} value={sucursal.id}>
                             {sucursal.nombre}
