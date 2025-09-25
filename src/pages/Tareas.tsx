@@ -61,8 +61,8 @@ export default function Tareas() {
         .from('tareas')
         .select(`
           *,
-          empleados!tareas_asignado_a_fkey(nombre, apellido, email),
-          empleados!tareas_asignado_por_fkey(nombre, apellido)
+          asignado_empleado:empleados!tareas_asignado_a_fkey(nombre, apellido, email),
+          creador_empleado:empleados!tareas_asignado_por_fkey(nombre, apellido)
         `)
         .order('created_at', { ascending: false });
 
@@ -78,14 +78,14 @@ export default function Tareas() {
       // Mapear los datos para que coincidan con la interfaz
       const tareasFormateadas = (data || []).map((tarea: any) => ({
         ...tarea,
-        empleado_asignado: tarea.empleados ? {
-          nombre: tarea.empleados.nombre,
-          apellido: tarea.empleados.apellido,
-          email: tarea.empleados.email
+        empleado_asignado: tarea.asignado_empleado ? {
+          nombre: tarea.asignado_empleado.nombre,
+          apellido: tarea.asignado_empleado.apellido,
+          email: tarea.asignado_empleado.email
         } : undefined,
-        empleado_creador: tarea.empleados_1 ? {
-          nombre: tarea.empleados_1.nombre,
-          apellido: tarea.empleados_1.apellido
+        empleado_creador: tarea.creador_empleado ? {
+          nombre: tarea.creador_empleado.nombre,
+          apellido: tarea.creador_empleado.apellido
         } : undefined
       }));
 
