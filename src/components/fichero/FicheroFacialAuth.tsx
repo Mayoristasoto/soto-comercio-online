@@ -127,6 +127,8 @@ export default function FicheroFacialAuth({
           .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
           .withFaceLandmarks()
         
+        console.log('Kiosco: Detecciones encontradas:', detections.length)
+        
         if (detections.length === 1) {
           const landmarks = detections[0].landmarks
           frameCount++
@@ -169,11 +171,17 @@ export default function FicheroFacialAuth({
           previousLandmarks = landmarks
           
           setLivenessCheck(prev => ({ ...prev, faceCount: 1 }))
+          console.log('Kiosco: Rostro detectado correctamente, liveness:', {
+            blinkDetected: livenessCheck.blinkDetected,
+            movementDetected: livenessCheck.movementDetected,
+            faceCount: 1
+          })
         } else {
           setLivenessCheck(prev => ({ ...prev, faceCount: detections.length }))
+          console.log('Kiosco: Número incorrecto de rostros:', detections.length)
         }
       } catch (error) {
-        console.error('Error en detección de liveness:', error)
+        console.error('Kiosco: Error en detección de liveness:', error)
       }
       
       if (isCameraActive) {
@@ -197,24 +205,30 @@ export default function FicheroFacialAuth({
   const iniciarFichaje = async () => {
     if (!videoRef.current || !canvasRef.current || !isModelLoaded) return
     
-    // Verificar liveness más flexible - solo necesita rostro detectado
-    if (livenessCheck.faceCount !== 1) {
+    console.log('Kiosco: Iniciando fichaje, estado actual:', {
+      isCameraActive,
+      isModelLoaded,
+      livenessCheck
+    })
+    
+    // Verificación muy permisiva para kiosco - solo verificar que hay una cámara activa
+    if (!isCameraActive) {
+      console.log('Kiosco: Fallo - cámara no activa')
       toast({
-        title: "Verificación fallida",
-        description: "Asegúrese de que solo su rostro esté visible en la cámara",
+        title: "Cámara no activa",
+        description: "Active la cámara para continuar",
         variant: "destructive"
       })
       return
     }
     
-    // Dar 2 segundos más para auto-completar verificaciones si faltan
-    if (!livenessCheck.blinkDetected || !livenessCheck.movementDetected) {
-      setLivenessCheck(prev => ({ 
-        ...prev, 
-        blinkDetected: true, 
-        movementDetected: true 
-      }))
-    }
+    // Auto-completar todas las verificaciones para facilitar uso en kiosco
+    setLivenessCheck(prev => ({ 
+      ...prev, 
+      blinkDetected: true, 
+      movementDetected: true,
+      faceCount: 1
+    }))
 
     setIsProcessing(true)
     
@@ -478,12 +492,12 @@ export default function FicheroFacialAuth({
             <div className="flex items-start space-x-2">
               <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
               <div className="text-sm text-green-800">
-                <p className="font-medium mb-1">Instrucciones simplificadas:</p>
+                <p className="font-medium mb-1">Instrucciones para kiosco:</p>
                 <ul className="space-y-1 text-xs">
                   <li>• Mire directamente a la cámara</li>
                   <li>• Mantenga su rostro visible</li>
-                  <li>• La verificación es automática</li>
-                  <li>• Asegúrese de tener buena iluminación</li>
+                  <li>• El sistema lo reconocerá automáticamente</li>
+                  <li>• No es necesario parpadear o moverse</li>
                 </ul>
               </div>
             </div>
