@@ -302,7 +302,10 @@ export default function UserEmployeeManagement() {
         <FacialRecognitionManagement
           open={faceDialogOpen}
           onOpenChange={setFaceDialogOpen}
-          empleado={editingEmployee}
+          empleado={editingEmployee ? {
+            ...editingEmployee,
+            face_descriptor: editingEmployee.face_descriptor ? [1] : null // Convert boolean to array for compatibility
+          } : null}
           onFaceUpdated={handleFaceUpdated}
         />
 

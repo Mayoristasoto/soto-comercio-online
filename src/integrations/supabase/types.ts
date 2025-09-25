@@ -1969,8 +1969,13 @@ export type Database = {
           direccion: string | null
           dni: string | null
           email: string | null
+          emergencia_contacto_nombre: string | null
+          emergencia_contacto_telefono: string | null
+          estado_civil: string | null
           fecha_ingreso: string | null
+          fecha_nacimiento: string | null
           grupo_id: string | null
+          has_face_descriptor: boolean | null
           id: string | null
           legajo: string | null
           nombre: string | null

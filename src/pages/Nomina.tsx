@@ -150,7 +150,7 @@ export default function Nomina() {
           direccion,
           puesto,
           salario,
-          fecha_nacimiento,
+          dni,
           estado_civil,
           emergencia_contacto_nombre,
           emergencia_contacto_telefono,
@@ -159,7 +159,7 @@ export default function Nomina() {
           activo,
           fecha_ingreso,
           avatar_url,
-          dni
+          has_face_descriptor
         `)
         .order('nombre', { ascending: true })
 
