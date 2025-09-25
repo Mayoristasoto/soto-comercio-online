@@ -176,6 +176,7 @@ export default function FicheroFacialAuth({
             movementDetected: livenessCheck.movementDetected,
             faceCount: 1
           })
+          console.log('Kiosco: Umbral de reconocimiento reducido a 40% para facilitar identificación')
         } else {
           setLivenessCheck(prev => ({ ...prev, faceCount: detections.length }))
           console.log('Kiosco: Número incorrecto de rostros:', detections.length)
@@ -292,7 +293,7 @@ export default function FicheroFacialAuth({
       // Comparar con rostro almacenado
       const resultado = await compararConRostroAlmacenado(faceDescriptor)
       
-      if (resultado.confidence > 0.6) {
+      if (resultado.confidence > 0.4) {
         // Pass both confidence and employee data to the success callback
         onFichajeSuccess(resultado.confidence, resultado.empleadoId, resultado.empleadoData)
         
@@ -339,7 +340,10 @@ export default function FicheroFacialAuth({
         let bestGlobalConfidence = 0
         let bestEmployeeMatch = null
 
+        console.log(`Kiosco: Iniciando búsqueda en ${allEmployees.length} empleados activos`)
+        
         for (const emp of allEmployees) {
+          console.log(`Kiosco: Verificando empleado: ${emp.nombre} ${emp.apellido} (ID: ${emp.id})`)
           // Check multiple face versions for this employee
           const { data: rostrosData, error: rostrosError } = await supabase
             .from('empleados_rostros')
@@ -348,6 +352,7 @@ export default function FicheroFacialAuth({
             .eq('is_active', true)
 
           if (rostrosData && rostrosData.length > 0) {
+            console.log(`Kiosco: Empleado ${emp.nombre} tiene ${rostrosData.length} versiones de rostro`)
             for (const rostro of rostrosData) {
               if (rostro.face_descriptor && rostro.face_descriptor.length > 0) {
                 const storedDescriptor = new Float32Array(rostro.face_descriptor)
@@ -355,8 +360,9 @@ export default function FicheroFacialAuth({
                 
                 // Convertir distancia a confianza (invertir y normalizar)
                 const confidence = Math.max(0, 1 - distance)
+                console.log(`Kiosco: Versión ${rostro.version_name} - Confianza: ${(confidence * 100).toFixed(1)}%`)
                 
-                if (confidence > bestGlobalConfidence && confidence > 0.6) {
+                if (confidence > bestGlobalConfidence && confidence > 0.4) {
                   bestGlobalConfidence = confidence
                   bestEmployeeMatch = emp
                 }
@@ -376,16 +382,17 @@ export default function FicheroFacialAuth({
             const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
             
             const confidence = Math.max(0, 1 - distance)
+            console.log(`Kiosco: Datos legacy ${emp.nombre} - Confianza: ${(confidence * 100).toFixed(1)}%`)
             
-            if (confidence > bestGlobalConfidence && confidence > 0.6) {
+            if (confidence > bestGlobalConfidence && confidence > 0.4) {
               bestGlobalConfidence = confidence
               bestEmployeeMatch = emp
             }
           }
         }
 
-        if (bestEmployeeMatch && bestGlobalConfidence > 0.6) {
-          console.log(`Empleado identificado: ${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido} con confianza ${bestGlobalConfidence.toFixed(3)}`)
+        if (bestEmployeeMatch && bestGlobalConfidence > 0.4) {
+          console.log(`Kiosco: Empleado identificado: ${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido} con confianza ${(bestGlobalConfidence * 100).toFixed(1)}% (umbral: 40%)`)
           
           // Log access to biometric data for audit
           await supabase.rpc('log_empleado_access', {
@@ -401,6 +408,7 @@ export default function FicheroFacialAuth({
           }
         }
 
+        console.log('Kiosco: No se encontró coincidencia válida (>40%) en ningún empleado')
         return { confidence: 0 }
       }
 
@@ -434,8 +442,8 @@ export default function FicheroFacialAuth({
         }
 
         // Si encontramos una buena coincidencia con las nuevas versiones
-        if (bestConfidence > 0.6) {
-          console.log(`Mejor coincidencia: ${bestMatch} con confianza ${bestConfidence.toFixed(3)}`)
+        if (bestConfidence > 0.4) {
+          console.log(`Kiosco: Mejor coincidencia: ${bestMatch} con confianza ${(bestConfidence * 100).toFixed(1)}% (umbral: 40%)`)
           
           // Log access to biometric data for audit
           await supabase.rpc('log_empleado_access', {
