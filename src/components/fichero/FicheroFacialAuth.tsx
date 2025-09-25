@@ -303,7 +303,7 @@ export default function FicheroFacialAuth({
       // Comparar con rostro almacenado
       const resultado = await compararConRostroAlmacenado(faceDescriptor)
       
-      if (resultado.confidence > 0.4) {
+      if (resultado.confidence > 0.35) {
         // Pass both confidence and employee data to the success callback
         onFichajeSuccess(resultado.confidence, resultado.empleadoId, resultado.empleadoData)
         
@@ -354,6 +354,12 @@ export default function FicheroFacialAuth({
         
         for (const emp of allEmployees) {
           console.log(`Kiosco: Verificando empleado: ${emp.nombre} ${emp.apellido} (ID: ${emp.id})`)
+          
+          // Special debug for Gonzalo Justiniano
+          if (emp.nombre.toLowerCase().includes('gonzalo') && emp.apellido.toLowerCase().includes('justiniano')) {
+            console.log(`🔍 DEBUG GONZALO: Iniciando verificación especial para ${emp.nombre} ${emp.apellido}`)
+          }
+          
           // Check multiple face versions for this employee
           const { data: rostrosData, error: rostrosError } = await supabase
             .from('empleados_rostros')
@@ -361,8 +367,14 @@ export default function FicheroFacialAuth({
             .eq('empleado_id', emp.id)
             .eq('is_active', true)
 
+          if (rostrosError) {
+            console.error(`Kiosco: Error obteniendo rostros para ${emp.nombre}:`, rostrosError)
+            continue
+          }
+
           if (rostrosData && rostrosData.length > 0) {
             console.log(`Kiosco: Empleado ${emp.nombre} tiene ${rostrosData.length} versiones de rostro`)
+            
             for (const rostro of rostrosData) {
               if (rostro.face_descriptor && rostro.face_descriptor.length > 0) {
                 const storedDescriptor = new Float32Array(rostro.face_descriptor)
@@ -372,12 +384,34 @@ export default function FicheroFacialAuth({
                 const confidence = Math.max(0, 1 - distance)
                 console.log(`Kiosco: Versión ${rostro.version_name} - Confianza: ${(confidence * 100).toFixed(1)}%`)
                 
-                if (confidence > bestGlobalConfidence && confidence > 0.4) {
+                // Special debug for Gonzalo Justiniano
+                if (emp.nombre.toLowerCase().includes('gonzalo') && emp.apellido.toLowerCase().includes('justiniano')) {
+                  console.log(`🔍 DEBUG GONZALO: Versión ${rostro.version_name}`)
+                  console.log(`🔍 DEBUG GONZALO: Descriptor stored length: ${storedDescriptor.length}`)
+                  console.log(`🔍 DEBUG GONZALO: Descriptor captured length: ${capturedDescriptor.length}`)
+                  console.log(`🔍 DEBUG GONZALO: Distance: ${distance}`)
+                  console.log(`🔍 DEBUG GONZALO: Confidence: ${(confidence * 100).toFixed(1)}%`)
+                  console.log(`🔍 DEBUG GONZALO: Threshold: 40%`)
+                  console.log(`🔍 DEBUG GONZALO: Passes threshold: ${confidence > 0.4}`)
+                }
+                
+                if (confidence > bestGlobalConfidence && confidence > 0.35) {
                   bestGlobalConfidence = confidence
                   bestEmployeeMatch = emp
+                  
+                  if (emp.nombre.toLowerCase().includes('gonzalo')) {
+                    console.log(`🔍 DEBUG GONZALO: ¡NUEVO MEJOR MATCH! Confianza: ${(confidence * 100).toFixed(1)}%`)
+                  }
+                }
+              } else {
+                console.log(`Kiosco: Versión ${rostro.version_name} - Sin descriptor válido`)
+                if (emp.nombre.toLowerCase().includes('gonzalo')) {
+                  console.log(`🔍 DEBUG GONZALO: Versión ${rostro.version_name} sin descriptor válido`)
                 }
               }
             }
+          } else {
+            console.log(`Kiosco: Empleado ${emp.nombre} sin versiones de rostro activas`)
           }
 
           // Also check legacy face descriptor
@@ -394,15 +428,20 @@ export default function FicheroFacialAuth({
             const confidence = Math.max(0, 1 - distance)
             console.log(`Kiosco: Datos legacy ${emp.nombre} - Confianza: ${(confidence * 100).toFixed(1)}%`)
             
-            if (confidence > bestGlobalConfidence && confidence > 0.4) {
+            if (confidence > bestGlobalConfidence && confidence > 0.35) {
               bestGlobalConfidence = confidence
               bestEmployeeMatch = emp
             }
           }
         }
 
-        if (bestEmployeeMatch && bestGlobalConfidence > 0.4) {
-          console.log(`Kiosco: Empleado identificado: ${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido} con confianza ${(bestGlobalConfidence * 100).toFixed(1)}% (umbral: 40%)`)
+        console.log(`Kiosco: RESUMEN FINAL - Mejor confianza global: ${(bestGlobalConfidence * 100).toFixed(1)}%`)
+        console.log(`Kiosco: RESUMEN FINAL - Mejor empleado: ${bestEmployeeMatch ? `${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido}` : 'ninguno'}`)
+        console.log(`Kiosco: RESUMEN FINAL - Umbral requerido: 35%`)
+        
+        // Reducir umbral a 35% para casos problemáticos
+        if (bestEmployeeMatch && bestGlobalConfidence > 0.35) {
+          console.log(`Kiosco: ✅ Empleado identificado: ${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido} con confianza ${(bestGlobalConfidence * 100).toFixed(1)}% (umbral: 35%)`)
           
           // Log access to biometric data for audit
           await supabase.rpc('log_empleado_access', {
@@ -418,7 +457,8 @@ export default function FicheroFacialAuth({
           }
         }
 
-        console.log('Kiosco: No se encontró coincidencia válida (>40%) en ningún empleado')
+        console.log('Kiosco: ❌ No se encontró coincidencia válida (>35%) en ningún empleado')
+        console.log(`Kiosco: Empleados verificados: ${allEmployees.length}`)
         return { confidence: 0 }
       }
 
