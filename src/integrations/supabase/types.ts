@@ -2229,6 +2229,16 @@ export type Database = {
         Args: { sucursal_uuid?: string }
         Returns: boolean
       }
+      kiosk_insert_fichaje: {
+        Args: {
+          p_confianza: number
+          p_datos?: Json
+          p_empleado_id: string
+          p_lat?: number
+          p_lng?: number
+        }
+        Returns: string
+      }
       log_empleado_access: {
         Args: {
           p_datos_accedidos?: string[]

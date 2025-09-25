@@ -71,27 +71,17 @@ export default function KioscoCheckIn() {
         console.log('No se pudo obtener ubicación:', error)
       }
 
-      // Registrar fichaje real
-      const fichaje = {
-        empleado_id: empleadoParaFichaje.id,
-        tipo: 'entrada' as const,
-        timestamp_real: new Date().toISOString(),
-        timestamp_aplicado: new Date().toISOString(),
-        metodo: 'facial' as const,
-        estado: 'valido' as const,
-        latitud: ubicacion?.latitud || null,
-        longitud: ubicacion?.longitud || null,
-        confianza_facial: confianza,
-        ip_address: null, // Se establecerá en el servidor
-        datos_adicionales: {
+      // Registrar fichaje usando función segura del kiosco
+      const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
+        p_empleado_id: empleadoParaFichaje.id,
+        p_confianza: confianza,
+        p_lat: ubicacion?.latitud || null,
+        p_lng: ubicacion?.longitud || null,
+        p_datos: {
           dispositivo: 'kiosco',
           timestamp_local: new Date().toISOString()
         }
-      }
-
-      const { error } = await supabase
-        .from('fichajes')
-        .insert([fichaje])
+      })
 
       if (error) throw error
 
