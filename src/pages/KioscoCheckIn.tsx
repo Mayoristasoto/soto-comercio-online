@@ -42,11 +42,18 @@ export default function KioscoCheckIn() {
     }
   }, [])
 
-  const procesarFichaje = async (confianza: number) => {
+  const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any) => {
     if (!selectedEmployee) return
 
     setLoading(true)
     try {
+      // Use the identified employee from facial recognition, or fall back to selected employee
+      const empleadoParaFichaje = empleadoId && empleadoData ? {
+        id: empleadoId,
+        nombre: empleadoData.nombre,
+        apellido: empleadoData.apellido
+      } : selectedEmployee
+
       // Obtener ubicación si está disponible
       let ubicacion = null
       try {
@@ -64,20 +71,9 @@ export default function KioscoCheckIn() {
         console.log('No se pudo obtener ubicación:', error)
       }
 
-      // Para demo, usar empleado demo
-      if (selectedEmployee.id === 'demo-empleado') {
-        toast({
-          title: "✅ Check-in exitoso",
-          description: `${selectedEmployee.nombre} ${selectedEmployee.apellido} - Entrada registrada`,
-          duration: 3000,
-        })
-        resetKiosco()
-        return
-      }
-
       // Registrar fichaje real
       const fichaje = {
-        empleado_id: selectedEmployee.id,
+        empleado_id: empleadoParaFichaje.id,
         tipo: 'entrada' as const,
         timestamp_real: new Date().toISOString(),
         timestamp_aplicado: new Date().toISOString(),
@@ -101,7 +97,7 @@ export default function KioscoCheckIn() {
 
       toast({
         title: "✅ Check-in exitoso",
-        description: `${selectedEmployee.nombre} ${selectedEmployee.apellido} - Entrada registrada`,
+        description: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido} - Entrada registrada`,
         duration: 3000,
       })
 

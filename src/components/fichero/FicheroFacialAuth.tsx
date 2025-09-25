@@ -14,7 +14,7 @@ interface FicheroFacialAuthProps {
     apellido: string
   }
   tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin'
-  onFichajeSuccess: (confianza: number) => void
+  onFichajeSuccess: (confianza: number, empleadoId?: string, empleadoData?: any) => void
   loading: boolean
 }
 
@@ -274,13 +274,19 @@ export default function FicheroFacialAuth({
       const faceDescriptor = detections[0].descriptor
       
       // Comparar con rostro almacenado
-      const confianza = await compararConRostroAlmacenado(faceDescriptor)
+      const resultado = await compararConRostroAlmacenado(faceDescriptor)
       
-      if (confianza > 0) {
-        onFichajeSuccess(confianza)
+      if (resultado.confidence > 0.6) {
+        // Pass both confidence and employee data to the success callback
+        onFichajeSuccess(resultado.confidence, resultado.empleadoId, resultado.empleadoData)
+        
+        const employeeName = resultado.empleadoData 
+          ? `${resultado.empleadoData.nombre} ${resultado.empleadoData.apellido}`
+          : `${empleado.nombre} ${empleado.apellido}`
+        
         toast({
           title: "Fichaje exitoso",
-          description: `${tipoFichaje.replace('_', ' ')} registrada con confianza ${(confianza * 100).toFixed(1)}%`,
+          description: `${tipoFichaje.replace('_', ' ')} registrada para ${employeeName} con confianza ${(resultado.confidence * 100).toFixed(1)}%`,
         })
       } else {
         toast({
@@ -302,14 +308,87 @@ export default function FicheroFacialAuth({
     }
   }
 
-  const compararConRostroAlmacenado = async (capturedDescriptor: Float32Array): Promise<number> => {
+  const compararConRostroAlmacenado = async (capturedDescriptor: Float32Array): Promise<{confidence: number, empleadoId?: string, empleadoData?: any}> => {
     try {
-      // For demo employee, always return high confidence
+      // For demo/kiosk mode, search for the actual employee by face recognition
       if (empleado.id === 'demo-empleado') {
-        return 0.95
+        // Get all active employees with face descriptors
+        const { data: allEmployees, error: employeesError } = await supabase
+          .from('empleados')
+          .select('id, nombre, apellido, email')
+          .eq('activo', true)
+
+        if (employeesError) throw employeesError
+
+        let bestGlobalConfidence = 0
+        let bestEmployeeMatch = null
+
+        for (const emp of allEmployees) {
+          // Check multiple face versions for this employee
+          const { data: rostrosData, error: rostrosError } = await supabase
+            .from('empleados_rostros')
+            .select('face_descriptor, confidence_score, version_name')
+            .eq('empleado_id', emp.id)
+            .eq('is_active', true)
+
+          if (rostrosData && rostrosData.length > 0) {
+            for (const rostro of rostrosData) {
+              if (rostro.face_descriptor && rostro.face_descriptor.length > 0) {
+                const storedDescriptor = new Float32Array(rostro.face_descriptor)
+                const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
+                
+                // Convertir distancia a confianza (invertir y normalizar)
+                const confidence = Math.max(0, 1 - distance)
+                
+                if (confidence > bestGlobalConfidence && confidence > 0.6) {
+                  bestGlobalConfidence = confidence
+                  bestEmployeeMatch = emp
+                }
+              }
+            }
+          }
+
+          // Also check legacy face descriptor
+          const { data: legacyData, error: legacyError } = await supabase
+            .from('empleados_datos_sensibles')
+            .select('face_descriptor')
+            .eq('empleado_id', emp.id)
+            .maybeSingle()
+
+          if (legacyData?.face_descriptor && legacyData.face_descriptor.length > 0) {
+            const storedDescriptor = new Float32Array(legacyData.face_descriptor)
+            const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
+            
+            const confidence = Math.max(0, 1 - distance)
+            
+            if (confidence > bestGlobalConfidence && confidence > 0.6) {
+              bestGlobalConfidence = confidence
+              bestEmployeeMatch = emp
+            }
+          }
+        }
+
+        if (bestEmployeeMatch && bestGlobalConfidence > 0.6) {
+          console.log(`Empleado identificado: ${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido} con confianza ${bestGlobalConfidence.toFixed(3)}`)
+          
+          // Log access to biometric data for audit
+          await supabase.rpc('log_empleado_access', {
+            p_empleado_id: bestEmployeeMatch.id,
+            p_tipo_acceso: 'facial_recognition_kiosk',
+            p_datos_accedidos: ['face_descriptor', 'basic_info']
+          })
+
+          return { 
+            confidence: bestGlobalConfidence, 
+            empleadoId: bestEmployeeMatch.id,
+            empleadoData: bestEmployeeMatch
+          }
+        }
+
+        return { confidence: 0 }
       }
 
-      // First, try to get face descriptors from new multiple faces table
+      // For specific employee (admin panel), check their face descriptors
       const { data: rostrosData, error: rostrosError } = await supabase
         .from('empleados_rostros')
         .select('face_descriptor, confidence_score, version_name')
@@ -349,7 +428,7 @@ export default function FicheroFacialAuth({
             p_datos_accedidos: ['face_descriptor', 'version_name']
           })
 
-          return bestConfidence
+          return { confidence: bestConfidence, empleadoId: empleado.id }
         }
       }
 
@@ -358,7 +437,7 @@ export default function FicheroFacialAuth({
         .from('empleados_datos_sensibles')
         .select('face_descriptor')
         .eq('empleado_id', empleado.id)
-        .single()
+        .maybeSingle()
 
       if (empleadoData?.face_descriptor && empleadoData.face_descriptor.length > 0) {
         console.log('Usando descriptor facial legacy')
@@ -383,16 +462,14 @@ export default function FicheroFacialAuth({
       // Si no encontramos ningún rostro registrado
       if (bestConfidence === 0) {
         console.error('No se encontraron descriptores faciales activos')
-        // For real employees without stored face data, return moderate confidence for demo
-        return 0.8
+        return { confidence: 0 }
       }
 
-      return bestConfidence
+      return { confidence: bestConfidence, empleadoId: empleado.id }
 
     } catch (error) {
       console.error('Error comparando descriptores:', error)
-      // Return demo confidence on error
-      return 0.75
+      return { confidence: 0 }
     }
   }
 
