@@ -16,6 +16,13 @@ interface RegistroExitoso {
   timestamp: Date
 }
 
+interface TareaPendiente {
+  id: string
+  titulo: string
+  prioridad: 'baja' | 'media' | 'alta' | 'urgente'
+  fecha_limite: string | null
+}
+
 export default function KioscoCheckIn() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -24,6 +31,7 @@ export default function KioscoCheckIn() {
   const [selectedEmployee, setSelectedEmployee] = useState<EmpleadoBasico | null>(null)
   const [showFacialAuth, setShowFacialAuth] = useState(false)
   const [registroExitoso, setRegistroExitoso] = useState<RegistroExitoso | null>(null)
+  const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -91,6 +99,17 @@ export default function KioscoCheckIn() {
 
       if (error) throw error
 
+      // Obtener tareas pendientes del empleado
+      const { data: tareas } = await supabase
+        .from('tareas')
+        .select('id, titulo, prioridad, fecha_limite')
+        .eq('asignado_a', empleadoParaFichaje.id)
+        .eq('estado', 'pendiente')
+        .order('fecha_limite', { ascending: true })
+        .limit(5)
+
+      setTareasPendientes(tareas || [])
+
       // Mostrar tarjeta de confirmación
       setRegistroExitoso({
         empleado: empleadoParaFichaje,
@@ -123,7 +142,8 @@ export default function KioscoCheckIn() {
       setSelectedEmployee(null)
       setShowFacialAuth(false)
       setRegistroExitoso(null)
-    }, 4000) // Aumentado tiempo para mostrar confirmación
+      setTareasPendientes([])
+    }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
   }
 
   const iniciarCheckIn = () => {
@@ -150,6 +170,31 @@ export default function KioscoCheckIn() {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
+    })
+  }
+
+  const getPriorityColor = (prioridad: string) => {
+    switch (prioridad) {
+      case 'urgente':
+        return 'border-destructive bg-destructive/10 text-destructive'
+      case 'alta':
+        return 'border-orange-500 bg-orange-50 text-orange-700'
+      case 'media':
+        return 'border-yellow-500 bg-yellow-50 text-yellow-700'
+      case 'baja':
+        return 'border-green-500 bg-green-50 text-green-700'
+      default:
+        return 'border-muted bg-muted/10 text-muted-foreground'
+    }
+  }
+
+  const formatFechaLimite = (fecha: string | null) => {
+    if (!fecha) return 'Sin fecha límite'
+    const fechaObj = new Date(fecha)
+    return fechaObj.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
     })
   }
 
@@ -216,6 +261,28 @@ export default function KioscoCheckIn() {
                     })}
                   </div>
                 </div>
+
+                {/* Tareas Pendientes */}
+                {tareasPendientes.length > 0 && (
+                  <div className="bg-white border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-blue-800 mb-3">
+                      Tareas Pendientes ({tareasPendientes.length})
+                    </h3>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {tareasPendientes.map((tarea) => (
+                        <div
+                          key={tarea.id}
+                          className={`border rounded-lg p-3 ${getPriorityColor(tarea.prioridad)}`}
+                        >
+                          <div className="font-medium text-sm">{tarea.titulo}</div>
+                          <div className="text-xs mt-1 opacity-80">
+                            Vence: {formatFechaLimite(tarea.fecha_limite)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="text-sm text-gray-600">
                   Volviendo al inicio en unos segundos...
                 </div>
