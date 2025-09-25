@@ -2179,6 +2179,15 @@ export type Database = {
           telefono: string
         }[]
       }
+      get_employees_for_kiosk: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          apellido: string
+          email: string
+          id: string
+          nombre: string
+        }[]
+      }
       get_manager_employee_view: {
         Args: Record<PropertyKey, never>
         Returns: {

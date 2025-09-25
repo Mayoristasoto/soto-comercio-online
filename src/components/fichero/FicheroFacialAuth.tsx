@@ -339,11 +339,9 @@ export default function FicheroFacialAuth({
     try {
       // For kiosk mode, search for the actual employee by face recognition
       if (empleado.id === 'demo-empleado' || empleado.id === 'recognition-mode') {
-        // Get all active employees with face descriptors using empleados_basic view
+        // Get all active employees using security definer function for kiosk access
         const { data: allEmployees, error: employeesError } = await supabase
-          .from('empleados_basic')
-          .select('id, nombre, apellido, email')
-          .eq('activo', true)
+          .rpc('get_employees_for_kiosk')
 
         if (employeesError) throw employeesError
 
