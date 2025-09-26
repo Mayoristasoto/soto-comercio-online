@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  MessageSquare,
+  TestTube
 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
@@ -33,6 +35,9 @@ interface ConfiguracionSistema {
   max_intentos_facial: number
   geocerca_obligatoria: boolean
   ip_whitelist_obligatoria: boolean
+  whatsapp_api_token: string
+  whatsapp_notificaciones_activas: boolean
+  whatsapp_retraso_minutos: number
 }
 
 export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionProps) {
@@ -43,11 +48,16 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     umbral_confianza_facial: 0.75,
     max_intentos_facial: 3,
     geocerca_obligatoria: true,
-    ip_whitelist_obligatoria: false
+    ip_whitelist_obligatoria: false,
+    whatsapp_api_token: '',
+    whatsapp_notificaciones_activas: true,
+    whatsapp_retraso_minutos: 15
   })
   const [ubicacionActual, setUbicacionActual] = useState<{lat: number, lng: number} | null>(null)
   const [tieneDescriptorFacial, setTieneDescriptorFacial] = useState(false)
   const [confirmacionBorrado, setConfirmacionBorrado] = useState(false)
+  const [mostrarToken, setMostrarToken] = useState(false)
+  const [probandoWhatsApp, setProbandoWhatsApp] = useState(false)
 
   useEffect(() => {
     cargarConfiguracion()
@@ -64,7 +74,10 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'umbral_confianza_facial',
           'max_intentos_facial', 
           'geocerca_obligatoria',
-          'ip_whitelist_obligatoria'
+          'ip_whitelist_obligatoria',
+          'whatsapp_api_token',
+          'whatsapp_notificaciones_activas',
+          'whatsapp_retraso_minutos'
         ])
 
       if (error) throw error
@@ -154,6 +167,18 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'ip_whitelist_obligatoria',
           valor: configuracion.ip_whitelist_obligatoria.toString()
+        },
+        {
+          clave: 'whatsapp_api_token',
+          valor: configuracion.whatsapp_api_token
+        },
+        {
+          clave: 'whatsapp_notificaciones_activas',
+          valor: configuracion.whatsapp_notificaciones_activas.toString()
+        },
+        {
+          clave: 'whatsapp_retraso_minutos',
+          valor: configuracion.whatsapp_retraso_minutos.toString()
         }
       ]
 
@@ -209,6 +234,29 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         description: "No se pudieron borrar los datos biométricos",
         variant: "destructive"
       })
+    }
+  }
+
+  const probarWhatsApp = async () => {
+    setProbandoWhatsApp(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-notify')
+      
+      if (error) throw error
+      
+      toast({
+        title: "Prueba completada",
+        description: `${data.message || 'Función ejecutada correctamente'}`,
+      })
+    } catch (error) {
+      console.error('Error probando WhatsApp:', error)
+      toast({
+        title: "Error en prueba",
+        description: "No se pudo ejecutar la función de WhatsApp",
+        variant: "destructive"
+      })
+    } finally {
+      setProbandoWhatsApp(false)
     }
   }
 
@@ -396,6 +444,97 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
                 Latitud: {ubicacionActual.lat.toFixed(6)}<br />
                 Longitud: {ubicacionActual.lng.toFixed(6)}
               </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Configuración de WhatsApp */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <MessageSquare className="h-5 w-5" />
+            <span>Notificaciones WhatsApp</span>
+          </CardTitle>
+          <CardDescription>
+            Configuración de notificaciones automáticas para empleados sin salida registrada
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Notificaciones automáticas</Label>
+              <p className="text-sm text-muted-foreground">
+                Enviar mensajes WhatsApp a empleados sin salida registrada
+              </p>
+            </div>
+            <Switch
+              checked={configuracion.whatsapp_notificaciones_activas}
+              onCheckedChange={(checked) => setConfiguracion(prev => ({
+                ...prev,
+                whatsapp_notificaciones_activas: checked
+              }))}
+              disabled={empleado.rol !== 'admin_rrhh'}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Retraso mínimo (minutos)</Label>
+            <Input
+              type="number"
+              min="5"
+              max="120"
+              value={configuracion.whatsapp_retraso_minutos}
+              onChange={(e) => setConfiguracion(prev => ({
+                ...prev,
+                whatsapp_retraso_minutos: parseInt(e.target.value)
+              }))}
+              disabled={empleado.rol !== 'admin_rrhh'}
+            />
+            <p className="text-xs text-muted-foreground">
+              Tiempo de espera después de la hora de salida antes de enviar notificación
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Token API WhatsApp</Label>
+            <div className="flex space-x-2">
+              <Input
+                type={mostrarToken ? "text" : "password"}
+                value={configuracion.whatsapp_api_token}
+                onChange={(e) => setConfiguracion(prev => ({
+                  ...prev,
+                  whatsapp_api_token: e.target.value
+                }))}
+                placeholder="Bearer token para la API"
+                disabled={empleado.rol !== 'admin_rrhh'}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setMostrarToken(!mostrarToken)}
+                disabled={empleado.rol !== 'admin_rrhh'}
+              >
+                {mostrarToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Token de autorización obtenido de la API de WhatsApp
+            </p>
+          </div>
+
+          {empleado.rol === 'admin_rrhh' && (
+            <div className="flex space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={probarWhatsApp}
+                disabled={probandoWhatsApp}
+                className="flex items-center space-x-2"
+              >
+                <TestTube className="h-4 w-4" />
+                <span>{probandoWhatsApp ? 'Probando...' : 'Probar función'}</span>
+              </Button>
             </div>
           )}
         </CardContent>
