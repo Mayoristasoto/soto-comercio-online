@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
 import { TaskDelegationInfo } from "@/components/tasks/TaskDelegationInfo"
+import { DelegateTaskDialog } from "@/components/tasks/DelegateTaskDialog"
 
 interface UserInfo {
   id: string
@@ -49,6 +50,8 @@ export default function Tareas() {
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [loading, setLoading] = useState(true)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [delegateDialogOpen, setDelegateDialogOpen] = useState(false)
+  const [selectedTaskToDelegate, setSelectedTaskToDelegate] = useState<Tarea | null>(null)
 
   useEffect(() => {
     if (userInfo) {
@@ -67,9 +70,15 @@ export default function Tareas() {
         `)
         .order('created_at', { ascending: false });
 
-      // Si no es admin, solo mostrar tareas asignadas al usuario o creadas por él
-      if (userInfo.rol !== 'admin_rrhh') {
+      // Filtros según el rol del usuario
+      if (userInfo.rol === 'admin_rrhh') {
+        // Admin puede ver todas las tareas
+      } else if (userInfo.rol === 'gerente_sucursal') {
+        // Gerente puede ver tareas asignadas a él, creadas por él, o asignadas a empleados de su sucursal
         query = query.or(`asignado_a.eq.${userInfo.id},asignado_por.eq.${userInfo.id}`);
+      } else {
+        // Empleados solo ven tareas asignadas a ellos
+        query = query.eq('asignado_a', userInfo.id);
       }
 
       const { data, error } = await query;
@@ -133,6 +142,11 @@ export default function Tareas() {
     }
   }
 
+  const openDelegateDialog = (tarea: Tarea) => {
+    setSelectedTaskToDelegate(tarea);
+    setDelegateDialogOpen(true);
+  }
+
   const getPrioridadColor = (prioridad: string) => {
     switch (prioridad) {
       case 'urgente': return 'bg-red-500'
@@ -176,7 +190,7 @@ export default function Tareas() {
         {(userInfo.rol === 'admin_rrhh' || userInfo.rol === 'gerente_sucursal') && (
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            {userInfo.rol === 'admin_rrhh' ? 'Nueva Tarea' : 'Delegar Tarea'}
+            {userInfo.rol === 'admin_rrhh' ? 'Nueva Tarea' : 'Crear Tarea'}
           </Button>
         )}
       </div>
@@ -294,21 +308,43 @@ export default function Tareas() {
                     </div>
                     <div className="flex justify-end space-x-2">
                       {tarea.estado === 'pendiente' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => updateTaskStatus(tarea.id, 'en_progreso')}
-                        >
-                          Iniciar
-                        </Button>
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => updateTaskStatus(tarea.id, 'en_progreso')}
+                          >
+                            Iniciar
+                          </Button>
+                          {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por !== userInfo.id && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => openDelegateDialog(tarea)}
+                            >
+                              Delegar
+                            </Button>
+                          )}
+                        </>
                       )}
                       {tarea.estado === 'en_progreso' && (
-                        <Button 
-                          size="sm"
-                          onClick={() => updateTaskStatus(tarea.id, 'completada')}
-                        >
-                          Completar
-                        </Button>
+                        <>
+                          <Button 
+                            size="sm"
+                            onClick={() => updateTaskStatus(tarea.id, 'completada')}
+                          >
+                            Completar
+                          </Button>
+                          {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por !== userInfo.id && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => openDelegateDialog(tarea)}
+                            >
+                              Delegar
+                            </Button>
+                          )}
+                        </>
                       )}
                       {tarea.estado === 'completada' && tarea.fecha_completada && (
                         <p className="text-xs text-green-600">
@@ -391,6 +427,19 @@ export default function Tareas() {
                           ✅ Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
                         </div>
                       )}
+                      {/* Botones de gestión para tareas delegadas */}
+                      {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && 
+                       (tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && (
+                        <div className="flex justify-end mt-4">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => openDelegateDialog(tarea)}
+                          >
+                            Re-delegar
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))
@@ -405,6 +454,15 @@ export default function Tareas() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onTaskCreated={loadTareas}
+        userInfo={userInfo}
+      />
+
+      {/* Dialog para delegar tarea */}
+      <DelegateTaskDialog
+        open={delegateDialogOpen}
+        onOpenChange={setDelegateDialogOpen}
+        onTaskDelegated={loadTareas}
+        task={selectedTaskToDelegate}
         userInfo={userInfo}
       />
     </div>

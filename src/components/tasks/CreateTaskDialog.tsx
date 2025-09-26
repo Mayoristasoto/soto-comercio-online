@@ -212,7 +212,7 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
           <DialogDescription>
             {userInfo.rol === 'admin_rrhh' 
               ? 'Asigna una nueva tarea a cualquier empleado o gerente' 
-              : 'Delega una tarea a un empleado de tu sucursal'
+              : 'Crea y asigna una nueva tarea a un empleado de tu sucursal'
             }
           </DialogDescription>
         </DialogHeader>
