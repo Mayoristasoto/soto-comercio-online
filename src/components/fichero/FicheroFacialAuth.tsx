@@ -216,12 +216,13 @@ export default function FicheroFacialAuth({
   }
 
   const iniciarFichaje = async () => {
-    if (!videoRef.current || !canvasRef.current || !isModelLoaded) return
+    if (!videoRef.current || !canvasRef.current || !isModelLoaded || isProcessing) return
     
     console.log('Kiosco: Iniciando fichaje, estado actual:', {
       isCameraActive,
       isModelLoaded,
-      livenessCheck
+      livenessCheck,
+      isProcessing
     })
     
     // Verificación muy permisiva para kiosco - solo verificar que hay una cámara activa
@@ -232,6 +233,12 @@ export default function FicheroFacialAuth({
         description: "Active la cámara para continuar",
         variant: "destructive"
       })
+      return
+    }
+    
+    // Prevenir múltiples procesamiento simultáneos
+    if (isProcessing) {
+      console.log('Kiosco: Ya hay un procesamiento en curso')
       return
     }
     
@@ -317,6 +324,9 @@ export default function FicheroFacialAuth({
           title: "Fichaje exitoso",
           description: `${tipoFichaje.replace('_', ' ')} registrada para ${employeeName} con confianza ${(resultado.confidence * 100).toFixed(1)}%`,
         })
+        
+        // Detener cámara después del éxito para evitar múltiples procesamiento
+        stopCamera()
       } else {
         toast({
           title: "Rostro no reconocido",

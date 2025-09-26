@@ -42,6 +42,7 @@ export default function KioscoCheckIn() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [lastProcessTime, setLastProcessTime] = useState<number>(0) // Para prevenir múltiples procesamiento
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [selectedEmployee, setSelectedEmployee] = useState<EmpleadoBasico | null>(null)
   const [showFacialAuth, setShowFacialAuth] = useState(false)
@@ -171,8 +172,13 @@ export default function KioscoCheckIn() {
   }
 
   const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any) => {
-    // Prevenir procesamiento duplicado
-    if (loading) return
+    // Prevenir procesamiento duplicado con debounce de 3 segundos
+    const now = Date.now()
+    if (loading || (now - lastProcessTime < 3000)) {
+      console.log('Procesamiento bloqueado - demasiado rápido o ya en proceso')
+      return
+    }
+    setLastProcessTime(now)
     
     // Store recognized employee data and determine available actions
     if (empleadoId && empleadoData) {
@@ -296,13 +302,19 @@ export default function KioscoCheckIn() {
       setRecognizedEmployee(null)
       setAccionesDisponibles([])
       setUltimoTipoFichaje(null)
+      setLastProcessTime(0) // Reset del debounce
     }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
   }
 
   // Función para ejecutar una acción directamente (cuando solo hay una opción)
   const ejecutarAccionDirecta = async (tipoAccion: TipoAccion, empleadoId: string, empleadoData: any, confianza: number) => {
-    // Prevenir ejecución duplicada
-    if (loading) return
+    // Prevenir ejecución duplicada con debounce
+    const now = Date.now()
+    if (loading || (now - lastProcessTime < 3000)) {
+      console.log('Acción directa bloqueada - demasiado rápido o ya en proceso')
+      return
+    }
+    setLastProcessTime(now)
     
     setLoading(true)
     try {
@@ -379,6 +391,7 @@ export default function KioscoCheckIn() {
 
     } catch (error) {
       console.error('Error procesando fichaje:', error)
+      setLastProcessTime(0) // Reset del debounce en caso de error
       toast({
         title: "Error",
         description: "No se pudo registrar el fichaje. Intente nuevamente.",
@@ -468,6 +481,7 @@ export default function KioscoCheckIn() {
 
     } catch (error) {
       console.error('Error procesando fichaje:', error)
+      setLastProcessTime(0) // Reset del debounce en caso de error
       toast({
         title: "Error",
         description: "No se pudo registrar el fichaje. Intente nuevamente.",
