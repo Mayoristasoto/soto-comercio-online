@@ -44,7 +44,9 @@ interface Props {
   userInfo: {
     id: string;
     rol: string;
-    sucursal_id: string;
+    sucursal_id: string | null;
+    nombre?: string;
+    apellido?: string;
   };
 }
 
@@ -72,8 +74,12 @@ export function DelegateTaskDialog({ open, onOpenChange, onTaskDelegated, task, 
         .from('empleados')
         .select('id, nombre, apellido, email, rol, sucursal_id, activo')
         .eq('activo', true)
-        .eq('sucursal_id', userInfo.sucursal_id)
         .eq('rol', 'empleado'); // Solo empleados regulares
+      
+      // Filtrar por sucursal del gerente
+      if (userInfo.sucursal_id) {
+        query = query.eq('sucursal_id', userInfo.sucursal_id);
+      }
 
       // Excluir al empleado actualmente asignado
       if (task?.asignado_a) {

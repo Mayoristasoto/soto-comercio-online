@@ -37,7 +37,9 @@ interface Props {
   userInfo: {
     id: string;
     rol: string;
-    sucursal_id: string;
+    sucursal_id: string | null;
+    nombre?: string;
+    apellido?: string;
   };
 }
 
@@ -59,12 +61,15 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
 
   useEffect(() => {
     if (open) {
+      console.log('Dialog abierto - User info:', userInfo);
       loadEmpleados();
       loadSucursales();
     }
-  }, [open]);
+  }, [open, userInfo.rol, userInfo.sucursal_id]);
 
   const loadEmpleados = async () => {
+    console.log('=== INICIO loadEmpleados ===');
+    console.log('userInfo completo:', userInfo);
     try {
       let query = supabase
         .from('empleados')
@@ -84,8 +89,12 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
           return;
         }
         
-        query = query.eq('sucursal_id', userInfo.sucursal_id)
-          .in('rol', ['empleado']); // Gerentes solo pueden asignar a empleados
+        console.log('Filtrando empleados para gerente de sucursal:', userInfo.sucursal_id);
+        
+        query = query
+          .eq('sucursal_id', userInfo.sucursal_id)
+          .eq('rol', 'empleado') // Solo empleados regulares
+          .neq('id', userInfo.id); // Excluir al gerente mismo
       } else if (userInfo.rol === 'admin_rrhh') {
         query = query.in('rol', ['empleado', 'gerente_sucursal']); // Admin puede asignar a empleados y gerentes
       }
@@ -95,7 +104,8 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
       if (error) throw error;
       
       console.log('Empleados cargados:', data); // Debug log
-      console.log('User info:', userInfo); // Debug log
+      console.log('User info en CreateTaskDialog:', userInfo); // Debug log
+      console.log('Query final ejecutada para rol:', userInfo.rol); // Debug log
       
       setEmpleados(data || []);
     } catch (error) {
@@ -317,7 +327,9 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
                       {searchTerm 
                         ? 'No se encontraron empleados con ese criterio' 
                         : userInfo.rol === 'gerente_sucursal' && !userInfo.sucursal_id
-                        ? 'Sin sucursal asignada'
+                        ? 'Sin sucursal asignada - contacta al administrador'
+                        : userInfo.rol === 'gerente_sucursal' && empleados.length === 0
+                        ? `No hay empleados en tu sucursal (${userInfo.sucursal_id}) disponibles para asignar`
                         : empleados.length === 0 
                         ? 'No hay empleados disponibles para asignar'
                         : 'Cargando empleados...'
