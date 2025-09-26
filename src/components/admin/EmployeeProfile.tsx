@@ -63,6 +63,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
   const [loading, setLoading] = useState(false)
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [formData, setFormData] = useState<Partial<EmpleadoProfile>>({})
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     if (empleado) {
@@ -70,6 +71,21 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
       loadSucursales()
     }
   }, [empleado])
+
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData.user?.id
+      if (!userId) return
+      const { data } = await supabase
+        .from('empleados')
+        .select('rol')
+        .eq('user_id', userId)
+        .maybeSingle()
+      setIsAdmin(data?.rol === 'admin_rrhh')
+    }
+    checkRole()
+  }, [])
 
   const loadSucursales = async () => {
     try {
@@ -118,35 +134,37 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
       }
 
-      // Check if sensitive data record exists first
-      const { data: existingRecord } = await supabase
-        .from('empleados_datos_sensibles')
-        .select('id')
-        .eq('empleado_id', empleado.id)
-        .maybeSingle()
-
-      let sensitiveError = null
-
-      if (existingRecord) {
-        // Update existing record
-        const { error } = await supabase
+      // Only admins can modify sensitive data; skip for others to avoid RLS errors
+      let sensitiveError: any = null
+      if (isAdmin) {
+        // Check if sensitive data record exists first
+        const { data: existingRecord } = await supabase
           .from('empleados_datos_sensibles')
-          .update(sensitiveUpdate)
+          .select('id')
           .eq('empleado_id', empleado.id)
-        sensitiveError = error
-      } else {
-        // Insert new record
-        const { error } = await supabase
-          .from('empleados_datos_sensibles')
-          .insert({ 
-            empleado_id: empleado.id,
-            ...sensitiveUpdate 
-          })
-        sensitiveError = error
-      }
+          .maybeSingle()
 
-      if (sensitiveError) {
-        console.error('Error updating sensitive data:', sensitiveError)
+        if (existingRecord) {
+          // Update existing record
+          const { error } = await supabase
+            .from('empleados_datos_sensibles')
+            .update(sensitiveUpdate)
+            .eq('empleado_id', empleado.id)
+          sensitiveError = error
+        } else {
+          // Insert new record
+          const { error } = await supabase
+            .from('empleados_datos_sensibles')
+            .insert({ 
+              empleado_id: empleado.id,
+              ...sensitiveUpdate 
+            })
+          sensitiveError = error
+        }
+
+        if (sensitiveError) {
+          console.error('Error updating sensitive data:', sensitiveError)
+        }
       }
 
       toast({
@@ -258,6 +276,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                         onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
                         className="pl-10"
                         placeholder="+54 11 1234-5678"
+                        disabled={!isAdmin}
                       />
                     </div>
                   </div>
