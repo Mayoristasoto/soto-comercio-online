@@ -1615,6 +1615,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notificaciones_salida: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          estado: string
+          fecha_fichaje: string
+          hora_notificacion: string
+          hora_salida_esperada: string
+          id: string
+          mensaje_enviado: string
+          numero_telefono: string
+          respuesta_api: Json | null
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          fecha_fichaje: string
+          hora_notificacion?: string
+          hora_salida_esperada: string
+          id?: string
+          mensaje_enviado: string
+          numero_telefono: string
+          respuesta_api?: Json | null
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          fecha_fichaje?: string
+          hora_notificacion?: string
+          hora_salida_esperada?: string
+          id?: string
+          mensaje_enviado?: string
+          numero_telefono?: string
+          respuesta_api?: Json | null
+        }
+        Relationships: []
+      }
       participaciones: {
         Row: {
           created_at: string
@@ -2273,6 +2312,16 @@ export type Database = {
           ubicacion_id: string
         }
         Returns: boolean
+      }
+      verificar_empleados_sin_salida: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          empleado_id: string
+          hora_salida_esperada: string
+          minutos_retraso: number
+          nombre_completo: string
+          telefono: string
+        }[]
       }
     }
     Enums: {
