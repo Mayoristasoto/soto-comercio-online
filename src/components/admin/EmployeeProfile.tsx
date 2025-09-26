@@ -91,6 +91,15 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
     setLoading(true)
     try {
+      // First, check if current user is admin
+      const { data: currentUser } = await supabase
+        .from('empleados')
+        .select('rol')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single()
+
+      const isAdmin = currentUser?.rol === 'admin_rrhh'
+
       // Update basic employee data in empleados table
       const empleadoUpdate = {
         nombre: formData.nombre,
@@ -107,55 +116,57 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
       if (empleadoError) throw empleadoError
 
-      // Update sensitive data in empleados_datos_sensibles table
-      // Only update if user has admin permissions
-      const sensitiveUpdate = {
-        telefono: formData.telefono || null,
-        direccion: formData.direccion || null,
-        salario: formData.salario || null,
-        fecha_nacimiento: formData.fecha_nacimiento || null,
-        estado_civil: formData.estado_civil || null,
-        emergencia_contacto_nombre: formData.emergencia_contacto_nombre || null,
-        emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
-      }
-
-      // Check if record exists first
-      const { data: existingRecord } = await supabase
-        .from('empleados_datos_sensibles')
-        .select('id')
-        .eq('empleado_id', empleado.id)
-        .single()
-
+      // Update sensitive data only if user is admin
       let sensitiveError = null
       
-      if (existingRecord) {
-        // Update existing record
-        const { error } = await supabase
-          .from('empleados_datos_sensibles')
-          .update(sensitiveUpdate)
-          .eq('empleado_id', empleado.id)
-        sensitiveError = error
-      } else {
-        // Insert new record
-        const { error } = await supabase
-          .from('empleados_datos_sensibles')
-          .insert({ 
-            empleado_id: empleado.id,
-            ...sensitiveUpdate 
-          })
-        sensitiveError = error
-      }
+      if (isAdmin) {
+        const sensitiveUpdate = {
+          telefono: formData.telefono || null,
+          direccion: formData.direccion || null,
+          salario: formData.salario || null,
+          fecha_nacimiento: formData.fecha_nacimiento || null,
+          estado_civil: formData.estado_civil || null,
+          emergencia_contacto_nombre: formData.emergencia_contacto_nombre || null,
+          emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
+        }
 
-      if (sensitiveError) {
-        console.warn('Error updating sensitive data:', sensitiveError)
-        // Don't throw error, just log warning since basic data was saved successfully
+        // Check if record exists first
+        const { data: existingRecord } = await supabase
+          .from('empleados_datos_sensibles')
+          .select('id')
+          .eq('empleado_id', empleado.id)
+          .maybeSingle()
+        
+        if (existingRecord) {
+          // Update existing record
+          const { error } = await supabase
+            .from('empleados_datos_sensibles')
+            .update(sensitiveUpdate)
+            .eq('empleado_id', empleado.id)
+          sensitiveError = error
+        } else {
+          // Insert new record
+          const { error } = await supabase
+            .from('empleados_datos_sensibles')
+            .insert({ 
+              empleado_id: empleado.id,
+              ...sensitiveUpdate 
+            })
+          sensitiveError = error
+        }
+
+        if (sensitiveError) {
+          console.warn('Error updating sensitive data:', sensitiveError)
+        }
       }
 
       toast({
         title: "Perfil actualizado",
-        description: sensitiveError 
-          ? "Datos básicos guardados. Datos sensibles requieren permisos de administrador."
-          : "Los datos del empleado se guardaron correctamente"
+        description: !isAdmin 
+          ? "Datos básicos guardados. Los datos sensibles solo pueden ser editados por administradores."
+          : sensitiveError 
+            ? "Datos básicos guardados. Error al guardar datos sensibles."
+            : "Los datos del empleado se guardaron correctamente"
       })
 
       onEmployeeUpdated?.()
