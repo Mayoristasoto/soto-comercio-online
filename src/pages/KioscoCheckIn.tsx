@@ -78,15 +78,13 @@ export default function KioscoCheckIn() {
   // Función para determinar el tipo de fichaje según el historial
   const determinarTipoFichaje = async (empleadoId: string): Promise<AccionDisponible[]> => {
     try {
-      // Obtener el último fichaje del día actual
-      const hoy = new Date().toISOString().split('T')[0]
-      
+      // Obtener el último fichaje del día actual usando DATE() para comparar solo la fecha
       const { data: fichajes, error } = await supabase
         .from('fichajes')
         .select('tipo, timestamp_real')
         .eq('empleado_id', empleadoId)
-        .gte('timestamp_real', `${hoy}T00:00:00.000Z`)
-        .lt('timestamp_real', `${hoy}T23:59:59.999Z`)
+        .eq('estado', 'valido')
+        .gte('timestamp_real', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
         .order('timestamp_real', { ascending: false })
         .limit(1)
 
@@ -173,6 +171,9 @@ export default function KioscoCheckIn() {
   }
 
   const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any) => {
+    // Prevenir procesamiento duplicado
+    if (loading) return
+    
     // Store recognized employee data and determine available actions
     if (empleadoId && empleadoData) {
       setRecognizedEmployee({ id: empleadoId, data: empleadoData, confidence: confianza })
@@ -300,6 +301,9 @@ export default function KioscoCheckIn() {
 
   // Función para ejecutar una acción directamente (cuando solo hay una opción)
   const ejecutarAccionDirecta = async (tipoAccion: TipoAccion, empleadoId: string, empleadoData: any, confianza: number) => {
+    // Prevenir ejecución duplicada
+    if (loading) return
+    
     setLoading(true)
     try {
       const empleadoParaFichaje = {
