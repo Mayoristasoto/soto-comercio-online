@@ -549,6 +549,7 @@ export type Database = {
           apellido: string
           avatar_url: string | null
           created_at: string
+          dni: string | null
           email: string
           fecha_ingreso: string
           grupo_id: string | null
@@ -566,6 +567,7 @@ export type Database = {
           apellido: string
           avatar_url?: string | null
           created_at?: string
+          dni?: string | null
           email: string
           fecha_ingreso?: string
           grupo_id?: string | null
@@ -583,6 +585,7 @@ export type Database = {
           apellido?: string
           avatar_url?: string | null
           created_at?: string
+          dni?: string | null
           email?: string
           fecha_ingreso?: string
           grupo_id?: string | null
