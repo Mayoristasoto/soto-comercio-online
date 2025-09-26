@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Pencil, Trash2, Plus, User, UserPlus, Mail, Building2, Shield, Eye, Camera } from "lucide-react"
+import { Pencil, Trash2, Plus, User, UserPlus, Mail, Building2, Shield, Eye, Camera, Key } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import UserCreationForm from "./UserCreationForm"
@@ -51,7 +51,9 @@ export default function UserEmployeeManagement() {
   const [createUserOpen, setCreateUserOpen] = useState(false)
   const [faceDialogOpen, setFaceDialogOpen] = useState(false)
   const [multipleFaceDialogOpen, setMultipleFaceDialogOpen] = useState(false)
+  const [enableUserDialogOpen, setEnableUserDialogOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Empleado | null>(null)
+  const [tempPassword, setTempPassword] = useState('')
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -212,6 +214,81 @@ export default function UserEmployeeManagement() {
     loadData()
   }
 
+  const handleEnableUser = (empleado: Empleado) => {
+    setEditingEmployee(empleado)
+    setTempPassword('') // Reset password field
+    setEnableUserDialogOpen(true)
+  }
+
+  const generateRandomPassword = () => {
+    const length = 8
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    let password = ""
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length))
+    }
+    setTempPassword(password)
+  }
+
+  const handleCreateUserAccount = async () => {
+    if (!editingEmployee || !tempPassword.trim()) {
+      toast({
+        title: "Error",
+        description: "La contraseña es requerida",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      // Create user account in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: editingEmployee.email,
+        password: tempPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            nombre: editingEmployee.nombre,
+            apellido: editingEmployee.apellido
+          }
+        }
+      })
+
+      if (authError) {
+        throw authError
+      }
+
+      if (authData.user) {
+        // Update employee record with user_id
+        const { error: updateError } = await supabase
+          .from('empleados')
+          .update({ user_id: authData.user.id })
+          .eq('id', editingEmployee.id)
+
+        if (updateError) {
+          throw updateError
+        }
+
+        toast({
+          title: "Usuario habilitado exitosamente",
+          description: `Se creó la cuenta de acceso para ${editingEmployee.nombre} ${editingEmployee.apellido}`,
+        })
+
+        setEnableUserDialogOpen(false)
+        setEditingEmployee(null)
+        setTempPassword('')
+        loadData()
+      }
+    } catch (error: any) {
+      console.error('Error creando cuenta de usuario:', error)
+      toast({
+        title: "Error al habilitar usuario",
+        description: error.message || "Ocurrió un error inesperado",
+        variant: "destructive"
+      })
+    }
+  }
+
   const getRoleBadge = (rol: string) => {
     const variants: Record<string, any> = {
       admin_rrhh: { variant: "destructive", label: "Admin RRHH" },
@@ -264,6 +341,7 @@ export default function UserEmployeeManagement() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onManageFace={handleManageFace}
+              onEnableUser={handleEnableUser}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
@@ -275,6 +353,7 @@ export default function UserEmployeeManagement() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onManageFace={handleManageFace}
+              onEnableUser={handleEnableUser}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
@@ -286,6 +365,7 @@ export default function UserEmployeeManagement() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onManageFace={handleManageFace}
+              onEnableUser={handleEnableUser}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
@@ -324,6 +404,82 @@ export default function UserEmployeeManagement() {
           } : null}
           onFaceUpdated={handleFaceUpdated}
         />
+
+        {/* Enable User Dialog */}
+        <Dialog open={enableUserDialogOpen} onOpenChange={setEnableUserDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Key className="h-5 w-5" />
+                <span>Habilitar Acceso al Sistema</span>
+              </DialogTitle>
+              <DialogDescription>
+                Crear cuenta de usuario para {editingEmployee?.nombre} {editingEmployee?.apellido}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-900 mb-2">Información del empleado</h4>
+                <div className="space-y-1 text-sm text-blue-800">
+                  <p><strong>Nombre:</strong> {editingEmployee?.nombre} {editingEmployee?.apellido}</p>
+                  <p><strong>Email:</strong> {editingEmployee?.email}</p>
+                  <p><strong>Rol:</strong> {editingEmployee?.rol}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="temp-password">Contraseña temporal *</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="temp-password"
+                    type="text"
+                    value={tempPassword}
+                    onChange={(e) => setTempPassword(e.target.value)}
+                    placeholder="Ingresa una contraseña temporal"
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={generateRandomPassword}
+                    title="Generar contraseña aleatoria"
+                  >
+                    <Shield className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  El empleado podrá cambiar esta contraseña después de su primer inicio de sesión.
+                </p>
+              </div>
+
+              <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <p className="text-sm text-yellow-800">
+                  <strong>Importante:</strong> Se enviará un email de confirmación a {editingEmployee?.email}. 
+                  El empleado deberá confirmar su email antes de poder acceder al sistema.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setEnableUserDialogOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={handleCreateUserAccount}
+                  disabled={!tempPassword.trim()}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Crear Cuenta
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Edit Employee Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -423,10 +579,11 @@ interface EmployeeTableProps {
   onEdit: (empleado: Empleado) => void
   onDelete: (id: string) => void
   onManageFace: (empleado: Empleado) => void
+  onEnableUser: (empleado: Empleado) => void
   getRoleBadge: (rol: string) => JSX.Element
 }
 
-function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, getRoleBadge }: EmployeeTableProps) {
+function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, onEnableUser, getRoleBadge }: EmployeeTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -485,6 +642,16 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, 
                 >
                   <Camera className="h-4 w-4" />
                 </Button>
+                {!empleado.user_id && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onEnableUser(empleado)}
+                    title="Habilitar acceso al sistema"
+                  >
+                    <Key className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={() => onDelete(empleado.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
