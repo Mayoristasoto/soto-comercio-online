@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2 } from "lucide-react"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2, User } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
+import { TaskDelegationInfo } from "@/components/tasks/TaskDelegationInfo"
 
 interface UserInfo {
   id: string
@@ -169,16 +170,19 @@ export default function Tareas() {
         <div>
           <h1 className="text-3xl font-bold">Gestión de Tareas</h1>
           <p className="text-muted-foreground mt-1">
-            Asignación y seguimiento de tareas por sucursal
+            Sistema de delegación y seguimiento de tareas
           </p>
         </div>
-        {userInfo.rol === 'admin_rrhh' && (
+        {(userInfo.rol === 'admin_rrhh' || userInfo.rol === 'gerente_sucursal') && (
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Nueva Tarea
+            {userInfo.rol === 'admin_rrhh' ? 'Nueva Tarea' : 'Delegar Tarea'}
           </Button>
         )}
       </div>
+
+      {/* Información de delegación */}
+      <TaskDelegationInfo userRole={userInfo.rol} />
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -239,7 +243,7 @@ export default function Tareas() {
           {(userInfo.rol === 'gerente_sucursal' || userInfo.rol === 'admin_rrhh') && (
             <TabsTrigger value="asignadas" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
-              <span>Asignadas</span>
+              <span>{userInfo.rol === 'admin_rrhh' ? 'Todas las Tareas' : 'Tareas Delegadas'}</span>
             </TabsTrigger>
           )}
           <TabsTrigger value="calendario" className="flex items-center space-x-2">
@@ -269,9 +273,10 @@ export default function Tareas() {
                         <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
                         <CardDescription>{tarea.descripcion || 'Sin descripción'}</CardDescription>
                         {tarea.empleado_creador && (
-                          <p className="text-xs text-muted-foreground">
-                            Asignada por: {tarea.empleado_creador.nombre} {tarea.empleado_creador.apellido}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Users className="h-3 w-3" />
+                            <span>Asignada por: {tarea.empleado_creador.nombre} {tarea.empleado_creador.apellido}</span>
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center space-x-2 ml-4">
@@ -342,9 +347,14 @@ export default function Tareas() {
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No has asignado tareas</h3>
+                    <h3 className="text-lg font-medium mb-2">
+                      {userInfo.rol === 'admin_rrhh' ? 'No has creado tareas' : 'No has delegado tareas'}
+                    </h3>
                     <p className="text-muted-foreground text-center">
-                      Las tareas que asignes a tu equipo aparecerán aquí
+                      {userInfo.rol === 'admin_rrhh' 
+                        ? 'Las tareas que crees para el equipo aparecerán aquí'
+                        : 'Las tareas que delegues a empleados de tu sucursal aparecerán aquí'
+                      }
                     </p>
                   </CardContent>
                 </Card>
@@ -357,9 +367,10 @@ export default function Tareas() {
                           <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
                           <CardDescription>{tarea.descripcion || 'Sin descripción'}</CardDescription>
                           {tarea.empleado_asignado && (
-                            <p className="text-sm text-primary">
-                              Asignada a: {tarea.empleado_asignado.nombre} {tarea.empleado_asignado.apellido}
-                            </p>
+                            <div className="flex items-center gap-2 text-sm text-primary">
+                              <User className="h-4 w-4" />
+                              <span>Asignada a: {tarea.empleado_asignado.nombre} {tarea.empleado_asignado.apellido}</span>
+                            </div>
                           )}
                         </div>
                         <div className="flex items-center space-x-2 ml-4">

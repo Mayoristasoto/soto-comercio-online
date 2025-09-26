@@ -73,7 +73,10 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
 
       // Si es admin_rrhh puede ver todos los empleados, si es gerente solo de su sucursal
       if (userInfo.rol === 'gerente_sucursal') {
-        query = query.eq('sucursal_id', userInfo.sucursal_id);
+        query = query.eq('sucursal_id', userInfo.sucursal_id)
+          .in('rol', ['empleado', 'lider_grupo']); // Gerentes solo pueden asignar a empleados y líderes
+      } else if (userInfo.rol === 'admin_rrhh') {
+        query = query.in('rol', ['empleado', 'lider_grupo', 'gerente_sucursal']); // Admin puede asignar a todos los roles excepto otros admins
       }
 
       const { data, error } = await query.order('nombre');
@@ -192,7 +195,10 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
             Crear Nueva Tarea
           </DialogTitle>
           <DialogDescription>
-            Asigna una nueva tarea a un empleado de tu equipo
+            {userInfo.rol === 'admin_rrhh' 
+              ? 'Asigna una nueva tarea a cualquier empleado o gerente' 
+              : 'Delega una tarea a un empleado de tu sucursal'
+            }
           </DialogDescription>
         </DialogHeader>
 
