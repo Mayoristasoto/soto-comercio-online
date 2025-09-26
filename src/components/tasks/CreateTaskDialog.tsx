@@ -73,15 +73,30 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
 
       // Si es admin_rrhh puede ver todos los empleados, si es gerente solo de su sucursal
       if (userInfo.rol === 'gerente_sucursal') {
+        // Verificar que el gerente tenga sucursal asignada
+        if (!userInfo.sucursal_id) {
+          toast({
+            title: "Sin sucursal asignada",
+            description: "No tienes una sucursal asignada. Contacta al administrador.",
+            variant: "destructive"
+          });
+          setEmpleados([]);
+          return;
+        }
+        
         query = query.eq('sucursal_id', userInfo.sucursal_id)
-          .in('rol', ['empleado', 'lider_grupo']); // Gerentes solo pueden asignar a empleados y líderes
+          .in('rol', ['empleado']); // Gerentes solo pueden asignar a empleados
       } else if (userInfo.rol === 'admin_rrhh') {
-        query = query.in('rol', ['empleado', 'lider_grupo', 'gerente_sucursal']); // Admin puede asignar a todos los roles excepto otros admins
+        query = query.in('rol', ['empleado', 'gerente_sucursal']); // Admin puede asignar a empleados y gerentes
       }
 
       const { data, error } = await query.order('nombre');
 
       if (error) throw error;
+      
+      console.log('Empleados cargados:', data); // Debug log
+      console.log('User info:', userInfo); // Debug log
+      
       setEmpleados(data || []);
     } catch (error) {
       console.error('Error loading empleados:', error);
@@ -299,7 +314,14 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
                 <Card>
                   <CardContent className="flex items-center justify-center py-6">
                     <p className="text-muted-foreground text-sm">
-                      {searchTerm ? 'No se encontraron empleados' : 'Cargando empleados...'}
+                      {searchTerm 
+                        ? 'No se encontraron empleados con ese criterio' 
+                        : userInfo.rol === 'gerente_sucursal' && !userInfo.sucursal_id
+                        ? 'Sin sucursal asignada'
+                        : empleados.length === 0 
+                        ? 'No hay empleados disponibles para asignar'
+                        : 'Cargando empleados...'
+                      }
                     </p>
                   </CardContent>
                 </Card>
