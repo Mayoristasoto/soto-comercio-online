@@ -2125,6 +2125,10 @@ export type Database = {
         Args: { redondeo_minutos: number; timestamp_real: string }
         Returns: string
       }
+      current_user_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
