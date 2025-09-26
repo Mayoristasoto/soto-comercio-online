@@ -241,6 +241,7 @@ export default function KioscoCheckIn() {
         p_datos: {
           dispositivo: 'kiosco',
           timestamp_local: new Date().toISOString()
+          // NO especificar 'tipo' para que la función determine automáticamente
         }
       })
 
@@ -332,7 +333,7 @@ export default function KioscoCheckIn() {
         p_lng: ubicacion?.longitud || null,
         p_datos: {
           dispositivo: 'kiosco',
-          tipo: tipoAccion,
+          tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
           timestamp_local: new Date().toISOString()
         }
       })
@@ -421,7 +422,7 @@ export default function KioscoCheckIn() {
         p_lng: ubicacion?.longitud || null,
         p_datos: {
           dispositivo: 'kiosco',
-          tipo: tipoAccion,
+          tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
           timestamp_local: new Date().toISOString()
         }
       })
