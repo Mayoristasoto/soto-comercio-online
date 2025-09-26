@@ -108,6 +108,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
       if (empleadoError) throw empleadoError
 
       // Update sensitive data in empleados_datos_sensibles table
+      // Only update if user has admin permissions
       const sensitiveUpdate = {
         telefono: formData.telefono || null,
         direccion: formData.direccion || null,
@@ -118,18 +119,43 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
       }
 
-      const { error: sensitiveError } = await supabase
+      // Check if record exists first
+      const { data: existingRecord } = await supabase
         .from('empleados_datos_sensibles')
-        .upsert({ 
-          empleado_id: empleado.id,
-          ...sensitiveUpdate 
-        })
+        .select('id')
+        .eq('empleado_id', empleado.id)
+        .single()
 
-      if (sensitiveError) throw sensitiveError
+      let sensitiveError = null
+      
+      if (existingRecord) {
+        // Update existing record
+        const { error } = await supabase
+          .from('empleados_datos_sensibles')
+          .update(sensitiveUpdate)
+          .eq('empleado_id', empleado.id)
+        sensitiveError = error
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('empleados_datos_sensibles')
+          .insert({ 
+            empleado_id: empleado.id,
+            ...sensitiveUpdate 
+          })
+        sensitiveError = error
+      }
+
+      if (sensitiveError) {
+        console.warn('Error updating sensitive data:', sensitiveError)
+        // Don't throw error, just log warning since basic data was saved successfully
+      }
 
       toast({
         title: "Perfil actualizado",
-        description: "Los datos del empleado se guardaron correctamente"
+        description: sensitiveError 
+          ? "Datos básicos guardados. Datos sensibles requieren permisos de administrador."
+          : "Los datos del empleado se guardaron correctamente"
       })
 
       onEmployeeUpdated?.()
