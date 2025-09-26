@@ -816,6 +816,36 @@ export type Database = {
         }
         Relationships: []
       }
+      facial_recognition_config: {
+        Row: {
+          data_type: string | null
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          data_type?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          data_type?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       fichado_configuracion: {
         Row: {
           clave: string
@@ -2242,6 +2272,10 @@ export type Database = {
           id: string
           nombre: string
         }[]
+      }
+      get_facial_config: {
+        Args: { config_key: string }
+        Returns: string
       }
       get_manager_employee_view: {
         Args: Record<PropertyKey, never>

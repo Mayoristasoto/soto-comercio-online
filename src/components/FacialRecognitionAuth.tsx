@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Camera, CameraOff, User, CheckCircle } from "lucide-react"
 import * as faceapi from '@vladmandic/face-api'
 import { supabase } from "@/integrations/supabase/client"
+import { useFacialConfig } from "@/hooks/useFacialConfig"
 
 interface FacialRecognitionAuthProps {
   onRegisterSuccess: (faceDescriptor: Float32Array) => void
@@ -18,6 +19,7 @@ export default function FacialRecognitionAuth({
   mode 
 }: FacialRecognitionAuthProps) {
   const { toast } = useToast()
+  const { config, loading: configLoading } = useFacialConfig()
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isModelLoaded, setIsModelLoaded] = useState(false)
@@ -154,72 +156,55 @@ export default function FacialRecognitionAuth({
 
   const recognizeUser = async (capturedDescriptor: Float32Array) => {
     try {
-      // Get users with facial recognition from secure view
-      const { data: empleados, error } = await supabase
-        .from('empleados')
-        .select('id, nombre, apellido, email')
-        .eq('activo', true)
+      console.log('FacialAuth: Iniciando reconocimiento facial centralizado')
+      
+      // Usar la función segura centralizada authenticate_face_kiosk
+      const threshold = mode === 'register' 
+        ? config.confidenceThresholdDemo 
+        : config.confidenceThresholdKiosk
+
+      const { data: matches, error } = await supabase
+        .rpc('authenticate_face_kiosk', {
+          p_face_descriptor: Array.from(capturedDescriptor),
+          p_threshold: threshold
+        })
 
       if (error) {
-        console.error('Error fetching employees:', error)
+        console.error('FacialAuth: Error en autenticación facial:', error)
         toast({
           title: "Error",
-          description: "Error al consultar usuarios registrados",
+          description: "Error durante el reconocimiento facial",
           variant: "destructive"
         })
         return
       }
 
-      if (!empleados || empleados.length === 0) {
-        toast({
-          title: "Sin usuarios registrados",
-          description: "No hay usuarios registrados",
-          variant: "destructive"
-        })
-        return
-      }
+      if (matches && matches.length > 0) {
+        const bestMatch = matches[0] // La función devuelve el mejor match primero
+        console.log(`FacialAuth: Usuario reconocido - ${bestMatch.nombre} ${bestMatch.apellido} con confianza ${(bestMatch.confidence_score * 100).toFixed(1)}%`)
+        
+        // Obtener email del empleado mediante consulta adicional
+        const { data: empleadoData } = await supabase
+          .from('empleados')
+          .select('email')
+          .eq('id', bestMatch.empleado_id)
+          .single()
 
-      let bestMatch = null
-      let bestDistance = 1.0 // Start with maximum distance
-
-      // Check against employees with facial recognition data
-      for (const empleado of empleados) {
-        try {
-          // Get face descriptor from secure sensitive data table
-          const { data: faceData } = await supabase
-            .from('empleados_datos_sensibles')
-            .select('face_descriptor')
-            .eq('empleado_id', empleado.id)
-            .single()
-
-          if (faceData?.face_descriptor && Array.isArray(faceData.face_descriptor)) {
-            const storedDescriptor = new Float32Array(faceData.face_descriptor)
-            const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
-            
-            // Lower distance means better match
-            if (distance < bestDistance && distance < 0.6) { // Threshold for recognition
-              bestDistance = distance
-              bestMatch = empleado
-            }
-          }
-        } catch (err) {
-          console.error('Error checking face descriptor for employee:', empleado.id, err)
-        }
-      }
-
-      if (bestMatch) {
         const user = {
           nombre: bestMatch.nombre,
           apellido: bestMatch.apellido,
-          email: bestMatch.email
+          email: empleadoData?.email || `${bestMatch.nombre.toLowerCase()}.${bestMatch.apellido.toLowerCase()}@empresa.com`
         }
+        
         setRecognizedUser(user)
         onLoginSuccess(user)
+        
         toast({
           title: "Rostro reconocido",
-          description: `Bienvenido, ${bestMatch.nombre} ${bestMatch.apellido}`,
+          description: `Bienvenido, ${bestMatch.nombre} ${bestMatch.apellido} (${(bestMatch.confidence_score * 100).toFixed(1)}% confianza)`,
         })
       } else {
+        console.log('FacialAuth: No se encontraron coincidencias')
         toast({
           title: "Rostro no reconocido",
           description: "No se encontró coincidencia con usuarios registrados",
@@ -228,7 +213,7 @@ export default function FacialRecognitionAuth({
       }
 
     } catch (error) {
-      console.error('Error recognizing user:', error)
+      console.error('FacialAuth: Error en recognizeUser:', error)
       toast({
         title: "Error",
         description: "Error durante el reconocimiento facial",
@@ -255,12 +240,14 @@ export default function FacialRecognitionAuth({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {!isModelLoaded && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Cargando modelos de IA...</p>
-          </div>
-        )}
+      {(!isModelLoaded || configLoading) && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">
+            {configLoading ? 'Cargando configuración...' : 'Cargando modelos de IA...'}
+          </p>
+        </div>
+      )}
         
         {isModelLoaded && (
           <>

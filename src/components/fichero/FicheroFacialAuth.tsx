@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import * as faceapi from '@vladmandic/face-api'
 import * as tf from '@tensorflow/tfjs'
 import { supabase } from "@/integrations/supabase/client"
+import { useFacialConfig } from "@/hooks/useFacialConfig"
 
 interface FicheroFacialAuthProps {
   empleado: {
@@ -26,6 +27,7 @@ export default function FicheroFacialAuth({
   loading 
 }: FicheroFacialAuthProps) {
   const { toast } = useToast()
+  const { config, loading: configLoading } = useFacialConfig()
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isModelLoaded, setIsModelLoaded] = useState(false)
@@ -341,11 +343,14 @@ export default function FicheroFacialAuth({
       if (empleado.id === 'demo-empleado' || empleado.id === 'recognition-mode') {
         console.log('Kiosco: Iniciando búsqueda facial segura')
         
-        // Use the new secure facial authentication function
+        // Use the new secure facial authentication function with centralized config
+        const threshold = config.confidenceThresholdKiosk
+        console.log(`Kiosco: Usando umbral de confianza centralizado: ${threshold}`)
+        
         const { data: matches, error } = await supabase
           .rpc('authenticate_face_kiosk', {
             p_face_descriptor: Array.from(capturedDescriptor),
-            p_threshold: 0.65
+            p_threshold: threshold
           })
 
         if (error) {
@@ -381,10 +386,13 @@ export default function FicheroFacialAuth({
       // For specific employee (admin panel), try to access their face data if authorized
       try {
         // Use secure facial authentication function even for specific employees
+        const threshold = config.confidenceThresholdSpecific
+        console.log(`Empleado específico: Usando umbral de confianza ${threshold}`)
+        
         const { data: matches, error } = await supabase
           .rpc('authenticate_face_kiosk', {
             p_face_descriptor: Array.from(capturedDescriptor),
-            p_threshold: 0.6
+            p_threshold: threshold
           })
 
         if (error) throw error
@@ -452,10 +460,12 @@ export default function FicheroFacialAuth({
 
   return (
     <div className="space-y-4">
-      {!isModelLoaded && (
+      {(!isModelLoaded || configLoading) && (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando modelos de IA...</p>
+          <p className="text-muted-foreground">
+            {configLoading ? 'Cargando configuración facial...' : 'Cargando modelos de IA...'}
+          </p>
         </div>
       )}
       
