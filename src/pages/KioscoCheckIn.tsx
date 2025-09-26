@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff, CheckCircle } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 
@@ -23,6 +23,21 @@ interface TareaPendiente {
   fecha_limite: string | null
 }
 
+interface Fichaje {
+  id: string
+  tipo: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin'
+  timestamp_real: string
+}
+
+type TipoAccion = 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin'
+
+interface AccionDisponible {
+  tipo: TipoAccion
+  label: string
+  icon: string
+  color: string
+}
+
 export default function KioscoCheckIn() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -34,6 +49,8 @@ export default function KioscoCheckIn() {
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
   const [showActionSelection, setShowActionSelection] = useState(false)
   const [recognizedEmployee, setRecognizedEmployee] = useState<{ id: string, data: any, confidence: number } | null>(null)
+  const [accionesDisponibles, setAccionesDisponibles] = useState<AccionDisponible[]>([])
+  const [ultimoTipoFichaje, setUltimoTipoFichaje] = useState<TipoAccion | null>(null)
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -58,13 +75,133 @@ export default function KioscoCheckIn() {
     }
   }, [])
 
+  // Función para determinar el tipo de fichaje según el historial
+  const determinarTipoFichaje = async (empleadoId: string): Promise<AccionDisponible[]> => {
+    try {
+      // Obtener el último fichaje del día actual
+      const hoy = new Date().toISOString().split('T')[0]
+      
+      const { data: fichajes, error } = await supabase
+        .from('fichajes')
+        .select('tipo, timestamp_real')
+        .eq('empleado_id', empleadoId)
+        .gte('timestamp_real', `${hoy}T00:00:00.000Z`)
+        .lt('timestamp_real', `${hoy}T23:59:59.999Z`)
+        .order('timestamp_real', { ascending: false })
+        .limit(1)
+
+      if (error) throw error
+
+      const ultimoFichaje = fichajes?.[0]
+      setUltimoTipoFichaje(ultimoFichaje?.tipo || null)
+
+      if (!ultimoFichaje) {
+        // Primer fichaje del día = entrada
+        return [{
+          tipo: 'entrada',
+          label: 'Entrada',
+          icon: 'Clock',
+          color: 'bg-green-600 hover:bg-green-700'
+        }]
+      }
+
+      switch (ultimoFichaje.tipo) {
+        case 'entrada':
+          // Después de entrada, puede elegir salida o inicio de pausa
+          return [
+            {
+              tipo: 'salida',
+              label: 'Salida (Fin de jornada)',
+              icon: 'LogOut',
+              color: 'bg-red-600 hover:bg-red-700'
+            },
+            {
+              tipo: 'pausa_inicio',
+              label: 'Inicio de Pausa',
+              icon: 'Coffee',
+              color: 'bg-orange-600 hover:bg-orange-700'
+            }
+          ]
+        
+        case 'pausa_inicio':
+          // Después de inicio de pausa, solo puede hacer fin de pausa
+          return [{
+            tipo: 'pausa_fin',
+            label: 'Fin de Pausa',
+            icon: 'Clock',
+            color: 'bg-blue-600 hover:bg-blue-700'
+          }]
+        
+        case 'pausa_fin':
+          // Después de fin de pausa, puede elegir salida o inicio de pausa nuevamente
+          return [
+            {
+              tipo: 'salida',
+              label: 'Salida (Fin de jornada)',
+              icon: 'LogOut',
+              color: 'bg-red-600 hover:bg-red-700'
+            },
+            {
+              tipo: 'pausa_inicio',
+              label: 'Inicio de Pausa',
+              icon: 'Coffee',
+              color: 'bg-orange-600 hover:bg-orange-700'
+            }
+          ]
+        
+        case 'salida':
+          // Si ya salió, no puede hacer más fichajes
+          return []
+        
+        default:
+          return [{
+            tipo: 'entrada',
+            label: 'Entrada',
+            icon: 'Clock',
+            color: 'bg-green-600 hover:bg-green-700'
+          }]
+      }
+    } catch (error) {
+      console.error('Error determinando tipo de fichaje:', error)
+      return [{
+        tipo: 'entrada',
+        label: 'Entrada',
+        icon: 'Clock',
+        color: 'bg-green-600 hover:bg-green-700'
+      }]
+    }
+  }
+
   const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any) => {
-    // Store recognized employee data and show action selection
+    // Store recognized employee data and determine available actions
     if (empleadoId && empleadoData) {
       setRecognizedEmployee({ id: empleadoId, data: empleadoData, confidence: confianza })
-      setShowActionSelection(true)
-      setShowFacialAuth(false)
-      return
+      
+      // Determinar acciones disponibles según el historial
+      const acciones = await determinarTipoFichaje(empleadoId)
+      setAccionesDisponibles(acciones)
+      
+      if (acciones.length === 0) {
+        // Ya completó su jornada
+        toast({
+          title: "Jornada completada",
+          description: `${empleadoData.nombre} ${empleadoData.apellido} ya registró su salida hoy`,
+          variant: "destructive",
+          duration: 5000,
+        })
+        setShowFacialAuth(false)
+        resetKiosco()
+        return
+      } else if (acciones.length === 1) {
+        // Solo hay una acción disponible, ejecutarla automáticamente
+        await ejecutarAccionDirecta(acciones[0].tipo, empleadoId, empleadoData, confianza)
+        return
+      } else {
+        // Múltiples opciones, mostrar selección
+        setShowActionSelection(true)
+        setShowFacialAuth(false)
+        return
+      }
     }
 
     if (!selectedEmployee) return
@@ -155,10 +292,100 @@ export default function KioscoCheckIn() {
       setTareasPendientes([])
       setShowActionSelection(false)
       setRecognizedEmployee(null)
+      setAccionesDisponibles([])
+      setUltimoTipoFichaje(null)
     }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
   }
 
-  const ejecutarAccion = async (tipoAccion: 'trabajo' | 'descanso') => {
+  // Función para ejecutar una acción directamente (cuando solo hay una opción)
+  const ejecutarAccionDirecta = async (tipoAccion: TipoAccion, empleadoId: string, empleadoData: any, confianza: number) => {
+    setLoading(true)
+    try {
+      const empleadoParaFichaje = {
+        id: empleadoId,
+        nombre: empleadoData.nombre,
+        apellido: empleadoData.apellido
+      }
+
+      // Obtener ubicación si está disponible
+      let ubicacion = null
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 5000,
+            enableHighAccuracy: false
+          })
+        })
+        ubicacion = {
+          latitud: position.coords.latitude,
+          longitud: position.coords.longitude
+        }
+      } catch (error) {
+        console.log('No se pudo obtener ubicación:', error)
+      }
+
+      // Registrar fichaje usando función segura del kiosco
+      const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
+        p_empleado_id: empleadoParaFichaje.id,
+        p_confianza: confianza,
+        p_lat: ubicacion?.latitud || null,
+        p_lng: ubicacion?.longitud || null,
+        p_datos: {
+          dispositivo: 'kiosco',
+          tipo: tipoAccion,
+          timestamp_local: new Date().toISOString()
+        }
+      })
+
+      if (error) throw error
+
+      // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
+      let tareas = []
+      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+        const { data: tareasData } = await supabase
+          .from('tareas')
+          .select('id, titulo, prioridad, fecha_limite')
+          .eq('asignado_a', empleadoParaFichaje.id)
+          .eq('estado', 'pendiente')
+          .order('fecha_limite', { ascending: true })
+          .limit(5)
+
+        tareas = tareasData || []
+      }
+
+      setTareasPendientes(tareas)
+
+      // Mostrar tarjeta de confirmación
+      setRegistroExitoso({
+        empleado: empleadoParaFichaje,
+        timestamp: new Date()
+      })
+
+      const accionTexto = getAccionTexto(tipoAccion)
+      
+      toast({
+        title: "✅ Registro exitoso",
+        description: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido} - ${accionTexto}`,
+        duration: 3000,
+      })
+
+      setShowFacialAuth(false)
+      resetKiosco()
+
+    } catch (error) {
+      console.error('Error procesando fichaje:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo registrar el fichaje. Intente nuevamente.",
+        variant: "destructive",
+        duration: 5000,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const ejecutarAccion = async (tipoAccion: TipoAccion) => {
     if (!recognizedEmployee) return
 
     setLoading(true)
@@ -194,16 +421,16 @@ export default function KioscoCheckIn() {
         p_lng: ubicacion?.longitud || null,
         p_datos: {
           dispositivo: 'kiosco',
-          tipo_accion: tipoAccion,
+          tipo: tipoAccion,
           timestamp_local: new Date().toISOString()
         }
       })
 
       if (error) throw error
 
-      // Obtener tareas pendientes del empleado solo si es trabajo
+      // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
       let tareas = []
-      if (tipoAccion === 'trabajo') {
+      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
         const { data: tareasData } = await supabase
           .from('tareas')
           .select('id, titulo, prioridad, fecha_limite')
@@ -223,7 +450,7 @@ export default function KioscoCheckIn() {
         timestamp: new Date()
       })
 
-      const accionTexto = tipoAccion === 'trabajo' ? 'Entrada registrada' : 'Descanso iniciado'
+      const accionTexto = getAccionTexto(tipoAccion)
       
       toast({
         title: "✅ Registro exitoso",
@@ -244,6 +471,16 @@ export default function KioscoCheckIn() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getAccionTexto = (tipo: TipoAccion): string => {
+    switch (tipo) {
+      case 'entrada': return 'Entrada registrada'
+      case 'salida': return 'Salida registrada'
+      case 'pausa_inicio': return 'Pausa iniciada'
+      case 'pausa_fin': return 'Pausa finalizada'
+      default: return 'Registro completado'
     }
   }
 
@@ -349,7 +586,7 @@ export default function KioscoCheckIn() {
                     {registroExitoso.empleado.nombre} {registroExitoso.empleado.apellido}
                   </div>
                   <div className="text-lg text-gray-700 mb-4">
-                    Entrada registrada correctamente
+                    {getAccionTexto(ultimoTipoFichaje || 'entrada')}
                   </div>
                   <div className="text-sm text-gray-600">
                     {registroExitoso.timestamp.toLocaleString('es-ES', {
@@ -408,24 +645,24 @@ export default function KioscoCheckIn() {
                     Seleccione el tipo de registro que desea realizar
                   </p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button
-                      onClick={() => ejecutarAccion('trabajo')}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                      disabled={loading}
-                    >
-                      <Clock className="h-5 w-5" />
-                      <span>Iniciar Trabajo</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => ejecutarAccion('descanso')}
-                      className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                      disabled={loading}
-                    >
-                      <Users className="h-5 w-5" />
-                      <span>Iniciar Descanso</span>
-                    </button>
+                  <div className="grid grid-cols-1 gap-4">
+                    {accionesDisponibles.map((accion) => {
+                      const IconComponent = accion.icon === 'Clock' ? Clock : 
+                                           accion.icon === 'LogOut' ? LogOut : 
+                                           accion.icon === 'Coffee' ? Coffee : Clock
+                      
+                      return (
+                        <button
+                          key={accion.tipo}
+                          onClick={() => ejecutarAccion(accion.tipo)}
+                          className={`${accion.color} text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2`}
+                          disabled={loading}
+                        >
+                          <IconComponent className="h-5 w-5" />
+                          <span>{accion.label}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
