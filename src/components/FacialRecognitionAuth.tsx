@@ -155,13 +155,15 @@ export default function FacialRecognitionAuth({
   }
 
   const recognizeUser = async (capturedDescriptor: Float32Array) => {
+    // Definir threshold al inicio para que esté disponible en todo el scope
+    const threshold = mode === 'register' 
+      ? config.confidenceThresholdDemo 
+      : config.confidenceThresholdKiosk
+      
     try {
       console.log('FacialAuth: Iniciando reconocimiento facial centralizado')
       
       // Usar la función segura centralizada authenticate_face_kiosk
-      const threshold = mode === 'register' 
-        ? config.confidenceThresholdDemo 
-        : config.confidenceThresholdKiosk
 
       const { data: matches, error } = await supabase
         .rpc('authenticate_face_kiosk', {
@@ -171,6 +173,16 @@ export default function FacialRecognitionAuth({
 
       if (error) {
         console.error('FacialAuth: Error en autenticación facial:', error)
+        
+        // Log del error de sistema
+        await logFacialRecognitionEvent('ERROR', {
+          error_message: error.message,
+          error_code: error.code,
+          threshold_used: threshold,
+          mode: mode,
+          timestamp: new Date().toISOString()
+        })
+        
         toast({
           title: "Error",
           description: "Error durante el reconocimiento facial",
@@ -182,6 +194,15 @@ export default function FacialRecognitionAuth({
       if (matches && matches.length > 0) {
         const bestMatch = matches[0] // La función devuelve el mejor match primero
         console.log(`FacialAuth: Usuario reconocido - ${bestMatch.nombre} ${bestMatch.apellido} con confianza ${(bestMatch.confidence_score * 100).toFixed(1)}%`)
+        
+        // Log exitoso adicional para debugging
+        await logFacialRecognitionEvent('SUCCESS', {
+          empleado_id: bestMatch.empleado_id,
+          confidence_score: bestMatch.confidence_score,
+          threshold_used: threshold,
+          mode: mode,
+          timestamp: new Date().toISOString()
+        })
         
         // Obtener email del empleado mediante consulta adicional
         const { data: empleadoData } = await supabase
@@ -204,7 +225,17 @@ export default function FacialRecognitionAuth({
           description: `Bienvenido, ${bestMatch.nombre} ${bestMatch.apellido} (${(bestMatch.confidence_score * 100).toFixed(1)}% confianza)`,
         })
       } else {
-        console.log('FacialAuth: No se encontraron coincidencias')
+        console.log('FacialAuth: No se encontraron coincidencias - logging evento fallido')
+        
+        // Log detallado del fallo de reconocimiento
+        await logFacialRecognitionEvent('FAILED', {
+          threshold_used: threshold,
+          mode: mode,
+          timestamp: new Date().toISOString(),
+          reason: 'no_matches_found',
+          descriptor_length: capturedDescriptor ? capturedDescriptor.length : 0
+        })
+        
         toast({
           title: "Rostro no reconocido",
           description: "No se encontró coincidencia con usuarios registrados",
@@ -214,11 +245,47 @@ export default function FacialRecognitionAuth({
 
     } catch (error) {
       console.error('FacialAuth: Error en recognizeUser:', error)
+      
+      // Log de errores no controlados
+      await logFacialRecognitionEvent('EXCEPTION', {
+        error_message: error instanceof Error ? error.message : String(error),
+        threshold_used: threshold,
+        mode: mode,
+        timestamp: new Date().toISOString(),
+        stack_trace: error instanceof Error ? error.stack : undefined
+      })
+      
       toast({
         title: "Error",
         description: "Error durante el reconocimiento facial",
         variant: "destructive"
       })
+    }
+  }
+
+  // Función para logging de eventos de reconocimiento facial
+  const logFacialRecognitionEvent = async (eventType: string, eventData: any) => {
+    try {
+      // Insertar log en tabla de auditoría
+      await supabase
+        .from('fichaje_auditoria')
+        .insert({
+          registro_id: crypto.randomUUID(),
+          tabla_afectada: 'facial_authentication_client',
+          accion: `FACE_RECOGNITION_${eventType}`,
+          datos_nuevos: {
+            ...eventData,
+            user_agent: navigator.userAgent,
+            ip_address: 'client_side' // En cliente no podemos obtener IP real
+          },
+          usuario_id: null, // En cliente no tenemos user_id disponible
+          timestamp_accion: new Date().toISOString()
+        })
+      
+      console.log(`FacialAuth: Evento ${eventType} registrado en auditoría`, eventData)
+    } catch (logError) {
+      console.error('FacialAuth: Error registrando evento en auditoría:', logError)
+      // No lanzar error para no interrumpir el flujo principal
     }
   }
 
