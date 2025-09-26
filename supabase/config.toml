@@ -76,5 +76,8 @@ port = 54327
 vector_port = 54328
 gw_port = 54329
 
+[functions.admin-change-password]
+verify_jwt = false
+
 [functions.whatsapp-notify]
 verify_jwt = false
