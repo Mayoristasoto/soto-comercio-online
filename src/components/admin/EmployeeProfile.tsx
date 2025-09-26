@@ -63,6 +63,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
   const [loading, setLoading] = useState(false)
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [formData, setFormData] = useState<Partial<EmpleadoProfile>>({})
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     if (empleado) {
@@ -70,6 +71,21 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
       loadSucursales()
     }
   }, [empleado])
+
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData.user?.id
+      if (!userId) return
+      const { data } = await supabase
+        .from('empleados')
+        .select('rol')
+        .eq('user_id', userId)
+        .maybeSingle()
+      setIsAdmin(data?.rol === 'admin_rrhh')
+    }
+    checkRole()
+  }, [])
 
   const loadSucursales = async () => {
     try {
@@ -352,6 +368,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                         onChange={(e) => setFormData(prev => ({ ...prev, emergencia_contacto_telefono: e.target.value }))}
                         className="pl-10"
                         placeholder="+54 11 1234-5678"
+                        disabled={!isAdmin}
                       />
                     </div>
                   </div>
