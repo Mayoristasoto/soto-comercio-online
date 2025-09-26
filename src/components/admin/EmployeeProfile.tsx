@@ -91,27 +91,41 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
     setLoading(true)
     try {
-      const updateData = {
+      // Update basic employee data in empleados table
+      const empleadoUpdate = {
         nombre: formData.nombre,
         apellido: formData.apellido,
+        puesto: formData.puesto || null,
+        rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
+        sucursal_id: formData.sucursal_id || null
+      }
+
+      const { error: empleadoError } = await supabase
+        .from('empleados')
+        .update(empleadoUpdate)
+        .eq('id', empleado.id)
+
+      if (empleadoError) throw empleadoError
+
+      // Update sensitive data in empleados_datos_sensibles table
+      const sensitiveUpdate = {
         telefono: formData.telefono || null,
         direccion: formData.direccion || null,
-        puesto: formData.puesto || null,
         salario: formData.salario || null,
         fecha_nacimiento: formData.fecha_nacimiento || null,
         estado_civil: formData.estado_civil || null,
         emergencia_contacto_nombre: formData.emergencia_contacto_nombre || null,
         emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
-        rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
-        sucursal_id: formData.sucursal_id || null
       }
 
-      const { error } = await supabase
-        .from('empleados')
-        .update(updateData)
-        .eq('id', empleado.id)
+      const { error: sensitiveError } = await supabase
+        .from('empleados_datos_sensibles')
+        .upsert({ 
+          empleado_id: empleado.id,
+          ...sensitiveUpdate 
+        })
 
-      if (error) throw error
+      if (sensitiveError) throw sensitiveError
 
       toast({
         title: "Perfil actualizado",
