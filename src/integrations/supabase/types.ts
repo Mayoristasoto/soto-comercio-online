@@ -2125,6 +2125,15 @@ export type Database = {
         Args: { redondeo_minutos: number; timestamp_real: string }
         Returns: string
       }
+      authenticate_face_kiosk: {
+        Args: { p_face_descriptor: number[]; p_threshold?: number }
+        Returns: {
+          apellido: string
+          confidence_score: number
+          empleado_id: string
+          nombre: string
+        }[]
+      }
       current_user_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean

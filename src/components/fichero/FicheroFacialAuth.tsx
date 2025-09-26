@@ -337,168 +337,90 @@ export default function FicheroFacialAuth({
 
   const compararConRostroAlmacenado = async (capturedDescriptor: Float32Array): Promise<{confidence: number, empleadoId?: string, empleadoData?: any}> => {
     try {
-      // For kiosk mode, search for the actual employee by face recognition
+      // For kiosk mode, use the secure facial authentication function
       if (empleado.id === 'demo-empleado' || empleado.id === 'recognition-mode') {
-        // Get all active employees using security definer function for kiosk access
-        const { data: allEmployees, error: employeesError } = await supabase
-          .rpc('get_employees_for_kiosk')
-
-        if (employeesError) throw employeesError
-
-        let bestGlobalConfidence = 0
-        let bestEmployeeMatch = null
-
-        console.log(`Kiosco: Iniciando búsqueda en ${allEmployees.length} empleados activos`)
+        console.log('Kiosco: Iniciando búsqueda facial segura')
         
-        for (const emp of allEmployees) {
-          console.log(`Kiosco: Verificando empleado: ${emp.nombre} ${emp.apellido} (ID: ${emp.id})`)
-          
-          // Special debug for Gonzalo Justiniano
-          if (emp.nombre.toLowerCase().includes('gonzalo') && emp.apellido.toLowerCase().includes('justiniano')) {
-            console.log(`🔍 DEBUG GONZALO: Iniciando verificación especial para ${emp.nombre} ${emp.apellido}`)
-          }
-          
-          // Check multiple face versions for this employee
-          const { data: rostrosData, error: rostrosError } = await supabase
-            .from('empleados_rostros')
-            .select('face_descriptor, confidence_score, version_name')
-            .eq('empleado_id', emp.id)
-            .eq('is_active', true)
+        // Use the new secure facial authentication function
+        const { data: matches, error } = await supabase
+          .rpc('authenticate_face_kiosk', {
+            p_face_descriptor: Array.from(capturedDescriptor),
+            p_threshold: 0.65
+          })
 
-          if (rostrosError) {
-            console.error(`Kiosco: Error obteniendo rostros para ${emp.nombre}:`, rostrosError)
-            continue
-          }
-
-          if (rostrosData && rostrosData.length > 0) {
-            console.log(`Kiosco: Empleado ${emp.nombre} tiene ${rostrosData.length} versiones de rostro`)
-            
-            for (const rostro of rostrosData) {
-              if (rostro.face_descriptor && rostro.face_descriptor.length > 0) {
-                const storedDescriptor = new Float32Array(rostro.face_descriptor)
-                const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
-                
-                // Convertir distancia a confianza (invertir y normalizar)
-                const confidence = Math.max(0, 1 - distance)
-                console.log(`Kiosco: Versión ${rostro.version_name} - Confianza: ${(confidence * 100).toFixed(1)}%`)
-                
-                // Special debug for Gonzalo Justiniano
-                if (emp.nombre.toLowerCase().includes('gonzalo') && emp.apellido.toLowerCase().includes('justiniano')) {
-                  console.log(`🔍 DEBUG GONZALO: Versión ${rostro.version_name}`)
-                  console.log(`🔍 DEBUG GONZALO: Descriptor stored length: ${storedDescriptor.length}`)
-                  console.log(`🔍 DEBUG GONZALO: Descriptor captured length: ${capturedDescriptor.length}`)
-                  console.log(`🔍 DEBUG GONZALO: Distance: ${distance}`)
-                  console.log(`🔍 DEBUG GONZALO: Confidence: ${(confidence * 100).toFixed(1)}%`)
-                  console.log(`🔍 DEBUG GONZALO: Threshold: 40%`)
-                  console.log(`🔍 DEBUG GONZALO: Passes threshold: ${confidence > 0.4}`)
-                }
-                
-                if (confidence > bestGlobalConfidence && confidence > 0.35) {
-                  bestGlobalConfidence = confidence
-                  bestEmployeeMatch = emp
-                  
-                  if (emp.nombre.toLowerCase().includes('gonzalo')) {
-                    console.log(`🔍 DEBUG GONZALO: ¡NUEVO MEJOR MATCH! Confianza: ${(confidence * 100).toFixed(1)}%`)
-                  }
-                }
-              } else {
-                console.log(`Kiosco: Versión ${rostro.version_name} - Sin descriptor válido`)
-                if (emp.nombre.toLowerCase().includes('gonzalo')) {
-                  console.log(`🔍 DEBUG GONZALO: Versión ${rostro.version_name} sin descriptor válido`)
-                }
-              }
-            }
-          } else {
-            console.log(`Kiosco: Empleado ${emp.nombre} sin versiones de rostro activas`)
-          }
-
-          // Skip legacy face descriptor check for kiosk mode due to permissions
-          // Only use the new empleados_rostros table which has proper access control
-          console.log(`Kiosco: Empleado ${emp.nombre} verificado (sin acceso a datos sensibles)`)
+        if (error) {
+          console.error('Kiosco: Error en autenticación facial:', error)
+          throw error
         }
 
-        console.log(`Kiosco: RESUMEN FINAL - Mejor confianza global: ${(bestGlobalConfidence * 100).toFixed(1)}%`)
-        console.log(`Kiosco: RESUMEN FINAL - Mejor empleado: ${bestEmployeeMatch ? `${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido}` : 'ninguno'}`)
-        console.log(`Kiosco: RESUMEN FINAL - Umbral requerido: 35%`)
-        
-        // Reducir umbral a 35% para casos problemáticos
-        if (bestEmployeeMatch && bestGlobalConfidence > 0.35) {
-          console.log(`Kiosco: ✅ Empleado identificado: ${bestEmployeeMatch.nombre} ${bestEmployeeMatch.apellido} con confianza ${(bestGlobalConfidence * 100).toFixed(1)}% (umbral: 35%)`)
+        if (matches && matches.length > 0) {
+          const bestMatch = matches[0] // Function returns best match first
+          console.log(`Kiosco: Match encontrado - ${bestMatch.nombre} ${bestMatch.apellido} con confianza ${(bestMatch.confidence_score * 100).toFixed(1)}%`)
           
-          // Log access to biometric data for audit
+          // Log access for audit
           await supabase.rpc('log_empleado_access', {
-            p_empleado_id: bestEmployeeMatch.id,
+            p_empleado_id: bestMatch.empleado_id,
             p_tipo_acceso: 'facial_recognition_kiosk',
             p_datos_accedidos: ['face_descriptor', 'basic_info']
           })
-
-          return { 
-            confidence: bestGlobalConfidence, 
-            empleadoId: bestEmployeeMatch.id,
-            empleadoData: bestEmployeeMatch
+          
+          return {
+            confidence: bestMatch.confidence_score,
+            empleadoId: bestMatch.empleado_id,
+            empleadoData: {
+              nombre: bestMatch.nombre,
+              apellido: bestMatch.apellido
+            }
           }
+        } else {
+          console.log('Kiosco: No se encontraron matches')
+          return { confidence: 0 }
         }
-
-        console.log('Kiosco: ❌ No se encontró coincidencia válida (>35%) en ningún empleado')
-        console.log(`Kiosco: Empleados verificados: ${allEmployees.length}`)
-        return { confidence: 0 }
       }
 
-      // For specific employee (admin panel), check their face descriptors
-      const { data: rostrosData, error: rostrosError } = await supabase
-        .from('empleados_rostros')
-        .select('face_descriptor, confidence_score, version_name')
-        .eq('empleado_id', empleado.id)
-        .eq('is_active', true)
+      // For specific employee (admin panel), try to access their face data if authorized
+      try {
+        // Use secure facial authentication function even for specific employees
+        const { data: matches, error } = await supabase
+          .rpc('authenticate_face_kiosk', {
+            p_face_descriptor: Array.from(capturedDescriptor),
+            p_threshold: 0.6
+          })
 
-      let bestConfidence = 0
-      let bestMatch = null
+        if (error) throw error
 
-      // Compare with all active face versions
-      if (rostrosData && rostrosData.length > 0) {
-        console.log(`Comparando con ${rostrosData.length} versiones de rostro`)
-        
-        for (const rostro of rostrosData) {
-          if (rostro.face_descriptor && rostro.face_descriptor.length > 0) {
-            const storedDescriptor = new Float32Array(rostro.face_descriptor)
-            const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor)
+        if (matches && matches.length > 0) {
+          // Filter to only the specific employee if we have a valid empleado ID
+          const employeeMatch = matches.find(match => match.empleado_id === empleado.id)
+          
+          if (employeeMatch) {
+            console.log(`Empleado específico encontrado: ${employeeMatch.nombre} ${employeeMatch.apellido} con confianza ${(employeeMatch.confidence_score * 100).toFixed(1)}%`)
             
-            // Convertir distancia a confianza (invertir y normalizar)
-            const confidence = Math.max(0, 1 - distance)
-            
-            if (confidence > bestConfidence) {
-              bestConfidence = confidence
-              bestMatch = rostro.version_name
+            // Log access to biometric data for audit
+            await supabase.rpc('log_empleado_access', {
+              p_empleado_id: employeeMatch.empleado_id,
+              p_tipo_acceso: 'facial_recognition_specific',
+              p_datos_accedidos: ['face_descriptor', 'basic_info']
+            })
+
+            return { 
+              confidence: employeeMatch.confidence_score, 
+              empleadoId: employeeMatch.empleado_id,
+              empleadoData: {
+                nombre: employeeMatch.nombre,
+                apellido: employeeMatch.apellido
+              }
             }
           }
         }
-
-        // Si encontramos una buena coincidencia con las nuevas versiones
-        if (bestConfidence > 0.4) {
-          console.log(`Kiosco: Mejor coincidencia: ${bestMatch} con confianza ${(bestConfidence * 100).toFixed(1)}% (umbral: 40%)`)
-          
-          // Log access to biometric data for audit
-          await supabase.rpc('log_empleado_access', {
-            p_empleado_id: empleado.id,
-            p_tipo_acceso: 'facial_recognition_multiple',
-            p_datos_accedidos: ['face_descriptor', 'version_name']
-          })
-
-          return { confidence: bestConfidence, empleadoId: empleado.id }
-        }
+      } catch (error) {
+        console.error('Error en verificación facial específica:', error)
+        // Continue with fallback method if available
       }
 
-      // Skip legacy face descriptor check for kiosk mode
-      // This prevents 401 errors as kiosk doesn't have access to sensitive data
-      console.log('Kiosk mode: Skipping legacy face descriptor check')
-
-      // Si no encontramos ningún rostro registrado
-      if (bestConfidence === 0) {
-        console.error('No se encontraron descriptores faciales activos')
-        return { confidence: 0 }
-      }
-
-      return { confidence: bestConfidence, empleadoId: empleado.id }
+      // If no facial match found through secure function
+      console.log('No se encontraron coincidencias válidas en el sistema de reconocimiento facial')
+      return { confidence: 0 }
 
     } catch (error) {
       console.error('Error comparando descriptores:', error)
