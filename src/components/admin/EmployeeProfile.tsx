@@ -118,16 +118,35 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
       }
 
-      // Try to update sensitive data with upsert
-      const { error: sensitiveError } = await supabase
+      // Check if sensitive data record exists first
+      const { data: existingRecord } = await supabase
         .from('empleados_datos_sensibles')
-        .upsert({ 
-          empleado_id: empleado.id,
-          ...sensitiveUpdate 
-        })
+        .select('id')
+        .eq('empleado_id', empleado.id)
+        .maybeSingle()
+
+      let sensitiveError = null
+
+      if (existingRecord) {
+        // Update existing record
+        const { error } = await supabase
+          .from('empleados_datos_sensibles')
+          .update(sensitiveUpdate)
+          .eq('empleado_id', empleado.id)
+        sensitiveError = error
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('empleados_datos_sensibles')
+          .insert({ 
+            empleado_id: empleado.id,
+            ...sensitiveUpdate 
+          })
+        sensitiveError = error
+      }
 
       if (sensitiveError) {
-        console.warn('Error updating sensitive data:', sensitiveError)
+        console.error('Error updating sensitive data:', sensitiveError)
       }
 
       toast({
