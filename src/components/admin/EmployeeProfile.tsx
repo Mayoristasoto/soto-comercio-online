@@ -51,6 +51,13 @@ interface Sucursal {
   nombre: string
 }
 
+interface Puesto {
+  id: string
+  nombre: string
+  descripcion?: string
+  departamento?: string
+}
+
 interface EmployeeProfileProps {
   empleado: EmpleadoProfile | null
   open: boolean
@@ -62,6 +69,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [puestos, setPuestos] = useState<Puesto[]>([])
   const [formData, setFormData] = useState<Partial<EmpleadoProfile>>({})
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -69,6 +77,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
     if (empleado) {
       setFormData(empleado)
       loadSucursales()
+      loadPuestos()
       loadSensitiveData()
     }
   }, [empleado])
@@ -135,16 +144,34 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
     }
   }
 
+  const loadPuestos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('puestos')
+        .select('id, nombre, descripcion, departamento')
+        .eq('activo', true)
+        .order('nombre')
+
+      if (error) throw error
+      setPuestos(data || [])
+    } catch (error) {
+      console.error('Error cargando puestos:', error)
+    }
+  }
   const handleSave = async () => {
     if (!empleado) return
 
     setLoading(true)
     try {
+      // Find the selected position to get its ID
+      const selectedPuesto = puestos.find(p => p.nombre === formData.puesto)
+      
       // Update basic employee data in empleados table
       const empleadoUpdate = {
         nombre: formData.nombre,
         apellido: formData.apellido,
         puesto: formData.puesto || null,
+        puesto_id: selectedPuesto?.id || null,
         rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
         sucursal_id: formData.sucursal_id || null
       }
@@ -398,12 +425,29 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="puesto">Puesto</Label>
-                    <Input
-                      id="puesto"
-                      value={formData.puesto || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, puesto: e.target.value }))}
-                      placeholder="Cargo o posición"
-                    />
+                    <Select 
+                      value={formData.puesto || ''} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, puesto: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar puesto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Sin puesto asignado</SelectItem>
+                        {puestos.map((puesto) => (
+                          <SelectItem key={puesto.id} value={puesto.nombre}>
+                            <div className="flex flex-col">
+                              <span>{puesto.nombre}</span>
+                              {puesto.departamento && (
+                                <span className="text-xs text-muted-foreground">
+                                  {puesto.departamento}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="salario">Salario</Label>
