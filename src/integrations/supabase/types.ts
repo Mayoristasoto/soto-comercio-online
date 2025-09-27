@@ -1229,6 +1229,60 @@ export type Database = {
           },
         ]
       }
+      fichajes_tardios: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          fecha_fichaje: string
+          hora_programada: string
+          hora_real: string
+          id: string
+          justificado: boolean | null
+          minutos_retraso: number
+          observaciones: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          fecha_fichaje: string
+          hora_programada: string
+          hora_real: string
+          id?: string
+          justificado?: boolean | null
+          minutos_retraso: number
+          observaciones?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          fecha_fichaje?: string
+          hora_programada?: string
+          hora_real?: string
+          id?: string
+          justificado?: boolean | null
+          minutos_retraso?: number
+          observaciones?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_fichajes_tardios_empleado"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fichajes_tardios_empleado"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gondolas: {
         Row: {
           brand: string | null

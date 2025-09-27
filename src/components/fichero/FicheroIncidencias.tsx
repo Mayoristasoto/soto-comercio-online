@@ -15,9 +15,12 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Calendar
+  Calendar,
+  AlertTriangle,
+  User
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 interface FicheroIncidenciasProps {
   empleado: {
@@ -38,10 +41,28 @@ interface Incidencia {
   created_at: string
 }
 
+interface FichajeTardio {
+  id: string
+  empleado_id: string
+  fecha_fichaje: string
+  hora_programada: string
+  hora_real: string
+  minutos_retraso: number
+  justificado: boolean
+  observaciones?: string
+  created_at: string
+  empleado?: {
+    nombre: string
+    apellido: string
+  }
+}
+
 export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps) {
   const { toast } = useToast()
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
+  const [fichajesToday, setFichajesToday] = useState<FichajeTardio[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingTardios, setLoadingTardios] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
     tipo: '' as 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | '',
@@ -52,6 +73,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
 
   useEffect(() => {
     cargarIncidencias()
+    cargarFichajesToday()
   }, [empleado.id])
 
   const cargarIncidencias = async () => {
@@ -74,6 +96,30 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const cargarFichajesToday = async () => {
+    setLoadingTardios(true)
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      
+      const { data, error } = await supabase
+        .from('fichajes_tardios')
+        .select(`
+          *,
+          empleado:empleados!inner(nombre, apellido)
+        `)
+        .eq('fecha_fichaje', today)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setFichajesToday(data || [])
+    } catch (error) {
+      console.error('Error cargando fichajes tardíos:', error)
+      // No mostramos toast para esta función ya que es secundaria
+    } finally {
+      setLoadingTardios(false)
     }
   }
 
@@ -268,6 +314,68 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Llegadas tardías de hoy */}
+      <Card className="border-orange-200 bg-orange-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center space-x-2">
+            <AlertTriangle className="h-5 w-5 text-orange-600" />
+            <span>Llegadas Tardías de Hoy</span>
+          </CardTitle>
+          <CardDescription>
+            Empleados que llegaron después de su horario programado
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingTardios ? (
+            <div className="animate-pulse space-y-2">
+              {[1, 2].map(i => (
+                <div key={i} className="h-16 bg-orange-200 rounded"></div>
+              ))}
+            </div>
+          ) : fichajesToday.length === 0 ? (
+            <div className="text-center py-4">
+              <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Todos los empleados llegaron puntualmente hoy
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {fichajesToday.map((fichaje) => (
+                <div key={fichaje.id} className="bg-white border border-orange-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {fichaje.empleado?.nombre} {fichaje.empleado?.apellido}
+                        </p>
+                        <div className="text-xs text-muted-foreground space-x-4">
+                          <span>Hora programada: {fichaje.hora_programada}</span>
+                          <span>Llegó: {fichaje.hora_real}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge className="bg-red-100 text-red-800">
+                      +{fichaje.minutos_retraso} min
+                    </Badge>
+                  </div>
+                  {fichaje.observaciones && (
+                    <p className="text-xs text-muted-foreground mt-2 pl-11">
+                      {fichaje.observaciones}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
 
       {/* Lista de incidencias */}
       <div className="space-y-4">
