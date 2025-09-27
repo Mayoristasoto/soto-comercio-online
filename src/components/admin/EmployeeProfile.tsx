@@ -163,14 +163,14 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
     setLoading(true)
     try {
-      // Find the selected position to get its ID
-      const selectedPuesto = puestos.find(p => p.nombre === formData.puesto)
+      // Find the selected position to get its ID (handle "none" case)
+      const selectedPuesto = formData.puesto !== "none" ? puestos.find(p => p.nombre === formData.puesto) : null
       
       // Update basic employee data in empleados table
       const empleadoUpdate = {
         nombre: formData.nombre,
         apellido: formData.apellido,
-        puesto: formData.puesto || null,
+        puesto: formData.puesto === "none" ? null : formData.puesto,
         puesto_id: selectedPuesto?.id || null,
         rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
         sucursal_id: formData.sucursal_id || null
@@ -426,14 +426,14 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                   <div className="space-y-2">
                     <Label htmlFor="puesto">Puesto</Label>
                     <Select 
-                      value={formData.puesto || ''} 
+                      value={formData.puesto || 'none'} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, puesto: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar puesto" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin puesto asignado</SelectItem>
+                        <SelectItem value="none">Sin puesto asignado</SelectItem>
                         {puestos.map((puesto) => (
                           <SelectItem key={puesto.id} value={puesto.nombre}>
                             <div className="flex flex-col">
