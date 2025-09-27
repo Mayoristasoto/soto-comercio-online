@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
+import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 
 interface EmpleadoBasico {
   id: string
@@ -265,6 +266,21 @@ export default function KioscoCheckIn() {
 
       setTareasPendientes(tareas || [])
 
+      // 🖨️ FUNCIONALIDAD DE IMPRESIÓN AUTOMÁTICA
+      // Imprimir tareas automáticamente si es el primer check-in del día
+      try {
+        const empleadoCompleto = {
+          id: empleadoParaFichaje.id,
+          nombre: empleadoParaFichaje.nombre,
+          apellido: empleadoParaFichaje.apellido,
+          puesto: empleadoData?.puesto || undefined
+        }
+        await imprimirTareasDiariasAutomatico(empleadoCompleto)
+      } catch (error) {
+        console.error('Error en impresión automática:', error)
+        // No mostrar error al usuario para no interrumpir el flujo de check-in
+      }
+
       // Mostrar tarjeta de confirmación
       setRegistroExitoso({
         empleado: empleadoParaFichaje,
@@ -372,6 +388,22 @@ export default function KioscoCheckIn() {
 
       setTareasPendientes(tareas)
 
+      // 🖨️ FUNCIONALIDAD DE IMPRESIÓN AUTOMÁTICA PARA ACCIONES DIRECTAS
+      // Imprimir tareas automáticamente si es entrada (primer check-in del día)
+      if (tipoAccion === 'entrada') {
+        try {
+          const empleadoCompleto = {
+            id: empleadoParaFichaje.id,
+            nombre: empleadoParaFichaje.nombre,
+            apellido: empleadoParaFichaje.apellido,
+            puesto: empleadoData?.puesto || undefined
+          }
+          await imprimirTareasDiariasAutomatico(empleadoCompleto)
+        } catch (error) {
+          console.error('Error en impresión automática:', error)
+        }
+      }
+
       // Mostrar tarjeta de confirmación
       setRegistroExitoso({
         empleado: empleadoParaFichaje,
@@ -461,6 +493,22 @@ export default function KioscoCheckIn() {
       }
 
       setTareasPendientes(tareas)
+
+      // 🖨️ FUNCIONALIDAD DE IMPRESIÓN AUTOMÁTICA PARA ACCIONES SELECCIONADAS
+      // Imprimir tareas automáticamente si es entrada (primer check-in del día)
+      if (tipoAccion === 'entrada') {
+        try {
+          const empleadoCompleto = {
+            id: empleadoParaFichaje.id,
+            nombre: empleadoParaFichaje.nombre,
+            apellido: empleadoParaFichaje.apellido,
+            puesto: recognizedEmployee.data?.puesto || undefined
+          }
+          await imprimirTareasDiariasAutomatico(empleadoCompleto)
+        } catch (error) {
+          console.error('Error en impresión automática:', error)
+        }
+      }
 
       // Mostrar tarjeta de confirmación
       setRegistroExitoso({
