@@ -97,6 +97,17 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
     checkRole()
   }, [])
 
+  // Update form when both employee and positions are loaded
+  useEffect(() => {
+    if (empleado && puestos.length > 0) {
+      // Ensure the puesto value is correctly set for the Select component
+      setFormData(prev => ({
+        ...prev,
+        puesto: empleado.puesto || 'none'
+      }))
+    }
+  }, [empleado, puestos])
+
   const loadSensitiveData = async () => {
     if (!empleado) return
     
@@ -426,7 +437,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                   <div className="space-y-2">
                     <Label htmlFor="puesto">Puesto</Label>
                     <Select 
-                      value={formData.puesto || 'none'} 
+                      value={formData.puesto && formData.puesto !== 'none' ? formData.puesto : 'none'} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, puesto: value }))}
                     >
                       <SelectTrigger>
