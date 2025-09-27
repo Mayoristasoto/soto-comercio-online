@@ -18,7 +18,8 @@ import {
   Search,
   Filter,
   MoreVertical,
-  KeyRound
+  KeyRound,
+  Briefcase
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -35,6 +36,7 @@ import { MandatoryDocuments } from "@/components/admin/MandatoryDocuments"
 import { DocumentAssignments } from "@/components/admin/DocumentAssignments"
 import { EmployeeDocumentView } from "@/components/admin/EmployeeDocumentView"
 import PasswordChange from "@/components/admin/PasswordChange"
+import PuestoManagement from "@/components/admin/PuestoManagement"
 
 interface Employee {
   id: string
@@ -348,9 +350,10 @@ export default function Nomina() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-8 w-full">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="employees">Empleados</TabsTrigger>
+          <TabsTrigger value="positions">Puestos</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
           <TabsTrigger value="permissions">Permisos</TabsTrigger>
           <TabsTrigger value="mandatory-docs">Doc. Obligatorios</TabsTrigger>
@@ -374,6 +377,14 @@ export default function Nomina() {
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Gestionar Empleados
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('positions')}
+                >
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Gestionar Puestos
                 </Button>
                 <Button 
                   variant="outline" 
@@ -407,6 +418,13 @@ export default function Nomina() {
                   <div>
                     <p className="text-sm font-medium">Gestión de Personal</p>
                     <p className="text-xs text-muted-foreground">Datos básicos, contacto y fotografías</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Briefcase className="h-5 w-5 text-orange-600" />
+                  <div>
+                    <p className="text-sm font-medium">Puestos de Trabajo</p>
+                    <p className="text-xs text-muted-foreground">Definición de roles, responsabilidades y documentos</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -569,6 +587,10 @@ export default function Nomina() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="positions">
+          <PuestoManagement />
         </TabsContent>
 
         <TabsContent value="documents">

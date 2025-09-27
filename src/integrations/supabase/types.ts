@@ -557,6 +557,7 @@ export type Database = {
           legajo: string | null
           nombre: string
           puesto: string | null
+          puesto_id: string | null
           rol: Database["public"]["Enums"]["user_role"]
           sucursal_id: string | null
           updated_at: string
@@ -575,6 +576,7 @@ export type Database = {
           legajo?: string | null
           nombre: string
           puesto?: string | null
+          puesto_id?: string | null
           rol?: Database["public"]["Enums"]["user_role"]
           sucursal_id?: string | null
           updated_at?: string
@@ -593,6 +595,7 @@ export type Database = {
           legajo?: string | null
           nombre?: string
           puesto?: string | null
+          puesto_id?: string | null
           rol?: Database["public"]["Enums"]["user_role"]
           sucursal_id?: string | null
           updated_at?: string
@@ -611,6 +614,13 @@ export type Database = {
             columns: ["sucursal_id"]
             isOneToOne: false
             referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_empleados_puesto"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
             referencedColumns: ["id"]
           },
         ]
@@ -1933,6 +1943,104 @@ export type Database = {
           presupuesto_disponible?: number
           presupuesto_inicial?: number
           presupuesto_utilizado?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      puesto_documentos: {
+        Row: {
+          activo: boolean
+          contenido: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          obligatorio: boolean | null
+          orden: number | null
+          puesto_id: string
+          tipo_documento: string
+          titulo: string
+          updated_at: string
+          url_archivo: string | null
+        }
+        Insert: {
+          activo?: boolean
+          contenido?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          obligatorio?: boolean | null
+          orden?: number | null
+          puesto_id: string
+          tipo_documento?: string
+          titulo: string
+          updated_at?: string
+          url_archivo?: string | null
+        }
+        Update: {
+          activo?: boolean
+          contenido?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          obligatorio?: boolean | null
+          orden?: number | null
+          puesto_id?: string
+          tipo_documento?: string
+          titulo?: string
+          updated_at?: string
+          url_archivo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_puesto_documentos_puesto"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      puestos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          departamento: string | null
+          descripcion: string | null
+          id: string
+          nivel_jerarquico: number | null
+          nombre: string
+          requisitos: string | null
+          responsabilidades: string | null
+          salario_maximo: number | null
+          salario_minimo: number | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          departamento?: string | null
+          descripcion?: string | null
+          id?: string
+          nivel_jerarquico?: number | null
+          nombre: string
+          requisitos?: string | null
+          responsabilidades?: string | null
+          salario_maximo?: number | null
+          salario_minimo?: number | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          departamento?: string | null
+          descripcion?: string | null
+          id?: string
+          nivel_jerarquico?: number | null
+          nombre?: string
+          requisitos?: string | null
+          responsabilidades?: string | null
+          salario_maximo?: number | null
+          salario_minimo?: number | null
           updated_at?: string
         }
         Relationships: []
