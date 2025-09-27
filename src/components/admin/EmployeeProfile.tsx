@@ -69,6 +69,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
     if (empleado) {
       setFormData(empleado)
       loadSucursales()
+      loadSensitiveData()
     }
   }, [empleado])
 
@@ -86,6 +87,38 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
     }
     checkRole()
   }, [])
+
+  const loadSensitiveData = async () => {
+    if (!empleado) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('empleados_datos_sensibles')
+        .select('telefono, direccion, salario, fecha_nacimiento, estado_civil, emergencia_contacto_nombre, emergencia_contacto_telefono')
+        .eq('empleado_id', empleado.id)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error loading sensitive data:', error)
+        return
+      }
+
+      if (data) {
+        setFormData(prev => ({
+          ...prev,
+          telefono: data.telefono,
+          direccion: data.direccion,
+          salario: data.salario,
+          fecha_nacimiento: data.fecha_nacimiento,
+          estado_civil: data.estado_civil,
+          emergencia_contacto_nombre: data.emergencia_contacto_nombre,
+          emergencia_contacto_telefono: data.emergencia_contacto_telefono
+        }))
+      }
+    } catch (error) {
+      console.error('Error loading sensitive data:', error)
+    }
+  }
 
   const loadSucursales = async () => {
     try {
