@@ -123,45 +123,32 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
       if (empleadoError) throw empleadoError
 
-      // Update sensitive data - RLS policies will handle permissions
-      const sensitiveUpdate = {
-        telefono: formData.telefono || null,
-        direccion: formData.direccion || null,
-        salario: formData.salario || null,
-        fecha_nacimiento: formData.fecha_nacimiento || null,
-        estado_civil: formData.estado_civil || null,
-        emergencia_contacto_nombre: formData.emergencia_contacto_nombre || null,
-        emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
-      }
-
-      // Only admins can modify sensitive data; skip for others to avoid RLS errors
+      // Update sensitive data - only if admin and if there are changes
       let sensitiveError: any = null
       if (isAdmin) {
-        // Check if sensitive data record exists first
-        const { data: existingRecord } = await supabase
-          .from('empleados_datos_sensibles')
-          .select('id')
-          .eq('empleado_id', empleado.id)
-          .maybeSingle()
-
-        if (existingRecord) {
-          // Update existing record
-          const { error } = await supabase
-            .from('empleados_datos_sensibles')
-            .update(sensitiveUpdate)
-            .eq('empleado_id', empleado.id)
-          sensitiveError = error
-        } else {
-          // Insert new record
-          const { error } = await supabase
-            .from('empleados_datos_sensibles')
-            .insert({ 
-              empleado_id: empleado.id,
-              ...sensitiveUpdate 
-            })
-          sensitiveError = error
+        const sensitiveUpdate = {
+          telefono: formData.telefono || null,
+          direccion: formData.direccion || null,
+          salario: formData.salario || null,
+          fecha_nacimiento: formData.fecha_nacimiento || null,
+          estado_civil: formData.estado_civil || null,
+          emergencia_contacto_nombre: formData.emergencia_contacto_nombre || null,
+          emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
         }
 
+        // Use RPC function to safely update sensitive data with proper admin check
+        const { error } = await supabase.rpc('admin_update_sensitive_data', {
+          p_empleado_id: empleado.id,
+          p_telefono: sensitiveUpdate.telefono,
+          p_direccion: sensitiveUpdate.direccion,
+          p_salario: sensitiveUpdate.salario,
+          p_fecha_nacimiento: sensitiveUpdate.fecha_nacimiento,
+          p_estado_civil: sensitiveUpdate.estado_civil,
+          p_emergencia_contacto_nombre: sensitiveUpdate.emergencia_contacto_nombre,
+          p_emergencia_contacto_telefono: sensitiveUpdate.emergencia_contacto_telefono
+        })
+
+        sensitiveError = error
         if (sensitiveError) {
           console.error('Error updating sensitive data:', sensitiveError)
         }
