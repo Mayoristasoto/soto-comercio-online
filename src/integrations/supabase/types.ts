@@ -2347,6 +2347,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      evaluar_puntualidad_mensual: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_current_empleado: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2446,6 +2450,19 @@ export type Database = {
           email: string
           id: string
           nombre: string
+        }[]
+      }
+      get_estadisticas_puntualidad: {
+        Args: {
+          p_empleado_id: string
+          p_fecha_fin?: string
+          p_fecha_inicio?: string
+        }
+        Returns: {
+          dias_puntuales: number
+          porcentaje_puntualidad: number
+          puede_obtener_insignia: boolean
+          total_dias: number
         }[]
       }
       get_facial_config: {
