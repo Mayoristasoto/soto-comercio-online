@@ -28,6 +28,7 @@ import ChallengeManagement from "@/components/admin/ChallengeManagement"
 import TrainingManagement from "@/components/admin/TrainingManagement"
 import PrizeManagement from "@/components/admin/PrizeManagement"
 import StaffOverview from "@/components/admin/StaffOverview"
+import { PuntualidadManager } from "@/components/admin/PuntualidadManager"
 
 interface DashboardStats {
   total_empleados: number
@@ -279,6 +280,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="challenges">Desafíos</TabsTrigger>
           <TabsTrigger value="training">Capacitaciones</TabsTrigger>
           <TabsTrigger value="prizes">Premios</TabsTrigger>
+          <TabsTrigger value="puntualidad">Puntualidad</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="activity">Actividad</TabsTrigger>
         </TabsList>
@@ -445,6 +447,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="prizes">
           <PrizeManagement />
+        </TabsContent>
+
+        <TabsContent value="puntualidad">
+          <PuntualidadManager />
         </TabsContent>
 
         <TabsContent value="roles">
