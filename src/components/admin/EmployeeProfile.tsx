@@ -137,7 +137,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         }
 
         // Use RPC function to safely update sensitive data with proper admin check
-        const { error } = await supabase.rpc('admin_update_sensitive_data', {
+        const { error } = await (supabase.rpc as any)('admin_update_sensitive_data', {
           p_empleado_id: empleado.id,
           p_telefono: sensitiveUpdate.telefono,
           p_direccion: sensitiveUpdate.direccion,

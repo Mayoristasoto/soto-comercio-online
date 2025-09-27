@@ -2151,6 +2151,19 @@ export type Database = {
       }
     }
     Functions: {
+      admin_update_sensitive_data: {
+        Args: {
+          p_direccion?: string
+          p_emergencia_contacto_nombre?: string
+          p_emergencia_contacto_telefono?: string
+          p_empleado_id: string
+          p_estado_civil?: string
+          p_fecha_nacimiento?: string
+          p_salario?: number
+          p_telefono?: string
+        }
+        Returns: undefined
+      }
       aplicar_redondeo_fichaje: {
         Args: { redondeo_minutos: number; timestamp_real: string }
         Returns: string
