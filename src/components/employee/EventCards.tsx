@@ -68,7 +68,47 @@ export function EventCards({ employeeId }: EventCardsProps) {
 
       if (empleadosError) throw empleadosError
 
-      // 2. Procesar aniversarios laborales
+      // 2. Cargar fechas de nacimiento para cumpleaños
+      const { data: fechasNacimiento, error: fechasError } = await supabase
+        .from('empleados_datos_sensibles')
+        .select('empleado_id, fecha_nacimiento')
+        .not('fecha_nacimiento', 'is', null)
+
+      if (fechasError) {
+        console.warn('No se pudieron cargar fechas de nacimiento:', fechasError)
+      }
+
+      // 3. Procesar cumpleaños próximos
+      if (fechasNacimiento && empleados) {
+        empleados.forEach(empleado => {
+          const fechaNacimiento = fechasNacimiento.find(f => f.empleado_id === empleado.id)?.fecha_nacimiento
+          if (fechaNacimiento) {
+            const birthDate = parseISO(fechaNacimiento)
+            const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())
+            
+            // Si ya pasó este año, calcular para el próximo año
+            if (thisYearBirthday < today) {
+              thisYearBirthday.setFullYear(today.getFullYear() + 1)
+            }
+            
+            const daysUntilBirthday = differenceInDays(thisYearBirthday, today)
+            
+            if (daysUntilBirthday <= 30) { // Mostrar próximos 30 días
+              upcomingEvents.push({
+                id: `birthday-${empleado.id}`,
+                type: 'birthday',
+                employeeName: `${empleado.nombre} ${empleado.apellido}`,
+                employeeEmail: empleado.email,
+                eventDate: thisYearBirthday,
+                description: 'Cumpleaños',
+                daysRemaining: daysUntilBirthday
+              })
+            }
+          }
+        })
+      }
+
+      // 4. Procesar aniversarios laborales
       empleados?.forEach(empleado => {
         const fechaIngreso = parseISO(empleado.fecha_ingreso)
         const thisYearAnniversary = new Date(today.getFullYear(), fechaIngreso.getMonth(), fechaIngreso.getDate())
@@ -95,7 +135,7 @@ export function EventCards({ employeeId }: EventCardsProps) {
         }
       })
 
-      // 3. Cargar capacitaciones próximas a vencer
+      // 5. Cargar capacitaciones próximas a vencer
       const { data: capacitaciones, error: capacitacionesError } = await supabase
         .from('asignaciones_capacitacion')
         .select(`
