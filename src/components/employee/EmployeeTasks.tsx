@@ -3,13 +3,19 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { 
   CheckCircle2, 
   Clock, 
   AlertCircle, 
   Calendar,
   User,
-  Briefcase
+  Briefcase,
+  Camera,
+  Upload,
+  X
 } from "lucide-react"
 
 interface Task {
@@ -21,6 +27,7 @@ interface Task {
   fecha_limite: string | null
   fecha_completada: string | null
   asignado_por: string
+  fotos_evidencia: string[]
 }
 
 interface EmployeeTasksProps {
@@ -46,6 +53,10 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -74,35 +85,91 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
     }
   }
 
-  const markTaskCompleted = async (taskId: string) => {
-    setUpdating(taskId)
+  const openCompletionDialog = (task: Task) => {
+    setSelectedTask(task)
+    setShowCompletionDialog(true)
+    setSelectedFiles([])
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (files) {
+      setSelectedFiles(Array.from(files))
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadFiles = async (taskId: string): Promise<string[]> => {
+    if (selectedFiles.length === 0) return []
+
+    const uploadedUrls: string[] = []
+    
+    for (const file of selectedFiles) {
+      const fileName = `tareas/${taskId}/${Date.now()}_${file.name}`
+      
+      const { data, error } = await supabase.storage
+        .from('employee-documents')
+        .upload(fileName, file)
+
+      if (error) {
+        console.error('Error subiendo archivo:', error)
+        throw new Error(`Error subiendo ${file.name}`)
+      }
+
+      // Obtener URL pública del archivo
+      const { data: urlData } = supabase.storage
+        .from('employee-documents')
+        .getPublicUrl(fileName)
+
+      uploadedUrls.push(urlData.publicUrl)
+    }
+
+    return uploadedUrls
+  }
+
+  const markTaskCompleted = async () => {
+    if (!selectedTask) return
+    
+    setUploading(true)
     try {
+      // Subir archivos si hay algunos seleccionados
+      const fotosUrls = await uploadFiles(selectedTask.id)
+      
       const { error } = await supabase
         .from('tareas')
         .update({ 
           estado: 'completada',
-          fecha_completada: new Date().toISOString()
+          fecha_completada: new Date().toISOString(),
+          fotos_evidencia: fotosUrls
         })
-        .eq('id', taskId)
+        .eq('id', selectedTask.id)
 
       if (error) throw error
 
       await loadTasks()
       onTasksUpdate?.()
+      setShowCompletionDialog(false)
+      setSelectedTask(null)
+      setSelectedFiles([])
       
       toast({
         title: "Tarea completada",
-        description: "La tarea ha sido marcada como completada exitosamente",
+        description: fotosUrls.length > 0 
+          ? `Tarea completada con ${fotosUrls.length} foto(s) de evidencia`
+          : "Tarea completada exitosamente",
       })
     } catch (error) {
       console.error('Error actualizando tarea:', error)
       toast({
         title: "Error",
-        description: "No se pudo actualizar la tarea",
+        description: "No se pudo completar la tarea",
         variant: "destructive"
       })
     } finally {
-      setUpdating(null)
+      setUploading(false)
     }
   }
 
@@ -210,12 +277,12 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => markTaskCompleted(task.id)}
+                    onClick={() => openCompletionDialog(task)}
                     disabled={updating === task.id}
                     className="hover:bg-green-50 hover:border-green-200"
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    {updating === task.id ? 'Completando...' : 'Completar'}
+                    <Camera className="h-4 w-4 mr-1" />
+                    Completar
                   </Button>
                 )}
               </div>
@@ -250,6 +317,79 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
           ))}
         </div>
       )}
+
+      {/* Diálogo para completar tarea con fotos */}
+      <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Completar Tarea</DialogTitle>
+            <DialogDescription>
+              {selectedTask?.titulo}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="photos">Fotos de evidencia (opcional)</Label>
+              <Input
+                id="photos"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileChange}
+                className="mt-1"
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Puedes subir múltiples fotos como evidencia del trabajo completado
+              </p>
+            </div>
+
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Archivos seleccionados:</Label>
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                    <span className="text-sm truncate">{file.name}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeFile(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCompletionDialog(false)}
+                disabled={uploading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={markTaskCompleted}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <>
+                    <Upload className="h-4 w-4 mr-2 animate-spin" />
+                    Completando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Completar Tarea
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

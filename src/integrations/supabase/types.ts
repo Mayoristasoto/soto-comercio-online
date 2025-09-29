@@ -2181,6 +2181,7 @@ export type Database = {
           estado: Database["public"]["Enums"]["tarea_estado"]
           fecha_completada: string | null
           fecha_limite: string | null
+          fotos_evidencia: string[] | null
           id: string
           prioridad: Database["public"]["Enums"]["tarea_prioridad"]
           titulo: string
@@ -2194,6 +2195,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["tarea_estado"]
           fecha_completada?: string | null
           fecha_limite?: string | null
+          fotos_evidencia?: string[] | null
           id?: string
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
           titulo: string
@@ -2207,6 +2209,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["tarea_estado"]
           fecha_completada?: string | null
           fecha_limite?: string | null
+          fotos_evidencia?: string[] | null
           id?: string
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
           titulo?: string
