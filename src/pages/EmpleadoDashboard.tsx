@@ -20,6 +20,7 @@ import { EmployeeTrainings } from "@/components/employee/EmployeeTrainings"
 import { EmployeeBadges } from "@/components/employee/EmployeeBadges"
 import { EmployeePrizes } from "@/components/employee/EmployeePrizes"
 import { EmployeeTasks } from "@/components/employee/EmployeeTasks"
+import { EventCards } from "@/components/employee/EventCards"
 
 interface UserInfo {
   id: string
@@ -175,6 +176,22 @@ export default function EmpleadoDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Sección de Próximos Eventos */}
+      <Card className="animate-fade-in mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <span>Próximos Eventos del Equipo</span>
+          </CardTitle>
+          <CardDescription>
+            Cumpleaños, aniversarios y vencimientos de capacitaciones de todos los empleados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EventCards employeeId={userInfo.id} />
+        </CardContent>
+      </Card>
 
       {/* Secciones principales del dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
