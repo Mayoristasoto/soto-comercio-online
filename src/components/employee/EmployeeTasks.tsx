@@ -304,7 +304,7 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
               key={task.id} 
               className="p-3 border rounded-lg bg-green-50/50 border-green-200"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 <div>
                   <h5 className="font-medium text-green-800">{task.titulo}</h5>
                   <p className="text-sm text-green-600">
@@ -313,6 +313,33 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
                 </div>
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
+              
+              {/* Mostrar fotos de evidencia si existen */}
+              {task.fotos_evidencia && task.fotos_evidencia.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-green-700 mb-1 flex items-center">
+                    <Camera className="h-3 w-3 mr-1" />
+                    {task.fotos_evidencia.length} foto(s) de evidencia
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {task.fotos_evidencia.map((url, index) => (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded overflow-hidden border border-green-200 hover:opacity-80 transition-opacity"
+                      >
+                        <img 
+                          src={url} 
+                          alt={`Evidencia ${index + 1}`}
+                          className="w-full h-20 object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

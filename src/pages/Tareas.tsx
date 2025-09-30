@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2, User, UserCheck } from "lucide-react"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2, User, UserCheck, Camera } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
@@ -33,6 +33,7 @@ interface Tarea {
   asignado_por: string
   created_at: string
   updated_at: string
+  fotos_evidencia: string[]
   empleado_asignado?: {
     nombre: string
     apellido: string
@@ -349,9 +350,38 @@ export default function Tareas() {
                         </>
                       )}
                       {tarea.estado === 'completada' && tarea.fecha_completada && (
-                        <p className="text-xs text-green-600">
-                          Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
-                        </p>
+                        <div className="w-full">
+                          <p className="text-xs text-green-600 mb-2">
+                            Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
+                          </p>
+                          
+                          {/* Mostrar fotos de evidencia si existen */}
+                          {tarea.fotos_evidencia && tarea.fotos_evidencia.length > 0 && (
+                            <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                              <p className="text-xs font-medium text-green-800 mb-2 flex items-center">
+                                <Camera className="h-3 w-3 mr-1" />
+                                {tarea.fotos_evidencia.length} foto(s) de evidencia
+                              </p>
+                              <div className="grid grid-cols-4 gap-1">
+                                {tarea.fotos_evidencia.map((url, index) => (
+                                  <a
+                                    key={index}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block rounded overflow-hidden border border-green-300 hover:border-green-500 transition-all"
+                                  >
+                                    <img 
+                                      src={url} 
+                                      alt={`Evidencia ${index + 1}`}
+                                      className="w-full h-16 object-cover"
+                                    />
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </CardContent>
@@ -425,8 +455,37 @@ export default function Tareas() {
                         <span>Creada: {new Date(tarea.created_at).toLocaleDateString()}</span>
                       </div>
                       {tarea.estado === 'completada' && tarea.fecha_completada && (
-                        <div className="text-sm text-green-600 mb-2">
-                          ✅ Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
+                        <div className="mb-3">
+                          <div className="text-sm text-green-600 mb-2">
+                            ✅ Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
+                          </div>
+                          
+                          {/* Mostrar fotos de evidencia si existen */}
+                          {tarea.fotos_evidencia && tarea.fotos_evidencia.length > 0 && (
+                            <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                              <p className="text-sm font-medium text-green-800 mb-2 flex items-center">
+                                <Camera className="h-4 w-4 mr-1" />
+                                Fotos de evidencia ({tarea.fotos_evidencia.length})
+                              </p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {tarea.fotos_evidencia.map((url, index) => (
+                                  <a
+                                    key={index}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block rounded-lg overflow-hidden border-2 border-green-300 hover:border-green-500 transition-all hover:shadow-md"
+                                  >
+                                    <img 
+                                      src={url} 
+                                      alt={`Evidencia ${index + 1} de ${tarea.titulo}`}
+                                      className="w-full h-24 object-cover"
+                                    />
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       {/* Botones de gestión para tareas delegadas */}
