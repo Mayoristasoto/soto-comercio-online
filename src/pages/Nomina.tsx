@@ -19,7 +19,8 @@ import {
   Filter,
   MoreVertical,
   KeyRound,
-  Briefcase
+  Briefcase,
+  Upload
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -37,6 +38,7 @@ import { DocumentAssignments } from "@/components/admin/DocumentAssignments"
 import { EmployeeDocumentView } from "@/components/admin/EmployeeDocumentView"
 import PasswordChange from "@/components/admin/PasswordChange"
 import PuestoManagement from "@/components/admin/PuestoManagement"
+import EmployeeImport from "@/components/admin/EmployeeImport"
 
 interface Employee {
   id: string
@@ -86,6 +88,7 @@ export default function Nomina() {
   const [documentsOpen, setDocumentsOpen] = useState(false)
   const [permissionsOpen, setPermissionsOpen] = useState(false)
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
 
@@ -290,6 +293,10 @@ export default function Nomina() {
         </div>
         
         <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar Excel
+          </Button>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -714,6 +721,12 @@ export default function Nomina() {
           onOpenChange={setPasswordChangeOpen}
         />
       )}
+
+      <EmployeeImport
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={loadNominaData}
+      />
     </div>
   )
 }
