@@ -148,18 +148,20 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
 
           // Insertar datos sensibles si existen
           if (empleadoData && (emp.telefono || emp.direccion || emp.salario || emp.fecha_nacimiento)) {
-            const { error: sensibleError } = await supabase
-              .from('empleados_datos_sensibles')
-              .insert({
-                empleado_id: empleadoData.id,
-                telefono: emp.telefono?.trim() || null,
-                direccion: emp.direccion?.trim() || null,
-                salario: emp.salario || null,
-                fecha_nacimiento: emp.fecha_nacimiento || null,
-                estado_civil: emp.estado_civil?.trim() || null,
-                emergencia_contacto_nombre: emp.emergencia_contacto_nombre?.trim() || null,
-                emergencia_contacto_telefono: emp.emergencia_contacto_telefono?.trim() || null
-              })
+            const { error: sensibleError } = await (supabase.rpc as any)(
+              'admin_update_sensitive_data',
+              {
+                p_empleado_id: empleadoData.id,
+                p_telefono: emp.telefono?.trim() || null,
+                p_direccion: emp.direccion?.trim() || null,
+                p_salario: emp.salario || null,
+                p_fecha_nacimiento: emp.fecha_nacimiento || null,
+                p_estado_civil: emp.estado_civil?.trim() || null,
+                p_emergencia_contacto_nombre: emp.emergencia_contacto_nombre?.trim() || null,
+                p_emergencia_contacto_telefono: emp.emergencia_contacto_telefono?.trim() || null,
+              }
+            )
+
 
             if (sensibleError) console.error('Error insertando datos sensibles:', sensibleError)
           }
