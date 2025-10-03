@@ -39,6 +39,7 @@ import { EmployeeDocumentView } from "@/components/admin/EmployeeDocumentView"
 import PasswordChange from "@/components/admin/PasswordChange"
 import PuestoManagement from "@/components/admin/PuestoManagement"
 import EmployeeImport from "@/components/admin/EmployeeImport"
+import UserCreationForm from "@/components/admin/UserCreationForm"
 
 interface Employee {
   id: string
@@ -89,6 +90,7 @@ export default function Nomina() {
   const [permissionsOpen, setPermissionsOpen] = useState(false)
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [userCreationOpen, setUserCreationOpen] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
 
@@ -301,7 +303,7 @@ export default function Nomina() {
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button>
+          <Button onClick={() => setUserCreationOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Nuevo Empleado
           </Button>
@@ -726,6 +728,12 @@ export default function Nomina() {
         open={importOpen}
         onOpenChange={setImportOpen}
         onImportComplete={loadNominaData}
+      />
+
+      <UserCreationForm
+        open={userCreationOpen}
+        onOpenChange={setUserCreationOpen}
+        onUserCreated={loadNominaData}
       />
     </div>
   )
