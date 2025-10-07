@@ -50,7 +50,7 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
           fecha_fin,
           motivo,
           estado,
-          empleados!inner(nombre, apellido, email, sucursal_id)
+          empleados!solicitudes_vacaciones_empleado_id_fkey(nombre, apellido, email, sucursal_id)
         `)
         .eq('estado', 'pendiente')
         .order('created_at', { ascending: true });
