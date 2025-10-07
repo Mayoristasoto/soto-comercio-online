@@ -247,6 +247,13 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           ))}
           {vacaciones.map((dia, idx) => {
             const tieneMultiplesEmpleados = dia.empleados.length >= 2;
+            const coloresFondo = [
+              'bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700',
+              'bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700',
+              'bg-purple-100 border-purple-300 dark:bg-purple-900/30 dark:border-purple-700',
+              'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700',
+              'bg-pink-100 border-pink-300 dark:bg-pink-900/30 dark:border-pink-700',
+            ];
             
             return (
               <div
@@ -254,39 +261,41 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 className={`min-h-[80px] p-2 border rounded-lg ${
                   dia.bloqueado
                     ? 'bg-destructive/10 border-destructive'
-                    : tieneMultiplesEmpleados
-                    ? 'bg-gradient-to-br from-primary/20 to-secondary/20 border-primary'
                     : dia.empleados.length > 0
-                    ? 'bg-primary/10 border-primary'
+                    ? 'bg-muted/30 border-border'
                     : 'bg-background'
                 }`}
               >
-              <div className="text-sm font-medium mb-1">
-                {format(dia.fecha, 'd')}
+                <div className="text-sm font-medium mb-1">
+                  {format(dia.fecha, 'd')}
+                </div>
+                {dia.bloqueado && (
+                  <Badge variant="destructive" className="text-xs mb-1">
+                    Bloqueado
+                  </Badge>
+                )}
+                <div className="space-y-1">
+                  {dia.empleados.slice(0, 5).map((emp, empIdx) => (
+                    <div 
+                      key={empIdx} 
+                      className={`text-xs px-2 py-1 rounded border ${
+                        tieneMultiplesEmpleados 
+                          ? coloresFondo[empIdx % coloresFondo.length]
+                          : 'bg-primary/10 border-primary/20'
+                      }`}
+                    >
+                      <span className="font-medium">{emp.nombre} {emp.apellido.charAt(0)}.</span>
+                    </div>
+                  ))}
+                </div>
+                {dia.empleados.length > 5 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    +{dia.empleados.length - 5} más
+                  </div>
+                )}
               </div>
-              {dia.bloqueado && (
-                <Badge variant="destructive" className="text-xs mb-1">
-                  Bloqueado
-                </Badge>
-              )}
-              {dia.empleados.slice(0, 2).map((emp, empIdx) => (
-                <div key={empIdx} className="text-xs truncate">
-                  {emp.nombre} {emp.apellido.charAt(0)}.
-                </div>
-              ))}
-              {dia.empleados.length > 2 && (
-                <div className="text-xs text-muted-foreground">
-                  +{dia.empleados.length - 2} más
-                </div>
-              )}
-              {tieneMultiplesEmpleados && (
-                <Badge variant="outline" className="text-xs mt-1">
-                  {dia.empleados.length} empleados
-                </Badge>
-              )}
-            </div>
-          )}
-        )}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
