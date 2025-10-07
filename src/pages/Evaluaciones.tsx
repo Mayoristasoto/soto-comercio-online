@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ClipboardCheck, Users, TrendingUp, Calendar } from "lucide-react";
+import { ClipboardCheck, Users, TrendingUp, Calendar, UserPlus } from "lucide-react";
 import { EvaluacionesGerente } from "@/components/evaluaciones/EvaluacionesGerente";
 import { EvaluacionesAdmin } from "@/components/evaluaciones/EvaluacionesAdmin";
 import { HistorialEvaluaciones } from "@/components/evaluaciones/HistorialEvaluaciones";
+import { GestionConceptos } from "@/components/evaluaciones/GestionConceptos";
+import { AsignarEvaluacion } from "@/components/evaluaciones/AsignarEvaluacion";
 import { Badge } from "@/components/ui/badge";
 
 interface UserInfo {
@@ -143,10 +145,20 @@ export default function Evaluaciones() {
             </TabsTrigger>
           )}
           {isAdmin && (
-            <TabsTrigger value="seguimiento">
-              <ClipboardCheck className="h-4 w-4 mr-2" />
-              Seguimiento
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="seguimiento">
+                <ClipboardCheck className="h-4 w-4 mr-2" />
+                Seguimiento
+              </TabsTrigger>
+              <TabsTrigger value="asignar">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Asignar
+              </TabsTrigger>
+              <TabsTrigger value="conceptos">
+                <Calendar className="h-4 w-4 mr-2" />
+                Conceptos
+              </TabsTrigger>
+            </>
           )}
           <TabsTrigger value="historial">
             <TrendingUp className="h-4 w-4 mr-2" />
@@ -164,9 +176,19 @@ export default function Evaluaciones() {
         )}
 
         {isAdmin && (
-          <TabsContent value="seguimiento" className="space-y-4">
-            <EvaluacionesAdmin />
-          </TabsContent>
+          <>
+            <TabsContent value="seguimiento" className="space-y-4">
+              <EvaluacionesAdmin />
+            </TabsContent>
+
+            <TabsContent value="asignar" className="space-y-4">
+              <AsignarEvaluacion />
+            </TabsContent>
+
+            <TabsContent value="conceptos" className="space-y-4">
+              <GestionConceptos />
+            </TabsContent>
+          </>
         )}
 
         <TabsContent value="historial" className="space-y-4">
