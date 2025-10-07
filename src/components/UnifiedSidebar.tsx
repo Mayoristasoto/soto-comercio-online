@@ -14,7 +14,8 @@ import {
   FileText,
   User,
   ClipboardCheck,
-  Plane
+  Plane,
+  FileSignature
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -90,6 +91,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
     { title: "Gestión Empleados", url: "/admin/empleados", icon: Users },
     { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
     { title: "Vacaciones", url: "/vacaciones", icon: Plane },
+    { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
     { title: "Módulo Nómina", url: "/nomina", icon: FileText },
     { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
     { title: "Configuración", url: "/admin/configuracion", icon: Settings },
@@ -99,6 +101,14 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const gerenteItems = [
     { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
     { title: "Vacaciones", url: "/vacaciones", icon: Plane },
+    { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
+  ]
+
+  // Items para todos los empleados
+  const empleadoItems = [
+    { title: "Mi Dashboard", url: "/mi-dashboard", icon: User },
+    { title: "Vacaciones", url: "/vacaciones", icon: Plane },
+    { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
   ]
 
   const isActive = (path: string) => {
@@ -141,18 +151,20 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
             <SidebarGroupLabel>Mi Espacio Personal</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive("/mi-dashboard")}
-                    tooltip="Tu dashboard personalizado con tareas, capacitaciones y logros"
-                  >
-                    <NavLink to="/mi-dashboard">
-                      <User className="h-4 w-4" />
-                      <span>Mi Dashboard</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {empleadoItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 

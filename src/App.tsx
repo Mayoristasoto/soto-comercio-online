@@ -25,6 +25,7 @@ import Nomina from "./pages/Nomina";
 import EmpleadoDashboard from "./pages/EmpleadoDashboard";
 import Evaluaciones from "./pages/Evaluaciones";
 import Vacaciones from "./pages/Vacaciones";
+import Solicitudes from "./pages/Solicitudes";
 
 // Legacy pages (mantener por compatibilidad)
 import Comercio from "./pages/Comercio";
@@ -91,6 +92,9 @@ const App = () => (
             
             {/* Módulo de Vacaciones */}
             <Route path="vacaciones" element={<Vacaciones />} />
+            
+            {/* Módulo de Solicitudes */}
+            <Route path="solicitudes" element={<Solicitudes />} />
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}

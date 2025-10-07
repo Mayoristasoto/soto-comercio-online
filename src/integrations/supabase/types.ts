@@ -2240,6 +2240,119 @@ export type Database = {
           },
         ]
       }
+      solicitudes_configuracion: {
+        Row: {
+          activo: boolean
+          created_at: string
+          dias_anticipacion: number
+          fecha_fin_ventana: string | null
+          fecha_inicio_ventana: string | null
+          id: string
+          monto_maximo_mes: number | null
+          tipo_solicitud: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          dias_anticipacion?: number
+          fecha_fin_ventana?: string | null
+          fecha_inicio_ventana?: string | null
+          id?: string
+          monto_maximo_mes?: number | null
+          tipo_solicitud: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          dias_anticipacion?: number
+          fecha_fin_ventana?: string | null
+          fecha_inicio_ventana?: string | null
+          id?: string
+          monto_maximo_mes?: number | null
+          tipo_solicitud?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      solicitudes_generales: {
+        Row: {
+          aprobado_por: string | null
+          archivo_adjunto: string | null
+          comentarios_aprobacion: string | null
+          created_at: string
+          descripcion: string | null
+          empleado_id: string
+          estado: string
+          fecha_aprobacion: string | null
+          fecha_solicitud: string
+          id: string
+          monto: number | null
+          tipo_solicitud: string
+          updated_at: string
+        }
+        Insert: {
+          aprobado_por?: string | null
+          archivo_adjunto?: string | null
+          comentarios_aprobacion?: string | null
+          created_at?: string
+          descripcion?: string | null
+          empleado_id: string
+          estado?: string
+          fecha_aprobacion?: string | null
+          fecha_solicitud: string
+          id?: string
+          monto?: number | null
+          tipo_solicitud: string
+          updated_at?: string
+        }
+        Update: {
+          aprobado_por?: string | null
+          archivo_adjunto?: string | null
+          comentarios_aprobacion?: string | null
+          created_at?: string
+          descripcion?: string | null
+          empleado_id?: string
+          estado?: string
+          fecha_aprobacion?: string | null
+          fecha_solicitud?: string
+          id?: string
+          monto?: number | null
+          tipo_solicitud?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitudes_generales_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_generales_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_generales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_generales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solicitudes_vacaciones: {
         Row: {
           aprobado_por: string | null
