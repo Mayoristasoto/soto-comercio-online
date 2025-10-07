@@ -132,14 +132,14 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
           const { data: empleadoData, error: empleadoError } = await supabase
             .from('empleados')
             .insert({
-              nombre: emp.nombre.trim(),
-              apellido: emp.apellido.trim(),
-              email: emp.email.trim().toLowerCase(),
-              dni: emp.dni?.trim() || null,
+              nombre: String(emp.nombre || '').trim(),
+              apellido: String(emp.apellido || '').trim(),
+              email: String(emp.email || '').trim().toLowerCase(),
+              dni: emp.dni ? String(emp.dni).trim() : null,
               rol: emp.rol as any,
               fecha_ingreso: emp.fecha_ingreso,
               activo: emp.activo,
-              puesto: emp.puesto?.trim() || null
+              puesto: emp.puesto ? String(emp.puesto).trim() : null
             })
             .select()
             .single()
@@ -152,13 +152,13 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
               'admin_update_sensitive_data',
               {
                 p_empleado_id: empleadoData.id,
-                p_telefono: emp.telefono?.trim() || null,
-                p_direccion: emp.direccion?.trim() || null,
-                p_salario: emp.salario || null,
+                p_telefono: emp.telefono ? String(emp.telefono).trim() : null,
+                p_direccion: emp.direccion ? String(emp.direccion).trim() : null,
+                p_salario: emp.salario ? Number(emp.salario) : null,
                 p_fecha_nacimiento: emp.fecha_nacimiento || null,
-                p_estado_civil: emp.estado_civil?.trim() || null,
-                p_emergencia_contacto_nombre: emp.emergencia_contacto_nombre?.trim() || null,
-                p_emergencia_contacto_telefono: emp.emergencia_contacto_telefono?.trim() || null,
+                p_estado_civil: emp.estado_civil ? String(emp.estado_civil).trim() : null,
+                p_emergencia_contacto_nombre: emp.emergencia_contacto_nombre ? String(emp.emergencia_contacto_nombre).trim() : null,
+                p_emergencia_contacto_telefono: emp.emergencia_contacto_telefono ? String(emp.emergencia_contacto_telefono).trim() : null,
               }
             )
 
