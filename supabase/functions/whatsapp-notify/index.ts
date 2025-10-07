@@ -26,7 +26,16 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log('🚀 Iniciando verificación de empleados sin salida...')
+    // Verificar si es modo prueba
+    const body = await req.json().catch(() => ({}))
+    const modoPrueba = body.modo_prueba === true
+    const numeroPrueba = body.numero_prueba
+    
+    if (modoPrueba) {
+      console.log('🧪 Modo prueba activado - enviando mensaje a:', numeroPrueba)
+    } else {
+      console.log('🚀 Iniciando verificación de empleados sin salida...')
+    }
 
     // Crear cliente Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -61,6 +70,71 @@ serve(async (req: Request): Promise<Response> => {
         JSON.stringify({ error: 'Token de WhatsApp API no configurado' }),
         { status: 400, headers: corsHeaders }
       )
+    }
+
+    // Si es modo prueba, enviar mensaje de prueba y terminar
+    if (modoPrueba) {
+      if (!numeroPrueba || numeroPrueba.trim() === '') {
+        return new Response(
+          JSON.stringify({ error: 'Número de prueba no proporcionado' }),
+          { status: 400, headers: corsHeaders }
+        )
+      }
+
+      const mensajePrueba = `🧪 Mensaje de prueba del Sistema de Control de Asistencia
+
+Este es un mensaje de prueba para verificar la configuración de WhatsApp.
+
+Si recibes este mensaje, la integración está funcionando correctamente. ✅
+
+Saludos,
+Sistema de Control de Asistencia`
+
+      try {
+        const whatsappResponse = await fetch('https://api.mayoristasoto.online/api/messages/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            number: numeroPrueba,
+            body: mensajePrueba
+          })
+        })
+
+        const responseData: WhatsAppResponse = await whatsappResponse.json()
+        
+        if (whatsappResponse.ok) {
+          console.log(`✅ Mensaje de prueba enviado exitosamente a ${numeroPrueba}`)
+          return new Response(
+            JSON.stringify({ 
+              message: 'Mensaje de prueba enviado exitosamente',
+              numero: numeroPrueba,
+              respuesta: responseData
+            }),
+            { status: 200, headers: corsHeaders }
+          )
+        } else {
+          console.error(`❌ Error al enviar mensaje de prueba:`, responseData)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Error al enviar mensaje de prueba',
+              detalles: responseData
+            }),
+            { status: 500, headers: corsHeaders }
+          )
+        }
+      } catch (error) {
+        console.error('❌ Error en envío de prueba:', error)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Error al conectar con la API de WhatsApp',
+            detalles: error instanceof Error ? error.message : String(error)
+          }),
+          { status: 500, headers: corsHeaders }
+        )
+      }
     }
 
     // Obtener empleados sin salida registrada

@@ -58,6 +58,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
   const [confirmacionBorrado, setConfirmacionBorrado] = useState(false)
   const [mostrarToken, setMostrarToken] = useState(false)
   const [probandoWhatsApp, setProbandoWhatsApp] = useState(false)
+  const [numeroTestWhatsApp, setNumeroTestWhatsApp] = useState('')
 
   useEffect(() => {
     cargarConfiguracion()
@@ -238,15 +239,29 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
   }
 
   const probarWhatsApp = async () => {
+    if (!numeroTestWhatsApp.trim()) {
+      toast({
+        title: "Número requerido",
+        description: "Por favor ingrese un número de teléfono para la prueba",
+        variant: "destructive"
+      })
+      return
+    }
+
     setProbandoWhatsApp(true)
     try {
-      const { data, error } = await supabase.functions.invoke('whatsapp-notify')
+      const { data, error } = await supabase.functions.invoke('whatsapp-notify', {
+        body: { 
+          modo_prueba: true,
+          numero_prueba: numeroTestWhatsApp
+        }
+      })
       
       if (error) throw error
       
       toast({
         title: "Prueba completada",
-        description: `${data.message || 'Función ejecutada correctamente'}`,
+        description: `${data.message || 'Mensaje de prueba enviado correctamente'}`,
       })
     } catch (error) {
       console.error('Error probando WhatsApp:', error)
@@ -525,15 +540,28 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           </div>
 
           {empleado.rol === 'admin_rrhh' && (
-            <div className="flex space-x-2 pt-2">
+            <div className="space-y-3 pt-2">
+              <div className="space-y-2">
+                <Label>Número de prueba (WhatsApp)</Label>
+                <Input
+                  type="tel"
+                  value={numeroTestWhatsApp}
+                  onChange={(e) => setNumeroTestWhatsApp(e.target.value)}
+                  placeholder="Ej: 541112345678"
+                  disabled={probandoWhatsApp}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ingrese un número con código de país para enviar mensaje de prueba (ej: 54 para Argentina)
+                </p>
+              </div>
               <Button
                 variant="outline"
                 onClick={probarWhatsApp}
-                disabled={probandoWhatsApp}
+                disabled={probandoWhatsApp || !numeroTestWhatsApp.trim()}
                 className="flex items-center space-x-2"
               >
                 <TestTube className="h-4 w-4" />
-                <span>{probandoWhatsApp ? 'Probando...' : 'Probar función'}</span>
+                <span>{probandoWhatsApp ? 'Enviando prueba...' : 'Enviar mensaje de prueba'}</span>
               </Button>
             </div>
           )}
