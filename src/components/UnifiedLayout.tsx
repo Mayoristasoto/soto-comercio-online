@@ -102,7 +102,7 @@ export default function UnifiedLayout() {
         
         // Gerentes tienen acceso a más rutas además del dashboard
         const isGerente = empleado.rol === 'gerente_sucursal'
-        const adminRoutes = ['/reconoce', '/fichero', '/tareas', '/evaluaciones', '/vacaciones', '/solicitudes']
+        const adminRoutes = ['/reconoce', '/fichero', '/tareas', '/evaluaciones', '/vacaciones', '/solicitudes', '/anotaciones']
         const hasAdminAccess = isGerente && adminRoutes.some(route => currentPath.startsWith(route))
         
         if (!allowedPaths.includes(currentPath) && !hasAdminAccess) {
