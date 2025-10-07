@@ -58,7 +58,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
   const [confirmacionBorrado, setConfirmacionBorrado] = useState(false)
   const [mostrarToken, setMostrarToken] = useState(false)
   const [probandoWhatsApp, setProbandoWhatsApp] = useState(false)
-  const [numeroTestWhatsApp, setNumeroTestWhatsApp] = useState('')
+  const [numeroTestWhatsApp, setNumeroTestWhatsApp] = useState('5492234262585')
 
   useEffect(() => {
     cargarConfiguracion()
