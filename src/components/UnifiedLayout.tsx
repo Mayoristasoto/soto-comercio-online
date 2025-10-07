@@ -104,6 +104,8 @@ export default function UnifiedLayout() {
         const isGerente = empleado.rol === 'gerente_sucursal'
         const adminRoutes = ['/reconoce', '/fichero', '/tareas', '/evaluaciones', '/vacaciones', '/solicitudes', '/anotaciones']
         const hasAdminAccess = isGerente && adminRoutes.some(route => currentPath.startsWith(route))
+
+        console.debug('Auth redirect check', { rol: empleado.rol, currentPath, isGerente, hasAdminAccess })
         
         if (!allowedPaths.includes(currentPath) && !hasAdminAccess) {
           navigate('/mi-dashboard')
