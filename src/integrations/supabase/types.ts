@@ -2389,6 +2389,99 @@ export type Database = {
           },
         ]
       }
+      vacaciones_bloqueos: {
+        Row: {
+          activo: boolean
+          creado_por: string | null
+          created_at: string
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          motivo: string
+        }
+        Insert: {
+          activo?: boolean
+          creado_por?: string | null
+          created_at?: string
+          fecha_fin: string
+          fecha_inicio: string
+          id?: string
+          motivo: string
+        }
+        Update: {
+          activo?: boolean
+          creado_por?: string | null
+          created_at?: string
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          motivo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacaciones_bloqueos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_bloqueos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vacaciones_saldo: {
+        Row: {
+          anio: number
+          created_at: string
+          dias_acumulados: number
+          dias_pendientes: number
+          dias_usados: number
+          empleado_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          anio: number
+          created_at?: string
+          dias_acumulados?: number
+          dias_pendientes?: number
+          dias_usados?: number
+          empleado_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          anio?: number
+          created_at?: string
+          dias_acumulados?: number
+          dias_pendientes?: number
+          dias_usados?: number
+          empleado_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacaciones_saldo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_saldo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       empleados_basic: {
@@ -2484,6 +2577,14 @@ export type Database = {
           empleado_id: string
           nombre: string
         }[]
+      }
+      calcular_dias_habiles: {
+        Args: { fecha_fin: string; fecha_inicio: string }
+        Returns: number
+      }
+      calcular_saldo_vacaciones: {
+        Args: { p_anio: number; p_empleado_id: string }
+        Returns: number
       }
       current_user_is_admin: {
         Args: Record<PropertyKey, never>
