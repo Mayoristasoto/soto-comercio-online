@@ -17,6 +17,7 @@ interface CalendarioVacacionesProps {
 interface VacacionDia {
   fecha: Date;
   empleados: Array<{
+    id: string;
     nombre: string;
     apellido: string;
     estado: string;
@@ -80,7 +81,8 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           fecha_inicio,
           fecha_fin,
           estado,
-          empleados!solicitudes_vacaciones_empleado_id_fkey(nombre, apellido, sucursal_id, puesto)
+          empleado_id,
+          empleados!solicitudes_vacaciones_empleado_id_fkey(id, nombre, apellido, sucursal_id, puesto)
         `)
         .lte('fecha_inicio', fin.toISOString().split('T')[0])
         .gte('fecha_fin', inicio.toISOString().split('T')[0])
@@ -133,6 +135,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         const empleadosDelDia = solicitudesFiltradas
           ?.filter((s: any) => s.fecha_inicio <= diaStr && s.fecha_fin >= diaStr)
           .map((s: any) => ({
+            id: s.empleados.id,
             nombre: s.empleados.nombre,
             apellido: s.empleados.apellido,
             estado: s.estado,
@@ -163,6 +166,28 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
     const nuevaFecha = new Date(mesSeleccionado);
     nuevaFecha.setMonth(nuevaFecha.getMonth() + direction);
     setMesSeleccionado(nuevaFecha);
+  };
+
+  // Función para asignar color consistente basado en el ID del empleado
+  const getEmpleadoColor = (empleadoId: string) => {
+    const coloresFondo = [
+      'bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700',
+      'bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700',
+      'bg-purple-100 border-purple-300 dark:bg-purple-900/30 dark:border-purple-700',
+      'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700',
+      'bg-pink-100 border-pink-300 dark:bg-pink-900/30 dark:border-pink-700',
+      'bg-cyan-100 border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700',
+      'bg-rose-100 border-rose-300 dark:bg-rose-900/30 dark:border-rose-700',
+      'bg-indigo-100 border-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-700',
+    ];
+    
+    // Crear un hash simple del ID para asignar color consistente
+    let hash = 0;
+    for (let i = 0; i < empleadoId.length; i++) {
+      hash = empleadoId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % coloresFondo.length;
+    return coloresFondo[index];
   };
 
   if (loading) {
@@ -246,15 +271,6 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             </div>
           ))}
           {vacaciones.map((dia, idx) => {
-            const tieneMultiplesEmpleados = dia.empleados.length >= 2;
-            const coloresFondo = [
-              'bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700',
-              'bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700',
-              'bg-purple-100 border-purple-300 dark:bg-purple-900/30 dark:border-purple-700',
-              'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700',
-              'bg-pink-100 border-pink-300 dark:bg-pink-900/30 dark:border-pink-700',
-            ];
-            
             return (
               <div
                 key={idx}
@@ -278,11 +294,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                   {dia.empleados.slice(0, 5).map((emp, empIdx) => (
                     <div 
                       key={empIdx} 
-                      className={`text-xs px-2 py-1 rounded border ${
-                        tieneMultiplesEmpleados 
-                          ? coloresFondo[empIdx % coloresFondo.length]
-                          : 'bg-primary/10 border-primary/20'
-                      }`}
+                      className={`text-xs px-2 py-1 rounded border ${getEmpleadoColor(emp.id)}`}
                     >
                       <span className="font-medium">{emp.nombre} {emp.apellido.charAt(0)}.</span>
                     </div>
