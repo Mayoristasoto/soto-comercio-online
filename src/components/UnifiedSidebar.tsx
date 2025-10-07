@@ -12,7 +12,8 @@ import {
   Building2,
   UserCheck,
   FileText,
-  User
+  User,
+  ClipboardCheck
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -86,9 +87,15 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
 
   const adminItems = [
     { title: "Gestión Empleados", url: "/admin/empleados", icon: Users },
+    { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
     { title: "Módulo Nómina", url: "/nomina", icon: FileText },
     { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
     { title: "Configuración", url: "/admin/configuracion", icon: Settings },
+  ]
+  
+  // Items solo para gerentes
+  const gerenteItems = [
+    { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
   ]
 
   const isActive = (path: string) => {
@@ -240,6 +247,30 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        
+        {/* Módulos de Gerente (solo para gerentes) */}
+        {userInfo?.rol === 'gerente_sucursal' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Gestión de Sucursal</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {gerenteItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
                       asChild 

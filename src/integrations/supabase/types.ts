@@ -826,6 +826,149 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluaciones_conceptos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      evaluaciones_detalles: {
+        Row: {
+          comentario: string | null
+          concepto_id: string
+          created_at: string
+          evaluacion_id: string
+          id: string
+          puntuacion: number
+        }
+        Insert: {
+          comentario?: string | null
+          concepto_id: string
+          created_at?: string
+          evaluacion_id: string
+          id?: string
+          puntuacion: number
+        }
+        Update: {
+          comentario?: string | null
+          concepto_id?: string
+          created_at?: string
+          evaluacion_id?: string
+          id?: string
+          puntuacion?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluaciones_detalles_concepto_id_fkey"
+            columns: ["concepto_id"]
+            isOneToOne: false
+            referencedRelation: "evaluaciones_conceptos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluaciones_detalles_evaluacion_id_fkey"
+            columns: ["evaluacion_id"]
+            isOneToOne: false
+            referencedRelation: "evaluaciones_mensuales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluaciones_mensuales: {
+        Row: {
+          anio: number
+          created_at: string
+          empleado_id: string
+          estado: string
+          evaluador_id: string
+          fecha_completada: string | null
+          id: string
+          mes: number
+          observaciones: string | null
+          puntuacion_promedio: number | null
+          updated_at: string
+        }
+        Insert: {
+          anio: number
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          evaluador_id: string
+          fecha_completada?: string | null
+          id?: string
+          mes: number
+          observaciones?: string | null
+          puntuacion_promedio?: number | null
+          updated_at?: string
+        }
+        Update: {
+          anio?: number
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          evaluador_id?: string
+          fecha_completada?: string | null
+          id?: string
+          mes?: number
+          observaciones?: string | null
+          puntuacion_promedio?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluaciones_mensuales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluaciones_mensuales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluaciones_mensuales_evaluador_id_fkey"
+            columns: ["evaluador_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluaciones_mensuales_evaluador_id_fkey"
+            columns: ["evaluador_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facial_recognition_config: {
         Row: {
           data_type: string | null

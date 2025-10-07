@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import MedalManagement from "./pages/MedalManagement";
 import Nomina from "./pages/Nomina";
 import EmpleadoDashboard from "./pages/EmpleadoDashboard";
+import Evaluaciones from "./pages/Evaluaciones";
 
 // Legacy pages (mantener por compatibilidad)
 import Comercio from "./pages/Comercio";
@@ -83,6 +84,9 @@ const App = () => (
             
             {/* Dashboard de Empleado */}
             <Route path="mi-dashboard" element={<EmpleadoDashboard />} />
+            
+            {/* Módulo de Evaluaciones */}
+            <Route path="evaluaciones" element={<Evaluaciones />} />
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}
