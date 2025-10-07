@@ -36,6 +36,7 @@ interface ConfiguracionSistema {
   geocerca_obligatoria: boolean
   ip_whitelist_obligatoria: boolean
   whatsapp_api_token: string
+  whatsapp_api_endpoint: string
   whatsapp_notificaciones_activas: boolean
   whatsapp_retraso_minutos: number
 }
@@ -49,7 +50,8 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     max_intentos_facial: 3,
     geocerca_obligatoria: true,
     ip_whitelist_obligatoria: false,
-    whatsapp_api_token: '',
+    whatsapp_api_token: 'c73f7a8b69dd4e2c9f218d1376b1fa07',
+    whatsapp_api_endpoint: 'https://api.mayoristasoto.online/api/messages/send',
     whatsapp_notificaciones_activas: true,
     whatsapp_retraso_minutos: 15
   })
@@ -58,7 +60,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
   const [confirmacionBorrado, setConfirmacionBorrado] = useState(false)
   const [mostrarToken, setMostrarToken] = useState(false)
   const [probandoWhatsApp, setProbandoWhatsApp] = useState(false)
-  const [numeroTestWhatsApp, setNumeroTestWhatsApp] = useState('5492234262585')
+  const [numeroTestWhatsApp, setNumeroTestWhatsApp] = useState('595985523065')
 
   useEffect(() => {
     cargarConfiguracion()
@@ -77,6 +79,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'geocerca_obligatoria',
           'ip_whitelist_obligatoria',
           'whatsapp_api_token',
+          'whatsapp_api_endpoint',
           'whatsapp_notificaciones_activas',
           'whatsapp_retraso_minutos'
         ])
@@ -172,6 +175,10 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'whatsapp_api_token',
           valor: configuracion.whatsapp_api_token
+        },
+        {
+          clave: 'whatsapp_api_endpoint',
+          valor: configuracion.whatsapp_api_endpoint
         },
         {
           clave: 'whatsapp_notificaciones_activas',
@@ -563,6 +570,23 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           </div>
 
           <div className="space-y-2">
+            <Label>URL Endpoint API WhatsApp</Label>
+            <Input
+              type="text"
+              value={configuracion.whatsapp_api_endpoint}
+              onChange={(e) => setConfiguracion(prev => ({
+                ...prev,
+                whatsapp_api_endpoint: e.target.value
+              }))}
+              placeholder="https://api.mayoristasoto.online/api/messages/send"
+              disabled={empleado.rol !== 'admin_rrhh'}
+            />
+            <p className="text-xs text-muted-foreground">
+              URL completa del endpoint para enviar mensajes de WhatsApp
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label>Token API WhatsApp</Label>
             <div className="flex space-x-2">
               <Input
@@ -572,7 +596,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
                   ...prev,
                   whatsapp_api_token: e.target.value
                 }))}
-                placeholder="Bearer token para la API"
+                placeholder="Token de autorización (Bearer)"
                 disabled={empleado.rol !== 'admin_rrhh'}
               />
               <Button
@@ -586,7 +610,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Token de autorización obtenido de la API de WhatsApp
+              Token de autorización (se enviará como Bearer token en el header Authorization)
             </p>
           </div>
 
@@ -598,11 +622,11 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
                   type="tel"
                   value={numeroTestWhatsApp}
                   onChange={(e) => setNumeroTestWhatsApp(e.target.value)}
-                  placeholder="Ej: 541112345678"
+                  placeholder="Ej: 595985523065"
                   disabled={probandoWhatsApp}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Ingrese un número con código de país para enviar mensaje de prueba (ej: 54 para Argentina)
+                  Ingrese un número completo con código de país (ej: 595 para Paraguay, 54 para Argentina)
                 </p>
               </div>
               <Button
