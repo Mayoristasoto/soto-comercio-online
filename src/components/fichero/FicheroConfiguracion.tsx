@@ -239,7 +239,12 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
   }
 
   const probarWhatsApp = async () => {
+    console.group('🧪 PRUEBA WHATSAPP - Inicio del proceso')
+    console.log('⏰ Timestamp:', new Date().toISOString())
+    
     if (!numeroTestWhatsApp.trim()) {
+      console.error('❌ Error: Número de teléfono vacío')
+      console.groupEnd()
       toast({
         title: "Número requerido",
         description: "Por favor ingrese un número de teléfono para la prueba",
@@ -248,30 +253,76 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
       return
     }
 
+    console.log('📋 Parámetros de prueba:')
+    console.log('  - Número destino:', numeroTestWhatsApp)
+    console.log('  - Token configurado:', configuracion.whatsapp_api_token ? 'SÍ (ocultado por seguridad)' : 'NO')
+    console.log('  - Notificaciones activas:', configuracion.whatsapp_notificaciones_activas)
+
     setProbandoWhatsApp(true)
+    
+    const requestBody = { 
+      modo_prueba: true,
+      numero_prueba: numeroTestWhatsApp
+    }
+    
+    console.log('📤 Preparando request a Edge Function:')
+    console.log('  - Función:', 'whatsapp-notify')
+    console.log('  - Body:', JSON.stringify(requestBody, null, 2))
+
     try {
+      console.log('🔄 Invocando Edge Function...')
+      const startTime = performance.now()
+      
       const { data, error } = await supabase.functions.invoke('whatsapp-notify', {
-        body: { 
-          modo_prueba: true,
-          numero_prueba: numeroTestWhatsApp
-        }
+        body: requestBody
       })
       
-      if (error) throw error
+      const endTime = performance.now()
+      const duration = (endTime - startTime).toFixed(2)
+      
+      console.log(`⏱️ Duración de la llamada: ${duration}ms`)
+      
+      if (error) {
+        console.error('❌ Error en la llamada a Edge Function:')
+        console.error('  - Tipo:', error.name)
+        console.error('  - Mensaje:', error.message)
+        console.error('  - Detalles completos:', error)
+        console.groupEnd()
+        
+        throw error
+      }
+      
+      console.log('✅ Respuesta recibida de Edge Function:')
+      console.log('  - Data:', JSON.stringify(data, null, 2))
+      console.groupEnd()
       
       toast({
         title: "Prueba completada",
         description: `${data.message || 'Mensaje de prueba enviado correctamente'}`,
       })
+      
+      console.log('🎉 Proceso completado exitosamente')
+      
     } catch (error) {
-      console.error('Error probando WhatsApp:', error)
+      console.error('❌ ERROR CRÍTICO en proceso de prueba:')
+      console.error('  - Tipo de error:', error instanceof Error ? error.constructor.name : typeof error)
+      console.error('  - Mensaje:', error instanceof Error ? error.message : String(error))
+      
+      if (error && typeof error === 'object') {
+        console.error('  - Propiedades del error:', Object.keys(error))
+        console.error('  - Error completo:', error)
+      }
+      
+      console.groupEnd()
+      
       toast({
         title: "Error en prueba",
-        description: "No se pudo ejecutar la función de WhatsApp",
+        description: error instanceof Error ? error.message : "No se pudo ejecutar la función de WhatsApp",
         variant: "destructive"
       })
     } finally {
       setProbandoWhatsApp(false)
+      console.log('🏁 Finalizando proceso (cleanup)')
     }
   }
 
