@@ -75,11 +75,16 @@ serve(async (req: Request): Promise<Response> => {
     // Si es modo prueba, enviar mensaje de prueba y terminar
     if (modoPrueba) {
       if (!numeroPrueba || numeroPrueba.trim() === '') {
+        console.error('❌ Número de prueba vacío')
         return new Response(
           JSON.stringify({ error: 'Número de prueba no proporcionado' }),
           { status: 400, headers: corsHeaders }
         )
       }
+
+      console.log('📋 Configuración de prueba:')
+      console.log('  - Número destino:', numeroPrueba)
+      console.log('  - Token configurado:', apiToken ? `${apiToken.substring(0, 10)}...` : 'NO CONFIGURADO')
 
       const mensajePrueba = `🧪 Mensaje de prueba del Sistema de Control de Asistencia
 
@@ -90,20 +95,57 @@ Si recibes este mensaje, la integración está funcionando correctamente. ✅
 Saludos,
 Sistema de Control de Asistencia`
 
+      console.log('📤 Preparando envío de mensaje de prueba...')
+      console.log('  - URL API:', 'https://api.mayoristasoto.online/api/messages/send')
+      console.log('  - Método:', 'POST')
+      
+      const requestBody = {
+        number: numeroPrueba,
+        body: mensajePrueba
+      }
+      console.log('  - Body request:', JSON.stringify(requestBody, null, 2))
+
       try {
+        console.log('🔄 Realizando petición a WhatsApp API...')
+        
         const whatsappResponse = await fetch('https://api.mayoristasoto.online/api/messages/send', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            number: numeroPrueba,
-            body: mensajePrueba
-          })
+          body: JSON.stringify(requestBody)
         })
 
-        const responseData: WhatsAppResponse = await whatsappResponse.json()
+        console.log('📨 Respuesta recibida:')
+        console.log('  - Status:', whatsappResponse.status)
+        console.log('  - Status Text:', whatsappResponse.statusText)
+        console.log('  - Headers:', JSON.stringify(Object.fromEntries(whatsappResponse.headers.entries()), null, 2))
+        
+        // Leer el texto de la respuesta primero
+        const responseText = await whatsappResponse.text()
+        console.log('  - Response raw text:', responseText)
+        
+        // Intentar parsear como JSON
+        let responseData: WhatsAppResponse
+        try {
+          responseData = JSON.parse(responseText)
+          console.log('  - Response parsed:', JSON.stringify(responseData, null, 2))
+        } catch (parseError) {
+          console.error('❌ Error parseando respuesta JSON:', parseError)
+          console.error('  - Texto recibido (primeros 500 chars):', responseText.substring(0, 500))
+          return new Response(
+            JSON.stringify({ 
+              error: 'La API retornó una respuesta inválida (esperaba JSON)',
+              detalles: {
+                status: whatsappResponse.status,
+                statusText: whatsappResponse.statusText,
+                responsePreview: responseText.substring(0, 200)
+              }
+            }),
+            { status: 500, headers: corsHeaders }
+          )
+        }
         
         if (whatsappResponse.ok) {
           console.log(`✅ Mensaje de prueba enviado exitosamente a ${numeroPrueba}`)
@@ -116,10 +158,10 @@ Sistema de Control de Asistencia`
             { status: 200, headers: corsHeaders }
           )
         } else {
-          console.error(`❌ Error al enviar mensaje de prueba:`, responseData)
+          console.error(`❌ Error al enviar mensaje de prueba (HTTP ${whatsappResponse.status}):`, responseData)
           return new Response(
             JSON.stringify({ 
-              error: 'Error al enviar mensaje de prueba',
+              error: `Error al enviar mensaje de prueba (HTTP ${whatsappResponse.status})`,
               detalles: responseData
             }),
             { status: 500, headers: corsHeaders }
@@ -127,6 +169,10 @@ Sistema de Control de Asistencia`
         }
       } catch (error) {
         console.error('❌ Error en envío de prueba:', error)
+        console.error('  - Tipo de error:', error instanceof Error ? error.constructor.name : typeof error)
+        console.error('  - Mensaje:', error instanceof Error ? error.message : String(error))
+        console.error('  - Stack:', error instanceof Error ? error.stack : 'N/A')
+        
         return new Response(
           JSON.stringify({ 
             error: 'Error al conectar con la API de WhatsApp',
