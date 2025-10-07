@@ -30,6 +30,7 @@ serve(async (req: Request): Promise<Response> => {
     const body = await req.json().catch(() => ({}))
     const modoPrueba = body.modo_prueba === true
     const numeroPrueba = body.numero_prueba
+    const mensajePrueba = body.mensaje_prueba || 'prueba'
     
     if (modoPrueba) {
       console.log('🧪 Modo prueba activado - enviando mensaje a:', numeroPrueba)
@@ -84,9 +85,8 @@ serve(async (req: Request): Promise<Response> => {
 
       console.log('📋 Configuración de prueba:')
       console.log('  - Número destino:', numeroPrueba)
+      console.log('  - Mensaje:', mensajePrueba)
       console.log('  - Token usado: c73f7a8b69dd4e2c9f218d1376b1fa07')
-
-      const mensajePrueba = 'prueba'
 
       console.log('📤 Preparando envío de mensaje de prueba...')
       console.log('  - URL API:', 'https://api.mayoristasoto.online/api/messages/send')

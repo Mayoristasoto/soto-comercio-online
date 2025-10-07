@@ -61,6 +61,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
   const [mostrarToken, setMostrarToken] = useState(false)
   const [probandoWhatsApp, setProbandoWhatsApp] = useState(false)
   const [numeroTestWhatsApp, setNumeroTestWhatsApp] = useState('595985523065')
+  const [mensajeTestWhatsApp, setMensajeTestWhatsApp] = useState('Mensaje de prueba desde el sistema de fichajes')
 
   useEffect(() => {
     cargarConfiguracion()
@@ -269,7 +270,8 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     
     const requestBody = { 
       modo_prueba: true,
-      numero_prueba: numeroTestWhatsApp
+      numero_prueba: numeroTestWhatsApp,
+      mensaje_prueba: mensajeTestWhatsApp
     }
     
     console.log('📤 Preparando request a Edge Function:')
@@ -627,6 +629,19 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
                 />
                 <p className="text-xs text-muted-foreground">
                   Ingrese un número completo con código de país (ej: 595 para Paraguay, 54 para Argentina)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Mensaje de Prueba</Label>
+                <Input
+                  type="text"
+                  value={mensajeTestWhatsApp}
+                  onChange={(e) => setMensajeTestWhatsApp(e.target.value)}
+                  placeholder="Mensaje personalizado para la prueba"
+                  disabled={probandoWhatsApp}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Texto del mensaje que se enviará en la prueba
                 </p>
               </div>
               <Button
