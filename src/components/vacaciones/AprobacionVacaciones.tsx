@@ -42,10 +42,19 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
     try {
       setLoading(true);
       
+      // Obtener el empleado actual
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: empleadoActual } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
       let query = supabase
         .from('solicitudes_vacaciones')
         .select(`
           id,
+          empleado_id,
           fecha_inicio,
           fecha_fin,
           motivo,
@@ -62,10 +71,15 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
       const { data, error } = await query;
       if (error) throw error;
       
-      const formattedData = (data || []).map((item: any) => ({
+      let formattedData = (data || []).map((item: any) => ({
         ...item,
         empleado: item.empleados
       }));
+      
+      // Si es gerente, excluir sus propias solicitudes
+      if (rol === 'gerente_sucursal' && empleadoActual) {
+        formattedData = formattedData.filter((sol: any) => sol.empleado_id !== empleadoActual.id);
+      }
       
       setSolicitudes(formattedData);
     } catch (error: any) {
