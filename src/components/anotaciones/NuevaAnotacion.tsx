@@ -128,7 +128,9 @@ export function NuevaAnotacion({ userInfo, isAdmin, isGerente }: Props) {
 
       toast({
         title: "Éxito",
-        description: "Anotación creada correctamente"
+        description: isGerente && !isAdmin 
+          ? "Anotación registrada. Administración de RRHH tiene acceso al historial completo."
+          : "Anotación creada correctamente"
       })
 
       // Limpiar formulario
@@ -151,16 +153,15 @@ export function NuevaAnotacion({ userInfo, isAdmin, isGerente }: Props) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Nueva Anotación</CardTitle>
-        <CardDescription>
-          Registra una nueva observación o anotación sobre un empleado
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {isGerente && !isAdmin && (
+        <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+          <p className="font-medium mb-1">Nota importante:</p>
+          <p>Las anotaciones que registres solo serán visibles para el equipo de Administración de RRHH. Si necesitas consultar el historial de un empleado, contacta con RRHH.</p>
+        </div>
+      )}
+      
+      <div className="space-y-2">
             <Label htmlFor="empleado">Empleado *</Label>
             <Select value={empleadoId} onValueChange={setEmpleadoId}>
               <SelectTrigger id="empleado">
@@ -241,12 +242,10 @@ export function NuevaAnotacion({ userInfo, isAdmin, isGerente }: Props) {
             </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full">
-            <Save className="h-4 w-4 mr-2" />
-            {loading ? "Guardando..." : "Guardar Anotación"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <Button type="submit" disabled={loading} className="w-full">
+        <Save className="h-4 w-4 mr-2" />
+        {loading ? "Guardando..." : "Guardar Anotación"}
+      </Button>
+    </form>
   )
 }

@@ -42,39 +42,62 @@ export default function Anotaciones() {
         <div>
           <h1 className="text-3xl font-bold">Anotaciones de Empleados</h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona las observaciones y registros de los empleados
+            {isGerente && !isAdmin 
+              ? "Registra observaciones sobre los empleados de tu sucursal"
+              : "Gestiona las observaciones y registros de los empleados"
+            }
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="historial" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="historial" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Historial
-          </TabsTrigger>
-          <TabsTrigger value="nueva" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nueva Anotación
-          </TabsTrigger>
-        </TabsList>
+      {isGerente && !isAdmin ? (
+        // Gerentes solo ven el formulario de nueva anotación
+        <Card>
+          <CardHeader>
+            <CardTitle>Nueva Anotación</CardTitle>
+            <CardDescription>
+              Registra una observación sobre un empleado. El historial solo es visible para Administración de RRHH.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <NuevaAnotacion 
+              userInfo={userInfo}
+              isAdmin={isAdmin}
+              isGerente={isGerente}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        // Admin ve tabs con historial y nueva anotación
+        <Tabs defaultValue="historial" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="historial" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Historial
+            </TabsTrigger>
+            <TabsTrigger value="nueva" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nueva Anotación
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="historial" className="mt-6">
-          <HistorialAnotaciones 
-            userInfo={userInfo}
-            isAdmin={isAdmin}
-            isGerente={isGerente}
-          />
-        </TabsContent>
+          <TabsContent value="historial" className="mt-6">
+            <HistorialAnotaciones 
+              userInfo={userInfo}
+              isAdmin={isAdmin}
+              isGerente={isGerente}
+            />
+          </TabsContent>
 
-        <TabsContent value="nueva" className="mt-6">
-          <NuevaAnotacion 
-            userInfo={userInfo}
-            isAdmin={isAdmin}
-            isGerente={isGerente}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="nueva" className="mt-6">
+            <NuevaAnotacion 
+              userInfo={userInfo}
+              isAdmin={isAdmin}
+              isGerente={isGerente}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   )
 }
