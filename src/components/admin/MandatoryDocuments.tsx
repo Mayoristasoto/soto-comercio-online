@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { FileText, Plus, Edit, Trash2, Users, CheckCircle } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Users, CheckCircle, Upload, Eye, X } from "lucide-react";
 
 interface DocumentoObligatorio {
   id: string;
@@ -39,6 +39,9 @@ export function MandatoryDocuments() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentoObligatorio | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     titulo: "",
     descripcion: "",
@@ -112,14 +115,89 @@ export function MandatoryDocuments() {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Solo se permiten archivos PDF o Word');
+      return;
+    }
+
+    // Validar tamaño (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('El archivo no debe superar 10MB');
+      return;
+    }
+
+    setSelectedFile(file);
+    
+    // Generar previsualización para PDF
+    if (file.type === 'application/pdf') {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile) return null;
+
+    setUploadingFile(true);
+    try {
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `mandatory-documents/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('employee-documents')
+        .upload(filePath, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('employee-documents')
+        .getPublicUrl(filePath);
+
+      toast.success('Archivo subido correctamente');
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Error al subir archivo');
+      return null;
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setFormData({ ...formData, url_archivo: "" });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      // Subir archivo si hay uno seleccionado
+      let fileUrl = formData.url_archivo;
+      if (selectedFile) {
+        const uploadedUrl = await handleFileUpload();
+        if (uploadedUrl) {
+          fileUrl = uploadedUrl;
+        }
+      }
+
+      const dataToSave = { ...formData, url_archivo: fileUrl };
+
       if (editingDoc) {
         const { error } = await supabase
           .from('documentos_obligatorios')
-          .update(formData)
+          .update(dataToSave)
           .eq('id', editingDoc.id);
 
         if (error) throw error;
@@ -127,7 +205,7 @@ export function MandatoryDocuments() {
       } else {
         const { error } = await supabase
           .from('documentos_obligatorios')
-          .insert([formData]);
+          .insert([dataToSave]);
 
         if (error) throw error;
         toast.success('Documento creado correctamente');
@@ -135,6 +213,8 @@ export function MandatoryDocuments() {
 
       setDialogOpen(false);
       setEditingDoc(null);
+      setSelectedFile(null);
+      setPreviewUrl(null);
       setFormData({
         titulo: "",
         descripcion: "",
@@ -154,6 +234,8 @@ export function MandatoryDocuments() {
 
   const handleEdit = (doc: DocumentoObligatorio) => {
     setEditingDoc(doc);
+    setSelectedFile(null);
+    setPreviewUrl(doc.url_archivo && doc.url_archivo.endsWith('.pdf') ? doc.url_archivo : null);
     setFormData({
       titulo: doc.titulo,
       descripcion: doc.descripcion || "",
@@ -200,6 +282,8 @@ export function MandatoryDocuments() {
           <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingDoc(null);
+              setSelectedFile(null);
+              setPreviewUrl(null);
               setFormData({
                 titulo: "",
                 descripcion: "",
@@ -276,14 +360,86 @@ export function MandatoryDocuments() {
               </div>
 
               <div>
-                <Label htmlFor="url_archivo">URL del Archivo</Label>
-                <Input
-                  id="url_archivo"
-                  type="url"
-                  value={formData.url_archivo}
-                  onChange={(e) => setFormData({ ...formData, url_archivo: e.target.value })}
-                  placeholder="https://..."
-                />
+                <Label>Archivo del Documento</Label>
+                <div className="space-y-3">
+                  {!selectedFile && !formData.url_archivo && (
+                    <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                      <Input
+                        id="file-upload"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="file-upload"
+                        className="cursor-pointer flex flex-col items-center gap-2"
+                      >
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Haz clic para subir un archivo PDF o Word
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Máximo 10MB
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {(selectedFile || formData.url_archivo) && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="text-sm font-medium">
+                              {selectedFile ? selectedFile.name : 'Archivo existente'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {selectedFile 
+                                ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
+                                : 'Ya subido'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {formData.url_archivo && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(formData.url_archivo, '_blank')}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRemoveFile}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {previewUrl && (
+                        <div className="border rounded-lg overflow-hidden">
+                          <iframe
+                            src={previewUrl}
+                            className="w-full h-96"
+                            title="Vista previa del documento"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    Puedes subir un archivo o proporcionar una URL externa
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
