@@ -84,20 +84,14 @@ serve(async (req: Request): Promise<Response> => {
 
       console.log('📋 Configuración de prueba:')
       console.log('  - Número destino:', numeroPrueba)
-      console.log('  - Token configurado:', apiToken ? `${apiToken.substring(0, 10)}...` : 'NO CONFIGURADO')
+      console.log('  - Token usado: c73f7a8b69dd4e2c9f218d1376b1fa07')
 
-      const mensajePrueba = `🧪 Mensaje de prueba del Sistema de Control de Asistencia
-
-Este es un mensaje de prueba para verificar la configuración de WhatsApp.
-
-Si recibes este mensaje, la integración está funcionando correctamente. ✅
-
-Saludos,
-Sistema de Control de Asistencia`
+      const mensajePrueba = 'prueba'
 
       console.log('📤 Preparando envío de mensaje de prueba...')
       console.log('  - URL API:', 'https://api.mayoristasoto.online/api/messages/send')
       console.log('  - Método:', 'POST')
+      console.log('  - Authorization: Bearer c73f7a8b69dd4e2c9f218d1376b1fa07')
       
       const requestBody = {
         number: numeroPrueba,
@@ -111,7 +105,7 @@ Sistema de Control de Asistencia`
         const whatsappResponse = await fetch('https://api.mayoristasoto.online/api/messages/send', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiToken}`,
+            'Authorization': 'Bearer c73f7a8b69dd4e2c9f218d1376b1fa07',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(requestBody)
