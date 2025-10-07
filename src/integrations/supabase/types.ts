@@ -625,6 +625,86 @@ export type Database = {
           },
         ]
       }
+      empleados_anotaciones: {
+        Row: {
+          archivos_adjuntos: string[] | null
+          categoria: Database["public"]["Enums"]["anotacion_categoria"]
+          creado_por: string
+          created_at: string
+          descripcion: string | null
+          empleado_id: string
+          es_critica: boolean | null
+          fecha_anotacion: string
+          fecha_seguimiento: string | null
+          id: string
+          requiere_seguimiento: boolean | null
+          seguimiento_completado: boolean | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          archivos_adjuntos?: string[] | null
+          categoria: Database["public"]["Enums"]["anotacion_categoria"]
+          creado_por: string
+          created_at?: string
+          descripcion?: string | null
+          empleado_id: string
+          es_critica?: boolean | null
+          fecha_anotacion?: string
+          fecha_seguimiento?: string | null
+          id?: string
+          requiere_seguimiento?: boolean | null
+          seguimiento_completado?: boolean | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          archivos_adjuntos?: string[] | null
+          categoria?: Database["public"]["Enums"]["anotacion_categoria"]
+          creado_por?: string
+          created_at?: string
+          descripcion?: string | null
+          empleado_id?: string
+          es_critica?: boolean | null
+          fecha_anotacion?: string
+          fecha_seguimiento?: string | null
+          id?: string
+          requiere_seguimiento?: boolean | null
+          seguimiento_completado?: boolean | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleados_anotaciones_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_anotaciones_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_anotaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_anotaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleados_audit_log: {
         Row: {
           datos_accedidos: string[] | null
@@ -2957,6 +3037,17 @@ export type Database = {
       }
     }
     Enums: {
+      anotacion_categoria:
+        | "apercibimiento"
+        | "llamado_atencion"
+        | "orden_no_acatada"
+        | "no_uso_uniforme"
+        | "uso_celular"
+        | "tardanza"
+        | "ausencia_injustificada"
+        | "actitud_positiva"
+        | "mejora_desempeno"
+        | "otro"
       asignacion_estado: "pendiente" | "entregado"
       beneficiario_tipo: "empleado" | "grupo"
       desafio_estado: "borrador" | "activo" | "finalizado"
@@ -3109,6 +3200,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      anotacion_categoria: [
+        "apercibimiento",
+        "llamado_atencion",
+        "orden_no_acatada",
+        "no_uso_uniforme",
+        "uso_celular",
+        "tardanza",
+        "ausencia_injustificada",
+        "actitud_positiva",
+        "mejora_desempeno",
+        "otro",
+      ],
       asignacion_estado: ["pendiente", "entregado"],
       beneficiario_tipo: ["empleado", "grupo"],
       desafio_estado: ["borrador", "activo", "finalizado"],

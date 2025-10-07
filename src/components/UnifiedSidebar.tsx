@@ -15,7 +15,8 @@ import {
   User,
   ClipboardCheck,
   Plane,
-  FileSignature
+  FileSignature,
+  FileWarning
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -92,6 +93,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
     { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
     { title: "Vacaciones", url: "/vacaciones", icon: Plane },
     { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
+    { title: "Anotaciones", url: "/anotaciones", icon: FileWarning },
     { title: "Módulo Nómina", url: "/nomina", icon: FileText },
     { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
     { title: "Configuración", url: "/admin/configuracion", icon: Settings },
@@ -102,6 +104,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
     { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
     { title: "Vacaciones", url: "/vacaciones", icon: Plane },
     { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
+    { title: "Anotaciones", url: "/anotaciones", icon: FileWarning },
   ]
 
   // Items para todos los empleados
