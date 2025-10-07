@@ -95,12 +95,17 @@ export default function UnifiedLayout() {
       })
 
       // Redirección y control de acceso basado en rol
-      if (empleado.rol === 'empleado') {
-        // Los empleados pueden acceder a su dashboard personal y al canje de premios
+      if (empleado.rol === 'empleado' || empleado.rol === 'gerente_sucursal') {
+        // Empleados y gerentes son redirigidos a su dashboard personal
         const allowedPaths = ['/mi-dashboard', '/reconoce/premios']
         const currentPath = location.pathname
         
-        if (!allowedPaths.includes(currentPath)) {
+        // Gerentes tienen acceso a más rutas además del dashboard
+        const isGerente = empleado.rol === 'gerente_sucursal'
+        const adminRoutes = ['/reconoce', '/fichero', '/tareas', '/evaluaciones', '/vacaciones', '/solicitudes']
+        const hasAdminAccess = isGerente && adminRoutes.some(route => currentPath.startsWith(route))
+        
+        if (!allowedPaths.includes(currentPath) && !hasAdminAccess) {
           navigate('/mi-dashboard')
         }
       }
