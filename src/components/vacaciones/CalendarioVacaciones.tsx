@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
@@ -28,11 +29,42 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const [loading, setLoading] = useState(true);
   const [mesSeleccionado, setMesSeleccionado] = useState(new Date());
   const [vacaciones, setVacaciones] = useState<VacacionDia[]>([]);
+  const [sucursales, setSucursales] = useState<any[]>([]);
+  const [puestos, setPuestos] = useState<string[]>([]);
+  const [filtroSucursal, setFiltroSucursal] = useState<string>("todas");
+  const [filtroPuesto, setFiltroPuesto] = useState<string>("todos");
   const { toast } = useToast();
 
   useEffect(() => {
+    fetchSucursalesYPuestos();
+  }, []);
+
+  useEffect(() => {
     fetchVacaciones();
-  }, [mesSeleccionado, rol, sucursalId]);
+  }, [mesSeleccionado, rol, sucursalId, filtroSucursal, filtroPuesto]);
+
+  const fetchSucursalesYPuestos = async () => {
+    try {
+      // Fetch sucursales
+      const { data: sucursalesData } = await supabase
+        .from('sucursales')
+        .select('id, nombre')
+        .eq('activa', true);
+      
+      setSucursales(sucursalesData || []);
+
+      // Fetch puestos únicos
+      const { data: empleadosData } = await supabase
+        .from('empleados')
+        .select('puesto')
+        .not('puesto', 'is', null);
+      
+      const puestosUnicos = [...new Set(empleadosData?.map(e => e.puesto).filter(Boolean))];
+      setPuestos(puestosUnicos as string[]);
+    } catch (error) {
+      console.error('Error fetching filters:', error);
+    }
+  };
 
   const fetchVacaciones = async () => {
     try {
@@ -48,7 +80,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           fecha_inicio,
           fecha_fin,
           estado,
-          empleados!solicitudes_vacaciones_empleado_id_fkey(nombre, apellido, sucursal_id)
+          empleados!solicitudes_vacaciones_empleado_id_fkey(nombre, apellido, sucursal_id, puesto)
         `)
         .lte('fecha_inicio', fin.toISOString().split('T')[0])
         .gte('fecha_fin', inicio.toISOString().split('T')[0])
@@ -58,8 +90,21 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         query = query.eq('empleados.sucursal_id', sucursalId);
       }
 
+      // Aplicar filtros
+      if (filtroSucursal !== "todas") {
+        query = query.eq('empleados.sucursal_id', filtroSucursal);
+      }
+
       const { data: solicitudes, error: solicitudesError } = await query;
       if (solicitudesError) throw solicitudesError;
+
+      // Filtrar por puesto después de la consulta
+      let solicitudesFiltradas = solicitudes || [];
+      if (filtroPuesto !== "todos") {
+        solicitudesFiltradas = solicitudesFiltradas.filter((s: any) => 
+          s.empleados?.puesto === filtroPuesto
+        );
+      }
 
       // Fetch bloqueos
       const { data: bloqueos, error: bloqueosError } = await supabase
@@ -85,7 +130,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         )?.motivo;
 
         // Obtener empleados con vacaciones este día
-        const empleadosDelDia = solicitudes
+        const empleadosDelDia = solicitudesFiltradas
           ?.filter((s: any) => s.fecha_inicio <= diaStr && s.fecha_fin >= diaStr)
           .map((s: any) => ({
             nombre: s.empleados.nombre,
@@ -153,6 +198,45 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             </button>
           </div>
         </div>
+
+        {/* Filtros */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {rol === 'admin_rrhh' && (
+            <div className="space-y-2">
+              <Label>Sucursal</Label>
+              <Select value={filtroSucursal} onValueChange={setFiltroSucursal}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas las sucursales" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas las sucursales</SelectItem>
+                  {sucursales.map((suc) => (
+                    <SelectItem key={suc.id} value={suc.id}>
+                      {suc.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          <div className="space-y-2">
+            <Label>Puesto</Label>
+            <Select value={filtroPuesto} onValueChange={setFiltroPuesto}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos los puestos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los puestos</SelectItem>
+                {puestos.map((puesto) => (
+                  <SelectItem key={puesto} value={puesto}>
+                    {puesto}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-7 gap-2">
@@ -161,17 +245,22 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
               {dia}
             </div>
           ))}
-          {vacaciones.map((dia, idx) => (
-            <div
-              key={idx}
-              className={`min-h-[80px] p-2 border rounded-lg ${
-                dia.bloqueado
-                  ? 'bg-destructive/10 border-destructive'
-                  : dia.empleados.length > 0
-                  ? 'bg-primary/10 border-primary'
-                  : 'bg-background'
-              }`}
-            >
+          {vacaciones.map((dia, idx) => {
+            const tieneMultiplesEmpleados = dia.empleados.length >= 2;
+            
+            return (
+              <div
+                key={idx}
+                className={`min-h-[80px] p-2 border rounded-lg ${
+                  dia.bloqueado
+                    ? 'bg-destructive/10 border-destructive'
+                    : tieneMultiplesEmpleados
+                    ? 'bg-gradient-to-br from-primary/20 to-secondary/20 border-primary'
+                    : dia.empleados.length > 0
+                    ? 'bg-primary/10 border-primary'
+                    : 'bg-background'
+                }`}
+              >
               <div className="text-sm font-medium mb-1">
                 {format(dia.fecha, 'd')}
               </div>
@@ -190,8 +279,14 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                   +{dia.empleados.length - 2} más
                 </div>
               )}
+              {tieneMultiplesEmpleados && (
+                <Badge variant="outline" className="text-xs mt-1">
+                  {dia.empleados.length} empleados
+                </Badge>
+              )}
             </div>
-          ))}
+          )}
+        )}
         </div>
       </CardContent>
     </Card>
