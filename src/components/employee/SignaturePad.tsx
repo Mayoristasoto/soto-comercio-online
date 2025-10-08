@@ -1,21 +1,17 @@
 import { useRef, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Eraser, Save, X } from 'lucide-react'
-import { toast } from 'sonner'
-import { supabase } from '@/integrations/supabase/client'
+import { X, RotateCcw, Save, Pen } from 'lucide-react'
 
 interface SignaturePadProps {
-  empleadoId: string
-  onSignatureSaved?: (firmaId: string) => void
-  onCancel?: () => void
+  onSave: (signatureData: string) => void
+  onCancel: () => void
 }
 
-export default function SignaturePad({ empleadoId, onSignatureSaved, onCancel }: SignaturePadProps) {
+export const SignaturePad = ({ onSave, onCancel }: SignaturePadProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [isEmpty, setIsEmpty] = useState(true)
-  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -24,7 +20,7 @@ export default function SignaturePad({ empleadoId, onSignatureSaved, onCancel }:
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Configurar canvas
+    // Configurar canvas para alta resolución
     const rect = canvas.getBoundingClientRect()
     canvas.width = rect.width * 2
     canvas.height = rect.height * 2
@@ -35,6 +31,10 @@ export default function SignaturePad({ empleadoId, onSignatureSaved, onCancel }:
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
+
+    // Fondo blanco
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
   }, [])
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -48,8 +48,8 @@ export default function SignaturePad({ empleadoId, onSignatureSaved, onCancel }:
     setIsEmpty(false)
 
     const rect = canvas.getBoundingClientRect()
-    const x = ('touches' in e ? e.touches[0].clientX : e.clientX) - rect.left
-    const y = ('touches' in e ? e.touches[0].clientY : e.clientY) - rect.top
+    const x = ('touches' in e) ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX
+    const y = ('touches' in e) ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY
 
     ctx.beginPath()
     ctx.moveTo(x, y)
@@ -65,8 +65,8 @@ export default function SignaturePad({ empleadoId, onSignatureSaved, onCancel }:
     if (!ctx) return
 
     const rect = canvas.getBoundingClientRect()
-    const x = ('touches' in e ? e.touches[0].clientX : e.clientX) - rect.left
-    const y = ('touches' in e ? e.touches[0].clientY : e.clientY) - rect.top
+    const x = ('touches' in e) ? e.touches[0].clientX - rect.left : e.nativeEvent.offsetX
+    const y = ('touches' in e) ? e.touches[0].clientY - rect.top : e.nativeEvent.offsetY
 
     ctx.lineTo(x, y)
     ctx.stroke()
@@ -83,69 +83,35 @@ export default function SignaturePad({ empleadoId, onSignatureSaved, onCancel }:
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
     setIsEmpty(true)
   }
 
-  const saveSignature = async () => {
+  const saveSignature = () => {
     const canvas = canvasRef.current
-    if (!canvas || isEmpty) {
-      toast.error('Por favor dibuje su firma primero')
-      return
-    }
+    if (!canvas || isEmpty) return
 
-    setSaving(true)
-
-    try {
-      // Convertir canvas a base64
-      const firmaData = canvas.toDataURL('image/png')
-
-      // Guardar en Supabase
-      const { data, error } = await supabase
-        .from('empleados_firmas')
-        .insert({
-          empleado_id: empleadoId,
-          firma_data: firmaData,
-          metadata: {
-            timestamp: new Date().toISOString(),
-            device: navigator.userAgent,
-          },
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      toast.success('Firma guardada correctamente')
-      onSignatureSaved?.(data.id)
-    } catch (error) {
-      console.error('Error guardando firma:', error)
-      toast.error('Error al guardar la firma')
-    } finally {
-      setSaving(false)
-    }
+    const signatureData = canvas.toDataURL('image/png')
+    onSave(signatureData)
   }
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Firma Digital</span>
-          {onCancel && (
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+        <CardTitle className="flex items-center gap-2">
+          <Pen className="h-5 w-5" />
+          Firma Digital
         </CardTitle>
         <CardDescription>
-          Dibuje su firma en el recuadro utilizando el mouse o pantalla táctil
+          Dibuja tu firma usando el mouse o pantalla táctil
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="relative border-2 border-dashed border-muted-foreground/20 rounded-lg overflow-hidden bg-white">
+        <div className="border-2 border-dashed rounded-lg p-2 bg-background">
           <canvas
             ref={canvasRef}
-            className="w-full h-64 touch-none cursor-crosshair"
+            className="w-full h-48 border rounded cursor-crosshair touch-none bg-white"
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={stopDrawing}
@@ -154,26 +120,32 @@ export default function SignaturePad({ empleadoId, onSignatureSaved, onCancel }:
             onTouchMove={draw}
             onTouchEnd={stopDrawing}
           />
-          <div className="absolute bottom-2 left-2 text-xs text-muted-foreground pointer-events-none">
-            Firme aquí
-          </div>
         </div>
-
+        
         <div className="flex gap-2 justify-end">
           <Button
+            type="button"
             variant="outline"
-            onClick={clearCanvas}
-            disabled={isEmpty || saving}
+            onClick={onCancel}
           >
-            <Eraser className="h-4 w-4 mr-2" />
-            Limpiar
+            <X className="h-4 w-4 mr-2" />
+            Cancelar
           </Button>
           <Button
+            type="button"
+            variant="outline"
+            onClick={clearCanvas}
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Borrar
+          </Button>
+          <Button
+            type="button"
             onClick={saveSignature}
-            disabled={isEmpty || saving}
+            disabled={isEmpty}
           >
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Guardando...' : 'Guardar Firma'}
+            Guardar Firma
           </Button>
         </div>
       </CardContent>
