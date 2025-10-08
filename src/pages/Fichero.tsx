@@ -28,7 +28,6 @@ import FicheroHorarios from "@/components/fichero/FicheroHorarios"
 import FicheroHistorial from "@/components/fichero/FicheroHistorial"
 import AttendanceReports from "@/components/admin/AttendanceReports"
 import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
-import Organigrama from "@/components/admin/Organigrama"
 
 interface Empleado {
   id: string
@@ -62,7 +61,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'organigrama'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas'>('fichaje')
 
   useEffect(() => {
     checkAuth()
@@ -434,7 +433,6 @@ export default function Fichero() {
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
             { key: 'config', label: 'Configuración', icon: Settings },
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'organigrama', label: 'Organigrama', icon: User }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'admin', label: 'Administrar', icon: Shield }] : []),
           ].map(({ key, label, icon: Icon }) => (
             <Button
@@ -549,10 +547,6 @@ export default function Fichero() {
 
         {activeTab === 'config' && (
           <FicheroConfiguracion empleado={empleado} />
-        )}
-
-        {activeTab === 'organigrama' && empleado?.rol === 'admin_rrhh' && (
-          <Organigrama />
         )}
         
         {/* Vista de administrador */}

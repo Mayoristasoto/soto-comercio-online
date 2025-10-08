@@ -40,6 +40,7 @@ import PasswordChange from "@/components/admin/PasswordChange"
 import PuestoManagement from "@/components/admin/PuestoManagement"
 import EmployeeImport from "@/components/admin/EmployeeImport"
 import UserCreationForm from "@/components/admin/UserCreationForm"
+import Organigrama from "@/components/admin/Organigrama"
 
 interface Employee {
   id: string
@@ -359,7 +360,7 @@ export default function Nomina() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-8 w-full">
+        <TabsList className="grid grid-cols-9 w-full">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="employees">Empleados</TabsTrigger>
           <TabsTrigger value="positions">Puestos</TabsTrigger>
@@ -368,6 +369,7 @@ export default function Nomina() {
           <TabsTrigger value="mandatory-docs">Doc. Obligatorios</TabsTrigger>
           <TabsTrigger value="assignments">Asignaciones</TabsTrigger>
           <TabsTrigger value="employee-view">Vista Empleado</TabsTrigger>
+          <TabsTrigger value="organigrama">Organigrama</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -672,6 +674,10 @@ export default function Nomina() {
               <EmployeeDocumentView empleadoId={selectedEmployeeId} />
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="organigrama">
+          <Organigrama />
         </TabsContent>
       </Tabs>
 
