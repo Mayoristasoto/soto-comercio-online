@@ -427,9 +427,9 @@ export default function Fichero() {
         <div className="flex space-x-1 bg-white/60 backdrop-blur-sm rounded-lg p-1 overflow-x-auto">
           {[
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
-            { key: 'misfichadas', label: 'Mis Fichadas', icon: User },
+            { key: 'misfichadas', label: 'Informe', icon: FileText },
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
-            { key: 'incidencias', label: 'Incidencias', icon: FileText },
+            { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
             { key: 'config', label: 'Configuración', icon: Settings },

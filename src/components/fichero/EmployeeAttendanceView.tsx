@@ -14,7 +14,8 @@ import {
   Edit3,
   Save,
   X,
-  AlertCircle
+  AlertCircle,
+  Users
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
@@ -34,6 +35,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface FichajeRecord {
   id: string
@@ -49,6 +57,12 @@ interface DayGroup {
   fecha: string
   fichajes: FichajeRecord[]
   totalHoras: number
+}
+
+interface Empleado {
+  id: string
+  nombre: string
+  apellido: string
 }
 
 interface EmployeeAttendanceViewProps {
@@ -67,6 +81,7 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
   })
   const [currentEmpleadoId, setCurrentEmpleadoId] = useState<string | null>(null)
   const [empleadoNombre, setEmpleadoNombre] = useState("")
+  const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [dateRange, setDateRange] = useState({
     from: format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'),
     to: format(new Date(), 'yyyy-MM-dd')
@@ -96,6 +111,19 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
       if (!empleadoData) return
 
       setIsAdmin(empleadoData.rol === 'admin_rrhh')
+      
+      // Si es admin, cargar lista de todos los empleados
+      if (empleadoData.rol === 'admin_rrhh') {
+        const { data: empleadosList } = await supabase
+          .from('empleados')
+          .select('id, nombre, apellido')
+          .eq('activo', true)
+          .order('apellido')
+        
+        if (empleadosList) {
+          setEmpleados(empleadosList)
+        }
+      }
       
       // Si se proporciona empleadoId, usarlo; sino, usar el empleado actual
       const targetEmpleadoId = empleadoId || empleadoData.id
@@ -268,13 +296,52 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="h-5 w-5" />
-            <span>Fichadas de {empleadoNombre}</span>
+            <span>Informe de Fichadas</span>
           </CardTitle>
           <CardDescription>
             Vista unificada de todas las fichadas por día
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Selector de empleado (solo para admins) */}
+          {isAdmin && empleados.length > 0 && (
+            <div>
+              <label className="text-sm font-medium flex items-center space-x-2 mb-2">
+                <Users className="h-4 w-4" />
+                <span>Seleccionar Empleado</span>
+              </label>
+              <Select
+                value={currentEmpleadoId || undefined}
+                onValueChange={(value) => {
+                  setCurrentEmpleadoId(value)
+                  const empleado = empleados.find(e => e.id === value)
+                  if (empleado) {
+                    setEmpleadoNombre(`${empleado.nombre} ${empleado.apellido}`)
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione un empleado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empleados.map((empleado) => (
+                    <SelectItem key={empleado.id} value={empleado.id}>
+                      {empleado.apellido}, {empleado.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Mostrar empleado actual */}
+          {empleadoNombre && (
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <p className="text-sm text-muted-foreground">Viendo fichadas de:</p>
+              <p className="font-medium">{empleadoNombre}</p>
+            </div>
+          )}
+
           {/* Filtros de fecha */}
           <div className="flex gap-4">
             <div className="flex-1">
