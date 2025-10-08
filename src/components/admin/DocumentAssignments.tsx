@@ -138,11 +138,23 @@ export function DocumentAssignments() {
     }
 
     try {
+      // Get current empleado ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const { data: empleado } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!empleado) throw new Error('Empleado no encontrado');
+
       const assignments = selectedEmpleados.map(empleadoId => ({
         documento_id: selectedDocumento,
         empleado_id: empleadoId,
         fecha_limite_lectura: fechaLimite || null,
-        asignado_por: null // This would need to be set based on current user
+        asignado_por: empleado.id
       }));
 
       const { error } = await supabase
@@ -157,7 +169,7 @@ export function DocumentAssignments() {
       setSelectedEmpleados([]);
       setFechaLimite("");
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error assigning document:', error);
       toast.error('Error al asignar documento');
     }
