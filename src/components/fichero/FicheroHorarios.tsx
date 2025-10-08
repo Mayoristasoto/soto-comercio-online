@@ -477,56 +477,35 @@ export default function FicheroHorarios() {
                             </div>
                           </div>
                           
-                          {/* Grid de horas con el turno superpuesto */}
-                          <div className="grid grid-cols-24 relative">
-                            {/* Celdas de fondo para cada hora */}
-                            {hours.map(hour => (
-                              <div 
-                                key={hour} 
-                                className={`border-r last:border-r-0 h-20 ${
-                                  hour >= 6 && hour < 22 ? 'bg-background' : 'bg-muted/20'
-                                }`}
-                              />
-                            ))}
-                            
-                            {/* Bloque visual del turno */}
-                            {turno && (() => {
-                              const [entradaH, entradaM] = turno.hora_entrada.split(':').map(Number);
-                              const [salidaH, salidaM] = turno.hora_salida.split(':').map(Number);
+                          {/* Grid de horas - celdas coloreadas si hay turno */}
+                          <div className="grid grid-cols-24">
+                            {hours.map(hour => {
+                              let isWorking = false;
                               
-                              // Calcular posición y duración en porcentaje
-                              const startPos = (entradaH + entradaM / 60) * (100 / 24);
-                              const duration = ((salidaH + salidaM / 60) - (entradaH + entradaM / 60)) * (100 / 24);
-                              const totalHours = (salidaH + salidaM / 60) - (entradaH + entradaM / 60);
+                              if (turno) {
+                                const [entradaH] = turno.hora_entrada.split(':').map(Number);
+                                const [salidaH] = turno.hora_salida.split(':').map(Number);
+                                
+                                if (salidaH > entradaH) {
+                                  isWorking = hour >= entradaH && hour < salidaH;
+                                } else {
+                                  // Night shift crossing midnight
+                                  isWorking = hour >= entradaH || hour < salidaH;
+                                }
+                              }
                               
                               return (
-                                <div
-                                  className={`absolute top-3 bottom-3 ${getTurnoColor(turno.tipo)} border rounded px-2 py-1 flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer z-10`}
-                                  style={{
-                                    left: `${startPos}%`,
-                                    width: `${duration}%`
-                                  }}
-                                  title={`${turno.nombre} - ${turno.tipo}`}
-                                >
-                                  <div className="text-center w-full">
-                                    <div className="text-xs font-semibold truncate">
-                                      {turno.hora_entrada} - {turno.hora_salida}
-                                    </div>
-                                    <div className="text-[10px] opacity-75 mt-0.5">
-                                      {totalHours.toFixed(1)}:00
-                                    </div>
-                                  </div>
-                                  <div className="text-xs font-medium mt-0.5">
-                                    {turno.hora_entrada} - {turno.hora_salida}
-                                  </div>
-                                  {turno.hora_pausa_inicio && turno.hora_pausa_fin && (
-                                    <div className="text-xs opacity-75 mt-0.5">
-                                      Pausa: {turno.hora_pausa_inicio} - {turno.hora_pausa_fin}
-                                    </div>
-                                  )}
-                                </div>
+                                <div 
+                                  key={hour} 
+                                  className={`border-r last:border-r-0 h-16 transition-colors ${
+                                    isWorking 
+                                      ? turno ? getTurnoColor(turno.tipo) : 'bg-muted/20'
+                                      : 'bg-background'
+                                  }`}
+                                  title={isWorking && turno ? `${turno.nombre} (${turno.hora_entrada} - ${turno.hora_salida})` : ''}
+                                />
                               );
-                            })()}
+                            })}
                           </div>
                         </div>
                       );
