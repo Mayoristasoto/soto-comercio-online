@@ -15,7 +15,10 @@ import {
   Calendar,
   BarChart3,
   Settings,
-  Shield
+  Shield,
+  UserCheck,
+  UserX,
+  Plane
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -37,6 +40,9 @@ interface DashboardStats {
   premios_pendientes: number
   participaciones_mes: number
   puntos_mes: number
+  empleados_trabajando: number
+  empleados_ausentes: number
+  empleados_vacaciones: number
 }
 
 interface RecentActivity {
@@ -45,6 +51,15 @@ interface RecentActivity {
   description: string
   fecha: string
   empleado?: string
+}
+
+interface EmpleadoEstado {
+  id: string
+  nombre: string
+  apellido: string
+  avatar_url?: string
+  puesto?: string
+  sucursal_nombre?: string
 }
 
 export default function AdminDashboard() {
@@ -57,10 +72,16 @@ export default function AdminDashboard() {
     desafios_activos: 0,
     premios_pendientes: 0,
     participaciones_mes: 0,
-    puntos_mes: 0
+    puntos_mes: 0,
+    empleados_trabajando: 0,
+    empleados_ausentes: 0,
+    empleados_vacaciones: 0
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
+  const [empleadosTrabajando, setEmpleadosTrabajando] = useState<EmpleadoEstado[]>([])
+  const [empleadosAusentes, setEmpleadosAusentes] = useState<EmpleadoEstado[]>([])
+  const [empleadosVacaciones, setEmpleadosVacaciones] = useState<EmpleadoEstado[]>([])
 
   useEffect(() => {
     loadDashboardData()
@@ -100,13 +121,97 @@ export default function AdminDashboard() {
         supabase.from('asignaciones_premio').select('id', { count: 'exact' }).eq('estado', 'pendiente')
       ])
 
+      // Obtener empleados trabajando (con fichaje de entrada hoy)
+      const hoy = new Date().toISOString().split('T')[0]
+      const { data: fichajesHoy } = await supabase
+        .from('fichajes')
+        .select(`
+          empleado_id,
+          tipo,
+          timestamp_real,
+          empleados(id, nombre, apellido, avatar_url, puesto, sucursal_id, sucursales(nombre))
+        `)
+        .gte('timestamp_real', `${hoy}T00:00:00`)
+        .order('timestamp_real', { ascending: false })
+
+      // Procesar empleados trabajando (último fichaje es entrada o pausa_fin)
+      const empleadosMap = new Map<string, any>()
+      fichajesHoy?.forEach((fichaje: any) => {
+        if (!empleadosMap.has(fichaje.empleado_id)) {
+          empleadosMap.set(fichaje.empleado_id, {
+            ...fichaje.empleados,
+            ultimo_tipo: fichaje.tipo,
+            sucursal_nombre: fichaje.empleados.sucursales?.nombre
+          })
+        }
+      })
+
+      const trabajando = Array.from(empleadosMap.values())
+        .filter(emp => emp.ultimo_tipo === 'entrada' || emp.ultimo_tipo === 'pausa_fin')
+        .map(emp => ({
+          id: emp.id,
+          nombre: emp.nombre,
+          apellido: emp.apellido,
+          avatar_url: emp.avatar_url,
+          puesto: emp.puesto,
+          sucursal_nombre: emp.sucursal_nombre
+        }))
+
+      // Obtener empleados de vacaciones (solicitudes aprobadas activas)
+      const { data: vacaciones } = await supabase
+        .from('solicitudes_vacaciones')
+        .select(`
+          empleado_id,
+          empleados(id, nombre, apellido, avatar_url, puesto, sucursal_id, sucursales(nombre))
+        `)
+        .eq('estado', 'aprobada')
+        .lte('fecha_inicio', new Date().toISOString())
+        .gte('fecha_fin', new Date().toISOString())
+
+      const enVacaciones = vacaciones?.map((vac: any) => ({
+        id: vac.empleados.id,
+        nombre: vac.empleados.nombre,
+        apellido: vac.empleados.apellido,
+        avatar_url: vac.empleados.avatar_url,
+        puesto: vac.empleados.puesto,
+        sucursal_nombre: vac.empleados.sucursales?.nombre
+      })) || []
+
+      // Obtener todos los empleados activos
+      const { data: todosEmpleados } = await supabase
+        .from('empleados')
+        .select('id, nombre, apellido, avatar_url, puesto, sucursal_id, sucursales(nombre)')
+        .eq('activo', true)
+
+      // Empleados ausentes = no están trabajando ni de vacaciones
+      const idsTrabajando = new Set(trabajando.map(e => e.id))
+      const idsVacaciones = new Set(enVacaciones.map(e => e.id))
+      
+      const ausentes = todosEmpleados
+        ?.filter(emp => !idsTrabajando.has(emp.id) && !idsVacaciones.has(emp.id))
+        .map(emp => ({
+          id: emp.id,
+          nombre: emp.nombre,
+          apellido: emp.apellido,
+          avatar_url: emp.avatar_url,
+          puesto: emp.puesto,
+          sucursal_nombre: emp.sucursales?.nombre
+        })) || []
+
+      setEmpleadosTrabajando(trabajando)
+      setEmpleadosVacaciones(enVacaciones)
+      setEmpleadosAusentes(ausentes)
+
       setStats({
         total_empleados: empleadosResult.count || 0,
         total_sucursales: sucursalesResult.count || 0,
         desafios_activos: desafiosResult.count || 0,
         premios_pendientes: premiosResult.count || 0,
-        participaciones_mes: Math.floor(Math.random() * 50) + 10, // Mock por ahora
-        puntos_mes: Math.floor(Math.random() * 1000) + 500 // Mock por ahora
+        participaciones_mes: Math.floor(Math.random() * 50) + 10,
+        puntos_mes: Math.floor(Math.random() * 1000) + 500,
+        empleados_trabajando: trabajando.length,
+        empleados_ausentes: ausentes.length,
+        empleados_vacaciones: enVacaciones.length
       })
 
       // Mock de actividad reciente
@@ -265,6 +370,117 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.puntos_mes}</div>
             <p className="text-xs text-muted-foreground">Otorgados este mes</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Estado de Empleados - Tarjetas Visuales */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Empleados Trabajando */}
+        <Card className="border-green-200 bg-green-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-green-700">
+              <UserCheck className="h-5 w-5" />
+              <span>Trabajando Ahora</span>
+            </CardTitle>
+            <CardDescription className="text-green-600">
+              {stats.empleados_trabajando} empleado{stats.empleados_trabajando !== 1 ? 's' : ''} activo{stats.empleados_trabajando !== 1 ? 's' : ''}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="max-h-[300px] overflow-y-auto space-y-2">
+            {empleadosTrabajando.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4 text-sm">
+                No hay empleados trabajando
+              </p>
+            ) : (
+              empleadosTrabajando.map((emp) => (
+                <div key={emp.id} className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-green-100">
+                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-sm">
+                    {emp.nombre[0]}{emp.apellido[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {emp.nombre} {emp.apellido}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {emp.puesto || 'Sin puesto'} {emp.sucursal_nombre && `• ${emp.sucursal_nombre}`}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Empleados Ausentes */}
+        <Card className="border-red-200 bg-red-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-red-700">
+              <UserX className="h-5 w-5" />
+              <span>Ausentes</span>
+            </CardTitle>
+            <CardDescription className="text-red-600">
+              {stats.empleados_ausentes} empleado{stats.empleados_ausentes !== 1 ? 's' : ''} sin fichar
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="max-h-[300px] overflow-y-auto space-y-2">
+            {empleadosAusentes.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4 text-sm">
+                Todos los empleados han fichado
+              </p>
+            ) : (
+              empleadosAusentes.map((emp) => (
+                <div key={emp.id} className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-red-100">
+                  <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-semibold text-sm">
+                    {emp.nombre[0]}{emp.apellido[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {emp.nombre} {emp.apellido}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {emp.puesto || 'Sin puesto'} {emp.sucursal_nombre && `• ${emp.sucursal_nombre}`}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Empleados de Vacaciones */}
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-blue-700">
+              <Plane className="h-5 w-5" />
+              <span>De Vacaciones</span>
+            </CardTitle>
+            <CardDescription className="text-blue-600">
+              {stats.empleados_vacaciones} empleado{stats.empleados_vacaciones !== 1 ? 's' : ''} en descanso
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="max-h-[300px] overflow-y-auto space-y-2">
+            {empleadosVacaciones.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4 text-sm">
+                No hay empleados de vacaciones
+              </p>
+            ) : (
+              empleadosVacaciones.map((emp) => (
+                <div key={emp.id} className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-blue-100">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-sm">
+                    {emp.nombre[0]}{emp.apellido[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {emp.nombre} {emp.apellido}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {emp.puesto || 'Sin puesto'} {emp.sucursal_nombre && `• ${emp.sucursal_nombre}`}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
