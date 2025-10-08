@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, CheckCircle, Clock, ExternalLink, Eye } from "lucide-react";
+import { FileText, CheckCircle, Clock, ExternalLink, Eye, FileSignature } from "lucide-react";
+import { DocumentSignature } from "./DocumentSignature";
 
 interface DocumentoAsignado {
   id: string;
@@ -22,6 +23,10 @@ interface DocumentoAsignado {
   confirmacion: {
     fecha_confirmacion: string;
   }[];
+  firmas: {
+    id: string;
+    fecha_firma: string;
+  }[];
 }
 
 interface Props {
@@ -33,6 +38,7 @@ export function EmployeeDocuments({ empleadoId }: Props) {
   const [loading, setLoading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<DocumentoAsignado | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showSignature, setShowSignature] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -68,10 +74,18 @@ export function EmployeeDocuments({ empleadoId }: Props) {
             .select('fecha_confirmacion')
             .eq('asignacion_id', asignacion.id);
 
+          // Load firmas
+          const { data: firmas } = await supabase
+            .from('documentos_firmas')
+            .select('id, fecha_firma')
+            .eq('documento_id', asignacion.documento_id)
+            .eq('empleado_id', empleadoId);
+
           return {
             ...asignacion,
             documento: documento || null,
-            confirmacion: confirmaciones || []
+            confirmacion: confirmaciones || [],
+            firmas: firmas || []
           };
         })
       );
@@ -134,11 +148,13 @@ export function EmployeeDocuments({ empleadoId }: Props) {
 
   const pendientes = documentos.filter(d => d?.confirmacion?.length === 0);
   const confirmados = documentos.filter(d => d?.confirmacion?.length > 0);
+  const sinFirmar = documentos.filter(d => d?.confirmacion?.length > 0 && d?.firmas?.length === 0);
+  const firmados = documentos.filter(d => d?.firmas?.length > 0);
 
   return (
     <div className="space-y-4">
       {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-3 gap-2 text-sm">
+      <div className="grid grid-cols-4 gap-2 text-sm">
         <div className="text-center p-2 bg-accent rounded">
           <div className="font-bold text-lg">{documentos.length}</div>
           <div className="text-muted-foreground">Total</div>
@@ -147,9 +163,13 @@ export function EmployeeDocuments({ empleadoId }: Props) {
           <div className="font-bold text-lg text-destructive">{pendientes.length}</div>
           <div className="text-muted-foreground">Pendientes</div>
         </div>
+        <div className="text-center p-2 bg-orange-500/10 rounded">
+          <div className="font-bold text-lg text-orange-600">{sinFirmar.length}</div>
+          <div className="text-muted-foreground">Sin Firmar</div>
+        </div>
         <div className="text-center p-2 bg-primary/10 rounded">
-          <div className="font-bold text-lg text-primary">{confirmados.length}</div>
-          <div className="text-muted-foreground">Leídos</div>
+          <div className="font-bold text-lg text-primary">{firmados.length}</div>
+          <div className="text-muted-foreground">Firmados</div>
         </div>
       </div>
 
@@ -166,7 +186,10 @@ export function EmployeeDocuments({ empleadoId }: Props) {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-sm">{doc.documento?.titulo || 'Sin título'}</span>
                   <Badge variant="outline">{doc.documento?.tipo_documento || 'Documento'}</Badge>
-                  <Badge variant="destructive" className="text-xs">Pendiente</Badge>
+                  <Badge variant="destructive" className="text-xs">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Pendiente Lectura
+                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{doc.documento?.descripcion || 'Sin descripción'}</p>
                 <div className="text-xs text-muted-foreground">
@@ -187,24 +210,72 @@ export function EmployeeDocuments({ empleadoId }: Props) {
         </div>
       )}
 
-      {/* Documentos confirmados */}
-      {confirmados.length > 0 && (
+      {/* Documentos leídos sin firmar */}
+      {sinFirmar.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-orange-600 flex items-center gap-2">
+            <FileSignature className="h-4 w-4" />
+            Pendientes de Firma
+          </h4>
+          {sinFirmar.map((doc) => (
+            <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg bg-orange-50 border-orange-200">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm">{doc.documento?.titulo || 'Sin título'}</span>
+                  <Badge variant="outline">{doc.documento?.tipo_documento || 'Documento'}</Badge>
+                  <Badge className="text-xs bg-orange-100 text-orange-700 hover:bg-orange-100">
+                    <FileSignature className="h-3 w-3 mr-1" />
+                    Requiere Firma
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Leído: {doc.confirmacion?.[0]?.fecha_confirmacion ? 
+                    new Date(doc.confirmacion[0].fecha_confirmacion).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => openDocument(doc)}>
+                  <Eye className="h-3 w-3 mr-1" />
+                  Ver
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    setSelectedDoc(doc);
+                    setShowSignature(true);
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  <FileSignature className="h-3 w-3 mr-1" />
+                  Firmar
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Documentos firmados */}
+      {firmados.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-primary flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
-            Documentos Leídos
+            Documentos Firmados
           </h4>
-          {confirmados.slice(0, 3).map((doc) => (
+          {firmados.slice(0, 3).map((doc) => (
             <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg bg-primary/5">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-sm">{doc.documento?.titulo || 'Sin título'}</span>
                   <Badge variant="outline">{doc.documento?.tipo_documento || 'Documento'}</Badge>
-                  <Badge className="text-xs">Leído</Badge>
+                  <Badge className="text-xs bg-green-100 text-green-700 hover:bg-green-100">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Firmado
+                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Confirmado: {doc.confirmacion?.[0]?.fecha_confirmacion ? 
-                    new Date(doc.confirmacion[0].fecha_confirmacion).toLocaleDateString() : 'N/A'}
+                  Firmado: {doc.firmas?.[0]?.fecha_firma ? 
+                    new Date(doc.firmas[0].fecha_firma).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
               <Button size="sm" variant="outline" onClick={() => openDocument(doc)}>
@@ -213,9 +284,9 @@ export function EmployeeDocuments({ empleadoId }: Props) {
               </Button>
             </div>
           ))}
-          {confirmados.length > 3 && (
+          {firmados.length > 3 && (
             <p className="text-xs text-muted-foreground text-center">
-              Y {confirmados.length - 3} documentos más leídos
+              Y {firmados.length - 3} documentos más firmados
             </p>
           )}
         </div>
@@ -286,9 +357,52 @@ export function EmployeeDocuments({ empleadoId }: Props) {
                     Confirmar Lectura
                   </Button>
                 )}
+                {selectedDoc?.confirmacion && selectedDoc.confirmacion.length > 0 && 
+                 (!selectedDoc?.firmas || selectedDoc.firmas.length === 0) && (
+                  <Button 
+                    onClick={() => {
+                      setDialogOpen(false);
+                      setShowSignature(true);
+                    }}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <FileSignature className="h-4 w-4 mr-2" />
+                    Firmar Documento
+                  </Button>
+                )}
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para firma digital */}
+      <Dialog open={showSignature} onOpenChange={setShowSignature}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSignature className="h-5 w-5" />
+              Firmar Documento: {selectedDoc?.documento?.titulo}
+            </DialogTitle>
+            <DialogDescription>
+              Por favor, firme el documento para completar el proceso
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDoc && (
+            <DocumentSignature
+              documentoId={selectedDoc.documento_id}
+              empleadoId={empleadoId}
+              onSigned={() => {
+                setShowSignature(false);
+                loadDocumentos();
+                toast({
+                  title: "Éxito",
+                  description: "Documento firmado correctamente"
+                });
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
