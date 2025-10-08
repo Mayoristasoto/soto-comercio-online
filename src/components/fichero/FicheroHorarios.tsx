@@ -10,7 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { Clock, Plus, Edit, Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Turno {
   id: string;
@@ -62,6 +64,8 @@ export default function FicheroHorarios() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [asignacionDialogOpen, setAsignacionDialogOpen] = useState(false);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
+  const [currentDate, setCurrentDate] = useState(new Date());
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -277,12 +281,214 @@ export default function FicheroHorarios() {
     setDialogOpen(true);
   };
 
+  const getWeekDates = () => {
+    const start = new Date(currentDate);
+    start.setDate(start.getDate() - start.getDay() + 1); // Lunes
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const getTurnoColor = (tipo: string) => {
+    const colors = {
+      normal: 'bg-blue-100 border-blue-300',
+      nocturno: 'bg-purple-100 border-purple-300',
+      partido: 'bg-yellow-100 border-yellow-300',
+      flexible: 'bg-green-100 border-green-300'
+    };
+    return colors[tipo as keyof typeof colors] || colors.normal;
+  };
+
+  const navigateDate = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    if (viewMode === 'day') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (viewMode === 'week') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    } else {
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    }
+    setCurrentDate(newDate);
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-64">Cargando...</div>;
   }
 
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="calendar" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="calendar">Vista Calendario</TabsTrigger>
+          <TabsTrigger value="management">Gestión de Turnos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendar" className="space-y-4">
+          {/* Header de navegación */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    <span className="font-semibold text-lg">
+                      {viewMode === 'week' 
+                        ? `Semana del ${getWeekDates()[0].toLocaleDateString()} al ${getWeekDates()[6].toLocaleDateString()}`
+                        : currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant={viewMode === 'day' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('day')}
+                  >
+                    Día
+                  </Button>
+                  <Button 
+                    variant={viewMode === 'week' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('week')}
+                  >
+                    Semana
+                  </Button>
+                  <Button 
+                    variant={viewMode === 'month' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('month')}
+                  >
+                    Mes
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+                    Hoy
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Vista de calendario tipo timeline */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <div className="min-w-[1200px]">
+                  {/* Header de horas */}
+                  <div className="grid grid-cols-[200px_1fr] border-b bg-muted/30">
+                    <div className="p-3 border-r font-medium">Empleados</div>
+                    <div className="grid grid-cols-24 text-xs text-center">
+                      {hours.map(hour => (
+                        <div key={hour} className="p-2 border-r last:border-r-0">
+                          {hour}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filas de empleados */}
+                  <div className="divide-y">
+                    {empleados.slice(0, 15).map((empleado) => {
+                      const asignacion = empleadoTurnos.find(et => et.empleado_id === empleado.id);
+                      const turno = asignacion?.turno;
+                      
+                      return (
+                        <div key={empleado.id} className="grid grid-cols-[200px_1fr] hover:bg-muted/50 transition-colors">
+                          <div className="p-3 border-r flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${empleado.nombre} ${empleado.apellido}`} />
+                              <AvatarFallback>
+                                {empleado.nombre[0]}{empleado.apellido[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {empleado.nombre} {empleado.apellido}
+                              </p>
+                              {turno && (
+                                <p className="text-xs text-muted-foreground">
+                                  {turno.hora_entrada}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-24 relative">
+                            {hours.map(hour => (
+                              <div key={hour} className="border-r last:border-r-0 h-16" />
+                            ))}
+                            
+                            {/* Bloque de turno */}
+                            {turno && (() => {
+                              const [entradaH, entradaM] = turno.hora_entrada.split(':').map(Number);
+                              const [salidaH, salidaM] = turno.hora_salida.split(':').map(Number);
+                              const startPos = (entradaH + entradaM / 60) * (100 / 24);
+                              const duration = ((salidaH + salidaM / 60) - (entradaH + entradaM / 60)) * (100 / 24);
+                              
+                              return (
+                                <div
+                                  className={`absolute top-2 bottom-2 ${getTurnoColor(turno.tipo)} border-2 rounded-md px-2 py-1 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+                                  style={{
+                                    left: `${startPos}%`,
+                                    width: `${duration}%`
+                                  }}
+                                >
+                                  <span className="text-xs font-medium truncate">
+                                    {turno.hora_entrada} - {turno.hora_salida}
+                                  </span>
+                                  <span className="text-xs font-semibold ml-1">
+                                    {Math.round((salidaH + salidaM / 60) - (entradaH + entradaM / 60))}h
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Leyenda */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-300" />
+                  <span className="text-sm">Normal</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-300" />
+                  <span className="text-sm">Nocturno</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-yellow-100 border-2 border-yellow-300" />
+                  <span className="text-sm">Partido</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-green-100 border-2 border-green-300" />
+                  <span className="text-sm">Flexible</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="management" className="space-y-6">
       {/* Gestión de Turnos */}
       <Card>
         <CardHeader>
@@ -626,6 +832,8 @@ export default function FicheroHorarios() {
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
