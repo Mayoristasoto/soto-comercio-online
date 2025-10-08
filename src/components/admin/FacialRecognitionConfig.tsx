@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Settings, Save, RotateCcw } from "lucide-react"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 
 export default function FacialRecognitionConfig() {
   const { toast } = useToast()
@@ -41,7 +42,8 @@ export default function FacialRecognitionConfig() {
         { key: 'confidenceThresholdDemo', value: editedConfig.confidenceThresholdDemo },
         { key: 'maxAttemptsPerMinute', value: editedConfig.maxAttemptsPerMinute },
         { key: 'livenessTimeoutSeconds', value: editedConfig.livenessTimeoutSeconds },
-        { key: 'faceDescriptorVersion', value: editedConfig.faceDescriptorVersion }
+        { key: 'faceDescriptorVersion', value: editedConfig.faceDescriptorVersion },
+        { key: 'emotionRecognitionEnabled', value: editedConfig.emotionRecognitionEnabled.toString() }
       ]
 
       for (const update of updates) {
@@ -230,6 +232,27 @@ export default function FacialRecognitionConfig() {
                 Tiempo para detección de vida
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Reconocimiento de Emociones */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Reconocimiento de Emociones</h3>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="emotion-recognition">Habilitar en Kiosco</Label>
+              <p className="text-xs text-muted-foreground">
+                Detecta y muestra la emoción del empleado al fichar
+              </p>
+            </div>
+            <Switch
+              id="emotion-recognition"
+              checked={editedConfig.emotionRecognitionEnabled}
+              onCheckedChange={(checked) => setEditedConfig(prev => ({
+                ...prev,
+                emotionRecognitionEnabled: checked
+              }))}
+            />
           </div>
         </div>
 

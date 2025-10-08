@@ -16,7 +16,7 @@ interface FicheroFacialAuthProps {
     apellido: string
   }
   tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin'
-  onFichajeSuccess: (confianza: number, empleadoId?: string, empleadoData?: any) => void
+  onFichajeSuccess: (confianza: number, empleadoId?: string, empleadoData?: any, emocion?: string) => void
   loading: boolean
 }
 
@@ -272,13 +272,26 @@ export default function FicheroFacialAuth({
       console.log('Video ready state:', video.readyState)
       console.log('Video src object:', video.srcObject)
       
-      const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
-          inputSize: 416,
-          scoreThreshold: 0.5
-        }))
-        .withFaceLandmarks()
-        .withFaceDescriptors()
+      // Detectar emociones si está habilitado en la configuración
+      let detections
+      if (config.emotionRecognitionEnabled) {
+        detections = await faceapi
+          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+            inputSize: 416,
+            scoreThreshold: 0.5
+          }))
+          .withFaceLandmarks()
+          .withFaceDescriptors()
+          .withFaceExpressions()
+      } else {
+        detections = await faceapi
+          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+            inputSize: 416,
+            scoreThreshold: 0.5
+          }))
+          .withFaceLandmarks()
+          .withFaceDescriptors()
+      }
       
       console.log('Detections found:', detections.length)
       
@@ -309,12 +322,24 @@ export default function FicheroFacialAuth({
       
       const faceDescriptor = detections[0].descriptor
       
+      // Detectar emoción si está disponible
+      let emocionDetectada = undefined
+      if (config.emotionRecognitionEnabled && detections[0].expressions) {
+        const expressions = detections[0].expressions as any
+        const emociones = Object.entries(expressions) as [string, number][]
+        const emocionPrincipal = emociones.reduce((max, current) => 
+          current[1] > max[1] ? current : max
+        )
+        emocionDetectada = emocionPrincipal[0]
+        console.log('Emoción detectada:', emocionDetectada, 'Confianza:', emocionPrincipal[1])
+      }
+      
       // Comparar con rostro almacenado
       const resultado = await compararConRostroAlmacenado(faceDescriptor)
       
       if (resultado.confidence > 0.35) {
-        // Pass both confidence and employee data to the success callback
-        onFichajeSuccess(resultado.confidence, resultado.empleadoId, resultado.empleadoData)
+        // Pass confidence, employee data, and emotion to the success callback
+        onFichajeSuccess(resultado.confidence, resultado.empleadoId, resultado.empleadoData, emocionDetectada)
         
         const employeeName = resultado.empleadoData 
           ? `${resultado.empleadoData.nombre} ${resultado.empleadoData.apellido}`

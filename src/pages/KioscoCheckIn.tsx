@@ -5,6 +5,7 @@ import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee } from "lucide
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
+import { useFacialConfig } from "@/hooks/useFacialConfig"
 
 interface EmpleadoBasico {
   id: string
@@ -41,6 +42,7 @@ interface AccionDisponible {
 
 export default function KioscoCheckIn() {
   const { toast } = useToast()
+  const { config } = useFacialConfig()
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [lastProcessTime, setLastProcessTime] = useState<number>(0) // Para prevenir múltiples procesamiento
@@ -53,6 +55,7 @@ export default function KioscoCheckIn() {
   const [recognizedEmployee, setRecognizedEmployee] = useState<{ id: string, data: any, confidence: number } | null>(null)
   const [accionesDisponibles, setAccionesDisponibles] = useState<AccionDisponible[]>([])
   const [ultimoTipoFichaje, setUltimoTipoFichaje] = useState<TipoAccion | null>(null)
+  const [emocionDetectada, setEmocionDetectada] = useState<string | null>(null)
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -172,7 +175,12 @@ export default function KioscoCheckIn() {
     }
   }
 
-  const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any) => {
+  const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any, emocion?: string) => {
+    // Guardar emoción si fue detectada
+    if (emocion && config.emotionRecognitionEnabled) {
+      setEmocionDetectada(emocion)
+    }
+    
     // Prevenir procesamiento duplicado con debounce de 3 segundos
     const now = Date.now()
     if (loading || (now - lastProcessTime < 3000)) {
@@ -319,6 +327,7 @@ export default function KioscoCheckIn() {
       setAccionesDisponibles([])
       setUltimoTipoFichaje(null)
       setLastProcessTime(0) // Reset del debounce
+      setEmocionDetectada(null)
     }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
   }
 
@@ -559,6 +568,23 @@ export default function KioscoCheckIn() {
       apellido: 'Facial'
     })
     setShowFacialAuth(true)
+    setEmocionDetectada(null)
+  }
+
+  const obtenerEmojiEmocion = (emocion: string | null): string => {
+    if (!emocion) return ''
+    
+    const emojis: Record<string, string> = {
+      happy: '😊',
+      sad: '😢',
+      angry: '😠',
+      surprised: '😲',
+      disgusted: '🤢',
+      fearful: '😨',
+      neutral: '😐'
+    }
+    
+    return emojis[emocion.toLowerCase()] || '😐'
   }
 
   const formatTime = (date: Date) => {
@@ -798,6 +824,14 @@ export default function KioscoCheckIn() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {config.emotionRecognitionEnabled && emocionDetectada && (
+                <div className="mb-4 text-center">
+                  <div className="text-6xl mb-2">{obtenerEmojiEmocion(emocionDetectada)}</div>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    Emoción detectada: {emocionDetectada}
+                  </p>
+                </div>
+              )}
               <FicheroFacialAuth
                 empleado={selectedEmployee!}
                 tipoFichaje="entrada"

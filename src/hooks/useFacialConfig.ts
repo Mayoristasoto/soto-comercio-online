@@ -8,6 +8,7 @@ interface FacialConfig {
   maxAttemptsPerMinute: number
   livenessTimeoutSeconds: number
   faceDescriptorVersion: string
+  emotionRecognitionEnabled: boolean
 }
 
 const defaultConfig: FacialConfig = {
@@ -16,7 +17,8 @@ const defaultConfig: FacialConfig = {
   confidenceThresholdDemo: 0.35,
   maxAttemptsPerMinute: 3,
   livenessTimeoutSeconds: 30,
-  faceDescriptorVersion: "1.0"
+  faceDescriptorVersion: "1.0",
+  emotionRecognitionEnabled: false
 }
 
 export function useFacialConfig() {
@@ -55,7 +57,8 @@ export function useFacialConfig() {
           confidenceThresholdDemo: parseFloat(configMap.confidence_threshold_demo) || defaultConfig.confidenceThresholdDemo,
           maxAttemptsPerMinute: parseInt(configMap.max_attempts_per_minute) || defaultConfig.maxAttemptsPerMinute,
           livenessTimeoutSeconds: parseInt(configMap.liveness_timeout_seconds) || defaultConfig.livenessTimeoutSeconds,
-          faceDescriptorVersion: configMap.face_descriptor_version || defaultConfig.faceDescriptorVersion
+          faceDescriptorVersion: configMap.face_descriptor_version || defaultConfig.faceDescriptorVersion,
+          emotionRecognitionEnabled: configMap.emotion_recognition_enabled === 'true' || defaultConfig.emotionRecognitionEnabled
         })
       }
     } catch (err) {
@@ -74,7 +77,8 @@ export function useFacialConfig() {
         confidenceThresholdDemo: 'confidence_threshold_demo',
         maxAttemptsPerMinute: 'max_attempts_per_minute',
         livenessTimeoutSeconds: 'liveness_timeout_seconds',
-        faceDescriptorVersion: 'face_descriptor_version'
+        faceDescriptorVersion: 'face_descriptor_version',
+        emotionRecognitionEnabled: 'emotion_recognition_enabled'
       }[key]
 
       const { error: updateError } = await supabase
