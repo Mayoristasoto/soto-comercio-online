@@ -824,20 +824,31 @@ export default function KioscoCheckIn() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {config.emotionRecognitionEnabled && emocionDetectada && (
-                <div className="mb-4 text-center">
-                  <div className="text-6xl mb-2">{obtenerEmojiEmocion(emocionDetectada)}</div>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    Emoción detectada: {emocionDetectada}
-                  </p>
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <FicheroFacialAuth
+                    empleado={selectedEmployee!}
+                    tipoFichaje="entrada"
+                    onFichajeSuccess={procesarFichaje}
+                    loading={loading}
+                  />
                 </div>
-              )}
-              <FicheroFacialAuth
-                empleado={selectedEmployee!}
-                tipoFichaje="entrada"
-                onFichajeSuccess={procesarFichaje}
-                loading={loading}
-              />
+                
+                {config.emotionRecognitionEnabled && (
+                  <div className="w-32 flex flex-col items-center justify-start pt-8">
+                    {emocionDetectada ? (
+                      <>
+                        <div className="text-7xl mb-2 animate-bounce">{obtenerEmojiEmocion(emocionDetectada)}</div>
+                        <p className="text-xs text-muted-foreground capitalize text-center">
+                          {emocionDetectada}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="text-5xl text-muted-foreground/20">😊</div>
+                    )}
+                  </div>
+                )}
+              </div>
               
               <div className="mt-4">
                 <button
