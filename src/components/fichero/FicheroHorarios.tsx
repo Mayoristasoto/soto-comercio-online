@@ -297,10 +297,10 @@ export default function FicheroHorarios() {
 
   const getTurnoColor = (tipo: string) => {
     const colors = {
-      normal: 'bg-blue-100 border-blue-300',
-      nocturno: 'bg-purple-100 border-purple-300',
-      partido: 'bg-yellow-100 border-yellow-300',
-      flexible: 'bg-green-100 border-green-300'
+      normal: 'bg-blue-100 border-blue-300 text-blue-900',
+      nocturno: 'bg-purple-100 border-purple-300 text-purple-900',
+      partido: 'bg-yellow-100 border-yellow-300 text-yellow-900',
+      flexible: 'bg-green-100 border-green-300 text-green-900'
     };
     return colors[tipo as keyof typeof colors] || colors.normal;
   };
@@ -325,25 +325,33 @@ export default function FicheroHorarios() {
     <div className="space-y-6">
       <Tabs defaultValue="calendar" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="calendar">Vista Calendario</TabsTrigger>
-          <TabsTrigger value="management">Gestión de Turnos</TabsTrigger>
+          <TabsTrigger value="calendar">
+            <Calendar className="h-4 w-4 mr-2" />
+            Vista Calendario
+          </TabsTrigger>
+          <TabsTrigger value="management">
+            <Clock className="h-4 w-4 mr-2" />
+            Gestión de Turnos
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
           {/* Header de navegación */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
                   <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
+                    <Calendar className="h-5 w-5 text-primary" />
                     <span className="font-semibold text-lg">
-                      {viewMode === 'week' 
-                        ? `Semana del ${getWeekDates()[0].toLocaleDateString()} al ${getWeekDates()[6].toLocaleDateString()}`
-                        : currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                      {currentDate.toLocaleDateString('es-ES', { 
+                        day: 'numeric',
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
                     </span>
                   </div>
                   <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
@@ -365,13 +373,6 @@ export default function FicheroHorarios() {
                   >
                     Semana
                   </Button>
-                  <Button 
-                    variant={viewMode === 'month' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('month')}
-                  >
-                    Mes
-                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
                     Hoy
                   </Button>
@@ -384,31 +385,41 @@ export default function FicheroHorarios() {
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <div className="min-w-[1200px]">
-                  {/* Header de horas */}
-                  <div className="grid grid-cols-[200px_1fr] border-b bg-muted/30">
-                    <div className="p-3 border-r font-medium">Empleados</div>
-                    <div className="grid grid-cols-24 text-xs text-center">
+                <div className="min-w-[1400px]">
+                  {/* Header de horas (0-23) */}
+                  <div className="grid grid-cols-[220px_1fr] border-b sticky top-0 bg-background z-10">
+                    <div className="p-4 border-r font-semibold bg-muted/50 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Empleados ({empleados.length})
+                    </div>
+                    <div className="grid grid-cols-24">
                       {hours.map(hour => (
-                        <div key={hour} className="p-2 border-r last:border-r-0">
-                          {hour}
+                        <div 
+                          key={hour} 
+                          className="p-2 border-r last:border-r-0 text-center text-sm font-medium bg-muted/50"
+                        >
+                          {hour.toString().padStart(2, '0')}:00
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Filas de empleados */}
+                  {/* Filas de empleados con sus turnos */}
                   <div className="divide-y">
-                    {empleados.slice(0, 15).map((empleado) => {
+                    {empleados.map((empleado) => {
                       const asignacion = empleadoTurnos.find(et => et.empleado_id === empleado.id);
                       const turno = asignacion?.turno;
                       
                       return (
-                        <div key={empleado.id} className="grid grid-cols-[200px_1fr] hover:bg-muted/50 transition-colors">
-                          <div className="p-3 border-r flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
+                        <div 
+                          key={empleado.id} 
+                          className="grid grid-cols-[220px_1fr] hover:bg-muted/30 transition-colors"
+                        >
+                          {/* Columna del empleado */}
+                          <div className="p-3 border-r flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
                               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${empleado.nombre} ${empleado.apellido}`} />
-                              <AvatarFallback>
+                              <AvatarFallback className="text-xs">
                                 {empleado.nombre[0]}{empleado.apellido[0]}
                               </AvatarFallback>
                             </Avatar>
@@ -417,39 +428,63 @@ export default function FicheroHorarios() {
                                 {empleado.nombre} {empleado.apellido}
                               </p>
                               {turno && (
-                                <p className="text-xs text-muted-foreground">
-                                  {turno.hora_entrada}
-                                </p>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <Clock className="h-3 w-3 text-muted-foreground" />
+                                  <p className="text-xs text-muted-foreground">
+                                    {turno.hora_entrada} - {turno.hora_salida}
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </div>
                           
+                          {/* Grid de horas con el turno superpuesto */}
                           <div className="grid grid-cols-24 relative">
+                            {/* Celdas de fondo para cada hora */}
                             {hours.map(hour => (
-                              <div key={hour} className="border-r last:border-r-0 h-16" />
+                              <div 
+                                key={hour} 
+                                className={`border-r last:border-r-0 h-20 ${
+                                  hour >= 6 && hour < 22 ? 'bg-background' : 'bg-muted/20'
+                                }`}
+                              />
                             ))}
                             
-                            {/* Bloque de turno */}
+                            {/* Bloque visual del turno */}
                             {turno && (() => {
                               const [entradaH, entradaM] = turno.hora_entrada.split(':').map(Number);
                               const [salidaH, salidaM] = turno.hora_salida.split(':').map(Number);
+                              
+                              // Calcular posición y duración en porcentaje
                               const startPos = (entradaH + entradaM / 60) * (100 / 24);
                               const duration = ((salidaH + salidaM / 60) - (entradaH + entradaM / 60)) * (100 / 24);
+                              const totalHours = (salidaH + salidaM / 60) - (entradaH + entradaM / 60);
                               
                               return (
                                 <div
-                                  className={`absolute top-2 bottom-2 ${getTurnoColor(turno.tipo)} border-2 rounded-md px-2 py-1 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+                                  className={`absolute top-3 bottom-3 ${getTurnoColor(turno.tipo)} border-2 rounded-lg px-3 py-2 flex flex-col justify-center shadow-md hover:shadow-lg transition-all cursor-pointer z-10`}
                                   style={{
                                     left: `${startPos}%`,
                                     width: `${duration}%`
                                   }}
+                                  title={`${turno.nombre} - ${turno.tipo}`}
                                 >
-                                  <span className="text-xs font-medium truncate">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-xs font-semibold truncate">
+                                      {turno.nombre}
+                                    </span>
+                                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                      {totalHours.toFixed(1)}h
+                                    </Badge>
+                                  </div>
+                                  <div className="text-xs font-medium mt-0.5">
                                     {turno.hora_entrada} - {turno.hora_salida}
-                                  </span>
-                                  <span className="text-xs font-semibold ml-1">
-                                    {Math.round((salidaH + salidaM / 60) - (entradaH + entradaM / 60))}h
-                                  </span>
+                                  </div>
+                                  {turno.hora_pausa_inicio && turno.hora_pausa_fin && (
+                                    <div className="text-xs opacity-75 mt-0.5">
+                                      Pausa: {turno.hora_pausa_inicio} - {turno.hora_pausa_fin}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })()}
@@ -458,30 +493,57 @@ export default function FicheroHorarios() {
                       );
                     })}
                   </div>
+
+                  {/* Línea de hora actual */}
+                  <div className="grid grid-cols-[220px_1fr] pointer-events-none absolute inset-0">
+                    <div />
+                    <div className="relative">
+                      {(() => {
+                        const now = new Date();
+                        const currentHour = now.getHours() + now.getMinutes() / 60;
+                        const position = (currentHour / 24) * 100;
+                        
+                        return (
+                          <div
+                            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
+                            style={{ left: `${position}%` }}
+                          >
+                            <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-red-500 rounded-full" />
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Leyenda */}
+          {/* Leyenda y estadísticas */}
           <Card>
             <CardContent className="p-4">
-              <div className="flex gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-300" />
-                  <span className="text-sm">Normal</span>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex gap-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-300" />
+                    <span className="text-sm font-medium">Normal</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-300" />
+                    <span className="text-sm font-medium">Nocturno</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-yellow-100 border-2 border-yellow-300" />
+                    <span className="text-sm font-medium">Partido</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-green-100 border-2 border-green-300" />
+                    <span className="text-sm font-medium">Flexible</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-300" />
-                  <span className="text-sm">Nocturno</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-yellow-100 border-2 border-yellow-300" />
-                  <span className="text-sm">Partido</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-green-100 border-2 border-green-300" />
-                  <span className="text-sm">Flexible</span>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  <span>Hora actual</span>
                 </div>
               </div>
             </CardContent>
