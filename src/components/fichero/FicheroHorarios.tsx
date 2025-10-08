@@ -299,10 +299,30 @@ export default function FicheroHorarios() {
     const colors = {
       normal: 'bg-blue-100 border-blue-300 text-blue-900',
       nocturno: 'bg-purple-100 border-purple-300 text-purple-900',
-      partido: 'bg-yellow-100 border-yellow-300 text-yellow-900',
-      flexible: 'bg-green-100 border-green-300 text-green-900'
+      partido: 'bg-pink-100 border-pink-300 text-pink-900',
+      flexible: 'bg-violet-100 border-violet-300 text-violet-900'
     };
     return colors[tipo as keyof typeof colors] || colors.normal;
+  };
+
+  // Calculate how many employees are working at each hour
+  const getEmployeeCountByHour = (hour: number) => {
+    return empleados.filter(empleado => {
+      const asignacion = empleadoTurnos.find(et => et.empleado_id === empleado.id);
+      if (!asignacion?.turno) return false;
+      
+      const turno = asignacion.turno;
+      const [entradaH] = turno.hora_entrada.split(':').map(Number);
+      const [salidaH] = turno.hora_salida.split(':').map(Number);
+      
+      // Check if this hour is within the shift
+      if (salidaH > entradaH) {
+        return hour >= entradaH && hour < salidaH;
+      } else {
+        // Night shift crossing midnight
+        return hour >= entradaH || hour < salidaH;
+      }
+    }).length;
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -388,17 +408,39 @@ export default function FicheroHorarios() {
                 <div className="min-w-[1400px]">
                   {/* Header de horas (0-23) */}
                   <div className="grid grid-cols-[220px_1fr] border-b sticky top-0 bg-background z-10">
-                    <div className="p-4 border-r font-semibold bg-muted/50 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Empleados ({empleados.length})
+                    <div className="p-3 border-r font-semibold bg-muted/50">
+                      <div className="text-sm">
+                        {currentDate.toLocaleDateString('es-ES', { 
+                          weekday: 'long', 
+                          day: 'numeric',
+                          month: 'long'
+                        })}
+                      </div>
                     </div>
                     <div className="grid grid-cols-24">
                       {hours.map(hour => (
                         <div 
                           key={hour} 
-                          className="p-2 border-r last:border-r-0 text-center text-sm font-medium bg-muted/50"
+                          className="p-1 border-r last:border-r-0 text-center text-xs font-medium bg-muted/50"
                         >
-                          {hour.toString().padStart(2, '0')}:00
+                          {hour}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Employee count row */}
+                  <div className="grid grid-cols-[220px_1fr] border-b bg-muted/30">
+                    <div className="p-3 border-r text-xs font-medium">
+                      Empleados trabajando
+                    </div>
+                    <div className="grid grid-cols-24">
+                      {hours.map(hour => (
+                        <div 
+                          key={hour} 
+                          className="p-2 border-r last:border-r-0 text-center text-sm font-semibold"
+                        >
+                          {getEmployeeCountByHour(hour) || '0'}
                         </div>
                       ))}
                     </div>
@@ -417,7 +459,7 @@ export default function FicheroHorarios() {
                         >
                           {/* Columna del empleado */}
                           <div className="p-3 border-r flex items-center gap-3">
-                            <Avatar className="h-9 w-9">
+                            <Avatar className="h-8 w-8">
                               <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${empleado.nombre} ${empleado.apellido}`} />
                               <AvatarFallback className="text-xs">
                                 {empleado.nombre[0]}{empleado.apellido[0]}
@@ -428,12 +470,9 @@ export default function FicheroHorarios() {
                                 {empleado.nombre} {empleado.apellido}
                               </p>
                               {turno && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <Clock className="h-3 w-3 text-muted-foreground" />
-                                  <p className="text-xs text-muted-foreground">
-                                    {turno.hora_entrada} - {turno.hora_salida}
-                                  </p>
-                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {turno.hora_entrada}
+                                </p>
                               )}
                             </div>
                           </div>
@@ -462,20 +501,20 @@ export default function FicheroHorarios() {
                               
                               return (
                                 <div
-                                  className={`absolute top-3 bottom-3 ${getTurnoColor(turno.tipo)} border-2 rounded-lg px-3 py-2 flex flex-col justify-center shadow-md hover:shadow-lg transition-all cursor-pointer z-10`}
+                                  className={`absolute top-3 bottom-3 ${getTurnoColor(turno.tipo)} border rounded px-2 py-1 flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer z-10`}
                                   style={{
                                     left: `${startPos}%`,
                                     width: `${duration}%`
                                   }}
                                   title={`${turno.nombre} - ${turno.tipo}`}
                                 >
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-xs font-semibold truncate">
-                                      {turno.nombre}
-                                    </span>
-                                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                                      {totalHours.toFixed(1)}h
-                                    </Badge>
+                                  <div className="text-center w-full">
+                                    <div className="text-xs font-semibold truncate">
+                                      {turno.hora_entrada} - {turno.hora_salida}
+                                    </div>
+                                    <div className="text-[10px] opacity-75 mt-0.5">
+                                      {totalHours.toFixed(1)}:00
+                                    </div>
                                   </div>
                                   <div className="text-xs font-medium mt-0.5">
                                     {turno.hora_entrada} - {turno.hora_salida}
