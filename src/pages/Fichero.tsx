@@ -27,6 +27,7 @@ import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
 import FicheroHorarios from "@/components/fichero/FicheroHorarios"
 import FicheroHistorial from "@/components/fichero/FicheroHistorial"
 import AttendanceReports from "@/components/admin/AttendanceReports"
+import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
 
 interface Empleado {
   id: string
@@ -60,7 +61,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas'>('fichaje')
 
   useEffect(() => {
     checkAuth()
@@ -426,6 +427,7 @@ export default function Fichero() {
         <div className="flex space-x-1 bg-white/60 backdrop-blur-sm rounded-lg p-1 overflow-x-auto">
           {[
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
+            { key: 'misfichadas', label: 'Mis Fichadas', icon: User },
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: FileText },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
@@ -521,6 +523,10 @@ export default function Fichero() {
               <FicheroManual onFichajeCreated={loadFichajes} />
             )}
           </div>
+        )}
+
+        {activeTab === 'misfichadas' && (
+          <EmployeeAttendanceView />
         )}
 
         {activeTab === 'estadisticas' && (
