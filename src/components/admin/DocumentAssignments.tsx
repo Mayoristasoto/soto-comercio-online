@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { UserPlus, Users, Calendar, Search } from "lucide-react";
+import { UserPlus, Users, Calendar, Search, FileText } from "lucide-react";
 
 interface Empleado {
   id: string;
@@ -60,6 +60,9 @@ export function DocumentAssignments() {
   const [selectedEmpleados, setSelectedEmpleados] = useState<string[]>([]);
   const [fechaLimite, setFechaLimite] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [selectedAsignacion, setSelectedAsignacion] = useState<Asignacion | null>(null);
+  const [firmaData, setFirmaData] = useState<{ firma_imagen: string; fecha_firma: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -192,6 +195,41 @@ export function DocumentAssignments() {
         ? prev.filter(id => id !== empleadoId)
         : [...prev, empleadoId]
     );
+  };
+
+  const handleViewSignedDocument = async (asignacion: Asignacion) => {
+    if (asignacion.firmas.length === 0) return;
+
+    try {
+      // Get firma data
+      const { data: firmaDoc, error: firmaError } = await supabase
+        .from('documentos_firmas')
+        .select('firma_id, fecha_firma')
+        .eq('documento_id', asignacion.documento_id)
+        .eq('empleado_id', asignacion.empleado_id)
+        .single();
+
+      if (firmaError) throw firmaError;
+
+      // Get firma image
+      const { data: firmaImg, error: imgError } = await supabase
+        .from('empleados_firmas')
+        .select('firma_data')
+        .eq('id', firmaDoc.firma_id)
+        .single();
+
+      if (imgError) throw imgError;
+
+      setFirmaData({
+        firma_imagen: firmaImg.firma_data,
+        fecha_firma: firmaDoc.fecha_firma
+      });
+      setSelectedAsignacion(asignacion);
+      setPreviewDialogOpen(true);
+    } catch (error) {
+      console.error('Error loading signature:', error);
+      toast.error('Error al cargar la firma');
+    }
   };
 
   const filteredEmpleados = empleados.filter(emp =>
@@ -419,12 +457,18 @@ export function DocumentAssignments() {
                   </TableCell>
                   <TableCell>
                     {asignacion.firmas.length > 0 ? (
-                      <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewSignedDocument(asignacion)}
+                        className="flex items-center gap-2"
+                      >
                         <Badge variant="default">Firmado</Badge>
+                        <FileText className="h-4 w-4" />
                         <span className="text-sm text-muted-foreground">
                           {new Date(asignacion.firmas[0].fecha_firma).toLocaleDateString()}
                         </span>
-                      </div>
+                      </Button>
                     ) : (
                       <Badge variant="outline">Sin firmar</Badge>
                     )}
@@ -435,6 +479,75 @@ export function DocumentAssignments() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Documento Firmado</DialogTitle>
+            <DialogDescription>
+              Vista previa del documento y firma digital del empleado
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAsignacion && (
+            <div className="space-y-6">
+              {/* Document Info */}
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg">{selectedAsignacion.documento.titulo}</h3>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>
+                    Empleado: {selectedAsignacion.empleado.nombre} {selectedAsignacion.empleado.apellido}
+                  </span>
+                  <Badge variant="outline">{selectedAsignacion.documento.tipo_documento}</Badge>
+                </div>
+              </div>
+
+              {/* Document Preview - TODO: Load actual document */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Vista Previa del Documento</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-muted rounded-lg p-4 text-center text-muted-foreground">
+                    <p>Vista previa del documento aquí</p>
+                    <p className="text-xs mt-2">
+                      El documento se puede visualizar si tiene una URL configurada
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Signature Section */}
+              {firmaData && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Firma Digital del Empleado</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="border rounded-lg p-4 bg-background">
+                      <img
+                        src={firmaData.firma_imagen}
+                        alt="Firma del empleado"
+                        className="max-w-md mx-auto"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Fecha y hora de firma:</span>
+                      <Badge variant="secondary">
+                        {new Date(firmaData.fecha_firma).toLocaleString('es-AR', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                        })}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
