@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FileSignature, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
-import SignaturePad from './SignaturePad'
+import { SignaturePad } from './SignaturePad'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -191,8 +191,26 @@ export default function EmployeeSignatureManager({ empleadoId }: EmployeeSignatu
             <DialogTitle>Crear Nueva Firma</DialogTitle>
           </DialogHeader>
           <SignaturePad
-            empleadoId={empleadoId}
-            onSignatureSaved={handleNuevaFirma}
+            onSave={async (firmaData) => {
+              try {
+                const { error } = await supabase
+                  .from('empleados_firmas')
+                  .insert({
+                    empleado_id: empleadoId,
+                    firma_data: firmaData,
+                    es_activa: false,
+                  })
+
+                if (error) throw error
+
+                toast.success('Firma guardada correctamente')
+                setShowSignaturePad(false)
+                await cargarFirmas()
+              } catch (error: any) {
+                console.error('Error guardando firma:', error)
+                toast.error(error.message || 'No se pudo guardar la firma')
+              }
+            }}
             onCancel={() => setShowSignaturePad(false)}
           />
         </DialogContent>
