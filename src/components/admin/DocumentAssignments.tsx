@@ -45,6 +45,9 @@ interface Asignacion {
   confirmacion: {
     fecha_confirmacion: string;
   }[];
+  firmas: {
+    fecha_firma: string;
+  }[];
 }
 
 export function DocumentAssignments() {
@@ -111,11 +114,19 @@ export function DocumentAssignments() {
             .select('fecha_confirmacion')
             .eq('asignacion_id', asignacion.id);
 
+          // Load firmas
+          const { data: firmas } = await supabase
+            .from('documentos_firmas')
+            .select('fecha_firma')
+            .eq('documento_id', asignacion.documento_id)
+            .eq('empleado_id', asignacion.empleado_id);
+
           return {
             ...asignacion,
             documento: documento || { titulo: '', tipo_documento: '' },
             empleado: empleado || { nombre: '', apellido: '', email: '' },
-            confirmacion: confirmaciones || []
+            confirmacion: confirmaciones || [],
+            firmas: firmas || []
           };
         })
       );
@@ -323,12 +334,12 @@ export function DocumentAssignments() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confirmadas</CardTitle>
+            <CardTitle className="text-sm font-medium">Firmadas</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {asignaciones.filter(a => a.confirmacion.length > 0).length}
+              {asignaciones.filter(a => a.firmas.length > 0).length}
             </div>
           </CardContent>
         </Card>
@@ -362,6 +373,7 @@ export function DocumentAssignments() {
                 <TableHead>Límite</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Confirmado</TableHead>
+                <TableHead>Firmado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -404,6 +416,18 @@ export function DocumentAssignments() {
                       ? new Date(asignacion.confirmacion[0].fecha_confirmacion).toLocaleDateString()
                       : '-'
                     }
+                  </TableCell>
+                  <TableCell>
+                    {asignacion.firmas.length > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default">Firmado</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(asignacion.firmas[0].fecha_firma).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ) : (
+                      <Badge variant="outline">Sin firmar</Badge>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
