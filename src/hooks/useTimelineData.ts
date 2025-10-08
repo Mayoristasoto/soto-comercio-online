@@ -110,15 +110,10 @@ export function useTimelineData(
     } catch (err: any) {
       console.error('Error fetching timeline data:', err);
       setError(err.message);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los datos del timeline',
-        variant: 'destructive',
-      });
     } finally {
       setLoading(false);
     }
-  }, [date, from, to, filters, toast]);
+  }, [date, from, to, JSON.stringify(filters)]);
 
   useEffect(() => {
     fetchData();
@@ -151,7 +146,7 @@ export function useTimelineData(
         variant: 'destructive',
       });
     }
-  }, [fetchData, toast]);
+  }, [toast]);
 
   return {
     employees,
