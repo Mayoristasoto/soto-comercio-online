@@ -9,32 +9,16 @@ import {
   Calendar, 
   Clock, 
   User, 
-  CheckCircle, 
-  XCircle,
-  Edit3,
+  ChevronDown,
+  ChevronRight,
   Save,
   X,
-  AlertCircle,
-  Users
+  Users,
+  Trash2
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
@@ -42,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 interface FichajeRecord {
   id: string
@@ -57,6 +46,8 @@ interface DayGroup {
   fecha: string
   fichajes: FichajeRecord[]
   totalHoras: number
+  entrada?: FichajeRecord
+  salida?: FichajeRecord
 }
 
 interface Empleado {
@@ -74,14 +65,12 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
   const [records, setRecords] = useState<DayGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<FichajeRecord | null>(null)
-  const [editForm, setEditForm] = useState({
-    timestamp: '',
-    observaciones: ''
-  })
   const [currentEmpleadoId, setCurrentEmpleadoId] = useState<string | null>(null)
   const [empleadoNombre, setEmpleadoNombre] = useState("")
   const [empleados, setEmpleados] = useState<Empleado[]>([])
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const [editingDay, setEditingDay] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<{[key: string]: {timestamp: string, observaciones: string}}>({})
   const [dateRange, setDateRange] = useState({
     from: format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'),
     to: format(new Date(), 'yyyy-MM-dd')
@@ -194,13 +183,19 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
       groups[fecha].push(fichaje)
     })
 
-    return Object.entries(groups).map(([fecha, fichajes]) => ({
-      fecha,
-      fichajes: fichajes.sort((a, b) => 
+    return Object.entries(groups).map(([fecha, fichajes]) => {
+      const sortedFichajes = fichajes.sort((a, b) => 
         new Date(a.timestamp_real).getTime() - new Date(b.timestamp_real).getTime()
-      ),
-      totalHoras: calculateDayHours(fichajes)
-    })).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      )
+      
+      return {
+        fecha,
+        fichajes: sortedFichajes,
+        totalHoras: calculateDayHours(sortedFichajes),
+        entrada: sortedFichajes.find(f => f.tipo === 'entrada'),
+        salida: sortedFichajes.reverse().find(f => f.tipo === 'salida')
+      }
+    }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
   }
 
   const calculateDayHours = (fichajes: FichajeRecord[]): number => {
@@ -222,63 +217,65 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
     return Math.round(totalMinutes / 60 * 10) / 10
   }
 
-  const handleEditClick = (record: FichajeRecord) => {
-    setEditingRecord(record)
-    setEditForm({
-      timestamp: format(new Date(record.timestamp_real), "yyyy-MM-dd'T'HH:mm"),
-      observaciones: record.observaciones || ''
-    })
+  const toggleDay = (fecha: string) => {
+    const newExpanded = new Set(expandedDays)
+    if (newExpanded.has(fecha)) {
+      newExpanded.delete(fecha)
+    } else {
+      newExpanded.add(fecha)
+    }
+    setExpandedDays(newExpanded)
   }
 
-  const handleSaveEdit = async () => {
-    if (!editingRecord) return
+  const initEditForm = (dayGroup: DayGroup) => {
+    const formData: {[key: string]: {timestamp: string, observaciones: string}} = {}
+    dayGroup.fichajes.forEach(fichaje => {
+      formData[fichaje.id] = {
+        timestamp: format(new Date(fichaje.timestamp_real), "HH:mm"),
+        observaciones: fichaje.observaciones || ''
+      }
+    })
+    setEditForm(formData)
+    setEditingDay(dayGroup.fecha)
+  }
+
+  const handleSaveDay = async (dayGroup: DayGroup) => {
+    if (!isAdmin) return
 
     try {
-      const { error } = await supabase
-        .from('fichajes')
-        .update({
-          timestamp_real: new Date(editForm.timestamp).toISOString(),
-          observaciones: editForm.observaciones
-        })
-        .eq('id', editingRecord.id)
+      // Actualizar cada fichaje del día
+      for (const fichaje of dayGroup.fichajes) {
+        const formData = editForm[fichaje.id]
+        if (formData) {
+          const [hours, minutes] = formData.timestamp.split(':')
+          const updatedDate = new Date(dayGroup.fecha)
+          updatedDate.setHours(parseInt(hours), parseInt(minutes))
 
-      if (error) throw error
+          await supabase
+            .from('fichajes')
+            .update({
+              timestamp_real: updatedDate.toISOString(),
+              observaciones: formData.observaciones
+            })
+            .eq('id', fichaje.id)
+        }
+      }
 
       toast({
-        title: "Registro actualizado",
+        title: "Día actualizado",
         description: "Los cambios se guardaron correctamente",
       })
 
-      setEditingRecord(null)
+      setEditingDay(null)
       loadRecords()
     } catch (error) {
-      console.error('Error actualizando registro:', error)
+      console.error('Error actualizando día:', error)
       toast({
         title: "Error",
-        description: "No se pudo actualizar el registro",
+        description: "No se pudo actualizar el día",
         variant: "destructive"
       })
     }
-  }
-
-  const getTypeIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'entrada': return <CheckCircle className="h-4 w-4 text-green-600" />
-      case 'salida': return <XCircle className="h-4 w-4 text-red-600" />
-      default: return <Clock className="h-4 w-4 text-yellow-600" />
-    }
-  }
-
-  const getTypeBadge = (tipo: string) => {
-    const configs = {
-      entrada: { label: 'Entrada', variant: 'default' as const },
-      salida: { label: 'Salida', variant: 'destructive' as const },
-      pausa_inicio: { label: 'Pausa', variant: 'secondary' as const },
-      pausa_fin: { label: 'Fin Pausa', variant: 'outline' as const }
-    }
-    
-    const config = configs[tipo as keyof typeof configs] || { label: tipo, variant: 'secondary' as const }
-    return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
   if (loading) {
@@ -291,15 +288,15 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <User className="h-5 w-5" />
+            <Clock className="h-5 w-5" />
             <span>Informe de Fichadas</span>
           </CardTitle>
           <CardDescription>
-            Vista unificada de todas las fichadas por día
+            Registro de entradas y salidas
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -308,7 +305,7 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
             <div>
               <label className="text-sm font-medium flex items-center space-x-2 mb-2">
                 <Users className="h-4 w-4" />
-                <span>Seleccionar Empleado</span>
+                <span>Empleado</span>
               </label>
               <Select
                 value={currentEmpleadoId || undefined}
@@ -334,14 +331,6 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
             </div>
           )}
 
-          {/* Mostrar empleado actual */}
-          {empleadoNombre && (
-            <div className="bg-muted/50 p-3 rounded-lg">
-              <p className="text-sm text-muted-foreground">Viendo fichadas de:</p>
-              <p className="font-medium">{empleadoNombre}</p>
-            </div>
-          )}
-
           {/* Filtros de fecha */}
           <div className="flex gap-4">
             <div className="flex-1">
@@ -361,138 +350,184 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
               />
             </div>
           </div>
-
-          {/* Registros agrupados por día */}
-          <div className="space-y-6">
-            {records.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No hay registros en el rango de fechas seleccionado
-              </div>
-            ) : (
-              records.map((dayGroup) => (
-                <Card key={dayGroup.fecha}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4" />
-                        <CardTitle className="text-lg">
-                          {format(new Date(dayGroup.fecha), "EEEE, d 'de' MMMM yyyy", { locale: es })}
-                        </CardTitle>
-                      </div>
-                      <Badge variant="outline">
-                        {dayGroup.totalHoras}h trabajadas
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Hora</TableHead>
-                          <TableHead>Estado</TableHead>
-                          <TableHead>Confianza</TableHead>
-                          <TableHead>Observaciones</TableHead>
-                          {isAdmin && <TableHead>Acciones</TableHead>}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {dayGroup.fichajes.map((fichaje) => (
-                          <TableRow key={fichaje.id}>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                {getTypeIcon(fichaje.tipo)}
-                                {getTypeBadge(fichaje.tipo)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {format(new Date(fichaje.timestamp_real), 'HH:mm:ss')}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={fichaje.estado === 'valido' ? 'default' : 'destructive'}>
-                                {fichaje.estado}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {fichaje.confianza_facial ? 
-                                `${(fichaje.confianza_facial * 100).toFixed(1)}%` : 
-                                'N/A'
-                              }
-                            </TableCell>
-                            <TableCell>
-                              <div className="max-w-xs truncate text-sm text-muted-foreground">
-                                {fichaje.observaciones || '-'}
-                              </div>
-                            </TableCell>
-                            {isAdmin && (
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleEditClick(fichaje)}
-                                >
-                                  <Edit3 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
         </CardContent>
       </Card>
 
-      {/* Modal de edición */}
-      <Dialog open={editingRecord !== null} onOpenChange={() => setEditingRecord(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Fichada</DialogTitle>
-            <DialogDescription>
-              Modificar registro de fichada y agregar observaciones
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Fecha y hora</label>
-              <Input
-                type="datetime-local"
-                value={editForm.timestamp}
-                onChange={(e) => setEditForm(prev => ({ ...prev, timestamp: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Observaciones</label>
-              <Textarea
-                placeholder="Agregar observaciones sobre este registro..."
-                value={editForm.observaciones}
-                onChange={(e) => setEditForm(prev => ({ ...prev, observaciones: e.target.value }))}
-                rows={4}
-              />
-            </div>
-
-            <div className="flex space-x-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setEditingRecord(null)}
+      {/* Lista de días */}
+      <div className="space-y-2">
+        {records.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8 text-muted-foreground">
+              No hay registros en el rango seleccionado
+            </CardContent>
+          </Card>
+        ) : (
+          records.map((dayGroup) => {
+            const isEditing = editingDay === dayGroup.fecha
+            const isExpanded = expandedDays.has(dayGroup.fecha)
+            
+            return (
+              <Collapsible
+                key={dayGroup.fecha}
+                open={isExpanded}
+                onOpenChange={() => toggleDay(dayGroup.fecha)}
               >
-                <X className="h-4 w-4 mr-2" />
-                Cancelar
-              </Button>
-              <Button onClick={handleSaveEdit}>
-                <Save className="h-4 w-4 mr-2" />
-                Guardar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="py-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                          <div className="flex items-center space-x-2">
+                            <div className="flex flex-col items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
+                              <span className="text-2xl font-bold text-primary">
+                                {format(new Date(dayGroup.fecha), 'd')}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(dayGroup.fecha), 'MMM', { locale: es })}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium">
+                                {format(new Date(dayGroup.fecha), 'EEEE', { locale: es })}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {empleadoNombre}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">
+                              {dayGroup.entrada && format(new Date(dayGroup.entrada.timestamp_real), 'HH:mm')} - {dayGroup.salida && format(new Date(dayGroup.salida.timestamp_real), 'HH:mm')}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="font-mono">
+                            {dayGroup.totalHoras}h
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 space-y-3">
+                      {/* Fichajes del día */}
+                      <div className="space-y-2">
+                        {dayGroup.fichajes.map((fichaje) => {
+                          const fichajeForm = editForm[fichaje.id] || {
+                            timestamp: format(new Date(fichaje.timestamp_real), "HH:mm"),
+                            observaciones: fichaje.observaciones || ''
+                          }
+                          
+                          return (
+                            <div key={fichaje.id} className="bg-muted/30 rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Badge variant={fichaje.tipo === 'entrada' ? 'default' : 'destructive'}>
+                                  {fichaje.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                                </Badge>
+                                
+                                {isEditing ? (
+                                  <div className="flex items-center space-x-2">
+                                    <Input
+                                      type="time"
+                                      value={fichajeForm.timestamp}
+                                      onChange={(e) => {
+                                        setEditForm(prev => ({
+                                          ...prev,
+                                          [fichaje.id]: {
+                                            ...prev[fichaje.id],
+                                            timestamp: e.target.value
+                                          }
+                                        }))
+                                      }}
+                                      className="w-28"
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="font-mono font-medium">
+                                    {format(new Date(fichaje.timestamp_real), 'HH:mm')}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Observaciones */}
+                              {(isEditing || fichaje.observaciones) && (
+                                <div>
+                                  {isEditing ? (
+                                    <Textarea
+                                      placeholder="Observaciones..."
+                                      value={fichajeForm.observaciones}
+                                      onChange={(e) => {
+                                        setEditForm(prev => ({
+                                          ...prev,
+                                          [fichaje.id]: {
+                                            ...prev[fichaje.id],
+                                            observaciones: e.target.value
+                                          }
+                                        }))
+                                      }}
+                                      rows={2}
+                                      className="text-sm"
+                                    />
+                                  ) : fichaje.observaciones ? (
+                                    <p className="text-sm text-muted-foreground border-l-2 border-muted-foreground/20 pl-3">
+                                      {fichaje.observaciones}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      
+                      {/* Botones de acción (solo admin) */}
+                      {isAdmin && (
+                        <div className="flex justify-end space-x-2 pt-2 border-t">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingDay(null)}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Cancelar
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleSaveDay(dayGroup)}
+                              >
+                                <Save className="h-4 w-4 mr-2" />
+                                Guardar
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => initEditForm(dayGroup)}
+                            >
+                              Editar día
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            )
+          })
+        )}
+      </div>
     </div>
   )
 }
