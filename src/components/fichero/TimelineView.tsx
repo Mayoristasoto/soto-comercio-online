@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AlertTriangle, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Filter, Users } from 'lucide-react';
 import { ShiftDetailModal } from './ShiftDetailModal';
 import { useTimelineData } from '@/hooks/useTimelineData';
 import { detectOverlaps, getShiftBlocks, hashStringToColor } from '@/lib/timelineUtils';
@@ -76,6 +76,42 @@ export function TimelineView({
       return total + (hours > 0 ? hours : hours + 24);
     }, 0);
   };
+
+  // Calculate employees working at each hour
+  const calculateEmployeesPerHour = () => {
+    const employeesPerHour: number[] = Array(hours.length).fill(0);
+    
+    employees.forEach((employee) => {
+      const employeeShifts = shifts.filter(s => s.employee_id === employee.id);
+      employeeShifts.forEach((shift) => {
+        const [startH, startM] = shift.start_time.split(':').map(Number);
+        const [endH, endM] = shift.end_time.split(':').map(Number);
+        
+        hours.forEach((hour, index) => {
+          const hourStart = fromHour + index;
+          const hourEnd = hourStart + 1;
+          
+          // Check if shift covers this hour
+          const shiftStartMinutes = startH * 60 + startM;
+          const shiftEndMinutes = endH * 60 + endM;
+          const hourStartMinutes = hourStart * 60;
+          const hourEndMinutes = hourEnd * 60;
+          
+          const isWorking = shiftEndMinutes >= shiftStartMinutes
+            ? (shiftStartMinutes < hourEndMinutes && shiftEndMinutes > hourStartMinutes)
+            : (shiftStartMinutes < hourEndMinutes || shiftEndMinutes > hourStartMinutes);
+          
+          if (isWorking) {
+            employeesPerHour[index]++;
+          }
+        });
+      });
+    });
+    
+    return employeesPerHour;
+  };
+
+  const employeesPerHour = calculateEmployeesPerHour();
 
   if (loading) {
     return (
@@ -151,6 +187,29 @@ export function TimelineView({
                       className="p-2 border-r last:border-r-0 text-center text-xs font-medium"
                     >
                       {hour.toString().padStart(2, '0')}:00
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Employee Count Row */}
+              <div className="grid grid-cols-[200px_1fr] border-b bg-blue-50 dark:bg-blue-950/20 sticky top-[49px] z-10">
+                <div className="p-2 border-r text-xs font-semibold flex items-center">
+                  <Users className="h-3 w-3 mr-1" />
+                  Empleados activos
+                </div>
+                <div className="grid" style={{ gridTemplateColumns: `repeat(${hours.length}, minmax(60px, 1fr))` }}>
+                  {employeesPerHour.map((count, index) => (
+                    <div 
+                      key={index}
+                      className="p-2 border-r last:border-r-0 text-center"
+                    >
+                      <Badge 
+                        variant={count === 0 ? "outline" : "default"}
+                        className="text-xs px-2 py-0.5"
+                      >
+                        {count}
+                      </Badge>
                     </div>
                   ))}
                 </div>

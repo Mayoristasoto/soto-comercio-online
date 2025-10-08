@@ -84,7 +84,7 @@ export default function FicheroHorarios() {
   });
 
   const [asignacionData, setAsignacionData] = useState({
-    empleado_id: '',
+    empleado_ids: [] as string[], // Cambiado para soportar múltiples empleados
     turno_id: '',
     fecha_inicio: new Date().toISOString().split('T')[0]
   });
@@ -206,34 +206,46 @@ export default function FicheroHorarios() {
   const handleSubmitAsignacion = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (asignacionData.empleado_ids.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debe seleccionar al menos un empleado",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      // Desactivar asignación anterior si existe
-      await supabase
-        .from('empleado_turnos')
-        .update({ activo: false, fecha_fin: new Date().toISOString().split('T')[0] })
-        .eq('empleado_id', asignacionData.empleado_id)
-        .eq('activo', true);
+      // Asignar el turno a cada empleado seleccionado
+      for (const empleadoId of asignacionData.empleado_ids) {
+        // Desactivar asignación anterior si existe
+        await supabase
+          .from('empleado_turnos')
+          .update({ activo: false, fecha_fin: new Date().toISOString().split('T')[0] })
+          .eq('empleado_id', empleadoId)
+          .eq('activo', true);
 
-      // Crear nueva asignación
-      const { error } = await supabase
-        .from('empleado_turnos')
-        .insert([{
-          empleado_id: asignacionData.empleado_id,
-          turno_id: asignacionData.turno_id,
-          fecha_inicio: asignacionData.fecha_inicio,
-          activo: true
-        }]);
+        // Crear nueva asignación
+        const { error } = await supabase
+          .from('empleado_turnos')
+          .insert([{
+            empleado_id: empleadoId,
+            turno_id: asignacionData.turno_id,
+            fecha_inicio: asignacionData.fecha_inicio,
+            activo: true
+          }]);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
       
       toast({
         title: "Éxito",
-        description: "Horario asignado correctamente",
+        description: `Horario asignado a ${asignacionData.empleado_ids.length} empleado(s)`,
       });
 
       setAsignacionDialogOpen(false);
       setAsignacionData({
-        empleado_id: '',
+        empleado_ids: [],
         turno_id: '',
         fecha_inicio: new Date().toISOString().split('T')[0]
       });
@@ -609,28 +621,47 @@ export default function FicheroHorarios() {
                   Asignar Horario
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Asignar Horario a Empleado</DialogTitle>
+                  <DialogTitle>Asignar Horario a Empleados</DialogTitle>
                   <DialogDescription>
-                    Selecciona el empleado y el horario a asignar
+                    Selecciona uno o más empleados y el horario a asignar
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmitAsignacion} className="space-y-4">
                   <div>
-                    <Label htmlFor="empleado">Empleado</Label>
-                    <Select value={asignacionData.empleado_id} onValueChange={(value) => setAsignacionData({...asignacionData, empleado_id: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar empleado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {empleados.map((empleado) => (
-                          <SelectItem key={empleado.id} value={empleado.id}>
+                    <Label htmlFor="empleados">Empleados (mantén Ctrl/Cmd para seleccionar múltiples)</Label>
+                    <div className="border rounded-md p-2 max-h-48 overflow-y-auto space-y-1">
+                      {empleados.map((empleado) => (
+                        <div key={empleado.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`emp-${empleado.id}`}
+                            checked={asignacionData.empleado_ids.includes(empleado.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAsignacionData({
+                                  ...asignacionData,
+                                  empleado_ids: [...asignacionData.empleado_ids, empleado.id]
+                                });
+                              } else {
+                                setAsignacionData({
+                                  ...asignacionData,
+                                  empleado_ids: asignacionData.empleado_ids.filter(id => id !== empleado.id)
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={`emp-${empleado.id}`} className="text-sm cursor-pointer">
                             {empleado.nombre} {empleado.apellido} - {empleado.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {asignacionData.empleado_ids.length} empleado(s) seleccionado(s)
+                    </p>
                   </div>
 
                   <div>
