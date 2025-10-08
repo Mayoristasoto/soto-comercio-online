@@ -286,6 +286,68 @@ export type Database = {
         }
         Relationships: []
       }
+      documentos_firmas: {
+        Row: {
+          created_at: string
+          documento_id: string
+          empleado_id: string
+          fecha_firma: string
+          firma_id: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string
+          documento_id: string
+          empleado_id: string
+          fecha_firma?: string
+          firma_id: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string
+          documento_id?: string
+          empleado_id?: string
+          fecha_firma?: string
+          firma_id?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_firmas_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_obligatorios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_firmas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_firmas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_firmas_firma_id_fkey"
+            columns: ["firma_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_firmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos_obligatorios: {
         Row: {
           activo: boolean
@@ -811,6 +873,54 @@ export type Database = {
             foreignKeyName: "fk_empleados_datos_sensibles_empleado"
             columns: ["empleado_id"]
             isOneToOne: true
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleados_firmas: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          es_activa: boolean
+          fecha_creacion: string
+          firma_data: string
+          id: string
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          es_activa?: boolean
+          fecha_creacion?: string
+          firma_data: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          es_activa?: boolean
+          fecha_creacion?: string
+          firma_data?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleados_firmas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_firmas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_basic"
             referencedColumns: ["id"]
           },
