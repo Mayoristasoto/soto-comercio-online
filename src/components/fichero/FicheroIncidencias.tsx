@@ -17,7 +17,9 @@ import {
   XCircle,
   Calendar,
   AlertTriangle,
-  User
+  User,
+  Filter,
+  X
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -64,6 +66,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const [loading, setLoading] = useState(true)
   const [loadingTardios, setLoadingTardios] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [filtroActivo, setFiltroActivo] = useState<'todos' | 'llegada_tarde' | 'no_ficho' | 'exceso_descanso'>('todos')
   const [formData, setFormData] = useState({
     tipo: '' as 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | '',
     descripcion: '',
@@ -204,6 +207,13 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     }
   }
 
+  const fichajesFiltrados = fichajesToday.filter(fichaje => {
+    if (filtroActivo === 'todos') return true
+    if (filtroActivo === 'llegada_tarde') return fichaje.minutos_retraso > 0
+    // Para implementar los otros filtros necesitarías datos adicionales
+    return true
+  })
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -318,13 +328,81 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
       {/* Llegadas tardías de hoy */}
       <Card className="border-orange-200 bg-orange-50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center space-x-2">
-            <AlertTriangle className="h-5 w-5 text-orange-600" />
-            <span>Llegadas Tardías de Hoy</span>
-          </CardTitle>
-          <CardDescription>
-            Empleados que llegaron después de su horario programado
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                <span>Incidencias de Fichaje</span>
+              </CardTitle>
+              <CardDescription>
+                Filtre por tipo de incidencia para revisar el estado del equipo
+              </CardDescription>
+            </div>
+          </div>
+
+          {/* Filtros */}
+          <div className="flex flex-wrap gap-2 pt-4">
+            <Button
+              size="sm"
+              variant={filtroActivo === 'todos' ? 'default' : 'outline'}
+              onClick={() => setFiltroActivo('todos')}
+              className="flex items-center space-x-1"
+            >
+              {filtroActivo === 'todos' && <CheckCircle className="h-3 w-3" />}
+              <span>Todos</span>
+              <Badge variant="secondary" className="ml-1">{fichajesToday.length}</Badge>
+            </Button>
+
+            <Button
+              size="sm"
+              variant={filtroActivo === 'llegada_tarde' ? 'default' : 'outline'}
+              onClick={() => setFiltroActivo('llegada_tarde')}
+              className="flex items-center space-x-1"
+            >
+              {filtroActivo === 'llegada_tarde' && <CheckCircle className="h-3 w-3" />}
+              <Clock className="h-3 w-3" />
+              <span>Llegada Tarde</span>
+              <Badge variant="secondary" className="ml-1">
+                {fichajesToday.filter(f => f.minutos_retraso > 0).length}
+              </Badge>
+            </Button>
+
+            <Button
+              size="sm"
+              variant={filtroActivo === 'no_ficho' ? 'default' : 'outline'}
+              onClick={() => setFiltroActivo('no_ficho')}
+              className="flex items-center space-x-1"
+            >
+              {filtroActivo === 'no_ficho' && <CheckCircle className="h-3 w-3" />}
+              <XCircle className="h-3 w-3" />
+              <span>No Fichó</span>
+              <Badge variant="secondary" className="ml-1">0</Badge>
+            </Button>
+
+            <Button
+              size="sm"
+              variant={filtroActivo === 'exceso_descanso' ? 'default' : 'outline'}
+              onClick={() => setFiltroActivo('exceso_descanso')}
+              className="flex items-center space-x-1"
+            >
+              {filtroActivo === 'exceso_descanso' && <CheckCircle className="h-3 w-3" />}
+              <AlertCircle className="h-3 w-3" />
+              <span>Exceso Descanso</span>
+              <Badge variant="secondary" className="ml-1">0</Badge>
+            </Button>
+
+            {filtroActivo !== 'todos' && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setFiltroActivo('todos')}
+                className="text-muted-foreground"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Limpiar
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {loadingTardios ? (
@@ -333,16 +411,18 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                 <div key={i} className="h-16 bg-orange-200 rounded"></div>
               ))}
             </div>
-          ) : fichajesToday.length === 0 ? (
+          ) : fichajesFiltrados.length === 0 ? (
             <div className="text-center py-4">
               <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                Todos los empleados llegaron puntualmente hoy
+                {filtroActivo === 'todos' 
+                  ? 'No hay incidencias registradas hoy'
+                  : `No hay incidencias de tipo "${filtroActivo.replace('_', ' ')}"`}
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {fichajesToday.map((fichaje) => (
+              {fichajesFiltrados.map((fichaje) => (
                 <div key={fichaje.id} className="bg-white border border-orange-200 rounded-lg p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
