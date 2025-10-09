@@ -585,8 +585,27 @@ export default function FicheroFacialAuth({
 
         console.log('Audio recibido, tipo:', typeof audioBlob, 'tamaño:', audioBlob.size || audioBlob.byteLength || 'desconocido')
 
+        // Convertir la respuesta a Blob si es necesario
+        let blob: Blob
+        if (audioBlob instanceof Blob) {
+          blob = audioBlob
+        } else if (audioBlob instanceof ArrayBuffer) {
+          blob = new Blob([audioBlob], { type: 'audio/mpeg' })
+        } else {
+          // Si es otro tipo (como string base64), intentar convertir
+          console.error('Formato de audio inesperado:', typeof audioBlob)
+          toast({
+            title: "Error de formato",
+            description: "El formato del audio no es compatible",
+            variant: "destructive"
+          })
+          setReproducirAudio(false)
+          setNombreEmpleadoAudio('')
+          return
+        }
+
         // Reproducir audio
-        const audioUrl = URL.createObjectURL(new Blob([audioBlob], { type: 'audio/mpeg' }))
+        const audioUrl = URL.createObjectURL(blob)
         const audio = new Audio(audioUrl)
         
         audio.onloadeddata = () => {
