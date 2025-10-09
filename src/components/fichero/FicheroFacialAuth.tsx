@@ -532,7 +532,7 @@ export default function FicheroFacialAuth({
     return traducciones[emocion] || emocion
   }
 
-  // Reproducir mensaje de audio al completar fichaje usando Web Speech API
+  // Reproducir mensaje de audio al completar fichaje usando ElevenLabs TTS
   useEffect(() => {
     const reproducirMensaje = async () => {
       if (!reproducirAudio || !nombreEmpleadoAudio) return
@@ -550,14 +550,18 @@ export default function FicheroFacialAuth({
         // Reemplazar {nombre} con el nombre del empleado
         mensaje = mensaje.replace('{nombre}', nombreEmpleadoAudio)
 
-        console.log('Reproduciendo mensaje de audio con Web Speech:', mensaje)
+        console.log('Generando audio con ElevenLabs para mensaje:', mensaje)
 
-        // Verificar soporte de Web Speech API
-        if (!('speechSynthesis' in window)) {
-          console.error('Web Speech API no soportada en este navegador')
+        // Generar audio con ElevenLabs
+        const { data: audioBlob, error } = await supabase.functions.invoke('elevenlabs-tts', {
+          body: { text: mensaje }
+        })
+
+        if (error) {
+          console.error('Error generando audio con ElevenLabs:', error)
           toast({
-            title: "Audio no disponible",
-            description: "Tu navegador no soporta síntesis de voz",
+            title: "Error de audio",
+            description: "No se pudo generar el mensaje de voz",
             variant: "destructive"
           })
           setReproducirAudio(false)
@@ -565,31 +569,25 @@ export default function FicheroFacialAuth({
           return
         }
 
-        // Cancelar cualquier síntesis previa
-        window.speechSynthesis.cancel()
-
-        // Crear utterance para síntesis de voz
-        const utterance = new SpeechSynthesisUtterance(mensaje)
-        utterance.lang = 'es-ES' // Español
-        utterance.rate = 0.9 // Velocidad ligeramente más lenta para claridad
-        utterance.pitch = 1.0 // Tono normal
-        utterance.volume = 1.0 // Volumen máximo
-
-        utterance.onend = () => {
-          console.log('Audio completado')
+        // Reproducir audio
+        const audioUrl = URL.createObjectURL(new Blob([audioBlob], { type: 'audio/mpeg' }))
+        const audio = new Audio(audioUrl)
+        
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl)
           setReproducirAudio(false)
           setNombreEmpleadoAudio('')
         }
 
-        utterance.onerror = (event) => {
-          console.error('Error en síntesis de voz:', event)
+        audio.onerror = (err) => {
+          console.error('Error reproduciendo audio:', err)
+          URL.revokeObjectURL(audioUrl)
           setReproducirAudio(false)
           setNombreEmpleadoAudio('')
         }
 
-        // Reproducir
-        window.speechSynthesis.speak(utterance)
-        console.log('Síntesis de voz iniciada para:', nombreEmpleadoAudio)
+        await audio.play()
+        console.log('Reproduciendo mensaje de audio con ElevenLabs para:', nombreEmpleadoAudio)
       } catch (error) {
         console.error('Error reproduciendo mensaje:', error)
         setReproducirAudio(false)
