@@ -681,6 +681,11 @@ export default function KioscoCheckIn() {
                   <div className="text-lg text-gray-700 mb-4">
                     {getAccionTexto(ultimoTipoFichaje || 'entrada')}
                   </div>
+                  {config.emotionRecognitionEnabled && emocionDetectada && (
+                    <div className="text-6xl mb-4">
+                      {obtenerEmojiEmocion(emocionDetectada)}
+                    </div>
+                  )}
                   <div className="text-sm text-gray-600">
                     {registroExitoso.timestamp.toLocaleString('es-ES', {
                       weekday: 'long',
