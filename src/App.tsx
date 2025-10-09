@@ -40,6 +40,7 @@ import GondolasEdit from "./pages/GondolasEdit";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import KioscoCheckIn from "./pages/KioscoCheckIn";
+import Autogestion from "./pages/Autogestion";
 import PrintPreview from "./pages/PrintPreview";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,9 @@ const App = () => (
           
           {/* Kiosco Check-In Route */}
           <Route path="/kiosco" element={<KioscoCheckIn />} />
+          
+          {/* Autogestión Route */}
+          <Route path="/autogestion" element={<Autogestion />} />
           
           {/* Print Preview */}
           <Route path="/print-preview" element={<PrintPreview />} />

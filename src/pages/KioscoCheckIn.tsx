@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
+import { useNavigate } from "react-router-dom"
 
 interface EmpleadoBasico {
   id: string
@@ -43,6 +44,7 @@ interface AccionDisponible {
 export default function KioscoCheckIn() {
   const { toast } = useToast()
   const { config } = useFacialConfig()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [lastProcessTime, setLastProcessTime] = useState<number>(0) // Para prevenir múltiples procesamiento
@@ -189,7 +191,7 @@ export default function KioscoCheckIn() {
     }
     setLastProcessTime(now)
     
-    // Store recognized employee data and determine available actions
+    // Store recognized employee data and show action selection (Check-in / Otras consultas)
     if (empleadoId && empleadoData) {
       setRecognizedEmployee({ id: empleadoId, data: empleadoData, confidence: confianza })
       
@@ -198,22 +200,12 @@ export default function KioscoCheckIn() {
       setAccionesDisponibles(acciones)
       
       if (acciones.length === 0) {
-        // Ya completó su jornada
-        toast({
-          title: "Jornada completada",
-          description: `${empleadoData.nombre} ${empleadoData.apellido} ya registró su salida hoy`,
-          variant: "destructive",
-          duration: 5000,
-        })
+        // Ya completó su jornada, solo mostrar opción de otras consultas
+        setShowActionSelection(true)
         setShowFacialAuth(false)
-        resetKiosco()
-        return
-      } else if (acciones.length === 1) {
-        // Solo hay una acción disponible, ejecutarla automáticamente
-        await ejecutarAccionDirecta(acciones[0].tipo, empleadoId, empleadoData, confianza)
         return
       } else {
-        // Múltiples opciones, mostrar selección
+        // Mostrar selección de Check-in o Otras consultas
         setShowActionSelection(true)
         setShowFacialAuth(false)
         return
@@ -735,27 +727,43 @@ export default function KioscoCheckIn() {
                     {recognizedEmployee?.data.nombre} {recognizedEmployee?.data.apellido}
                   </div>
                   <p className="text-gray-600 mb-6">
-                    Seleccione el tipo de registro que desea realizar
+                    ¿Qué desea realizar?
                   </p>
                   
                   <div className="grid grid-cols-1 gap-4">
-                    {accionesDisponibles.map((accion) => {
-                      const IconComponent = accion.icon === 'Clock' ? Clock : 
-                                           accion.icon === 'LogOut' ? LogOut : 
-                                           accion.icon === 'Coffee' ? Coffee : Clock
-                      
-                      return (
-                        <button
-                          key={accion.tipo}
-                          onClick={() => ejecutarAccion(accion.tipo)}
-                          className={`${accion.color} text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2`}
-                          disabled={loading}
-                        >
-                          <IconComponent className="h-5 w-5" />
-                          <span>{accion.label}</span>
-                        </button>
-                      )
-                    })}
+                    {/* Botón Check-in - Solo si hay acciones disponibles */}
+                    {accionesDisponibles.length > 0 && (
+                      <button
+                        onClick={() => {
+                          // Si hay una sola acción, ejecutarla directamente
+                          if (accionesDisponibles.length === 1) {
+                            ejecutarAccion(accionesDisponibles[0].tipo)
+                          } else {
+                            // Si hay múltiples, mostrar sub-menú
+                            // Por ahora, mostrar todas las opciones
+                            const primerAccion = accionesDisponibles[0]
+                            ejecutarAccion(primerAccion.tipo)
+                          }
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
+                        disabled={loading}
+                      >
+                        <Clock className="h-6 w-6" />
+                        <span>Check-in / Check-out</span>
+                      </button>
+                    )}
+                    
+                    {/* Botón Otras Consultas */}
+                    <button
+                      onClick={() => {
+                        // Navegar a autogestión con el ID del empleado
+                        navigate(`/autogestion?empleado=${recognizedEmployee?.id}`)
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
+                    >
+                      <Settings className="h-6 w-6" />
+                      <span>Otras Consultas</span>
+                    </button>
                   </div>
                 </div>
 
