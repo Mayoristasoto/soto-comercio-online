@@ -46,6 +46,7 @@ export default function FicheroFacialAuth({
   const [countdown, setCountdown] = useState<number | null>(null)
   const [emocionMostrada, setEmocionMostrada] = useState<string | null>(null)
   const [reproducirAudio, setReproducirAudio] = useState(false)
+  const [nombreEmpleadoAudio, setNombreEmpleadoAudio] = useState<string>('')
 
   useEffect(() => {
     loadModels()
@@ -358,8 +359,11 @@ export default function FicheroFacialAuth({
           description: `${tipoFichaje.replace('_', ' ')} registrada para ${employeeName} con confianza ${(resultado.confidence * 100).toFixed(1)}%`,
         })
         
-        // Reproducir mensaje de audio
-        setReproducirAudio(true)
+        // Reproducir mensaje de audio solo en entrada (primer check-in)
+        if (tipoFichaje === 'entrada') {
+          setNombreEmpleadoAudio(employeeName)
+          setReproducirAudio(true)
+        }
         
         // Detener cámara después del éxito para evitar múltiples procesamiento
         stopCamera()
@@ -531,7 +535,7 @@ export default function FicheroFacialAuth({
   // Reproducir mensaje de audio al completar fichaje
   useEffect(() => {
     const reproducirMensaje = async () => {
-      if (!reproducirAudio) return
+      if (!reproducirAudio || !nombreEmpleadoAudio) return
 
       try {
         // Obtener mensaje configurado
@@ -541,7 +545,10 @@ export default function FicheroFacialAuth({
           .eq('clave', 'mensaje_audio_checkin')
           .single()
 
-        const mensaje = config?.valor || '¡Bienvenido! Tu fichaje ha sido registrado correctamente.'
+        let mensaje = config?.valor || '¡Bienvenido {nombre}! Tu fichaje ha sido registrado correctamente.'
+        
+        // Reemplazar {nombre} con el nombre del empleado
+        mensaje = mensaje.replace('{nombre}', nombreEmpleadoAudio)
 
         console.log('Generando audio para mensaje:', mensaje)
 
@@ -562,18 +569,20 @@ export default function FicheroFacialAuth({
         audio.onended = () => {
           URL.revokeObjectURL(audioUrl)
           setReproducirAudio(false)
+          setNombreEmpleadoAudio('')
         }
 
         await audio.play()
-        console.log('Reproduciendo mensaje de audio')
+        console.log('Reproduciendo mensaje de audio con nombre:', nombreEmpleadoAudio)
       } catch (error) {
         console.error('Error reproduciendo mensaje:', error)
         setReproducirAudio(false)
+        setNombreEmpleadoAudio('')
       }
     }
 
     reproducirMensaje()
-  }, [reproducirAudio])
+  }, [reproducirAudio, nombreEmpleadoAudio])
 
   const livenessCompleto = livenessCheck.blinkDetected && livenessCheck.movementDetected && livenessCheck.faceCount === 1
 
