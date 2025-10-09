@@ -40,6 +40,7 @@ import GondolasEdit from "./pages/GondolasEdit";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import KioscoCheckIn from "./pages/KioscoCheckIn";
+import PrintPreview from "./pages/PrintPreview";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,9 @@ const App = () => (
           
           {/* Kiosco Check-In Route */}
           <Route path="/kiosco" element={<KioscoCheckIn />} />
+          
+          {/* Print Preview */}
+          <Route path="/print-preview" element={<PrintPreview />} />
           
           {/* Rutas de compatibilidad que redirigen al nuevo sistema */}
           <Route path="/reconoce/auth" element={<Navigate to="/auth?redirect=/reconoce" replace />} />
