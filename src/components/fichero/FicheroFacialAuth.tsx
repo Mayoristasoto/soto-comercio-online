@@ -62,7 +62,8 @@ export default function FicheroFacialAuth({
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
         faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+        faceapi.nets.faceExpressionNet.loadFromUri('/models')
       ])
       setIsModelLoaded(true)
       console.log('Kiosco: ✅ Modelos cargados exitosamente')
@@ -272,16 +273,26 @@ export default function FicheroFacialAuth({
       console.log('Video ready state:', video.readyState)
       console.log('Video src object:', video.srcObject)
       
-      // Detectar emociones solo si está habilitado en la configuración
-      // No intentamos cargar el modelo de expresiones ya que no está disponible
+      // Detectar emociones si está habilitado en la configuración
       let detections
-      detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
-          inputSize: 416,
-          scoreThreshold: 0.5
-        }))
-        .withFaceLandmarks()
-        .withFaceDescriptors()
+      if (config.emotionRecognitionEnabled) {
+        detections = await faceapi
+          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+            inputSize: 416,
+            scoreThreshold: 0.5
+          }))
+          .withFaceLandmarks()
+          .withFaceDescriptors()
+          .withFaceExpressions()
+      } else {
+        detections = await faceapi
+          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+            inputSize: 416,
+            scoreThreshold: 0.5
+          }))
+          .withFaceLandmarks()
+          .withFaceDescriptors()
+      }
       
       console.log('Detections found:', detections.length)
       
@@ -312,8 +323,17 @@ export default function FicheroFacialAuth({
       
       const faceDescriptor = detections[0].descriptor
       
-      // Emoción no disponible actualmente (modelo no cargado)
+      // Detectar emoción si está habilitado
       let emocionDetectada = undefined
+      if (config.emotionRecognitionEnabled && detections[0].expressions) {
+        const expressions = detections[0].expressions as any
+        const emociones = Object.entries(expressions) as [string, number][]
+        const emocionPrincipal = emociones.reduce((max, current) => 
+          current[1] > max[1] ? current : max
+        )
+        emocionDetectada = emocionPrincipal[0]
+        console.log('Emoción detectada:', emocionDetectada, 'Confianza:', emocionPrincipal[1])
+      }
       
       // Comparar con rostro almacenado
       const resultado = await compararConRostroAlmacenado(faceDescriptor)
