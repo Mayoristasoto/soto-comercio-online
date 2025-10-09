@@ -20,8 +20,19 @@ import {
   Pause,
   Play,
   BarChart3,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { format, parseISO, differenceInMinutes } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -59,11 +70,28 @@ export default function FicheroHistorial() {
   })
   const [resumenEmpleados, setResumenEmpleados] = useState<EmpleadoResumen[]>([])
   const [mostrarResumen, setMostrarResumen] = useState(false)
+  const [fichajeAEliminar, setFichajeAEliminar] = useState<string | null>(null)
+  const [esAdmin, setEsAdmin] = useState(false)
 
   useEffect(() => {
+    verificarAdmin()
     cargarEmpleados()
     cargarFichajes()
   }, [])
+
+  const verificarAdmin = async () => {
+    try {
+      const { data: empleado } = await supabase
+        .from('empleados')
+        .select('rol')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single()
+
+      setEsAdmin(empleado?.rol === 'admin_rrhh')
+    } catch (error) {
+      console.error('Error verificando permisos:', error)
+    }
+  }
 
   useEffect(() => {
     cargarFichajes()
@@ -198,6 +226,36 @@ export default function FicheroHistorial() {
     })
 
     setResumenEmpleados(Array.from(empleadosMap.values()))
+  }
+
+  const eliminarFichaje = async () => {
+    if (!fichajeAEliminar) return
+
+    try {
+      const { error } = await supabase
+        .from('fichajes')
+        .delete()
+        .eq('id', fichajeAEliminar)
+
+      if (error) throw error
+
+      toast({
+        title: "Fichaje eliminado",
+        description: "El registro ha sido eliminado correctamente"
+      })
+
+      // Recargar fichajes
+      cargarFichajes()
+    } catch (error) {
+      console.error('Error eliminando fichaje:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el fichaje",
+        variant: "destructive"
+      })
+    } finally {
+      setFichajeAEliminar(null)
+    }
   }
 
   const exportarCSV = () => {
@@ -498,6 +556,7 @@ export default function FicheroHistorial() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Confianza</TableHead>
+                    {esAdmin && <TableHead className="text-right">Acciones</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -536,6 +595,18 @@ export default function FicheroHistorial() {
                           <span className="text-muted-foreground">N/A</span>
                         )}
                       </TableCell>
+                      {esAdmin && (
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setFichajeAEliminar(fichaje.id)}
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -544,6 +615,24 @@ export default function FicheroHistorial() {
           )}
         </CardContent>
       </Card>
+
+      {/* Diálogo de confirmación de eliminación */}
+      <AlertDialog open={fichajeAEliminar !== null} onOpenChange={(open) => !open && setFichajeAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar fichaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El registro de fichaje será eliminado permanentemente del sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={eliminarFichaje} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
