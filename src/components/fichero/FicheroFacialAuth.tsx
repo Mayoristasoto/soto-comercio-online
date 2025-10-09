@@ -557,6 +557,8 @@ export default function FicheroFacialAuth({
           body: { text: mensaje }
         })
 
+        console.log('Respuesta de ElevenLabs:', { hasData: !!audioBlob, error })
+
         if (error) {
           console.error('Error generando audio con ElevenLabs:', error)
           toast({
@@ -569,23 +571,48 @@ export default function FicheroFacialAuth({
           return
         }
 
+        if (!audioBlob) {
+          console.error('No se recibió audio de ElevenLabs')
+          toast({
+            title: "Error de audio",
+            description: "No se recibió el audio generado",
+            variant: "destructive"
+          })
+          setReproducirAudio(false)
+          setNombreEmpleadoAudio('')
+          return
+        }
+
+        console.log('Audio recibido, tipo:', typeof audioBlob, 'tamaño:', audioBlob.size || audioBlob.byteLength || 'desconocido')
+
         // Reproducir audio
         const audioUrl = URL.createObjectURL(new Blob([audioBlob], { type: 'audio/mpeg' }))
         const audio = new Audio(audioUrl)
         
+        audio.onloadeddata = () => {
+          console.log('Audio cargado correctamente, duración:', audio.duration)
+        }
+
         audio.onended = () => {
+          console.log('Audio terminó de reproducirse')
           URL.revokeObjectURL(audioUrl)
           setReproducirAudio(false)
           setNombreEmpleadoAudio('')
         }
 
         audio.onerror = (err) => {
-          console.error('Error reproduciendo audio:', err)
+          console.error('Error reproduciendo audio:', err, audio.error)
+          toast({
+            title: "Error de reproducción",
+            description: "No se pudo reproducir el audio",
+            variant: "destructive"
+          })
           URL.revokeObjectURL(audioUrl)
           setReproducirAudio(false)
           setNombreEmpleadoAudio('')
         }
 
+        console.log('Iniciando reproducción...')
         await audio.play()
         console.log('Reproduciendo mensaje de audio con ElevenLabs para:', nombreEmpleadoAudio)
       } catch (error) {
