@@ -272,32 +272,16 @@ export default function FicheroFacialAuth({
       console.log('Video ready state:', video.readyState)
       console.log('Video src object:', video.srcObject)
       
-      // Detectar emociones solo si el modelo de expresiones está cargado
+      // Detectar emociones solo si está habilitado en la configuración
+      // No intentamos cargar el modelo de expresiones ya que no está disponible
       let detections
-      const expressionsLoaded = (faceapi.nets.faceExpressionNet as any)?.isLoaded?.() === true
-      const canDetectEmotions = Boolean(config.emotionRecognitionEnabled && expressionsLoaded)
-
-      if (canDetectEmotions) {
-        detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
-            inputSize: 416,
-            scoreThreshold: 0.5
-          }))
-          .withFaceLandmarks()
-          .withFaceDescriptors()
-          .withFaceExpressions()
-      } else {
-        if (config.emotionRecognitionEnabled && !expressionsLoaded) {
-          console.warn('Kiosco: Emoción habilitada pero FaceExpressionNet no está cargado; omitiendo detección de emociones.')
-        }
-        detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
-            inputSize: 416,
-            scoreThreshold: 0.5
-          }))
-          .withFaceLandmarks()
-          .withFaceDescriptors()
-      }
+      detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+          inputSize: 416,
+          scoreThreshold: 0.5
+        }))
+        .withFaceLandmarks()
+        .withFaceDescriptors()
       
       console.log('Detections found:', detections.length)
       
@@ -328,17 +312,8 @@ export default function FicheroFacialAuth({
       
       const faceDescriptor = detections[0].descriptor
       
-      // Detectar emoción si está disponible
+      // Emoción no disponible actualmente (modelo no cargado)
       let emocionDetectada = undefined
-      if (config.emotionRecognitionEnabled && detections[0].expressions) {
-        const expressions = detections[0].expressions as any
-        const emociones = Object.entries(expressions) as [string, number][]
-        const emocionPrincipal = emociones.reduce((max, current) => 
-          current[1] > max[1] ? current : max
-        )
-        emocionDetectada = emocionPrincipal[0]
-        console.log('Emoción detectada:', emocionDetectada, 'Confianza:', emocionPrincipal[1])
-      }
       
       // Comparar con rostro almacenado
       const resultado = await compararConRostroAlmacenado(faceDescriptor)
