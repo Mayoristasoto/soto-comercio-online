@@ -32,7 +32,6 @@ import TrainingManagement from "@/components/admin/TrainingManagement"
 import PrizeManagement from "@/components/admin/PrizeManagement"
 import StaffOverview from "@/components/admin/StaffOverview"
 import { PuntualidadManager } from "@/components/admin/PuntualidadManager"
-import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
 
 interface DashboardStats {
   total_empleados: number
@@ -488,7 +487,7 @@ export default function AdminDashboard() {
 
       {/* Management Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-11 w-full">
+        <TabsList className="grid grid-cols-10 w-full">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="staff">Personal</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
@@ -500,7 +499,6 @@ export default function AdminDashboard() {
           <TabsTrigger value="puntualidad">Puntualidad</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="activity">Actividad</TabsTrigger>
-          <TabsTrigger value="configuracion">Configuración</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -702,12 +700,6 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="configuracion">
-          <div className="space-y-6">
-            <FacialRecognitionConfig />
-          </div>
         </TabsContent>
       </Tabs>
     </div>
