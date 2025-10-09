@@ -550,90 +550,86 @@ export default function FicheroFacialAuth({
         // Reemplazar {nombre} con el nombre del empleado
         mensaje = mensaje.replace('{nombre}', nombreEmpleadoAudio)
 
-        console.log('Generando audio con ElevenLabs para mensaje:', mensaje)
+        console.log('Generando audio para mensaje:', mensaje)
 
-        // Generar audio con ElevenLabs
-        const { data: audioBlob, error } = await supabase.functions.invoke('elevenlabs-tts', {
-          body: { text: mensaje }
-        })
-
-        console.log('Respuesta de ElevenLabs:', { hasData: !!audioBlob, error })
-
-        if (error) {
-          console.error('Error generando audio con ElevenLabs:', error)
-          toast({
-            title: "Error de audio",
-            description: "No se pudo generar el mensaje de voz",
-            variant: "destructive"
-          })
-          setReproducirAudio(false)
-          setNombreEmpleadoAudio('')
-          return
-        }
-
-        if (!audioBlob) {
-          console.error('No se recibió audio de ElevenLabs')
-          toast({
-            title: "Error de audio",
-            description: "No se recibió el audio generado",
-            variant: "destructive"
-          })
-          setReproducirAudio(false)
-          setNombreEmpleadoAudio('')
-          return
-        }
-
-        console.log('Audio recibido, tipo:', typeof audioBlob, 'tamaño:', audioBlob.size || audioBlob.byteLength || 'desconocido')
-
-        // Convertir la respuesta a Blob si es necesario
-        let blob: Blob
-        if (audioBlob instanceof Blob) {
-          blob = audioBlob
-        } else if (audioBlob instanceof ArrayBuffer) {
-          blob = new Blob([audioBlob], { type: 'audio/mpeg' })
-        } else {
-          // Si es otro tipo (como string base64), intentar convertir
-          console.error('Formato de audio inesperado:', typeof audioBlob)
-          toast({
-            title: "Error de formato",
-            description: "El formato del audio no es compatible",
-            variant: "destructive"
-          })
-          setReproducirAudio(false)
-          setNombreEmpleadoAudio('')
-          return
-        }
-
-        // Reproducir audio
-        const audioUrl = URL.createObjectURL(blob)
-        const audio = new Audio(audioUrl)
+        // Intentar primero con ElevenLabs, si falla usar Web Speech API
+        let audioGenerado = false
         
-        audio.onloadeddata = () => {
-          console.log('Audio cargado correctamente, duración:', audio.duration)
-        }
-
-        audio.onended = () => {
-          console.log('Audio terminó de reproducirse')
-          URL.revokeObjectURL(audioUrl)
-          setReproducirAudio(false)
-          setNombreEmpleadoAudio('')
-        }
-
-        audio.onerror = (err) => {
-          console.error('Error reproduciendo audio:', err, audio.error)
-          toast({
-            title: "Error de reproducción",
-            description: "No se pudo reproducir el audio",
-            variant: "destructive"
+        try {
+          const { data: audioBlob, error } = await supabase.functions.invoke('elevenlabs-tts', {
+            body: { text: mensaje }
           })
-          URL.revokeObjectURL(audioUrl)
-          setReproducirAudio(false)
-          setNombreEmpleadoAudio('')
+
+          if (!error && audioBlob) {
+            console.log('Audio recibido de ElevenLabs')
+            
+            // Convertir la respuesta a Blob si es necesario
+            let blob: Blob
+            if (audioBlob instanceof Blob) {
+              blob = audioBlob
+            } else if (audioBlob instanceof ArrayBuffer) {
+              blob = new Blob([audioBlob], { type: 'audio/mpeg' })
+            } else {
+              throw new Error('Formato inesperado')
+            }
+
+            // Reproducir audio
+            const audioUrl = URL.createObjectURL(blob)
+            const audio = new Audio(audioUrl)
+            
+            audio.onended = () => {
+              URL.revokeObjectURL(audioUrl)
+              setReproducirAudio(false)
+              setNombreEmpleadoAudio('')
+            }
+
+            audio.onerror = () => {
+              URL.revokeObjectURL(audioUrl)
+              throw new Error('Error reproduciendo')
+            }
+
+            await audio.play()
+            audioGenerado = true
+            console.log('Reproduciendo con ElevenLabs')
+          } else {
+            throw new Error(error?.message || 'No se recibió audio')
+          }
+        } catch (elevenLabsError) {
+          console.warn('ElevenLabs no disponible, usando Web Speech API:', elevenLabsError)
         }
 
-        console.log('Iniciando reproducción...')
-        await audio.play()
-        console.log('Reproduciendo mensaje de audio con ElevenLabs para:', nombreEmpleadoAudio)
+        // Fallback a Web Speech API si ElevenLabs falla
+        if (!audioGenerado) {
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(mensaje)
+            utterance.lang = 'es-ES'
+            utterance.rate = 0.9
+            utterance.pitch = 1.0
+            
+            utterance.onend = () => {
+              setReproducirAudio(false)
+              setNombreEmpleadoAudio('')
+            }
+            
+            utterance.onerror = (error) => {
+              console.error('Error con Web Speech API:', error)
+              setReproducirAudio(false)
+              setNombreEmpleadoAudio('')
+            }
+            
+            window.speechSynthesis.speak(utterance)
+            console.log('Reproduciendo con Web Speech API')
+          } else {
+            console.error('Speech Synthesis no disponible')
+            toast({
+              title: "Audio no disponible",
+              description: "El navegador no soporta síntesis de voz",
+              variant: "destructive"
+            })
+            setReproducirAudio(false)
+            setNombreEmpleadoAudio('')
+          }
+        }
       } catch (error) {
         console.error('Error reproduciendo mensaje:', error)
         setReproducirAudio(false)
