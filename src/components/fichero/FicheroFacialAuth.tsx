@@ -44,6 +44,7 @@ export default function FicheroFacialAuth({
     faceCount: 0
   })
   const [countdown, setCountdown] = useState<number | null>(null)
+  const [emocionMostrada, setEmocionMostrada] = useState<string | null>(null)
 
   useEffect(() => {
     loadModels()
@@ -333,6 +334,11 @@ export default function FicheroFacialAuth({
         )
         emocionDetectada = emocionPrincipal[0]
         console.log('Emoción detectada:', emocionDetectada, 'Confianza:', emocionPrincipal[1])
+        
+        // Mostrar emoción durante 2 segundos
+        setEmocionMostrada(emocionDetectada)
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        setEmocionMostrada(null)
       }
       
       // Comparar con rostro almacenado
@@ -492,6 +498,32 @@ export default function FicheroFacialAuth({
     }
   }
 
+  const obtenerEmojiEmocion = (emocion: string): string => {
+    const emojis: Record<string, string> = {
+      'happy': '😊',
+      'sad': '😢',
+      'angry': '😠',
+      'surprised': '😲',
+      'neutral': '😐',
+      'fearful': '😨',
+      'disgusted': '🤢'
+    }
+    return emojis[emocion] || '😊'
+  }
+
+  const traducirEmocion = (emocion: string): string => {
+    const traducciones: Record<string, string> = {
+      'happy': 'Feliz',
+      'sad': 'Triste',
+      'angry': 'Enojado',
+      'surprised': 'Sorprendido',
+      'neutral': 'Neutral',
+      'fearful': 'Asustado',
+      'disgusted': 'Disgustado'
+    }
+    return traducciones[emocion] || emocion
+  }
+
   const livenessCompleto = livenessCheck.blinkDetected && livenessCheck.movementDetected && livenessCheck.faceCount === 1
 
   return (
@@ -526,6 +558,18 @@ export default function FicheroFacialAuth({
             {countdown && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
                 <div className="text-white text-6xl font-bold">{countdown}</div>
+              </div>
+            )}
+            
+            {/* Emotion Overlay */}
+            {emocionMostrada && (
+              <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-lg">
+                <div className="text-9xl mb-4 animate-pulse">
+                  {obtenerEmojiEmocion(emocionMostrada)}
+                </div>
+                <div className="text-white text-2xl font-semibold capitalize">
+                  {traducirEmocion(emocionMostrada)}
+                </div>
               </div>
             )}
             
