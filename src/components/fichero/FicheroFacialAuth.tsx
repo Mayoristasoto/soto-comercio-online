@@ -272,9 +272,12 @@ export default function FicheroFacialAuth({
       console.log('Video ready state:', video.readyState)
       console.log('Video src object:', video.srcObject)
       
-      // Detectar emociones si está habilitado en la configuración
+      // Detectar emociones solo si el modelo de expresiones está cargado
       let detections
-      if (config.emotionRecognitionEnabled) {
+      const expressionsLoaded = (faceapi.nets.faceExpressionNet as any)?.isLoaded?.() === true
+      const canDetectEmotions = Boolean(config.emotionRecognitionEnabled && expressionsLoaded)
+
+      if (canDetectEmotions) {
         detections = await faceapi
           .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
             inputSize: 416,
@@ -284,6 +287,9 @@ export default function FicheroFacialAuth({
           .withFaceDescriptors()
           .withFaceExpressions()
       } else {
+        if (config.emotionRecognitionEnabled && !expressionsLoaded) {
+          console.warn('Kiosco: Emoción habilitada pero FaceExpressionNet no está cargado; omitiendo detección de emociones.')
+        }
         detections = await faceapi
           .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
             inputSize: 416,
