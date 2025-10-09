@@ -532,7 +532,7 @@ export default function FicheroFacialAuth({
     return traducciones[emocion] || emocion
   }
 
-  // Reproducir mensaje de audio al completar fichaje
+  // Reproducir mensaje de audio al completar fichaje usando Web Speech API
   useEffect(() => {
     const reproducirMensaje = async () => {
       if (!reproducirAudio || !nombreEmpleadoAudio) return
@@ -550,30 +550,46 @@ export default function FicheroFacialAuth({
         // Reemplazar {nombre} con el nombre del empleado
         mensaje = mensaje.replace('{nombre}', nombreEmpleadoAudio)
 
-        console.log('Generando audio para mensaje:', mensaje)
+        console.log('Reproduciendo mensaje de audio con Web Speech:', mensaje)
 
-        // Generar audio con TTS
-        const { data: audioBlob, error } = await supabase.functions.invoke('text-to-speech', {
-          body: { text: mensaje, voice: 'alloy' }
-        })
-
-        if (error) {
-          console.error('Error generando audio:', error)
+        // Verificar soporte de Web Speech API
+        if (!('speechSynthesis' in window)) {
+          console.error('Web Speech API no soportada en este navegador')
+          toast({
+            title: "Audio no disponible",
+            description: "Tu navegador no soporta síntesis de voz",
+            variant: "destructive"
+          })
+          setReproducirAudio(false)
+          setNombreEmpleadoAudio('')
           return
         }
 
-        // Reproducir audio
-        const audioUrl = URL.createObjectURL(new Blob([audioBlob], { type: 'audio/mpeg' }))
-        const audio = new Audio(audioUrl)
-        
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl)
+        // Cancelar cualquier síntesis previa
+        window.speechSynthesis.cancel()
+
+        // Crear utterance para síntesis de voz
+        const utterance = new SpeechSynthesisUtterance(mensaje)
+        utterance.lang = 'es-ES' // Español
+        utterance.rate = 0.9 // Velocidad ligeramente más lenta para claridad
+        utterance.pitch = 1.0 // Tono normal
+        utterance.volume = 1.0 // Volumen máximo
+
+        utterance.onend = () => {
+          console.log('Audio completado')
           setReproducirAudio(false)
           setNombreEmpleadoAudio('')
         }
 
-        await audio.play()
-        console.log('Reproduciendo mensaje de audio con nombre:', nombreEmpleadoAudio)
+        utterance.onerror = (event) => {
+          console.error('Error en síntesis de voz:', event)
+          setReproducirAudio(false)
+          setNombreEmpleadoAudio('')
+        }
+
+        // Reproducir
+        window.speechSynthesis.speak(utterance)
+        console.log('Síntesis de voz iniciada para:', nombreEmpleadoAudio)
       } catch (error) {
         console.error('Error reproduciendo mensaje:', error)
         setReproducirAudio(false)
