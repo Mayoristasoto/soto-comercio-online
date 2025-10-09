@@ -17,8 +17,10 @@ import {
   Eye,
   EyeOff,
   MessageSquare,
-  TestTube
+  TestTube,
+  Volume2
 } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface FicheroConfiguracionProps {
@@ -39,6 +41,7 @@ interface ConfiguracionSistema {
   whatsapp_api_endpoint: string
   whatsapp_notificaciones_activas: boolean
   whatsapp_retraso_minutos: number
+  mensaje_audio_checkin: string
 }
 
 export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionProps) {
@@ -53,7 +56,8 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     whatsapp_api_token: 'c73f7a8b69dd4e2c9f218d1376b1fa07',
     whatsapp_api_endpoint: 'https://api.mayoristasoto.online/api/messages/send',
     whatsapp_notificaciones_activas: true,
-    whatsapp_retraso_minutos: 15
+    whatsapp_retraso_minutos: 15,
+    mensaje_audio_checkin: '¡Bienvenido! Tu fichaje ha sido registrado correctamente.'
   })
   const [ubicacionActual, setUbicacionActual] = useState<{lat: number, lng: number} | null>(null)
   const [tieneDescriptorFacial, setTieneDescriptorFacial] = useState(false)
@@ -82,7 +86,8 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'whatsapp_api_token',
           'whatsapp_api_endpoint',
           'whatsapp_notificaciones_activas',
-          'whatsapp_retraso_minutos'
+          'whatsapp_retraso_minutos',
+          'mensaje_audio_checkin'
         ])
 
       if (error) throw error
@@ -188,6 +193,10 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'whatsapp_retraso_minutos',
           valor: configuracion.whatsapp_retraso_minutos.toString()
+        },
+        {
+          clave: 'mensaje_audio_checkin',
+          valor: configuracion.mensaje_audio_checkin
         }
       ]
 
@@ -318,6 +327,41 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           Gestione la configuración del sistema de fichado y sus datos personales
         </p>
       </div>
+
+      {/* Configuración de Mensaje de Audio */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Volume2 className="h-5 w-5" />
+            <span>Mensaje de Audio Post-Check-in</span>
+          </CardTitle>
+          <CardDescription>
+            Configure el mensaje que se reproducirá automáticamente después de cada fichaje exitoso
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="mensaje_audio">
+              Mensaje de bienvenida
+            </Label>
+            <Textarea
+              id="mensaje_audio"
+              value={configuracion.mensaje_audio_checkin}
+              onChange={(e) => setConfiguracion({ 
+                ...configuracion, 
+                mensaje_audio_checkin: e.target.value 
+              })}
+              placeholder="Escribe el mensaje que quieres que escuchen los empleados..."
+              rows={3}
+              className="resize-none"
+              disabled={empleado.rol !== 'admin_rrhh'}
+            />
+            <p className="text-sm text-muted-foreground">
+              Este mensaje será convertido a audio y reproducido automáticamente después de cada fichaje exitoso usando tecnología de síntesis de voz.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Configuración de Reconocimiento Facial */}
       <Card>

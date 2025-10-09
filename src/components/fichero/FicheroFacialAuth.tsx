@@ -45,6 +45,7 @@ export default function FicheroFacialAuth({
   })
   const [countdown, setCountdown] = useState<number | null>(null)
   const [emocionMostrada, setEmocionMostrada] = useState<string | null>(null)
+  const [reproducirAudio, setReproducirAudio] = useState(false)
 
   useEffect(() => {
     loadModels()
@@ -357,6 +358,9 @@ export default function FicheroFacialAuth({
           description: `${tipoFichaje.replace('_', ' ')} registrada para ${employeeName} con confianza ${(resultado.confidence * 100).toFixed(1)}%`,
         })
         
+        // Reproducir mensaje de audio
+        setReproducirAudio(true)
+        
         // Detener cámara después del éxito para evitar múltiples procesamiento
         stopCamera()
       } else {
@@ -523,6 +527,53 @@ export default function FicheroFacialAuth({
     }
     return traducciones[emocion] || emocion
   }
+
+  // Reproducir mensaje de audio al completar fichaje
+  useEffect(() => {
+    const reproducirMensaje = async () => {
+      if (!reproducirAudio) return
+
+      try {
+        // Obtener mensaje configurado
+        const { data: config } = await supabase
+          .from('fichado_configuracion')
+          .select('valor')
+          .eq('clave', 'mensaje_audio_checkin')
+          .single()
+
+        const mensaje = config?.valor || '¡Bienvenido! Tu fichaje ha sido registrado correctamente.'
+
+        console.log('Generando audio para mensaje:', mensaje)
+
+        // Generar audio con TTS
+        const { data: audioBlob, error } = await supabase.functions.invoke('text-to-speech', {
+          body: { text: mensaje, voice: 'alloy' }
+        })
+
+        if (error) {
+          console.error('Error generando audio:', error)
+          return
+        }
+
+        // Reproducir audio
+        const audioUrl = URL.createObjectURL(new Blob([audioBlob], { type: 'audio/mpeg' }))
+        const audio = new Audio(audioUrl)
+        
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl)
+          setReproducirAudio(false)
+        }
+
+        await audio.play()
+        console.log('Reproduciendo mensaje de audio')
+      } catch (error) {
+        console.error('Error reproduciendo mensaje:', error)
+        setReproducirAudio(false)
+      }
+    }
+
+    reproducirMensaje()
+  }, [reproducirAudio])
 
   const livenessCompleto = livenessCheck.blinkDetected && livenessCheck.movementDetected && livenessCheck.faceCount === 1
 
