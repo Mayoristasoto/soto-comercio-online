@@ -2430,6 +2430,80 @@ export type Database = {
           },
         ]
       }
+      solicitudes: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          empleado_id: string
+          estado: string
+          fecha_respuesta: string | null
+          fecha_solicitud: string
+          id: string
+          monto_solicitado: number | null
+          observaciones: string | null
+          respondido_por: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          empleado_id: string
+          estado?: string
+          fecha_respuesta?: string | null
+          fecha_solicitud?: string
+          id?: string
+          monto_solicitado?: number | null
+          observaciones?: string | null
+          respondido_por?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          empleado_id?: string
+          estado?: string
+          fecha_respuesta?: string | null
+          fecha_solicitud?: string
+          id?: string
+          monto_solicitado?: number | null
+          observaciones?: string | null
+          respondido_por?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitudes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_respondido_por_fkey"
+            columns: ["respondido_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_respondido_por_fkey"
+            columns: ["respondido_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solicitudes_configuracion: {
         Row: {
           activo: boolean
