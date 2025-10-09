@@ -22,8 +22,8 @@ serve(async (req) => {
       throw new Error('Text is required');
     }
 
-    // Usar voz en español por defecto (Laura)
-    const voiceId = voice || 'FGY2WhTYpPnrIDTdsKH5';
+    // Usar voz personalizada argentina por defecto
+    const voiceId = voice || 'JNcXxzrlvFDXcrGo2b47';
     
     console.log('Generating speech with ElevenLabs for text:', text);
 
