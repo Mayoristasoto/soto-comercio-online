@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, ClipboardList, DollarSign, CheckCircle } from "lucide-react"
+import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
+import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 
 interface TareaPendiente {
   id: string
@@ -148,6 +149,33 @@ export default function Autogestion() {
     })
   }
 
+  const handleReimprimirTareas = async () => {
+    if (!empleado) return
+    
+    try {
+      const success = await imprimirTareasDiariasAutomatico(empleado)
+      if (success) {
+        toast({
+          title: "✅ Impresión iniciada",
+          description: "Tus tareas están siendo impresas",
+        })
+      } else {
+        toast({
+          title: "Información",
+          description: "No hay tareas para imprimir o ya se imprimieron hoy",
+          variant: "default"
+        })
+      }
+    } catch (error) {
+      console.error('Error al imprimir tareas:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron imprimir las tareas",
+        variant: "destructive"
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 flex items-center justify-center p-4">
@@ -241,9 +269,19 @@ export default function Autogestion() {
                   <ClipboardList className="h-6 w-6" />
                   <span>Tareas Pendientes</span>
                 </CardTitle>
-                <Button variant="outline" onClick={() => setVistaActual('menu')}>
-                  Volver
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleReimprimirTareas}
+                    disabled={tareasPendientes.length === 0}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Imprimir
+                  </Button>
+                  <Button variant="outline" onClick={() => setVistaActual('menu')}>
+                    Volver
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-6">
