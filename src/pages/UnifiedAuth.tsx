@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Shield, Mail, Lock, User, Building } from "lucide-react"
+import { Shield, Mail, Lock, User, Building, Scan } from "lucide-react"
+import FacialRecognitionAuth from "@/components/FacialRecognitionAuth"
 
 export default function UnifiedAuth() {
   const navigate = useNavigate()
@@ -19,6 +20,8 @@ export default function UnifiedAuth() {
   const [password, setPassword] = useState("")
   const [nombre, setNombre] = useState("")
   const [apellido, setApellido] = useState("")
+  const [resetEmail, setResetEmail] = useState("")
+  const [showResetPassword, setShowResetPassword] = useState(false)
 
   // Obtener el módulo de destino de los parámetros de URL
   const redirectTo = searchParams.get('redirect') || '/reconoce'
@@ -137,6 +140,73 @@ export default function UnifiedAuth() {
     }
   }
 
+  const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string }) => {
+    try {
+      const { data: empleado, error: empleadoError } = await supabase
+        .from('empleados')
+        .select('user_id')
+        .eq('email', user.email)
+        .single()
+
+      if (empleadoError || !empleado?.user_id) {
+        toast({
+          title: "Error",
+          description: "No se pudo autenticar el usuario",
+          variant: "destructive",
+        })
+        return
+      }
+
+      toast({
+        title: "Bienvenido",
+        description: `¡Hola ${user.nombre} ${user.apellido}!`,
+      })
+      navigate(redirectTo)
+    } catch (error) {
+      console.error("Error in facial login:", error)
+      toast({
+        title: "Error",
+        description: "Error en autenticación facial",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/unifiedauth`,
+      })
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Email enviado",
+          description: "Revisa tu email para restablecer tu contraseña",
+        })
+        setShowResetPassword(false)
+        setResetEmail("")
+      }
+    } catch (error) {
+      console.error("Error in password reset:", error)
+      toast({
+        title: "Error",
+        description: "Error al enviar email de recuperación",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -158,13 +228,51 @@ export default function UnifiedAuth() {
 
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Ingresar</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="signin">Email</TabsTrigger>
+              <TabsTrigger value="facial">
+                <Scan className="h-4 w-4 mr-1" />
+                Facial
+              </TabsTrigger>
+              <TabsTrigger value="signup">Registro</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin" className="space-y-4">
-              <form onSubmit={handleSignIn} className="space-y-4">
+              {showResetPassword ? (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="tu@empresa.com"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Enviando..." : "Enviar Email de Recuperación"}
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="ghost"
+                      className="w-full" 
+                      onClick={() => setShowResetPassword(false)}
+                      disabled={isLoading}
+                    >
+                      Volver
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <div className="relative">
@@ -198,10 +306,30 @@ export default function UnifiedAuth() {
                   </div>
                 </div>
 
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="px-0 text-xs"
+                    onClick={() => setShowResetPassword(true)}
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Button>
+                </div>
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Ingresando..." : "Ingresar"}
                 </Button>
               </form>
+              )}
+            </TabsContent>
+
+            <TabsContent value="facial">
+              <FacialRecognitionAuth
+                mode="login"
+                onRegisterSuccess={() => {}}
+                onLoginSuccess={handleFacialLogin}
+              />
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
