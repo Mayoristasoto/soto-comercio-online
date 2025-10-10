@@ -64,7 +64,7 @@ const Comercio = () => {
       icon: <Cigarette size={32} className="text-blue-600" />,
       badge: "Distribución",
       badgeColor: "bg-blue-600",
-      pdfUrl: "https://drive.google.com/file/d/1ihknrmFU-mRPeGdQcryvZ11NcI9DDou4/view",
+      pdfUrl: "https://drive.google.com/file/d/1ihknrmFU-mRPeGdQcryvZ11NcI9DDou4/",
       hasDelivery: true
     },
     {
