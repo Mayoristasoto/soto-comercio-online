@@ -44,35 +44,41 @@ serve(async (req) => {
       )
     }
 
-    // Generar tokens de sesión para el usuario
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+    // Generar link de acceso para el usuario (esto crea una sesión válida)
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userData.user.email!,
     })
 
-    if (sessionError || !sessionData) {
-      console.error('Error generando sesión:', sessionError)
+    if (linkError || !linkData) {
+      console.error('Error generando link de acceso:', linkError)
       return new Response(
         JSON.stringify({ error: 'Error generando sesión de autenticación' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Crear sesión usando el usuario autenticado
-    const { data: session, error: authError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: user_id,
-    })
+    // Extraer el access_token y refresh_token del link generado
+    // El link contiene los tokens necesarios para crear la sesión
+    const url = new URL(linkData.properties.action_link)
+    const access_token = url.searchParams.get('access_token')
+    const refresh_token = url.searchParams.get('refresh_token')
 
-    if (authError || !session) {
-      console.error('Error creando sesión:', authError)
+    if (!access_token || !refresh_token) {
+      console.error('No se pudieron extraer tokens del link')
       return new Response(
-        JSON.stringify({ error: 'Error creando sesión' }),
+        JSON.stringify({ error: 'Error obteniendo tokens de sesión' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Devolver los tokens para que el cliente pueda crear la sesión
     return new Response(
-      JSON.stringify({ session }),
+      JSON.stringify({ 
+        access_token,
+        refresh_token,
+        user: userData.user
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
