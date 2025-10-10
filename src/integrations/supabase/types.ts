@@ -2983,6 +2983,7 @@ export type Database = {
           email: string
           empleado_id: string
           nombre: string
+          user_id: string
         }[]
       }
       calcular_dias_habiles: {

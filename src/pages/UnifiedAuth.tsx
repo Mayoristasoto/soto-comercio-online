@@ -140,29 +140,13 @@ export default function UnifiedAuth() {
     }
   }
 
-  const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string }) => {
+  const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string, user_id?: string }) => {
     try {
-      console.log('UnifiedAuth: Iniciando autenticación facial para:', user.email)
+      console.log('UnifiedAuth: Iniciando autenticación facial para:', user.email, 'user_id:', user.user_id)
       
-      // Verificar que el empleado existe y obtener su user_id
-      const { data: empleado, error: empleadoError } = await supabase
-        .from('empleados')
-        .select('user_id, id')
-        .eq('email', user.email)
-        .maybeSingle()
-
-      if (empleadoError) {
-        console.error('UnifiedAuth: Error buscando empleado:', empleadoError)
-        toast({
-          title: "Error",
-          description: "Error al verificar usuario",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!empleado || !empleado.user_id) {
-        console.error('UnifiedAuth: Empleado no encontrado o sin user_id:', empleado)
+      // El user_id ahora viene directamente del reconocimiento facial
+      if (!user.user_id) {
+        console.error('UnifiedAuth: Usuario reconocido pero sin user_id asociado')
         toast({
           title: "Error",
           description: "Usuario no tiene cuenta asociada. Contacte con administración.",
@@ -171,13 +155,13 @@ export default function UnifiedAuth() {
         return
       }
 
-      console.log('UnifiedAuth: Empleado encontrado, creando sesión para user_id:', empleado.user_id)
+      console.log('UnifiedAuth: Creando sesión para user_id:', user.user_id)
 
       // Llamar al edge function para crear una sesión autenticada
       const { data: authData, error: authError } = await supabase.functions.invoke(
         'facial-auth-login',
         {
-          body: { user_id: empleado.user_id }
+          body: { user_id: user.user_id }
         }
       )
 

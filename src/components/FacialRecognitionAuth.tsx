@@ -9,7 +9,7 @@ import { useFacialConfig } from "@/hooks/useFacialConfig"
 
 interface FacialRecognitionAuthProps {
   onRegisterSuccess: (faceDescriptor: Float32Array) => void
-  onLoginSuccess: (user: { nombre: string, apellido: string, email: string }) => void
+  onLoginSuccess: (user: { nombre: string, apellido: string, email: string, user_id?: string }) => void
   mode: 'register' | 'login'
 }
 
@@ -207,11 +207,12 @@ export default function FacialRecognitionAuth({
           timestamp: new Date().toISOString()
         }).catch(e => console.warn('Failed to log success event:', e))
         
-        // El email ahora viene directamente de la función RPC
+        // El email y user_id ahora vienen directamente de la función RPC
         const user = {
           nombre: bestMatch.nombre,
           apellido: bestMatch.apellido,
-          email: bestMatch.email || `${bestMatch.nombre.toLowerCase()}.${bestMatch.apellido.toLowerCase()}@empresa.com`
+          email: bestMatch.email || `${bestMatch.nombre.toLowerCase()}.${bestMatch.apellido.toLowerCase()}@empresa.com`,
+          user_id: bestMatch.user_id
         }
         
         setRecognizedUser(user)
