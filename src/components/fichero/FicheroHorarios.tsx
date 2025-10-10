@@ -12,8 +12,9 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react';
 import { TimelineView } from './TimelineView';
+import HorariosDragDrop from './HorariosDragDrop';
 
 interface Turno {
   id: string;
@@ -356,8 +357,12 @@ export default function FicheroHorarios() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="calendar" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="drag-drop" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="drag-drop">
+            <GripVertical className="h-4 w-4 mr-2" />
+            Ajuste Visual
+          </TabsTrigger>
           <TabsTrigger value="calendar">
             <Calendar className="h-4 w-4 mr-2" />
             Vista Calendario
@@ -367,6 +372,10 @@ export default function FicheroHorarios() {
             Gestión de Turnos
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="drag-drop" className="space-y-4">
+          <HorariosDragDrop />
+        </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
           <TimelineView />
