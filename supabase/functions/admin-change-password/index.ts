@@ -72,22 +72,67 @@ serve(async (req) => {
     }
 
     // Get the user_id for the employee
+    // Get the employee record with user link and email
     const { data: targetEmpleado, error: targetError } = await supabase
       .from('empleados')
-      .select('user_id')
+      .select('user_id, email, nombre, apellido')
       .eq('id', empleadoId)
       .single()
 
-    if (targetError || !targetEmpleado?.user_id) {
+    if (targetError || !targetEmpleado) {
       return new Response(
-        JSON.stringify({ error: 'Employee not found' }),
+        JSON.stringify({ error: 'Empleado no encontrado' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Update password using admin client
+    let targetUserId = targetEmpleado.user_id as string | null
+
+    // If the employee has no linked auth user, create one and link it
+    if (!targetUserId) {
+      const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: targetEmpleado.email,
+        password: newPassword,
+        email_confirm: true,
+        user_metadata: {
+          nombre: targetEmpleado.nombre,
+          apellido: targetEmpleado.apellido
+        }
+      })
+
+      if (createError || !created?.user?.id) {
+        console.error('Error creating auth user for employee:', createError)
+        return new Response(
+          JSON.stringify({ error: 'No se pudo crear el usuario para el empleado' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      targetUserId = created.user.id
+
+      const { error: linkError } = await supabase
+        .from('empleados')
+        .update({ user_id: targetUserId })
+        .eq('id', empleadoId)
+
+      if (linkError) {
+        console.error('Error linking auth user to empleado:', linkError)
+        return new Response(
+          JSON.stringify({ error: 'No se pudo vincular el usuario al empleado' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // User created with the desired password
+      return new Response(
+        JSON.stringify({ success: true, createdUser: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Update password using admin client for existing user
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      targetEmpleado.user_id,
+      targetUserId,
       { password: newPassword }
     )
 
