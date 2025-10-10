@@ -207,17 +207,11 @@ export default function FacialRecognitionAuth({
           timestamp: new Date().toISOString()
         }).catch(e => console.warn('Failed to log success event:', e))
         
-        // Obtener email del empleado mediante consulta adicional
-        const { data: empleadoData } = await supabase
-          .from('empleados')
-          .select('email')
-          .eq('id', bestMatch.empleado_id)
-          .single()
-
+        // El email ahora viene directamente de la función RPC
         const user = {
           nombre: bestMatch.nombre,
           apellido: bestMatch.apellido,
-          email: empleadoData?.email || `${bestMatch.nombre.toLowerCase()}.${bestMatch.apellido.toLowerCase()}@empresa.com`
+          email: bestMatch.email || `${bestMatch.nombre.toLowerCase()}.${bestMatch.apellido.toLowerCase()}@empresa.com`
         }
         
         setRecognizedUser(user)

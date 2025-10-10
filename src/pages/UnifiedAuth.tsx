@@ -142,21 +142,36 @@ export default function UnifiedAuth() {
 
   const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string }) => {
     try {
+      console.log('UnifiedAuth: Iniciando autenticación facial para:', user.email)
+      
       // Verificar que el empleado existe y obtener su user_id
       const { data: empleado, error: empleadoError } = await supabase
         .from('empleados')
         .select('user_id, id')
         .eq('email', user.email)
-        .single()
+        .maybeSingle()
 
-      if (empleadoError || !empleado?.user_id) {
+      if (empleadoError) {
+        console.error('UnifiedAuth: Error buscando empleado:', empleadoError)
         toast({
           title: "Error",
-          description: "No se pudo autenticar el usuario",
+          description: "Error al verificar usuario",
           variant: "destructive",
         })
         return
       }
+
+      if (!empleado || !empleado.user_id) {
+        console.error('UnifiedAuth: Empleado no encontrado o sin user_id:', empleado)
+        toast({
+          title: "Error",
+          description: "Usuario no tiene cuenta asociada. Contacte con administración.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      console.log('UnifiedAuth: Empleado encontrado, creando sesión para user_id:', empleado.user_id)
 
       // Llamar al edge function para crear una sesión autenticada
       const { data: authData, error: authError } = await supabase.functions.invoke(
@@ -167,6 +182,7 @@ export default function UnifiedAuth() {
       )
 
       if (authError || !authData?.session) {
+        console.error('UnifiedAuth: Error creando sesión:', authError)
         toast({
           title: "Error",
           description: "No se pudo crear la sesión de autenticación",
@@ -174,6 +190,8 @@ export default function UnifiedAuth() {
         })
         return
       }
+
+      console.log('UnifiedAuth: Sesión creada exitosamente, estableciendo en cliente')
 
       // Establecer la sesión en el cliente
       await supabase.auth.setSession({
@@ -188,10 +206,10 @@ export default function UnifiedAuth() {
       
       // La redirección será manejada automáticamente por el listener de auth
     } catch (error) {
-      console.error("Error in facial login:", error)
+      console.error("UnifiedAuth: Error in facial login:", error)
       toast({
         title: "Error",
-        description: "Error en autenticación facial",
+        description: "Error durante el inicio de sesión facial",
         variant: "destructive",
       })
     }

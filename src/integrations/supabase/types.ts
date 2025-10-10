@@ -2980,6 +2980,7 @@ export type Database = {
         Returns: {
           apellido: string
           confidence_score: number
+          email: string
           empleado_id: string
           nombre: string
         }[]
