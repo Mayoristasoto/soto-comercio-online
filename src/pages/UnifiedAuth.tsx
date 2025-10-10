@@ -157,7 +157,7 @@ export default function UnifiedAuth() {
 
       console.log('UnifiedAuth: Creando sesión para user_id:', user.user_id)
 
-      // Llamar al edge function para crear una sesión autenticada
+      // Llamar al edge function para obtener OTP y crear sesión en el cliente
       const { data: authData, error: authError } = await supabase.functions.invoke(
         'facial-auth-login',
         {
@@ -165,29 +165,38 @@ export default function UnifiedAuth() {
         }
       )
 
-      if (authError || !authData?.session) {
-        console.error('UnifiedAuth: Error creando sesión:', authError)
+      if (authError || !authData?.email_otp) {
+        console.error('UnifiedAuth: Error obteniendo OTP:', authError)
         toast({
           title: "Error",
-          description: "No se pudo crear la sesión de autenticación",
+          description: "No se pudo obtener el token de autenticación",
           variant: "destructive",
         })
         return
       }
 
-      console.log('UnifiedAuth: Sesión creada exitosamente, estableciendo en cliente')
+      console.log('UnifiedAuth: Verificando OTP para crear sesión')
 
-      // Establecer la sesión en el cliente
-      await supabase.auth.setSession({
-        access_token: authData.session.access_token,
-        refresh_token: authData.session.refresh_token
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        email: authData.email || user.email,
+        token: authData.email_otp,
+        type: 'email',
       })
+
+      if (verifyError || !verifyData?.session) {
+        console.error('UnifiedAuth: Error verificando OTP:', verifyError)
+        toast({
+          title: "Error",
+          description: "No se pudo iniciar sesión con OTP",
+          variant: "destructive",
+        })
+        return
+      }
 
       toast({
         title: "Bienvenido",
         description: `¡Hola ${user.nombre} ${user.apellido}!`,
       })
-      
       // La redirección será manejada automáticamente por el listener de auth
     } catch (error) {
       console.error("UnifiedAuth: Error in facial login:", error)

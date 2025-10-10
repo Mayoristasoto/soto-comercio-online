@@ -84,3 +84,6 @@ verify_jwt = false
 
 [functions.elevenlabs-tts]
 verify_jwt = false
+
+[functions.facial-auth-login]
+verify_jwt = false

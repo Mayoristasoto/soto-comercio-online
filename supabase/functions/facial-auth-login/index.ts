@@ -44,7 +44,7 @@ serve(async (req) => {
       )
     }
 
-    // Generar link de acceso para el usuario (esto crea una sesión válida)
+    // Generar link de acceso para el usuario
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userData.user.email!,
@@ -53,31 +53,26 @@ serve(async (req) => {
     if (linkError || !linkData) {
       console.error('Error generando link de acceso:', linkError)
       return new Response(
-        JSON.stringify({ error: 'Error generando sesión de autenticación' }),
+        JSON.stringify({ error: 'Error generando link de autenticación' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Extraer el access_token y refresh_token del link generado
-    // El link contiene los tokens necesarios para crear la sesión
-    const url = new URL(linkData.properties.action_link)
-    const access_token = url.searchParams.get('access_token')
-    const refresh_token = url.searchParams.get('refresh_token')
+    const email_otp = linkData.properties?.email_otp
 
-    if (!access_token || !refresh_token) {
-      console.error('No se pudieron extraer tokens del link')
+    if (!email_otp) {
+      console.error('No se obtuvo email_otp desde generateLink')
       return new Response(
-        JSON.stringify({ error: 'Error obteniendo tokens de sesión' }),
+        JSON.stringify({ error: 'No se pudo obtener OTP para autenticación' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Devolver los tokens para que el cliente pueda crear la sesión
+    // Devolver OTP para que el cliente cree la sesión con verifyOtp
     return new Response(
       JSON.stringify({ 
-        access_token,
-        refresh_token,
-        user: userData.user
+        email: userData.user.email,
+        email_otp
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
