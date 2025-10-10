@@ -209,8 +209,8 @@ export default function HorariosDragDrop() {
     }
   };
 
-  const getEmpleadoColor = (empleadoId: string): string => {
-    // Paleta de colores distintivos para cada empleado
+  const getEmpleadoStyles = (empleadoId: string) => {
+    // Paleta de colores distintivos para cada empleado (HSL)
     const colorPalettes = [
       { bg: 'hsl(142, 71%, 45%)', border: 'hsl(142, 71%, 35%)', text: 'hsl(142, 71%, 15%)' }, // Verde
       { bg: 'hsl(24, 90%, 55%)', border: 'hsl(24, 90%, 45%)', text: 'hsl(24, 90%, 15%)' },    // Naranja
@@ -223,13 +223,12 @@ export default function HorariosDragDrop() {
       { bg: 'hsl(14, 100%, 57%)', border: 'hsl(14, 100%, 47%)', text: 'hsl(14, 100%, 15%)' }, // Rojo-naranja
       { bg: 'hsl(199, 89%, 48%)', border: 'hsl(199, 89%, 38%)', text: 'hsl(199, 89%, 15%)' }, // Cian
     ];
-    
+
     const hash = empleadoId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const palette = colorPalettes[hash % colorPalettes.length];
-    
-    return `bg-[${palette.bg}] border-2 border-[${palette.border}] text-[${palette.text}]`;
-  };
 
+    return { backgroundColor: palette.bg, borderColor: palette.border, color: palette.text } as React.CSSProperties;
+  };
   const getTimePosition = (time: string): number => {
     const minutes = timeToMinutes(time);
     const startMinutes = 6 * 60; // 6 AM
@@ -346,10 +345,11 @@ export default function HorariosDragDrop() {
                       >
                         {/* Schedule block */}
                         <div
-                          className={`absolute h-12 top-2 rounded-lg ${getEmpleadoColor(et.empleado_id)} hover:shadow-lg cursor-move transition-all shadow-md group`}
+                          className="absolute h-12 top-2 rounded-lg border-2 hover:shadow-lg cursor-move transition-all shadow-md group"
                           style={{
                             left: `${getTimePosition(et.turno.hora_entrada)}%`,
                             width: `${getTimeDuration(et.turno.hora_entrada, et.turno.hora_salida)}%`,
+                            ...getEmpleadoStyles(et.empleado_id),
                           }}
                           onMouseDown={(e) => handleMouseDown(e, et)}
                         >
