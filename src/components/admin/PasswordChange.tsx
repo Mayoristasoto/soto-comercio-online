@@ -82,30 +82,20 @@ export default function PasswordChange({
     setIsUpdating(true)
 
     try {
-      // Call the edge function to change password
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        throw new Error("No hay sesión activa")
-      }
-
-      const response = await fetch(`https://iizwnijtgfvanhqqjeyw.supabase.co/functions/v1/admin-change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpenduaWp0Z2Z2YW5ocXFqZXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4ODc1NzAsImV4cCI6MjA3MTQ2MzU3MH0.Ec7iJRVy0l2MgFHKVPi26AnRsXhFsUM7RhOOrE7eEvE'
-        },
-        body: JSON.stringify({
+      // Call the edge function to change password using Supabase client
+      const { data, error } = await supabase.functions.invoke('admin-change-password', {
+        body: {
           empleadoId: employeeId,
           newPassword: newPassword
-        })
+        }
       })
 
-      const result = await response.json()
+      if (error) {
+        throw new Error(error.message || 'Error al cambiar contraseña')
+      }
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al cambiar contraseña')
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al cambiar contraseña')
       }
 
       toast({
