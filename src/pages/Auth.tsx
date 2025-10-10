@@ -7,13 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Store, Shield, Lock } from "lucide-react";
+import { Store, Shield, Lock, Scan } from "lucide-react";
+import FacialRecognitionAuth from "@/components/FacialRecognitionAuth";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -139,6 +142,54 @@ const Auth = () => {
     }
   };
 
+  const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string }) => {
+    try {
+      // El reconocimiento facial ya verificó la identidad del usuario
+      // Ahora obtenemos su user_id para hacer login
+      const { data: empleado, error: empleadoError } = await supabase
+        .from('empleados')
+        .select('user_id')
+        .eq('email', user.email)
+        .single();
+
+      if (empleadoError || !empleado?.user_id) {
+        toast("Error: No se pudo autenticar el usuario");
+        return;
+      }
+
+      // Navegar directamente ya que el reconocimiento facial validó la identidad
+      toast(`¡Bienvenido ${user.nombre} ${user.apellido}!`);
+      navigate("/gondolasedit");
+    } catch (error) {
+      console.error("Error in facial login:", error);
+      toast("Error en autenticación facial");
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) {
+        toast(`Error: ${error.message}`);
+      } else {
+        toast("Revisa tu email para restablecer tu contraseña");
+        setShowResetPassword(false);
+        setResetEmail("");
+      }
+    } catch (error) {
+      console.error("Error in password reset:", error);
+      toast("Error al enviar email de recuperación");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
@@ -178,45 +229,102 @@ const Auth = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="signin">Email</TabsTrigger>
+                <TabsTrigger value="facial">
+                  <Scan className="h-4 w-4 mr-1" />
+                  Facial
+                </TabsTrigger>
                 <TabsTrigger value="signup">Registro</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
+                {showResetPassword ? (
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="tu@email.com"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Enviando..." : "Enviar Email de Recuperación"}
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="ghost"
+                        className="w-full" 
+                        onClick={() => setShowResetPassword(false)}
+                        disabled={isLoading}
+                      >
+                        Volver
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="tu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Contraseña</Label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-0 text-xs"
+                        onClick={() => setShowResetPassword(true)}
+                      >
+                        ¿Olvidaste tu contraseña?
+                      </Button>
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
                       disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Contraseña</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
-                  </Button>
-                </form>
+                    >
+                      {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+                    </Button>
+                  </form>
+                )}
+              </TabsContent>
+
+              <TabsContent value="facial">
+                <FacialRecognitionAuth
+                  mode="login"
+                  onRegisterSuccess={() => {}}
+                  onLoginSuccess={handleFacialLogin}
+                />
               </TabsContent>
               
               <TabsContent value="signup">
