@@ -46,7 +46,7 @@ const Comercio = () => {
       icon: <Cigarette size={32} className="text-gray-600" />,
       badge: "Salón",
       badgeColor: "bg-gray-500",
-      pdfUrl: "https://drive.google.com/file/d/1Wg_qk5GPpqorwZAna1xqlyzZdxINZU-c/view?usp=sharing",
+      pdfUrl: "https://drive.google.com/file/d/1ihknrmFU-mRPeGdQcryvZ11NcI9DDou4/",
       isLocal: true
     },
     {
