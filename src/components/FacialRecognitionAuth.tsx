@@ -161,10 +161,13 @@ export default function FacialRecognitionAuth({
       : config.confidenceThresholdKiosk
       
     try {
-      console.log('FacialAuth: Iniciando reconocimiento facial centralizado')
+      console.log('FacialAuth: Iniciando reconocimiento facial centralizado', {
+        threshold,
+        mode,
+        descriptorLength: capturedDescriptor.length
+      })
       
       // Usar la función segura centralizada authenticate_face_kiosk
-
       const { data: matches, error } = await supabase
         .rpc('authenticate_face_kiosk', {
           p_face_descriptor: Array.from(capturedDescriptor),
@@ -174,14 +177,14 @@ export default function FacialRecognitionAuth({
       if (error) {
         console.error('FacialAuth: Error en autenticación facial:', error)
         
-        // Log del error de sistema
-        await logFacialRecognitionEvent('ERROR', {
+        // Log del error de sistema (no bloqueante)
+        logFacialRecognitionEvent('ERROR', {
           error_message: error.message,
           error_code: error.code,
           threshold_used: threshold,
           mode: mode,
           timestamp: new Date().toISOString()
-        })
+        }).catch(e => console.warn('Failed to log error event:', e))
         
         toast({
           title: "Error",
@@ -195,14 +198,14 @@ export default function FacialRecognitionAuth({
         const bestMatch = matches[0] // La función devuelve el mejor match primero
         console.log(`FacialAuth: Usuario reconocido - ${bestMatch.nombre} ${bestMatch.apellido} con confianza ${(bestMatch.confidence_score * 100).toFixed(1)}%`)
         
-        // Log exitoso adicional para debugging
-        await logFacialRecognitionEvent('SUCCESS', {
+        // Log exitoso adicional para debugging (no bloqueante)
+        logFacialRecognitionEvent('SUCCESS', {
           empleado_id: bestMatch.empleado_id,
           confidence_score: bestMatch.confidence_score,
           threshold_used: threshold,
           mode: mode,
           timestamp: new Date().toISOString()
-        })
+        }).catch(e => console.warn('Failed to log success event:', e))
         
         // Obtener email del empleado mediante consulta adicional
         const { data: empleadoData } = await supabase
@@ -225,16 +228,16 @@ export default function FacialRecognitionAuth({
           description: `Bienvenido, ${bestMatch.nombre} ${bestMatch.apellido} (${(bestMatch.confidence_score * 100).toFixed(1)}% confianza)`,
         })
       } else {
-        console.log('FacialAuth: No se encontraron coincidencias - logging evento fallido')
+        console.log('FacialAuth: No se encontraron coincidencias')
         
-        // Log detallado del fallo de reconocimiento
-        await logFacialRecognitionEvent('FAILED', {
+        // Log detallado del fallo de reconocimiento (no bloqueante)
+        logFacialRecognitionEvent('FAILED', {
           threshold_used: threshold,
           mode: mode,
           timestamp: new Date().toISOString(),
           reason: 'no_matches_found',
           descriptor_length: capturedDescriptor ? capturedDescriptor.length : 0
-        })
+        }).catch(e => console.warn('Failed to log failure event:', e))
         
         toast({
           title: "Rostro no reconocido",
@@ -246,14 +249,14 @@ export default function FacialRecognitionAuth({
     } catch (error) {
       console.error('FacialAuth: Error en recognizeUser:', error)
       
-      // Log de errores no controlados
-      await logFacialRecognitionEvent('EXCEPTION', {
+      // Log de errores no controlados (no bloqueante)
+      logFacialRecognitionEvent('EXCEPTION', {
         error_message: error instanceof Error ? error.message : String(error),
         threshold_used: threshold,
         mode: mode,
         timestamp: new Date().toISOString(),
         stack_trace: error instanceof Error ? error.stack : undefined
-      })
+      }).catch(e => console.warn('Failed to log exception event:', e))
       
       toast({
         title: "Error",
@@ -263,11 +266,14 @@ export default function FacialRecognitionAuth({
     }
   }
 
-  // Función para logging de eventos de reconocimiento facial
-  const logFacialRecognitionEvent = async (eventType: string, eventData: any) => {
+  // Función para logging de eventos de reconocimiento facial (completamente opcional y no bloqueante)
+  const logFacialRecognitionEvent = async (eventType: string, eventData: any): Promise<void> => {
+    // Envolver todo en try-catch para que NUNCA interrumpa el flujo principal
     try {
+      console.log(`FacialAuth: Intentando registrar evento ${eventType}`, eventData)
+      
       // Insertar log en tabla de auditoría
-      await supabase
+      const { error } = await supabase
         .from('fichaje_auditoria')
         .insert({
           registro_id: crypto.randomUUID(),
@@ -276,16 +282,20 @@ export default function FacialRecognitionAuth({
           datos_nuevos: {
             ...eventData,
             user_agent: navigator.userAgent,
-            ip_address: 'client_side' // En cliente no podemos obtener IP real
+            ip_address: 'client_side'
           },
-          usuario_id: null, // En cliente no tenemos user_id disponible
+          usuario_id: null,
           timestamp_accion: new Date().toISOString()
         })
       
-      console.log(`FacialAuth: Evento ${eventType} registrado en auditoría`, eventData)
+      if (error) {
+        console.warn('FacialAuth: No se pudo registrar evento (esto no afecta el login):', error.message)
+      } else {
+        console.log(`FacialAuth: Evento ${eventType} registrado correctamente`)
+      }
     } catch (logError) {
-      console.error('FacialAuth: Error registrando evento en auditoría:', logError)
-      // No lanzar error para no interrumpir el flujo principal
+      // Capturar cualquier error y solo loguearlo, nunca lanzar
+      console.warn('FacialAuth: Error al intentar registrar evento (no crítico):', logError)
     }
   }
 
