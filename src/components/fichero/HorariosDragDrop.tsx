@@ -209,14 +209,14 @@ export default function HorariosDragDrop() {
     }
   };
 
-  const getTurnoColor = (tipo: string) => {
-    const colors = {
-      normal: 'bg-blue-100 border-2 border-blue-300 text-blue-900',
-      nocturno: 'bg-purple-100 border-2 border-purple-300 text-purple-900',
-      partido: 'bg-pink-100 border-2 border-pink-300 text-pink-900',
-      flexible: 'bg-violet-100 border-2 border-violet-300 text-violet-900'
-    };
-    return colors[tipo as keyof typeof colors] || colors.normal;
+  const getEmpleadoColor = (empleadoId: string): string => {
+    // Generar un color azul único basado en el ID del empleado
+    const hash = empleadoId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hue = 200 + (hash % 60); // Azules entre 200-260
+    const saturation = 60 + (hash % 30); // Saturación entre 60-90
+    const lightness = 85 + (hash % 10); // Luminosidad entre 85-95
+    
+    return `bg-[hsl(${hue},${saturation}%,${lightness}%)] border-2 border-[hsl(${hue},${saturation}%,${lightness - 15}%)] text-blue-900`;
   };
 
   const getTimePosition = (time: string): number => {
@@ -335,7 +335,7 @@ export default function HorariosDragDrop() {
                       >
                         {/* Schedule block */}
                         <div
-                          className={`absolute h-12 top-2 rounded-lg ${getTurnoColor(et.turno.tipo)} hover:shadow-lg cursor-move transition-all shadow-md group`}
+                          className={`absolute h-12 top-2 rounded-lg ${getEmpleadoColor(et.empleado_id)} hover:shadow-lg cursor-move transition-all shadow-md group`}
                           style={{
                             left: `${getTimePosition(et.turno.hora_entrada)}%`,
                             width: `${getTimeDuration(et.turno.hora_entrada, et.turno.hora_salida)}%`,
@@ -368,45 +368,9 @@ export default function HorariosDragDrop() {
                             }}
                           />
                         </div>
-
-                        {/* Pause indicator if exists */}
-                        {et.turno.hora_pausa_inicio && et.turno.hora_pausa_fin && (
-                          <div
-                            className="absolute h-2 top-[50%] bg-orange-400 rounded-full opacity-60"
-                            style={{
-                              left: `${getTimePosition(et.turno.hora_pausa_inicio)}%`,
-                              width: `${getTimeDuration(et.turno.hora_pausa_inicio, et.turno.hora_pausa_fin)}%`,
-                            }}
-                            title={`Pausa: ${et.turno.hora_pausa_inicio} - ${et.turno.hora_pausa_fin}`}
-                          />
-                        )}
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div className="mt-6 flex items-center gap-6 text-sm flex-wrap">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-blue-100 border-2 border-blue-300"></div>
-                  <span className="font-medium">Normal</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-purple-100 border-2 border-purple-300"></div>
-                  <span className="font-medium">Nocturno</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-pink-100 border-2 border-pink-300"></div>
-                  <span className="font-medium">Partido</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-violet-100 border-2 border-violet-300"></div>
-                  <span className="font-medium">Flexible</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-2 rounded-full bg-orange-400"></div>
-                  <span className="font-medium">Pausa</span>
                 </div>
               </div>
 
@@ -417,6 +381,7 @@ export default function HorariosDragDrop() {
                   Instrucciones de uso:
                 </p>
                 <ul className="space-y-1 ml-4 list-disc">
+                  <li>Cada empleado tiene un color azul único para fácil identificación</li>
                   <li>Arrastra el bloque completo para mover el horario</li>
                   <li>Arrastra los bordes izquierdo/derecho para ajustar hora de entrada o salida</li>
                   <li>Los cambios se ajustan en intervalos de <strong>30 minutos</strong></li>
