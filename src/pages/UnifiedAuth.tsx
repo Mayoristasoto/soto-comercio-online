@@ -142,9 +142,10 @@ export default function UnifiedAuth() {
 
   const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string }) => {
     try {
+      // Verificar que el empleado existe y obtener su user_id
       const { data: empleado, error: empleadoError } = await supabase
         .from('empleados')
-        .select('user_id')
+        .select('user_id, id')
         .eq('email', user.email)
         .single()
 
@@ -157,11 +158,35 @@ export default function UnifiedAuth() {
         return
       }
 
+      // Llamar al edge function para crear una sesión autenticada
+      const { data: authData, error: authError } = await supabase.functions.invoke(
+        'facial-auth-login',
+        {
+          body: { user_id: empleado.user_id }
+        }
+      )
+
+      if (authError || !authData?.session) {
+        toast({
+          title: "Error",
+          description: "No se pudo crear la sesión de autenticación",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Establecer la sesión en el cliente
+      await supabase.auth.setSession({
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token
+      })
+
       toast({
         title: "Bienvenido",
         description: `¡Hola ${user.nombre} ${user.apellido}!`,
       })
-      navigate('/mi-dashboard')
+      
+      // La redirección será manejada automáticamente por el listener de auth
     } catch (error) {
       console.error("Error in facial login:", error)
       toast({
