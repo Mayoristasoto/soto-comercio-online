@@ -96,9 +96,13 @@ export default function HorariosDragDrop() {
     if (!containerRef.current) return 0;
     const rect = containerRef.current.getBoundingClientRect();
     const relativeY = y - rect.top;
-    const totalMinutes = 24 * 60; // 24 horas
-    const minutes = (relativeY / rect.height) * totalMinutes;
-    return Math.max(0, Math.min(totalMinutes, Math.round(minutes / 15) * 15)); // Redondear a 15 min
+    
+    // Horario de 6 AM (360 min) a 7 PM (1140 min) = 13 horas (780 minutos)
+    const startMinutes = 6 * 60; // 6 AM
+    const totalMinutes = 13 * 60; // 13 horas (6 AM a 7 PM)
+    
+    const minutes = startMinutes + (relativeY / rect.height) * totalMinutes;
+    return Math.max(startMinutes, Math.min(startMinutes + totalMinutes, Math.round(minutes / 30) * 30)); // Redondear a 30 min
   };
 
   const handleMouseDown = (e: React.MouseEvent, empleadoTurno: EmpleadoTurno, resizeHandle?: 'start' | 'end') => {
@@ -207,17 +211,20 @@ export default function HorariosDragDrop() {
 
   const getTurnoColor = (tipo: string) => {
     const colors = {
-      normal: 'bg-blue-500',
-      nocturno: 'bg-purple-500',
-      partido: 'bg-pink-500',
-      flexible: 'bg-violet-500'
+      normal: 'bg-blue-100 border-2 border-blue-300 text-blue-900',
+      nocturno: 'bg-purple-100 border-2 border-purple-300 text-purple-900',
+      partido: 'bg-pink-100 border-2 border-pink-300 text-pink-900',
+      flexible: 'bg-violet-100 border-2 border-violet-300 text-violet-900'
     };
     return colors[tipo as keyof typeof colors] || colors.normal;
   };
 
   const getTimePosition = (time: string): number => {
     const minutes = timeToMinutes(time);
-    return (minutes / (24 * 60)) * 100;
+    const startMinutes = 6 * 60; // 6 AM
+    const totalMinutes = 13 * 60; // 13 horas
+    const relativeMinutes = minutes - startMinutes;
+    return (relativeMinutes / totalMinutes) * 100;
   };
 
   const getTimeDuration = (start: string, end: string): number => {
@@ -225,7 +232,8 @@ export default function HorariosDragDrop() {
     const endMin = timeToMinutes(end);
     let duration = endMin - startMin;
     if (duration < 0) duration += 24 * 60;
-    return (duration / (24 * 60)) * 100;
+    const totalMinutes = 13 * 60; // 13 horas
+    return (duration / totalMinutes) * 100;
   };
 
   if (loading) {
@@ -291,24 +299,27 @@ export default function HorariosDragDrop() {
 
                 {/* Timeline Column */}
                 <div className="relative">
-                  {/* Hour markers */}
+                  {/* Hour markers - 6 AM a 7 PM */}
                   <div className="h-12 flex border-b">
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 text-xs text-center text-muted-foreground"
-                        style={{ minWidth: '40px' }}
-                      >
-                        {i.toString().padStart(2, '0')}:00
-                      </div>
-                    ))}
+                    {Array.from({ length: 14 }, (_, i) => {
+                      const hour = i + 6; // Desde las 6 AM
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 text-xs text-center text-muted-foreground font-medium"
+                          style={{ minWidth: '60px' }}
+                        >
+                          {hour.toString().padStart(2, '0')}:00
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Timeline grid */}
                   <div className="relative">
                     {/* Vertical lines for hours */}
                     <div className="absolute inset-0 flex pointer-events-none">
-                      {Array.from({ length: 24 }, (_, i) => (
+                      {Array.from({ length: 14 }, (_, i) => (
                         <div
                           key={i}
                           className="flex-1 border-l border-gray-200"
@@ -324,7 +335,7 @@ export default function HorariosDragDrop() {
                       >
                         {/* Schedule block */}
                         <div
-                          className={`absolute h-12 top-2 rounded-lg ${getTurnoColor(et.turno.tipo)} opacity-80 hover:opacity-100 cursor-move transition-all shadow-md group`}
+                          className={`absolute h-12 top-2 rounded-lg ${getTurnoColor(et.turno.tipo)} hover:shadow-lg cursor-move transition-all shadow-md group`}
                           style={{
                             left: `${getTimePosition(et.turno.hora_entrada)}%`,
                             width: `${getTimeDuration(et.turno.hora_entrada, et.turno.hora_salida)}%`,
@@ -333,7 +344,7 @@ export default function HorariosDragDrop() {
                         >
                           {/* Resize handle - Start */}
                           <div
-                            className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/30 rounded-l-lg"
+                            className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-500/20 rounded-l-lg transition-colors"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleMouseDown(e, et, 'start');
@@ -341,8 +352,8 @@ export default function HorariosDragDrop() {
                           />
                           
                           {/* Content */}
-                          <div className="h-full flex items-center justify-center text-white text-xs font-medium px-2 select-none">
-                            <GripVertical className="h-3 w-3 mr-1 opacity-50 group-hover:opacity-100" />
+                          <div className="h-full flex items-center justify-center font-semibold text-xs px-3 select-none">
+                            <GripVertical className="h-4 w-4 mr-1 opacity-40 group-hover:opacity-70" />
                             <span>
                               {et.turno.hora_entrada} - {et.turno.hora_salida}
                             </span>
@@ -350,7 +361,7 @@ export default function HorariosDragDrop() {
 
                           {/* Resize handle - End */}
                           <div
-                            className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/30 rounded-r-lg"
+                            className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-500/20 rounded-r-lg transition-colors"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleMouseDown(e, et, 'end');
@@ -376,37 +387,41 @@ export default function HorariosDragDrop() {
               </div>
 
               {/* Legend */}
-              <div className="mt-6 flex items-center gap-6 text-sm">
+              <div className="mt-6 flex items-center gap-6 text-sm flex-wrap">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-blue-500"></div>
-                  <span>Normal</span>
+                  <div className="w-6 h-6 rounded bg-blue-100 border-2 border-blue-300"></div>
+                  <span className="font-medium">Normal</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-purple-500"></div>
-                  <span>Nocturno</span>
+                  <div className="w-6 h-6 rounded bg-purple-100 border-2 border-purple-300"></div>
+                  <span className="font-medium">Nocturno</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-pink-500"></div>
-                  <span>Partido</span>
+                  <div className="w-6 h-6 rounded bg-pink-100 border-2 border-pink-300"></div>
+                  <span className="font-medium">Partido</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-violet-500"></div>
-                  <span>Flexible</span>
+                  <div className="w-6 h-6 rounded bg-violet-100 border-2 border-violet-300"></div>
+                  <span className="font-medium">Flexible</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-2 rounded-full bg-orange-400"></div>
-                  <span>Pausa</span>
+                  <div className="w-6 h-2 rounded-full bg-orange-400"></div>
+                  <span className="font-medium">Pausa</span>
                 </div>
               </div>
 
               {/* Instructions */}
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-900">
-                <p className="font-semibold mb-2">💡 Instrucciones:</p>
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-900 border border-blue-200">
+                <p className="font-semibold mb-2 flex items-center gap-2">
+                  <GripVertical className="h-4 w-4" />
+                  Instrucciones de uso:
+                </p>
                 <ul className="space-y-1 ml-4 list-disc">
                   <li>Arrastra el bloque completo para mover el horario</li>
-                  <li>Arrastra los bordes del bloque para ajustar hora de entrada o salida</li>
-                  <li>Los cambios se ajustan en intervalos de 15 minutos</li>
-                  <li>Recuerda hacer clic en "Guardar Cambios" para aplicar las modificaciones</li>
+                  <li>Arrastra los bordes izquierdo/derecho para ajustar hora de entrada o salida</li>
+                  <li>Los cambios se ajustan en intervalos de <strong>30 minutos</strong></li>
+                  <li>Horario de trabajo: <strong>6:00 AM - 7:00 PM</strong></li>
+                  <li>Recuerda hacer clic en <strong>"Guardar Cambios"</strong> para aplicar las modificaciones</li>
                 </ul>
               </div>
             </div>
