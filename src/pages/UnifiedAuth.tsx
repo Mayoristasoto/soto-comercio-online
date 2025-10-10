@@ -161,7 +161,7 @@ export default function UnifiedAuth() {
         title: "Bienvenido",
         description: `¡Hola ${user.nombre} ${user.apellido}!`,
       })
-      navigate(redirectTo)
+      navigate('/mi-dashboard')
     } catch (error) {
       console.error("Error in facial login:", error)
       toast({
