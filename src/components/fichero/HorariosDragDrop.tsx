@@ -210,13 +210,24 @@ export default function HorariosDragDrop() {
   };
 
   const getEmpleadoColor = (empleadoId: string): string => {
-    // Generar un color azul único basado en el ID del empleado
-    const hash = empleadoId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const hue = 200 + (hash % 60); // Azules entre 200-260
-    const saturation = 60 + (hash % 30); // Saturación entre 60-90
-    const lightness = 85 + (hash % 10); // Luminosidad entre 85-95
+    // Paleta de colores distintivos para cada empleado
+    const colorPalettes = [
+      { bg: 'hsl(142, 71%, 45%)', border: 'hsl(142, 71%, 35%)', text: 'hsl(142, 71%, 15%)' }, // Verde
+      { bg: 'hsl(24, 90%, 55%)', border: 'hsl(24, 90%, 45%)', text: 'hsl(24, 90%, 15%)' },    // Naranja
+      { bg: 'hsl(45, 90%, 55%)', border: 'hsl(45, 90%, 45%)', text: 'hsl(45, 90%, 15%)' },    // Amarillo
+      { bg: 'hsl(217, 91%, 60%)', border: 'hsl(217, 91%, 50%)', text: 'hsl(217, 91%, 15%)' }, // Azul
+      { bg: 'hsl(291, 64%, 55%)', border: 'hsl(291, 64%, 45%)', text: 'hsl(291, 64%, 15%)' }, // Magenta
+      { bg: 'hsl(340, 82%, 52%)', border: 'hsl(340, 82%, 42%)', text: 'hsl(340, 82%, 15%)' }, // Rosa
+      { bg: 'hsl(262, 83%, 58%)', border: 'hsl(262, 83%, 48%)', text: 'hsl(262, 83%, 15%)' }, // Púrpura
+      { bg: 'hsl(173, 80%, 40%)', border: 'hsl(173, 80%, 30%)', text: 'hsl(173, 80%, 15%)' }, // Turquesa
+      { bg: 'hsl(14, 100%, 57%)', border: 'hsl(14, 100%, 47%)', text: 'hsl(14, 100%, 15%)' }, // Rojo-naranja
+      { bg: 'hsl(199, 89%, 48%)', border: 'hsl(199, 89%, 38%)', text: 'hsl(199, 89%, 15%)' }, // Cian
+    ];
     
-    return `bg-[hsl(${hue},${saturation}%,${lightness}%)] border-2 border-[hsl(${hue},${saturation}%,${lightness - 15}%)] text-blue-900`;
+    const hash = empleadoId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const palette = colorPalettes[hash % colorPalettes.length];
+    
+    return `bg-[${palette.bg}] border-2 border-[${palette.border}] text-[${palette.text}]`;
   };
 
   const getTimePosition = (time: string): number => {
@@ -381,7 +392,7 @@ export default function HorariosDragDrop() {
                   Instrucciones de uso:
                 </p>
                 <ul className="space-y-1 ml-4 list-disc">
-                  <li>Cada empleado tiene un color azul único para fácil identificación</li>
+                  <li>Cada empleado tiene un color distintivo para fácil identificación</li>
                   <li>Arrastra el bloque completo para mover el horario</li>
                   <li>Arrastra los bordes izquierdo/derecho para ajustar hora de entrada o salida</li>
                   <li>Los cambios se ajustan en intervalos de <strong>30 minutos</strong></li>
