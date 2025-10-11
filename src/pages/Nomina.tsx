@@ -360,17 +360,19 @@ export default function Nomina() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-9 w-full">
-          <TabsTrigger value="overview">Resumen</TabsTrigger>
-          <TabsTrigger value="employees">Empleados</TabsTrigger>
-          <TabsTrigger value="positions">Puestos</TabsTrigger>
-          <TabsTrigger value="documents">Documentos</TabsTrigger>
-          <TabsTrigger value="permissions">Permisos</TabsTrigger>
-          <TabsTrigger value="mandatory-docs">Doc. Obligatorios</TabsTrigger>
-          <TabsTrigger value="assignments">Asignaciones</TabsTrigger>
-          <TabsTrigger value="employee-view">Vista Empleado</TabsTrigger>
-          <TabsTrigger value="organigrama">Organigrama</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-9 md:w-full">
+            <TabsTrigger value="overview" className="whitespace-nowrap">Resumen</TabsTrigger>
+            <TabsTrigger value="employees" className="whitespace-nowrap">Empleados</TabsTrigger>
+            <TabsTrigger value="positions" className="whitespace-nowrap">Puestos</TabsTrigger>
+            <TabsTrigger value="documents" className="whitespace-nowrap">Documentos</TabsTrigger>
+            <TabsTrigger value="permissions" className="whitespace-nowrap">Permisos</TabsTrigger>
+            <TabsTrigger value="mandatory-docs" className="whitespace-nowrap">Doc. Obligatorios</TabsTrigger>
+            <TabsTrigger value="assignments" className="whitespace-nowrap">Asignaciones</TabsTrigger>
+            <TabsTrigger value="employee-view" className="whitespace-nowrap">Vista Empleado</TabsTrigger>
+            <TabsTrigger value="organigrama" className="whitespace-nowrap">Organigrama</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
