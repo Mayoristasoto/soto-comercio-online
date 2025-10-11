@@ -15,8 +15,219 @@ interface EmpleadoInfo {
   puesto?: string
 }
 
-// Función para generar el contenido HTML para imprimir
-const generarHTMLTareas = (empleado: EmpleadoInfo, tareas: TareaDiaria[], fecha: Date): string => {
+// Función para generar el contenido HTML para impresora térmica de tickets
+const generarHTMLTareasTermica = (empleado: EmpleadoInfo, tareas: TareaDiaria[], fecha: Date): string => {
+  const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+
+  const horaFormateada = fecha.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+
+  const prioridadTexto = (prioridad: string) => {
+    switch (prioridad) {
+      case 'urgente': return '!!! URGENTE'
+      case 'alta': return '!! ALTA'
+      case 'media': return '! MEDIA'
+      case 'baja': return 'BAJA'
+      default: return 'NORMAL'
+    }
+  }
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Tareas - ${empleado.nombre} ${empleado.apellido}</title>
+      <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: 'Courier New', monospace;
+          font-size: 9pt;
+          line-height: 1.3;
+          color: #000;
+          width: 80mm;
+          padding: 5mm;
+          background: white;
+        }
+        .divider {
+          border-top: 1px dashed #000;
+          margin: 8px 0;
+        }
+        .divider-double {
+          border-top: 2px solid #000;
+          margin: 10px 0;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 12px;
+        }
+        .header h1 {
+          font-size: 14pt;
+          font-weight: bold;
+          margin-bottom: 4px;
+        }
+        .header .subtitle {
+          font-size: 9pt;
+          margin-bottom: 2px;
+        }
+        .info-line {
+          font-size: 8pt;
+          margin: 2px 0;
+        }
+        .bold {
+          font-weight: bold;
+        }
+        .center {
+          text-align: center;
+        }
+        .section-title {
+          font-size: 10pt;
+          font-weight: bold;
+          margin: 8px 0 6px 0;
+          text-transform: uppercase;
+        }
+        .tarea {
+          margin-bottom: 10px;
+          padding: 6px 0;
+          border-bottom: 1px solid #ddd;
+        }
+        .tarea:last-child {
+          border-bottom: none;
+        }
+        .tarea-num {
+          font-weight: bold;
+          font-size: 10pt;
+        }
+        .tarea-titulo {
+          font-weight: bold;
+          margin: 3px 0;
+          word-wrap: break-word;
+        }
+        .tarea-desc {
+          font-size: 8pt;
+          margin: 3px 0;
+          word-wrap: break-word;
+        }
+        .tarea-prioridad {
+          font-size: 8pt;
+          font-weight: bold;
+          margin: 2px 0;
+        }
+        .tarea-fecha {
+          font-size: 7pt;
+          font-style: italic;
+          margin: 2px 0;
+        }
+        .checkbox {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border: 2px solid #000;
+          margin-right: 5px;
+          vertical-align: middle;
+        }
+        .no-tareas {
+          text-align: center;
+          padding: 15px;
+          font-style: italic;
+        }
+        .firma-section {
+          margin-top: 15px;
+          padding-top: 10px;
+        }
+        .firma-line {
+          border-bottom: 1px solid #000;
+          margin: 20px 0 5px 0;
+        }
+        .footer {
+          margin-top: 15px;
+          padding-top: 8px;
+          border-top: 1px dashed #000;
+          text-align: center;
+          font-size: 7pt;
+        }
+        @media print {
+          body {
+            padding: 2mm;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>TAREAS DIARIAS</h1>
+        <div class="subtitle">Plan de Trabajo</div>
+      </div>
+
+      <div class="divider-double"></div>
+
+      <div class="info-line bold">${empleado.nombre} ${empleado.apellido}</div>
+      ${empleado.puesto ? `<div class="info-line">${empleado.puesto}</div>` : ''}
+      <div class="info-line">${fechaFormateada} - ${horaFormateada}</div>
+
+      <div class="divider-double"></div>
+
+      ${tareas.length === 0 ? `
+        <div class="no-tareas">
+          <div class="bold">SIN TAREAS</div>
+          <div>No hay tareas asignadas</div>
+        </div>
+      ` : `
+        <div class="section-title">TAREAS (${tareas.length})</div>
+        ${tareas.map((tarea, index) => `
+          <div class="tarea">
+            <div>
+              <span class="checkbox"></span>
+              <span class="tarea-num">${index + 1}.</span>
+            </div>
+            <div class="tarea-titulo">${tarea.titulo}</div>
+            ${tarea.descripcion ? `
+              <div class="tarea-desc">${tarea.descripcion}</div>
+            ` : ''}
+            <div class="tarea-prioridad">Prioridad: ${prioridadTexto(tarea.prioridad)}</div>
+            ${tarea.fecha_limite ? `
+              <div class="tarea-fecha">Vence: ${new Date(tarea.fecha_limite).toLocaleDateString('es-ES')}</div>
+            ` : ''}
+          </div>
+        `).join('')}
+      `}
+
+      <div class="divider-double"></div>
+
+      <div class="firma-section">
+        <div class="section-title">FIRMA</div>
+        <div class="firma-line"></div>
+        <div class="center info-line">Empleado - Fecha</div>
+        
+        <div class="firma-line" style="margin-top: 25px;"></div>
+        <div class="center info-line">Supervisor - Fecha</div>
+      </div>
+
+      <div class="footer">
+        <div>${new Date().toLocaleString('es-ES')}</div>
+        <div>Sistema Kiosco CheckIn</div>
+      </div>
+    </body>
+    </html>
+  `
+}
+
+// Función para generar el contenido HTML para impresión A4
+const generarHTMLTareasA4 = (empleado: EmpleadoInfo, tareas: TareaDiaria[], fecha: Date): string => {
   const fechaFormateada = fecha.toLocaleDateString('es-ES', {
     weekday: 'long',
     year: 'numeric',
@@ -313,8 +524,11 @@ export const esPrimerCheckinDelDia = async (empleadoId: string): Promise<boolean
   return fichajes?.length === 1
 }
 
-// Función principal para imprimir tareas automáticamente
-export const imprimirTareasDiariasAutomatico = async (empleado: EmpleadoInfo): Promise<boolean> => {
+// Función principal para imprimir tareas automáticamente (térmica por defecto)
+export const imprimirTareasDiariasAutomatico = async (
+  empleado: EmpleadoInfo, 
+  tipoImpresora: 'termica' | 'a4' = 'termica'
+): Promise<boolean> => {
   try {
     console.log('🖨️ Iniciando impresión automática de tareas para:', empleado.nombre)
 
@@ -329,8 +543,10 @@ export const imprimirTareasDiariasAutomatico = async (empleado: EmpleadoInfo): P
     const tareas = await obtenerTareasEmpleado(empleado.id)
     console.log(`📋 Tareas encontradas: ${tareas.length}`)
 
-    // Generar HTML para imprimir
-    const htmlContent = generarHTMLTareas(empleado, tareas, new Date())
+    // Generar HTML según tipo de impresora
+    const htmlContent = tipoImpresora === 'termica' 
+      ? generarHTMLTareasTermica(empleado, tareas, new Date())
+      : generarHTMLTareasA4(empleado, tareas, new Date())
 
     // Crear ventana de impresión
     const printWindow = window.open('', '_blank', 'width=800,height=600')
@@ -364,9 +580,14 @@ export const imprimirTareasDiariasAutomatico = async (empleado: EmpleadoInfo): P
 }
 
 // Función para preview manual de las tareas (para testing)
-export const previewTareasDiarias = async (empleado: EmpleadoInfo): Promise<void> => {
+export const previewTareasDiarias = async (
+  empleado: EmpleadoInfo,
+  tipoImpresora: 'termica' | 'a4' = 'termica'
+): Promise<void> => {
   const tareas = await obtenerTareasEmpleado(empleado.id)
-  const htmlContent = generarHTMLTareas(empleado, tareas, new Date())
+  const htmlContent = tipoImpresora === 'termica'
+    ? generarHTMLTareasTermica(empleado, tareas, new Date())
+    : generarHTMLTareasA4(empleado, tareas, new Date())
   
   const previewWindow = window.open('', '_blank', 'width=800,height=600')
   if (previewWindow) {
