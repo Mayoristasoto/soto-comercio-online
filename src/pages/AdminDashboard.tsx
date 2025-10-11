@@ -487,19 +487,21 @@ export default function AdminDashboard() {
 
       {/* Management Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-10 w-full">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="staff">Personal</TabsTrigger>
-          <TabsTrigger value="users">Usuarios</TabsTrigger>
-          <TabsTrigger value="branches">Sucursales</TabsTrigger>
-          <TabsTrigger value="budget">Presupuesto</TabsTrigger>
-          <TabsTrigger value="challenges">Desafíos</TabsTrigger>
-          <TabsTrigger value="training">Capacitaciones</TabsTrigger>
-          <TabsTrigger value="prizes">Premios</TabsTrigger>
-          <TabsTrigger value="puntualidad">Puntualidad</TabsTrigger>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="activity">Actividad</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-10 md:w-full">
+            <TabsTrigger value="dashboard" className="whitespace-nowrap">Dashboard</TabsTrigger>
+            <TabsTrigger value="staff" className="whitespace-nowrap">Personal</TabsTrigger>
+            <TabsTrigger value="users" className="whitespace-nowrap">Usuarios</TabsTrigger>
+            <TabsTrigger value="branches" className="whitespace-nowrap">Sucursales</TabsTrigger>
+            <TabsTrigger value="budget" className="whitespace-nowrap">Presupuesto</TabsTrigger>
+            <TabsTrigger value="challenges" className="whitespace-nowrap">Desafíos</TabsTrigger>
+            <TabsTrigger value="training" className="whitespace-nowrap">Capacitaciones</TabsTrigger>
+            <TabsTrigger value="prizes" className="whitespace-nowrap">Premios</TabsTrigger>
+            <TabsTrigger value="puntualidad" className="whitespace-nowrap">Puntualidad</TabsTrigger>
+            <TabsTrigger value="roles" className="whitespace-nowrap">Roles</TabsTrigger>
+            <TabsTrigger value="activity" className="whitespace-nowrap">Actividad</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="dashboard">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
