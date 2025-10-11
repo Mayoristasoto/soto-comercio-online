@@ -511,7 +511,7 @@ export default function AdminDashboard() {
                   Gestiona los elementos principales del sistema
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                 <Button className="w-full justify-start bg-primary hover:bg-primary/90">
                   <Users className="h-4 w-4 mr-2" />
                   Gestionar Empleados

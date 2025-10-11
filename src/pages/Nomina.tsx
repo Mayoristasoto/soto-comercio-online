@@ -381,7 +381,7 @@ export default function Nomina() {
                   Gestiona los elementos principales del módulo
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                 <Button 
                   className="w-full justify-start"
                   onClick={() => setActiveTab('employees')}
