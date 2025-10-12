@@ -362,6 +362,37 @@ export function MandatoryDocuments() {
               <div>
                 <Label>Archivo del Documento</Label>
                 <div className="space-y-3">
+                  {/* Opción 1: URL Externa (Google Drive, etc) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="url_archivo" className="text-sm font-medium">
+                      URL Externa (Google Drive, Dropbox, etc.)
+                    </Label>
+                    <Input
+                      id="url_archivo"
+                      type="url"
+                      placeholder="https://drive.google.com/file/d/..."
+                      value={formData.url_archivo}
+                      onChange={(e) => {
+                        setFormData({ ...formData, url_archivo: e.target.value });
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Para Google Drive: Compartir → Cualquiera con el enlace → Copiar enlace
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">O</span>
+                    </div>
+                  </div>
+
+                  {/* Opción 2: Subir archivo a Supabase */}
                   {!selectedFile && !formData.url_archivo && (
                     <div className="border-2 border-dashed rounded-lg p-6 text-center">
                       <Input
@@ -386,24 +417,24 @@ export function MandatoryDocuments() {
                     </div>
                   )}
 
-                  {(selectedFile || formData.url_archivo) && (
+                  {(selectedFile || (formData.url_archivo && !formData.url_archivo.includes('drive.google.com'))) && (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
                         <div className="flex items-center gap-2">
                           <FileText className="h-5 w-5 text-primary" />
                           <div>
                             <p className="text-sm font-medium">
-                              {selectedFile ? selectedFile.name : 'Archivo existente'}
+                              {selectedFile ? selectedFile.name : 'Archivo de Supabase'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {selectedFile 
                                 ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
-                                : 'Ya subido'}
+                                : 'Alojado en Supabase'}
                             </p>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          {formData.url_archivo && (
+                          {formData.url_archivo && !selectedFile && (
                             <Button
                               type="button"
                               variant="outline"
@@ -436,9 +467,37 @@ export function MandatoryDocuments() {
                     </div>
                   )}
 
-                  <p className="text-xs text-muted-foreground">
-                    Puedes subir un archivo o proporcionar una URL externa
-                  </p>
+                  {formData.url_archivo && formData.url_archivo.includes('drive.google.com') && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 border rounded-lg bg-primary/5">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="text-sm font-medium">Archivo de Google Drive</p>
+                            <p className="text-xs text-muted-foreground">Enlazado externamente</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(formData.url_archivo, '_blank')}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFormData({ ...formData, url_archivo: "" })}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -133,6 +133,17 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
     }
   };
 
+  const getEmbedUrl = (url: string): string => {
+    // Convertir URLs de Google Drive al formato embed
+    if (url.includes('drive.google.com')) {
+      const fileIdMatch = url.match(/\/d\/([^/]+)/);
+      if (fileIdMatch) {
+        return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+      }
+    }
+    return url;
+  };
+
   if (!empleadoId) {
     return (
       <Card>
@@ -329,12 +340,14 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
                   </Button>
                 </div>
                 
-                {selectedDoc.documento.url_archivo.toLowerCase().endsWith('.pdf') && (
+                {(selectedDoc.documento.url_archivo.toLowerCase().endsWith('.pdf') || 
+                  selectedDoc.documento.url_archivo.includes('drive.google.com')) && (
                   <div className="border rounded-lg overflow-hidden bg-white">
                     <iframe
-                      src={selectedDoc.documento.url_archivo}
+                      src={getEmbedUrl(selectedDoc.documento.url_archivo)}
                       className="w-full h-[500px]"
                       title="Vista previa del documento"
+                      allow="autoplay"
                     />
                   </div>
                 )}
