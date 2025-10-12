@@ -490,24 +490,27 @@ export default function Organigrama() {
           </TabsContent>
 
           <TabsContent value="nivel" className="space-y-8">
-            {/* Nivel 1: Administradores */}
+            {/* Nivel Superior: Administradores RRHH */}
             {admins.length > 0 && (
               <div className="relative">
-                <div className="text-center mb-4">
-                  <Badge className="mb-2">Administración</Badge>
+                <div className="text-center mb-6">
+                  <Badge className="mb-2 text-base px-4 py-2" variant="default">
+                    Administración de Recursos Humanos
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-2">Nivel Superior</p>
                 </div>
-                <div className="flex justify-center gap-4 flex-wrap">
+                <div className="flex justify-center gap-4 flex-wrap max-w-4xl mx-auto">
                   {admins.map((admin) => (
-                    <div key={admin.id} className="w-64">
+                    <div key={admin.id} className="w-72">
                       <EmpleadoCard empleado={admin} />
                     </div>
                   ))}
                 </div>
                 
-                {/* Línea vertical hacia niveles */}
+                {/* Línea vertical hacia niveles jerárquicos */}
                 {niveles.length > 0 && (
-                  <div className="flex justify-center">
-                    <div className="w-0.5 h-8 bg-gradient-to-b from-primary to-primary/30"></div>
+                  <div className="flex justify-center mt-6">
+                    <div className="w-0.5 h-12 bg-gradient-to-b from-primary to-primary/30"></div>
                   </div>
                 )}
               </div>
@@ -515,21 +518,27 @@ export default function Organigrama() {
 
             {/* Niveles Jerárquicos - Verticalmente organizados */}
             {niveles.length > 0 && (
-              <div className="space-y-8">
+              <div className="space-y-12">
                 {niveles.map((nivel, index) => (
                   <div key={nivel.nivel} className="relative">
                     {/* Línea vertical conectora entre niveles */}
                     {index > 0 && (
-                      <div className="absolute left-1/2 -top-8 w-0.5 h-8 bg-gradient-to-b from-primary/30 to-primary"></div>
+                      <div className="absolute left-1/2 -top-12 w-0.5 h-12 bg-gradient-to-b from-primary/50 to-primary/30"></div>
                     )}
                     
-                    <div className="text-center mb-4">
-                      <Badge className="text-sm">
-                        {nivel.nombre}
-                      </Badge>
+                    <div className="text-center mb-6">
+                      <div className="inline-flex items-center space-x-2 bg-primary/10 px-6 py-3 rounded-full border-2 border-primary/30">
+                        <Star className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-lg text-primary">
+                          {nivel.nombre}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {nivel.gerentes.length + nivel.empleados.length} {nivel.gerentes.length + nivel.empleados.length === 1 ? 'persona' : 'personas'}
+                      </p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
                       {/* Gerentes primero */}
                       {nivel.gerentes.map((gerente) => (
                         <div key={gerente.id}>
