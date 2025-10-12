@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { 
   Building2, 
@@ -8,7 +9,8 @@ import {
   User,
   Mail,
   Calendar,
-  Briefcase
+  Briefcase,
+  RefreshCw
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
@@ -34,6 +36,12 @@ interface EmpleadoOrg {
   avatar_url?: string
 }
 
+interface DepartamentoNode {
+  nombre: string
+  gerentes: EmpleadoOrg[]
+  empleados: EmpleadoOrg[]
+}
+
 interface SucursalNode {
   id: string
   nombre: string
@@ -44,19 +52,24 @@ interface SucursalNode {
 export default function Organigrama() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [admins, setAdmins] = useState<EmpleadoOrg[]>([])
-  const [sucursales, setSucursales] = useState<SucursalNode[]>([])
-  const [empleadosSinSucursal, setEmpleadosSinSucursal] = useState<EmpleadoOrg[]>([])
+  const [departamentos, setDepartamentos] = useState<DepartamentoNode[]>([])
+  const [empleadosSinDepartamento, setEmpleadosSinDepartamento] = useState<EmpleadoOrg[]>([])
 
   useEffect(() => {
     loadOrganigrama()
   }, [])
 
-  const loadOrganigrama = async () => {
+  const loadOrganigrama = async (isRefresh = false) => {
     try {
-      setLoading(true)
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
 
-      // Cargar empleados con sus sucursales
+      // Cargar empleados con sus puestos
       const { data: empleados, error: empleadosError } = await supabase
         .from('empleados')
         .select(`
@@ -70,7 +83,8 @@ export default function Organigrama() {
           grupo_id,
           fecha_ingreso,
           avatar_url,
-          sucursales(nombre)
+          sucursales(nombre),
+          puestos(departamento)
         `)
         .eq('activo', true)
         .order('apellido')
@@ -84,49 +98,62 @@ export default function Organigrama() {
         sucursal_nombre: e.sucursales?.nombre
       })))
 
-      // Cargar sucursales
-      const { data: sucursalesData, error: sucursalesError } = await supabase
-        .from('sucursales')
-        .select('id, nombre')
-        .eq('activa', true)
-        .order('nombre')
-
-      if (sucursalesError) throw sucursalesError
-
-      // Organizar empleados por sucursal
-      const sucursalesOrg: SucursalNode[] = sucursalesData?.map(sucursal => {
-        const empleadosSucursal = empleados?.filter(
-          e => e.sucursal_id === sucursal.id && e.rol !== 'admin_rrhh'
-        ) || []
-
-        const gerente = empleadosSucursal.find(e => e.rol === 'gerente_sucursal')
-        const empleadosRegulares = empleadosSucursal.filter(e => e.rol === 'empleado')
-
-        return {
-          id: sucursal.id,
-          nombre: sucursal.nombre,
-          gerente: gerente ? {
-            ...gerente,
-            sucursal_nombre: sucursal.nombre
-          } : undefined,
-          empleados: empleadosRegulares.map(e => ({
-            ...e,
-            sucursal_nombre: sucursal.nombre
-          }))
+      // Obtener departamentos únicos de los puestos
+      const departamentosMap = new Map<string, DepartamentoNode>()
+      
+      empleados?.forEach(empleado => {
+        if (empleado.rol === 'admin_rrhh') return
+        
+        const departamento = empleado.puestos?.departamento || 'Sin Departamento'
+        
+        if (!departamentosMap.has(departamento)) {
+          departamentosMap.set(departamento, {
+            nombre: departamento,
+            gerentes: [],
+            empleados: []
+          })
         }
-      }) || []
+        
+        const dept = departamentosMap.get(departamento)!
+        const empleadoData = {
+          ...empleado,
+          sucursal_nombre: empleado.sucursales?.nombre
+        }
+        
+        if (empleado.rol === 'gerente_sucursal') {
+          dept.gerentes.push(empleadoData)
+        } else {
+          dept.empleados.push(empleadoData)
+        }
+      })
 
-      setSucursales(sucursalesOrg)
+      // Convertir el mapa a array y ordenar
+      const departamentosArray = Array.from(departamentosMap.values())
+        .sort((a, b) => {
+          // "Sin Departamento" al final
+          if (a.nombre === 'Sin Departamento') return 1
+          if (b.nombre === 'Sin Departamento') return -1
+          return a.nombre.localeCompare(b.nombre)
+        })
 
-      // Empleados sin sucursal asignada
-      const sinSucursal = empleados?.filter(
-        e => !e.sucursal_id && e.rol !== 'admin_rrhh'
+      setDepartamentos(departamentosArray)
+
+      // Empleados sin puesto asignado (y por tanto sin departamento)
+      const sinDepartamento = empleados?.filter(
+        e => !e.puestos?.departamento && e.rol !== 'admin_rrhh'
       ).map(e => ({
         ...e,
-        sucursal_nombre: undefined
+        sucursal_nombre: e.sucursales?.nombre
       })) || []
       
-      setEmpleadosSinSucursal(sinSucursal)
+      setEmpleadosSinDepartamento(sinDepartamento)
+
+      if (isRefresh) {
+        toast({
+          title: "Organigrama actualizado",
+          description: "Los datos se han refrescado correctamente"
+        })
+      }
 
     } catch (error) {
       console.error('Error cargando organigrama:', error)
@@ -137,7 +164,12 @@ export default function Organigrama() {
       })
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
+  }
+
+  const handleRefresh = () => {
+    loadOrganigrama(true)
   }
 
   const EmpleadoCard = ({ empleado }: { empleado: EmpleadoOrg }) => {
@@ -241,13 +273,26 @@ export default function Organigrama() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="h-5 w-5" />
-            <span>Organigrama Empresarial</span>
-          </CardTitle>
-          <CardDescription>
-            Estructura organizacional de la empresa
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="h-5 w-5" />
+                <span>Organigrama Empresarial</span>
+              </CardTitle>
+              <CardDescription>
+                Estructura organizacional por departamentos
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={handleRefresh} 
+              disabled={refreshing}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refrescar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
@@ -265,8 +310,8 @@ export default function Organigrama() {
                   ))}
                 </div>
                 
-                {/* Línea vertical hacia sucursales */}
-                {sucursales.length > 0 && (
+                {/* Línea vertical hacia departamentos */}
+                {departamentos.length > 0 && (
                   <div className="flex justify-center">
                     <div className="w-0.5 h-8 bg-gradient-to-b from-primary to-primary/30"></div>
                   </div>
@@ -274,12 +319,12 @@ export default function Organigrama() {
               </div>
             )}
 
-            {/* Nivel 2: Sucursales */}
-            {sucursales.length > 0 && (
+            {/* Nivel 2: Departamentos */}
+            {departamentos.length > 0 && (
               <div className="relative">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {sucursales.map((sucursal, index) => (
-                    <div key={sucursal.id} className="relative">
+                  {departamentos.map((departamento, index) => (
+                    <div key={departamento.nombre} className="relative">
                       {/* Línea conectora horizontal */}
                       {index > 0 && (
                         <div className="hidden lg:block absolute top-0 -left-3 w-3 h-0.5 bg-primary/30"></div>
@@ -288,19 +333,25 @@ export default function Organigrama() {
                       <Card className="border-2">
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center space-x-2">
-                            <Building2 className="h-4 w-4" />
-                            <span>{sucursal.nombre}</span>
+                            <Briefcase className="h-4 w-4" />
+                            <span>{departamento.nombre}</span>
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          {/* Gerente */}
-                          {sucursal.gerente ? (
+                          {/* Gerentes */}
+                          {departamento.gerentes.length > 0 ? (
                             <div>
-                              <p className="text-xs text-muted-foreground mb-2">Gerente</p>
-                              <EmpleadoCard empleado={sucursal.gerente} />
+                              <p className="text-xs text-muted-foreground mb-2">
+                                {departamento.gerentes.length > 1 ? 'Gerentes' : 'Gerente'}
+                              </p>
+                              <div className="space-y-2">
+                                {departamento.gerentes.map((gerente) => (
+                                  <EmpleadoCard key={gerente.id} empleado={gerente} />
+                                ))}
+                              </div>
                               
                               {/* Línea hacia empleados */}
-                              {sucursal.empleados.length > 0 && (
+                              {departamento.empleados.length > 0 && (
                                 <div className="flex justify-center my-2">
                                   <div className="w-0.5 h-4 bg-gradient-to-b from-primary/50 to-primary/20"></div>
                                 </div>
@@ -313,18 +364,18 @@ export default function Organigrama() {
                           )}
                           
                           {/* Empleados */}
-                          {sucursal.empleados.length > 0 ? (
+                          {departamento.empleados.length > 0 ? (
                             <div>
                               <p className="text-xs text-muted-foreground mb-2">
-                                Equipo ({sucursal.empleados.length})
+                                Equipo ({departamento.empleados.length})
                               </p>
                               <div className="space-y-2 max-h-96 overflow-y-auto">
-                                {sucursal.empleados.map((empleado) => (
+                                {departamento.empleados.map((empleado) => (
                                   <EmpleadoCard key={empleado.id} empleado={empleado} />
                                 ))}
                               </div>
                             </div>
-                          ) : sucursal.gerente && (
+                          ) : departamento.gerentes.length > 0 && (
                             <div className="text-center py-2 text-xs text-muted-foreground">
                               Sin empleados
                             </div>
@@ -337,18 +388,18 @@ export default function Organigrama() {
               </div>
             )}
 
-            {/* Empleados sin sucursal */}
-            {empleadosSinSucursal.length > 0 && (
+            {/* Empleados sin departamento */}
+            {empleadosSinDepartamento.length > 0 && (
               <Card className="border-dashed border-2">
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center space-x-2">
                     <User className="h-4 w-4" />
-                    <span>Sin Sucursal Asignada</span>
+                    <span>Sin Departamento Asignado</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {empleadosSinSucursal.map((empleado) => (
+                    {empleadosSinDepartamento.map((empleado) => (
                       <EmpleadoCard key={empleado.id} empleado={empleado} />
                     ))}
                   </div>
