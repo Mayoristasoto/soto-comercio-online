@@ -527,9 +527,12 @@ export default function Nomina() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="text-sm font-medium">
+                              <button
+                                onClick={() => handleViewProfile(employee.id)}
+                                className="text-sm font-medium text-primary hover:underline cursor-pointer text-left"
+                              >
                                 {employee.nombre} {employee.apellido}
-                              </p>
+                              </button>
                               <p className="text-xs text-muted-foreground">{employee.email}</p>
                             </div>
                           </div>
