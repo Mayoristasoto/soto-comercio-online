@@ -42,6 +42,8 @@ interface ConfiguracionSistema {
   whatsapp_notificaciones_activas: boolean
   whatsapp_retraso_minutos: number
   mensaje_audio_checkin: string
+  mensaje_audio_tareas_pendientes: string
+  audio_tareas_pendientes_activo: boolean
 }
 
 export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionProps) {
@@ -57,7 +59,9 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     whatsapp_api_endpoint: 'https://api.mayoristasoto.online/api/messages/send',
     whatsapp_notificaciones_activas: true,
     whatsapp_retraso_minutos: 15,
-    mensaje_audio_checkin: '¡Bienvenido! Tu fichaje ha sido registrado correctamente.'
+    mensaje_audio_checkin: '¡Bienvenido! Tu fichaje ha sido registrado correctamente.',
+    mensaje_audio_tareas_pendientes: 'Tienes {cantidad} tareas pendientes para hoy. Recuerda revisarlas.',
+    audio_tareas_pendientes_activo: true
   })
   const [ubicacionActual, setUbicacionActual] = useState<{lat: number, lng: number} | null>(null)
   const [tieneDescriptorFacial, setTieneDescriptorFacial] = useState(false)
@@ -87,7 +91,9 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'whatsapp_api_endpoint',
           'whatsapp_notificaciones_activas',
           'whatsapp_retraso_minutos',
-          'mensaje_audio_checkin'
+          'mensaje_audio_checkin',
+          'mensaje_audio_tareas_pendientes',
+          'audio_tareas_pendientes_activo'
         ])
 
       if (error) throw error
@@ -197,6 +203,14 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'mensaje_audio_checkin',
           valor: configuracion.mensaje_audio_checkin
+        },
+        {
+          clave: 'mensaje_audio_tareas_pendientes',
+          valor: configuracion.mensaje_audio_tareas_pendientes
+        },
+        {
+          clave: 'audio_tareas_pendientes_activo',
+          valor: configuracion.audio_tareas_pendientes_activo.toString()
         }
       ]
 
@@ -333,13 +347,13 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Volume2 className="h-5 w-5" />
-            <span>Mensaje de Audio Post-Check-in</span>
+            <span>Mensajes de Audio Post-Check-in</span>
           </CardTitle>
           <CardDescription>
-            Configure el mensaje que se reproducirá automáticamente después de cada fichaje exitoso
+            Configure los mensajes que se reproducirán automáticamente después de cada fichaje exitoso
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="mensaje_audio">
               Mensaje de bienvenida
@@ -357,8 +371,50 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
               disabled={empleado.rol !== 'admin_rrhh'}
             />
             <p className="text-sm text-muted-foreground">
-              Este mensaje será convertido a audio y reproducido automáticamente después de cada fichaje exitoso usando tecnología de síntesis de voz.
+              Este mensaje será convertido a audio y reproducido automáticamente después de cada fichaje exitoso.
             </p>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Audio de tareas pendientes</Label>
+                <p className="text-sm text-muted-foreground">
+                  Reproducir mensaje cuando hay tareas pendientes
+                </p>
+              </div>
+              <Switch
+                checked={configuracion.audio_tareas_pendientes_activo}
+                onCheckedChange={(checked) => setConfiguracion({
+                  ...configuracion,
+                  audio_tareas_pendientes_activo: checked
+                })}
+                disabled={empleado.rol !== 'admin_rrhh'}
+              />
+            </div>
+
+            {configuracion.audio_tareas_pendientes_activo && (
+              <div className="space-y-2">
+                <Label htmlFor="mensaje_tareas">
+                  Mensaje de tareas pendientes
+                </Label>
+                <Textarea
+                  id="mensaje_tareas"
+                  value={configuracion.mensaje_audio_tareas_pendientes}
+                  onChange={(e) => setConfiguracion({ 
+                    ...configuracion, 
+                    mensaje_audio_tareas_pendientes: e.target.value 
+                  })}
+                  placeholder="Tienes {cantidad} tareas pendientes..."
+                  rows={3}
+                  className="resize-none"
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Use <code className="bg-muted px-1 py-0.5 rounded">{'{cantidad}'}</code> para mostrar el número de tareas pendientes.
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

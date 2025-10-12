@@ -7,6 +7,7 @@ import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { useNavigate } from "react-router-dom"
+import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 
 interface EmpleadoBasico {
   id: string
@@ -45,6 +46,7 @@ export default function KioscoCheckIn() {
   const { toast } = useToast()
   const { config } = useFacialConfig()
   const navigate = useNavigate()
+  const { reproducirMensajeBienvenida, reproducirMensajeTareas } = useAudioNotifications()
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [lastProcessTime, setLastProcessTime] = useState<number>(0) // Para prevenir múltiples procesamiento
@@ -293,6 +295,19 @@ export default function KioscoCheckIn() {
         duration: 3000,
       })
 
+      // Reproducir mensajes de audio
+      try {
+        await reproducirMensajeBienvenida()
+        if (tareas && tareas.length > 0) {
+          // Esperar un poco antes de reproducir el mensaje de tareas
+          setTimeout(() => {
+            reproducirMensajeTareas(tareas.length)
+          }, 2000)
+        }
+      } catch (error) {
+        console.error('Error reproduciendo audio:', error)
+      }
+
       resetKiosco()
 
     } catch (error) {
@@ -419,6 +434,20 @@ export default function KioscoCheckIn() {
         duration: 3000,
       })
 
+      // Reproducir mensajes de audio si es entrada o fin de pausa
+      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+        try {
+          await reproducirMensajeBienvenida()
+          if (tareas && tareas.length > 0) {
+            setTimeout(() => {
+              reproducirMensajeTareas(tareas.length)
+            }, 2000)
+          }
+        } catch (error) {
+          console.error('Error reproduciendo audio:', error)
+        }
+      }
+
       setShowFacialAuth(false)
       resetKiosco()
 
@@ -524,6 +553,20 @@ export default function KioscoCheckIn() {
         description: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido} - ${accionTexto}`,
         duration: 3000,
       })
+
+      // Reproducir mensajes de audio si es entrada o fin de pausa
+      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+        try {
+          await reproducirMensajeBienvenida()
+          if (tareas && tareas.length > 0) {
+            setTimeout(() => {
+              reproducirMensajeTareas(tareas.length)
+            }, 2000)
+          }
+        } catch (error) {
+          console.error('Error reproduciendo audio:', error)
+        }
+      }
 
       setShowActionSelection(false)
       resetKiosco()
