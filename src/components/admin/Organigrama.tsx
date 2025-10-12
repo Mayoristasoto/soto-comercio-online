@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -10,7 +11,8 @@ import {
   Mail,
   Calendar,
   Briefcase,
-  RefreshCw
+  RefreshCw,
+  Star
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
@@ -36,6 +38,13 @@ interface EmpleadoOrg {
   avatar_url?: string
 }
 
+interface NivelJerarquicoNode {
+  nivel: number
+  nombre: string
+  gerentes: EmpleadoOrg[]
+  empleados: EmpleadoOrg[]
+}
+
 interface DepartamentoNode {
   nombre: string
   gerentes: EmpleadoOrg[]
@@ -53,9 +62,12 @@ export default function Organigrama() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [vistaActiva, setVistaActiva] = useState<'departamento' | 'nivel'>('departamento')
   const [admins, setAdmins] = useState<EmpleadoOrg[]>([])
   const [departamentos, setDepartamentos] = useState<DepartamentoNode[]>([])
+  const [niveles, setNiveles] = useState<NivelJerarquicoNode[]>([])
   const [empleadosSinDepartamento, setEmpleadosSinDepartamento] = useState<EmpleadoOrg[]>([])
+  const [empleadosSinNivel, setEmpleadosSinNivel] = useState<EmpleadoOrg[]>([])
 
   useEffect(() => {
     loadOrganigrama()
@@ -84,7 +96,7 @@ export default function Organigrama() {
           fecha_ingreso,
           avatar_url,
           sucursales(nombre),
-          puestos(departamento)
+          puestos(departamento, nivel_jerarquico)
         `)
         .eq('activo', true)
         .order('apellido')
@@ -138,6 +150,48 @@ export default function Organigrama() {
 
       setDepartamentos(departamentosArray)
 
+      // Organizar por nivel jerárquico
+      const nivelesMap = new Map<number, NivelJerarquicoNode>()
+      
+      empleados?.forEach(empleado => {
+        if (empleado.rol === 'admin_rrhh') return
+        
+        const nivelJerarquico = empleado.puestos?.nivel_jerarquico || 0
+        const nombreNivel = getNombreNivel(nivelJerarquico)
+        
+        if (!nivelesMap.has(nivelJerarquico)) {
+          nivelesMap.set(nivelJerarquico, {
+            nivel: nivelJerarquico,
+            nombre: nombreNivel,
+            gerentes: [],
+            empleados: []
+          })
+        }
+        
+        const nvl = nivelesMap.get(nivelJerarquico)!
+        const empleadoData = {
+          ...empleado,
+          sucursal_nombre: empleado.sucursales?.nombre
+        }
+        
+        if (empleado.rol === 'gerente_sucursal') {
+          nvl.gerentes.push(empleadoData)
+        } else {
+          nvl.empleados.push(empleadoData)
+        }
+      })
+
+      // Convertir el mapa a array y ordenar por nivel
+      const nivelesArray = Array.from(nivelesMap.values())
+        .sort((a, b) => {
+          // Sin nivel al final
+          if (a.nivel === 0) return 1
+          if (b.nivel === 0) return -1
+          return b.nivel - a.nivel // Mayor nivel primero
+        })
+
+      setNiveles(nivelesArray)
+
       // Empleados sin puesto asignado (y por tanto sin departamento)
       const sinDepartamento = empleados?.filter(
         e => !e.puestos?.departamento && e.rol !== 'admin_rrhh'
@@ -147,6 +201,16 @@ export default function Organigrama() {
       })) || []
       
       setEmpleadosSinDepartamento(sinDepartamento)
+
+      // Empleados sin nivel jerárquico
+      const sinNivel = empleados?.filter(
+        e => !e.puestos?.nivel_jerarquico && e.rol !== 'admin_rrhh'
+      ).map(e => ({
+        ...e,
+        sucursal_nombre: e.sucursales?.nombre
+      })) || []
+      
+      setEmpleadosSinNivel(sinNivel)
 
       if (isRefresh) {
         toast({
@@ -170,6 +234,17 @@ export default function Organigrama() {
 
   const handleRefresh = () => {
     loadOrganigrama(true)
+  }
+
+  const getNombreNivel = (nivel: number): string => {
+    const niveles: Record<number, string> = {
+      0: 'Sin Nivel',
+      1: 'Nivel 1 - Operativo',
+      2: 'Nivel 2 - Supervisión',
+      3: 'Nivel 3 - Gerencia',
+      4: 'Nivel 4 - Dirección'
+    }
+    return niveles[nivel] || `Nivel ${nivel}`
   }
 
   const EmpleadoCard = ({ empleado }: { empleado: EmpleadoOrg }) => {
@@ -280,7 +355,7 @@ export default function Organigrama() {
                 <span>Organigrama Empresarial</span>
               </CardTitle>
               <CardDescription>
-                Estructura organizacional por departamentos
+                Estructura organizacional de la empresa
               </CardDescription>
             </div>
             <Button 
@@ -295,7 +370,13 @@ export default function Organigrama() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-8">
+          <Tabs value={vistaActiva} onValueChange={(v) => setVistaActiva(v as 'departamento' | 'nivel')} className="space-y-6">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+              <TabsTrigger value="departamento">Por Departamento</TabsTrigger>
+              <TabsTrigger value="nivel">Por Nivel Jerárquico</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="departamento" className="space-y-8">
             {/* Nivel 1: Administradores */}
             {admins.length > 0 && (
               <div className="relative">
@@ -406,7 +487,121 @@ export default function Organigrama() {
                 </CardContent>
               </Card>
             )}
-          </div>
+          </TabsContent>
+
+          <TabsContent value="nivel" className="space-y-8">
+            {/* Nivel 1: Administradores */}
+            {admins.length > 0 && (
+              <div className="relative">
+                <div className="text-center mb-4">
+                  <Badge className="mb-2">Administración</Badge>
+                </div>
+                <div className="flex justify-center gap-4 flex-wrap">
+                  {admins.map((admin) => (
+                    <div key={admin.id} className="w-64">
+                      <EmpleadoCard empleado={admin} />
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Línea vertical hacia niveles */}
+                {niveles.length > 0 && (
+                  <div className="flex justify-center">
+                    <div className="w-0.5 h-8 bg-gradient-to-b from-primary to-primary/30"></div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Niveles Jerárquicos */}
+            {niveles.length > 0 && (
+              <div className="relative">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {niveles.map((nivel, index) => (
+                    <div key={nivel.nivel} className="relative">
+                      {/* Línea conectora horizontal */}
+                      {index > 0 && (
+                        <div className="hidden lg:block absolute top-0 -left-3 w-3 h-0.5 bg-primary/30"></div>
+                      )}
+                      
+                      <Card className="border-2">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center space-x-2">
+                            <Star className="h-4 w-4" />
+                            <span>{nivel.nombre}</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {/* Gerentes */}
+                          {nivel.gerentes.length > 0 ? (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-2">
+                                {nivel.gerentes.length > 1 ? 'Gerentes' : 'Gerente'}
+                              </p>
+                              <div className="space-y-2">
+                                {nivel.gerentes.map((gerente) => (
+                                  <EmpleadoCard key={gerente.id} empleado={gerente} />
+                                ))}
+                              </div>
+                              
+                              {/* Línea hacia empleados */}
+                              {nivel.empleados.length > 0 && (
+                                <div className="flex justify-center my-2">
+                                  <div className="w-0.5 h-4 bg-gradient-to-b from-primary/50 to-primary/20"></div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-2 text-sm text-muted-foreground">
+                              Sin gerente en este nivel
+                            </div>
+                          )}
+                          
+                          {/* Empleados */}
+                          {nivel.empleados.length > 0 ? (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-2">
+                                Personal ({nivel.empleados.length})
+                              </p>
+                              <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {nivel.empleados.map((empleado) => (
+                                  <EmpleadoCard key={empleado.id} empleado={empleado} />
+                                ))}
+                              </div>
+                            </div>
+                          ) : nivel.gerentes.length > 0 && (
+                            <div className="text-center py-2 text-xs text-muted-foreground">
+                              Sin personal asignado
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empleados sin nivel */}
+            {empleadosSinNivel.length > 0 && (
+              <Card className="border-dashed border-2">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>Sin Nivel Jerárquico Asignado</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {empleadosSinNivel.map((empleado) => (
+                      <EmpleadoCard key={empleado.id} empleado={empleado} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
         </CardContent>
       </Card>
     </div>
