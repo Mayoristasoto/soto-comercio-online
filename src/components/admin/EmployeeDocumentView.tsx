@@ -274,17 +274,29 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
 
           <div className="space-y-4 overflow-y-auto">
             {selectedDoc?.documento.url_archivo && (
-              <div className="flex items-center gap-2 p-2 bg-accent rounded">
-                <ExternalLink className="h-4 w-4" />
-                <a
-                  href={selectedDoc.documento.url_archivo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Abrir archivo externo
-                </a>
-              </div>
+              <>
+                <div className="flex items-center gap-2 p-2 bg-accent rounded">
+                  <ExternalLink className="h-4 w-4" />
+                  <a
+                    href={selectedDoc.documento.url_archivo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Abrir archivo en nueva pestaña
+                  </a>
+                </div>
+                
+                {selectedDoc.documento.url_archivo.toLowerCase().endsWith('.pdf') && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <iframe
+                      src={selectedDoc.documento.url_archivo}
+                      className="w-full h-[500px]"
+                      title="Vista previa del documento"
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {selectedDoc?.documento.contenido && (

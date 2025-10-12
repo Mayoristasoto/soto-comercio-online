@@ -557,6 +557,15 @@ export function MandatoryDocuments() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        {doc.url_archivo && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(doc.url_archivo, '_blank')}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
