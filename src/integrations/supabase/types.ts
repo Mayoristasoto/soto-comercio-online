@@ -2283,6 +2283,7 @@ export type Database = {
       puesto_documentos: {
         Row: {
           activo: boolean
+          archivo_storage_path: string | null
           contenido: string | null
           created_at: string
           descripcion: string | null
@@ -2294,9 +2295,11 @@ export type Database = {
           titulo: string
           updated_at: string
           url_archivo: string | null
+          url_externo: string | null
         }
         Insert: {
           activo?: boolean
+          archivo_storage_path?: string | null
           contenido?: string | null
           created_at?: string
           descripcion?: string | null
@@ -2308,9 +2311,11 @@ export type Database = {
           titulo: string
           updated_at?: string
           url_archivo?: string | null
+          url_externo?: string | null
         }
         Update: {
           activo?: boolean
+          archivo_storage_path?: string | null
           contenido?: string | null
           created_at?: string
           descripcion?: string | null
@@ -2322,6 +2327,7 @@ export type Database = {
           titulo?: string
           updated_at?: string
           url_archivo?: string | null
+          url_externo?: string | null
         }
         Relationships: [
           {

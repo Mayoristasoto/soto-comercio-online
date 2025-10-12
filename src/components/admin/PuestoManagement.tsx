@@ -47,6 +47,8 @@ interface PuestoDocumento {
   descripcion?: string
   tipo_documento: string
   url_archivo?: string
+  url_externo?: string
+  archivo_storage_path?: string
   contenido?: string
   orden: number
   obligatorio: boolean
@@ -79,9 +81,13 @@ export default function PuestoManagement() {
     descripcion: '',
     tipo_documento: 'manual',
     contenido: '',
+    url_externo: '',
     orden: 0,
     obligatorio: false
   })
+  
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   useEffect(() => {
     loadPuestos()
@@ -198,6 +204,39 @@ export default function PuestoManagement() {
     }
   }
 
+  const handleFileUpload = async (file: File) => {
+    if (!selectedPuesto) return null
+    
+    setUploadingFile(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${selectedPuesto.id}/${Date.now()}.${fileExt}`
+      const filePath = `puesto-documentos/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('mandatory-documents')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('mandatory-documents')
+        .getPublicUrl(filePath)
+
+      return { publicUrl, storagePath: filePath }
+    } catch (error: any) {
+      console.error('Error uploading file:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo subir el archivo",
+        variant: "destructive"
+      })
+      return null
+    } finally {
+      setUploadingFile(false)
+    }
+  }
+
   const handleDocumentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -211,12 +250,27 @@ export default function PuestoManagement() {
     }
 
     try {
+      let archivo_storage_path = null
+      let url_archivo = null
+
+      // Subir archivo si hay uno seleccionado
+      if (selectedFile) {
+        const uploadResult = await handleFileUpload(selectedFile)
+        if (uploadResult) {
+          archivo_storage_path = uploadResult.storagePath
+          url_archivo = uploadResult.publicUrl
+        }
+      }
+
       const documentData = {
         puesto_id: selectedPuesto.id,
         titulo: documentFormData.titulo.trim(),
         descripcion: documentFormData.descripcion.trim() || null,
         tipo_documento: documentFormData.tipo_documento,
         contenido: documentFormData.contenido.trim() || null,
+        url_externo: documentFormData.url_externo.trim() || null,
+        url_archivo,
+        archivo_storage_path,
         orden: documentFormData.orden,
         obligatorio: documentFormData.obligatorio
       }
@@ -229,10 +283,11 @@ export default function PuestoManagement() {
 
       toast({
         title: "Documento agregado",
-        description: "El documento ha sido agregado al puesto"
+        description: "El documento ha sido agregado al puesto correctamente"
       })
 
       resetDocumentForm()
+      setSelectedFile(null)
       loadPuestoDocumentos(selectedPuesto.id)
 
     } catch (error: any) {
@@ -311,9 +366,40 @@ export default function PuestoManagement() {
       descripcion: '',
       tipo_documento: 'manual',
       contenido: '',
+      url_externo: '',
       orden: 0,
       obligatorio: false
     })
+    setSelectedFile(null)
+  }
+  
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm('¿Está seguro de eliminar este documento?')) return
+    
+    try {
+      const { error } = await supabase
+        .from('puesto_documentos')
+        .update({ activo: false })
+        .eq('id', documentId)
+
+      if (error) throw error
+
+      toast({
+        title: "Documento eliminado",
+        description: "El documento ha sido eliminado correctamente"
+      })
+
+      if (selectedPuesto) {
+        loadPuestoDocumentos(selectedPuesto.id)
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el documento",
+        variant: "destructive"
+      })
+    }
   }
 
   const formatSalary = (amount?: number) => {
@@ -660,8 +746,35 @@ export default function PuestoManagement() {
                       value={documentFormData.contenido}
                       onChange={(e) => setDocumentFormData(prev => ({ ...prev, contenido: e.target.value }))}
                       placeholder="Escriba el contenido del documento aquí..."
-                      rows={6}
+                      rows={4}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="doc_url_externo">Link Externo (Google Drive, etc.)</Label>
+                    <Input
+                      id="doc_url_externo"
+                      value={documentFormData.url_externo}
+                      onChange={(e) => setDocumentFormData(prev => ({ ...prev, url_externo: e.target.value }))}
+                      placeholder="https://drive.google.com/file/d/..."
+                      type="url"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Puede pegar un link de Google Drive, Dropbox u otro servicio
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="doc_archivo">Subir Archivo</Label>
+                    <Input
+                      id="doc_archivo"
+                      type="file"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {selectedFile ? `Archivo seleccionado: ${selectedFile.name}` : 'Formatos: PDF, Word, Excel, PowerPoint, TXT'}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -687,9 +800,9 @@ export default function PuestoManagement() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full" disabled={uploadingFile}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Agregar Documento
+                    {uploadingFile ? 'Subiendo archivo...' : 'Agregar Documento'}
                   </Button>
                 </form>
               </CardContent>
@@ -717,7 +830,7 @@ export default function PuestoManagement() {
                     <Card key={doc.id}>
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between">
-                          <div className="space-y-1">
+                          <div className="flex-1 space-y-1">
                             <div className="flex items-center space-x-2">
                               <h4 className="font-medium">{doc.titulo}</h4>
                               <Badge variant="outline" className="text-xs">
@@ -732,14 +845,55 @@ export default function PuestoManagement() {
                             {doc.descripcion && (
                               <p className="text-sm text-muted-foreground">{doc.descripcion}</p>
                             )}
+                            
+                            {/* Enlaces y archivos */}
+                            <div className="mt-2 space-y-1">
+                              {doc.url_externo && (
+                                <div className="flex items-center space-x-2 text-sm">
+                                  <FileText className="h-3 w-3 text-blue-600" />
+                                  <a 
+                                    href={doc.url_externo} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    Ver link externo
+                                  </a>
+                                </div>
+                              )}
+                              {doc.url_archivo && (
+                                <div className="flex items-center space-x-2 text-sm">
+                                  <FileText className="h-3 w-3 text-green-600" />
+                                  <a 
+                                    href={doc.url_archivo} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-green-600 hover:underline"
+                                  >
+                                    Abrir archivo subido
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            
                             {doc.contenido && (
                               <div className="mt-2 p-3 bg-muted rounded-lg">
                                 <p className="text-sm whitespace-pre-wrap">{doc.contenido}</p>
                               </div>
                             )}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            Orden: {doc.orden}
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm text-muted-foreground">
+                              Orden: {doc.orden}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
