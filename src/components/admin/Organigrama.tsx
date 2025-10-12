@@ -513,72 +513,46 @@ export default function Organigrama() {
               </div>
             )}
 
-            {/* Niveles Jerárquicos */}
+            {/* Niveles Jerárquicos - Verticalmente organizados */}
             {niveles.length > 0 && (
-              <div className="relative">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {niveles.map((nivel, index) => (
-                    <div key={nivel.nivel} className="relative">
-                      {/* Línea conectora horizontal */}
-                      {index > 0 && (
-                        <div className="hidden lg:block absolute top-0 -left-3 w-3 h-0.5 bg-primary/30"></div>
-                      )}
-                      
-                      <Card className="border-2">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center space-x-2">
-                            <Star className="h-4 w-4" />
-                            <span>{nivel.nombre}</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          {/* Gerentes */}
-                          {nivel.gerentes.length > 0 ? (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-2">
-                                {nivel.gerentes.length > 1 ? 'Gerentes' : 'Gerente'}
-                              </p>
-                              <div className="space-y-2">
-                                {nivel.gerentes.map((gerente) => (
-                                  <EmpleadoCard key={gerente.id} empleado={gerente} />
-                                ))}
-                              </div>
-                              
-                              {/* Línea hacia empleados */}
-                              {nivel.empleados.length > 0 && (
-                                <div className="flex justify-center my-2">
-                                  <div className="w-0.5 h-4 bg-gradient-to-b from-primary/50 to-primary/20"></div>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-center py-2 text-sm text-muted-foreground">
-                              Sin gerente en este nivel
-                            </div>
-                          )}
-                          
-                          {/* Empleados */}
-                          {nivel.empleados.length > 0 ? (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-2">
-                                Personal ({nivel.empleados.length})
-                              </p>
-                              <div className="space-y-2 max-h-96 overflow-y-auto">
-                                {nivel.empleados.map((empleado) => (
-                                  <EmpleadoCard key={empleado.id} empleado={empleado} />
-                                ))}
-                              </div>
-                            </div>
-                          ) : nivel.gerentes.length > 0 && (
-                            <div className="text-center py-2 text-xs text-muted-foreground">
-                              Sin personal asignado
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+              <div className="space-y-8">
+                {niveles.map((nivel, index) => (
+                  <div key={nivel.nivel} className="relative">
+                    {/* Línea vertical conectora entre niveles */}
+                    {index > 0 && (
+                      <div className="absolute left-1/2 -top-8 w-0.5 h-8 bg-gradient-to-b from-primary/30 to-primary"></div>
+                    )}
+                    
+                    <div className="text-center mb-4">
+                      <Badge className="text-sm">
+                        {nivel.nombre}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {/* Gerentes primero */}
+                      {nivel.gerentes.map((gerente) => (
+                        <div key={gerente.id}>
+                          <EmpleadoCard empleado={gerente} />
+                        </div>
+                      ))}
+                      
+                      {/* Luego empleados */}
+                      {nivel.empleados.map((empleado) => (
+                        <div key={empleado.id}>
+                          <EmpleadoCard empleado={empleado} />
+                        </div>
+                      ))}
+                      
+                      {/* Mensaje si no hay nadie en este nivel */}
+                      {nivel.gerentes.length === 0 && nivel.empleados.length === 0 && (
+                        <div className="col-span-full text-center py-8 text-muted-foreground">
+                          No hay personal asignado a este nivel
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
