@@ -63,6 +63,12 @@ export function DocumentAssignments() {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [selectedAsignacion, setSelectedAsignacion] = useState<Asignacion | null>(null);
   const [firmaData, setFirmaData] = useState<{ firma_imagen: string; fecha_firma: string } | null>(null);
+  
+  // Filtros adicionales
+  const [filterEstado, setFilterEstado] = useState<string>("todos");
+  const [filterFechaDesde, setFilterFechaDesde] = useState("");
+  const [filterFechaHasta, setFilterFechaHasta] = useState("");
+  const [sortBy, setSortBy] = useState<"fecha" | "empleado" | "estado">("fecha");
 
   useEffect(() => {
     loadData();
@@ -238,11 +244,47 @@ export function DocumentAssignments() {
     emp.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredAsignaciones = asignaciones.filter(asig =>
-    asig.documento.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    asig.empleado.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    asig.empleado.apellido.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAsignaciones = asignaciones
+    .filter(asig => {
+      // Filtro por búsqueda de texto
+      const matchesSearch = asig.documento.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        asig.empleado.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        asig.empleado.apellido.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filtro por estado
+      let matchesEstado = true;
+      if (filterEstado === "pendiente") {
+        matchesEstado = asig.confirmacion.length === 0;
+      } else if (filterEstado === "leido") {
+        matchesEstado = asig.confirmacion.length > 0 && asig.firmas.length === 0;
+      } else if (filterEstado === "firmado") {
+        matchesEstado = asig.firmas.length > 0;
+      }
+      
+      // Filtro por fecha desde
+      const matchesFechaDesde = !filterFechaDesde || 
+        new Date(asig.fecha_asignacion) >= new Date(filterFechaDesde);
+      
+      // Filtro por fecha hasta
+      const matchesFechaHasta = !filterFechaHasta || 
+        new Date(asig.fecha_asignacion) <= new Date(filterFechaHasta);
+      
+      return matchesSearch && matchesEstado && matchesFechaDesde && matchesFechaHasta;
+    })
+    .sort((a, b) => {
+      if (sortBy === "fecha") {
+        return new Date(b.fecha_asignacion).getTime() - new Date(a.fecha_asignacion).getTime();
+      } else if (sortBy === "empleado") {
+        const nombreA = `${a.empleado.nombre} ${a.empleado.apellido}`;
+        const nombreB = `${b.empleado.nombre} ${b.empleado.apellido}`;
+        return nombreA.localeCompare(nombreB);
+      } else if (sortBy === "estado") {
+        const estadoA = a.firmas.length > 0 ? 2 : a.confirmacion.length > 0 ? 1 : 0;
+        const estadoB = b.firmas.length > 0 ? 2 : b.confirmacion.length > 0 ? 1 : 0;
+        return estadoB - estadoA;
+      }
+      return 0;
+    });
 
   if (loading) {
     return <div className="flex justify-center items-center h-64">Cargando...</div>;
@@ -392,14 +434,67 @@ export function DocumentAssignments() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative mb-4">
-            <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
-            <Input
-              placeholder="Buscar asignaciones..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="space-y-4 mb-4">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+              <Input
+                placeholder="Buscar asignaciones..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="filter-estado" className="text-sm mb-2 block">Estado</Label>
+                <Select value={filterEstado} onValueChange={setFilterEstado}>
+                  <SelectTrigger id="filter-estado">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="pendiente">Pendiente</SelectItem>
+                    <SelectItem value="leido">Leído</SelectItem>
+                    <SelectItem value="firmado">Firmado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="filter-fecha-desde" className="text-sm mb-2 block">Desde</Label>
+                <Input
+                  id="filter-fecha-desde"
+                  type="date"
+                  value={filterFechaDesde}
+                  onChange={(e) => setFilterFechaDesde(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="filter-fecha-hasta" className="text-sm mb-2 block">Hasta</Label>
+                <Input
+                  id="filter-fecha-hasta"
+                  type="date"
+                  value={filterFechaHasta}
+                  onChange={(e) => setFilterFechaHasta(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="sort-by" className="text-sm mb-2 block">Ordenar por</Label>
+                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                  <SelectTrigger id="sort-by">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fecha">Fecha</SelectItem>
+                    <SelectItem value="empleado">Empleado</SelectItem>
+                    <SelectItem value="estado">Estado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           
           <Table>
