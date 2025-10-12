@@ -153,13 +153,13 @@ export function MandatoryDocuments() {
       const filePath = `mandatory-documents/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('employee-documents')
+        .from('mandatory-documents')
         .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('employee-documents')
+        .from('mandatory-documents')
         .getPublicUrl(filePath);
 
       toast.success('Archivo subido correctamente');
