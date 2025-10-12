@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +18,9 @@ import {
   Shield,
   UserCheck,
   UserX,
-  Plane
+  Plane,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -66,6 +68,7 @@ export default function AdminDashboard() {
   const { toast } = useToast()
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard')
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [stats, setStats] = useState<DashboardStats>({
     total_empleados: 0,
     total_sucursales: 0,
@@ -86,6 +89,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadDashboardData()
   }, [])
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 200
+      const newScrollLeft = direction === 'left' 
+        ? scrollContainerRef.current.scrollLeft - scrollAmount
+        : scrollContainerRef.current.scrollLeft + scrollAmount
+      
+      scrollContainerRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      })
+    }
+  }
 
   const loadDashboardData = async () => {
     try {
@@ -487,20 +504,44 @@ export default function AdminDashboard() {
 
       {/* Management Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="overflow-x-auto">
-          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-10 md:w-full">
-            <TabsTrigger value="dashboard" className="whitespace-nowrap">Dashboard</TabsTrigger>
-            <TabsTrigger value="staff" className="whitespace-nowrap">Personal</TabsTrigger>
-            <TabsTrigger value="users" className="whitespace-nowrap">Usuarios</TabsTrigger>
-            <TabsTrigger value="branches" className="whitespace-nowrap">Sucursales</TabsTrigger>
-            <TabsTrigger value="budget" className="whitespace-nowrap">Presupuesto</TabsTrigger>
-            <TabsTrigger value="challenges" className="whitespace-nowrap">Desafíos</TabsTrigger>
-            <TabsTrigger value="training" className="whitespace-nowrap">Capacitaciones</TabsTrigger>
-            <TabsTrigger value="prizes" className="whitespace-nowrap">Premios</TabsTrigger>
-            <TabsTrigger value="puntualidad" className="whitespace-nowrap">Puntualidad</TabsTrigger>
-            <TabsTrigger value="roles" className="whitespace-nowrap">Roles</TabsTrigger>
-            <TabsTrigger value="activity" className="whitespace-nowrap">Actividad</TabsTrigger>
-          </TabsList>
+        <div className="relative">
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full shadow-md"
+            onClick={() => scrollTabs('left')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <div 
+            ref={scrollContainerRef}
+            className="overflow-x-auto scrollbar-hide mx-10"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <TabsList className="inline-flex w-max">
+              <TabsTrigger value="dashboard" className="whitespace-nowrap">Dashboard</TabsTrigger>
+              <TabsTrigger value="staff" className="whitespace-nowrap">Personal</TabsTrigger>
+              <TabsTrigger value="users" className="whitespace-nowrap">Usuarios</TabsTrigger>
+              <TabsTrigger value="branches" className="whitespace-nowrap">Sucursales</TabsTrigger>
+              <TabsTrigger value="budget" className="whitespace-nowrap">Presupuesto</TabsTrigger>
+              <TabsTrigger value="challenges" className="whitespace-nowrap">Desafíos</TabsTrigger>
+              <TabsTrigger value="training" className="whitespace-nowrap">Capacitaciones</TabsTrigger>
+              <TabsTrigger value="prizes" className="whitespace-nowrap">Premios</TabsTrigger>
+              <TabsTrigger value="puntualidad" className="whitespace-nowrap">Puntualidad</TabsTrigger>
+              <TabsTrigger value="roles" className="whitespace-nowrap">Roles</TabsTrigger>
+              <TabsTrigger value="activity" className="whitespace-nowrap">Actividad</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full shadow-md"
+            onClick={() => scrollTabs('right')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
         <TabsContent value="dashboard">
