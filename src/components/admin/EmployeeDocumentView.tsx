@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileText, CheckCircle, Clock, ExternalLink } from "lucide-react";
+import { FileText, CheckCircle, Clock, ExternalLink, Download, Eye } from "lucide-react";
 
 interface DocumentoAsignado {
   id: string;
@@ -112,6 +112,25 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
   const openDocument = (doc: DocumentoAsignado) => {
     setSelectedDoc(doc);
     setDialogOpen(true);
+  };
+
+  const handleDownload = async (url: string, titulo: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${titulo}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      toast.success('Documento descargado');
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Error al descargar el documento');
+    }
   };
 
   if (!empleadoId) {
@@ -240,10 +259,24 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
                       </div>
                     )}
                   </div>
-                  <Button variant="outline" onClick={() => openDocument(doc)}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ver Documento
-                  </Button>
+                  <div className="flex gap-2">
+                    {doc.documento.url_archivo && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(doc.documento.url_archivo, doc.documento.titulo);
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="outline" onClick={() => openDocument(doc)}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver Documento
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -272,23 +305,32 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 overflow-y-auto">
+          <div className="space-y-4 overflow-y-auto max-h-[60vh]">
             {selectedDoc?.documento.url_archivo && (
               <>
-                <div className="flex items-center gap-2 p-2 bg-accent rounded">
-                  <ExternalLink className="h-4 w-4" />
-                  <a
-                    href={selectedDoc.documento.url_archivo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
+                <div className="flex flex-wrap gap-2 p-3 bg-accent/50 rounded-lg">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(selectedDoc.documento.url_archivo, '_blank')}
+                    className="flex items-center gap-2"
                   >
-                    Abrir archivo en nueva pestaña
-                  </a>
+                    <ExternalLink className="h-4 w-4" />
+                    Abrir en nueva pestaña
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(selectedDoc.documento.url_archivo, selectedDoc.documento.titulo)}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Descargar
+                  </Button>
                 </div>
                 
                 {selectedDoc.documento.url_archivo.toLowerCase().endsWith('.pdf') && (
-                  <div className="border rounded-lg overflow-hidden">
+                  <div className="border rounded-lg overflow-hidden bg-white">
                     <iframe
                       src={selectedDoc.documento.url_archivo}
                       className="w-full h-[500px]"
@@ -304,6 +346,13 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
                 <div className="whitespace-pre-wrap p-4 border rounded-lg bg-background">
                   {selectedDoc.documento.contenido}
                 </div>
+              </div>
+            )}
+
+            {!selectedDoc?.documento.url_archivo && !selectedDoc?.documento.contenido && (
+              <div className="text-center p-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No hay contenido disponible para este documento</p>
               </div>
             )}
 
