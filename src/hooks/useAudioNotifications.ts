@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client'
 interface AudioConfig {
   mensaje_audio_checkin: string
   mensaje_audio_tareas_pendientes: string
+  audio_checkin_activo: boolean
   audio_tareas_pendientes_activo: boolean
 }
 
@@ -11,6 +12,7 @@ export const useAudioNotifications = () => {
   const [config, setConfig] = useState<AudioConfig>({
     mensaje_audio_checkin: '¡Bienvenido! Tu fichaje ha sido registrado correctamente.',
     mensaje_audio_tareas_pendientes: 'Tienes {cantidad} tareas pendientes para hoy. Recuerda revisarlas.',
+    audio_checkin_activo: true,
     audio_tareas_pendientes_activo: true
   })
 
@@ -26,6 +28,7 @@ export const useAudioNotifications = () => {
         .in('clave', [
           'mensaje_audio_checkin',
           'mensaje_audio_tareas_pendientes',
+          'audio_checkin_activo',
           'audio_tareas_pendientes_activo'
         ])
 
@@ -33,7 +36,7 @@ export const useAudioNotifications = () => {
 
       const configData: any = {}
       data?.forEach(item => {
-        if (item.clave === 'audio_tareas_pendientes_activo') {
+        if (item.clave === 'audio_tareas_pendientes_activo' || item.clave === 'audio_checkin_activo') {
           configData[item.clave] = item.valor === 'true'
         } else {
           configData[item.clave] = item.valor
@@ -47,6 +50,9 @@ export const useAudioNotifications = () => {
   }
 
   const reproducirMensajeBienvenida = async () => {
+    if (!config.audio_checkin_activo) {
+      return
+    }
     await reproducirTexto(config.mensaje_audio_checkin)
   }
 

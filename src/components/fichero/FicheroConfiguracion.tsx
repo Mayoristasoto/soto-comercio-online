@@ -43,6 +43,7 @@ interface ConfiguracionSistema {
   whatsapp_retraso_minutos: number
   mensaje_audio_checkin: string
   mensaje_audio_tareas_pendientes: string
+  audio_checkin_activo: boolean
   audio_tareas_pendientes_activo: boolean
 }
 
@@ -61,6 +62,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     whatsapp_retraso_minutos: 15,
     mensaje_audio_checkin: '¡Bienvenido! Tu fichaje ha sido registrado correctamente.',
     mensaje_audio_tareas_pendientes: 'Tienes {cantidad} tareas pendientes para hoy. Recuerda revisarlas.',
+    audio_checkin_activo: true,
     audio_tareas_pendientes_activo: true
   })
   const [ubicacionActual, setUbicacionActual] = useState<{lat: number, lng: number} | null>(null)
@@ -93,6 +95,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'whatsapp_retraso_minutos',
           'mensaje_audio_checkin',
           'mensaje_audio_tareas_pendientes',
+          'audio_checkin_activo',
           'audio_tareas_pendientes_activo'
         ])
 
@@ -207,6 +210,10 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'mensaje_audio_tareas_pendientes',
           valor: configuracion.mensaje_audio_tareas_pendientes
+        },
+        {
+          clave: 'audio_checkin_activo',
+          valor: configuracion.audio_checkin_activo.toString()
         },
         {
           clave: 'audio_tareas_pendientes_activo',
@@ -354,26 +361,45 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="mensaje_audio">
-              Mensaje de bienvenida
-            </Label>
-            <Textarea
-              id="mensaje_audio"
-              value={configuracion.mensaje_audio_checkin}
-              onChange={(e) => setConfiguracion({ 
-                ...configuracion, 
-                mensaje_audio_checkin: e.target.value 
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Audio de bienvenida</Label>
+              <p className="text-sm text-muted-foreground">
+                Reproducir mensaje de bienvenida después del check-in
+              </p>
+            </div>
+            <Switch
+              checked={configuracion.audio_checkin_activo}
+              onCheckedChange={(checked) => setConfiguracion({
+                ...configuracion,
+                audio_checkin_activo: checked
               })}
-              placeholder="Escribe el mensaje que quieres que escuchen los empleados..."
-              rows={3}
-              className="resize-none"
               disabled={empleado.rol !== 'admin_rrhh'}
             />
-            <p className="text-sm text-muted-foreground">
-              Este mensaje será convertido a audio y reproducido automáticamente después de cada fichaje exitoso.
-            </p>
           </div>
+
+          {configuracion.audio_checkin_activo && (
+            <div className="space-y-2">
+              <Label htmlFor="mensaje_audio">
+                Mensaje de bienvenida
+              </Label>
+              <Textarea
+                id="mensaje_audio"
+                value={configuracion.mensaje_audio_checkin}
+                onChange={(e) => setConfiguracion({ 
+                  ...configuracion, 
+                  mensaje_audio_checkin: e.target.value 
+                })}
+                placeholder="Escribe el mensaje que quieres que escuchen los empleados..."
+                rows={3}
+                className="resize-none"
+                disabled={empleado.rol !== 'admin_rrhh'}
+              />
+              <p className="text-sm text-muted-foreground">
+                Este mensaje será convertido a audio y reproducido automáticamente después de cada fichaje exitoso.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-4 pt-4 border-t">
             <div className="flex items-center justify-between">
