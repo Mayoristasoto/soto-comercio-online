@@ -134,8 +134,8 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
     );
   }
 
-  const pendientes = documentos.filter(d => d.confirmacion.length === 0);
-  const confirmados = documentos.filter(d => d.confirmacion.length > 0);
+  const pendientes = documentos.filter(d => !d.confirmacion || d.confirmacion.length === 0);
+  const confirmados = documentos.filter(d => d.confirmacion && d.confirmacion.length > 0);
 
   return (
     <div className="space-y-6">
@@ -234,9 +234,11 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
                     <p className="text-sm text-muted-foreground mb-2">
                       {doc.documento.descripcion}
                     </p>
-                    <div className="text-xs text-muted-foreground">
-                      Confirmado: {new Date(doc.confirmacion[0].fecha_confirmacion).toLocaleString()}
-                    </div>
+                    {doc.confirmacion && doc.confirmacion.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        Confirmado: {new Date(doc.confirmacion[0].fecha_confirmacion).toLocaleString()}
+                      </div>
+                    )}
                   </div>
                   <Button variant="outline" onClick={() => openDocument(doc)}>
                     <FileText className="h-4 w-4 mr-2" />
@@ -295,7 +297,7 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
 
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="text-sm text-muted-foreground">
-                {selectedDoc?.confirmacion.length === 0 ? (
+                {!selectedDoc?.confirmacion || selectedDoc.confirmacion.length === 0 ? (
                   <span className="text-destructive">Pendiente de confirmación</span>
                 ) : (
                   <span className="text-primary">
@@ -308,7 +310,7 @@ export function EmployeeDocumentView({ empleadoId }: Props) {
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Cerrar
                 </Button>
-                {selectedDoc?.confirmacion.length === 0 && (
+                {selectedDoc && (!selectedDoc.confirmacion || selectedDoc.confirmacion.length === 0) && (
                   <Button onClick={() => handleConfirmReading(selectedDoc.id, selectedDoc.documento_id)}>
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Confirmar Lectura
