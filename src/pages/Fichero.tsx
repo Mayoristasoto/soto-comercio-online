@@ -28,6 +28,7 @@ import FicheroHorarios from "@/components/fichero/FicheroHorarios"
 import FicheroHistorial from "@/components/fichero/FicheroHistorial"
 import AttendanceReports from "@/components/admin/AttendanceReports"
 import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
+import EstadoAnimoEmpleado from "@/components/fichero/EstadoAnimoEmpleado"
 
 interface Empleado {
   id: string
@@ -61,7 +62,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo'>('fichaje')
 
   useEffect(() => {
     checkAuth()
@@ -195,7 +196,7 @@ export default function Fichero() {
     }
   }
 
-  const procesarFichaje = async (tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin', confianzaFacial: number) => {
+  const procesarFichaje = async (tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin', confianzaFacial: number, empleadoId?: string, empleadoData?: any, emocion?: string) => {
     if (!empleado) {
       toast({
         title: "Error",
@@ -234,17 +235,25 @@ export default function Fichero() {
         setFichajes(prev => [fichajeSimulado, ...prev])
       } else {
         // Crear el fichaje en la base de datos para empleados reales
+        const datosAdicionales: any = {
+          tipo: tipoFichaje,
+          metodo: 'facial',
+          estado: 'valido',
+          timestamp_local: new Date().toISOString()
+        }
+
+        // Agregar emoción detectada a los datos adicionales
+        if (emocion) {
+          datosAdicionales.emocion = emocion
+          datosAdicionales.momento_emocion = tipoFichaje === 'entrada' ? 'inicio_jornada' : 'fin_jornada'
+        }
+
         const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
-          p_empleado_id: empleado.id,
+          p_empleado_id: empleadoId || empleado.id,
           p_confianza: confianzaFacial,
           p_lat: coordenadas?.lat || null,
           p_lng: coordenadas?.lng || null,
-          p_datos: {
-            tipo: tipoFichaje,
-            metodo: 'facial',
-            estado: 'valido',
-            timestamp_local: new Date().toISOString()
-          }
+          p_datos: datosAdicionales
         })
 
         if (error) throw error
@@ -428,6 +437,7 @@ export default function Fichero() {
           {[
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
             { key: 'misfichadas', label: 'Informe', icon: FileText },
+            { key: 'estado-animo', label: 'Estado Ánimo', icon: User },
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
@@ -468,7 +478,7 @@ export default function Fichero() {
                   <FicheroFacialAuth
                     empleado={empleado}
                     tipoFichaje={obtenerTipoFichajeSiguiente()}
-                    onFichajeSuccess={(confianza) => procesarFichaje(obtenerTipoFichajeSiguiente(), confianza)}
+                    onFichajeSuccess={(confianza, empleadoId, empleadoData, emocion) => procesarFichaje(obtenerTipoFichajeSiguiente(), confianza, empleadoId, empleadoData, emocion)}
                     loading={fichajeEnProceso}
                   />
                 </CardContent>
@@ -547,6 +557,10 @@ export default function Fichero() {
 
         {activeTab === 'config' && (
           <FicheroConfiguracion empleado={empleado} />
+        )}
+
+        {activeTab === 'estado-animo' && (
+          <EstadoAnimoEmpleado />
         )}
         
         {/* Vista de administrador */}
