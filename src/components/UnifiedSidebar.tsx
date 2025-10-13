@@ -1,5 +1,23 @@
-import { useMemo } from "react"
-import * as Icons from "lucide-react"
+import { 
+  Home, 
+  Award, 
+  Clock, 
+  CheckSquare, 
+  Settings, 
+  Users,
+  BarChart3,
+  Calendar,
+  Trophy,
+  Target,
+  Building2,
+  UserCheck,
+  FileText,
+  User,
+  ClipboardCheck,
+  Plane,
+  FileSignature,
+  FileWarning
+} from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -15,7 +33,6 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { useSidebarLinks } from "@/hooks/useSidebarLinks"
 
 interface UserInfo {
   id: string
@@ -34,30 +51,68 @@ interface UnifiedSidebarProps {
 
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const location = useLocation()
-  const { links, loading } = useSidebarLinks(userInfo?.rol || null)
   
-  // Helper para obtener el ícono dinámicamente
-  const getIcon = (iconName: string) => {
-    const IconComponent = (Icons as any)[iconName]
-    return IconComponent || Icons.Circle
-  }
+  const mainModules = [
+    {
+      title: "Reconocimiento",
+      url: "/reconoce",
+      icon: Award,
+      description: "Programa de reconocimiento y premios"
+    },
+    {
+      title: "Control Horario",
+      url: "/fichero", 
+      icon: Clock,
+      description: "Fichado con reconocimiento facial"
+    },
+    {
+      title: "Gestión de Tareas",
+      url: "/tareas",
+      icon: CheckSquare,
+      description: "Asignación y seguimiento de tareas"
+    }
+  ]
 
-  // Agrupar links por parent_id
-  const { parentLinks, childrenByParent } = useMemo(() => {
-    const parents = links.filter(link => !link.parent_id)
-    const childMap: Record<string, typeof links> = {}
-    
-    links.forEach(link => {
-      if (link.parent_id) {
-        if (!childMap[link.parent_id]) {
-          childMap[link.parent_id] = []
-        }
-        childMap[link.parent_id].push(link)
-      }
-    })
-    
-    return { parentLinks: parents, childrenByParent: childMap }
-  }, [links])
+  const reconoceSubmenu = [
+    { title: "Dashboard", url: "/reconoce/dashboard", icon: BarChart3 },
+    { title: "Ranking", url: "/reconoce/ranking", icon: Trophy },
+    { title: "Desafíos", url: "/reconoce/desafios", icon: Target },
+    { title: "Insignias", url: "/reconoce/insignias", icon: Award },
+    { title: "Premios", url: "/reconoce/premios", icon: Trophy },
+  ]
+
+  const tareasSubmenu = [
+    { title: "Mis Tareas", url: "/tareas/mis-tareas", icon: CheckSquare },
+    { title: "Asignadas", url: "/tareas/asignadas", icon: Users },
+    { title: "Calendario", url: "/tareas/calendario", icon: Calendar },
+    { title: "Reportes", url: "/tareas/reportes", icon: BarChart3 },
+  ]
+
+  const adminItems = [
+    { title: "Gestión Empleados", url: "/admin/empleados", icon: Users },
+    { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
+    { title: "Vacaciones", url: "/vacaciones", icon: Plane },
+    { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
+    { title: "Anotaciones", url: "/anotaciones", icon: FileWarning },
+    { title: "Módulo Nómina", url: "/nomina", icon: FileText },
+    { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
+    { title: "Configuración", url: "/admin/configuracion", icon: Settings },
+  ]
+  
+  // Items solo para gerentes
+  const gerenteItems = [
+    { title: "Evaluaciones", url: "/evaluaciones", icon: ClipboardCheck },
+    { title: "Vacaciones", url: "/vacaciones", icon: Plane },
+    { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
+    { title: "Anotaciones", url: "/anotaciones", icon: FileWarning },
+  ]
+
+  // Items para todos los empleados
+  const empleadoItems = [
+    { title: "Mi Dashboard", url: "/mi-dashboard", icon: User },
+    { title: "Vacaciones", url: "/vacaciones", icon: Plane },
+    { title: "Solicitudes", url: "/solicitudes", icon: FileSignature },
+  ]
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/")
@@ -74,16 +129,6 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
       case 'lider_grupo': return 'secondary'
       default: return 'outline'
     }
-  }
-
-  if (loading) {
-    return (
-      <Sidebar>
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </Sidebar>
-    )
   }
 
   return (
@@ -103,62 +148,163 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Renderizar links principales y sus hijos dinámicamente */}
-        {parentLinks.map((parentLink) => {
-          const Icon = getIcon(parentLink.icon)
-          const children = childrenByParent[parentLink.id] || []
-          const hasChildren = children.length > 0
+        {/* Dashboard Personal - Solo para empleados */}
+        {userInfo?.rol === 'empleado' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Mi Espacio Personal</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {empleadoItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive("/reconoce/premios")}
+                    tooltip="Canjea tus puntos por premios"
+                  >
+                    <NavLink to="/reconoce/premios">
+                      <Trophy className="h-4 w-4" />
+                      <span>Canje de Premios</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-          return (
-            <SidebarGroup key={parentLink.id}>
-              {hasChildren ? (
-                // Si tiene hijos, mostrar como grupo con label
-                <>
-                  <SidebarGroupLabel>{parentLink.label}</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {children.map((childLink) => {
-                        const ChildIcon = getIcon(childLink.icon)
-                        return (
-                          <SidebarMenuItem key={childLink.id}>
-                            <SidebarMenuButton 
-                              asChild 
-                              isActive={isActive(childLink.path)}
-                              tooltip={childLink.descripcion || childLink.label}
-                            >
-                              <NavLink to={childLink.path}>
-                                <ChildIcon className="h-4 w-4" />
-                                <span>{childLink.label}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        )
-                      })}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </>
-              ) : (
-                // Si no tiene hijos, mostrar como item individual
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        asChild 
-                        isActive={isActive(parentLink.path)}
-                        tooltip={parentLink.descripcion || parentLink.label}
-                      >
-                        <NavLink to={parentLink.path}>
-                          <Icon className="h-4 w-4" />
-                          <span>{parentLink.label}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              )}
-            </SidebarGroup>
-          )
-        })}
+        {/* Módulos Principales - Solo para roles superiores */}
+        {userInfo?.rol !== 'empleado' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Módulos Principales</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {mainModules.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                      tooltip={item.description}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Submenú Reconocimiento - Solo para roles superiores */}
+        {userInfo?.rol !== 'empleado' && isActive("/reconoce") && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Reconocimiento</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {reconoceSubmenu.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={location.pathname === item.url}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Submenú Tareas - Solo para roles superiores */}
+        {userInfo?.rol !== 'empleado' && isActive("/tareas") && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Gestión de Tareas</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {tareasSubmenu.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={location.pathname === item.url}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Administración (solo para admins) */}
+        {userInfo?.rol === 'admin_rrhh' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administración</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        
+        {/* Módulos de Gerente (solo para gerentes) */}
+        {userInfo?.rol === 'gerente_sucursal' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Gestión de Sucursal</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {gerenteItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
