@@ -45,6 +45,11 @@ interface ConfiguracionSistema {
   mensaje_audio_tareas_pendientes: string
   audio_checkin_activo: boolean
   audio_tareas_pendientes_activo: boolean
+  whatsapp_cumpleanos_activo: boolean
+  whatsapp_aniversario_activo: boolean
+  whatsapp_notificaciones_numero: string
+  mensaje_cumpleanos: string
+  mensaje_aniversario: string
 }
 
 export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionProps) {
@@ -63,7 +68,12 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     mensaje_audio_checkin: '¡Bienvenido! Tu fichaje ha sido registrado correctamente.',
     mensaje_audio_tareas_pendientes: 'Tienes {cantidad} tareas pendientes para hoy. Recuerda revisarlas.',
     audio_checkin_activo: true,
-    audio_tareas_pendientes_activo: true
+    audio_tareas_pendientes_activo: true,
+    whatsapp_cumpleanos_activo: false,
+    whatsapp_aniversario_activo: false,
+    whatsapp_notificaciones_numero: '595985523065',
+    mensaje_cumpleanos: 'Hoy {nombre} {apellido} cumple {edad} años. ¡Feliz cumpleaños! 🎂🎉',
+    mensaje_aniversario: 'Hoy {nombre} {apellido} cumple {años} años trabajando con nosotros. ¡Felicidades por su aniversario laboral! 🎊'
   })
   const [ubicacionActual, setUbicacionActual] = useState<{lat: number, lng: number} | null>(null)
   const [tieneDescriptorFacial, setTieneDescriptorFacial] = useState(false)
@@ -96,7 +106,12 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'mensaje_audio_checkin',
           'mensaje_audio_tareas_pendientes',
           'audio_checkin_activo',
-          'audio_tareas_pendientes_activo'
+          'audio_tareas_pendientes_activo',
+          'whatsapp_cumpleanos_activo',
+          'whatsapp_aniversario_activo',
+          'whatsapp_notificaciones_numero',
+          'mensaje_cumpleanos',
+          'mensaje_aniversario'
         ])
 
       if (error) throw error
@@ -218,6 +233,26 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'audio_tareas_pendientes_activo',
           valor: configuracion.audio_tareas_pendientes_activo.toString()
+        },
+        {
+          clave: 'whatsapp_cumpleanos_activo',
+          valor: configuracion.whatsapp_cumpleanos_activo.toString()
+        },
+        {
+          clave: 'whatsapp_aniversario_activo',
+          valor: configuracion.whatsapp_aniversario_activo.toString()
+        },
+        {
+          clave: 'whatsapp_notificaciones_numero',
+          valor: configuracion.whatsapp_notificaciones_numero
+        },
+        {
+          clave: 'mensaje_cumpleanos',
+          valor: configuracion.mensaje_cumpleanos
+        },
+        {
+          clave: 'mensaje_aniversario',
+          valor: configuracion.mensaje_aniversario
         }
       ]
 
@@ -617,129 +652,239 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
             <span>Notificaciones WhatsApp</span>
           </CardTitle>
           <CardDescription>
-            Configuración de notificaciones automáticas para empleados sin salida registrada
+            Configuración de notificaciones automáticas por WhatsApp
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Notificaciones automáticas</Label>
-              <p className="text-sm text-muted-foreground">
-                Enviar mensajes WhatsApp a empleados sin salida registrada
-              </p>
-            </div>
-            <Switch
-              checked={configuracion.whatsapp_notificaciones_activas}
-              onCheckedChange={(checked) => setConfiguracion(prev => ({
-                ...prev,
-                whatsapp_notificaciones_activas: checked
-              }))}
-              disabled={empleado.rol !== 'admin_rrhh'}
-            />
-          </div>
+        <CardContent className="space-y-6">
+          {/* Notificaciones de Salida */}
+          <div className="border-b pb-4">
+            <h4 className="font-medium mb-3">Salidas no registradas</h4>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Notificaciones automáticas</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enviar mensajes WhatsApp a empleados sin salida registrada
+                  </p>
+                </div>
+                <Switch
+                  checked={configuracion.whatsapp_notificaciones_activas}
+                  onCheckedChange={(checked) => setConfiguracion(prev => ({
+                    ...prev,
+                    whatsapp_notificaciones_activas: checked
+                  }))}
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label>Retraso mínimo (minutos)</Label>
-            <Input
-              type="number"
-              min="5"
-              max="120"
-              value={configuracion.whatsapp_retraso_minutos}
-              onChange={(e) => setConfiguracion(prev => ({
-                ...prev,
-                whatsapp_retraso_minutos: parseInt(e.target.value)
-              }))}
-              disabled={empleado.rol !== 'admin_rrhh'}
-            />
-            <p className="text-xs text-muted-foreground">
-              Tiempo de espera después de la hora de salida antes de enviar notificación
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>URL Endpoint API WhatsApp</Label>
-            <Input
-              type="text"
-              value={configuracion.whatsapp_api_endpoint}
-              onChange={(e) => setConfiguracion(prev => ({
-                ...prev,
-                whatsapp_api_endpoint: e.target.value
-              }))}
-              placeholder="https://api.mayoristasoto.online/api/messages/send"
-              disabled={empleado.rol !== 'admin_rrhh'}
-            />
-            <p className="text-xs text-muted-foreground">
-              URL completa del endpoint para enviar mensajes de WhatsApp
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Token API WhatsApp</Label>
-            <div className="flex space-x-2">
-              <Input
-                type={mostrarToken ? "text" : "password"}
-                value={configuracion.whatsapp_api_token}
-                onChange={(e) => setConfiguracion(prev => ({
-                  ...prev,
-                  whatsapp_api_token: e.target.value
-                }))}
-                placeholder="Token de autorización (Bearer)"
-                disabled={empleado.rol !== 'admin_rrhh'}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setMostrarToken(!mostrarToken)}
-                disabled={empleado.rol !== 'admin_rrhh'}
-              >
-                {mostrarToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Token de autorización (se enviará como Bearer token en el header Authorization)
-            </p>
-          </div>
-
-          {empleado.rol === 'admin_rrhh' && (
-            <div className="space-y-3 pt-2">
               <div className="space-y-2">
-                <Label>Número de prueba (WhatsApp)</Label>
+                <Label>Retraso mínimo (minutos)</Label>
+                <Input
+                  type="number"
+                  min="5"
+                  max="120"
+                  value={configuracion.whatsapp_retraso_minutos}
+                  onChange={(e) => setConfiguracion(prev => ({
+                    ...prev,
+                    whatsapp_retraso_minutos: parseInt(e.target.value)
+                  }))}
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tiempo de espera después de la hora de salida antes de enviar notificación
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Notificaciones de Cumpleaños y Aniversarios */}
+          <div className="border-b pb-4">
+            <h4 className="font-medium mb-3">Cumpleaños y Aniversarios</h4>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Número de WhatsApp destino</Label>
                 <Input
                   type="tel"
-                  value={numeroTestWhatsApp}
-                  onChange={(e) => setNumeroTestWhatsApp(e.target.value)}
-                  placeholder="Ej: 595985523065"
-                  disabled={probandoWhatsApp}
+                  value={configuracion.whatsapp_notificaciones_numero}
+                  onChange={(e) => setConfiguracion(prev => ({
+                    ...prev,
+                    whatsapp_notificaciones_numero: e.target.value
+                  }))}
+                  placeholder="595985523065"
+                  disabled={empleado.rol !== 'admin_rrhh'}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Ingrese un número completo con código de país (ej: 595 para Paraguay, 54 para Argentina)
+                  Número donde se enviarán las notificaciones de cumpleaños y aniversarios
                 </p>
               </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Notificar cumpleaños</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enviar mensaje automático cuando un empleado cumple años
+                  </p>
+                </div>
+                <Switch
+                  checked={configuracion.whatsapp_cumpleanos_activo}
+                  onCheckedChange={(checked) => setConfiguracion(prev => ({
+                    ...prev,
+                    whatsapp_cumpleanos_activo: checked
+                  }))}
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+              </div>
+
+              {configuracion.whatsapp_cumpleanos_activo && (
+                <div className="space-y-2">
+                  <Label>Mensaje de cumpleaños</Label>
+                  <Textarea
+                    value={configuracion.mensaje_cumpleanos}
+                    onChange={(e) => setConfiguracion(prev => ({
+                      ...prev,
+                      mensaje_cumpleanos: e.target.value
+                    }))}
+                    placeholder="Hoy {nombre} {apellido} cumple {edad} años..."
+                    rows={3}
+                    className="resize-none"
+                    disabled={empleado.rol !== 'admin_rrhh'}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use <code className="bg-muted px-1 py-0.5 rounded">{'{nombre}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{apellido}'}</code> y <code className="bg-muted px-1 py-0.5 rounded">{'{edad}'}</code>
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Notificar aniversarios</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enviar mensaje automático en aniversarios laborales
+                  </p>
+                </div>
+                <Switch
+                  checked={configuracion.whatsapp_aniversario_activo}
+                  onCheckedChange={(checked) => setConfiguracion(prev => ({
+                    ...prev,
+                    whatsapp_aniversario_activo: checked
+                  }))}
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+              </div>
+
+              {configuracion.whatsapp_aniversario_activo && (
+                <div className="space-y-2">
+                  <Label>Mensaje de aniversario</Label>
+                  <Textarea
+                    value={configuracion.mensaje_aniversario}
+                    onChange={(e) => setConfiguracion(prev => ({
+                      ...prev,
+                      mensaje_aniversario: e.target.value
+                    }))}
+                    placeholder="Hoy {nombre} {apellido} cumple {años} años trabajando con nosotros..."
+                    rows={3}
+                    className="resize-none"
+                    disabled={empleado.rol !== 'admin_rrhh'}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use <code className="bg-muted px-1 py-0.5 rounded">{'{nombre}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{apellido}'}</code> y <code className="bg-muted px-1 py-0.5 rounded">{'{años}'}</code>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Configuración API */}
+          <div>
+            <h4 className="font-medium mb-3">Configuración API</h4>
+            <div className="space-y-4">
+
               <div className="space-y-2">
-                <Label>Mensaje de Prueba</Label>
+                <Label>URL Endpoint API WhatsApp</Label>
                 <Input
                   type="text"
-                  value={mensajeTestWhatsApp}
-                  onChange={(e) => setMensajeTestWhatsApp(e.target.value)}
-                  placeholder="Mensaje personalizado para la prueba"
-                  disabled={probandoWhatsApp}
+                  value={configuracion.whatsapp_api_endpoint}
+                  onChange={(e) => setConfiguracion(prev => ({
+                    ...prev,
+                    whatsapp_api_endpoint: e.target.value
+                  }))}
+                  placeholder="https://api.mayoristasoto.online/api/messages/send"
+                  disabled={empleado.rol !== 'admin_rrhh'}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Texto del mensaje que se enviará en la prueba
+                  URL completa del endpoint para enviar mensajes de WhatsApp
                 </p>
               </div>
-              <Button
-                variant="outline"
-                onClick={probarWhatsApp}
-                disabled={probandoWhatsApp || !numeroTestWhatsApp.trim()}
-                className="flex items-center space-x-2"
-              >
-                <TestTube className="h-4 w-4" />
-                <span>{probandoWhatsApp ? 'Enviando prueba...' : 'Enviar mensaje de prueba'}</span>
-              </Button>
+
+              <div className="space-y-2">
+                <Label>Token API WhatsApp</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    type={mostrarToken ? "text" : "password"}
+                    value={configuracion.whatsapp_api_token}
+                    onChange={(e) => setConfiguracion(prev => ({
+                      ...prev,
+                      whatsapp_api_token: e.target.value
+                    }))}
+                    placeholder="Token de autorización (Bearer)"
+                    disabled={empleado.rol !== 'admin_rrhh'}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setMostrarToken(!mostrarToken)}
+                    disabled={empleado.rol !== 'admin_rrhh'}
+                  >
+                    {mostrarToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Token de autorización (se enviará como Bearer token en el header Authorization)
+                </p>
+              </div>
+
+              {empleado.rol === 'admin_rrhh' && (
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-2">
+                    <Label>Número de prueba (WhatsApp)</Label>
+                    <Input
+                      type="tel"
+                      value={numeroTestWhatsApp}
+                      onChange={(e) => setNumeroTestWhatsApp(e.target.value)}
+                      placeholder="Ej: 595985523065"
+                      disabled={probandoWhatsApp}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ingrese un número completo con código de país (ej: 595 para Paraguay, 54 para Argentina)
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mensaje de Prueba</Label>
+                    <Input
+                      type="text"
+                      value={mensajeTestWhatsApp}
+                      onChange={(e) => setMensajeTestWhatsApp(e.target.value)}
+                      placeholder="Mensaje personalizado para la prueba"
+                      disabled={probandoWhatsApp}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Texto del mensaje que se enviará en la prueba
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={probarWhatsApp}
+                    disabled={probandoWhatsApp || !numeroTestWhatsApp.trim()}
+                    className="flex items-center space-x-2"
+                  >
+                    <TestTube className="h-4 w-4" />
+                    <span>{probandoWhatsApp ? 'Enviando prueba...' : 'Enviar mensaje de prueba'}</span>
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
