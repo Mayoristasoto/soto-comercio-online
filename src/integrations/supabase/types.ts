@@ -2436,6 +2436,56 @@ export type Database = {
           },
         ]
       }
+      sidebar_links: {
+        Row: {
+          created_at: string | null
+          descripcion: string | null
+          icon: string
+          id: string
+          label: string
+          orden: number
+          parent_id: string | null
+          path: string
+          rol: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string | null
+          descripcion?: string | null
+          icon: string
+          id?: string
+          label: string
+          orden?: number
+          parent_id?: string | null
+          path: string
+          rol: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string | null
+          descripcion?: string | null
+          icon?: string
+          id?: string
+          label?: string
+          orden?: number
+          parent_id?: string | null
+          path?: string
+          rol?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sidebar_links_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "sidebar_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solicitudes: {
         Row: {
           created_at: string
