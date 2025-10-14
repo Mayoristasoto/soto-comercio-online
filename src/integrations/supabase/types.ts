@@ -3014,6 +3014,13 @@ export type Database = {
       }
     }
     Functions: {
+      admin_update_empleado_rol: {
+        Args: {
+          p_empleado_id: string
+          p_nuevo_rol: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: undefined
+      }
       admin_update_sensitive_data: {
         Args: {
           p_direccion?: string

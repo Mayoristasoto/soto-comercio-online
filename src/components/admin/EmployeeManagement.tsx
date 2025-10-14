@@ -100,7 +100,6 @@ export default function EmployeeManagement() {
         email: formData.email,
         puesto: formData.puesto || null,
         telefono: formData.telefono || null,
-        rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
         sucursal_id: formData.sucursal_id || null
       }
 
@@ -112,14 +111,26 @@ export default function EmployeeManagement() {
         
         if (error) throw error
         
+        // Update role using secure function if it changed
+        if (formData.rol !== editingEmployee.rol) {
+          const { error: rolError } = await supabase.rpc('admin_update_empleado_rol', {
+            p_empleado_id: editingEmployee.id,
+            p_nuevo_rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal'
+          })
+          
+          if (rolError) throw rolError
+        }
+        
         toast({
           title: "Empleado actualizado",
           description: "Los datos del empleado se actualizaron correctamente"
         })
       } else {
+        // For new employees, include rol in insert
+        const newEmployeeData = { ...empleadoData, rol: formData.rol }
         const { error } = await supabase
           .from('empleados')
-          .insert(empleadoData)
+          .insert(newEmployeeData)
         
         if (error) throw error
         

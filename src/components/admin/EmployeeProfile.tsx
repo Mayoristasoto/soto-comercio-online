@@ -177,13 +177,12 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
       // Find the selected position to get its ID (handle "none" case)
       const selectedPuesto = formData.puesto !== "none" ? puestos.find(p => p.nombre === formData.puesto) : null
       
-      // Update basic employee data in empleados table
+      // Update basic employee data in empleados table (except rol)
       const empleadoUpdate = {
         nombre: formData.nombre,
         apellido: formData.apellido,
         puesto: formData.puesto === "none" ? null : formData.puesto,
         puesto_id: selectedPuesto?.id || null,
-        rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal',
         sucursal_id: formData.sucursal_id || null
       }
 
@@ -193,6 +192,16 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         .eq('id', empleado.id)
 
       if (empleadoError) throw empleadoError
+
+      // Update role using secure function if it changed
+      if (formData.rol !== empleado.rol) {
+        const { error: rolError } = await supabase.rpc('admin_update_empleado_rol', {
+          p_empleado_id: empleado.id,
+          p_nuevo_rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal'
+        })
+        
+        if (rolError) throw rolError
+      }
 
       // Update sensitive data - only if admin and if there are changes
       let sensitiveError: any = null

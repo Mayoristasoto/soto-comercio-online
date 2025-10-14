@@ -118,7 +118,6 @@ export default function UserEmployeeManagement() {
         nombre: formData.nombre,
         apellido: formData.apellido,
         email: formData.email,
-        rol: formData.rol,
         sucursal_id: formData.sucursal_id && formData.sucursal_id.trim() !== '' ? formData.sucursal_id : null
       }
 
@@ -128,6 +127,16 @@ export default function UserEmployeeManagement() {
         .eq('id', editingEmployee.id)
       
       if (error) throw error
+      
+      // Update role using secure function if it changed
+      if (formData.rol !== editingEmployee.rol) {
+        const { error: rolError } = await supabase.rpc('admin_update_empleado_rol', {
+          p_empleado_id: editingEmployee.id,
+          p_nuevo_rol: formData.rol as 'empleado' | 'admin_rrhh' | 'gerente_sucursal'
+        })
+        
+        if (rolError) throw rolError
+      }
       
       toast({
         title: "Empleado actualizado",
