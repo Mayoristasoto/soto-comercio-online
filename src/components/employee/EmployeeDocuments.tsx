@@ -136,6 +136,31 @@ export function EmployeeDocuments({ empleadoId }: Props) {
     setDialogOpen(true);
   };
 
+  const getEmbedUrl = (url: string): string => {
+    if (!url) return '';
+    
+    // Handle Google Drive links
+    if (url.includes('drive.google.com')) {
+      const fileIdMatch = url.match(/\/d\/([^/]+)/);
+      if (fileIdMatch) {
+        return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+      }
+    }
+    
+    // Handle Google Docs
+    if (url.includes('docs.google.com')) {
+      return url.replace('/edit', '/preview');
+    }
+    
+    return url;
+  };
+
+  const handleDownload = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -301,7 +326,7 @@ export function EmployeeDocuments({ empleadoId }: Props) {
 
       {/* Dialog para mostrar documento */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-6xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -313,23 +338,32 @@ export function EmployeeDocuments({ empleadoId }: Props) {
           </DialogHeader>
 
           <div className="space-y-4 overflow-y-auto">
+            {/* Previsualización del documento */}
             {selectedDoc?.documento?.url_archivo && (
-              <div className="flex items-center gap-2 p-2 bg-accent rounded">
-                <ExternalLink className="h-4 w-4" />
-                <a
-                  href={selectedDoc.documento.url_archivo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Abrir archivo externo
-                </a>
+              <div className="w-full">
+                <iframe
+                  src={getEmbedUrl(selectedDoc.documento.url_archivo)}
+                  className="w-full h-[500px] border rounded-lg"
+                  title={selectedDoc.documento.titulo}
+                  allow="autoplay"
+                />
+                <div className="flex items-center gap-2 p-2 bg-accent rounded mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDownload(selectedDoc.documento?.url_archivo || '')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Abrir en nueva ventana
+                  </Button>
+                </div>
               </div>
             )}
 
-            {selectedDoc?.documento?.contenido && (
+            {/* Contenido de texto si no hay URL */}
+            {!selectedDoc?.documento?.url_archivo && selectedDoc?.documento?.contenido && (
               <div className="prose max-w-none">
-                <div className="whitespace-pre-wrap p-4 border rounded-lg bg-background text-sm">
+                <div className="whitespace-pre-wrap p-4 border rounded-lg bg-background text-sm max-h-[500px] overflow-y-auto">
                   {selectedDoc.documento.contenido}
                 </div>
               </div>
