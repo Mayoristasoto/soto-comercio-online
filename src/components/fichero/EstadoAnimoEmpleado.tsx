@@ -110,9 +110,15 @@ export default function EstadoAnimoEmpleado() {
           estadosPorDia[fecha] = { fecha }
         }
 
-        const emocion = typeof fichaje.datos_adicionales === 'object' && fichaje.datos_adicionales !== null 
-          ? (fichaje.datos_adicionales as any).emocion 
-          : undefined
+        // Buscar la emoción en datos_adicionales
+        let emocion: string | undefined
+        if (typeof fichaje.datos_adicionales === 'object' && fichaje.datos_adicionales !== null) {
+          const datos = fichaje.datos_adicionales as any
+          // La emoción puede venir como 'emocion' directamente
+          emocion = datos.emocion
+        }
+        
+        console.log('Fichaje:', fichaje.tipo, 'Emoción detectada:', emocion, 'Datos:', fichaje.datos_adicionales)
 
         if (fichaje.tipo === 'entrada' && emocion) {
           estadosPorDia[fecha].emocion_entrada = emocion
