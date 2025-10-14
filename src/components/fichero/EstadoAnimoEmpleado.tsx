@@ -66,6 +66,9 @@ export default function EstadoAnimoEmpleado() {
 
         if (!errorEmpleados && todosEmpleados) {
           setEmpleados(todosEmpleados)
+          if (!empleadoSeleccionado && todosEmpleados.length > 0) {
+            setEmpleadoSeleccionado(todosEmpleados[0].id)
+          }
         }
       } else {
         // Solo el empleado actual
@@ -85,16 +88,24 @@ export default function EstadoAnimoEmpleado() {
   const cargarEstadosAnimo = async () => {
     setLoading(true)
     try {
-      const mesInicio = new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth(), 1)
-      const mesFin = new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth() + 1, 0, 23, 59, 59)
+      const mesInicioLocal = new Date(
+        fechaSeleccionada.getFullYear(), 
+        fechaSeleccionada.getMonth(), 
+        1, 0, 0, 0
+      )
+      const proximoMesInicioLocal = new Date(
+        fechaSeleccionada.getFullYear(), 
+        fechaSeleccionada.getMonth() + 1, 
+        1, 0, 0, 0
+      )
 
-      // Obtener todos los fichajes del mes para el empleado
+      // Obtener todos los fichajes del mes para el empleado (usando límites locales para evitar problemas de zona horaria)
       const { data: fichajes, error } = await supabase
         .from('fichajes')
         .select('tipo, timestamp_real, datos_adicionales')
         .eq('empleado_id', empleadoSeleccionado)
-        .gte('timestamp_real', mesInicio.toISOString())
-        .lte('timestamp_real', mesFin.toISOString())
+        .gte('timestamp_real', mesInicioLocal.toISOString())
+        .lt('timestamp_real', proximoMesInicioLocal.toISOString())
         .in('tipo', ['entrada', 'salida'])
         .order('timestamp_real')
 
@@ -104,7 +115,8 @@ export default function EstadoAnimoEmpleado() {
       const estadosPorDia: { [key: string]: EstadoAnimoDia } = {}
 
       fichajes?.forEach(fichaje => {
-        const fecha = new Date(fichaje.timestamp_real).toISOString().split('T')[0]
+        const d = new Date(fichaje.timestamp_real)
+        const fecha = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
         
         if (!estadosPorDia[fecha]) {
           estadosPorDia[fecha] = { fecha }
