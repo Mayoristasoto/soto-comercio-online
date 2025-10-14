@@ -250,12 +250,15 @@ export default function KioscoCheckIn() {
         p_lng: ubicacion?.longitud || null,
         p_datos: {
           dispositivo: 'kiosco',
-          timestamp_local: new Date().toISOString()
+          timestamp_local: new Date().toISOString(),
+          emocion: emocionDetectada || null
           // NO especificar 'tipo' para que la función determine automáticamente
         }
       })
 
-      if (error) throw error
+      if (error) {
+        throw new Error(error.message || 'Error al registrar fichaje')
+      }
 
       // Obtener tareas pendientes del empleado
       const { data: tareas } = await supabase
@@ -383,11 +386,14 @@ export default function KioscoCheckIn() {
         p_datos: {
           dispositivo: 'kiosco',
           tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
-          timestamp_local: new Date().toISOString()
+          timestamp_local: new Date().toISOString(),
+          emocion: emocionDetectada || null
         }
       })
 
-      if (error) throw error
+      if (error) {
+        throw new Error(error.message || 'Error al registrar fichaje')
+      }
 
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
       let tareas = []
@@ -504,11 +510,14 @@ export default function KioscoCheckIn() {
         p_datos: {
           dispositivo: 'kiosco',
           tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
-          timestamp_local: new Date().toISOString()
+          timestamp_local: new Date().toISOString(),
+          emocion: emocionDetectada || null
         }
       })
 
-      if (error) throw error
+      if (error) {
+        throw new Error(error.message || 'Error al registrar fichaje')
+      }
 
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
       let tareas = []
