@@ -310,11 +310,12 @@ export default function KioscoCheckIn() {
 
       resetKiosco()
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error procesando fichaje:', error)
+      const errorMessage = error.message || "No se pudo registrar el fichaje. Intente nuevamente."
       toast({
-        title: "Error",
-        description: "No se pudo registrar el fichaje. Intente nuevamente.",
+        title: "Error en el fichaje",
+        description: errorMessage,
         variant: "destructive",
         duration: 5000,
       })
@@ -451,12 +452,13 @@ export default function KioscoCheckIn() {
       setShowFacialAuth(false)
       resetKiosco()
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error procesando fichaje:', error)
       setLastProcessTime(0) // Reset del debounce en caso de error
+      const errorMessage = error.message || "No se pudo registrar el fichaje. Intente nuevamente."
       toast({
-        title: "Error",
-        description: "No se pudo registrar el fichaje. Intente nuevamente.",
+        title: "Error en el fichaje",
+        description: errorMessage,
         variant: "destructive",
         duration: 5000,
       })
@@ -571,12 +573,13 @@ export default function KioscoCheckIn() {
       setShowActionSelection(false)
       resetKiosco()
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error procesando fichaje:', error)
       setLastProcessTime(0) // Reset del debounce en caso de error
+      const errorMessage = error.message || "No se pudo registrar el fichaje. Intente nuevamente."
       toast({
-        title: "Error",
-        description: "No se pudo registrar el fichaje. Intente nuevamente.",
+        title: "Error en el fichaje",
+        description: errorMessage,
         variant: "destructive",
         duration: 5000,
       })
