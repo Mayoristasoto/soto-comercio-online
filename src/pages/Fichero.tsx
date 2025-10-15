@@ -445,7 +445,7 @@ export default function Fichero() {
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
-            { key: 'config', label: 'Configuración', icon: Settings },
+            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'config', label: 'Configuración', icon: Settings }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'admin', label: 'Administrar', icon: Shield }] : []),
           ].map(({ key, label, icon: Icon }) => (
             <Button
