@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, Clock, User } from "lucide-react";
+import { Loader2, Calendar, Clock, User, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MisVacaciones } from "@/components/vacaciones/MisVacaciones";
 import { CalendarioVacaciones } from "@/components/vacaciones/CalendarioVacaciones";
 import { AprobacionVacaciones } from "@/components/vacaciones/AprobacionVacaciones";
 import { GestionBloqueos } from "@/components/vacaciones/GestionBloqueos";
+import { VacacionesImport } from "@/components/vacaciones/VacacionesImport";
+import { Button } from "@/components/ui/button";
 
 interface UserInfo {
   id: string;
@@ -21,6 +23,7 @@ interface UserInfo {
 export default function Vacaciones() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -90,6 +93,12 @@ export default function Vacaciones() {
             Solicita, gestiona y consulta las vacaciones del personal
           </p>
         </div>
+        {isAdmin && (
+          <Button onClick={() => setImportDialogOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Importar desde Excel
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="mis-vacaciones" className="space-y-4">
@@ -141,6 +150,12 @@ export default function Vacaciones() {
           </TabsContent>
         )}
       </Tabs>
+
+      <VacacionesImport
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImportComplete={fetchUserInfo}
+      />
     </div>
   );
 }
