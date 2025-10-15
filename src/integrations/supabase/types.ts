@@ -2447,6 +2447,7 @@ export type Database = {
           parent_id: string | null
           path: string
           rol: Database["public"]["Enums"]["user_role"]
+          tipo: string | null
           updated_at: string | null
           visible: boolean
         }
@@ -2460,6 +2461,7 @@ export type Database = {
           parent_id?: string | null
           path: string
           rol: Database["public"]["Enums"]["user_role"]
+          tipo?: string | null
           updated_at?: string | null
           visible?: boolean
         }
@@ -2473,6 +2475,7 @@ export type Database = {
           parent_id?: string | null
           path?: string
           rol?: Database["public"]["Enums"]["user_role"]
+          tipo?: string | null
           updated_at?: string | null
           visible?: boolean
         }

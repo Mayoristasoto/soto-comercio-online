@@ -18,6 +18,7 @@ import {
   FileSignature,
   FileWarning
 } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -113,6 +114,21 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {links.map((link) => {
+                      // Si es un separador, renderizar Separator
+                      if ((link as any).tipo === 'separator') {
+                        return (
+                          <div key={link.id} className="px-2 py-2">
+                            <Separator />
+                            {link.label && (
+                              <p className="text-xs text-muted-foreground mt-2 px-2 font-medium">
+                                {link.label}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      }
+
+                      // Renderizar link normal
                       const Icon = getIcon(link.icon)
                       return (
                         <div key={link.id}>

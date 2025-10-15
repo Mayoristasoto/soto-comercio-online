@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GripVertical, Eye, EyeOff, Edit, Save, X } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Edit, Save, X, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
@@ -21,6 +21,7 @@ interface SidebarLink {
   orden: number;
   visible: boolean;
   parent_id: string | null;
+  tipo?: 'link' | 'separator';
   children?: SidebarLink[];
 }
 
@@ -31,6 +32,7 @@ export function SidebarLinksManager() {
   const [editForm, setEditForm] = useState<Partial<SidebarLink>>({});
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [showAddSeparator, setShowAddSeparator] = useState(false);
 
   useEffect(() => {
     loadLinks();
@@ -108,6 +110,7 @@ export function SidebarLinksManager() {
           descripcion: editForm.descripcion,
           icon: editForm.icon,
           orden: editForm.orden,
+          tipo: editForm.tipo || 'link',
         })
         .eq("id", editingId);
 
@@ -117,6 +120,33 @@ export function SidebarLinksManager() {
       loadLinks();
     } catch (error: any) {
       toast.error("Error al actualizar link: " + error.message);
+    }
+  };
+
+  const handleAddSeparator = async () => {
+    try {
+      const maxOrder = Math.max(...links[selectedRole].map((l) => l.orden), 0);
+      
+      const { error } = await (supabase as any)
+        .from("sidebar_links")
+        .insert({
+          rol: selectedRole,
+          label: editForm.label || "Separador",
+          path: "#",
+          icon: "Minus",
+          tipo: "separator",
+          orden: maxOrder + 1,
+          visible: true,
+          parent_id: null,
+        });
+
+      if (error) throw error;
+      toast.success("Separador agregado");
+      setShowAddSeparator(false);
+      setEditForm({});
+      loadLinks();
+    } catch (error: any) {
+      toast.error("Error al agregar separador: " + error.message);
     }
   };
 
@@ -176,11 +206,12 @@ export function SidebarLinksManager() {
 
   const renderLink = (link: SidebarLink, isChild: boolean = false) => {
     const isEditing = editingId === link.id;
+    const isSeparator = link.tipo === 'separator';
 
     return (
       <div key={link.id} className={isChild ? "ml-8" : ""}>
         <Card
-          className={`mb-2 ${!link.visible ? "opacity-50" : ""} ${draggedItem === link.id ? "opacity-50" : ""}`}
+          className={`mb-2 ${!link.visible ? "opacity-50" : ""} ${draggedItem === link.id ? "opacity-50" : ""} ${isSeparator ? "border-dashed" : ""}`}
           draggable
           onDragStart={() => handleDragStart(link.id)}
           onDragOver={handleDragOver}
@@ -191,7 +222,7 @@ export function SidebarLinksManager() {
               <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
               
               {isEditing ? (
-                <div className="flex-1 grid grid-cols-4 gap-2">
+                <div className="flex-1 grid grid-cols-5 gap-2">
                   <Input
                     value={editForm.label || ""}
                     onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
@@ -213,17 +244,32 @@ export function SidebarLinksManager() {
                     onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
                     placeholder="Descripción"
                   />
+                  <Select
+                    value={editForm.tipo || 'link'}
+                    onValueChange={(value) => setEditForm({ ...editForm, tipo: value as 'link' | 'separator' })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="link">Link</SelectItem>
+                      <SelectItem value="separator">Separador</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               ) : (
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
+                    {isSeparator && <Minus className="h-4 w-4 text-muted-foreground" />}
                     <span className="font-medium">{link.label}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {link.icon}
-                    </Badge>
+                    {isSeparator ? (
+                      <Badge variant="secondary" className="text-xs">Separador</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">{link.icon}</Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">Orden: {link.orden}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{link.path}</p>
+                  {!isSeparator && <p className="text-sm text-muted-foreground">{link.path}</p>}
                   {link.descripcion && (
                     <p className="text-xs text-muted-foreground mt-1">{link.descripcion}</p>
                   )}
@@ -294,13 +340,44 @@ export function SidebarLinksManager() {
 
         <TabsContent value="admin_rrhh" className="space-y-4 mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Links de Administrador RRHH</CardTitle>
-              <CardDescription>
-                Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Links de Administrador RRHH</CardTitle>
+                <CardDescription>
+                  Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={() => setShowAddSeparator(!showAddSeparator)}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Separador
+              </Button>
             </CardHeader>
             <CardContent>
+              {showAddSeparator && (
+                <Card className="mb-4 border-dashed">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Input
+                        value={editForm.label || ""}
+                        onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
+                        placeholder="Nombre del separador (opcional)"
+                        className="flex-1"
+                      />
+                      <Button onClick={handleAddSeparator} size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Guardar
+                      </Button>
+                      <Button onClick={() => setShowAddSeparator(false)} variant="ghost" size="sm">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               {links.admin_rrhh.map((link: SidebarLink) => renderLink(link))}
             </CardContent>
           </Card>
