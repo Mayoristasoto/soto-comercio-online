@@ -111,8 +111,18 @@ export default function EstadoAnimoEmpleado() {
 
       if (error) throw error
 
-      // Agrupar por día
+      // Agrupar por día y prellenar todos los días del mes
       const estadosPorDia: { [key: string]: EstadoAnimoDia } = {}
+
+      // Prellenar cada día del mes seleccionado para que aparezca aunque no haya fichajes
+      const inicio = new Date(mesInicioLocal)
+      const fin = new Date(proximoMesInicioLocal)
+      fin.setDate(fin.getDate() - 1) // último día del mes
+
+      for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
+        const fecha = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        estadosPorDia[fecha] = { fecha }
+      }
 
       fichajes?.forEach(fichaje => {
         const d = new Date(fichaje.timestamp_real)
