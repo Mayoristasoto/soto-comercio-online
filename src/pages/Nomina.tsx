@@ -22,7 +22,8 @@ import {
   KeyRound,
   Briefcase,
   Upload,
-  Save
+  Save,
+  ArrowUpDown
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -89,6 +90,8 @@ export default function Nomina() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [editingLegajos, setEditingLegajos] = useState<Record<string, string>>({})
   const [hasChanges, setHasChanges] = useState(false)
+  const [sortColumn, setSortColumn] = useState<'legajo' | 'nombre' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   
   // Modals
   const [profileOpen, setProfileOpen] = useState(false)
@@ -106,7 +109,7 @@ export default function Nomina() {
 
   useEffect(() => {
     filterEmployees()
-  }, [employees, searchTerm, filterRole, filterStatus])
+  }, [employees, searchTerm, filterRole, filterStatus, sortColumn, sortDirection])
 
   const checkAccess = async () => {
     try {
@@ -208,6 +211,15 @@ export default function Nomina() {
     }
   }
 
+  const handleSort = (column: 'legajo' | 'nombre') => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
   const filterEmployees = () => {
     let filtered = employees
 
@@ -228,6 +240,26 @@ export default function Nomina() {
       filtered = filtered.filter(emp => 
         filterStatus === 'active' ? emp.activo : !emp.activo
       )
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      filtered = [...filtered].sort((a, b) => {
+        if (sortColumn === 'legajo') {
+          const legajoA = a.legajo || ''
+          const legajoB = b.legajo || ''
+          return sortDirection === 'asc' 
+            ? legajoA.localeCompare(legajoB, undefined, { numeric: true })
+            : legajoB.localeCompare(legajoA, undefined, { numeric: true })
+        } else if (sortColumn === 'nombre') {
+          const nombreA = `${a.nombre} ${a.apellido}`.toLowerCase()
+          const nombreB = `${b.nombre} ${b.apellido}`.toLowerCase()
+          return sortDirection === 'asc'
+            ? nombreA.localeCompare(nombreB)
+            : nombreB.localeCompare(nombreA)
+        }
+        return 0
+      })
     }
 
     setFilteredEmployees(filtered)
@@ -643,8 +675,28 @@ export default function Nomina() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Empleado</TableHead>
-                      <TableHead>Legajo</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSort('nombre')}
+                          className="h-8 px-2 hover:bg-accent"
+                        >
+                          Empleado
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSort('legajo')}
+                          className="h-8 px-2 hover:bg-accent"
+                        >
+                          Legajo
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </TableHead>
                       <TableHead>Puesto</TableHead>
                       <TableHead>Contacto</TableHead>
                       <TableHead>Rol</TableHead>
