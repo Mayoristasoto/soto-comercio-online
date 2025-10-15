@@ -268,11 +268,21 @@ export default function EstadoAnimoEmpleado() {
                   <div key={estado.fecha} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold">
-                        {new Date(estado.fecha).toLocaleDateString('es-ES', { 
-                          weekday: 'long', 
-                          day: 'numeric', 
-                          month: 'long' 
-                        })}
+                        {(() => {
+                          const displayDate = new Date(`${estado.fecha}T00:00:00`)
+                          const isToday = new Date().toDateString() === displayDate.toDateString()
+                          const texto = displayDate.toLocaleDateString('es-ES', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long'
+                          })
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span>{texto}</span>
+                              {isToday && <Badge variant="secondary">Hoy</Badge>}
+                            </div>
+                          )
+                        })()}
                       </h3>
                       {obtenerIndicadorCambio(estado.emocion_entrada, estado.emocion_salida)}
                     </div>
