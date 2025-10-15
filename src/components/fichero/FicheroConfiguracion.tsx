@@ -82,11 +82,15 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
   const [probandoWhatsApp, setProbandoWhatsApp] = useState(false)
   const [numeroTestWhatsApp, setNumeroTestWhatsApp] = useState('595985523065')
   const [mensajeTestWhatsApp, setMensajeTestWhatsApp] = useState('Mensaje de prueba desde el sistema de fichajes')
+  const [ipsPermitidas, setIpsPermitidas] = useState<string[]>([])
+  const [nuevaIp, setNuevaIp] = useState('')
+  const [descripcionIp, setDescripcionIp] = useState('')
 
   useEffect(() => {
     cargarConfiguracion()
     verificarDescriptorFacial()
     obtenerUbicacion()
+    cargarIpsPermitidas()
   }, [])
 
   const cargarConfiguracion = async () => {
@@ -307,6 +311,117 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         title: "Error",
         description: "No se pudieron borrar los datos biométricos",
         variant: "destructive"
+      })
+    }
+  }
+
+  const cargarIpsPermitidas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fichado_configuracion')
+        .select('valor')
+        .eq('clave', 'ips_permitidas')
+        .single()
+
+      if (error && error.code !== 'PGRST116') throw error
+
+      if (data?.valor) {
+        try {
+          const ips = JSON.parse(data.valor)
+          setIpsPermitidas(Array.isArray(ips) ? ips : [])
+        } catch {
+          setIpsPermitidas([])
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando IPs permitidas:', error)
+    }
+  }
+
+  const agregarIp = async () => {
+    if (!nuevaIp.trim()) {
+      toast({
+        title: "IP requerida",
+        description: "Por favor ingrese una dirección IP",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validación básica de formato IP
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
+    if (!ipRegex.test(nuevaIp.trim())) {
+      toast({
+        title: "IP inválida",
+        description: "Por favor ingrese una dirección IP válida (ej: 192.168.1.1)",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const ipEntry = descripcionIp.trim() 
+      ? `${nuevaIp.trim()}|${descripcionIp.trim()}`
+      : nuevaIp.trim()
+
+    const nuevasIps = [...ipsPermitidas, ipEntry]
+    
+    try {
+      const { error } = await supabase
+        .from('fichado_configuracion')
+        .upsert({
+          clave: 'ips_permitidas',
+          valor: JSON.stringify(nuevasIps),
+          tipo: 'json',
+          updated_by: empleado.id
+        })
+
+      if (error) throw error
+
+      setIpsPermitidas(nuevasIps)
+      setNuevaIp('')
+      setDescripcionIp('')
+      
+      toast({
+        title: "IP agregada",
+        description: "La dirección IP ha sido añadida a la lista blanca",
+      })
+    } catch (error) {
+      console.error('Error agregando IP:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo agregar la IP",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const eliminarIp = async (ip: string) => {
+    const nuevasIps = ipsPermitidas.filter(i => i !== ip)
+    
+    try {
+      const { error } = await supabase
+        .from('fichado_configuracion')
+        .upsert({
+          clave: 'ips_permitidas',
+          valor: JSON.stringify(nuevasIps),
+          tipo: 'json',
+          updated_by: empleado.id
+        })
+
+      if (error) throw error
+
+      setIpsPermitidas(nuevasIps)
+      
+      toast({
+        title: "IP eliminada",
+        description: "La dirección IP ha sido removida de la lista blanca",
+      })
+    } catch (error) {
+      console.error('Error eliminando IP:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la IP",
+        variant: "destructive",
       })
     }
   }
@@ -639,6 +754,79 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
                 Latitud: {ubicacionActual.lat.toFixed(6)}<br />
                 Longitud: {ubicacionActual.lng.toFixed(6)}
               </p>
+            </div>
+          )}
+
+          {configuracion.ip_whitelist_obligatoria && (
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <h4 className="font-medium mb-2">IPs Permitidas</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Solo los usuarios con estas direcciones IP podrán fichar
+                </p>
+              </div>
+
+              {empleado.rol === 'admin_rrhh' && (
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="nueva-ip">Dirección IP</Label>
+                    <Input
+                      id="nueva-ip"
+                      type="text"
+                      value={nuevaIp}
+                      onChange={(e) => setNuevaIp(e.target.value)}
+                      placeholder="192.168.1.1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="descripcion-ip">Descripción (opcional)</Label>
+                    <Input
+                      id="descripcion-ip"
+                      type="text"
+                      value={descripcionIp}
+                      onChange={(e) => setDescripcionIp(e.target.value)}
+                      placeholder="Ej: Oficina principal, Sucursal Centro"
+                    />
+                  </div>
+                  <Button onClick={agregarIp} size="sm" className="w-full">
+                    Agregar IP
+                  </Button>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {ipsPermitidas.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No hay IPs permitidas configuradas
+                  </div>
+                ) : (
+                  ipsPermitidas.map((ip, index) => {
+                    const [direccion, descripcion] = ip.split('|')
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-background border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <p className="font-mono font-medium">{direccion}</p>
+                          {descripcion && (
+                            <p className="text-sm text-muted-foreground">{descripcion}</p>
+                          )}
+                        </div>
+                        {empleado.rol === 'admin_rrhh' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => eliminarIp(ip)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
             </div>
           )}
         </CardContent>
