@@ -12,10 +12,11 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { TimelineView } from './TimelineView';
 import HorariosDragDrop from './HorariosDragDrop';
 import ScheduleImport from './ScheduleImport';
+import AssignmentImport from './AssignmentImport';
 
 interface Turno {
   id: string;
@@ -67,6 +68,7 @@ export default function FicheroHorarios() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [asignacionDialogOpen, setAsignacionDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importAssignmentDialogOpen, setImportAssignmentDialogOpen] = useState(false);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -258,6 +260,31 @@ export default function FicheroHorarios() {
       toast({
         title: "Error",
         description: "No se pudo asignar el horario",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAsignacion = async (asignacionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('empleado_turnos')
+        .update({ activo: false, fecha_fin: new Date().toISOString().split('T')[0] })
+        .eq('id', asignacionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Asignación eliminada correctamente",
+      });
+
+      loadData();
+    } catch (error) {
+      console.error('Error eliminando asignación:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la asignación",
         variant: "destructive",
       });
     }
@@ -633,13 +660,21 @@ export default function FicheroHorarios() {
                 Asignar horarios específicos a empleados
               </CardDescription>
             </div>
-            <Dialog open={asignacionDialogOpen} onOpenChange={setAsignacionDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Asignar Horario
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setImportAssignmentDialogOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Importar Asignaciones
+              </Button>
+              <Dialog open={asignacionDialogOpen} onOpenChange={setAsignacionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Asignar Horario
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Asignar Horario a Empleados</DialogTitle>
@@ -720,6 +755,7 @@ export default function FicheroHorarios() {
               </DialogContent>
             </Dialog>
           </div>
+        </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -730,6 +766,7 @@ export default function FicheroHorarios() {
                 <TableHead>Horario de Trabajo</TableHead>
                 <TableHead>Fecha Inicio</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -748,6 +785,16 @@ export default function FicheroHorarios() {
                       {asignacion.activo ? 'Activo' : 'Inactivo'}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteAsignacion(asignacion.id)}
+                      disabled={!asignacion.activo}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                  </TableRow>
               ))}
             </TableBody>
@@ -760,6 +807,12 @@ export default function FicheroHorarios() {
       <ScheduleImport
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
+        onImportComplete={loadData}
+      />
+
+      <AssignmentImport
+        open={importAssignmentDialogOpen}
+        onOpenChange={setImportAssignmentDialogOpen}
         onImportComplete={loadData}
       />
     </div>
