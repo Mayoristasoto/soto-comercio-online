@@ -3323,7 +3323,12 @@ export type Database = {
         | "experiencia"
         | "descuento"
         | "reconocimiento"
-      solicitud_estado: "pendiente" | "aprobada" | "rechazada" | "cancelada"
+      solicitud_estado:
+        | "pendiente"
+        | "aprobada"
+        | "rechazada"
+        | "cancelada"
+        | "gozadas"
       tarea_estado: "pendiente" | "en_progreso" | "completada" | "cancelada"
       tarea_prioridad: "baja" | "media" | "alta" | "urgente"
       turno_tipo: "normal" | "nocturno" | "partido" | "flexible"
@@ -3489,7 +3494,13 @@ export const Constants = {
         "descuento",
         "reconocimiento",
       ],
-      solicitud_estado: ["pendiente", "aprobada", "rechazada", "cancelada"],
+      solicitud_estado: [
+        "pendiente",
+        "aprobada",
+        "rechazada",
+        "cancelada",
+        "gozadas",
+      ],
       tarea_estado: ["pendiente", "en_progreso", "completada", "cancelada"],
       tarea_prioridad: ["baja", "media", "alta", "urgente"],
       turno_tipo: ["normal", "nocturno", "partido", "flexible"],
