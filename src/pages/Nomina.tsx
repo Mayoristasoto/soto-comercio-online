@@ -21,7 +21,8 @@ import {
   MoreVertical,
   KeyRound,
   Briefcase,
-  Upload
+  Upload,
+  Save
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -61,6 +62,7 @@ interface Employee {
   activo: boolean
   fecha_ingreso: string
   avatar_url?: string
+  legajo?: string
 }
 
 interface NominaStats {
@@ -85,6 +87,8 @@ export default function Nomina() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [editingLegajos, setEditingLegajos] = useState<Record<string, string>>({})
+  const [hasChanges, setHasChanges] = useState(false)
   
   // Modals
   const [profileOpen, setProfileOpen] = useState(false)
@@ -146,8 +150,6 @@ export default function Nomina() {
     try {
       setLoading(true)
       
-      // Cargar empleados
-      // Use direct table access for basic employee data
       const { data: employeesData, error: employeesError } = await supabase
         .from('empleados')
         .select(`
@@ -168,6 +170,13 @@ export default function Nomina() {
       if (employeesError) throw employeesError
 
       setEmployees(employeesData || [])
+      
+      // Inicializar el estado de edición de legajos
+      const legajosInit: Record<string, string> = {}
+      employeesData?.forEach(emp => {
+        legajosInit[emp.id] = emp.legajo || ''
+      })
+      setEditingLegajos(legajosInit)
 
       // Calcular estadísticas
       const totalEmpleados = employeesData?.length || 0
@@ -178,7 +187,6 @@ export default function Nomina() {
         new Date(emp.fecha_ingreso) > mesAtras
       )?.length || 0
 
-      // Contar documentos pendientes (mock por ahora)
       const documentosPendientes = Math.floor(Math.random() * 15) + 5
 
       setStats({
@@ -203,7 +211,6 @@ export default function Nomina() {
   const filterEmployees = () => {
     let filtered = employees
 
-    // Filtro por búsqueda
     if (searchTerm) {
       filtered = filtered.filter(emp => 
         emp.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -213,12 +220,10 @@ export default function Nomina() {
       )
     }
 
-    // Filtro por rol
     if (filterRole !== 'all') {
       filtered = filtered.filter(emp => emp.rol === filterRole)
     }
 
-    // Filtro por estado
     if (filterStatus !== 'all') {
       filtered = filtered.filter(emp => 
         filterStatus === 'active' ? emp.activo : !emp.activo
@@ -273,9 +278,43 @@ export default function Nomina() {
     }
   }
 
+  const handleLegajoChange = (empleadoId: string, newLegajo: string) => {
+    setEditingLegajos(prev => ({
+      ...prev,
+      [empleadoId]: newLegajo
+    }))
+    setHasChanges(true)
+  }
+
+  const handleSaveLegajos = async () => {
+    try {
+      const updates = Object.entries(editingLegajos).map(([empleadoId, legajo]) => 
+        supabase
+          .from('empleados')
+          .update({ legajo: legajo || null })
+          .eq('id', empleadoId)
+      )
+
+      await Promise.all(updates)
+
+      toast({
+        title: "Legajos actualizados",
+        description: "Todos los legajos se actualizaron correctamente"
+      })
+      
+      setHasChanges(false)
+      loadNominaData()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar los legajos",
+        variant: "destructive"
+      })
+    }
+  }
+
   const handleExportNomina = async () => {
     try {
-      // Obtener datos completos de empleados con información sensible
       const { data: employeesData, error } = await supabase
         .from('empleados')
         .select(`
@@ -303,7 +342,6 @@ export default function Nomina() {
 
       if (error) throw error
 
-      // Formatear datos para exportar
       const formattedData = employeesData?.map(emp => ({
         'Legajo': emp.legajo || '',
         'Nombre': emp.nombre,
@@ -323,10 +361,8 @@ export default function Nomina() {
         'Tel. Emergencia': emp.empleados_datos_sensibles?.[0]?.emergencia_contacto_telefono || '',
       })) || []
 
-      // Crear libro de Excel
       const ws = XLSX.utils.json_to_sheet(formattedData)
       
-      // Ajustar ancho de columnas
       const columnWidths = [
         { wch: 10 },  // Legajo
         { wch: 15 },  // Nombre
@@ -350,7 +386,6 @@ export default function Nomina() {
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Nómina')
 
-      // Descargar archivo
       const fecha = new Date().toISOString().split('T')[0]
       XLSX.writeFile(wb, `nomina_${fecha}.xlsx`)
 
@@ -400,6 +435,12 @@ export default function Nomina() {
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
+          {hasChanges && (
+            <Button onClick={handleSaveLegajos} className="bg-green-600 hover:bg-green-700">
+              <Save className="h-4 w-4 mr-2" />
+              Guardar Legajos
+            </Button>
+          )}
           <Button onClick={() => setUserCreationOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Nuevo Empleado
@@ -603,6 +644,7 @@ export default function Nomina() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Empleado</TableHead>
+                      <TableHead>Legajo</TableHead>
                       <TableHead>Puesto</TableHead>
                       <TableHead>Contacto</TableHead>
                       <TableHead>Rol</TableHead>
@@ -632,6 +674,14 @@ export default function Nomina() {
                               <p className="text-xs text-muted-foreground">{employee.email}</p>
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={editingLegajos[employee.id] || ''}
+                            onChange={(e) => handleLegajoChange(employee.id, e.target.value)}
+                            placeholder="LEG-001"
+                            className="w-28"
+                          />
                         </TableCell>
                         <TableCell>
                           <span className="text-sm">{employee.puesto || 'No asignado'}</span>
