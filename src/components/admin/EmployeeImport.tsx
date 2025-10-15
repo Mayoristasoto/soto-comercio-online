@@ -52,6 +52,19 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
         const sheet = workbook.Sheets[sheetName]
         const jsonData = XLSX.utils.sheet_to_json(sheet) as any[]
 
+        // Función para normalizar roles del Excel a valores válidos del enum
+        const normalizeRole = (role: string): string => {
+          const roleStr = String(role || '').toLowerCase().trim()
+          
+          if (roleStr.includes('admin') || roleStr.includes('rrhh')) {
+            return 'admin_rrhh'
+          }
+          if (roleStr.includes('gerente') || roleStr.includes('manager')) {
+            return 'gerente_sucursal'
+          }
+          return 'empleado'
+        }
+
         const importedData: ImportedEmployee[] = jsonData.map((row) => ({
           nombre: row['Nombre'] || row['nombre'] || '',
           apellido: row['Apellido'] || row['apellido'] || '',
@@ -62,7 +75,7 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
           direccion: row['Dirección'] || row['direccion'] || row['Direccion'] || '',
           fecha_nacimiento: row['Fecha Nacimiento'] || row['fecha_nacimiento'] || '',
           puesto: row['Puesto'] || row['puesto'] || '',
-          rol: row['Rol'] || row['rol'] || 'empleado',
+          rol: normalizeRole(row['Rol'] || row['rol'] || 'empleado'),
           fecha_ingreso: row['Fecha Ingreso'] || row['fecha_ingreso'] || new Date().toISOString().split('T')[0],
           activo: row['Activo'] === undefined ? true : row['Activo'] === 'Sí' || row['Activo'] === 'Si' || row['Activo'] === true,
           salario: row['Salario'] || row['salario'] || undefined,
@@ -210,7 +223,7 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
         'Dirección': 'Calle Falsa 123',
         'Fecha Nacimiento': '1990-01-15',
         'Puesto': 'Vendedor',
-        'Rol': 'empleado',
+        'Rol': 'Empleado',
         'Fecha Ingreso': '2024-01-01',
         'Activo': 'Sí',
         'Salario': '150000',
