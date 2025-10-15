@@ -3232,6 +3232,12 @@ export type Database = {
         Args: { sucursal_uuid?: string }
         Returns: boolean
       }
+      kiosk_get_acciones: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          accion: string
+        }[]
+      }
       kiosk_insert_fichaje: {
         Args: {
           p_confianza: number

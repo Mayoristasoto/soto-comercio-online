@@ -84,72 +84,66 @@ export default function KioscoCheckIn() {
     }
   }, [])
 
-  // Función para determinar el tipo de fichaje según el historial
+  // Función para determinar el tipo de fichaje según el historial usando RPC segura
   const determinarTipoFichaje = async (empleadoId: string): Promise<AccionDisponible[]> => {
     try {
-      // Obtener el último fichaje del día actual usando DATE() para comparar solo la fecha
-      const { data: fichajes, error } = await supabase
-        .from('fichajes')
-        .select('tipo, timestamp_real')
-        .eq('empleado_id', empleadoId)
-        .eq('estado', 'valido')
-        .gte('timestamp_real', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
-        .order('timestamp_real', { ascending: false })
-        .limit(1)
+      // Usar RPC que evita RLS para obtener acciones permitidas
+      const { data: acciones, error } = await supabase
+        .rpc('kiosk_get_acciones', { p_empleado_id: empleadoId })
 
-      if (error) throw error
-
-      const ultimoFichaje = fichajes?.[0]
-      setUltimoTipoFichaje(ultimoFichaje?.tipo || null)
-
-      if (!ultimoFichaje) {
-        // Sin entrada del día = debe hacer entrada
+      if (error) {
+        console.error('Error obteniendo acciones:', error)
         return []
       }
 
-      switch (ultimoFichaje.tipo) {
-        case 'entrada':
-          // Después de entrada, puede iniciar pausa o finalizar jornada
-          return [
-            {
+      if (!acciones || acciones.length === 0) {
+        return []
+      }
+
+      // Mapear acciones de texto a objetos AccionDisponible
+      const accionesDisponibles: AccionDisponible[] = []
+      
+      for (const accion of acciones) {
+        switch (accion.accion) {
+          case 'entrada':
+            accionesDisponibles.push({
+              tipo: 'entrada',
+              label: 'Registrar Entrada',
+              icon: 'Clock',
+              color: 'bg-green-600 hover:bg-green-700'
+            })
+            setUltimoTipoFichaje(null)
+            break
+          case 'pausa_inicio':
+            accionesDisponibles.push({
               tipo: 'pausa_inicio',
               label: 'Iniciar Pausa',
               icon: 'Coffee',
               color: 'bg-orange-600 hover:bg-orange-700'
-            },
-            {
+            })
+            setUltimoTipoFichaje('entrada')
+            break
+          case 'salida':
+            accionesDisponibles.push({
               tipo: 'salida',
               label: 'Finalizar Jornada',
               icon: 'LogOut',
               color: 'bg-red-600 hover:bg-red-700'
-            }
-          ]
-        
-        case 'pausa_inicio':
-          // Después de inicio de pausa, solo puede finalizar pausa
-          return [{
-            tipo: 'pausa_fin',
-            label: 'Finalizar Pausa',
-            icon: 'Clock',
-            color: 'bg-blue-600 hover:bg-blue-700'
-          }]
-        
-        case 'pausa_fin':
-          // Después de fin de pausa, solo puede finalizar jornada
-          return [{
-            tipo: 'salida',
-            label: 'Finalizar Jornada',
-            icon: 'LogOut',
-            color: 'bg-red-600 hover:bg-red-700'
-          }]
-        
-        case 'salida':
-          // Si ya salió, no puede hacer más fichajes
-          return []
-        
-        default:
-          return []
+            })
+            break
+          case 'pausa_fin':
+            accionesDisponibles.push({
+              tipo: 'pausa_fin',
+              label: 'Finalizar Pausa',
+              icon: 'Clock',
+              color: 'bg-blue-600 hover:bg-blue-700'
+            })
+            setUltimoTipoFichaje('pausa_inicio')
+            break
+        }
       }
+
+      return accionesDisponibles
     } catch (error) {
       console.error('Error determinando tipo de fichaje:', error)
       return []
