@@ -242,10 +242,13 @@ export default function Fichero() {
           timestamp_local: new Date().toISOString()
         }
 
-        // Agregar emoción detectada a los datos adicionales
-        if (emocion) {
+        // Agregar emoción detectada a los datos adicionales (solo si no es null/undefined)
+        if (emocion && emocion !== 'undefined' && emocion !== 'null') {
           datosAdicionales.emocion = emocion
           datosAdicionales.momento_emocion = tipoFichaje === 'entrada' ? 'inicio_jornada' : 'fin_jornada'
+          console.log('Fichaje: Guardando emoción:', emocion, 'para tipo:', tipoFichaje)
+        } else {
+          console.log('Fichaje: No se detectó emoción válida, omitiendo del registro')
         }
 
         const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
