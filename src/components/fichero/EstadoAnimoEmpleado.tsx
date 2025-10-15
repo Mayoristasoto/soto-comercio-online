@@ -3,9 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Smile, Meh, Frown, AlertCircle, TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Smile, Meh, Frown, AlertCircle, TrendingUp, TrendingDown, Minus, Search, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface EmpleadoOption {
   id: string
@@ -25,6 +28,9 @@ export default function EstadoAnimoEmpleado() {
   const { toast } = useToast()
   const [empleados, setEmpleados] = useState<EmpleadoOption[]>([])
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState<string>("")
+  const [empleadoNombre, setEmpleadoNombre] = useState<string>("")
+  const [busquedaAbierta, setBusquedaAbierta] = useState(false)
+  const [filtro, setFiltro] = useState<string>("")
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date>(new Date())
   const [estadosAnimo, setEstadosAnimo] = useState<EstadoAnimoDia[]>([])
   const [loading, setLoading] = useState(false)
@@ -68,12 +74,14 @@ export default function EstadoAnimoEmpleado() {
           setEmpleados(todosEmpleados)
           if (!empleadoSeleccionado && todosEmpleados.length > 0) {
             setEmpleadoSeleccionado(todosEmpleados[0].id)
+            setEmpleadoNombre(`${todosEmpleados[0].apellido}, ${todosEmpleados[0].nombre}`)
           }
         }
       } else {
         // Solo el empleado actual
         setEmpleados([{ id: empleado.id, nombre: empleado.nombre, apellido: empleado.apellido }])
         setEmpleadoSeleccionado(empleado.id)
+        setEmpleadoNombre(`${empleado.apellido}, ${empleado.nombre}`)
       }
     } catch (error) {
       console.error('Error verificando permisos:', error)
@@ -84,6 +92,27 @@ export default function EstadoAnimoEmpleado() {
       })
     }
   }
+
+  const seleccionarEmpleado = (empleadoId: string) => {
+    const empleado = empleados.find(e => e.id === empleadoId)
+    if (empleado) {
+      setEmpleadoSeleccionado(empleadoId)
+      setEmpleadoNombre(`${empleado.apellido}, ${empleado.nombre}`)
+      setBusquedaAbierta(false)
+      setFiltro("")
+    }
+  }
+
+  const limpiarSeleccion = () => {
+    setEmpleadoSeleccionado("")
+    setEmpleadoNombre("")
+    setFiltro("")
+  }
+
+  const empleadosFiltrados = empleados.filter(emp => {
+    const nombreCompleto = `${emp.apellido}, ${emp.nombre}`.toLowerCase()
+    return nombreCompleto.includes(filtro.toLowerCase())
+  })
 
   const cargarEstadosAnimo = async () => {
     setLoading(true)
@@ -215,18 +244,53 @@ export default function EstadoAnimoEmpleado() {
           {esAdmin && (
             <div>
               <label className="text-sm font-medium mb-2 block">Seleccionar Empleado</label>
-              <Select value={empleadoSeleccionado} onValueChange={setEmpleadoSeleccionado}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un empleado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empleados.map(emp => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.apellido}, {emp.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={busquedaAbierta} onOpenChange={setBusquedaAbierta}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={busquedaAbierta}
+                    className="w-full justify-between"
+                  >
+                    {empleadoNombre || "Seleccione un empleado..."}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Buscar empleado..." 
+                      value={filtro}
+                      onValueChange={setFiltro}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No se encontraron empleados.</CommandEmpty>
+                      <CommandGroup>
+                        {empleadosFiltrados.map(emp => (
+                          <CommandItem
+                            key={emp.id}
+                            value={emp.id}
+                            onSelect={() => seleccionarEmpleado(emp.id)}
+                          >
+                            {emp.apellido}, {emp.nombre}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {empleadoSeleccionado && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2"
+                  onClick={limpiarSeleccion}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpiar selección
+                </Button>
+              )}
             </div>
           )}
 
