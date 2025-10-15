@@ -14,6 +14,7 @@ interface ImportedEmployee {
   apellido: string
   email: string
   dni?: string
+  legajo?: string
   telefono?: string
   direccion?: string
   fecha_nacimiento?: string
@@ -56,6 +57,7 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
           apellido: row['Apellido'] || row['apellido'] || '',
           email: row['Email'] || row['email'] || row['Correo'] || '',
           dni: row['DNI'] || row['dni'] || '',
+          legajo: row['Legajo'] || row['legajo'] || '',
           telefono: row['Teléfono'] || row['telefono'] || row['Telefono'] || '',
           direccion: row['Dirección'] || row['direccion'] || row['Direccion'] || '',
           fecha_nacimiento: row['Fecha Nacimiento'] || row['fecha_nacimiento'] || '',
@@ -136,6 +138,7 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
               apellido: String(emp.apellido || '').trim(),
               email: String(emp.email || '').trim().toLowerCase(),
               dni: emp.dni ? String(emp.dni).trim() : null,
+              legajo: emp.legajo ? String(emp.legajo).trim() : null,
               rol: emp.rol as any,
               fecha_ingreso: emp.fecha_ingreso,
               activo: emp.activo,
@@ -202,6 +205,7 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
         'Apellido': 'Pérez',
         'Email': 'juan.perez@example.com',
         'DNI': '12345678',
+        'Legajo': 'LEG-001',
         'Teléfono': '+54 11 1234-5678',
         'Dirección': 'Calle Falsa 123',
         'Fecha Nacimiento': '1990-01-15',
@@ -263,6 +267,7 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
                       <TableHead className="w-[100px]">Apellido</TableHead>
                       <TableHead className="w-[180px]">Email</TableHead>
                       <TableHead className="w-[100px]">DNI</TableHead>
+                      <TableHead className="w-[100px]">Legajo</TableHead>
                       <TableHead className="w-[100px]">Puesto</TableHead>
                       <TableHead className="w-[120px]">Rol</TableHead>
                       <TableHead className="w-[120px]">Fecha Ingreso</TableHead>
@@ -299,6 +304,14 @@ export default function EmployeeImport({ open, onOpenChange, onImportComplete }:
                             value={emp.dni || ''}
                             onChange={(e) => updateEmployee(index, 'dni', e.target.value)}
                             className="min-w-[100px]"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={emp.legajo || ''}
+                            onChange={(e) => updateEmployee(index, 'legajo', e.target.value)}
+                            className="min-w-[100px]"
+                            placeholder="LEG-001"
                           />
                         </TableCell>
                         <TableCell>
