@@ -24,6 +24,16 @@ interface EstadoAnimoDia {
   timestamp_salida?: string
 }
 
+interface EstadoAnimoEmpleadoDia {
+  empleado_id: string
+  empleado_nombre: string
+  empleado_apellido: string
+  emocion_entrada?: string
+  emocion_salida?: string
+  timestamp_entrada?: string
+  timestamp_salida?: string
+}
+
 export default function EstadoAnimoEmpleado() {
   const { toast } = useToast()
   const [empleados, setEmpleados] = useState<EmpleadoOption[]>([])
@@ -33,18 +43,22 @@ export default function EstadoAnimoEmpleado() {
   const [filtro, setFiltro] = useState<string>("")
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date>(new Date())
   const [estadosAnimo, setEstadosAnimo] = useState<EstadoAnimoDia[]>([])
+  const [estadosPorDia, setEstadosPorDia] = useState<EstadoAnimoEmpleadoDia[]>([])
   const [loading, setLoading] = useState(false)
   const [esAdmin, setEsAdmin] = useState(false)
+  const [modoVisualizacion, setModoVisualizacion] = useState<'dia' | 'empleado'>('dia')
 
   useEffect(() => {
     checkPermisos()
   }, [])
 
   useEffect(() => {
-    if (empleadoSeleccionado) {
+    if (modoVisualizacion === 'empleado' && empleadoSeleccionado) {
       cargarEstadosAnimo()
+    } else if (modoVisualizacion === 'dia') {
+      cargarEstadosPorDia()
     }
-  }, [empleadoSeleccionado, fechaSeleccionada])
+  }, [empleadoSeleccionado, fechaSeleccionada, modoVisualizacion])
 
   const checkPermisos = async () => {
     try {
@@ -98,6 +112,7 @@ export default function EstadoAnimoEmpleado() {
     if (empleado) {
       setEmpleadoSeleccionado(empleadoId)
       setEmpleadoNombre(`${empleado.apellido}, ${empleado.nombre}`)
+      setModoVisualizacion('empleado')
       setBusquedaAbierta(false)
       setFiltro("")
     }
@@ -106,6 +121,7 @@ export default function EstadoAnimoEmpleado() {
   const limpiarSeleccion = () => {
     setEmpleadoSeleccionado("")
     setEmpleadoNombre("")
+    setModoVisualizacion('dia')
     setFiltro("")
   }
 
@@ -115,6 +131,82 @@ export default function EstadoAnimoEmpleado() {
       return nombreCompleto.includes(filtro.toLowerCase())
     })
   }, [empleados, filtro])
+
+  const cargarEstadosPorDia = async () => {
+    setLoading(true)
+    try {
+      const fechaLocal = new Date(fechaSeleccionada)
+      fechaLocal.setHours(0, 0, 0, 0)
+      const fechaFin = new Date(fechaLocal)
+      fechaFin.setDate(fechaFin.getDate() + 1)
+
+      // Obtener todos los fichajes del día seleccionado
+      const { data: fichajes, error } = await supabase
+        .from('fichajes')
+        .select(`
+          tipo, 
+          timestamp_real, 
+          datos_adicionales,
+          empleado_id,
+          empleados:empleado_id (
+            nombre,
+            apellido
+          )
+        `)
+        .gte('timestamp_real', fechaLocal.toISOString())
+        .lt('timestamp_real', fechaFin.toISOString())
+        .in('tipo', ['entrada', 'salida'])
+        .order('timestamp_real')
+
+      if (error) throw error
+
+      // Agrupar por empleado
+      const estadosPorEmpleado: { [key: string]: EstadoAnimoEmpleadoDia } = {}
+
+      fichajes?.forEach(fichaje => {
+        const empleadoData = fichaje.empleados as any
+        if (!empleadoData) return
+
+        if (!estadosPorEmpleado[fichaje.empleado_id]) {
+          estadosPorEmpleado[fichaje.empleado_id] = {
+            empleado_id: fichaje.empleado_id,
+            empleado_nombre: empleadoData.nombre,
+            empleado_apellido: empleadoData.apellido
+          }
+        }
+
+        // Buscar la emoción en datos_adicionales
+        let emocion: string | undefined
+        if (typeof fichaje.datos_adicionales === 'object' && fichaje.datos_adicionales !== null) {
+          const datos = fichaje.datos_adicionales as any
+          emocion = datos.emocion
+        }
+
+        if (fichaje.tipo === 'entrada' && emocion) {
+          estadosPorEmpleado[fichaje.empleado_id].emocion_entrada = emocion
+          estadosPorEmpleado[fichaje.empleado_id].timestamp_entrada = fichaje.timestamp_real
+        } else if (fichaje.tipo === 'salida' && emocion) {
+          estadosPorEmpleado[fichaje.empleado_id].emocion_salida = emocion
+          estadosPorEmpleado[fichaje.empleado_id].timestamp_salida = fichaje.timestamp_real
+        }
+      })
+
+      setEstadosPorDia(
+        Object.values(estadosPorEmpleado).sort((a, b) => 
+          `${a.empleado_apellido}, ${a.empleado_nombre}`.localeCompare(`${b.empleado_apellido}, ${b.empleado_nombre}`)
+        )
+      )
+    } catch (error) {
+      console.error('Error cargando estados por día:', error)
+      toast({
+        title: "Error",
+        description: "Error cargando estados de ánimo",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const cargarEstadosAnimo = async () => {
     setLoading(true)
@@ -244,8 +336,10 @@ export default function EstadoAnimoEmpleado() {
         </CardHeader>
         <CardContent className="space-y-4">
           {esAdmin && (
-            <div>
-              <label className="text-sm font-medium mb-2 block">Seleccionar Empleado</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium mb-2 block">
+                {modoVisualizacion === 'dia' ? 'Filtrar por Empleado (Opcional)' : 'Empleado Seleccionado'}
+              </label>
               <Popover open={busquedaAbierta} onOpenChange={setBusquedaAbierta}>
                 <PopoverTrigger asChild>
                   <Button
@@ -254,7 +348,7 @@ export default function EstadoAnimoEmpleado() {
                     aria-expanded={busquedaAbierta}
                     className="w-full justify-between"
                   >
-                    {empleadoNombre || "Seleccione un empleado..."}
+                    {empleadoNombre || "Todos los empleados"}
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -297,7 +391,9 @@ export default function EstadoAnimoEmpleado() {
           )}
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Seleccionar Mes</label>
+            <label className="text-sm font-medium mb-2 block">
+              {modoVisualizacion === 'dia' ? 'Seleccionar Día' : 'Seleccionar Mes'}
+            </label>
             <Calendar
               mode="single"
               selected={fechaSeleccionada}
@@ -308,7 +404,90 @@ export default function EstadoAnimoEmpleado() {
         </CardContent>
       </Card>
 
-      {empleadoSeleccionado && (
+      {modoVisualizacion === 'dia' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Estado de Ánimo del Día</CardTitle>
+            <CardDescription>
+              {fechaSeleccionada.toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+              })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Cargando datos...</p>
+              </div>
+            ) : estadosPorDia.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay registros de emociones para este día</p>
+                <p className="text-sm mt-2">Los datos se capturan durante check-in y check-out con reconocimiento facial</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {estadosPorDia.map((estado) => (
+                  <div key={estado.empleado_id} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">
+                        {estado.empleado_apellido}, {estado.empleado_nombre}
+                      </h3>
+                      {obtenerIndicadorCambio(estado.emocion_entrada, estado.emocion_salida)}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Entrada */}
+                      <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground mb-2">Inicio de Jornada</div>
+                        {estado.emocion_entrada ? (
+                          <>
+                            {obtenerIconoEmocion(estado.emocion_entrada)}
+                            {estado.timestamp_entrada && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(estado.timestamp_entrada).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Sin registro</div>
+                        )}
+                      </div>
+
+                      {/* Salida */}
+                      <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground mb-2">Fin de Jornada</div>
+                        {estado.emocion_salida ? (
+                          <>
+                            {obtenerIconoEmocion(estado.emocion_salida)}
+                            {estado.timestamp_salida && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(estado.timestamp_salida).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Sin registro</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : empleadoSeleccionado && (
         <Card>
           <CardHeader>
             <CardTitle>Registro de Emociones</CardTitle>
