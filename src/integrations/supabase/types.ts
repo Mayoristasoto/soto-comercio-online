@@ -3014,6 +3014,10 @@ export type Database = {
       }
     }
     Functions: {
+      actualizar_vacaciones_gozadas: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       admin_update_empleado_rol: {
         Args: {
           p_empleado_id: string

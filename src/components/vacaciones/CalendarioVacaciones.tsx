@@ -74,7 +74,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
       const fin = endOfMonth(mesSeleccionado);
       const dias = eachDayOfInterval({ start: inicio, end: fin });
 
-      // Fetch solicitudes
+      // Fetch solicitudes aprobadas y gozadas
       let query = supabase
         .from('solicitudes_vacaciones')
         .select(`
@@ -86,7 +86,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         `)
         .lte('fecha_inicio', fin.toISOString().split('T')[0])
         .gte('fecha_fin', inicio.toISOString().split('T')[0])
-        .eq('estado', 'aprobada');
+        .in('estado', ['aprobada', 'gozadas']);
 
       if (rol === 'gerente_sucursal' && sucursalId) {
         query = query.eq('empleados.sucursal_id', sucursalId);

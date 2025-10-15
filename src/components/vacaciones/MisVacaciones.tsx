@@ -124,6 +124,7 @@ export function MisVacaciones({ empleadoId }: MisVacacionesProps) {
       aprobada: { variant: "default", text: "Aprobada" },
       rechazada: { variant: "destructive", text: "Rechazada" },
       cancelada: { variant: "outline", text: "Cancelada" },
+      gozadas: { variant: "outline", text: "Gozadas" },
     };
     const badge = badges[estado] || { variant: "secondary", text: estado };
     return <Badge variant={badge.variant}>{badge.text}</Badge>;

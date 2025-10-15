@@ -109,11 +109,11 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
         if (vac.fecha_fin && !dateRegex.test(vac.fecha_fin)) {
           errors.push(`Fila ${index + 2}: Fecha de fin debe estar en formato YYYY-MM-DD`);
         }
-
+        
         // Validar estado
-        const estadosValidos = ['pendiente', 'aprobada', 'rechazada'];
+        const estadosValidos = ['pendiente', 'aprobada', 'rechazada', 'gozadas'];
         if (vac.estado && !estadosValidos.includes(vac.estado.toLowerCase())) {
-          errors.push(`Fila ${index + 2}: Estado debe ser pendiente, aprobada o rechazada`);
+          errors.push(`Fila ${index + 2}: Estado debe ser pendiente, aprobada, rechazada o gozadas`);
         }
       });
 
@@ -174,9 +174,9 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
           }
 
           // Validar estado
-          const estadoValido = ['pendiente', 'aprobada', 'rechazada', 'cancelada'].includes(
+          const estadoValido = ['pendiente', 'aprobada', 'rechazada', 'cancelada', 'gozadas'].includes(
             vacacion.estado?.toLowerCase() || ''
-          ) ? (vacacion.estado?.toLowerCase() as 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada') : 'pendiente';
+          ) ? (vacacion.estado?.toLowerCase() as 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada' | 'gozadas') : 'pendiente';
 
           // Insertar solicitud de vacaciones
           const { error: insertError } = await supabase
