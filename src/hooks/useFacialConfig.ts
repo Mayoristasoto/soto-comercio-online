@@ -18,7 +18,7 @@ const defaultConfig: FacialConfig = {
   maxAttemptsPerMinute: 3,
   livenessTimeoutSeconds: 30,
   faceDescriptorVersion: "1.0",
-  emotionRecognitionEnabled: false
+  emotionRecognitionEnabled: true
 }
 
 export function useFacialConfig() {

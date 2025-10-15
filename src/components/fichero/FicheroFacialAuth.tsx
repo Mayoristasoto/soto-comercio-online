@@ -276,26 +276,16 @@ export default function FicheroFacialAuth({
       console.log('Video ready state:', video.readyState)
       console.log('Video src object:', video.srcObject)
       
-      // Detectar emociones si está habilitado en la configuración
+      // Detectar rostro con expresiones siempre (modelo cargado en loadModels)
       let detections
-      if (config.emotionRecognitionEnabled) {
-        detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
-            inputSize: 416,
-            scoreThreshold: 0.5
-          }))
-          .withFaceLandmarks()
-          .withFaceDescriptors()
-          .withFaceExpressions()
-      } else {
-        detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
-            inputSize: 416,
-            scoreThreshold: 0.5
-          }))
-          .withFaceLandmarks()
-          .withFaceDescriptors()
-      }
+      detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+          inputSize: 416,
+          scoreThreshold: 0.5
+        }))
+        .withFaceLandmarks()
+        .withFaceDescriptors()
+        .withFaceExpressions()
       
       console.log('Detections found:', detections.length)
       
@@ -326,10 +316,10 @@ export default function FicheroFacialAuth({
       
       const faceDescriptor = detections[0].descriptor
       
-      // Detectar emoción si está habilitado
+      // Detectar emoción principal si hay expresiones
       let emocionDetectada = undefined
-      if (config.emotionRecognitionEnabled && detections[0].expressions) {
-        const expressions = detections[0].expressions as any
+      if ((detections[0] as any).expressions) {
+        const expressions = (detections[0] as any).expressions
         const emociones = Object.entries(expressions) as [string, number][]
         const emocionPrincipal = emociones.reduce((max, current) => 
           current[1] > max[1] ? current : max

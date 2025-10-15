@@ -181,7 +181,7 @@ export default function KioscoCheckIn() {
 
   const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any, emocion?: string) => {
     // Guardar emoción si fue detectada
-    if (emocion && config.emotionRecognitionEnabled) {
+    if (emocion) {
       setEmocionDetectada(emocion)
     }
     
@@ -251,7 +251,7 @@ export default function KioscoCheckIn() {
         p_datos: {
           dispositivo: 'kiosco',
           timestamp_local: new Date().toISOString(),
-          emocion: emocionDetectada || null
+          emocion: emocion || emocionDetectada || null
           // NO especificar 'tipo' para que la función determine automáticamente
         }
       })
