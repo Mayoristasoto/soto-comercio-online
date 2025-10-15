@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -109,10 +109,12 @@ export default function EstadoAnimoEmpleado() {
     setFiltro("")
   }
 
-  const empleadosFiltrados = empleados.filter(emp => {
-    const nombreCompleto = `${emp.apellido}, ${emp.nombre}`.toLowerCase()
-    return nombreCompleto.includes(filtro.toLowerCase())
-  })
+  const empleadosFiltrados = useMemo(() => {
+    return empleados.filter(emp => {
+      const nombreCompleto = `${emp.apellido}, ${emp.nombre}`.toLowerCase()
+      return nombreCompleto.includes(filtro.toLowerCase())
+    })
+  }, [empleados, filtro])
 
   const cargarEstadosAnimo = async () => {
     setLoading(true)
