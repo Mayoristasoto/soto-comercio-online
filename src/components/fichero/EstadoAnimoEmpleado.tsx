@@ -20,8 +20,12 @@ interface EstadoAnimoDia {
   fecha: string
   emocion_entrada?: string
   emocion_salida?: string
+  emocion_pausa_inicio?: string
+  emocion_pausa_fin?: string
   timestamp_entrada?: string
   timestamp_salida?: string
+  timestamp_pausa_inicio?: string
+  timestamp_pausa_fin?: string
 }
 
 interface EstadoAnimoEmpleadoDia {
@@ -30,8 +34,12 @@ interface EstadoAnimoEmpleadoDia {
   empleado_apellido: string
   emocion_entrada?: string
   emocion_salida?: string
+  emocion_pausa_inicio?: string
+  emocion_pausa_fin?: string
   timestamp_entrada?: string
   timestamp_salida?: string
+  timestamp_pausa_inicio?: string
+  timestamp_pausa_fin?: string
 }
 
 export default function EstadoAnimoEmpleado() {
@@ -155,7 +163,7 @@ export default function EstadoAnimoEmpleado() {
         `)
         .gte('timestamp_real', fechaLocal.toISOString())
         .lt('timestamp_real', fechaFin.toISOString())
-        .in('tipo', ['entrada', 'salida'])
+        .in('tipo', ['entrada', 'salida', 'pausa_inicio', 'pausa_fin'])
         .order('timestamp_real')
 
       if (error) throw error
@@ -188,6 +196,12 @@ export default function EstadoAnimoEmpleado() {
         } else if (fichaje.tipo === 'salida' && emocion) {
           estadosPorEmpleado[fichaje.empleado_id].emocion_salida = emocion
           estadosPorEmpleado[fichaje.empleado_id].timestamp_salida = fichaje.timestamp_real
+        } else if (fichaje.tipo === 'pausa_inicio' && emocion) {
+          estadosPorEmpleado[fichaje.empleado_id].emocion_pausa_inicio = emocion
+          estadosPorEmpleado[fichaje.empleado_id].timestamp_pausa_inicio = fichaje.timestamp_real
+        } else if (fichaje.tipo === 'pausa_fin' && emocion) {
+          estadosPorEmpleado[fichaje.empleado_id].emocion_pausa_fin = emocion
+          estadosPorEmpleado[fichaje.empleado_id].timestamp_pausa_fin = fichaje.timestamp_real
         }
       })
 
@@ -229,7 +243,7 @@ export default function EstadoAnimoEmpleado() {
         .eq('empleado_id', empleadoSeleccionado)
         .gte('timestamp_real', mesInicioLocal.toISOString())
         .lt('timestamp_real', proximoMesInicioLocal.toISOString())
-        .in('tipo', ['entrada', 'salida'])
+        .in('tipo', ['entrada', 'salida', 'pausa_inicio', 'pausa_fin'])
         .order('timestamp_real')
 
       if (error) throw error
@@ -271,6 +285,12 @@ export default function EstadoAnimoEmpleado() {
         } else if (fichaje.tipo === 'salida' && emocion) {
           estadosPorDia[fecha].emocion_salida = emocion
           estadosPorDia[fecha].timestamp_salida = fichaje.timestamp_real
+        } else if (fichaje.tipo === 'pausa_inicio' && emocion) {
+          estadosPorDia[fecha].emocion_pausa_inicio = emocion
+          estadosPorDia[fecha].timestamp_pausa_inicio = fichaje.timestamp_real
+        } else if (fichaje.tipo === 'pausa_fin' && emocion) {
+          estadosPorDia[fecha].emocion_pausa_fin = emocion
+          estadosPorDia[fecha].timestamp_pausa_fin = fichaje.timestamp_real
         }
       })
 
@@ -440,7 +460,7 @@ export default function EstadoAnimoEmpleado() {
                       {obtenerIndicadorCambio(estado.emocion_entrada, estado.emocion_salida)}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Entrada */}
                       <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3">
                         <div className="text-xs text-muted-foreground mb-2">Inicio de Jornada</div>
@@ -450,6 +470,46 @@ export default function EstadoAnimoEmpleado() {
                             {estado.timestamp_entrada && (
                               <div className="text-xs text-muted-foreground mt-1">
                                 {new Date(estado.timestamp_entrada).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Sin registro</div>
+                        )}
+                      </div>
+
+                      {/* Inicio Pausa */}
+                      <div className="bg-orange-50 dark:bg-orange-950 rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground mb-2">Inicio Pausa</div>
+                        {estado.emocion_pausa_inicio ? (
+                          <>
+                            {obtenerIconoEmocion(estado.emocion_pausa_inicio)}
+                            {estado.timestamp_pausa_inicio && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(estado.timestamp_pausa_inicio).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Sin registro</div>
+                        )}
+                      </div>
+
+                      {/* Fin Pausa */}
+                      <div className="bg-purple-50 dark:bg-purple-950 rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground mb-2">Fin Pausa</div>
+                        {estado.emocion_pausa_fin ? (
+                          <>
+                            {obtenerIconoEmocion(estado.emocion_pausa_fin)}
+                            {estado.timestamp_pausa_fin && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(estado.timestamp_pausa_fin).toLocaleTimeString('es-ES', {
                                   hour: '2-digit',
                                   minute: '2-digit'
                                 })}
@@ -532,7 +592,7 @@ export default function EstadoAnimoEmpleado() {
                       {obtenerIndicadorCambio(estado.emocion_entrada, estado.emocion_salida)}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Entrada */}
                       <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3">
                         <div className="text-xs text-muted-foreground mb-2">Inicio de Jornada</div>
@@ -542,6 +602,46 @@ export default function EstadoAnimoEmpleado() {
                             {estado.timestamp_entrada && (
                               <div className="text-xs text-muted-foreground mt-1">
                                 {new Date(estado.timestamp_entrada).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Sin registro</div>
+                        )}
+                      </div>
+
+                      {/* Inicio Pausa */}
+                      <div className="bg-orange-50 dark:bg-orange-950 rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground mb-2">Inicio Pausa</div>
+                        {estado.emocion_pausa_inicio ? (
+                          <>
+                            {obtenerIconoEmocion(estado.emocion_pausa_inicio)}
+                            {estado.timestamp_pausa_inicio && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(estado.timestamp_pausa_inicio).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Sin registro</div>
+                        )}
+                      </div>
+
+                      {/* Fin Pausa */}
+                      <div className="bg-purple-50 dark:bg-purple-950 rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground mb-2">Fin Pausa</div>
+                        {estado.emocion_pausa_fin ? (
+                          <>
+                            {obtenerIconoEmocion(estado.emocion_pausa_fin)}
+                            {estado.timestamp_pausa_fin && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(estado.timestamp_pausa_fin).toLocaleTimeString('es-ES', {
                                   hour: '2-digit',
                                   minute: '2-digit'
                                 })}
