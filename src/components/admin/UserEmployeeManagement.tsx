@@ -69,7 +69,7 @@ export default function UserEmployeeManagement() {
   const loadData = async () => {
     try {
       const [empleadosResult, sucursalesResult, faceDataResult, rostrosResult] = await Promise.all([
-        supabase.from('empleados').select('*').order('nombre'),
+        supabase.from('empleados').select('*').eq('activo', true).order('nombre'),
         supabase.from('sucursales').select('id, nombre').eq('activa', true),
         supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor'),
         supabase.from('empleados_rostros').select('empleado_id, is_active').eq('is_active', true)
@@ -167,28 +167,31 @@ export default function UserEmployeeManagement() {
     setEditDialogOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este empleado?')) return
+  const handleToggleActive = async (empleado: Empleado) => {
+    const newStatus = !empleado.activo
+    const action = newStatus ? 'activar' : 'desactivar'
+    
+    if (!confirm(`¿Estás seguro de que quieres ${action} a ${empleado.nombre} ${empleado.apellido}?`)) return
 
     try {
       const { error } = await supabase
         .from('empleados')
-        .delete()
-        .eq('id', id)
+        .update({ activo: newStatus })
+        .eq('id', empleado.id)
       
       if (error) throw error
       
       toast({
-        title: "Empleado eliminado",
-        description: "El empleado se eliminó correctamente"
+        title: `Empleado ${newStatus ? 'activado' : 'desactivado'}`,
+        description: `${empleado.nombre} ${empleado.apellido} fue ${newStatus ? 'activado' : 'desactivado'} correctamente`
       })
       
       loadData()
     } catch (error) {
-      console.error('Error eliminando empleado:', error)
+      console.error('Error cambiando estado del empleado:', error)
       toast({
         title: "Error",
-        description: "No se pudo eliminar el empleado",
+        description: `No se pudo ${action} el empleado`,
         variant: "destructive"
       })
     }
@@ -312,8 +315,9 @@ export default function UserEmployeeManagement() {
     return <div className="h-64 bg-muted rounded-lg animate-pulse"></div>
   }
 
-  const empleadosConAuth = empleados.filter(emp => emp.user_id)
-  const empleadosSinAuth = empleados.filter(emp => !emp.user_id)
+  const empleadosActivos = empleados.filter(emp => emp.activo)
+  const empleadosConAuth = empleadosActivos.filter(emp => emp.user_id)
+  const empleadosSinAuth = empleadosActivos.filter(emp => !emp.user_id)
 
   return (
     <Card>
@@ -337,18 +341,18 @@ export default function UserEmployeeManagement() {
       <CardContent>
         <Tabs defaultValue="all" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="all">Todos ({empleados.length})</TabsTrigger>
+            <TabsTrigger value="all">Todos ({empleadosActivos.length})</TabsTrigger>
             <TabsTrigger value="with-auth">Con Acceso ({empleadosConAuth.length})</TabsTrigger>
             <TabsTrigger value="without-auth">Solo Empleados ({empleadosSinAuth.length})</TabsTrigger>
-            <TabsTrigger value="faces">Rostros Registrados ({empleados.filter(emp => emp.face_descriptor).length})</TabsTrigger>
+            <TabsTrigger value="faces">Rostros Registrados ({empleadosActivos.filter(emp => emp.face_descriptor).length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
             <EmployeeTable 
-              empleados={empleados}
+              empleados={empleadosActivos}
               sucursales={sucursales}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onToggleActive={handleToggleActive}
               onManageFace={handleManageFace}
               onEnableUser={handleEnableUser}
               getRoleBadge={getRoleBadge}
@@ -360,7 +364,7 @@ export default function UserEmployeeManagement() {
               empleados={empleadosConAuth}
               sucursales={sucursales}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onToggleActive={handleToggleActive}
               onManageFace={handleManageFace}
               onEnableUser={handleEnableUser}
               getRoleBadge={getRoleBadge}
@@ -372,7 +376,7 @@ export default function UserEmployeeManagement() {
               empleados={empleadosSinAuth}
               sucursales={sucursales}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onToggleActive={handleToggleActive}
               onManageFace={handleManageFace}
               onEnableUser={handleEnableUser}
               getRoleBadge={getRoleBadge}
@@ -381,7 +385,7 @@ export default function UserEmployeeManagement() {
 
           <TabsContent value="faces">
             <FaceGallery 
-              empleados={empleados.filter(emp => emp.face_descriptor)}
+              empleados={empleadosActivos.filter(emp => emp.face_descriptor)}
               sucursales={sucursales}
               getRoleBadge={getRoleBadge}
             />
@@ -586,13 +590,13 @@ interface EmployeeTableProps {
   empleados: Empleado[]
   sucursales: Sucursal[]
   onEdit: (empleado: Empleado) => void
-  onDelete: (id: string) => void
+  onToggleActive: (empleado: Empleado) => void
   onManageFace: (empleado: Empleado) => void
   onEnableUser: (empleado: Empleado) => void
   getRoleBadge: (rol: string) => JSX.Element
 }
 
-function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, onEnableUser, getRoleBadge }: EmployeeTableProps) {
+function EmployeeTable({ empleados, sucursales, onEdit, onToggleActive, onManageFace, onEnableUser, getRoleBadge }: EmployeeTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -661,8 +665,13 @@ function EmployeeTable({ empleados, sucursales, onEdit, onDelete, onManageFace, 
                     <Key className="h-4 w-4" />
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={() => onDelete(empleado.id)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button 
+                  variant={empleado.activo ? "destructive" : "default"} 
+                  size="sm" 
+                  onClick={() => onToggleActive(empleado)}
+                  title={empleado.activo ? "Desactivar empleado" : "Activar empleado"}
+                >
+                  {empleado.activo ? <Trash2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
                 </Button>
               </div>
             </TableCell>
