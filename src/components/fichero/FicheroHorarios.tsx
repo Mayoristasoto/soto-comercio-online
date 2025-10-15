@@ -12,9 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet } from 'lucide-react';
 import { TimelineView } from './TimelineView';
 import HorariosDragDrop from './HorariosDragDrop';
+import ScheduleImport from './ScheduleImport';
 
 interface Turno {
   id: string;
@@ -65,6 +66,7 @@ export default function FicheroHorarios() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [asignacionDialogOpen, setAsignacionDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -395,13 +397,23 @@ export default function FicheroHorarios() {
                 Crear y administrar horarios de trabajo para empleados
               </CardDescription>
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => { resetForm(); setEditingTurno(null); }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuevo Horario
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setImportDialogOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Importar desde Excel
+              </Button>
+              <Button onClick={() => { resetForm(); setEditingTurno(null); setDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Horario
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>
@@ -553,9 +565,7 @@ export default function FicheroHorarios() {
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
+
           <Table>
             <TableHeader>
               <TableRow>
@@ -738,7 +748,7 @@ export default function FicheroHorarios() {
                       {asignacion.activo ? 'Activo' : 'Inactivo'}
                     </Badge>
                   </TableCell>
-                </TableRow>
+                 </TableRow>
               ))}
             </TableBody>
           </Table>
@@ -746,6 +756,12 @@ export default function FicheroHorarios() {
       </Card>
         </TabsContent>
       </Tabs>
+
+      <ScheduleImport
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImportComplete={loadData}
+      />
     </div>
   );
 }
