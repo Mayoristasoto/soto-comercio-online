@@ -57,8 +57,13 @@ export function useFacialConfig() {
           confidenceThresholdDemo: parseFloat(configMap.confidence_threshold_demo) || defaultConfig.confidenceThresholdDemo,
           maxAttemptsPerMinute: parseInt(configMap.max_attempts_per_minute) || defaultConfig.maxAttemptsPerMinute,
           livenessTimeoutSeconds: parseInt(configMap.liveness_timeout_seconds) || defaultConfig.livenessTimeoutSeconds,
-          faceDescriptorVersion: configMap.face_descriptor_version || defaultConfig.faceDescriptorVersion,
-          emotionRecognitionEnabled: configMap.emotion_recognition_enabled === 'true' || defaultConfig.emotionRecognitionEnabled
+          faceDescriptorVersion: (configMap.face_descriptor_version ?? defaultConfig.faceDescriptorVersion) as string,
+          emotionRecognitionEnabled: (() => {
+            const raw = (configMap as any).emotion_recognition_enabled;
+            if (typeof raw === 'boolean') return raw;
+            const str = String(raw).toLowerCase();
+            return str === 'true' || str === '1' || str === 'yes';
+          })()
         })
       }
     } catch (err) {
