@@ -16,10 +16,12 @@ import {
   ClipboardCheck,
   Plane,
   FileSignature,
-  FileWarning
+  FileWarning,
+  ChevronDown
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
+import { useState } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -62,6 +64,7 @@ const iconMap: Record<string, any> = {
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const location = useLocation()
   const { links, loading } = useSidebarLinks(userInfo?.rol || null)
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/")
@@ -82,6 +85,18 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
 
   const getIcon = (iconName: string) => {
     return iconMap[iconName] || FileText
+  }
+
+  const toggleExpanded = (linkId: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(linkId)) {
+        newSet.delete(linkId)
+      } else {
+        newSet.add(linkId)
+      }
+      return newSet
+    })
   }
 
   return (
@@ -130,24 +145,47 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
 
                       // Renderizar link normal
                       const Icon = getIcon(link.icon)
+                      const hasChildren = link.children && link.children.length > 0
+                      const isExpanded = expandedItems.has(link.id)
+                      
                       return (
                         <div key={link.id}>
                           <SidebarMenuItem>
-                            <SidebarMenuButton 
-                              asChild 
-                              isActive={isActive(link.path)}
-                              tooltip={link.descripcion || link.label}
-                            >
-                              <NavLink to={link.path}>
+                            {hasChildren ? (
+                              <SidebarMenuButton 
+                                onClick={() => toggleExpanded(link.id)}
+                                tooltip={link.descripcion || link.label}
+                                className="cursor-pointer"
+                              >
                                 <Icon className="h-4 w-4" />
                                 <span>{link.label}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
+                                <ChevronDown 
+                                  className={`ml-auto h-4 w-4 transition-transform duration-200 ${
+                                    isExpanded ? 'rotate-180' : ''
+                                  }`}
+                                />
+                              </SidebarMenuButton>
+                            ) : (
+                              <SidebarMenuButton 
+                                asChild 
+                                isActive={isActive(link.path)}
+                                tooltip={link.descripcion || link.label}
+                              >
+                                <NavLink to={link.path}>
+                                  <Icon className="h-4 w-4" />
+                                  <span>{link.label}</span>
+                                </NavLink>
+                              </SidebarMenuButton>
+                            )}
                           </SidebarMenuItem>
                           
-                          {/* Renderizar hijos si existen */}
-                          {link.children && link.children.length > 0 && (
-                            <div className="ml-4 mt-1 space-y-1">
+                          {/* Renderizar hijos si existen y está expandido */}
+                          {hasChildren && (
+                            <div 
+                              className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${
+                                isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                              }`}
+                            >
                               {link.children.map((child) => {
                                 const ChildIcon = getIcon(child.icon)
                                 return (
