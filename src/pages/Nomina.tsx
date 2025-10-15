@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import * as XLSX from 'xlsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -272,6 +273,101 @@ export default function Nomina() {
     }
   }
 
+  const handleExportNomina = async () => {
+    try {
+      // Obtener datos completos de empleados con información sensible
+      const { data: employeesData, error } = await supabase
+        .from('empleados')
+        .select(`
+          legajo,
+          nombre,
+          apellido,
+          email,
+          rol,
+          puesto,
+          activo,
+          fecha_ingreso,
+          sucursal_id,
+          empleados_datos_sensibles (
+            dni,
+            telefono,
+            direccion,
+            fecha_nacimiento,
+            estado_civil,
+            salario,
+            emergencia_contacto_nombre,
+            emergencia_contacto_telefono
+          )
+        `)
+        .order('nombre', { ascending: true })
+
+      if (error) throw error
+
+      // Formatear datos para exportar
+      const formattedData = employeesData?.map(emp => ({
+        'Legajo': emp.legajo || '',
+        'Nombre': emp.nombre,
+        'Apellido': emp.apellido,
+        'Email': emp.email,
+        'DNI': emp.empleados_datos_sensibles?.[0]?.dni || '',
+        'Teléfono': emp.empleados_datos_sensibles?.[0]?.telefono || '',
+        'Dirección': emp.empleados_datos_sensibles?.[0]?.direccion || '',
+        'Fecha Nacimiento': emp.empleados_datos_sensibles?.[0]?.fecha_nacimiento || '',
+        'Estado Civil': emp.empleados_datos_sensibles?.[0]?.estado_civil || '',
+        'Puesto': emp.puesto || '',
+        'Rol': formatRole(emp.rol),
+        'Salario': emp.empleados_datos_sensibles?.[0]?.salario || '',
+        'Estado': emp.activo ? 'Activo' : 'Inactivo',
+        'Fecha Ingreso': emp.fecha_ingreso,
+        'Contacto Emergencia': emp.empleados_datos_sensibles?.[0]?.emergencia_contacto_nombre || '',
+        'Tel. Emergencia': emp.empleados_datos_sensibles?.[0]?.emergencia_contacto_telefono || '',
+      })) || []
+
+      // Crear libro de Excel
+      const ws = XLSX.utils.json_to_sheet(formattedData)
+      
+      // Ajustar ancho de columnas
+      const columnWidths = [
+        { wch: 10 },  // Legajo
+        { wch: 15 },  // Nombre
+        { wch: 15 },  // Apellido
+        { wch: 25 },  // Email
+        { wch: 12 },  // DNI
+        { wch: 15 },  // Teléfono
+        { wch: 30 },  // Dirección
+        { wch: 15 },  // Fecha Nacimiento
+        { wch: 12 },  // Estado Civil
+        { wch: 20 },  // Puesto
+        { wch: 15 },  // Rol
+        { wch: 12 },  // Salario
+        { wch: 10 },  // Estado
+        { wch: 15 },  // Fecha Ingreso
+        { wch: 20 },  // Contacto Emergencia
+        { wch: 15 },  // Tel. Emergencia
+      ]
+      ws['!cols'] = columnWidths
+
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Nómina')
+
+      // Descargar archivo
+      const fecha = new Date().toISOString().split('T')[0]
+      XLSX.writeFile(wb, `nomina_${fecha}.xlsx`)
+
+      toast({
+        title: "Exportación exitosa",
+        description: `Se exportaron ${formattedData.length} empleados`,
+      })
+    } catch (error) {
+      console.error('Error exportando nómina:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo exportar la nómina",
+        variant: "destructive",
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-6 space-y-6">
@@ -300,7 +396,7 @@ export default function Nomina() {
             <Upload className="h-4 w-4 mr-2" />
             Importar Excel
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportNomina}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
