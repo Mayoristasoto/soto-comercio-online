@@ -69,7 +69,7 @@ export default function UserEmployeeManagement() {
   const loadData = async () => {
     try {
       const [empleadosResult, sucursalesResult, faceDataResult, rostrosResult] = await Promise.all([
-        supabase.from('empleados').select('*').eq('activo', true).order('nombre'),
+        supabase.from('empleados').select('*').order('nombre'),
         supabase.from('sucursales').select('id, nombre').eq('activa', true),
         supabase.from('empleados_datos_sensibles').select('empleado_id, face_descriptor'),
         supabase.from('empleados_rostros').select('empleado_id, is_active').eq('is_active', true)
@@ -316,6 +316,7 @@ export default function UserEmployeeManagement() {
   }
 
   const empleadosActivos = empleados.filter(emp => emp.activo)
+  const empleadosInactivos = empleados.filter(emp => !emp.activo)
   const empleadosConAuth = empleadosActivos.filter(emp => emp.user_id)
   const empleadosSinAuth = empleadosActivos.filter(emp => !emp.user_id)
 
@@ -341,10 +342,11 @@ export default function UserEmployeeManagement() {
       <CardContent>
         <Tabs defaultValue="all" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="all">Todos ({empleadosActivos.length})</TabsTrigger>
+            <TabsTrigger value="all">Activos ({empleadosActivos.length})</TabsTrigger>
             <TabsTrigger value="with-auth">Con Acceso ({empleadosConAuth.length})</TabsTrigger>
             <TabsTrigger value="without-auth">Solo Empleados ({empleadosSinAuth.length})</TabsTrigger>
             <TabsTrigger value="faces">Rostros Registrados ({empleadosActivos.filter(emp => emp.face_descriptor).length})</TabsTrigger>
+            <TabsTrigger value="inactive">Desactivados ({empleadosInactivos.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
@@ -387,6 +389,18 @@ export default function UserEmployeeManagement() {
             <FaceGallery 
               empleados={empleadosActivos.filter(emp => emp.face_descriptor)}
               sucursales={sucursales}
+              getRoleBadge={getRoleBadge}
+            />
+          </TabsContent>
+
+          <TabsContent value="inactive">
+            <EmployeeTable 
+              empleados={empleadosInactivos}
+              sucursales={sucursales}
+              onEdit={handleEdit}
+              onToggleActive={handleToggleActive}
+              onManageFace={handleManageFace}
+              onEnableUser={handleEnableUser}
               getRoleBadge={getRoleBadge}
             />
           </TabsContent>
