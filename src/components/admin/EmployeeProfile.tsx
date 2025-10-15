@@ -31,6 +31,7 @@ interface EmpleadoProfile {
   nombre: string
   apellido: string
   email: string
+  legajo?: string
   telefono?: string
   direccion?: string
   puesto?: string
@@ -181,6 +182,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
       const empleadoUpdate = {
         nombre: formData.nombre,
         apellido: formData.apellido,
+        legajo: formData.legajo || null,
         puesto: formData.puesto === "none" ? null : formData.puesto,
         puesto_id: selectedPuesto?.id || null,
         sucursal_id: formData.sucursal_id || null
@@ -444,6 +446,15 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="legajo">Legajo</Label>
+                    <Input
+                      id="legajo"
+                      value={formData.legajo || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, legajo: e.target.value }))}
+                      placeholder="Número de legajo"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="puesto">Puesto</Label>
                     <Select 
                       value={formData.puesto && formData.puesto !== 'none' ? formData.puesto : 'none'} 
@@ -469,20 +480,21 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="salario">Salario</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="salario"
-                        type="number"
-                        step="0.01"
-                        value={formData.salario || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, salario: parseFloat(e.target.value) || undefined }))}
-                        className="pl-10"
-                        placeholder="0.00"
-                      />
-                    </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="salario">Salario</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="salario"
+                      type="number"
+                      step="0.01"
+                      value={formData.salario || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, salario: parseFloat(e.target.value) || undefined }))}
+                      className="pl-10"
+                      placeholder="0.00"
+                    />
                   </div>
                 </div>
 
