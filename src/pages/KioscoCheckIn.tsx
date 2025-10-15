@@ -103,79 +103,56 @@ export default function KioscoCheckIn() {
       setUltimoTipoFichaje(ultimoFichaje?.tipo || null)
 
       if (!ultimoFichaje) {
-        // Primer fichaje del día = entrada
-        return [{
-          tipo: 'entrada',
-          label: 'Entrada',
-          icon: 'Clock',
-          color: 'bg-green-600 hover:bg-green-700'
-        }]
+        // Sin entrada del día = debe hacer entrada
+        return []
       }
 
       switch (ultimoFichaje.tipo) {
         case 'entrada':
-          // Después de entrada, puede elegir salida o inicio de pausa
+          // Después de entrada, puede iniciar pausa o finalizar jornada
           return [
             {
-              tipo: 'salida',
-              label: 'Salida (Fin de jornada)',
-              icon: 'LogOut',
-              color: 'bg-red-600 hover:bg-red-700'
-            },
-            {
               tipo: 'pausa_inicio',
-              label: 'Inicio de Pausa',
+              label: 'Iniciar Pausa',
               icon: 'Coffee',
               color: 'bg-orange-600 hover:bg-orange-700'
+            },
+            {
+              tipo: 'salida',
+              label: 'Finalizar Jornada',
+              icon: 'LogOut',
+              color: 'bg-red-600 hover:bg-red-700'
             }
           ]
         
         case 'pausa_inicio':
-          // Después de inicio de pausa, solo puede hacer fin de pausa
+          // Después de inicio de pausa, solo puede finalizar pausa
           return [{
             tipo: 'pausa_fin',
-            label: 'Fin de Pausa',
+            label: 'Finalizar Pausa',
             icon: 'Clock',
             color: 'bg-blue-600 hover:bg-blue-700'
           }]
         
         case 'pausa_fin':
-          // Después de fin de pausa, puede elegir salida o inicio de pausa nuevamente
-          return [
-            {
-              tipo: 'salida',
-              label: 'Salida (Fin de jornada)',
-              icon: 'LogOut',
-              color: 'bg-red-600 hover:bg-red-700'
-            },
-            {
-              tipo: 'pausa_inicio',
-              label: 'Inicio de Pausa',
-              icon: 'Coffee',
-              color: 'bg-orange-600 hover:bg-orange-700'
-            }
-          ]
+          // Después de fin de pausa, solo puede finalizar jornada
+          return [{
+            tipo: 'salida',
+            label: 'Finalizar Jornada',
+            icon: 'LogOut',
+            color: 'bg-red-600 hover:bg-red-700'
+          }]
         
         case 'salida':
           // Si ya salió, no puede hacer más fichajes
           return []
         
         default:
-          return [{
-            tipo: 'entrada',
-            label: 'Entrada',
-            icon: 'Clock',
-            color: 'bg-green-600 hover:bg-green-700'
-          }]
+          return []
       }
     } catch (error) {
       console.error('Error determinando tipo de fichaje:', error)
-      return [{
-        tipo: 'entrada',
-        label: 'Entrada',
-        icon: 'Clock',
-        color: 'bg-green-600 hover:bg-green-700'
-      }]
+      return []
     }
   }
 
@@ -786,32 +763,41 @@ export default function KioscoCheckIn() {
                   </p>
                   
                   <div className="grid grid-cols-1 gap-4">
-                    {/* Botón Check-in - Solo si hay acciones disponibles */}
-                    {accionesDisponibles.length > 0 && (
+                    {/* Sin entrada del día - Mostrar que debe hacer entrada primero */}
+                    {accionesDisponibles.length === 0 && !ultimoTipoFichaje && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p className="text-yellow-800 text-sm text-center">
+                          Debe registrar su entrada antes de realizar otras acciones.
+                        </p>
+                        <button
+                          onClick={() => ejecutarAccion('entrada')}
+                          className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
+                          disabled={loading}
+                        >
+                          <Clock className="h-6 w-6" />
+                          <span>Registrar Entrada</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Botones de acciones disponibles */}
+                    {accionesDisponibles.length > 0 && accionesDisponibles.map((accion) => (
                       <button
-                        onClick={() => {
-                          // Si hay una sola acción, ejecutarla directamente
-                          if (accionesDisponibles.length === 1) {
-                            ejecutarAccion(accionesDisponibles[0].tipo)
-                          } else {
-                            // Si hay múltiples, mostrar sub-menú
-                            // Por ahora, mostrar todas las opciones
-                            const primerAccion = accionesDisponibles[0]
-                            ejecutarAccion(primerAccion.tipo)
-                          }
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
+                        key={accion.tipo}
+                        onClick={() => ejecutarAccion(accion.tipo)}
+                        className={`${accion.color} text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3`}
                         disabled={loading}
                       >
-                        <Clock className="h-6 w-6" />
-                        <span>Check-in / Check-out</span>
+                        {accion.icon === 'LogOut' && <LogOut className="h-6 w-6" />}
+                        {accion.icon === 'Coffee' && <Coffee className="h-6 w-6" />}
+                        {accion.icon === 'Clock' && <Clock className="h-6 w-6" />}
+                        <span>{accion.label}</span>
                       </button>
-                    )}
+                    ))}
                     
-                    {/* Botón Otras Consultas */}
+                    {/* Botón Otras Consultas - Siempre visible */}
                     <button
                       onClick={() => {
-                        // Navegar a autogestión con el ID del empleado
                         navigate(`/autogestion?empleado=${recognizedEmployee?.id}`)
                       }}
                       className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
@@ -850,7 +836,7 @@ export default function KioscoCheckIn() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     Registre su entrada
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                   <p className="text-gray-600 mb-6">
                     El sistema identificará automáticamente su rostro
                   </p>
                   <button
@@ -864,7 +850,7 @@ export default function KioscoCheckIn() {
                         <span>Procesando...</span>
                       </div>
                     ) : (
-                      'Iniciar Check-In'
+                      'Iniciar Reconocimiento'
                     )}
                   </button>
                 </div>
