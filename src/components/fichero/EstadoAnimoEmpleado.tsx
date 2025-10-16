@@ -94,10 +94,7 @@ export default function EstadoAnimoEmpleado() {
 
         if (!errorEmpleados && todosEmpleados) {
           setEmpleados(todosEmpleados)
-          if (!empleadoSeleccionado && todosEmpleados.length > 0) {
-            setEmpleadoSeleccionado(todosEmpleados[0].id)
-            setEmpleadoNombre(`${todosEmpleados[0].apellido}, ${todosEmpleados[0].nombre}`)
-          }
+          // No seleccionar ningún empleado por defecto
         }
       } else {
         // Solo el empleado actual
