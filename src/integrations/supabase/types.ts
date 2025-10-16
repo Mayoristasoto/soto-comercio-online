@@ -3418,6 +3418,10 @@ export type Database = {
         Args: { sucursal_uuid?: string }
         Returns: boolean
       }
+      is_manager_of_branch: {
+        Args: { branch_id: string }
+        Returns: boolean
+      }
       kiosk_get_acciones: {
         Args: { p_empleado_id: string }
         Returns: {
