@@ -12,14 +12,39 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id } = await req.json()
+    const { user_id, face_descriptor } = await req.json()
 
+    // Validate user_id
     if (!user_id) {
       return new Response(
         JSON.stringify({ error: 'user_id es requerido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Validate face_descriptor if provided (128 float values expected)
+    if (face_descriptor !== undefined) {
+      if (!Array.isArray(face_descriptor) || 
+          face_descriptor.length !== 128 ||
+          !face_descriptor.every(v => typeof v === 'number' && !isNaN(v) && isFinite(v))) {
+        console.error('Invalid face descriptor format:', {
+          isArray: Array.isArray(face_descriptor),
+          length: face_descriptor?.length,
+          hasInvalidValues: face_descriptor?.some(v => typeof v !== 'number' || isNaN(v) || !isFinite(v))
+        })
+        return new Response(
+          JSON.stringify({ error: 'Invalid face descriptor format. Expected array of 128 numeric values.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // Get client IP for rate limiting and audit logging
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown'
+    
+    console.log('Facial auth attempt:', { user_id, clientIp, timestamp: new Date().toISOString() })
 
     // Crear cliente de Supabase con service role para autenticación
     const supabaseAdmin = createClient(
