@@ -33,6 +33,12 @@ export function SidebarLinksManager() {
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [showAddSeparator, setShowAddSeparator] = useState(false);
+  const [showAddLink, setShowAddLink] = useState(false);
+  const [newLinkForm, setNewLinkForm] = useState<Partial<SidebarLink>>({
+    tipo: 'link',
+    visible: true,
+    parent_id: null
+  });
 
   useEffect(() => {
     loadLinks();
@@ -148,6 +154,46 @@ export function SidebarLinksManager() {
       loadLinks();
     } catch (error: any) {
       toast.error("Error al agregar separador: " + error.message);
+    }
+  };
+
+  const handleAddLink = async () => {
+    try {
+      if (!newLinkForm.label || !newLinkForm.path || !newLinkForm.icon) {
+        toast.error("Completa todos los campos obligatorios");
+        return;
+      }
+
+      const maxOrder = newLinkForm.parent_id 
+        ? Math.max(
+            ...links[selectedRole]
+              .filter(l => l.parent_id === newLinkForm.parent_id)
+              .map(l => l.orden),
+            0
+          )
+        : Math.max(...links[selectedRole].map((l) => l.orden), 0);
+      
+      const { error } = await (supabase as any)
+        .from("sidebar_links")
+        .insert({
+          rol: selectedRole,
+          label: newLinkForm.label,
+          path: newLinkForm.path,
+          icon: newLinkForm.icon,
+          descripcion: newLinkForm.descripcion || null,
+          tipo: newLinkForm.tipo || 'link',
+          orden: maxOrder + 1,
+          visible: newLinkForm.visible ?? true,
+          parent_id: newLinkForm.parent_id || null,
+        });
+
+      if (error) throw error;
+      toast.success("Link agregado exitosamente");
+      setShowAddLink(false);
+      setNewLinkForm({ tipo: 'link', visible: true, parent_id: null });
+      loadLinks();
+    } catch (error: any) {
+      toast.error("Error al agregar link: " + error.message);
     }
   };
 
@@ -353,16 +399,114 @@ export function SidebarLinksManager() {
                   Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar
                 </CardDescription>
               </div>
-              <Button 
-                onClick={() => setShowAddSeparator(!showAddSeparator)}
-                variant="outline"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Separador
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => setShowAddLink(!showAddLink)}
+                  variant="default"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Link
+                </Button>
+                <Button 
+                  onClick={() => setShowAddSeparator(!showAddSeparator)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Separador
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              {showAddLink && (
+                <Card className="mb-4 border-primary">
+                  <CardContent className="p-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Label *</Label>
+                        <Input
+                          value={newLinkForm.label || ""}
+                          onChange={(e) => setNewLinkForm({ ...newLinkForm, label: e.target.value })}
+                          placeholder="Ej: Dashboard"
+                        />
+                      </div>
+                      <div>
+                        <Label>Ruta *</Label>
+                        <Input
+                          value={newLinkForm.path || ""}
+                          onChange={(e) => setNewLinkForm({ ...newLinkForm, path: e.target.value })}
+                          placeholder="Ej: /dashboard"
+                        />
+                      </div>
+                      <div>
+                        <Label>Icono (Lucide) *</Label>
+                        <Input
+                          value={newLinkForm.icon || ""}
+                          onChange={(e) => setNewLinkForm({ ...newLinkForm, icon: e.target.value })}
+                          placeholder="Ej: LayoutDashboard"
+                        />
+                      </div>
+                      <div>
+                        <Label>Descripción</Label>
+                        <Input
+                          value={newLinkForm.descripcion || ""}
+                          onChange={(e) => setNewLinkForm({ ...newLinkForm, descripcion: e.target.value })}
+                          placeholder="Descripción del link"
+                        />
+                      </div>
+                      <div>
+                        <Label>Link Padre (para subitems)</Label>
+                        <Select
+                          value={newLinkForm.parent_id || "ninguno"}
+                          onValueChange={(value) => setNewLinkForm({ 
+                            ...newLinkForm, 
+                            parent_id: value === "ninguno" ? null : value 
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ninguno">Ninguno (link principal)</SelectItem>
+                            {links[selectedRole]
+                              .filter(l => !l.parent_id && l.tipo === 'link')
+                              .map(l => (
+                                <SelectItem key={l.id} value={l.id}>
+                                  {l.label}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={newLinkForm.visible ?? true}
+                          onCheckedChange={(checked) => setNewLinkForm({ ...newLinkForm, visible: checked })}
+                        />
+                        <Label>Visible</Label>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button onClick={handleAddLink} size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Guardar Link
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          setShowAddLink(false);
+                          setNewLinkForm({ tipo: 'link', visible: true, parent_id: null });
+                        }} 
+                        variant="ghost" 
+                        size="sm"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Cancelar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               {showAddSeparator && (
                 <Card className="mb-4 border-dashed">
                   <CardContent className="p-4">
@@ -391,11 +535,21 @@ export function SidebarLinksManager() {
 
         <TabsContent value="gerente_sucursal" className="space-y-4 mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Links de Gerente de Sucursal</CardTitle>
-              <CardDescription>
-                Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Links de Gerente de Sucursal</CardTitle>
+                <CardDescription>
+                  Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={() => setShowAddLink(!showAddLink)}
+                variant="default"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Link
+              </Button>
             </CardHeader>
             <CardContent>
               {links.gerente_sucursal.map((link: SidebarLink) => renderLink(link))}
@@ -405,11 +559,21 @@ export function SidebarLinksManager() {
 
         <TabsContent value="empleado" className="space-y-4 mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Links de Empleado</CardTitle>
-              <CardDescription>
-                Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Links de Empleado</CardTitle>
+                <CardDescription>
+                  Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={() => setShowAddLink(!showAddLink)}
+                variant="default"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Link
+              </Button>
             </CardHeader>
             <CardContent>
               {links.empleado.map((link: SidebarLink) => renderLink(link))}
