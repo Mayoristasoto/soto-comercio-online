@@ -17,7 +17,10 @@ import {
   Plane,
   FileSignature,
   FileWarning,
-  ChevronDown
+  ChevronDown,
+  LogOut,
+  Moon,
+  Sun
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
@@ -36,7 +39,12 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { useSidebarLinks } from "@/hooks/useSidebarLinks"
+import { supabase } from "@/integrations/supabase/client"
+import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
+import { useTheme } from "next-themes"
 
 interface UserInfo {
   id: string
@@ -63,6 +71,8 @@ const iconMap: Record<string, any> = {
 
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
   const { links, loading } = useSidebarLinks(userInfo?.rol || null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   
@@ -97,6 +107,21 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
       }
       return newSet
     })
+  }
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      toast.success("Sesión cerrada correctamente")
+      navigate("/auth")
+    } catch (error: any) {
+      toast.error("Error al cerrar sesión: " + error.message)
+    }
+  }
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
   }
 
   return (
@@ -219,7 +244,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
 
       <SidebarFooter>
         {userInfo && (
-          <div className="p-3 border-t">
+          <div className="p-3 border-t space-y-3">
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={userInfo.avatar_url} />
@@ -242,6 +267,35 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                   </Badge>
                 </div>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleTheme}
+                className="flex-1"
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun className="h-4 w-4 mr-2" />
+                    Modo Claro
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-4 w-4 mr-2" />
+                    Modo Oscuro
+                  </>
+                )}
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={handleLogout}
+                className="flex-1"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Salir
+              </Button>
             </div>
           </div>
         )}
