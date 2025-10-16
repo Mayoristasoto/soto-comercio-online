@@ -7,9 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GripVertical, Eye, EyeOff, Edit, Save, X, Plus, Minus } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Edit, Save, X, Plus, Minus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SidebarLink {
   id: string;
@@ -39,6 +49,8 @@ export function SidebarLinksManager() {
     visible: true,
     parent_id: null
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [linkToDelete, setLinkToDelete] = useState<SidebarLink | null>(null);
 
   useEffect(() => {
     loadLinks();
@@ -194,6 +206,43 @@ export function SidebarLinksManager() {
       loadLinks();
     } catch (error: any) {
       toast.error("Error al agregar link: " + error.message);
+    }
+  };
+
+  const handleDeleteClick = (link: SidebarLink) => {
+    setLinkToDelete(link);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!linkToDelete) return;
+
+    try {
+      // Primero eliminar los hijos si existen
+      if (linkToDelete.children && linkToDelete.children.length > 0) {
+        const childIds = linkToDelete.children.map(child => child.id);
+        const { error: childError } = await (supabase as any)
+          .from("sidebar_links")
+          .delete()
+          .in("id", childIds);
+
+        if (childError) throw childError;
+      }
+
+      // Luego eliminar el link principal
+      const { error } = await (supabase as any)
+        .from("sidebar_links")
+        .delete()
+        .eq("id", linkToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Link eliminado exitosamente");
+      setDeleteDialogOpen(false);
+      setLinkToDelete(null);
+      loadLinks();
+    } catch (error: any) {
+      toast.error("Error al eliminar link: " + error.message);
     }
   };
 
@@ -353,6 +402,14 @@ export function SidebarLinksManager() {
                     </Button>
                     <Button size="icon" variant="ghost" onClick={() => handleStartEdit(link)}>
                       <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => handleDeleteClick(link)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </>
                 )}
@@ -581,6 +638,32 @@ export function SidebarLinksManager() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar link?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {linkToDelete?.children && linkToDelete.children.length > 0 ? (
+                <>
+                  Se eliminará el link "{linkToDelete.label}" y sus {linkToDelete.children.length} sub-link(s).
+                  Esta acción no se puede deshacer.
+                </>
+              ) : (
+                <>
+                  Se eliminará el link "{linkToDelete?.label}". Esta acción no se puede deshacer.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
