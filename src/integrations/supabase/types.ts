@@ -1159,6 +1159,36 @@ export type Database = {
           },
         ]
       }
+      facial_auth_rate_limit: {
+        Row: {
+          attempt_count: number
+          blocked_until: string | null
+          created_at: string
+          id: string
+          ip_address: unknown
+          last_attempt: string
+          window_start: string
+        }
+        Insert: {
+          attempt_count?: number
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip_address: unknown
+          last_attempt?: string
+          window_start?: string
+        }
+        Update: {
+          attempt_count?: number
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          last_attempt?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       facial_recognition_config: {
         Row: {
           data_type: string | null
@@ -3064,6 +3094,23 @@ export type Database = {
         Args: { p_anio: number; p_empleado_id: string }
         Returns: number
       }
+      check_facial_auth_rate_limit: {
+        Args: {
+          p_block_minutes?: number
+          p_ip_address: unknown
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
+        Returns: {
+          allowed: boolean
+          attempts_remaining: number
+          blocked_until: string
+        }[]
+      }
+      cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       current_user_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -3273,6 +3320,10 @@ export type Database = {
           p_user_agent?: string
           p_user_id: string
         }
+        Returns: undefined
+      }
+      reset_facial_auth_rate_limit: {
+        Args: { p_ip_address: unknown }
         Returns: undefined
       }
       user_has_admin_role: {
