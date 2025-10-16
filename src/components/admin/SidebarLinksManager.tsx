@@ -107,6 +107,7 @@ export function SidebarLinksManager() {
         .from("sidebar_links")
         .update({
           label: editForm.label,
+          path: editForm.path,
           descripcion: editForm.descripcion,
           icon: editForm.icon,
           orden: editForm.orden,
@@ -222,11 +223,16 @@ export function SidebarLinksManager() {
               <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
               
               {isEditing ? (
-                <div className="flex-1 grid grid-cols-5 gap-2">
+                <div className="flex-1 grid grid-cols-6 gap-2">
                   <Input
                     value={editForm.label || ""}
                     onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
                     placeholder="Label"
+                  />
+                  <Input
+                    value={editForm.path || ""}
+                    onChange={(e) => setEditForm({ ...editForm, path: e.target.value })}
+                    placeholder="Ruta"
                   />
                   <Input
                     value={editForm.icon || ""}
