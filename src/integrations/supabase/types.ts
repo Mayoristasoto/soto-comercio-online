@@ -2006,6 +2006,71 @@ export type Database = {
         }
         Relationships: []
       }
+      kiosk_devices: {
+        Row: {
+          allowed_ips: unknown[]
+          created_at: string | null
+          device_name: string
+          device_token: string
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          sucursal_id: string | null
+        }
+        Insert: {
+          allowed_ips?: unknown[]
+          created_at?: string | null
+          device_name: string
+          device_token: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          sucursal_id?: string | null
+        }
+        Update: {
+          allowed_ips?: unknown[]
+          created_at?: string | null
+          device_name?: string
+          device_token?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          sucursal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiosk_devices_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kiosk_rate_limit: {
+        Row: {
+          empleado_id: string
+          fichaje_count: number | null
+          id: string
+          last_fichaje: string
+          window_start: string | null
+        }
+        Insert: {
+          empleado_id: string
+          fichaje_count?: number | null
+          id?: string
+          last_fichaje?: string
+          window_start?: string | null
+        }
+        Update: {
+          empleado_id?: string
+          fichaje_count?: number | null
+          id?: string
+          last_fichaje?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       layout_viewport: {
         Row: {
           created_at: string
@@ -2466,6 +2531,36 @@ export type Database = {
           },
         ]
       }
+      role_change_audit: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_role: Database["public"]["Enums"]["user_role"]
+          old_role: Database["public"]["Enums"]["user_role"] | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_role: Database["public"]["Enums"]["user_role"]
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_role?: Database["public"]["Enums"]["user_role"]
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       sidebar_links: {
         Row: {
           created_at: string | null
@@ -2884,6 +2979,36 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          is_active: boolean | null
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          revoked_at?: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vacaciones_bloqueos: {
         Row: {
           activo: boolean
@@ -3266,6 +3391,13 @@ export type Database = {
           utilizado_mes: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -3296,6 +3428,17 @@ export type Database = {
         Args: {
           p_confianza: number
           p_datos?: Json
+          p_empleado_id: string
+          p_lat?: number
+          p_lng?: number
+        }
+        Returns: string
+      }
+      kiosk_insert_fichaje_secure: {
+        Args: {
+          p_confianza: number
+          p_datos?: Json
+          p_device_token?: string
           p_empleado_id: string
           p_lat?: number
           p_lng?: number
