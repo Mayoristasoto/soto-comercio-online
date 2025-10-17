@@ -21,6 +21,10 @@ import { EmployeeBadges } from "@/components/employee/EmployeeBadges"
 import { EmployeePrizes } from "@/components/employee/EmployeePrizes"
 import { EmployeeTasks } from "@/components/employee/EmployeeTasks"
 import { EventCards } from "@/components/employee/EventCards"
+import { ConfirmarEntregas } from "@/components/employee/ConfirmarEntregas"
+import { HistorialEntregas } from "@/components/employee/HistorialEntregas"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Package } from "lucide-react"
 
 interface UserInfo {
   id: string
@@ -259,6 +263,33 @@ export default function EmpleadoDashboard() {
           </CardHeader>
           <CardContent>
             <EmployeeBadges empleadoId={userInfo.id} />
+          </CardContent>
+        </Card>
+
+        {/* Sección: Entregas de Elementos */}
+        <Card className="animate-fade-in lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Package className="h-5 w-5 text-orange-600" />
+              <span>Mis Entregas de Elementos</span>
+            </CardTitle>
+            <CardDescription>
+              Confirma la recepción de elementos entregados y consulta tu historial
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="pendientes">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pendientes">Pendientes de Confirmar</TabsTrigger>
+                <TabsTrigger value="historial">Historial</TabsTrigger>
+              </TabsList>
+              <TabsContent value="pendientes">
+                <ConfirmarEntregas />
+              </TabsContent>
+              <TabsContent value="historial">
+                <HistorialEntregas />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

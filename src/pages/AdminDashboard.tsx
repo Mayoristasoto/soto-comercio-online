@@ -35,6 +35,7 @@ import PrizeManagement from "@/components/admin/PrizeManagement"
 import StaffOverview from "@/components/admin/StaffOverview"
 import { PuntualidadManager } from "@/components/admin/PuntualidadManager"
 import { SidebarLinksManager } from "@/components/admin/SidebarLinksManager"
+import { EntregaElementos } from "@/components/admin/EntregaElementos"
 
 interface DashboardStats {
   total_empleados: number
@@ -532,6 +533,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="puntualidad" className="whitespace-nowrap">Puntualidad</TabsTrigger>
               <TabsTrigger value="roles" className="whitespace-nowrap">Roles</TabsTrigger>
               <TabsTrigger value="sidebar" className="whitespace-nowrap">Menú Sidebar</TabsTrigger>
+              <TabsTrigger value="entregas" className="whitespace-nowrap">Entregas Elementos</TabsTrigger>
               <TabsTrigger value="activity" className="whitespace-nowrap">Actividad</TabsTrigger>
             </TabsList>
           </div>
@@ -720,6 +722,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="sidebar">
           <SidebarLinksManager />
+        </TabsContent>
+
+        <TabsContent value="entregas">
+          <EntregaElementos />
         </TabsContent>
 
         <TabsContent value="activity">
