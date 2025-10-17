@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useOutletContext } from "react-router-dom"
+import { useOutletContext, useLocation } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -40,7 +40,9 @@ interface UserInfo {
 export default function EmpleadoDashboard() {
   const { userInfo } = useOutletContext<{ userInfo: UserInfo }>()
   const { toast } = useToast()
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
+  const [activeEntregasTab, setActiveEntregasTab] = useState("pendientes")
   const [stats, setStats] = useState({
     tareas: 0,
     capacitaciones: 0,
@@ -53,6 +55,20 @@ export default function EmpleadoDashboard() {
       loadDashboardData()
     }
   }, [userInfo])
+
+  // Detectar hash en la URL para scroll y cambio de tab
+  useEffect(() => {
+    const hash = location.hash.replace('#', '')
+    if (hash === 'entregas') {
+      // Hacer scroll al elemento de entregas
+      setTimeout(() => {
+        const element = document.getElementById('entregas-section')
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
+  }, [location.hash])
 
   const loadDashboardData = async () => {
     try {
@@ -267,7 +283,7 @@ export default function EmpleadoDashboard() {
         </Card>
 
         {/* Sección: Entregas de Elementos */}
-        <Card className="animate-fade-in lg:col-span-2">
+        <Card id="entregas-section" className="animate-fade-in lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Package className="h-5 w-5 text-orange-600" />
@@ -278,7 +294,7 @@ export default function EmpleadoDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="pendientes">
+            <Tabs value={activeEntregasTab} onValueChange={setActiveEntregasTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="pendientes">Pendientes de Confirmar</TabsTrigger>
                 <TabsTrigger value="historial">Historial</TabsTrigger>

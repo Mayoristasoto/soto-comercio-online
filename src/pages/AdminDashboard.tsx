@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, useLocation } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -69,6 +69,7 @@ interface EmpleadoEstado {
 export default function AdminDashboard() {
   const { toast } = useToast()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [stats, setStats] = useState<DashboardStats>({
@@ -91,6 +92,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadDashboardData()
   }, [])
+
+  // Detectar hash en la URL y cambiar tab activo
+  useEffect(() => {
+    const hash = location.hash.replace('#', '')
+    if (hash) {
+      setActiveTab(hash)
+    }
+  }, [location.hash])
 
   const scrollTabs = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
