@@ -28,6 +28,7 @@ import Evaluaciones from "./pages/Evaluaciones";
 import Vacaciones from "./pages/Vacaciones";
 import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
+import DesafiosTV from "./pages/DesafiosTV";
 
 // Legacy pages (mantener por compatibilidad)
 import Comercio from "./pages/Comercio";
@@ -101,6 +102,9 @@ const App = () => (
             {/* Módulo de Solicitudes */}
             <Route path="solicitudes" element={<Solicitudes />} />
             <Route path="anotaciones" element={<Anotaciones />} />
+            
+            {/* Pantalla de TV para Desafíos */}
+            <Route path="desafios-tv" element={<DesafiosTV />} />
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}
