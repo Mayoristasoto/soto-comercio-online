@@ -36,6 +36,7 @@ import StaffOverview from "@/components/admin/StaffOverview"
 import { PuntualidadManager } from "@/components/admin/PuntualidadManager"
 import { SidebarLinksManager } from "@/components/admin/SidebarLinksManager"
 import { EntregaElementos } from "@/components/admin/EntregaElementos"
+import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 
 interface DashboardStats {
   total_empleados: number
@@ -543,6 +544,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="roles" className="whitespace-nowrap">Roles</TabsTrigger>
               <TabsTrigger value="sidebar" className="whitespace-nowrap">Menú Sidebar</TabsTrigger>
               <TabsTrigger value="entregas" className="whitespace-nowrap">Entregas Elementos</TabsTrigger>
+              <TabsTrigger value="sistema-comercial" className="whitespace-nowrap">Sistema Comercial</TabsTrigger>
               <TabsTrigger value="activity" className="whitespace-nowrap">Actividad</TabsTrigger>
             </TabsList>
           </div>
@@ -735,6 +737,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="entregas">
           <EntregaElementos />
+        </TabsContent>
+
+        <TabsContent value="sistema-comercial">
+          <SistemaComercialConfig />
         </TabsContent>
 
         <TabsContent value="activity">

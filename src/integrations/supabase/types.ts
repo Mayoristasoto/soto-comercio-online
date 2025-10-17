@@ -100,39 +100,48 @@ export type Database = {
       }
       asignaciones_premio: {
         Row: {
+          acreditado_sistema_comercial: boolean | null
           beneficiario_id: string
           beneficiario_tipo: Database["public"]["Enums"]["beneficiario_tipo"]
           comprobante_url: string | null
           costo_real: number | null
           created_at: string
           estado: Database["public"]["Enums"]["asignacion_estado"]
+          fecha_acreditacion: string | null
           fecha_asignacion: string
           id: string
           premio_id: string
+          respuesta_sistema_comercial: Json | null
           updated_at: string
         }
         Insert: {
+          acreditado_sistema_comercial?: boolean | null
           beneficiario_id: string
           beneficiario_tipo: Database["public"]["Enums"]["beneficiario_tipo"]
           comprobante_url?: string | null
           costo_real?: number | null
           created_at?: string
           estado?: Database["public"]["Enums"]["asignacion_estado"]
+          fecha_acreditacion?: string | null
           fecha_asignacion?: string
           id?: string
           premio_id: string
+          respuesta_sistema_comercial?: Json | null
           updated_at?: string
         }
         Update: {
+          acreditado_sistema_comercial?: boolean | null
           beneficiario_id?: string
           beneficiario_tipo?: Database["public"]["Enums"]["beneficiario_tipo"]
           comprobante_url?: string | null
           costo_real?: number | null
           created_at?: string
           estado?: Database["public"]["Enums"]["asignacion_estado"]
+          fecha_acreditacion?: string | null
           fecha_asignacion?: string
           id?: string
           premio_id?: string
+          respuesta_sistema_comercial?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -2693,6 +2702,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sistema_comercial_config: {
+        Row: {
+          api_token: string | null
+          api_url: string | null
+          created_at: string | null
+          endpoint_acreditacion: string | null
+          habilitado: boolean | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_token?: string | null
+          api_url?: string | null
+          created_at?: string | null
+          endpoint_acreditacion?: string | null
+          habilitado?: boolean | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_token?: string | null
+          api_url?: string | null
+          created_at?: string | null
+          endpoint_acreditacion?: string | null
+          habilitado?: boolean | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       solicitudes: {
         Row: {

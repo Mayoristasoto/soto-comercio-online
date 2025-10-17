@@ -77,69 +77,42 @@ export function EmployeePrizes({ empleadoId, userPoints, onPointsUpdate }: Props
 
     setCanjeando(true);
     try {
-      // Verificar que el usuario tenga suficientes puntos actualizados
-      const { data: puntosActuales } = await supabase
-        .from('puntos')
-        .select('puntos')
-        .eq('empleado_id', empleadoId);
+      // Llamar al edge function para procesar el canje
+      const { data: { session } } = await supabase.auth.getSession();
       
-      const totalPuntosActuales = puntosActuales?.reduce((sum, p) => sum + p.puntos, 0) || 0;
-      
-      if (totalPuntosActuales < premio.monto_presupuestado) {
-        toast({
-          title: "Puntos insuficientes",
-          description: `Tus puntos actuales (${totalPuntosActuales}) no son suficientes para canjear este premio.`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Crear la asignación del premio
-      const { error: asignacionError } = await supabase
-        .from('asignaciones_premio')
-        .insert([{
-          premio_id: premio.id,
-          beneficiario_tipo: 'empleado',
-          beneficiario_id: empleadoId,
-          estado: 'pendiente',
-          costo_real: premio.monto_presupuestado
-        }]);
-
-      if (asignacionError) {
-        console.error('Error creando asignación:', asignacionError);
-        throw new Error('No se pudo crear la asignación del premio');
-      }
-
-      // Deducir puntos del empleado
-      const { error: puntosError } = await supabase
-        .from('puntos')
-        .insert([{
-          empleado_id: empleadoId,
-          puntos: -premio.monto_presupuestado,
-          motivo: `Canje por premio: ${premio.nombre}`
-        }]);
-
-      if (puntosError) {
-        console.error('Error deduciendo puntos:', puntosError);
-        throw new Error('No se pudieron deducir los puntos');
-      }
-
-      // Actualizar stock si aplica
-      if (premio.stock !== null && premio.stock > 0) {
-        const { error: stockError } = await supabase
-          .from('premios')
-          .update({ stock: premio.stock - 1 })
-          .eq('id', premio.id);
-
-        if (stockError) {
-          console.error('Error actualizando stock:', stockError);
-          // No bloquear el canje por error de stock
+      const response = await fetch(
+        `https://iizwnijtgfvanhqqjeyw.supabase.co/functions/v1/canjear-premio`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({
+            premioId: premio.id,
+            empleadoId: empleadoId
+          })
         }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al canjear premio');
+      }
+
+      // Mensaje personalizado según si se acreditó en sistema comercial
+      let description = `Has canjeado ${premio.monto_presupuestado} puntos por "${premio.nombre}".`;
+      
+      if (result.acreditado && premio.tipo === 'monetario') {
+        description += ' El monto ha sido acreditado en tu cuenta corriente.';
+      } else {
+        description += ' El premio estará disponible pronto.';
       }
 
       toast({
         title: "¡Canje exitoso!",
-        description: `Has canjeado ${premio.monto_presupuestado} puntos por "${premio.nombre}". El premio estará disponible pronto.`
+        description
       });
 
       setDialogOpen(false);
