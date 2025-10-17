@@ -977,6 +977,86 @@ export type Database = {
           },
         ]
       }
+      entregas_elementos: {
+        Row: {
+          cantidad: number
+          created_at: string
+          descripcion: string | null
+          empleado_id: string
+          entregado_por: string
+          estado: string
+          fecha_confirmacion: string | null
+          fecha_entrega: string
+          firma_empleado: string | null
+          id: string
+          observaciones: string | null
+          talla: string | null
+          tipo_elemento: string
+          updated_at: string
+        }
+        Insert: {
+          cantidad?: number
+          created_at?: string
+          descripcion?: string | null
+          empleado_id: string
+          entregado_por: string
+          estado?: string
+          fecha_confirmacion?: string | null
+          fecha_entrega?: string
+          firma_empleado?: string | null
+          id?: string
+          observaciones?: string | null
+          talla?: string | null
+          tipo_elemento: string
+          updated_at?: string
+        }
+        Update: {
+          cantidad?: number
+          created_at?: string
+          descripcion?: string | null
+          empleado_id?: string
+          entregado_por?: string
+          estado?: string
+          fecha_confirmacion?: string | null
+          fecha_entrega?: string
+          firma_empleado?: string | null
+          id?: string
+          observaciones?: string | null
+          talla?: string | null
+          tipo_elemento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_elementos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_elementos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_elementos_entregado_por_fkey"
+            columns: ["entregado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_elementos_entregado_por_fkey"
+            columns: ["entregado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluaciones_capacitacion: {
         Row: {
           activa: boolean
