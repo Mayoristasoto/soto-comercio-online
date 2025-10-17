@@ -59,7 +59,7 @@ export default function DesafiosTV() {
           .select(`
             empleado_id,
             progreso,
-            empleados (
+            empleados!participaciones_empleado_id_fkey (
               nombre,
               apellido,
               avatar_url
