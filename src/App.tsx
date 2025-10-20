@@ -38,6 +38,7 @@ import Gulero from "./pages/Gulero";
 import Mayorista from "./pages/Mayorista";
 import Centum from "./pages/Centum";
 import Gondolas from "./pages/Gondolas";
+import Configuracion from "./pages/Configuracion";
 import GondolasEdit from "./pages/GondolasEdit";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -105,6 +106,9 @@ const App = () => (
             
             {/* Pantalla de TV para Desafíos */}
             <Route path="desafios-tv" element={<DesafiosTV />} />
+            
+            {/* Configuración del Sistema */}
+            <Route path="configuracion" element={<Configuracion />} />
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}
