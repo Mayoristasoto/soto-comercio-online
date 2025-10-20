@@ -115,9 +115,15 @@ export function PagesManager() {
     if (!editingId) return
 
     try {
+      if (!editForm.path || !editForm.nombre) {
+        toast.error("Path y nombre son obligatorios")
+        return
+      }
+
       const { error } = await supabase
         .from("app_pages")
         .update({
+          path: editForm.path,
           nombre: editForm.nombre,
           titulo_pagina: editForm.titulo_pagina,
           descripcion: editForm.descripcion,
@@ -131,7 +137,7 @@ export function PagesManager() {
 
       if (error) throw error
 
-      toast.success("Página actualizada")
+      toast.success("Página actualizada correctamente")
       setEditingId(null)
       setEditForm({})
       loadPages()
@@ -282,26 +288,34 @@ export function PagesManager() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Path</Label>
+                    <Label>Path (Ruta) *</Label>
                     <Input
                       value={editForm.path || ""}
-                      disabled
-                      className="bg-muted"
+                      onChange={(e) => setEditForm({ ...editForm, path: e.target.value })}
+                      placeholder="/mi-pagina"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Cambiar la ruta puede afectar navegación existente
+                    </p>
                   </div>
                   <div>
-                    <Label>Nombre</Label>
+                    <Label>Nombre (Menú) *</Label>
                     <Input
                       value={editForm.nombre || ""}
                       onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                      placeholder="Mi Página"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Nombre que aparece en el menú lateral
+                    </p>
                   </div>
                 </div>
                 <div>
-                  <Label>Título de Página</Label>
+                  <Label>Título de Página (Pestaña del Navegador)</Label>
                   <Input
                     value={editForm.titulo_pagina || ""}
                     onChange={(e) => setEditForm({ ...editForm, titulo_pagina: e.target.value })}
+                    placeholder="Título que aparece en la pestaña"
                   />
                 </div>
                 <div>
