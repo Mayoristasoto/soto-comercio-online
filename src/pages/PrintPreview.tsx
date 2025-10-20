@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const PrintPreview = () => {
-  const [printerType, setPrinterType] = useState<"termica" | "a4">("a4");
+  const [printerType, setPrinterType] = useState<"termica" | "a4">("termica");
   const empleado = {
     nombre: "Juan",
     apellido: "Pérez García",
@@ -80,12 +80,13 @@ const PrintPreview = () => {
   };
 
   const prioridadClass = (prioridad: string) => {
+    // Estilos optimizados para impresión térmica en blanco y negro
     switch (prioridad) {
-      case 'urgente': return 'bg-red-100 text-red-700 border border-red-300';
-      case 'alta': return 'bg-orange-100 text-orange-700 border border-orange-300';
-      case 'media': return 'bg-yellow-100 text-yellow-700 border border-yellow-300';
-      case 'baja': return 'bg-green-100 text-green-700 border border-green-300';
-      default: return 'bg-gray-100 text-gray-700 border border-gray-300';
+      case 'urgente': return 'border-2 border-foreground font-black';
+      case 'alta': return 'border-2 border-foreground font-bold';
+      case 'media': return 'border border-foreground';
+      case 'baja': return 'border border-muted-foreground';
+      default: return 'border border-muted-foreground';
     }
   };
 
