@@ -1,19 +1,10 @@
 import { useState, useEffect } from "react"
 import { 
-  Home, 
-  Trophy, 
-  Target, 
-  Users, 
-  Building2, 
-  Award, 
-  BarChart3,
-  Settings,
   LogOut,
-  ChevronDown,
-  User,
-  GraduationCap
+  FileText
 } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import * as LucideIcons from "lucide-react"
 
 import {
   Sidebar,
@@ -31,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { useSidebarLinks } from "@/hooks/useSidebarLinks"
 
 // Tipos para empleados
 type UserRole = 'admin_rrhh' | 'gerente_sucursal' | 'lider_grupo' | 'empleado'
@@ -50,27 +42,11 @@ interface Empleado {
   }
 }
 
-// Items del menú para empleados
-const empleadoItems = [
-  { title: "Inicio", url: "/reconoce/home", icon: Home },
-  { title: "Mi Dashboard", url: "/mi-dashboard", icon: BarChart3 },
-  { title: "Ranking", url: "/reconoce/ranking", icon: Trophy },
-  { title: "Desafíos", url: "/reconoce/desafios", icon: Target },
-  { title: "Capacitaciones", url: "/reconoce/capacitaciones", icon: GraduationCap },
-  { title: "Mi Perfil", url: "/reconoce/perfil", icon: User },
-]
-
-// Items del menú para administradores
-const adminItems = [
-  { title: "Dashboard", url: "/reconoce/admin", icon: Home },
-  { title: "Empleados", url: "/reconoce/admin/empleados", icon: Users },
-  { title: "Sucursales", url: "/reconoce/admin/sucursales", icon: Building2 },
-  { title: "Desafíos", url: "/reconoce/admin/desafios", icon: Target },
-  { title: "Capacitaciones", url: "/reconoce/admin/capacitaciones", icon: GraduationCap },
-  { title: "Premios", url: "/reconoce/admin/premios", icon: Award },
-  { title: "Reportes", url: "/reconoce/admin/reportes", icon: BarChart3 },
-  { title: "Configuración", url: "/reconoce/admin/config", icon: Settings },
-]
+// Helper para obtener iconos dinámicamente
+const getIcon = (iconName: string) => {
+  const IconComponent = (LucideIcons as any)[iconName]
+  return IconComponent || FileText
+}
 
 export function AppSidebar() {
   const location = useLocation()
@@ -78,6 +54,7 @@ export function AppSidebar() {
   const { toast } = useToast()
   const [empleado, setEmpleado] = useState<Empleado | null>(null)
   const [loading, setLoading] = useState(true)
+  const { links, loading: linksLoading } = useSidebarLinks(empleado?.rol || null)
 
   const currentPath = location.pathname
 
@@ -142,13 +119,17 @@ export function AppSidebar() {
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-primary text-primary-foreground font-medium" : "hover:bg-muted/50"
 
-  // Determinar qué items mostrar según el rol
-  const menuItems = empleado?.rol === 'admin_rrhh' ? adminItems : empleadoItems
-  
-  // Mantener grupo abierto si contiene la ruta activa
-  const isExpanded = menuItems.some((i) => isActive(i.url))
+  // Agrupar links por parent_id
+  const parentLinks = links.filter(link => !link.parent_id)
+  const childLinksByParent = links.reduce((acc, link) => {
+    if (link.parent_id) {
+      if (!acc[link.parent_id]) acc[link.parent_id] = []
+      acc[link.parent_id].push(link)
+    }
+    return acc
+  }, {} as Record<string, typeof links>)
 
-  if (loading) {
+  if (loading || linksLoading) {
     return (
       <Sidebar className="w-60">
         <div className="flex items-center justify-center h-full">
@@ -172,77 +153,35 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-black">
-            {empleado?.rol === 'admin_rrhh' ? 'Administración' : 'Menú Principal'}
-          </SidebarGroupLabel>
-
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="h-4 w-4 text-black" />
-                      <span className="text-black">{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Accesos rápidos para todos los usuarios */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-black">Accesos Rápidos</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/reconoce/premios" className={getNavCls}>
-                    <Trophy className="h-4 w-4 text-black" />
-                    <span className="text-black">Canje de Premios</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/reconoce/" className={getNavCls}>
-                    <Home className="h-4 w-4 text-black" />
-                    <span className="text-black">Página Pública</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/reconoce/ranking" className={getNavCls}>
-                    <Trophy className="h-4 w-4 text-black" />
-                    <span className="text-black">Ranking Global</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/reconoce/insignias" className={getNavCls}>
-                    <Award className="h-4 w-4 text-black" />
-                    <span className="text-black">Insignias</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {empleado?.rol === 'admin_rrhh' && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/reconoce/admin" className={getNavCls}>
-                      <Settings className="h-4 w-4 text-black" />
-                      <span className="text-black">Panel Admin</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {parentLinks.map((parentLink) => {
+          const Icon = getIcon(parentLink.icon)
+          const children = childLinksByParent[parentLink.id] || []
+          
+          return (
+            <SidebarGroup key={parentLink.id}>
+              <SidebarGroupLabel className="text-black">
+                {parentLink.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {children.map((link) => {
+                    const ChildIcon = getIcon(link.icon)
+                    return (
+                      <SidebarMenuItem key={link.id}>
+                        <SidebarMenuButton asChild>
+                          <NavLink to={link.path} end className={getNavCls}>
+                            <ChildIcon className="h-4 w-4 text-black" />
+                            <span className="text-black">{link.label}</span>
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )
+        })}
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4">
