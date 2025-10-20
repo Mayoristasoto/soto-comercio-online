@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_pages: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          icon: string | null
+          id: string
+          nombre: string
+          orden: number
+          parent_id: string | null
+          path: string
+          requiere_auth: boolean
+          roles_permitidos: string[] | null
+          titulo_pagina: string | null
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          icon?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+          parent_id?: string | null
+          path: string
+          requiere_auth?: boolean
+          roles_permitidos?: string[] | null
+          titulo_pagina?: string | null
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          icon?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+          parent_id?: string | null
+          path?: string
+          requiere_auth?: boolean
+          roles_permitidos?: string[] | null
+          titulo_pagina?: string | null
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_pages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "app_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asignaciones_capacitacion: {
         Row: {
           capacitacion_id: string
