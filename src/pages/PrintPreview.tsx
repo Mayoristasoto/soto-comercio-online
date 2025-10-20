@@ -1,6 +1,19 @@
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Download, Printer, Settings2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const PrintPreview = () => {
+  const [printerType, setPrinterType] = useState<"termica" | "a4">("a4");
   const empleado = {
     nombre: "Juan",
     apellido: "Pérez García",
@@ -76,45 +89,77 @@ const PrintPreview = () => {
     }
   };
 
+  const descargarEjemplo = () => {
+    const contenidoHTML = document.querySelector('.documento-impresion')?.innerHTML || '';
+    const htmlCompleto = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Ejemplo Tareas - ${printerType === 'termica' ? 'Térmica' : 'A4'}</title>
+          <style>
+            ${printerType === 'termica' ? `
+              body { margin: 0; padding: 10mm; font-family: monospace; font-size: 12pt; width: 80mm; }
+              h1 { font-size: 16pt; text-align: center; margin: 5mm 0; }
+              .task { border: 1px solid #000; padding: 3mm; margin: 2mm 0; }
+            ` : `
+              body { margin: 0; padding: 20mm; font-family: Arial, sans-serif; }
+              .print\\:hidden { display: none; }
+            `}
+          </style>
+        </head>
+        <body>${contenidoHTML}</body>
+      </html>
+    `;
+    const blob = new Blob([htmlCompleto], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ejemplo-tareas-${printerType}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow-lg print:shadow-none">
+    <div className="min-h-screen bg-background p-8">
+      <div className={printerType === 'termica' ? 'max-w-xs mx-auto' : 'max-w-4xl mx-auto'}>
+        <div className="bg-card shadow-lg print:shadow-none documento-impresion"
+             style={printerType === 'termica' ? { width: '80mm' } : {}}>
           {/* Header */}
-          <div className="text-center border-b-2 border-black pb-4 mb-8 p-8">
-            <h1 className="text-3xl font-bold m-0">📋 TAREAS DIARIAS</h1>
-            <h2 className="text-xl text-gray-600 mt-2">Plan de Trabajo</h2>
+          <div className={`text-center border-b-2 border-border pb-4 mb-${printerType === 'termica' ? '4' : '8'} p-${printerType === 'termica' ? '4' : '8'}`}>
+            <h1 className={`${printerType === 'termica' ? 'text-xl' : 'text-3xl'} font-bold m-0`}>📋 TAREAS DIARIAS</h1>
+            {printerType === 'a4' && <h2 className="text-xl text-muted-foreground mt-2">Plan de Trabajo</h2>}
           </div>
 
-          <div className="px-8 pb-8">
+          <div className={`px-${printerType === 'termica' ? '4' : '8'} pb-${printerType === 'termica' ? '4' : '8'}`}>
             {/* Employee Info */}
-            <div className="bg-gray-100 p-6 rounded-lg mb-8">
-              <h3 className="text-lg font-bold mb-3">👤 {empleado.nombre} {empleado.apellido}</h3>
-              <p><strong>Puesto:</strong> {empleado.puesto}</p>
-              <p className="font-bold text-blue-600 text-lg mt-2">📅 {fechaFormateada}</p>
+            <div className={`bg-muted p-${printerType === 'termica' ? '3' : '6'} rounded-lg mb-${printerType === 'termica' ? '4' : '8'}`}>
+              <h3 className={`${printerType === 'termica' ? 'text-sm' : 'text-lg'} font-bold mb-2`}>👤 {empleado.nombre} {empleado.apellido}</h3>
+              <p className={printerType === 'termica' ? 'text-xs' : ''}><strong>Puesto:</strong> {empleado.puesto}</p>
+              <p className={`font-bold text-primary ${printerType === 'termica' ? 'text-xs' : 'text-lg'} mt-2`}>📅 {fechaFormateada}</p>
             </div>
 
             {/* Tasks */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4">📝 Tareas Pendientes ({tareas.length})</h3>
+            <div className={`mb-${printerType === 'termica' ? '4' : '8'}`}>
+              <h3 className={`${printerType === 'termica' ? 'text-sm' : 'text-lg'} font-bold mb-${printerType === 'termica' ? '2' : '4'}`}>📝 Tareas Pendientes ({tareas.length})</h3>
               {tareas.map((tarea, index) => (
-                <div key={tarea.id} className="border border-gray-300 rounded-lg p-6 mb-6">
-                  <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-                    <div className="font-bold text-base flex-1 mr-4">
-                      <span className="inline-block w-4 h-4 border-2 border-black mr-3 align-middle"></span>
+                <div key={tarea.id} className={`border border-border rounded-lg p-${printerType === 'termica' ? '3' : '6'} mb-${printerType === 'termica' ? '3' : '6'}`}>
+                  <div className={`flex ${printerType === 'termica' ? 'flex-col' : 'justify-between items-center'} mb-${printerType === 'termica' ? '2' : '4'} border-b border-border pb-${printerType === 'termica' ? '2' : '3'}`}>
+                    <div className={`font-bold ${printerType === 'termica' ? 'text-xs' : 'text-base'} flex-1 ${printerType === 'a4' ? 'mr-4' : ''}`}>
+                      <span className={`inline-block ${printerType === 'termica' ? 'w-3 h-3 border' : 'w-4 h-4 border-2'} border-foreground mr-${printerType === 'termica' ? '2' : '3'} align-middle`}></span>
                       {index + 1}. {tarea.titulo}
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${prioridadClass(tarea.prioridad)}`}>
+                    <div className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${prioridadClass(tarea.prioridad)} ${printerType === 'termica' ? 'mt-1' : ''}`}>
                       {prioridadEmoji(tarea.prioridad)} {prioridadTexto(tarea.prioridad)}
                     </div>
                   </div>
                   {tarea.descripcion && (
-                    <div className="text-gray-600 mb-3 leading-relaxed">
+                    <div className={`text-muted-foreground mb-${printerType === 'termica' ? '2' : '3'} ${printerType === 'termica' ? 'text-xs' : ''} leading-relaxed`}>
                       <strong>Descripción:</strong> {tarea.descripcion}
                     </div>
                   )}
                   {tarea.fecha_limite && (
-                    <div className="text-gray-500 text-sm italic">
+                    <div className={`text-muted-foreground ${printerType === 'termica' ? 'text-xs' : 'text-sm'} italic`}>
                       ⏰ Fecha límite: {new Date(tarea.fecha_limite).toLocaleDateString('es-ES')}
                     </div>
                   )}
@@ -123,33 +168,75 @@ const PrintPreview = () => {
             </div>
 
             {/* Completion Section */}
-            <div className="mt-12 pt-8 border-t-2 border-gray-300">
-              <div className="font-bold mb-6 text-base">✅ CONTROL DE FINALIZACIÓN</div>
-              <div className="flex justify-between">
-                <div className="w-48 text-center">
-                  <div className="border-b border-black mb-2 h-12"></div>
-                  <p><strong>Empleado</strong><br />Firma y fecha</p>
-                </div>
-                <div className="w-48 text-center">
-                  <div className="border-b border-black mb-2 h-12"></div>
-                  <p><strong>Supervisor</strong><br />Firma y fecha</p>
+            {printerType === 'a4' && (
+              <div className="mt-12 pt-8 border-t-2 border-border">
+                <div className="font-bold mb-6 text-base">✅ CONTROL DE FINALIZACIÓN</div>
+                <div className="flex justify-between">
+                  <div className="w-48 text-center">
+                    <div className="border-b border-foreground mb-2 h-12"></div>
+                    <p><strong>Empleado</strong><br />Firma y fecha</p>
+                  </div>
+                  <div className="w-48 text-center">
+                    <div className="border-b border-foreground mb-2 h-12"></div>
+                    <p><strong>Supervisor</strong><br />Firma y fecha</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Footer */}
-            <div className="mt-12 pt-8 border-t border-gray-300 text-center text-xs text-gray-500">
-              <p>Documento generado automáticamente el {new Date().toLocaleString('es-ES')}</p>
-              <p>Sistema de Gestión de Tareas - Kiosco CheckIn</p>
+            <div className={`mt-${printerType === 'termica' ? '4' : '12'} pt-${printerType === 'termica' ? '4' : '8'} border-t border-border text-center text-xs text-muted-foreground`}>
+              <p>Generado: {new Date().toLocaleString('es-ES')}</p>
+              {printerType === 'a4' && <p>Sistema de Gestión de Tareas - Kiosco CheckIn</p>}
             </div>
           </div>
         </div>
 
         {/* Action buttons */}
-        <div className="mt-8 flex gap-4 justify-center print:hidden">
+        <div className="mt-8 flex flex-wrap gap-4 justify-center print:hidden">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="lg">
+                <Settings2 className="mr-2 h-4 w-4" />
+                Configuración
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Configuración de Impresora</DialogTitle>
+                <DialogDescription>
+                  Selecciona el tipo de impresora para ajustar el formato del documento
+                </DialogDescription>
+              </DialogHeader>
+              <RadioGroup value={printerType} onValueChange={(value: any) => setPrinterType(value)}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="a4" id="a4" />
+                  <Label htmlFor="a4" className="cursor-pointer">
+                    <div className="font-semibold">Impresora A4 (Estándar)</div>
+                    <div className="text-sm text-muted-foreground">Formato completo con firmas y detalles</div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="termica" id="termica" />
+                  <Label htmlFor="termica" className="cursor-pointer">
+                    <div className="font-semibold">Impresora Térmica (80mm)</div>
+                    <div className="text-sm text-muted-foreground">Formato compacto para tickets</div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </DialogContent>
+          </Dialog>
+
           <Button onClick={() => window.print()} size="lg">
-            🖨️ Imprimir Documento
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir
           </Button>
+
+          <Button onClick={descargarEjemplo} variant="secondary" size="lg">
+            <Download className="mr-2 h-4 w-4" />
+            Descargar Ejemplo
+          </Button>
+
           <Button onClick={() => window.close()} variant="outline" size="lg">
             Cerrar
           </Button>
@@ -168,6 +255,12 @@ const PrintPreview = () => {
           .print\\:shadow-none {
             box-shadow: none !important;
           }
+          ${printerType === 'termica' ? `
+            @page {
+              size: 80mm auto;
+              margin: 5mm;
+            }
+          ` : ''}
         }
       `}</style>
     </div>
