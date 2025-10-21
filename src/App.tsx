@@ -50,7 +50,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
         <Routes>
-          {/* Página de inicio - redirige al login */}
+          {/* Página de inicio - redirige al dashboard */}
           <Route path="/" element={<Index />} />
           
           {/* Autenticación unificada */}
@@ -58,6 +58,25 @@ const App = () => (
           
           {/* Rutas protegidas con layout unificado */}
           <Route path="/" element={<UnifiedLayout />}>
+            {/* Dashboard Principal Unificado */}
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="mi-dashboard" element={<EmpleadoDashboard />} />
+            
+            {/* Módulo RRHH */}
+            <Route path="rrhh/nomina" element={<Nomina />} />
+            <Route path="rrhh/evaluaciones" element={<Evaluaciones />} />
+            <Route path="rrhh/vacaciones" element={<Vacaciones />} />
+            <Route path="rrhh/solicitudes" element={<Solicitudes />} />
+            <Route path="rrhh/anotaciones" element={<Anotaciones />} />
+            
+            {/* Módulo Operaciones */}
+            <Route path="operaciones/fichero" element={<Fichero />} />
+            <Route path="operaciones/tareas" element={<Tareas />} />
+            <Route path="operaciones/tareas/mis-tareas" element={<Tareas />} />
+            <Route path="operaciones/tareas/asignadas" element={<Tareas />} />
+            <Route path="operaciones/tareas/calendario" element={<Tareas />} />
+            <Route path="operaciones/tareas/reportes" element={<Tareas />} />
+            
             {/* Módulo Reconocimiento */}
             <Route path="reconoce" element={<HomePublico />} />
             <Route path="reconoce/dashboard" element={<Dashboard />} />
@@ -66,62 +85,40 @@ const App = () => (
             <Route path="reconoce/insignias" element={<Insignias />} />
             <Route path="reconoce/premios" element={<Premios />} />
             <Route path="reconoce/medals" element={<MedalManagement />} />
+            <Route path="reconoce/desafios-tv" element={<DesafiosTV />} />
             
-            {/* Módulo Control Horario */}
-            <Route path="fichero" element={<Fichero />} />
-            
-            {/* Módulo Gestión de Tareas */}
-            <Route path="tareas" element={<Tareas />} />
-            <Route path="tareas/mis-tareas" element={<Tareas />} />
-            <Route path="tareas/asignadas" element={<Tareas />} />
-            <Route path="tareas/calendario" element={<Tareas />} />
-            <Route path="tareas/reportes" element={<Tareas />} />
-            
-            {/* Administración */}
+            {/* Módulo Administración */}
+            <Route path="admin" element={<AdminDashboard />} />
             <Route path="admin/empleados" element={<AdminDashboard />} />
             <Route path="admin/sucursales" element={<AdminDashboard />} />
-            <Route path="admin/configuracion" element={<AdminDashboard />} />
+            <Route path="admin/gondolas" element={<Gondolas />} />
+            <Route path="admin/gondolasedit" element={<GondolasEdit />} />
+            <Route path="admin/configuracion" element={<Configuracion />} />
             
-            {/* Módulo de Nómina */}
-            <Route path="nomina" element={<Nomina />} />
-            
-            {/* Dashboard de Empleado */}
-            <Route path="mi-dashboard" element={<EmpleadoDashboard />} />
-            
-            {/* Módulo de Evaluaciones */}
-            <Route path="evaluaciones" element={<Evaluaciones />} />
-            
-            {/* Módulo de Vacaciones */}
-            <Route path="vacaciones" element={<Vacaciones />} />
-            
-            {/* Módulo de Solicitudes */}
-            <Route path="solicitudes" element={<Solicitudes />} />
-            <Route path="anotaciones" element={<Anotaciones />} />
-            
-            {/* Pantalla de TV para Desafíos */}
-            <Route path="desafios-tv" element={<DesafiosTV />} />
-            
-            {/* Configuración del Sistema */}
-            <Route path="configuracion" element={<Configuracion />} />
+            {/* Redirects de compatibilidad (rutas antiguas -> nuevas) */}
+            <Route path="nomina" element={<Navigate to="/rrhh/nomina" replace />} />
+            <Route path="evaluaciones" element={<Navigate to="/rrhh/evaluaciones" replace />} />
+            <Route path="vacaciones" element={<Navigate to="/rrhh/vacaciones" replace />} />
+            <Route path="solicitudes" element={<Navigate to="/rrhh/solicitudes" replace />} />
+            <Route path="anotaciones" element={<Navigate to="/rrhh/anotaciones" replace />} />
+            <Route path="fichero" element={<Navigate to="/operaciones/fichero" replace />} />
+            <Route path="tareas" element={<Navigate to="/operaciones/tareas" replace />} />
+            <Route path="tareas/:subpath" element={<Navigate to="/operaciones/tareas" replace />} />
+            <Route path="desafios-tv" element={<Navigate to="/reconoce/desafios-tv" replace />} />
+            <Route path="configuracion" element={<Navigate to="/admin/configuracion" replace />} />
           </Route>
 
-          {/* Legacy routes (mantener por compatibilidad) */}
-          <Route path="/gondolas" element={<Gondolas />} />
-          <Route path="/gondolasedit" element={<GondolasEdit />} />
-          
-          {/* Kiosco Check-In Route */}
+          {/* Herramientas especiales (sin layout) */}
           <Route path="/kiosco" element={<KioscoCheckIn />} />
-          
-          {/* Autogestión Route */}
           <Route path="/autogestion" element={<Autogestion />} />
-          
-          {/* Print Preview */}
           <Route path="/print-preview" element={<PrintPreview />} />
           
-          {/* Rutas de compatibilidad que redirigen al nuevo sistema */}
+          {/* Redirects legacy */}
+          <Route path="/gondolas" element={<Navigate to="/admin/gondolas" replace />} />
+          <Route path="/gondolasedit" element={<Navigate to="/admin/gondolasedit" replace />} />
           <Route path="/reconoce/auth" element={<Navigate to="/auth?redirect=/reconoce" replace />} />
           <Route path="/reconoce/home" element={<Navigate to="/reconoce" replace />} />
-          <Route path="/reconoce/admin" element={<Navigate to="/admin/empleados" replace />} />
+          <Route path="/reconoce/admin" element={<Navigate to="/admin" replace />} />
           
           {/* 404 - debe ir al final */}
           <Route path="*" element={<NotFound />} />
