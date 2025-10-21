@@ -20,12 +20,14 @@ export type Database = {
           descripcion: string | null
           icon: string | null
           id: string
+          mostrar_en_sidebar: boolean | null
           nombre: string
           orden: number
           parent_id: string | null
           path: string
           requiere_auth: boolean
           roles_permitidos: string[] | null
+          tipo: string | null
           titulo_pagina: string | null
           updated_at: string
           visible: boolean
@@ -35,12 +37,14 @@ export type Database = {
           descripcion?: string | null
           icon?: string | null
           id?: string
+          mostrar_en_sidebar?: boolean | null
           nombre: string
           orden?: number
           parent_id?: string | null
           path: string
           requiere_auth?: boolean
           roles_permitidos?: string[] | null
+          tipo?: string | null
           titulo_pagina?: string | null
           updated_at?: string
           visible?: boolean
@@ -50,12 +54,14 @@ export type Database = {
           descripcion?: string | null
           icon?: string | null
           id?: string
+          mostrar_en_sidebar?: boolean | null
           nombre?: string
           orden?: number
           parent_id?: string | null
           path?: string
           requiere_auth?: boolean
           roles_permitidos?: string[] | null
+          tipo?: string | null
           titulo_pagina?: string | null
           updated_at?: string
           visible?: boolean

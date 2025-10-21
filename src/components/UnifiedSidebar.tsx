@@ -159,9 +159,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                         return (
                           <div key={link.id} className="px-2 py-2">
                             <Separator />
-                            {link.label && (
+                            {link.nombre && (
                               <p className="text-xs text-muted-foreground mt-2 px-2 font-medium">
-                                {link.label}
+                                {link.nombre}
                               </p>
                             )}
                           </div>
@@ -179,11 +179,11 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                             {hasChildren ? (
                               <SidebarMenuButton 
                                 onClick={() => toggleExpanded(link.id)}
-                                tooltip={link.descripcion || link.label}
+                                tooltip={link.descripcion || link.nombre}
                                 className="cursor-pointer"
                               >
                                 <Icon className="h-4 w-4" />
-                                <span>{link.label}</span>
+                                <span>{link.nombre}</span>
                                 <ChevronDown 
                                   className={`ml-auto h-4 w-4 transition-transform duration-200 ${
                                     isExpanded ? 'rotate-180' : ''
@@ -194,11 +194,11 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                               <SidebarMenuButton 
                                 asChild 
                                 isActive={isActive(link.path)}
-                                tooltip={link.descripcion || link.label}
+                                tooltip={link.descripcion || link.nombre}
                               >
                                 <NavLink to={link.path}>
                                   <Icon className="h-4 w-4" />
-                                  <span>{link.label}</span>
+                                  <span>{link.nombre}</span>
                                 </NavLink>
                               </SidebarMenuButton>
                             )}
@@ -218,12 +218,12 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                     <SidebarMenuButton 
                                       asChild 
                                       isActive={location.pathname === child.path}
-                                      tooltip={child.descripcion || child.label}
+                                      tooltip={child.descripcion || child.nombre}
                                       className="text-sm"
                                     >
                                       <NavLink to={child.path}>
                                         <ChildIcon className="h-3 w-3" />
-                                        <span>{child.label}</span>
+                                        <span>{child.nombre}</span>
                                       </NavLink>
                                     </SidebarMenuButton>
                                   </SidebarMenuItem>

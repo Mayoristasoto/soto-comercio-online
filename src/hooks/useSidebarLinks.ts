@@ -3,14 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface SidebarLink {
   id: string;
-  rol: string;
-  label: string;
+  nombre: string; // Antes: label
   path: string;
   icon: string;
   descripcion: string | null;
   orden: number;
   visible: boolean;
   parent_id: string | null;
+  tipo: string;
 }
 
 interface SidebarLinkWithChildren extends SidebarLink {
@@ -31,14 +31,13 @@ export function useSidebarLinks(userRole: string | null) {
 
     // Suscribirse a cambios en tiempo real
     const channel = supabase
-      .channel('sidebar-links-changes')
+      .channel('app-pages-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'sidebar_links',
-          filter: `rol=eq.${userRole}`
+          table: 'app_pages'
         },
         () => {
           loadLinks();
@@ -56,11 +55,12 @@ export function useSidebarLinks(userRole: string | null) {
 
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
-        .from("sidebar_links")
+      const { data, error } = await supabase
+        .from("app_pages")
         .select("*")
-        .eq("rol", userRole)
+        .contains("roles_permitidos", [userRole])
         .eq("visible", true)
+        .eq("mostrar_en_sidebar", true)
         .order("orden", { ascending: true });
 
       if (error) throw error;
@@ -68,9 +68,28 @@ export function useSidebarLinks(userRole: string | null) {
       // Organizar en estructura jerárquica
       const parentLinks = data?.filter((link: any) => !link.parent_id) || [];
       const linksWithChildren: SidebarLinkWithChildren[] = parentLinks.map((parent: any) => ({
-        ...parent,
+        id: parent.id,
+        nombre: parent.nombre,
+        path: parent.path,
+        icon: parent.icon,
+        descripcion: parent.descripcion,
+        orden: parent.orden,
+        visible: parent.visible,
+        parent_id: parent.parent_id,
+        tipo: parent.tipo || 'link',
         children: data
           ?.filter((child: any) => child.parent_id === parent.id)
+          .map((child: any) => ({
+            id: child.id,
+            nombre: child.nombre,
+            path: child.path,
+            icon: child.icon,
+            descripcion: child.descripcion,
+            orden: child.orden,
+            visible: child.visible,
+            parent_id: child.parent_id,
+            tipo: child.tipo || 'link',
+          }))
           .sort((a: any, b: any) => a.orden - b.orden) || [],
       }));
 

@@ -160,7 +160,7 @@ export function AppSidebar() {
           return (
             <SidebarGroup key={parentLink.id}>
               <SidebarGroupLabel className="text-black">
-                {parentLink.label}
+                {parentLink.nombre}
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -171,7 +171,7 @@ export function AppSidebar() {
                         <SidebarMenuButton asChild>
                           <NavLink to={link.path} end className={getNavCls}>
                             <ChildIcon className="h-4 w-4 text-black" />
-                            <span className="text-black">{link.label}</span>
+                            <span className="text-black">{link.nombre}</span>
                           </NavLink>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

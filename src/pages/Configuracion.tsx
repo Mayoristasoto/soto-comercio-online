@@ -5,7 +5,6 @@ import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
-import { SidebarLinksManager } from "@/components/admin/SidebarLinksManager"
 import { PagesManager } from "@/components/admin/PagesManager"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
@@ -75,7 +74,7 @@ export default function Configuracion() {
       </div>
 
       <Tabs defaultValue="fichero" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="fichero" className="gap-2">
             <Settings className="h-4 w-4" />
             Fichero
@@ -94,11 +93,7 @@ export default function Configuracion() {
           </TabsTrigger>
           <TabsTrigger value="pages" className="gap-2">
             <Layout className="h-4 w-4" />
-            Páginas
-          </TabsTrigger>
-          <TabsTrigger value="sidebar" className="gap-2">
-            <Menu className="h-4 w-4" />
-            Menú Lateral
+            Navegación y Páginas
           </TabsTrigger>
         </TabsList>
 
@@ -123,12 +118,6 @@ export default function Configuracion() {
         <TabsContent value="pages" className="space-y-6">
           <Card className="p-6">
             <PagesManager />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sidebar" className="space-y-6">
-          <Card className="p-6">
-            <SidebarLinksManager />
           </Card>
         </TabsContent>
       </Tabs>
