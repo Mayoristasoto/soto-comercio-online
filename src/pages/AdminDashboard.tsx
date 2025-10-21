@@ -24,8 +24,6 @@ import {
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import UserEmployeeManagement from "@/components/admin/UserEmployeeManagement"
-import FacialRecognitionStats from "@/components/admin/FacialRecognitionStats"
 import BranchManagement from "@/components/admin/BranchManagement"
 import RoleManagement from "@/components/admin/RoleManagement"
 import BudgetManagement from "@/components/admin/BudgetManagement"
@@ -534,7 +532,6 @@ export default function AdminDashboard() {
             <TabsList className="inline-flex w-max">
               <TabsTrigger value="dashboard" className="whitespace-nowrap">Dashboard</TabsTrigger>
               <TabsTrigger value="staff" className="whitespace-nowrap">Personal</TabsTrigger>
-              <TabsTrigger value="users" className="whitespace-nowrap">Usuarios</TabsTrigger>
               <TabsTrigger value="branches" className="whitespace-nowrap">Sucursales</TabsTrigger>
               <TabsTrigger value="budget" className="whitespace-nowrap">Presupuesto</TabsTrigger>
               <TabsTrigger value="challenges" className="whitespace-nowrap">Desafíos</TabsTrigger>
@@ -570,9 +567,12 @@ export default function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                <Button className="w-full justify-start bg-primary hover:bg-primary/90">
+                <Button 
+                  className="w-full justify-start bg-primary hover:bg-primary/90"
+                  onClick={() => window.location.href = '/nomina?tab=employees'}
+                >
                   <Users className="h-4 w-4 mr-2" />
-                  Gestionar Empleados
+                  Gestión Completa de Personal
                 </Button>
                 <Button 
                   variant="outline" 
@@ -694,13 +694,6 @@ export default function AdminDashboard() {
 
         <TabsContent value="staff">
           <StaffOverview />
-        </TabsContent>
-
-        <TabsContent value="users">
-          <div className="space-y-6">
-            <FacialRecognitionStats />
-            <UserEmployeeManagement />
-          </div>
         </TabsContent>
 
         <TabsContent value="branches">

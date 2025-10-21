@@ -23,7 +23,9 @@ import {
   Briefcase,
   Upload,
   Save,
-  ArrowUpDown
+  ArrowUpDown,
+  UserCheck,
+  Lock
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -44,6 +46,8 @@ import PuestoManagement from "@/components/admin/PuestoManagement"
 import EmployeeImport from "@/components/admin/EmployeeImport"
 import UserCreationForm from "@/components/admin/UserCreationForm"
 import Organigrama from "@/components/admin/Organigrama"
+import FacialRecognitionStats from "@/components/admin/FacialRecognitionStats"
+import MultipleFaceManagement from "@/components/admin/MultipleFaceManagement"
 
 interface Employee {
   id: string
@@ -64,6 +68,9 @@ interface Employee {
   fecha_ingreso: string
   avatar_url?: string
   legajo?: string
+  user_id?: string
+  has_facial_data?: boolean
+  facial_versions_count?: number
 }
 
 interface NominaStats {
@@ -100,6 +107,7 @@ export default function Nomina() {
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [userCreationOpen, setUserCreationOpen] = useState(false)
+  const [faceManagementOpen, setFaceManagementOpen] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
 
@@ -166,13 +174,30 @@ export default function Nomina() {
           fecha_ingreso,
           avatar_url,
           legajo,
-          puesto
+          puesto,
+          user_id
         `)
         .order('nombre', { ascending: true })
 
       if (employeesError) throw employeesError
 
-      setEmployees(employeesData || [])
+      // Enrich with facial recognition data
+      const enrichedEmployees = await Promise.all(
+        (employeesData || []).map(async (emp) => {
+          const { data: facialData, count } = await supabase
+            .from('empleados_rostros')
+            .select('id', { count: 'exact' })
+            .eq('empleado_id', emp.id)
+          
+          return {
+            ...emp,
+            has_facial_data: (count || 0) > 0,
+            facial_versions_count: count || 0
+          }
+        })
+      )
+
+      setEmployees(enrichedEmployees)
       
       // Inicializar el estado de edición de legajos
       const legajosInit: Record<string, string> = {}
@@ -530,9 +555,10 @@ export default function Nomina() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="overflow-x-auto">
-          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-9 md:w-full">
+          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-10 md:w-full">
             <TabsTrigger value="overview" className="whitespace-nowrap">Resumen</TabsTrigger>
             <TabsTrigger value="employees" className="whitespace-nowrap">Empleados</TabsTrigger>
+            <TabsTrigger value="access-security" className="whitespace-nowrap">Acceso y Seguridad</TabsTrigger>
             <TabsTrigger value="positions" className="whitespace-nowrap">Puestos</TabsTrigger>
             <TabsTrigger value="documents" className="whitespace-nowrap">Documentos</TabsTrigger>
             <TabsTrigger value="permissions" className="whitespace-nowrap">Permisos</TabsTrigger>
@@ -576,13 +602,21 @@ export default function Nomina() {
                   <FileText className="h-4 w-4 mr-2" />
                   Administrar Documentos
                 </Button>
-                <Button 
+                  <Button 
                   variant="outline" 
                   className="w-full justify-start"
                   onClick={() => setActiveTab('permissions')}
                 >
                   <Shield className="h-4 w-4 mr-2" />
                   Configurar Permisos
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('access-security')}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Acceso y Seguridad
                 </Button>
               </CardContent>
             </Card>
@@ -701,6 +735,8 @@ export default function Nomina() {
                       <TableHead>Contacto</TableHead>
                       <TableHead>Rol</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Acceso</TableHead>
+                      <TableHead>Rostro</TableHead>
                       <TableHead>Fecha Ingreso</TableHead>
                       <TableHead>Acciones</TableHead>
                     </TableRow>
@@ -763,6 +799,33 @@ export default function Nomina() {
                           </Badge>
                         </TableCell>
                         <TableCell>
+                          <Badge variant={employee.user_id ? "default" : "secondary"} className="flex items-center gap-1 w-fit">
+                            {employee.user_id ? (
+                              <>
+                                <UserCheck className="h-3 w-3" />
+                                Con acceso
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3 w-3" />
+                                Sin acceso
+                              </>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={employee.has_facial_data ? "default" : "outline"}
+                            className="flex items-center gap-1 w-fit"
+                          >
+                            <Camera className="h-3 w-3" />
+                            {employee.has_facial_data 
+                              ? `${employee.facial_versions_count} versión${employee.facial_versions_count !== 1 ? 'es' : ''}`
+                              : 'Sin registrar'
+                            }
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <span className="text-sm">
                             {new Date(employee.fecha_ingreso).toLocaleDateString('es-AR')}
                           </span>
@@ -791,6 +854,13 @@ export default function Nomina() {
                                 <KeyRound className="h-4 w-4 mr-2" />
                                 Cambiar Contraseña
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedEmployee(employee)
+                                setFaceManagementOpen(true)
+                              }}>
+                                <Camera className="h-4 w-4 mr-2" />
+                                Gestionar Rostros
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -801,6 +871,119 @@ export default function Nomina() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="access-security">
+          <div className="space-y-6">
+            <FacialRecognitionStats />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Empleados sin Acceso al Sistema</CardTitle>
+                <CardDescription>
+                  Empleados registrados que aún no tienen credenciales de acceso
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {employees
+                    .filter(emp => !emp.user_id && emp.activo)
+                    .map((emp) => (
+                      <div key={emp.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={emp.avatar_url} />
+                            <AvatarFallback>
+                              {emp.nombre.charAt(0)}{emp.apellido.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{emp.nombre} {emp.apellido}</p>
+                            <p className="text-sm text-muted-foreground">{emp.email}</p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setSelectedEmployee(emp)
+                            setUserCreationOpen(true)
+                          }}
+                          size="sm"
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Habilitar Acceso
+                        </Button>
+                      </div>
+                    ))}
+                  {employees.filter(emp => !emp.user_id && emp.activo).length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      Todos los empleados activos tienen acceso al sistema
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Galería de Rostros Registrados</CardTitle>
+                <CardDescription>
+                  Vista visual de empleados con reconocimiento facial activo
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {employees
+                    .filter(emp => emp.has_facial_data)
+                    .map((emp) => (
+                      <Card key={emp.id} className="overflow-hidden">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-3 mb-3">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={emp.avatar_url} />
+                              <AvatarFallback>
+                                {emp.nombre.charAt(0)}{emp.apellido.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{emp.nombre} {emp.apellido}</p>
+                              <p className="text-xs text-muted-foreground truncate">{emp.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Badge variant="secondary" className={getRoleColor(emp.rol)}>
+                              {formatRole(emp.rol)}
+                            </Badge>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Camera className="h-3 w-3" />
+                              <span>{emp.facial_versions_count} versión{emp.facial_versions_count !== 1 ? 'es' : ''}</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-3"
+                            onClick={() => {
+                              setSelectedEmployee(emp)
+                              setFaceManagementOpen(true)
+                            }}
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            Gestionar Rostros
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {employees.filter(emp => emp.has_facial_data).length === 0 && (
+                    <div className="col-span-full text-center py-12 text-muted-foreground">
+                      <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay empleados con rostros registrados</p>
+                      <p className="text-sm mt-2">Usa "Gestionar Rostros" en la tabla de empleados para registrar</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="positions">
@@ -943,6 +1126,20 @@ export default function Nomina() {
         open={userCreationOpen}
         onOpenChange={setUserCreationOpen}
         onUserCreated={loadNominaData}
+      />
+
+      <MultipleFaceManagement
+        open={faceManagementOpen}
+        onOpenChange={setFaceManagementOpen}
+        empleado={selectedEmployee ? {
+          id: selectedEmployee.id,
+          nombre: selectedEmployee.nombre,
+          apellido: selectedEmployee.apellido,
+          email: selectedEmployee.email
+        } : null}
+        onFaceUpdated={() => {
+          loadNominaData()
+        }}
       />
     </div>
   )
