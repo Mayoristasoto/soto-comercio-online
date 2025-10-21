@@ -210,6 +210,74 @@ export type Database = {
           },
         ]
       }
+      ausencias_medicas: {
+        Row: {
+          certificado_url: string | null
+          created_at: string
+          empleado_id: string
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          observaciones: string | null
+          registrado_por: string | null
+          tipo_enfermedad: string | null
+          updated_at: string
+        }
+        Insert: {
+          certificado_url?: string | null
+          created_at?: string
+          empleado_id: string
+          fecha_fin: string
+          fecha_inicio: string
+          id?: string
+          observaciones?: string | null
+          registrado_por?: string | null
+          tipo_enfermedad?: string | null
+          updated_at?: string
+        }
+        Update: {
+          certificado_url?: string | null
+          created_at?: string
+          empleado_id?: string
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          observaciones?: string | null
+          registrado_por?: string | null
+          tipo_enfermedad?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ausencias_medicas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ausencias_medicas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ausencias_medicas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ausencias_medicas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_partners: {
         Row: {
           created_at: string

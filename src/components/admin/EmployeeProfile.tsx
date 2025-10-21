@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import DocumentManager from "./DocumentManager"
 import PermissionsManager from "./PermissionsManager"
+import { AusenciasMedicas } from "./AusenciasMedicas"
 
 interface EmpleadoProfile {
   id: string
@@ -299,10 +300,11 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
       <CardContent>
         <Tabs defaultValue="personal" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="personal">Datos Personales</TabsTrigger>
             <TabsTrigger value="work">Información Laboral</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
+            <TabsTrigger value="ausencias">Ausencias Médicas</TabsTrigger>
             <TabsTrigger value="permissions">Permisos</TabsTrigger>
           </TabsList>
 
@@ -550,6 +552,13 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
           <TabsContent value="documents">
             <DocumentManager empleadoId={empleado.id} />
+          </TabsContent>
+
+          <TabsContent value="ausencias">
+            <AusenciasMedicas 
+              empleadoId={empleado.id}
+              empleadoNombre={`${empleado.nombre} ${empleado.apellido}`}
+            />
           </TabsContent>
 
           <TabsContent value="permissions">
