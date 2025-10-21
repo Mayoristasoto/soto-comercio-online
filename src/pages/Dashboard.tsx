@@ -1,193 +1,200 @@
 import { useState, useEffect } from "react"
+import { useOutletContext, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { 
-  Trophy, 
-  Medal, 
-  Star, 
-  Crown,
-  Award,
+  LayoutDashboard,
   Users,
+  ClipboardCheck,
+  Trophy,
   Calendar,
-  CheckCircle,
-  BookOpen,
+  FileText,
+  Clock,
+  AlertCircle,
+  TrendingUp,
+  Award,
   Target,
-  Coins
+  Briefcase,
+  CheckCircle,
+  XCircle,
+  ArrowRight
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
-interface Empleado {
+interface UserInfo {
   id: string
   nombre: string
   apellido: string
-  avatar_url?: string
+  email: string
   rol: string
-  sucursal?: { nombre: string }
-  puntos_totales?: number
-  logros: Logro[]
+  sucursal_id: string
+  grupo_id?: string
+  avatar_url?: string
 }
 
-interface Logro {
-  id: string
-  tipo: 'desafio' | 'capacitacion' | 'premio'
-  nombre: string
-  descripcion?: string
-  fecha_obtencion: string
-  icono?: string
-  color: string
+interface DashboardStats {
+  // RRHH
+  evaluacionesPendientes: number
+  solicitudesPendientes: number
+  vacacionesPendientes: number
+  documentosPendientes: number
+  
+  // Operaciones
+  empleadosActivos: number
+  asistenciaHoy: number
+  tareasPendientes: number
+  tareasVencidas: number
+  
+  // Reconocimiento
+  puntosTotal: number
+  desafiosActivos: number
+  premiosDisponibles: number
+  empleadosConLogros: number
 }
 
 export default function Dashboard() {
+  const { userInfo } = useOutletContext<{ userInfo: UserInfo }>()
   const { toast } = useToast()
-  const [empleados, setEmpleados] = useState<Empleado[]>([])
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [filtroTipo, setFiltroTipo] = useState<'todos' | 'desafio' | 'capacitacion' | 'premio'>('todos')
+  const [stats, setStats] = useState<DashboardStats>({
+    evaluacionesPendientes: 0,
+    solicitudesPendientes: 0,
+    vacacionesPendientes: 0,
+    documentosPendientes: 0,
+    empleadosActivos: 0,
+    asistenciaHoy: 0,
+    tareasPendientes: 0,
+    tareasVencidas: 0,
+    puntosTotal: 0,
+    desafiosActivos: 0,
+    premiosDisponibles: 0,
+    empleadosConLogros: 0
+  })
+
+  const isAdmin = userInfo?.rol === 'admin_rrhh'
+  const isGerente = userInfo?.rol === 'gerente_sucursal'
+  const isLider = userInfo?.rol === 'lider_grupo'
 
   useEffect(() => {
-    loadEmpleadosConLogros()
-  }, [])
+    if (userInfo) {
+      loadDashboardStats()
+    }
+  }, [userInfo])
 
-  const loadEmpleadosConLogros = async () => {
+  const loadDashboardStats = async () => {
     try {
-      // Cargar empleados con información básica
-      const { data: empleadosData, error: empleadosError } = await supabase
-        .from('empleados')
-        .select(`
-          id,
-          nombre,
-          apellido,
-          avatar_url,
-          rol,
-          sucursal:sucursales(nombre)
-        `)
+      const newStats: DashboardStats = {
+        evaluacionesPendientes: 0,
+        solicitudesPendientes: 0,
+        vacacionesPendientes: 0,
+        documentosPendientes: 0,
+        empleadosActivos: 0,
+        asistenciaHoy: 0,
+        tareasPendientes: 0,
+        tareasVencidas: 0,
+        puntosTotal: 0,
+        desafiosActivos: 0,
+        premiosDisponibles: 0,
+        empleadosConLogros: 0
+      }
+
+      // RRHH Stats
+      if (isAdmin || isGerente) {
+        const { count: evalCount } = await supabase
+          .from('empleados')
+          .select('id', { count: 'exact', head: true })
+          .eq('activo', true)
+        newStats.evaluacionesPendientes = evalCount || 0
+
+        const { count: solCount } = await supabase
+          .from('solicitudes')
+          .select('id', { count: 'exact', head: true })
+          .eq('estado', 'pendiente')
+        newStats.solicitudesPendientes = solCount || 0
+
+        const { count: vacCount } = await supabase
+          .from('solicitudes_vacaciones')
+          .select('id', { count: 'exact', head: true })
+          .eq('estado', 'pendiente')
+        newStats.vacacionesPendientes = vacCount || 0
+
+        const { count: docCount } = await supabase
+          .from('documentos_obligatorios')
+          .select('id', { count: 'exact', head: true })
+          .eq('activo', true)
+        newStats.documentosPendientes = docCount || 0
+
+        const { count: empCount } = await supabase
+          .from('empleados')
+          .select('id', { count: 'exact', head: true })
+          .eq('activo', true)
+        newStats.empleadosActivos = empCount || 0
+
+        const today = new Date().toISOString().split('T')[0]
+        const { count: asisCount } = await supabase
+          .from('fichajes')
+          .select('id', { count: 'exact', head: true })
+          .gte('fecha_hora', `${today}T00:00:00`)
+          .lte('fecha_hora', `${today}T23:59:59`)
+        newStats.asistenciaHoy = asisCount || 0
+
+        const { count: tarCount } = await supabase
+          .from('tareas')
+          .select('id', { count: 'exact', head: true })
+          .neq('estado', 'completada')
+        newStats.tareasPendientes = tarCount || 0
+
+        const { count: tarVencCount } = await supabase
+          .from('tareas')
+          .select('id', { count: 'exact', head: true })
+          .neq('estado', 'completada')
+          .lt('fecha_limite', new Date().toISOString())
+        newStats.tareasVencidas = tarVencCount || 0
+      }
+
+      // Reconocimiento Stats
+      const puntosResult = await supabase
+        .from('puntos')
+        .select('puntos')
+      let totalPuntos = 0
+      if (puntosResult.data) {
+        for (const item of puntosResult.data) {
+          totalPuntos += item.puntos || 0
+        }
+      }
+      newStats.puntosTotal = totalPuntos
+
+      const { count: desafCount } = await supabase
+        .from('desafios')
+        .select('id', { count: 'exact', head: true })
         .eq('activo', true)
-        .order('nombre')
+      newStats.desafiosActivos = desafCount || 0
 
-      if (empleadosError) throw empleadosError
+      const { count: premCount } = await supabase
+        .from('premios')
+        .select('id', { count: 'exact', head: true })
+        .eq('activo', true)
+        .gt('stock', 0)
+      newStats.premiosDisponibles = premCount || 0
 
-      // Para cada empleado, cargar sus logros
-      const empleadosConLogros = await Promise.all(
-        empleadosData.map(async (empleado) => {
-          const logros: Logro[] = []
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const { count: logrosCount } = await supabase
+        .from('insignias_empleado')
+        .select('empleado_id', { count: 'exact', head: true })
+        .gte('fecha_obtencion', thirtyDaysAgo.toISOString())
+      newStats.empleadosConLogros = logrosCount || 0
 
-          // Logros por desafíos completados
-          const { data: participaciones } = await supabase
-            .from('participaciones')
-            .select(`
-              id,
-              progreso,
-              fecha_validacion,
-              desafio:desafios(id, titulo, descripcion)
-            `)
-            .eq('empleado_id', empleado.id)
-            .eq('progreso', 100)
-            .not('fecha_validacion', 'is', null)
-
-          participaciones?.forEach(p => {
-            if (p.desafio) {
-              logros.push({
-                id: `desafio-${p.id}`,
-                tipo: 'desafio',
-                nombre: p.desafio.titulo,
-                descripcion: p.desafio.descripcion,
-                fecha_obtencion: p.fecha_validacion,
-                color: 'bg-blue-100 text-blue-800'
-              })
-            }
-          })
-
-          // Logros por capacitaciones completadas
-          const { data: capacitaciones } = await supabase
-            .from('asignaciones_capacitacion')
-            .select(`
-              id,
-              fecha_completada,
-              capacitacion_id
-            `)
-            .eq('empleado_id', empleado.id)
-            .eq('estado', 'completada')
-            .not('fecha_completada', 'is', null)
-
-          // Obtener detalles de capacitaciones por separado
-          if (capacitaciones && capacitaciones.length > 0) {
-            const capacitacionIds = capacitaciones.map(c => c.capacitacion_id)
-            const { data: capacitacionesDetalle } = await supabase
-              .from('capacitaciones')
-              .select('id, titulo, descripcion')
-              .in('id', capacitacionIds)
-
-            capacitaciones.forEach(c => {
-              const detalle = capacitacionesDetalle?.find(d => d.id === c.capacitacion_id)
-              if (detalle) {
-                logros.push({
-                  id: `capacitacion-${c.id}`,
-                  tipo: 'capacitacion',
-                  nombre: detalle.titulo,
-                  descripcion: detalle.descripcion,
-                  fecha_obtencion: c.fecha_completada,
-                  color: 'bg-green-100 text-green-800'
-                })
-              }
-            })
-          }
-
-          // Logros por premios obtenidos
-          const { data: premios } = await supabase
-            .from('asignaciones_premio')
-            .select(`
-              id,
-              fecha_asignacion,
-              estado,
-              premio:premios(id, nombre, descripcion, tipo)
-            `)
-            .eq('beneficiario_id', empleado.id)
-            .eq('beneficiario_tipo', 'empleado')
-            .in('estado', ['entregado'])
-
-          premios?.forEach(p => {
-            if (p.premio) {
-              logros.push({
-                id: `premio-${p.id}`,
-                tipo: 'premio',
-                nombre: p.premio.nombre,
-                descripcion: p.premio.descripcion,
-                fecha_obtencion: p.fecha_asignacion,
-                color: 'bg-yellow-100 text-yellow-800'
-              })
-            }
-          })
-
-          // Calcular puntos totales
-          const { data: puntos } = await supabase
-            .from('puntos')
-            .select('puntos')
-            .eq('empleado_id', empleado.id)
-
-          const puntosTotal = puntos?.reduce((sum, p) => sum + p.puntos, 0) || 0
-
-          // Ordenar logros por fecha (más recientes primero)
-          logros.sort((a, b) => new Date(b.fecha_obtencion).getTime() - new Date(a.fecha_obtencion).getTime())
-
-          return {
-            ...empleado,
-            puntos_totales: puntosTotal,
-            logros
-          }
-        })
-      )
-
-      // Ordenar empleados por número de logros (descendente)
-      empleadosConLogros.sort((a, b) => b.logros.length - a.logros.length)
-      
-      setEmpleados(empleadosConLogros)
+      setStats(newStats)
 
     } catch (error) {
-      console.error('Error cargando empleados con logros:', error)
+      console.error('Error cargando estadísticas:', error)
       toast({
         title: "Error",
-        description: "No se pudieron cargar los datos del dashboard",
+        description: "No se pudieron cargar algunas estadísticas del dashboard",
         variant: "destructive"
       })
     } finally {
@@ -195,50 +202,21 @@ export default function Dashboard() {
     }
   }
 
-  const getIconoLogro = (tipo: string) => {
-    switch (tipo) {
-      case 'desafio': return Target
-      case 'capacitacion': return BookOpen
-      case 'premio': return Trophy
-      default: return Medal
-    }
-  }
-
-  const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-AR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
-
-  const empleadosFiltrados = empleados.map(empleado => ({
-    ...empleado,
-    logros: filtroTipo === 'todos' 
-      ? empleado.logros 
-      : empleado.logros.filter(logro => logro.tipo === filtroTipo)
-  }))
-
-  const stats = {
-    totalEmpleados: empleados.length,
-    totalLogros: empleados.reduce((sum, emp) => sum + emp.logros.length, 0),
-    empleadoMasActivo: empleados.length > 0 ? empleados[0] : null,
-    promedioLogros: empleados.length > 0 ? Math.round(empleados.reduce((sum, emp) => sum + emp.logros.length, 0) / empleados.length) : 0
-  }
-
   if (loading) {
     return (
       <div className="p-6 space-y-6">
-        <div className="h-8 w-64 bg-muted rounded animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-24 bg-muted rounded-lg animate-pulse"></div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-96 bg-muted rounded-lg animate-pulse"></div>
-          ))}
+        <div className="animate-pulse space-y-4">
+          <div className="h-10 bg-muted rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-32 bg-muted rounded-lg"></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[1,2,3].map(i => (
+              <div key={i} className="h-64 bg-muted rounded-lg"></div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -249,222 +227,301 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center space-x-2">
-            <Trophy className="h-8 w-8 text-yellow-600" />
-            <span>Dashboard de Reconocimientos</span>
+          <h1 className="text-3xl font-bold flex items-center space-x-2">
+            <LayoutDashboard className="h-8 w-8 text-primary" />
+            <span>Dashboard Principal</span>
           </h1>
-          <p className="text-muted-foreground">
-            Visualiza los logros y reconocimientos de todos los empleados
+          <p className="text-muted-foreground mt-2">
+            Resumen consolidado de todos los módulos del sistema
           </p>
+          <div className="flex items-center space-x-2 mt-2">
+            <Badge variant="secondary">
+              {isAdmin ? 'Administrador RRHH' : 
+               isGerente ? 'Gerente de Sucursal' : 
+               isLider ? 'Líder de Grupo' : 'Empleado'}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              Última actualización: {new Date().toLocaleTimeString('es-AR')}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Módulo RRHH - Solo para Admin y Gerentes */}
+      {(isAdmin || isGerente) && (
+        <>
+          <div className="flex items-center space-x-2 mt-8">
+            <Users className="h-6 w-6 text-blue-600" />
+            <h2 className="text-2xl font-semibold">Recursos Humanos</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/rrhh/evaluaciones')}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <ClipboardCheck className="h-8 w-8 text-blue-600" />
+                  {stats.evaluacionesPendientes > 0 && (
+                    <Badge variant="destructive">{stats.evaluacionesPendientes}</Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">Evaluaciones</p>
+                <p className="text-2xl font-bold">{stats.evaluacionesPendientes}</p>
+                <p className="text-xs text-muted-foreground mt-1">pendientes</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/rrhh/solicitudes')}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <FileText className="h-8 w-8 text-purple-600" />
+                  {stats.solicitudesPendientes > 0 && (
+                    <Badge variant="destructive">{stats.solicitudesPendientes}</Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">Solicitudes</p>
+                <p className="text-2xl font-bold">{stats.solicitudesPendientes}</p>
+                <p className="text-xs text-muted-foreground mt-1">pendientes de aprobar</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/rrhh/vacaciones')}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <Calendar className="h-8 w-8 text-green-600" />
+                  {stats.vacacionesPendientes > 0 && (
+                    <Badge variant="destructive">{stats.vacacionesPendientes}</Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">Vacaciones</p>
+                <p className="text-2xl font-bold">{stats.vacacionesPendientes}</p>
+                <p className="text-xs text-muted-foreground mt-1">solicitudes pendientes</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/rrhh/nomina')}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <FileText className="h-8 w-8 text-orange-600" />
+                </div>
+                <p className="text-sm text-muted-foreground">Documentos</p>
+                <p className="text-2xl font-bold">{stats.documentosPendientes}</p>
+                <p className="text-xs text-muted-foreground mt-1">activos</p>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* Módulo Operaciones - Solo para Admin y Gerentes */}
+      {(isAdmin || isGerente) && (
+        <>
+          <div className="flex items-center space-x-2 mt-8">
+            <Briefcase className="h-6 w-6 text-green-600" />
+            <h2 className="text-2xl font-semibold">Operaciones</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <Users className="h-8 w-8 text-blue-600" />
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                </div>
+                <p className="text-sm text-muted-foreground">Empleados Activos</p>
+                <p className="text-2xl font-bold">{stats.empleadosActivos}</p>
+                <p className="text-xs text-muted-foreground mt-1">en plantilla</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/operaciones/fichero')}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <Clock className="h-8 w-8 text-indigo-600" />
+                </div>
+                <p className="text-sm text-muted-foreground">Asistencia Hoy</p>
+                <p className="text-2xl font-bold">{stats.asistenciaHoy}</p>
+                <p className="text-xs text-muted-foreground mt-1">fichajes registrados</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/operaciones/tareas')}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <Target className="h-8 w-8 text-blue-600" />
+                  {stats.tareasPendientes > 0 && (
+                    <Badge variant="secondary">{stats.tareasPendientes}</Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">Tareas Activas</p>
+                <p className="text-2xl font-bold">{stats.tareasPendientes}</p>
+                <p className="text-xs text-muted-foreground mt-1">en progreso</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/operaciones/tareas')}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <AlertCircle className="h-8 w-8 text-red-600" />
+                  {stats.tareasVencidas > 0 && (
+                    <Badge variant="destructive">{stats.tareasVencidas}</Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">Tareas Vencidas</p>
+                <p className="text-2xl font-bold text-red-600">{stats.tareasVencidas}</p>
+                <p className="text-xs text-muted-foreground mt-1">requieren atención</p>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* Módulo Reconocimiento - Visible para todos */}
+      <div className="flex items-center space-x-2 mt-8">
+        <Trophy className="h-6 w-6 text-yellow-600" />
+        <h2 className="text-2xl font-semibold">Reconocimiento y Logros</h2>
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/reconoce/ranking')}>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Empleados</p>
-                <p className="text-2xl font-bold">{stats.totalEmpleados}</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-600" />
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp className="h-8 w-8 text-yellow-600" />
             </div>
+            <p className="text-sm text-muted-foreground">Puntos Totales</p>
+            <p className="text-2xl font-bold text-yellow-600">{stats.puntosTotal.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">en el sistema</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/reconoce/desafios')}>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Logros</p>
-                <p className="text-2xl font-bold">{stats.totalLogros}</p>
-              </div>
-              <Medal className="h-8 w-8 text-yellow-600" />
+            <div className="flex items-center justify-between mb-2">
+              <Target className="h-8 w-8 text-blue-600" />
+              <CheckCircle className="h-5 w-5 text-green-500" />
             </div>
+            <p className="text-sm text-muted-foreground">Desafíos Activos</p>
+            <p className="text-2xl font-bold">{stats.desafiosActivos}</p>
+            <p className="text-xs text-muted-foreground mt-1">disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/reconoce/premios')}>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Promedio Logros</p>
-                <p className="text-2xl font-bold">{stats.promedioLogros}</p>
-              </div>
-              <Star className="h-8 w-8 text-purple-600" />
+            <div className="flex items-center justify-between mb-2">
+              <Award className="h-8 w-8 text-purple-600" />
             </div>
+            <p className="text-sm text-muted-foreground">Premios</p>
+            <p className="text-2xl font-bold">{stats.premiosDisponibles}</p>
+            <p className="text-xs text-muted-foreground mt-1">disponibles</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/reconoce/insignias')}>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Empleado Destacado</p>
-                <p className="text-lg font-semibold truncate">
-                  {stats.empleadoMasActivo ? 
-                    `${stats.empleadoMasActivo.nombre} ${stats.empleadoMasActivo.apellido}` : 
-                    'N/A'
-                  }
-                </p>
-              </div>
-              <Crown className="h-8 w-8 text-amber-600" />
+            <div className="flex items-center justify-between mb-2">
+              <Trophy className="h-8 w-8 text-amber-600" />
+              <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
+            <p className="text-sm text-muted-foreground">Logros Recientes</p>
+            <p className="text-2xl font-bold">{stats.empleadosConLogros}</p>
+            <p className="text-xs text-muted-foreground mt-1">últimos 30 días</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-2">
-            <Badge 
-              variant={filtroTipo === 'todos' ? 'default' : 'outline'}
-              className="cursor-pointer"
-              onClick={() => setFiltroTipo('todos')}
-            >
-              Todos los logros
-            </Badge>
-            <Badge 
-              variant={filtroTipo === 'desafio' ? 'default' : 'outline'}
-              className="cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200"
-              onClick={() => setFiltroTipo('desafio')}
-            >
-              <Target className="h-3 w-3 mr-1" />
-              Desafíos
-            </Badge>
-            <Badge 
-              variant={filtroTipo === 'capacitacion' ? 'default' : 'outline'}
-              className="cursor-pointer bg-green-100 text-green-800 hover:bg-green-200"
-              onClick={() => setFiltroTipo('capacitacion')}
-            >
-              <BookOpen className="h-3 w-3 mr-1" />
-              Capacitaciones
-            </Badge>
-            <Badge 
-              variant={filtroTipo === 'premio' ? 'default' : 'outline'}
-              className="cursor-pointer bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-              onClick={() => setFiltroTipo('premio')}
-            >
-              <Trophy className="h-3 w-3 mr-1" />
-              Premios
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Empleados con Logros */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {empleadosFiltrados.map((empleado) => (
-          <Card key={empleado.id} className="overflow-hidden">
-            <CardHeader className="pb-4">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={empleado.avatar_url} />
-                  <AvatarFallback>
-                    {empleado.nombre[0]}{empleado.apellido[0]}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1">
-                  <CardTitle className="text-lg">
-                    {empleado.nombre} {empleado.apellido}
-                  </CardTitle>
-                  <CardDescription className="flex items-center space-x-4">
-                    <span className="capitalize">{empleado.rol.replace('_', ' ')}</span>
-                    {empleado.sucursal && (
-                      <span>• {empleado.sucursal.nombre}</span>
-                    )}
-                  </CardDescription>
-                </div>
-
-                <div className="text-right">
-                  <div className="flex items-center space-x-1 text-yellow-600">
-                    <Coins className="h-4 w-4" />
-                    <span className="font-semibold">{empleado.puntos_totales}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {empleado.logros.length} logro{empleado.logros.length !== 1 ? 's' : ''}
-                  </div>
-                </div>
-              </div>
+      {/* Accesos Rápidos */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-semibold mb-4">Accesos Rápidos</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                <span>Mi Equipo</span>
+              </CardTitle>
+              <CardDescription>Gestiona tu equipo de trabajo</CardDescription>
             </CardHeader>
-
-            <CardContent>
-              {empleado.logros.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <Medal className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Sin logros {filtroTipo !== 'todos' ? `de ${filtroTipo}` : ''} aún</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {empleado.logros.slice(0, 5).map((logro) => {
-                    const IconoLogro = getIconoLogro(logro.tipo)
-                    
-                    return (
-                      <div 
-                        key={logro.id}
-                        className="flex items-start space-x-3 p-3 rounded-lg bg-muted/30 border"
-                      >
-                        <div className="flex-shrink-0 mt-0.5">
-                          <div className="w-8 h-8 rounded-full bg-background border-2 border-primary flex items-center justify-center">
-                            <IconoLogro className="h-4 w-4 text-primary" />
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <h4 className="font-medium text-sm truncate">
-                              {logro.nombre}
-                            </h4>
-                            <Badge className={`${logro.color} text-xs`}>
-                              {logro.tipo}
-                            </Badge>
-                          </div>
-                          
-                          {logro.descripcion && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {logro.descripcion}
-                            </p>
-                          )}
-                          
-                          <div className="flex items-center space-x-1 mt-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {formatFecha(logro.fecha_obtencion)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                  
-                  {empleado.logros.length > 5 && (
-                    <div className="text-center text-sm text-muted-foreground pt-2">
-                      +{empleado.logros.length - 5} logro{empleado.logros.length - 5 !== 1 ? 's' : ''} más
-                    </div>
-                  )}
-                </div>
+            <CardContent className="space-y-2">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => navigate('/mi-dashboard')}
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Mi Dashboard Personal
+              </Button>
+              {(isAdmin || isGerente) && (
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/admin')}
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Gestión de Empleados
+                </Button>
               )}
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {empleados.length === 0 && (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">No hay empleados</h3>
-              <p className="text-muted-foreground">
-                No se encontraron empleados activos en el sistema
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          {(isAdmin || isGerente) && (
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <ClipboardCheck className="h-5 w-5 text-green-600" />
+                  <span>RRHH</span>
+                </CardTitle>
+                <CardDescription>Gestión de recursos humanos</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/rrhh/evaluaciones')}
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Evaluaciones
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/rrhh/vacaciones')}
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Gestión de Vacaciones
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Trophy className="h-5 w-5 text-yellow-600" />
+                <span>Reconocimiento</span>
+              </CardTitle>
+              <CardDescription>Sistema de logros y premios</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => navigate('/reconoce/ranking')}
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Ver Ranking
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => navigate('/reconoce/desafios')}
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Desafíos Activos
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }
