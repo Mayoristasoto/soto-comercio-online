@@ -103,59 +103,68 @@ export default function Dashboard() {
 
       // RRHH Stats
       if (isAdmin || isGerente) {
-        const { count: evalCount } = await supabase
+        // @ts-ignore TS2589
+        const evalResult = await supabase
           .from('empleados')
           .select('id', { count: 'exact', head: true })
           .eq('activo', true)
-        newStats.evaluacionesPendientes = evalCount || 0
+        newStats.evaluacionesPendientes = evalResult.count || 0
 
-        const { count: solCount } = await supabase
+        // @ts-ignore TS2589
+        const solResult = await supabase
           .from('solicitudes')
           .select('id', { count: 'exact', head: true })
           .eq('estado', 'pendiente')
-        newStats.solicitudesPendientes = solCount || 0
+        newStats.solicitudesPendientes = solResult.count || 0
 
-        const { count: vacCount } = await supabase
+        // @ts-ignore TS2589
+        const vacResult = await supabase
           .from('solicitudes_vacaciones')
           .select('id', { count: 'exact', head: true })
           .eq('estado', 'pendiente')
-        newStats.vacacionesPendientes = vacCount || 0
+        newStats.vacacionesPendientes = vacResult.count || 0
 
-        const { count: docCount } = await supabase
+        // @ts-ignore TS2589
+        const docResult = await supabase
           .from('documentos_obligatorios')
           .select('id', { count: 'exact', head: true })
           .eq('activo', true)
-        newStats.documentosPendientes = docCount || 0
+        newStats.documentosPendientes = docResult.count || 0
 
-        const { count: empCount } = await supabase
+        // @ts-ignore TS2589
+        const empResult = await supabase
           .from('empleados')
           .select('id', { count: 'exact', head: true })
           .eq('activo', true)
-        newStats.empleadosActivos = empCount || 0
+        newStats.empleadosActivos = empResult.count || 0
 
         const today = new Date().toISOString().split('T')[0]
-        const { count: asisCount } = await supabase
+        // @ts-ignore TS2589
+        const asisResult = await supabase
           .from('fichajes')
           .select('id', { count: 'exact', head: true })
           .gte('fecha_hora', `${today}T00:00:00`)
           .lte('fecha_hora', `${today}T23:59:59`)
-        newStats.asistenciaHoy = asisCount || 0
+        newStats.asistenciaHoy = asisResult.count || 0
 
-        const { count: tarCount } = await supabase
+        // @ts-ignore TS2589
+        const tarResult = await supabase
           .from('tareas')
           .select('id', { count: 'exact', head: true })
           .neq('estado', 'completada')
-        newStats.tareasPendientes = tarCount || 0
+        newStats.tareasPendientes = tarResult.count || 0
 
-        const { count: tarVencCount } = await supabase
+        // @ts-ignore TS2589
+        const tarVencResult = await supabase
           .from('tareas')
           .select('id', { count: 'exact', head: true })
           .neq('estado', 'completada')
           .lt('fecha_limite', new Date().toISOString())
-        newStats.tareasVencidas = tarVencCount || 0
+        newStats.tareasVencidas = tarVencResult.count || 0
       }
 
       // Reconocimiento Stats
+      // @ts-ignore TS2589
       const puntosResult = await supabase
         .from('puntos')
         .select('puntos')
@@ -167,26 +176,29 @@ export default function Dashboard() {
       }
       newStats.puntosTotal = totalPuntos
 
-      const { count: desafCount } = await supabase
+      // @ts-ignore TS2589
+      const desafResult = await supabase
         .from('desafios')
         .select('id', { count: 'exact', head: true })
         .eq('activo', true)
-      newStats.desafiosActivos = desafCount || 0
+      newStats.desafiosActivos = desafResult.count || 0
 
-      const { count: premCount } = await supabase
+      // @ts-ignore TS2589
+      const premResult = await supabase
         .from('premios')
         .select('id', { count: 'exact', head: true })
         .eq('activo', true)
         .gt('stock', 0)
-      newStats.premiosDisponibles = premCount || 0
+      newStats.premiosDisponibles = premResult.count || 0
 
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const { count: logrosCount } = await supabase
+      // @ts-ignore TS2589
+      const logrosResult = await supabase
         .from('insignias_empleado')
         .select('empleado_id', { count: 'exact', head: true })
         .gte('fecha_obtencion', thirtyDaysAgo.toISOString())
-      newStats.empleadosConLogros = logrosCount || 0
+      newStats.empleadosConLogros = logrosResult.count || 0
 
       setStats(newStats)
 
