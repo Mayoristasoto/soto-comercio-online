@@ -3,14 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface SidebarLink {
   id: string;
-  nombre: string; // Antes: label
+  nombre: string;
   path: string;
   icon: string;
   descripcion: string | null;
   orden: number;
   visible: boolean;
   parent_id: string | null;
-  tipo: string;
+  tipo: 'link' | 'separator';
 }
 
 interface SidebarLinkWithChildren extends SidebarLink {
@@ -29,7 +29,7 @@ export function useSidebarLinks(userRole: string | null) {
 
     loadLinks();
 
-    // Suscribirse a cambios en tiempo real
+    // Suscribirse a cambios en tiempo real en app_pages
     const channel = supabase
       .channel('app-pages-changes')
       .on(
@@ -55,42 +55,38 @@ export function useSidebarLinks(userRole: string | null) {
 
     try {
       setLoading(true);
+      
+      // Leer de app_pages en vez de sidebar_links
       const { data, error } = await supabase
         .from("app_pages")
         .select("*")
-        .contains("roles_permitidos", [userRole])
         .eq("visible", true)
         .eq("mostrar_en_sidebar", true)
+        .contains("roles_permitidos", [userRole])
         .order("orden", { ascending: true });
 
       if (error) throw error;
 
+      // Transformar a formato SidebarLink
+      const transformedData = data?.map((page: any) => ({
+        id: page.id,
+        nombre: page.nombre,
+        path: page.path,
+        icon: page.icon,
+        descripcion: page.descripcion,
+        orden: page.orden,
+        visible: page.visible,
+        parent_id: page.parent_id,
+        tipo: page.tipo || 'link'
+      })) || [];
+
       // Organizar en estructura jerárquica
-      const parentLinks = data?.filter((link: any) => !link.parent_id) || [];
+      const parentLinks = transformedData.filter((link: any) => !link.parent_id);
       const linksWithChildren: SidebarLinkWithChildren[] = parentLinks.map((parent: any) => ({
-        id: parent.id,
-        nombre: parent.nombre,
-        path: parent.path,
-        icon: parent.icon,
-        descripcion: parent.descripcion,
-        orden: parent.orden,
-        visible: parent.visible,
-        parent_id: parent.parent_id,
-        tipo: parent.tipo || 'link',
-        children: data
-          ?.filter((child: any) => child.parent_id === parent.id)
-          .map((child: any) => ({
-            id: child.id,
-            nombre: child.nombre,
-            path: child.path,
-            icon: child.icon,
-            descripcion: child.descripcion,
-            orden: child.orden,
-            visible: child.visible,
-            parent_id: child.parent_id,
-            tipo: child.tipo || 'link',
-          }))
-          .sort((a: any, b: any) => a.orden - b.orden) || [],
+        ...parent,
+        children: transformedData
+          .filter((child: any) => child.parent_id === parent.id)
+          .sort((a: any, b: any) => a.orden - b.orden),
       }));
 
       setLinks(linksWithChildren);

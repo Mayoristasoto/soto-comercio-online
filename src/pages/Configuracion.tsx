@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { Settings, Brain, Building2, FileText, DollarSign, Menu, Layout } from "lucide-react"
+import { Settings, Brain, FileText, DollarSign, Layout } from "lucide-react"
 import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes"
@@ -93,7 +93,7 @@ export default function Configuracion() {
           </TabsTrigger>
           <TabsTrigger value="pages" className="gap-2">
             <Layout className="h-4 w-4" />
-            Navegación y Páginas
+            Navegación y Permisos
           </TabsTrigger>
         </TabsList>
 
@@ -117,6 +117,13 @@ export default function Configuracion() {
 
         <TabsContent value="pages" className="space-y-6">
           <Card className="p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold">Navegación y Permisos</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Gestiona las páginas de la aplicación, su visibilidad en el menú lateral y los roles que tienen acceso.
+                Los cambios se reflejan automáticamente en el sidebar según el rol del usuario.
+              </p>
+            </div>
             <PagesManager />
           </Card>
         </TabsContent>
