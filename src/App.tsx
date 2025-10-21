@@ -31,12 +31,6 @@ import Anotaciones from "./pages/Anotaciones";
 import DesafiosTV from "./pages/DesafiosTV";
 
 // Legacy pages (mantener por compatibilidad)
-import Comercio from "./pages/Comercio";
-import Particular from "./pages/Particular";
-import Reventa from "./pages/Reventa";
-import Gulero from "./pages/Gulero";
-import Mayorista from "./pages/Mayorista";
-import Centum from "./pages/Centum";
 import Gondolas from "./pages/Gondolas";
 import Configuracion from "./pages/Configuracion";
 import GondolasEdit from "./pages/GondolasEdit";
@@ -112,12 +106,6 @@ const App = () => (
           </Route>
 
           {/* Legacy routes (mantener por compatibilidad) */}
-          <Route path="/comercio" element={<Comercio />} />
-          <Route path="/particular" element={<Particular />} />
-          <Route path="/reventa" element={<Reventa />} />
-          <Route path="/gulero" element={<Gulero />} />
-          <Route path="/mayorista" element={<Mayorista />} />
-          <Route path="/centum" element={<Centum />} />
           <Route path="/gondolas" element={<Gondolas />} />
           <Route path="/gondolasedit" element={<GondolasEdit />} />
           

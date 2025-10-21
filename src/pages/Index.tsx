@@ -170,12 +170,12 @@ const Index = () => {
                     Ideal para: Consumo familiar
                   </div>
                 </div>
-                <Link to="/particular">
+                <Link to="/auth">
                   <Button 
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white group-hover:bg-blue-600"
                     size="lg"
                   >
-                    Ver productos
+                    Acceder al sistema
                     <ChevronRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
@@ -218,12 +218,12 @@ const Index = () => {
                     Descuentos por volumen
                   </div>
                 </div>
-                <Link to="/comercio">
+                <Link to="/auth">
                   <Button 
                     className="w-full bg-green-500 hover:bg-green-600 text-white group-hover:bg-green-600"
                     size="lg"
                   >
-                    Ver productos
+                    Acceder al sistema
                     <ChevronRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
@@ -263,12 +263,12 @@ const Index = () => {
                     Términos preferenciales
                   </div>
                 </div>
-                <Link to="/reventa">
+                <Link to="/auth">
                   <Button 
                     className="w-full bg-orange-500 hover:bg-orange-600 text-white group-hover:bg-orange-600"
                     size="lg"
                   >
-                    Ver productos
+                    Acceder al sistema
                     <ChevronRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
