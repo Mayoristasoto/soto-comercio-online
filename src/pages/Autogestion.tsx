@@ -89,15 +89,16 @@ export default function Autogestion() {
   const solicitarAdelanto = async (monto: number) => {
     setSolicitandoAdelanto(true)
     try {
-      // Insertar solicitud de adelanto
+      // Insertar solicitud de adelanto en el sistema nuevo
       const { error } = await supabase
-        .from('solicitudes')
+        .from('solicitudes_generales')
         .insert({
           empleado_id: empleadoId,
-          tipo: 'adelanto',
-          estado: 'pendiente',
-          monto_solicitado: monto,
-          descripcion: `Solicitud de adelanto de $${monto.toLocaleString('es-AR')}`
+          tipo_solicitud: 'adelanto_sueldo',
+          fecha_solicitud: new Date().toISOString().split('T')[0],
+          monto: monto,
+          descripcion: `Solicitud de adelanto de $${monto.toLocaleString('es-AR')}`,
+          estado: 'pendiente'
         })
 
       if (error) throw error
