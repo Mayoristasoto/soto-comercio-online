@@ -70,7 +70,18 @@ interface UnifiedSidebarProps {
 const iconMap: Record<string, any> = {
   Home, Award, Clock, CheckSquare, Settings, Users, BarChart3,
   Calendar, Trophy, Target, Building2, UserCheck, FileText,
-  User, ClipboardCheck, Plane, FileSignature, FileWarning
+  User, ClipboardCheck, Plane, FileSignature, FileWarning,
+  LayoutDashboard: Home,
+  ClipboardList: ClipboardCheck,
+  Gift: Award,
+  DollarSign: FileText,
+  BookOpen: FileText,
+  Shield: Settings,
+  Briefcase: Building2,
+  Tablet: Building2,
+  Tv: Building2,
+  Edit: FileText,
+  Medal: Award
 }
 
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
