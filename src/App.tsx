@@ -87,6 +87,12 @@ const App = () => (
             <Route path="medal-management" element={<MedalManagement />} />
             <Route path="reconoce/desafios-tv" element={<DesafiosTV />} />
             
+            {/* Rutas directas para reconocimiento */}
+            <Route path="ranking" element={<Ranking />} />
+            <Route path="desafios" element={<Desafios />} />
+            <Route path="insignias" element={<Insignias />} />
+            <Route path="premios" element={<Premios />} />
+            
             {/* Módulo Administración */}
             <Route path="admin" element={<AdminDashboard />} />
             <Route path="admin/empleados" element={<AdminDashboard />} />
