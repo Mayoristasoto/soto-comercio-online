@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useOutletContext } from "react-router-dom"
 import { HistorialAnotaciones } from "@/components/anotaciones/HistorialAnotaciones"
 import { NuevaAnotacion } from "@/components/anotaciones/NuevaAnotacion"
+import { AnotacionesSyncManager } from "@/components/anotaciones/AnotacionesSyncManager"
 import { FileText, Plus } from "lucide-react"
 
 interface UserInfo {
@@ -81,7 +82,15 @@ export default function Anotaciones() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="historial" className="mt-6">
+          <TabsContent value="historial" className="mt-6 space-y-4">
+            {/* Botones de exportar/sincronizar */}
+            <div className="flex justify-end">
+              <AnotacionesSyncManager 
+                userInfo={userInfo}
+                isAdmin={isAdmin}
+              />
+            </div>
+            
             <HistorialAnotaciones 
               userInfo={userInfo}
               isAdmin={isAdmin}
