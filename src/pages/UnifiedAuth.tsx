@@ -62,13 +62,33 @@ export default function UnifiedAuth() {
     e.preventDefault()
     setIsLoading(true)
 
+    console.log('🔐 [UnifiedAuth.tsx] Iniciando proceso de login...');
+    console.log('📧 Email ingresado:', email);
+    console.log('🔑 Password presente:', !!password, 'Length:', password?.length || 0);
+    console.log('🎯 Redirect destino:', redirectTo);
+
     try {
+      console.log('⏳ [UnifiedAuth.tsx] Llamando a supabase.auth.signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log('📥 [UnifiedAuth.tsx] Respuesta de Supabase:', { 
+        hasData: !!data, 
+        hasUser: !!data?.user,
+        hasSession: !!data?.session,
+        hasError: !!error 
+      });
+
       if (error) {
+        console.error('❌ [UnifiedAuth.tsx] Error de autenticación:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          fullError: error
+        });
+
         toast({
           title: "Error de autenticación",
           description: error.message,
@@ -78,6 +98,11 @@ export default function UnifiedAuth() {
       }
 
       if (data.user) {
+        console.log('✅ [UnifiedAuth.tsx] Login exitoso!', {
+          userId: data.user.id,
+          email: data.user.email
+        });
+
         toast({
           title: "Bienvenido",
           description: "Has iniciado sesión correctamente",
@@ -85,7 +110,7 @@ export default function UnifiedAuth() {
         navigate(redirectTo)
       }
     } catch (error) {
-      console.error('Error en login:', error)
+      console.error('💥 [UnifiedAuth.tsx] Error inesperado en login:', error)
       toast({
         title: "Error",
         description: "Ocurrió un error inesperado",

@@ -45,7 +45,13 @@ export default function SotoAuth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    console.log('🔐 [SotoAuth.tsx] Iniciando proceso de login...');
+    console.log('📧 Email ingresado:', email);
+    console.log('🔑 Password presente:', !!password, 'Length:', password?.length || 0);
+
     if (!email || !password) {
+      console.warn('⚠️ [SotoAuth.tsx] Faltan campos requeridos');
       toast({
         title: "Error",
         description: "Por favor completa todos los campos",
@@ -56,12 +62,33 @@ export default function SotoAuth() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('⏳ [SotoAuth.tsx] Llamando a supabase.auth.signInWithPassword...');
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       })
 
-      if (error) throw error
+      console.log('📥 [SotoAuth.tsx] Respuesta de Supabase:', { 
+        hasData: !!data, 
+        hasUser: !!data?.user,
+        hasSession: !!data?.session,
+        hasError: !!error 
+      });
+
+      if (error) {
+        console.error('❌ [SotoAuth.tsx] Error de autenticación:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          fullError: error
+        });
+        throw error
+      }
+
+      console.log('✅ [SotoAuth.tsx] Login exitoso!', {
+        userId: data?.user?.id,
+        email: data?.user?.email
+      });
 
       toast({
         title: "¡Bienvenido!",
@@ -70,7 +97,7 @@ export default function SotoAuth() {
       
       navigate('/reconoce/home')
     } catch (error: any) {
-      console.error('Error iniciando sesión:', error)
+      console.error('💥 [SotoAuth.tsx] Error inesperado en signIn:', error)
       toast({
         title: "Error de autenticación",
         description: error.message === "Invalid login credentials" 

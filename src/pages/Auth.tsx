@@ -119,23 +119,46 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    console.log('🔐 [Auth.tsx] Iniciando proceso de login...');
+    console.log('📧 Email ingresado:', email);
+    console.log('🔑 Password presente:', !!password, 'Length:', password?.length || 0);
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('⏳ [Auth.tsx] Llamando a supabase.auth.signInWithPassword...');
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('📥 [Auth.tsx] Respuesta de Supabase:', { 
+        hasData: !!data, 
+        hasUser: !!data?.user,
+        hasSession: !!data?.session,
+        hasError: !!error 
+      });
+
       if (error) {
+        console.error('❌ [Auth.tsx] Error de autenticación:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          fullError: error
+        });
+
         if (error.message.includes("Invalid login credentials")) {
           toast("Credenciales inválidas. Verifica tu email y contraseña.");
         } else {
           toast(`Error al iniciar sesión: ${error.message}`);
         }
       } else {
+        console.log('✅ [Auth.tsx] Login exitoso!', {
+          userId: data?.user?.id,
+          email: data?.user?.email
+        });
         toast("¡Bienvenido de vuelta!");
       }
     } catch (error) {
-      console.error("Error in signIn:", error);
+      console.error("💥 [Auth.tsx] Error inesperado en signIn:", error);
       toast("Error inesperado al iniciar sesión");
     } finally {
       setIsLoading(false);
