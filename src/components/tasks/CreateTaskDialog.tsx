@@ -96,7 +96,7 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
           .eq('rol', 'empleado') // Solo empleados regulares
           .neq('id', userInfo.id); // Excluir al gerente mismo
       } else if (userInfo.rol === 'admin_rrhh') {
-        query = query.in('rol', ['empleado', 'gerente_sucursal']); // Admin puede asignar a empleados y gerentes
+        query = query.in('rol', ['empleado', 'gerente_sucursal', 'admin_rrhh']); // Admin puede asignar a empleados, gerentes y otros admins
       }
 
       const { data, error } = await query.order('nombre');

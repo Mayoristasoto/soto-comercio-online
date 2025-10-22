@@ -69,16 +69,20 @@ export function DelegateTaskDialog({ open, onOpenChange, onTaskDelegated, task, 
 
   const loadEmpleados = async () => {
     try {
-      // Solo cargar empleados de la misma sucursal que no sean el actual asignado
+      // Cargar empleados según el rol del usuario actual
       let query = supabase
         .from('empleados')
         .select('id, nombre, apellido, email, rol, sucursal_id, activo')
-        .eq('activo', true)
-        .eq('rol', 'empleado'); // Solo empleados regulares
+        .eq('activo', true);
       
-      // Filtrar por sucursal del gerente
-      if (userInfo.sucursal_id) {
-        query = query.eq('sucursal_id', userInfo.sucursal_id);
+      if (userInfo.rol === 'gerente_sucursal') {
+        // Gerentes solo pueden delegar a empleados regulares de su sucursal
+        query = query
+          .eq('rol', 'empleado')
+          .eq('sucursal_id', userInfo.sucursal_id);
+      } else if (userInfo.rol === 'admin_rrhh') {
+        // Admin puede delegar a empleados, gerentes y otros admins
+        query = query.in('rol', ['empleado', 'gerente_sucursal', 'admin_rrhh']);
       }
 
       // Excluir al empleado actualmente asignado
@@ -86,7 +90,7 @@ export function DelegateTaskDialog({ open, onOpenChange, onTaskDelegated, task, 
         query = query.neq('id', task.asignado_a);
       }
       
-      // Excluir al gerente actual
+      // Excluir al usuario actual
       query = query.neq('id', userInfo.id);
 
       const { data, error } = await query.order('nombre');
