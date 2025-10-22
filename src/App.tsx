@@ -50,8 +50,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
         <Routes>
-          {/* Página de inicio - redirige al dashboard */}
-          <Route path="/" element={<Index />} />
+          {/* Página de inicio - redirige a autenticación */}
+          <Route path="/" element={<Navigate to="/auth" replace />} />
           
           {/* Autenticación unificada */}
           <Route path="/auth" element={<UnifiedAuth />} />
