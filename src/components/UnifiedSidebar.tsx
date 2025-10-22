@@ -36,7 +36,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -174,22 +178,25 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                       const isExpanded = expandedItems.has(link.id)
                       
                       return (
-                        <div key={link.id}>
+                        <Collapsible
+                          key={link.id}
+                          open={isExpanded}
+                          onOpenChange={() => toggleExpanded(link.id)}
+                          className="group/collapsible"
+                        >
                           <SidebarMenuItem>
                             {hasChildren ? (
-                              <SidebarMenuButton 
-                                onClick={() => toggleExpanded(link.id)}
-                                tooltip={link.descripcion || link.nombre}
-                                className="cursor-pointer"
-                              >
-                                <Icon className="h-4 w-4" />
-                                <span>{link.nombre}</span>
-                                <ChevronDown 
-                                  className={`ml-auto h-4 w-4 transition-transform duration-200 ${
-                                    isExpanded ? 'rotate-180' : ''
-                                  }`}
-                                />
-                              </SidebarMenuButton>
+                              <CollapsibleTrigger asChild>
+                                <SidebarMenuButton 
+                                  tooltip={link.descripcion || link.nombre}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  <span>{link.nombre}</span>
+                                  <ChevronDown 
+                                    className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+                                  />
+                                </SidebarMenuButton>
+                              </CollapsibleTrigger>
                             ) : (
                               <SidebarMenuButton 
                                 asChild 
@@ -204,34 +211,30 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                             )}
                           </SidebarMenuItem>
                           
-                          {/* Renderizar hijos si existen y está expandido */}
+                          {/* Renderizar hijos si existen */}
                           {hasChildren && (
-                            <div 
-                              className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${
-                                isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                              }`}
-                            >
-                              {link.children.map((child) => {
-                                const ChildIcon = getIcon(child.icon)
-                                return (
-                                  <SidebarMenuItem key={child.id}>
-                                    <SidebarMenuButton 
-                                      asChild 
-                                      isActive={location.pathname === child.path}
-                                      tooltip={child.descripcion || child.nombre}
-                                      className="text-sm"
-                                    >
-                                      <NavLink to={child.path}>
-                                        <ChildIcon className="h-3 w-3" />
-                                        <span>{child.nombre}</span>
-                                      </NavLink>
-                                    </SidebarMenuButton>
-                                  </SidebarMenuItem>
-                                )
-                              })}
-                            </div>
+                            <CollapsibleContent>
+                              <SidebarMenuSub>
+                                {link.children.map((child) => {
+                                  const ChildIcon = getIcon(child.icon)
+                                  return (
+                                    <SidebarMenuSubItem key={child.id}>
+                                      <SidebarMenuSubButton 
+                                        asChild 
+                                        isActive={location.pathname === child.path}
+                                      >
+                                        <NavLink to={child.path}>
+                                          <ChildIcon className="h-4 w-4" />
+                                          <span>{child.nombre}</span>
+                                        </NavLink>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  )
+                                })}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
                           )}
-                        </div>
+                        </Collapsible>
                       )
                     })}
                   </SidebarMenu>
