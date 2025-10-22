@@ -355,7 +355,7 @@ export type Database = {
           empleado_id: string
           fecha_confirmacion: string
           id: string
-          ip_confirmacion: unknown | null
+          ip_confirmacion: unknown
         }
         Insert: {
           asignacion_id: string
@@ -364,7 +364,7 @@ export type Database = {
           empleado_id: string
           fecha_confirmacion?: string
           id?: string
-          ip_confirmacion?: unknown | null
+          ip_confirmacion?: unknown
         }
         Update: {
           asignacion_id?: string
@@ -373,7 +373,7 @@ export type Database = {
           empleado_id?: string
           fecha_confirmacion?: string
           id?: string
-          ip_confirmacion?: unknown | null
+          ip_confirmacion?: unknown
         }
         Relationships: []
       }
@@ -433,7 +433,7 @@ export type Database = {
           fecha_firma: string
           firma_id: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
         }
         Insert: {
@@ -443,7 +443,7 @@ export type Database = {
           fecha_firma?: string
           firma_id: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
         }
         Update: {
@@ -453,7 +453,7 @@ export type Database = {
           fecha_firma?: string
           firma_id?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
         }
         Relationships: [
@@ -911,7 +911,7 @@ export type Database = {
           datos_accedidos: string[] | null
           empleado_accedido_id: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           timestamp_acceso: string
           tipo_acceso: string
           user_agent: string | null
@@ -921,7 +921,7 @@ export type Database = {
           datos_accedidos?: string[] | null
           empleado_accedido_id: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           timestamp_acceso?: string
           tipo_acceso: string
           user_agent?: string | null
@@ -931,7 +931,7 @@ export type Database = {
           datos_accedidos?: string[] | null
           empleado_accedido_id?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           timestamp_acceso?: string
           tipo_acceso?: string
           user_agent?: string | null
@@ -1601,7 +1601,7 @@ export type Database = {
           datos_anteriores: Json | null
           datos_nuevos: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           registro_id: string
           tabla_afectada: string
           timestamp_accion: string | null
@@ -1613,7 +1613,7 @@ export type Database = {
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           registro_id: string
           tabla_afectada: string
           timestamp_accion?: string | null
@@ -1625,7 +1625,7 @@ export type Database = {
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           registro_id?: string
           tabla_afectada?: string
           timestamp_accion?: string | null
@@ -1744,7 +1744,7 @@ export type Database = {
           empleado_id: string | null
           estado: Database["public"]["Enums"]["fichaje_estado"] | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           latitud: number | null
           longitud: number | null
           metodo: Database["public"]["Enums"]["fichaje_metodo"] | null
@@ -1764,7 +1764,7 @@ export type Database = {
           empleado_id?: string | null
           estado?: Database["public"]["Enums"]["fichaje_estado"] | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           latitud?: number | null
           longitud?: number | null
           metodo?: Database["public"]["Enums"]["fichaje_metodo"] | null
@@ -1784,7 +1784,7 @@ export type Database = {
           empleado_id?: string | null
           estado?: Database["public"]["Enums"]["fichaje_estado"] | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           latitud?: number | null
           longitud?: number | null
           metodo?: Database["public"]["Enums"]["fichaje_metodo"] | null
@@ -3421,10 +3421,7 @@ export type Database = {
       }
     }
     Functions: {
-      actualizar_vacaciones_gozadas: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      actualizar_vacaciones_gozadas: { Args: never; Returns: undefined }
       admin_update_empleado_rol: {
         Args: {
           p_empleado_id: string
@@ -3481,28 +3478,16 @@ export type Database = {
           blocked_until: string
         }[]
       }
-      cleanup_old_rate_limits: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      current_user_is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      cleanup_old_rate_limits: { Args: never; Returns: number }
+      current_user_is_admin: { Args: never; Returns: boolean }
       current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      evaluar_puntualidad_mensual: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      get_current_empleado: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      evaluar_puntualidad_mensual: { Args: never; Returns: undefined }
+      get_current_empleado: { Args: never; Returns: string }
       get_current_empleado_full: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           activo: boolean
           apellido: string
@@ -3517,7 +3502,7 @@ export type Database = {
         }[]
       }
       get_current_empleado_safe: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           activo: boolean
           apellido: string
@@ -3530,7 +3515,7 @@ export type Database = {
         }[]
       }
       get_empleado_basic_safe: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           activo: boolean
           apellido: string
@@ -3562,7 +3547,7 @@ export type Database = {
         }[]
       }
       get_empleado_profile_limited: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           activo: boolean
           apellido: string
@@ -3590,7 +3575,7 @@ export type Database = {
         }[]
       }
       get_employees_for_kiosk: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           apellido: string
           email: string
@@ -3611,12 +3596,9 @@ export type Database = {
           total_dias: number
         }[]
       }
-      get_facial_config: {
-        Args: { config_key: string }
-        Returns: string
-      }
+      get_facial_config: { Args: { config_key: string }; Returns: string }
       get_manager_employee_view: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           activo: boolean
           apellido: string
@@ -3631,7 +3613,7 @@ export type Database = {
         }[]
       }
       get_presupuesto_resumen: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           anual: number
           disponible_mes: number
@@ -3647,30 +3629,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin_or_manager: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_authenticated_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
+      is_admin_or_manager: { Args: never; Returns: boolean }
+      is_admin_user: { Args: never; Returns: boolean }
+      is_authenticated_user: { Args: never; Returns: boolean }
       is_gerente_sucursal: {
         Args: { sucursal_uuid?: string }
         Returns: boolean
       }
-      is_manager_of_branch: {
-        Args: { branch_id: string }
-        Returns: boolean
-      }
+      is_manager_of_branch: { Args: { branch_id: string }; Returns: boolean }
       kiosk_get_acciones: {
         Args: { p_empleado_id: string }
         Returns: {
@@ -3722,10 +3689,7 @@ export type Database = {
         Args: { p_ip_address: unknown }
         Returns: undefined
       }
-      user_has_admin_role: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      user_has_admin_role: { Args: never; Returns: boolean }
       validar_geocerca: {
         Args: {
           lat_empleado: number
@@ -3735,7 +3699,7 @@ export type Database = {
         Returns: boolean
       }
       verificar_empleados_sin_salida: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           empleado_id: string
           hora_salida_esperada: string
