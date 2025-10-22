@@ -141,7 +141,7 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
 
       // Configurar anchos de columna
       ws['!cols'] = [
-        { wch: 36 }, // id_anotacion (oculta)
+        { wch: 36 }, // id_anotacion
         { wch: 12 }, // empleado_legajo
         { wch: 30 }, // empleado_nombre_completo
         { wch: 20 }, // categoria
@@ -152,6 +152,25 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
         { wch: 20 }, // seguimiento_completado
         { wch: 12 }  // es_critica
       ]
+
+      // Convertir a Tabla de Excel (esencial para Power Query)
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1')
+      ws['!tables'] = [{
+        name: 'TablaAnotaciones',
+        ref: ws['!ref'],
+        headerRowCount: 1,
+        totalsRowCount: 0,
+        style: {
+          theme: 'TableStyleMedium2',
+          showFirstColumn: false,
+          showLastColumn: false,
+          showRowStripes: true,
+          showColumnStripes: false
+        }
+      }]
+
+      // Agregar filtro automático
+      ws['!autofilter'] = { ref: ws['!ref'] }
 
       // Agregar validación de datos para columna categoria (columna D, comenzando en fila 2)
       const categoriaCol = 'D'
@@ -186,42 +205,84 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
 
       // Crear hoja de instrucciones
       const instrucciones = [
-        ['INSTRUCCIONES DE USO'],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        ['                    SISTEMA DE ANOTACIONES - GUÍA DE USO                          '],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
         [''],
-        ['Este archivo está optimizado para Power Query y sincronización bidireccional.'],
+        ['📊 CONECTAR CON POWER QUERY (RECOMENDADO)'],
         [''],
-        ['PARA AGREGAR NUEVAS ANOTACIONES:'],
-        ['1. Deja el campo "id_anotacion" vacío'],
-        ['2. Completa empleado_legajo (debe existir en el sistema)'],
-        ['3. Selecciona una categoría del menú desplegable'],
-        ['4. Completa título (obligatorio, máximo 200 caracteres)'],
-        ['5. Opcionalmente completa descripción'],
-        ['6. Usa formato de fecha: DD/MM/YYYY HH:MM:SS o déjalo vacío para usar fecha actual'],
-        ['7. Usa SI/NO en los campos booleanos'],
+        ['1. Abre Excel y ve a: Datos > Obtener datos > Desde archivo > Desde libro'],
+        ['2. Selecciona este archivo Excel'],
+        ['3. En el navegador, selecciona "TablaAnotaciones"'],
+        ['4. Click en "Transformar datos" para abrir Power Query'],
+        ['5. Aplica las transformaciones que necesites (filtros, columnas calculadas, etc.)'],
+        ['6. Click en "Cerrar y cargar" para importar'],
         [''],
-        ['PARA MODIFICAR ANOTACIONES EXISTENTES:'],
-        ['1. NO modifiques el campo "id_anotacion"'],
-        ['2. Modifica solo los campos que desees cambiar'],
-        ['3. Los cambios se detectarán automáticamente'],
+        ['💡 VENTAJAS DE POWER QUERY:'],
+        ['   • Actualizar datos con un click (Datos > Actualizar todo)'],
+        ['   • Aplicar filtros y transformaciones reutilizables'],
+        ['   • Combinar con otras fuentes de datos'],
+        ['   • Crear tablas dinámicas actualizables'],
         [''],
-        ['PARA ELIMINAR ANOTACIONES:'],
-        ['1. Simplemente elimina la fila completa del Excel'],
-        ['2. El sistema detectará la ausencia y te pedirá confirmación'],
+        ['🔄 SINCRONIZACIÓN BIDIRECCIONAL'],
         [''],
-        ['CATEGORÍAS VÁLIDAS:'],
-        ...CATEGORIAS.map(c => [`- ${c}: ${CATEGORIAS_LABELS[c]}`]),
+        ['Este archivo permite trabajar localmente y sincronizar cambios:'],
         [''],
-        ['POWER QUERY:'],
-        ['Este archivo está formateado como tabla de Excel para facilitar su uso con Power Query.'],
-        ['Puedes aplicar transformaciones, filtros, y análisis antes de sincronizar.'],
+        ['➕ AGREGAR NUEVAS ANOTACIONES:'],
+        ['   1. Deja "id_anotacion" VACÍO (se generará automáticamente)'],
+        ['   2. Completa "empleado_legajo" (debe existir en sistema)'],
+        ['   3. Selecciona "categoria" del menú desplegable'],
+        ['   4. Completa "titulo" (obligatorio, máx 200 caracteres)'],
+        ['   5. Opcional: completa "descripcion"'],
+        ['   6. Fecha: DD/MM/YYYY HH:MM:SS (vacío = fecha actual)'],
+        ['   7. Campos booleanos: usa "SI" o "NO"'],
         [''],
-        ['IMPORTANTE:'],
-        ['- NO modifiques empleado_nombre_completo (es solo informativo)'],
-        ['- NO modifiques id_anotacion de registros existentes'],
-        ['- Guarda el archivo como .xlsx antes de sincronizar'],
+        ['✏️ MODIFICAR ANOTACIONES:'],
+        ['   1. NO toques "id_anotacion" (identifica el registro)'],
+        ['   2. Modifica solo los campos que necesites'],
+        ['   3. Los cambios se detectan automáticamente al sincronizar'],
         [''],
-        ['FECHA DE EXPORTACIÓN:', new Date().toLocaleString('es-AR')],
-        ['USUARIO:', `${userInfo?.nombre} ${userInfo?.apellido}`]
+        ['❌ ELIMINAR ANOTACIONES:'],
+        ['   1. Elimina la fila completa del Excel'],
+        ['   2. Al sincronizar, se pedirá confirmación antes de eliminar'],
+        [''],
+        ['📋 CATEGORÍAS VÁLIDAS:'],
+        ...CATEGORIAS.map(c => [`   • ${c.padEnd(25)} → ${CATEGORIAS_LABELS[c]}`]),
+        [''],
+        ['⚠️ IMPORTANTE:'],
+        ['   ✓ "empleado_nombre_completo" es solo informativo (NO editar)'],
+        ['   ✓ "id_anotacion" NO debe modificarse en registros existentes'],
+        ['   ✓ Guarda como .xlsx antes de sincronizar'],
+        ['   ✓ La tabla se llama "TablaAnotaciones" (usar en Power Query)'],
+        [''],
+        ['🔧 CONEXIÓN AVANZADA (Power BI / Power Query M):'],
+        [''],
+        ['Código M para conexión reutilizable:'],
+        ['let'],
+        ['    Origen = Excel.Workbook(File.Contents("RUTA_AL_ARCHIVO.xlsx"), null, true),'],
+        ['    TablaAnotaciones = Origen{[Item="TablaAnotaciones",Kind="Table"]}[Data],'],
+        ['    TiposCambiados = Table.TransformColumnTypes(TablaAnotaciones,{'],
+        ['        {"id_anotacion", type text},'],
+        ['        {"empleado_legajo", type text},'],
+        ['        {"categoria", type text},'],
+        ['        {"titulo", type text},'],
+        ['        {"fecha_anotacion", type datetime},'],
+        ['        {"requiere_seguimiento", type text},'],
+        ['        {"es_critica", type text}})'],
+        ['in'],
+        ['    TiposCambiados'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        ['EXPORTADO:', new Date().toLocaleString('es-AR', {
+          year: 'numeric',
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })],
+        ['USUARIO:', `${userInfo?.nombre} ${userInfo?.apellido} (${userInfo?.rol})`],
+        ['REGISTROS:', excelData.length.toString()],
+        ['═══════════════════════════════════════════════════════════════════════════════════']
       ]
 
       const wsInstrucciones = XLSX.utils.aoa_to_sheet(instrucciones)
