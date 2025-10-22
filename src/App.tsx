@@ -84,7 +84,7 @@ const App = () => (
             <Route path="reconoce/desafios" element={<Desafios />} />
             <Route path="reconoce/insignias" element={<Insignias />} />
             <Route path="reconoce/premios" element={<Premios />} />
-            <Route path="reconoce/medals" element={<MedalManagement />} />
+            <Route path="medal-management" element={<MedalManagement />} />
             <Route path="reconoce/desafios-tv" element={<DesafiosTV />} />
             
             {/* Módulo Administración */}
