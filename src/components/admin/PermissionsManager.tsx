@@ -68,14 +68,36 @@ const modulePermissions = [
     ]
   },
   {
-    module: 'gondolas',
-    name: 'Gestión de Góndolas',
+    module: 'vacaciones',
+    name: 'Gestión de Vacaciones',
+    icon: Calendar,
+    permissions: [
+      { key: 'view', name: 'Ver solicitudes', description: 'Puede ver solicitudes de vacaciones' },
+      { key: 'approve', name: 'Aprobar solicitudes', description: 'Puede aprobar/rechazar vacaciones' },
+      { key: 'manage_blocks', name: 'Gestionar bloqueos', description: 'Puede crear períodos de bloqueo' },
+      { key: 'reports', name: 'Reportes', description: 'Puede ver reportes de vacaciones' }
+    ]
+  },
+  {
+    module: 'capacitaciones',
+    name: 'Capacitaciones',
+    icon: FileText,
+    permissions: [
+      { key: 'view', name: 'Ver capacitaciones', description: 'Puede ver capacitaciones asignadas' },
+      { key: 'assign', name: 'Asignar capacitaciones', description: 'Puede asignar capacitaciones a empleados' },
+      { key: 'manage', name: 'Gestionar contenido', description: 'Puede crear y editar capacitaciones' },
+      { key: 'reports', name: 'Reportes', description: 'Puede ver reportes de progreso' }
+    ]
+  },
+  {
+    module: 'evaluaciones',
+    name: 'Evaluaciones de Desempeño',
     icon: BarChart3,
     permissions: [
-      { key: 'view', name: 'Ver góndolas', description: 'Puede ver el mapa de góndolas' },
-      { key: 'edit', name: 'Editar góndolas', description: 'Puede modificar góndolas' },
-      { key: 'manage_brands', name: 'Gestionar marcas', description: 'Puede gestionar marcas' },
-      { key: 'reports', name: 'Reportes', description: 'Puede ver reportes de ocupación' }
+      { key: 'view', name: 'Ver evaluaciones', description: 'Puede ver evaluaciones' },
+      { key: 'create', name: 'Crear evaluaciones', description: 'Puede crear evaluaciones mensuales' },
+      { key: 'approve', name: 'Validar evaluaciones', description: 'Puede validar evaluaciones completadas' },
+      { key: 'reports', name: 'Reportes', description: 'Puede ver reportes de desempeño' }
     ]
   },
   {
@@ -86,7 +108,7 @@ const modulePermissions = [
       { key: 'view_config', name: 'Ver configuración', description: 'Puede ver configuraciones del sistema' },
       { key: 'edit_config', name: 'Editar configuración', description: 'Puede modificar configuraciones' },
       { key: 'view_logs', name: 'Ver logs', description: 'Puede ver logs del sistema' },
-      { key: 'backup', name: 'Respaldos', description: 'Puede crear y gestionar respaldos' }
+      { key: 'manage_users', name: 'Gestionar usuarios', description: 'Puede crear y gestionar usuarios' }
     ]
   }
 ]
