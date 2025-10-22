@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Shield, 
   Users, 
@@ -30,6 +31,35 @@ interface Permission {
 
 interface PermissionsManagerProps {
   empleadoId: string
+}
+
+// Permisos por defecto según rol
+const DEFAULT_ROLE_PERMISSIONS = {
+  admin_rrhh: {
+    empleados: ['view', 'create', 'edit', 'delete', 'manage_roles'],
+    documentos: ['view', 'upload', 'download', 'delete'],
+    fichado: ['view', 'edit', 'reports', 'manage_shifts'],
+    vacaciones: ['view', 'approve', 'manage_blocks', 'reports'],
+    capacitaciones: ['view', 'assign', 'manage', 'reports'],
+    evaluaciones: ['view', 'create', 'approve', 'reports'],
+    sistema: ['view_config', 'edit_config', 'view_logs', 'manage_users']
+  },
+  gerente_sucursal: {
+    empleados: ['view', 'edit'],
+    documentos: ['view', 'upload', 'download'],
+    fichado: ['view', 'edit', 'reports', 'manage_shifts'],
+    vacaciones: ['view', 'approve', 'reports'],
+    capacitaciones: ['view', 'assign', 'reports'],
+    evaluaciones: ['view', 'create', 'reports'],
+    sistema: ['view_config']
+  },
+  empleado: {
+    documentos: ['view', 'download'],
+    fichado: ['view'],
+    vacaciones: ['view'],
+    capacitaciones: ['view'],
+    evaluaciones: ['view']
+  }
 }
 
 const modulePermissions = [
@@ -116,6 +146,7 @@ const modulePermissions = [
 export default function PermissionsManager({ empleadoId }: PermissionsManagerProps) {
   const { toast } = useToast()
   const [permissions, setPermissions] = useState<Permission[]>([])
+  const [empleadoRol, setEmpleadoRol] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
@@ -125,6 +156,19 @@ export default function PermissionsManager({ empleadoId }: PermissionsManagerPro
 
   const loadPermissions = async () => {
     try {
+      // Cargar rol del empleado
+      const { data: empleado, error: empError } = await supabase
+        .from('empleados')
+        .select('rol')
+        .eq('id', empleadoId)
+        .single()
+
+      if (empError) throw empError
+      if (empleado) {
+        setEmpleadoRol(empleado.rol)
+      }
+
+      // Cargar permisos personalizados
       const { data, error } = await supabase
         .from('empleado_permisos')
         .select('*')
@@ -213,8 +257,24 @@ export default function PermissionsManager({ empleadoId }: PermissionsManagerPro
   }
 
   const getPermissionStatus = (modulo: string, permiso: string) => {
-    const permission = permissions.find(p => p.modulo === modulo && p.permiso === permiso)
-    return permission?.habilitado || false
+    // Primero verificar si hay personalización
+    const customPermission = permissions.find(p => p.modulo === modulo && p.permiso === permiso)
+    if (customPermission) {
+      return customPermission.habilitado
+    }
+    
+    // Si no hay personalización, usar permisos del rol
+    const rolePerms = DEFAULT_ROLE_PERMISSIONS[empleadoRol as keyof typeof DEFAULT_ROLE_PERMISSIONS]
+    if (rolePerms && rolePerms[modulo]) {
+      return rolePerms[modulo].includes(permiso)
+    }
+    
+    return false
+  }
+
+  const isRoleBasedPermission = (modulo: string, permiso: string) => {
+    const customPermission = permissions.find(p => p.modulo === modulo && p.permiso === permiso)
+    return !customPermission
   }
 
   const getModulePermissionCount = (modulo: string) => {
@@ -233,7 +293,7 @@ export default function PermissionsManager({ empleadoId }: PermissionsManagerPro
               <span>Permisos y Roles</span>
             </CardTitle>
             <CardDescription>
-              Configura los permisos específicos para este empleado
+              Rol actual: <Badge variant="outline">{empleadoRol}</Badge> - Los permisos mostrados son del rol, pero pueden personalizarse
             </CardDescription>
           </div>
           {hasChanges && (
@@ -246,6 +306,13 @@ export default function PermissionsManager({ empleadoId }: PermissionsManagerPro
       </CardHeader>
 
       <CardContent className="space-y-6">
+        <Alert>
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Los permisos se basan en el <strong>rol asignado</strong>. Puedes personalizarlos para este empleado específico activando/desactivando los switches.
+            Los permisos personalizados se marcarán como "Personalizado".
+          </AlertDescription>
+        </Alert>
         {modulePermissions.map((module) => {
           const Icon = module.icon
           const { enabled, total } = getModulePermissionCount(module.module)
@@ -272,6 +339,7 @@ export default function PermissionsManager({ empleadoId }: PermissionsManagerPro
                 <div className="grid grid-cols-1 gap-4">
                   {module.permissions.map((permission) => {
                     const isEnabled = getPermissionStatus(module.module, permission.key)
+                    const isFromRole = isRoleBasedPermission(module.module, permission.key)
                     return (
                       <div 
                         key={permission.key}
@@ -282,7 +350,12 @@ export default function PermissionsManager({ empleadoId }: PermissionsManagerPro
                             <Label className="font-medium">{permission.name}</Label>
                             {isEnabled && (
                               <Badge variant="outline" className="text-xs">
-                                Habilitado
+                                {isFromRole ? 'Del rol' : 'Personalizado'}
+                              </Badge>
+                            )}
+                            {!isEnabled && !isFromRole && (
+                              <Badge variant="secondary" className="text-xs">
+                                Deshabilitado manualmente
                               </Badge>
                             )}
                           </div>
