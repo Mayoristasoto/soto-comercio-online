@@ -47,7 +47,7 @@ export default function AdminAuthLogs() {
       let query = supabase
         .from("auth_logs")
         .select("*")
-        .order("timestamp", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(200);
 
       if (searchEmail) {
