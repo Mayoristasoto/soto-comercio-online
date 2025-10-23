@@ -37,16 +37,16 @@ export default function CalificarEmpleado() {
     }
 
     try {
-      // Decodificar token (formato: empleadoId-ventaId-timestamp)
+      // Decodificar token (formato: empleadoId_ventaId_timestamp)
       const decoded = atob(token);
-      const [empleadoId, ventaId] = decoded.split("-");
+      const [empleadoId, ventaId] = decoded.split("_");
 
       // Verificar si ya se usó este token
       const { data: existingRating } = await supabase
         .from("calificaciones_empleados")
         .select("id")
         .eq("token_usado", token)
-        .single();
+        .maybeSingle();
 
       if (existingRating) {
         setSubmitted(true);
@@ -54,21 +54,27 @@ export default function CalificarEmpleado() {
         return;
       }
 
-      // Cargar datos del empleado (usando empleados_basic que es público)
+      // Cargar datos del empleado usando función RPC pública
       const { data: empleadoData, error } = await supabase
-        .from("empleados_basic")
-        .select("id, nombre, apellido, avatar_url, puesto")
-        .eq("id", empleadoId)
-        .eq("activo", true)
-        .single();
+        .rpc("get_empleado_for_rating", { empleado_uuid: empleadoId }) as {
+          data: Array<{
+            id: string;
+            nombre: string;
+            apellido: string;
+            avatar_url: string | null;
+            puesto: string | null;
+          }> | null;
+          error: any;
+        };
 
-      if (error) {
+      if (error || !empleadoData || empleadoData.length === 0) {
         console.error("Error loading employee:", error);
         toast.error("No se pudo cargar la información del empleado");
+        setLoading(false);
         return;
       }
 
-      setEmpleado({ ...empleadoData, ventaId });
+      setEmpleado({ ...empleadoData[0], ventaId });
     } catch (error) {
       console.error("Error decoding token:", error);
       toast.error("Token inválido");
