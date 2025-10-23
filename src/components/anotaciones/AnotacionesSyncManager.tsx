@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle2, XCircle, Trash2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import * as XLSX from 'xlsx'
 
 interface UserInfo {
@@ -139,19 +140,39 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
       // Crear worksheet con los datos
       const ws = XLSX.utils.json_to_sheet(excelData)
 
-      // Configurar anchos de columna
+      // Configurar anchos de columna OPTIMIZADOS
       ws['!cols'] = [
-        { wch: 36 }, // id_anotacion
-        { wch: 12 }, // empleado_legajo
-        { wch: 30 }, // empleado_nombre_completo
-        { wch: 20 }, // categoria
-        { wch: 40 }, // titulo
-        { wch: 50 }, // descripcion
-        { wch: 20 }, // fecha_anotacion
-        { wch: 18 }, // requiere_seguimiento
-        { wch: 20 }, // seguimiento_completado
-        { wch: 12 }  // es_critica
+        { wch: 38 }, // id_anotacion (UUID completo)
+        { wch: 15 }, // empleado_legajo
+        { wch: 35 }, // empleado_nombre_completo
+        { wch: 25 }, // categoria
+        { wch: 45 }, // titulo
+        { wch: 60 }, // descripcion (más ancho para mayor legibilidad)
+        { wch: 22 }, // fecha_anotacion
+        { wch: 20 }, // requiere_seguimiento
+        { wch: 22 }, // seguimiento_completado
+        { wch: 14 }  // es_critica
       ]
+
+      // Aplicar formato a los encabezados (primera fila)
+      const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1', 'J1']
+      headerCells.forEach(cell => {
+        if (!ws[cell]) return
+        ws[cell].s = {
+          font: { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "4472C4" } },
+          alignment: { horizontal: "center", vertical: "center", wrapText: true },
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          }
+        }
+      })
+
+      // Congelar primera fila
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 }
 
       // Convertir a Tabla de Excel (esencial para Power Query)
       const range = XLSX.utils.decode_range(ws['!ref'] || 'A1')
@@ -203,99 +224,239 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
       // Agregar worksheet al workbook
       XLSX.utils.book_append_sheet(wb, ws, 'Anotaciones')
 
-      // Crear hoja de instrucciones
+      // Crear hoja de instrucciones MEJORADA
       const instrucciones = [
         ['═══════════════════════════════════════════════════════════════════════════════════'],
-        ['                    SISTEMA DE ANOTACIONES - GUÍA DE USO                          '],
+        ['               📋 SISTEMA DE ANOTACIONES - GUÍA RÁPIDA DE USO 📋                    '],
         ['═══════════════════════════════════════════════════════════════════════════════════'],
         [''],
-        ['📊 CONECTAR CON POWER QUERY (RECOMENDADO)'],
+        ['🚀 INICIO RÁPIDO - 3 PASOS SIMPLES'],
         [''],
-        ['1. Abre Excel y ve a: Datos > Obtener datos > Desde archivo > Desde libro'],
-        ['2. Selecciona este archivo Excel'],
-        ['3. En el navegador, selecciona "TablaAnotaciones"'],
-        ['4. Click en "Transformar datos" para abrir Power Query'],
-        ['5. Aplica las transformaciones que necesites (filtros, columnas calculadas, etc.)'],
-        ['6. Click en "Cerrar y cargar" para importar'],
-        [''],
-        ['💡 VENTAJAS DE POWER QUERY:'],
-        ['   • Actualizar datos con un click (Datos > Actualizar todo)'],
-        ['   • Aplicar filtros y transformaciones reutilizables'],
-        ['   • Combinar con otras fuentes de datos'],
-        ['   • Crear tablas dinámicas actualizables'],
-        [''],
-        ['🔄 SINCRONIZACIÓN BIDIRECCIONAL'],
-        [''],
-        ['Este archivo permite trabajar localmente y sincronizar cambios:'],
-        [''],
-        ['➕ AGREGAR NUEVAS ANOTACIONES:'],
-        ['   1. Deja "id_anotacion" VACÍO (se generará automáticamente)'],
-        ['   2. Completa "empleado_legajo" (debe existir en sistema)'],
-        ['   3. Selecciona "categoria" del menú desplegable'],
-        ['   4. Completa "titulo" (obligatorio, máx 200 caracteres)'],
-        ['   5. Opcional: completa "descripcion"'],
-        ['   6. Fecha: DD/MM/YYYY HH:MM:SS (vacío = fecha actual)'],
-        ['   7. Campos booleanos: usa "SI" o "NO"'],
-        [''],
-        ['✏️ MODIFICAR ANOTACIONES:'],
-        ['   1. NO toques "id_anotacion" (identifica el registro)'],
-        ['   2. Modifica solo los campos que necesites'],
-        ['   3. Los cambios se detectan automáticamente al sincronizar'],
-        [''],
-        ['❌ ELIMINAR ANOTACIONES:'],
-        ['   1. Elimina la fila completa del Excel'],
-        ['   2. Al sincronizar, se pedirá confirmación antes de eliminar'],
-        [''],
-        ['📋 CATEGORÍAS VÁLIDAS:'],
-        ...CATEGORIAS.map(c => [`   • ${c.padEnd(25)} → ${CATEGORIAS_LABELS[c]}`]),
-        [''],
-        ['⚠️ IMPORTANTE:'],
-        ['   ✓ "empleado_nombre_completo" es solo informativo (NO editar)'],
-        ['   ✓ "id_anotacion" NO debe modificarse en registros existentes'],
-        ['   ✓ Guarda como .xlsx antes de sincronizar'],
-        ['   ✓ La tabla se llama "TablaAnotaciones" (usar en Power Query)'],
-        [''],
-        ['🔧 CONEXIÓN AVANZADA (Power BI / Power Query M):'],
-        [''],
-        ['Código M para conexión reutilizable:'],
-        ['let'],
-        ['    Origen = Excel.Workbook(File.Contents("RUTA_AL_ARCHIVO.xlsx"), null, true),'],
-        ['    TablaAnotaciones = Origen{[Item="TablaAnotaciones",Kind="Table"]}[Data],'],
-        ['    TiposCambiados = Table.TransformColumnTypes(TablaAnotaciones,{'],
-        ['        {"id_anotacion", type text},'],
-        ['        {"empleado_legajo", type text},'],
-        ['        {"categoria", type text},'],
-        ['        {"titulo", type text},'],
-        ['        {"fecha_anotacion", type datetime},'],
-        ['        {"requiere_seguimiento", type text},'],
-        ['        {"es_critica", type text}})'],
-        ['in'],
-        ['    TiposCambiados'],
+        ['  1️⃣  Descarga este archivo Excel'],
+        ['  2️⃣  Agrega/edita anotaciones en la pestaña "Anotaciones"'],
+        ['  3️⃣  Sube el archivo usando el botón "Sincronizar" en la aplicación'],
         [''],
         ['═══════════════════════════════════════════════════════════════════════════════════'],
-        ['EXPORTADO:', new Date().toLocaleString('es-AR', {
+        [''],
+        ['📝 CÓMO AGREGAR UNA NUEVA ANOTACIÓN'],
+        [''],
+        ['  1. Ve a la pestaña "Anotaciones"'],
+        ['  2. En una fila NUEVA, completa:'],
+        ['     • empleado_legajo: Escribe el número de legajo del empleado'],
+        ['     • categoria: Selecciona del menú desplegable (click en celda)'],
+        ['     • titulo: Escribe un título descriptivo (máx. 200 caracteres)'],
+        ['     • descripcion: Opcional, agrega detalles adicionales'],
+        ['     • fecha_anotacion: Déjalo vacío para usar fecha actual'],
+        ['     • requiere_seguimiento: SI o NO (menú desplegable)'],
+        ['     • seguimiento_completado: SI o NO (menú desplegable)'],
+        ['     • es_critica: SI o NO (menú desplegable)'],
+        [''],
+        ['  3. IMPORTANTE: Deja la columna "id_anotacion" VACÍA (se genera automático)'],
+        ['  4. NO edites "empleado_nombre_completo" (solo informativo)'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['✏️ CÓMO MODIFICAR UNA ANOTACIÓN EXISTENTE'],
+        [''],
+        ['  1. Encuentra la fila que quieres modificar'],
+        ['  2. NO cambies el "id_anotacion" (identifica el registro único)'],
+        ['  3. Modifica los campos que necesites'],
+        ['  4. Al sincronizar, se detectarán los cambios automáticamente'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['🗑️ CÓMO ELIMINAR UNA ANOTACIÓN'],
+        [''],
+        ['  1. Selecciona la fila completa que quieres eliminar'],
+        ['  2. Click derecho > Eliminar (o Delete)'],
+        ['  3. Al sincronizar, se pedirá confirmación antes de eliminar de la BD'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['📋 CATEGORÍAS DISPONIBLES (Usar en columna "categoria")'],
+        [''],
+        ['  Código                    │  Descripción'],
+        ['  ──────────────────────────┼─────────────────────────────'],
+        ...CATEGORIAS.map(c => [`  ${c.padEnd(26)}│  ${CATEGORIAS_LABELS[c]}`]),
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['⚠️ VALIDACIONES AUTOMÁTICAS'],
+        [''],
+        ['  ✓ Legajo: Debe existir en el sistema'],
+        ['  ✓ Categoría: Debe ser una de las listadas arriba'],
+        ['  ✓ Título: Obligatorio, máximo 200 caracteres'],
+        ['  ✓ Fecha: Formato DD/MM/YYYY HH:MM:SS (opcional)'],
+        ['  ✓ Campos SI/NO: Solo acepta "SI" o "NO"'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['💡 TIPS Y TRUCOS'],
+        [''],
+        ['  • Usa los menús desplegables para evitar errores de escritura'],
+        ['  • Puedes copiar y pegar filas para duplicar anotaciones similares'],
+        ['  • El filtro automático te permite buscar por categoría, empleado, etc.'],
+        ['  • Guarda siempre como .xlsx antes de sincronizar'],
+        ['  • Si hay errores, la sincronización te mostrará qué filas tienen problemas'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['📊 INTEGRACIÓN CON POWER QUERY (AVANZADO)'],
+        [''],
+        ['  Si quieres conectar este archivo a Power BI o hacer análisis avanzados:'],
+        [''],
+        ['  1. Excel: Datos > Obtener datos > Desde archivo > Desde libro'],
+        ['  2. Selecciona este archivo'],
+        ['  3. Elige "TablaAnotaciones" en el navegador'],
+        ['  4. Click "Cargar" para importar'],
+        [''],
+        ['  La tabla se llama "TablaAnotaciones" y está formateada para Power Query.'],
+        ['  Puedes actualizar los datos en cualquier momento con "Actualizar todo".'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['📈 INFORMACIÓN DEL ARCHIVO'],
+        [''],
+        ['  Exportado:    ' + new Date().toLocaleString('es-AR', {
           year: 'numeric',
           month: '2-digit', 
           day: '2-digit',
           hour: '2-digit',
           minute: '2-digit'
         })],
-        ['USUARIO:', `${userInfo?.nombre} ${userInfo?.apellido} (${userInfo?.rol})`],
-        ['REGISTROS:', excelData.length.toString()],
+        ['  Usuario:      ' + `${userInfo?.nombre} ${userInfo?.apellido}`],
+        ['  Rol:          ' + userInfo?.rol],
+        ['  Registros:    ' + excelData.length.toString()],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['❓ ¿NECESITAS AYUDA?'],
+        [''],
+        ['  Contacta al equipo de RRHH o consulta la documentación del sistema.'],
+        ['  Recuerda: Siempre haz una copia de respaldo antes de hacer cambios masivos.'],
+        [''],
         ['═══════════════════════════════════════════════════════════════════════════════════']
       ]
 
       const wsInstrucciones = XLSX.utils.aoa_to_sheet(instrucciones)
-      wsInstrucciones['!cols'] = [{ wch: 80 }, { wch: 30 }]
-      XLSX.utils.book_append_sheet(wb, wsInstrucciones, 'Instrucciones')
+      wsInstrucciones['!cols'] = [{ wch: 90 }]
+      XLSX.utils.book_append_sheet(wb, wsInstrucciones, '📖 Guía de Uso')
+
+      // Crear hoja de EJEMPLOS
+      const ejemplos = [
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        ['                           📝 EJEMPLOS PRÁCTICOS 📝                                 '],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['A continuación encontrarás ejemplos de cómo completar las anotaciones:'],
+        [''],
+        ['EJEMPLO 1: Agregar una nueva anotación (Apercibimiento)'],
+        ['───────────────────────────────────────────────────────────────────────────────────'],
+        [''],
+        ['id_anotacion:              (DEJAR VACÍO - se genera automáticamente)'],
+        ['empleado_legajo:           1234'],
+        ['empleado_nombre_completo:  (NO EDITAR - se completa automático)'],
+        ['categoria:                 apercibimiento'],
+        ['titulo:                    Uso de celular durante horario laboral'],
+        ['descripcion:               El empleado fue observado utilizando el celular personal'],
+        ['                           durante su turno en el área de atención al cliente.'],
+        ['fecha_anotacion:           (VACÍO para usar fecha actual)'],
+        ['requiere_seguimiento:      SI'],
+        ['seguimiento_completado:    NO'],
+        ['es_critica:                NO'],
+        [''],
+        ['───────────────────────────────────────────────────────────────────────────────────'],
+        [''],
+        ['EJEMPLO 2: Reconocimiento positivo'],
+        ['───────────────────────────────────────────────────────────────────────────────────'],
+        [''],
+        ['id_anotacion:              (DEJAR VACÍO)'],
+        ['empleado_legajo:           5678'],
+        ['empleado_nombre_completo:  (NO EDITAR)'],
+        ['categoria:                 actitud_positiva'],
+        ['titulo:                    Excelente atención al cliente'],
+        ['descripcion:               Múltiples clientes destacaron la amabilidad y eficiencia'],
+        ['                           en la atención. Superó las expectativas del rol.'],
+        ['fecha_anotacion:           (VACÍO)'],
+        ['requiere_seguimiento:      NO'],
+        ['seguimiento_completado:    NO'],
+        ['es_critica:                NO'],
+        [''],
+        ['───────────────────────────────────────────────────────────────────────────────────'],
+        [''],
+        ['EJEMPLO 3: Ausencia injustificada'],
+        ['───────────────────────────────────────────────────────────────────────────────────'],
+        [''],
+        ['id_anotacion:              (DEJAR VACÍO)'],
+        ['empleado_legajo:           9012'],
+        ['empleado_nombre_completo:  (NO EDITAR)'],
+        ['categoria:                 ausencia_injustificada'],
+        ['titulo:                    Inasistencia sin aviso previo'],
+        ['descripcion:               El empleado no se presentó a su turno del día 15/01/2025'],
+        ['                           y no realizó ninguna comunicación previa o posterior.'],
+        ['fecha_anotacion:           15/01/2025 08:00:00'],
+        ['requiere_seguimiento:      SI'],
+        ['seguimiento_completado:    NO'],
+        ['es_critica:                SI'],
+        [''],
+        ['───────────────────────────────────────────────────────────────────────────────────'],
+        [''],
+        ['EJEMPLO 4: Modificar una anotación existente'],
+        ['───────────────────────────────────────────────────────────────────────────────────'],
+        [''],
+        ['Para modificar una anotación:'],
+        ['  1. Busca la fila con el id_anotacion que quieres modificar'],
+        ['  2. NO cambies el id_anotacion'],
+        ['  3. Modifica solo los campos necesarios'],
+        [''],
+        ['Ejemplo: Marcar seguimiento como completado'],
+        [''],
+        ['id_anotacion:              550e8400-e29b-41d4-a716-446655440000 (NO CAMBIAR)'],
+        ['empleado_legajo:           1234 (no tocar si no es necesario)'],
+        ['categoria:                 apercibimiento (igual)'],
+        ['titulo:                    Uso de celular... (igual)'],
+        ['descripcion:               (igual o agregar más info)'],
+        ['fecha_anotacion:           (igual)'],
+        ['requiere_seguimiento:      SI (igual)'],
+        ['seguimiento_completado:    SI ← CAMBIAR DE NO A SI'],
+        ['es_critica:                NO (igual)'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════'],
+        [''],
+        ['💡 RECUERDA:'],
+        [''],
+        ['  • Los menús desplegables te ayudan a evitar errores'],
+        ['  • Siempre guarda el archivo antes de sincronizar'],
+        ['  • Puedes agregar múltiples anotaciones de una vez'],
+        ['  • La aplicación validará todos los datos antes de sincronizar'],
+        [''],
+        ['═══════════════════════════════════════════════════════════════════════════════════']
+      ]
+
+      const wsEjemplos = XLSX.utils.aoa_to_sheet(ejemplos)
+      wsEjemplos['!cols'] = [{ wch: 90 }]
+      XLSX.utils.book_append_sheet(wb, wsEjemplos, '💡 Ejemplos')
 
       // Descargar archivo
       const fecha = new Date().toISOString().split('T')[0]
       XLSX.writeFile(wb, `anotaciones_empleados_${fecha}.xlsx`)
 
       toast({
-        title: "Exportación exitosa",
-        description: `Se exportaron ${excelData.length} anotaciones a Excel`
+        title: "✅ Excel generado exitosamente",
+        description: (
+          <div className="space-y-2">
+            <p><strong>{excelData.length} anotaciones</strong> exportadas</p>
+            <div className="text-sm mt-2 space-y-1">
+              <p>📋 <strong>3 pestañas incluidas:</strong></p>
+              <ul className="list-disc list-inside ml-2 space-y-1">
+                <li><strong>Anotaciones:</strong> Datos actuales (editable)</li>
+                <li><strong>📖 Guía de Uso:</strong> Instrucciones paso a paso</li>
+                <li><strong>💡 Ejemplos:</strong> Casos prácticos</li>
+              </ul>
+              <p className="mt-2"><strong>Próximo paso:</strong> Edita el Excel y súbelo con "Sincronizar"</p>
+            </div>
+          </div>
+        )
       })
     } catch (error) {
       console.error('Error exporting:', error)
@@ -596,26 +757,42 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
   if (!isAdmin) return null
 
   return (
-    <>
+    <TooltipProvider>
       <div className="flex gap-2">
-        <Button
-          onClick={exportToExcel}
-          disabled={exporting}
-          variant="outline"
-          className="gap-2"
-        >
-          <Download className="h-4 w-4" />
-          {exporting ? "Exportando..." : "Exportar a Excel"}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={exportToExcel}
+              disabled={exporting}
+              variant="outline"
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? "Exportando..." : "Descargar Excel"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <p className="font-semibold mb-1">📥 Descargar plantilla editable</p>
+            <p className="text-sm">Incluye todas las anotaciones actuales, instrucciones detalladas y ejemplos prácticos. Edita el archivo y súbelo para sincronizar cambios.</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <Button
-          onClick={() => document.getElementById('sync-file-input')?.click()}
-          disabled={syncing}
-          className="gap-2"
-        >
-          <Upload className="h-4 w-4" />
-          {syncing ? "Analizando..." : "Sincronizar desde Excel"}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => document.getElementById('sync-file-input')?.click()}
+              disabled={syncing}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              {syncing ? "Analizando..." : "Subir y Sincronizar"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <p className="font-semibold mb-1">📤 Sincronizar cambios</p>
+            <p className="text-sm">Sube el Excel editado. Se analizarán todos los cambios (nuevas, modificadas, eliminadas) y podrás revisarlos antes de aplicarlos.</p>
+          </TooltipContent>
+        </Tooltip>
 
         <input
           id="sync-file-input"
@@ -825,6 +1002,6 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </TooltipProvider>
   )
 }
