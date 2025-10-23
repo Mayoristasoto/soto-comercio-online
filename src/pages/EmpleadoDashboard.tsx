@@ -24,7 +24,8 @@ import { EventCards } from "@/components/employee/EventCards"
 import { ConfirmarEntregas } from "@/components/employee/ConfirmarEntregas"
 import { HistorialEntregas } from "@/components/employee/HistorialEntregas"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Package } from "lucide-react"
+import { Package, Star } from "lucide-react"
+import CalificacionesEmpleado from "@/components/employee/CalificacionesEmpleado"
 
 interface UserInfo {
   id: string
@@ -279,6 +280,22 @@ export default function EmpleadoDashboard() {
           </CardHeader>
           <CardContent>
             <EmployeeBadges empleadoId={userInfo.id} />
+          </CardContent>
+        </Card>
+
+        {/* Sección: Mis Calificaciones */}
+        <Card className="animate-fade-in lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              <span>Mis Calificaciones de Clientes</span>
+            </CardTitle>
+            <CardDescription>
+              Visualiza las calificaciones que los clientes te han dado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CalificacionesEmpleado empleadoId={userInfo.id} />
           </CardContent>
         </Card>
 
