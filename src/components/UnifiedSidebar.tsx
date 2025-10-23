@@ -23,7 +23,8 @@ import {
   Sun,
   AlertTriangle,
   History,
-  Shield
+  Shield,
+  Briefcase
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
@@ -79,14 +80,14 @@ const iconMap: Record<string, any> = {
   Gift: Award,
   DollarSign: FileText,
   BookOpen: FileText,
-  Shield: Settings,
+  Shield,
   Briefcase: Building2,
   Tablet: Building2,
   Tv: Building2,
   Edit: FileText,
   Medal: Award,
-  AlertTriangle: FileWarning,
-  History: Clock
+  AlertTriangle,
+  History
 }
 
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {

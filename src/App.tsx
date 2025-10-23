@@ -67,6 +67,16 @@ const App = () => (
             
             {/* Módulo RRHH */}
             <Route path="rrhh/nomina" element={<Nomina />} />
+            <Route path="rrhh/nomina/resumen" element={<Nomina />} />
+            <Route path="rrhh/nomina/empleados" element={<Nomina />} />
+            <Route path="rrhh/nomina/acceso-seguridad" element={<Nomina />} />
+            <Route path="rrhh/nomina/puestos" element={<Nomina />} />
+            <Route path="rrhh/nomina/documentos" element={<Nomina />} />
+            <Route path="rrhh/nomina/permisos" element={<Nomina />} />
+            <Route path="rrhh/nomina/doc-obligatorios" element={<Nomina />} />
+            <Route path="rrhh/nomina/asignaciones" element={<Nomina />} />
+            <Route path="rrhh/nomina/vista-empleado" element={<Nomina />} />
+            <Route path="rrhh/nomina/organigrama" element={<Nomina />} />
             <Route path="rrhh/evaluaciones" element={<Evaluaciones />} />
             <Route path="rrhh/vacaciones" element={<Vacaciones />} />
             <Route path="rrhh/solicitudes" element={<Solicitudes />} />
