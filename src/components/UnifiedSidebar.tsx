@@ -96,6 +96,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const { theme, setTheme } = useTheme()
   const { links, loading } = useSidebarLinks(userInfo?.rol || null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const currentFullPath = `${location.pathname}${location.hash || ''}`
   
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/")
@@ -213,8 +214,8 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                       const isCurrentPath = isActive(fixPath(link.path, link.nombre))
                       
                       // Auto-expandir si algún hijo está activo
-                      const hasActiveChild = hasChildren && link.children.some((child: any) => 
-                        location.pathname === fixPath(child.path, child.nombre)
+                       const hasActiveChild = hasChildren && link.children.some((child: any) => 
+                        currentFullPath === fixPath(child.path, child.nombre)
                       )
                       const shouldBeExpanded = expandedItems.has(link.id) || hasActiveChild
                       
@@ -259,9 +260,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                               <SidebarMenuSub>
                                 {link.children.map((child) => {
                                   const ChildIcon = getIcon(child.icon)
-                                  const isChildActive = location.pathname === fixPath(child.path, child.nombre)
+                                  const isChildActive = currentFullPath === fixPath(child.path, child.nombre)
                                   const childHasChildren = (child as any).children && (child as any).children.length > 0
-                                  const childHasActiveGrand = childHasChildren && (child as any).children.some((g: any) => location.pathname === fixPath(g.path, g.nombre))
+                                  const childHasActiveGrand = childHasChildren && (child as any).children.some((g: any) => currentFullPath === fixPath(g.path, g.nombre))
 
                                   if (childHasChildren) {
                                     const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
@@ -280,7 +281,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                           <SidebarMenuSub>
                                             {(child as any).children.map((grand: any) => {
                                               const GrandIcon = getIcon(grand.icon)
-                                              const isGrandActive = location.pathname === fixPath(grand.path, grand.nombre)
+                                              const isGrandActive = currentFullPath === fixPath(grand.path, grand.nombre)
                                               return (
                                                 <SidebarMenuSubItem key={grand.id}>
                                                   <SidebarMenuSubButton asChild isActive={isGrandActive}>
