@@ -151,7 +151,7 @@ export default function HomePublico() {
                   Ver Ranking
                 </Button>
               </Link>
-              <Link to="/reconoce/auth">
+              <Link to="/admin">
                 <Button size="sm">
                   <Settings className="h-4 w-4 mr-2" />
                   Admin
