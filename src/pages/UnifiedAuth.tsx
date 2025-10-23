@@ -18,8 +18,6 @@ export default function UnifiedAuth() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [nombre, setNombre] = useState("")
-  const [apellido, setApellido] = useState("")
   const [resetEmail, setResetEmail] = useState("")
   const [showResetPassword, setShowResetPassword] = useState(false)
 
@@ -111,50 +109,6 @@ export default function UnifiedAuth() {
       }
     } catch (error) {
       console.error('💥 [UnifiedAuth.tsx] Error inesperado en login:', error)
-      toast({
-        title: "Error",
-        description: "Ocurrió un error inesperado",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}${redirectTo}`,
-          data: {
-            nombre,
-            apellido,
-          }
-        }
-      })
-
-      if (error) {
-        toast({
-          title: "Error en registro",
-          description: error.message,
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (data.user) {
-        toast({
-          title: "Cuenta creada",
-          description: "Revisa tu email para confirmar tu cuenta",
-        })
-      }
-    } catch (error) {
-      console.error('Error en registro:', error)
       toast({
         title: "Error",
         description: "Ocurrió un error inesperado",
@@ -289,13 +243,12 @@ export default function UnifiedAuth() {
 
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Email</TabsTrigger>
               <TabsTrigger value="facial">
                 <Scan className="h-4 w-4 mr-1" />
                 Facial
               </TabsTrigger>
-              <TabsTrigger value="signup">Registro</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin" className="space-y-4">
@@ -391,79 +344,6 @@ export default function UnifiedAuth() {
                 onRegisterSuccess={() => {}}
                 onLoginSuccess={handleFacialLogin}
               />
-            </TabsContent>
-
-            <TabsContent value="signup" className="space-y-4">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-nombre">Nombre</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-nombre"
-                        type="text"
-                        placeholder="Juan"
-                        value={nombre}
-                        onChange={(e) => setNombre(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-apellido">Apellido</Label>
-                    <Input
-                      id="signup-apellido"
-                      type="text"
-                      placeholder="Pérez"
-                      value={apellido}
-                      onChange={(e) => setApellido(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="tu@empresa.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creando cuenta..." : "Crear cuenta"}
-                </Button>
-              </form>
             </TabsContent>
           </Tabs>
 

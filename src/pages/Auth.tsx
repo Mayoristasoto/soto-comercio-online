@@ -13,7 +13,6 @@ import FacialRecognitionAuth from "@/components/FacialRecognitionAuth";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -56,64 +55,6 @@ const Auth = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      // First create the auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/gondolasedit`,
-          data: {
-            full_name: fullName,
-          }
-        }
-      });
-
-      if (authError) {
-        if (authError.message.includes("User already registered")) {
-          toast("Este email ya está registrado. Intenta iniciar sesión.");
-        } else {
-          toast(`Error al registrarse: ${authError.message}`);
-        }
-        return;
-      }
-
-      // If auth user was created successfully, create the empleado record
-      if (authData.user) {
-        const [nombre, ...apellidoParts] = fullName.trim().split(' ');
-        const apellido = apellidoParts.join(' ') || 'Nuevo';
-
-        const { error: empleadoError } = await supabase
-          .from('empleados')
-          .insert({
-            user_id: authData.user.id,
-            nombre: nombre || 'Usuario',
-            apellido: apellido,
-            email: email,
-            rol: 'empleado',
-            fecha_ingreso: new Date().toISOString().split('T')[0],
-            sucursal_id: '9682b6cf-f904-4497-918c-d0c9c061b9ec' // Default sucursal
-          });
-
-        if (empleadoError) {
-          console.error('Error creating empleado:', empleadoError);
-          // Don't show this error to user as auth was successful
-        }
-      }
-
-      toast("¡Registro exitoso! Revisa tu email para confirmar tu cuenta.");
-    } catch (error) {
-      console.error("Error in signUp:", error);
-      toast("Error inesperado al registrarse");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,13 +193,12 @@ const Auth = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Email</TabsTrigger>
                 <TabsTrigger value="facial">
                   <Scan className="h-4 w-4 mr-1" />
                   Facial
                 </TabsTrigger>
-                <TabsTrigger value="signup">Registro</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin">
@@ -348,58 +288,6 @@ const Auth = () => {
                   onRegisterSuccess={() => {}}
                   onLoginSuccess={handleFacialLogin}
                 />
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nombre Completo</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Tu nombre completo"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Contraseña</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      minLength={6}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Mínimo 6 caracteres
-                    </p>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Registrando..." : "Crear Cuenta"}
-                  </Button>
-                </form>
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -19,9 +19,6 @@ export default function SotoAuth() {
   // Form states
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [nombre, setNombre] = useState("")
-  const [apellido, setApellido] = useState("")
-  const [faceDescriptor, setFaceDescriptor] = useState<Float32Array | null>(null)
 
   useEffect(() => {
     checkUser()
@@ -110,65 +107,6 @@ export default function SotoAuth() {
     }
   }
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email || !password || !nombre || !apellido) {
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 6 caracteres",
-        variant: "destructive"
-      })
-      return
-    }
-
-    setLoading(true)
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/reconoce/home`,
-          data: {
-            nombre,
-            apellido,
-            face_descriptor: faceDescriptor ? Array.from(faceDescriptor) : null
-          }
-        }
-      })
-
-      if (error) throw error
-
-      toast({
-        title: "¡Registro exitoso!",
-        description: "Se ha creado tu cuenta. Ya puedes iniciar sesión.",
-      })
-    } catch (error: any) {
-      console.error('Error registrando usuario:', error)
-      toast({
-        title: "Error en el registro",
-        description: error.message === "User already registered" 
-          ? "Este email ya está registrado" 
-          : error.message,
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleFacialRegister = (descriptor: Float32Array) => {
-    setFaceDescriptor(descriptor)
-  }
-
   const handleFacialLogin = async (user: { nombre: string, apellido: string, email: string }) => {
     // Handle successful facial login with user info
     toast({
@@ -199,9 +137,8 @@ export default function SotoAuth() {
         <Card>
           <Tabs defaultValue="signin" className="w-full">
             <CardHeader className="pb-4">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-1">
                 <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup">Registrarse</TabsTrigger>
               </TabsList>
             </CardHeader>
 
@@ -267,115 +204,11 @@ export default function SotoAuth() {
                   <TabsContent value="facial-login" className="mt-4">
                     <FacialRecognitionAuth
                       mode="login"
-                      onRegisterSuccess={handleFacialRegister}
+                      onRegisterSuccess={() => {}}
                       onLoginSuccess={handleFacialLogin}
                     />
                   </TabsContent>
                 </Tabs>
-              </TabsContent>
-
-              {/* Sign Up Tab */}
-              <TabsContent value="signup" className="space-y-4">
-                <div className="space-y-2">
-                  <CardTitle className="text-xl">Crear cuenta nueva</CardTitle>
-                  <CardDescription>
-                    Completa los datos para registrarte y opcionalmente agrega tu foto para reconocimiento facial
-                  </CardDescription>
-                </div>
-
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-nombre">Nombre</Label>
-                      <Input
-                        id="signup-nombre"
-                        type="text"
-                        placeholder="Juan"
-                        value={nombre}
-                        onChange={(e) => setNombre(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-apellido">Apellido</Label>
-                      <Input
-                        id="signup-apellido"
-                        type="text"
-                        placeholder="Pérez"
-                        value={apellido}
-                        onChange={(e) => setApellido(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Contraseña</Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Mínimo 6 caracteres"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Facial Recognition Registration */}
-                  <div className="space-y-2">
-                    <Label>Reconocimiento Facial (Opcional)</Label>
-                    <Card className="p-4">
-                      <div className="space-y-3">
-                        <p className="text-sm text-muted-foreground">
-                          Registra tu rostro para poder iniciar sesión usando reconocimiento facial
-                        </p>
-                        <FacialRecognitionAuth
-                          mode="register"
-                          onRegisterSuccess={handleFacialRegister}
-                          onLoginSuccess={handleFacialLogin}
-                        />
-                        {faceDescriptor && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                            <div className="flex items-center space-x-2">
-                              <Award className="h-4 w-4 text-green-600" />
-                              <span className="text-green-800 text-sm font-medium">
-                                ✓ Rostro registrado exitosamente
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creando cuenta..." : "Crear Cuenta"}
-                  </Button>
-                </form>
               </TabsContent>
             </CardContent>
           </Tabs>
@@ -385,8 +218,7 @@ export default function SotoAuth() {
         <Card className="bg-muted/50">
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground text-center">
-              💡 <strong>Tip:</strong> Los empleados registrados serán asignados automáticamente 
-              como rol "empleado". Los administradores deben ser configurados manualmente.
+              💡 <strong>Nota:</strong> El registro de nuevos usuarios debe realizarse a través del panel de administración.
             </p>
           </CardContent>
         </Card>
