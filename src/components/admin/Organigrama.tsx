@@ -80,30 +80,31 @@ export default function Organigrama() {
   
   // Dialog states for assignment
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
+  const [assignType, setAssignType] = useState<'departamento' | 'nivel'>('departamento')
   const [selectedLevel, setSelectedLevel] = useState<NivelJerarquicoNode | null>(null)
   const [selectedDepartment, setSelectedDepartment] = useState<DepartamentoNode | null>(null)
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set())
-  const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([])
-  const [targetSucursal, setTargetSucursal] = useState<string>("")
+  const [puestos, setPuestos] = useState<{ id: string; nombre: string; departamento: string; nivel_jerarquico: number }[]>([])
+  const [targetPuesto, setTargetPuesto] = useState<string>("")
   const [assigning, setAssigning] = useState(false)
 
   useEffect(() => {
     loadOrganigrama()
-    loadSucursales()
+    loadPuestos()
   }, [])
 
-  const loadSucursales = async () => {
+  const loadPuestos = async () => {
     try {
       const { data, error } = await supabase
-        .from('sucursales')
-        .select('id, nombre')
-        .eq('activa', true)
-        .order('nombre')
+        .from('puestos')
+        .select('id, nombre, departamento, nivel_jerarquico')
+        .eq('activo', true)
+        .order('departamento, nombre')
       
       if (error) throw error
-      setSucursales(data || [])
+      setPuestos(data || [])
     } catch (error) {
-      console.error('Error loading sucursales:', error)
+      console.error('Error loading puestos:', error)
     }
   }
 
@@ -285,12 +286,14 @@ export default function Organigrama() {
     if (nivel) {
       setSelectedLevel(nivel)
       setSelectedDepartment(null)
+      setAssignType('nivel')
     } else if (departamento) {
       setSelectedDepartment(departamento)
       setSelectedLevel(null)
+      setAssignType('departamento')
     }
     setSelectedEmployees(new Set())
-    setTargetSucursal("")
+    setTargetPuesto("")
     setAssignDialogOpen(true)
   }
 
@@ -318,11 +321,11 @@ export default function Organigrama() {
     }
   }
 
-  const handleAssignToSucursal = async () => {
-    if (!targetSucursal || selectedEmployees.size === 0) {
+  const handleAssignToPuesto = async () => {
+    if (!targetPuesto || selectedEmployees.size === 0) {
       toast({
         title: "Error",
-        description: "Selecciona una sucursal y al menos un empleado",
+        description: "Selecciona un puesto y al menos un empleado",
         variant: "destructive"
       })
       return
@@ -330,16 +333,21 @@ export default function Organigrama() {
 
     setAssigning(true)
     try {
+      const selectedPuesto = puestos.find(p => p.id === targetPuesto)
+      
       const { error } = await supabase
         .from('empleados')
-        .update({ sucursal_id: targetSucursal })
+        .update({ 
+          puesto_id: targetPuesto,
+          puesto: selectedPuesto?.nombre
+        })
         .in('id', Array.from(selectedEmployees))
 
       if (error) throw error
 
       toast({
         title: "Asignación exitosa",
-        description: `${selectedEmployees.size} empleado(s) asignado(s) a la sucursal`
+        description: `${selectedEmployees.size} empleado(s) asignado(s) al puesto`
       })
 
       setAssignDialogOpen(false)
@@ -354,6 +362,15 @@ export default function Organigrama() {
     } finally {
       setAssigning(false)
     }
+  }
+
+  const getFilteredPuestos = () => {
+    if (assignType === 'nivel' && selectedLevel) {
+      return puestos.filter(p => p.nivel_jerarquico === selectedLevel.nivel)
+    } else if (assignType === 'departamento' && selectedDepartment) {
+      return puestos.filter(p => p.departamento === selectedDepartment.nombre)
+    }
+    return puestos
   }
 
   const EmpleadoCard = ({ empleado }: { empleado: EmpleadoOrg }) => {
@@ -708,30 +725,30 @@ export default function Organigrama() {
         </CardContent>
       </Card>
 
-      {/* Dialog for assigning employees to sucursal */}
+      {/* Dialog for assigning employees to puesto */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Asignar a Sucursal - {selectedLevel?.nombre || selectedDepartment?.nombre}
+              Asignar Puesto - {selectedLevel?.nombre || selectedDepartment?.nombre}
             </DialogTitle>
             <DialogDescription>
-              Selecciona empleados y asígnalos a una sucursal
+              Selecciona empleados y asígnalos a un puesto {assignType === 'nivel' ? 'del mismo nivel jerárquico' : 'del mismo departamento'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Select sucursal */}
+            {/* Select puesto */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Sucursal Destino</label>
-              <Select value={targetSucursal} onValueChange={setTargetSucursal}>
+              <label className="text-sm font-medium mb-2 block">Puesto Destino</label>
+              <Select value={targetPuesto} onValueChange={setTargetPuesto}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una sucursal" />
+                  <SelectValue placeholder="Selecciona un puesto" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sucursales.map((sucursal) => (
-                    <SelectItem key={sucursal.id} value={sucursal.id}>
-                      {sucursal.nombre}
+                  {getFilteredPuestos().map((puesto) => (
+                    <SelectItem key={puesto.id} value={puesto.id}>
+                      {puesto.nombre} - {puesto.departamento} (Nivel {puesto.nivel_jerarquico})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -811,8 +828,8 @@ export default function Organigrama() {
                 Cancelar
               </Button>
               <Button 
-                onClick={handleAssignToSucursal}
-                disabled={assigning || selectedEmployees.size === 0 || !targetSucursal}
+                onClick={handleAssignToPuesto}
+                disabled={assigning || selectedEmployees.size === 0 || !targetPuesto}
               >
                 {assigning ? 'Asignando...' : `Asignar ${selectedEmployees.size} empleado(s)`}
               </Button>
