@@ -89,7 +89,7 @@ export default function UnifiedAuth() {
 
         // Registrar intento de login fallido
         try {
-          await supabase.rpc('registrar_intento_login', {
+          await supabase.rpc('registrar_intento_login_v2', {
             p_email: email,
             p_evento: 'login_fallido',
             p_metodo: 'email_password',
@@ -116,7 +116,7 @@ export default function UnifiedAuth() {
 
         // Registrar login exitoso
         try {
-          await supabase.rpc('registrar_intento_login', {
+          await supabase.rpc('registrar_intento_login_v2', {
             p_email: email,
             p_evento: 'login_exitoso',
             p_metodo: 'email_password',
@@ -153,7 +153,7 @@ export default function UnifiedAuth() {
       if (!user.user_id) {
         // Log de intento facial sin cuenta asociada
         try {
-          await supabase.rpc('registrar_intento_login', {
+          await supabase.rpc('registrar_intento_login_v2', {
             p_email: user.email,
             p_evento: 'intento_facial',
             p_metodo: 'facial',
@@ -186,7 +186,7 @@ export default function UnifiedAuth() {
       if (authError || !authData?.email_otp) {
         // Log de intento facial fallido (no se obtuvo OTP)
         try {
-          await supabase.rpc('registrar_intento_login', {
+          await supabase.rpc('registrar_intento_login_v2', {
             p_email: user.email,
             p_evento: 'intento_facial',
             p_metodo: 'facial',
@@ -217,7 +217,7 @@ export default function UnifiedAuth() {
       if (verifyError || !verifyData?.session) {
         // Log de login facial fallido en verificación OTP
         try {
-          await supabase.rpc('registrar_intento_login', {
+          await supabase.rpc('registrar_intento_login_v2', {
             p_email: user.email,
             p_evento: 'login_fallido',
             p_metodo: 'facial',
@@ -239,7 +239,7 @@ export default function UnifiedAuth() {
 
       // Log de login facial exitoso
       try {
-        await supabase.rpc('registrar_intento_login', {
+        await supabase.rpc('registrar_intento_login_v2', {
           p_email: user.email,
           p_evento: 'login_exitoso',
           p_metodo: 'facial',

@@ -88,7 +88,7 @@ const Auth = () => {
 
         // Registrar intento fallido
         try {
-          await supabase.rpc('registrar_intento_login', {
+          await supabase.rpc('registrar_intento_login_v2', {
             p_email: email,
             p_evento: 'login_fallido',
             p_metodo: 'email_password',
@@ -112,7 +112,7 @@ const Auth = () => {
 
         // Registrar login exitoso
         try {
-          await supabase.rpc('registrar_intento_login', {
+          await supabase.rpc('registrar_intento_login_v2', {
             p_email: email,
             p_evento: 'login_exitoso',
             p_metodo: 'email_password',

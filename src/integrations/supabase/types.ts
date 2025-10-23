@@ -3864,6 +3864,18 @@ export type Database = {
             }
             Returns: undefined
           }
+      registrar_intento_login_v2: {
+        Args: {
+          p_datos_adicionales?: Json
+          p_email: string
+          p_evento: string
+          p_exitoso: boolean
+          p_mensaje_error?: string
+          p_metodo: string
+          p_user_id?: string
+        }
+        Returns: undefined
+      }
       reset_facial_auth_rate_limit: {
         Args: { p_ip_address: unknown }
         Returns: undefined
