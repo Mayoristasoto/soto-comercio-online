@@ -317,6 +317,57 @@ export default function Nomina() {
     }
   }
 
+  const handleDeleteEmployee = async (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId)
+    if (!employee) return
+
+    const confirmMessage = `¿Estás seguro de que quieres eliminar a ${employee.nombre} ${employee.apellido}?\n\n` +
+      `Esta acción NO se puede deshacer y eliminará:\n` +
+      `• El registro del empleado\n` +
+      `• Sus fichajes y evaluaciones\n` +
+      `• Sus documentos y asignaciones\n` +
+      `${employee.user_id ? '• Su cuenta de usuario (acceso al sistema)' : ''}`
+
+    if (!confirm(confirmMessage)) return
+
+    try {
+      // Eliminar empleado (esto eliminará en cascada fichajes, evaluaciones, etc. si está configurado)
+      const { error: deleteError } = await supabase
+        .from('empleados')
+        .delete()
+        .eq('id', employeeId)
+
+      if (deleteError) throw deleteError
+
+      // Si tiene user_id, intentar eliminar el usuario de auth
+      if (employee.user_id) {
+        try {
+          const { error: authError } = await supabase.auth.admin.deleteUser(employee.user_id)
+          if (authError) {
+            console.warn('No se pudo eliminar el usuario de auth:', authError)
+          }
+        } catch (authError) {
+          console.warn('No se pudo eliminar el usuario de auth:', authError)
+        }
+      }
+
+      toast({
+        title: "Empleado eliminado",
+        description: `${employee.nombre} ${employee.apellido} ha sido eliminado del sistema`
+      })
+
+      // Recargar datos
+      loadNominaData()
+    } catch (error) {
+      console.error('Error eliminando empleado:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el empleado. Intenta nuevamente.",
+        variant: "destructive"
+      })
+    }
+  }
+
   const formatRole = (role: string) => {
     const roles = {
       'admin_rrhh': 'Admin RRHH',
@@ -860,6 +911,13 @@ export default function Nomina() {
                               }}>
                                 <Camera className="h-4 w-4 mr-2" />
                                 Gestionar Rostros
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteEmployee(employee.id)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <UserPlus className="h-4 w-4 mr-2 rotate-180" />
+                                Eliminar Empleado
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
