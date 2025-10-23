@@ -28,6 +28,7 @@ import Evaluaciones from "./pages/Evaluaciones";
 import Vacaciones from "./pages/Vacaciones";
 import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
+import AsignarSucursales from "./pages/AsignarSucursales";
 import DesafiosTV from "./pages/DesafiosTV";
 
 // Legacy pages (mantener por compatibilidad)
@@ -96,6 +97,7 @@ const App = () => (
             {/* Módulo Administración */}
             <Route path="admin" element={<AdminDashboard />} />
             <Route path="admin/empleados" element={<AdminDashboard />} />
+            <Route path="admin/asignar-sucursales" element={<AsignarSucursales />} />
             <Route path="admin/sucursales" element={<AdminDashboard />} />
             <Route path="admin/gondolas" element={<Gondolas />} />
             <Route path="admin/gondolasedit" element={<GondolasEdit />} />
