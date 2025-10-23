@@ -82,7 +82,19 @@ export default function CalificarEmpleadoV2() {
 
       if (error) throw error;
 
-      const configObj: any = {};
+      // Valores por defecto
+      const defaults = {
+        sorteo_activo: true,
+        sorteo_titulo: "¡Participa en nuestro sorteo!",
+        sorteo_descripcion: "Al calificar, participas automáticamente en nuestro sorteo mensual.",
+        mensaje_agradecimiento: "¡Gracias por tu calificación!",
+        requiere_datos_cliente: true,
+        campos_opcionales: ['telefono'],
+        calificar_servicio: true,
+      };
+
+      const configObj: any = { ...defaults };
+      
       data?.forEach((item) => {
         if (item.clave === 'sorteo_activo' || item.clave === 'requiere_datos_cliente' || item.clave === 'calificar_servicio') {
           configObj[item.clave] = item.valor === 'true';
@@ -93,6 +105,7 @@ export default function CalificarEmpleadoV2() {
         }
       });
 
+      console.log("Config loaded:", configObj);
       setConfig(configObj as Config);
     } catch (error) {
       console.error("Error loading config:", error);
@@ -267,10 +280,16 @@ export default function CalificarEmpleadoV2() {
   if (loading || !config) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-        <div className="animate-pulse text-muted-foreground">Cargando...</div>
+        <div className="animate-pulse text-muted-foreground">
+          {!config ? "Cargando configuración..." : "Cargando..."}
+        </div>
       </div>
     );
   }
+
+  console.log("Rendering with config:", config);
+  console.log("calificar_servicio:", config.calificar_servicio);
+  console.log("requiere_datos_cliente:", config.requiere_datos_cliente);
 
   if (submitted) {
     return (
