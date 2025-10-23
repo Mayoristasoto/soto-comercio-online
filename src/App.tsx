@@ -43,6 +43,7 @@ import PrintPreview from "./pages/PrintPreview";
 import CalificarEmpleado from "./pages/CalificarEmpleado";
 import CalificarEmpleadoV2 from "./pages/CalificarEmpleadoV2";
 import DemoQRCalificacion from "./pages/DemoQRCalificacion";
+import AdminAuthLogs from "./pages/AdminAuthLogs";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +124,7 @@ const App = () => (
             <Route path="admin/gondolas" element={<Gondolas />} />
             <Route path="admin/gondolasedit" element={<GondolasEdit />} />
             <Route path="admin/configuracion" element={<Configuracion />} />
+            <Route path="admin/auth-logs" element={<AdminAuthLogs />} />
             
             {/* Redirects de compatibilidad (rutas antiguas -> nuevas) */}
             <Route path="nomina" element={<Navigate to="/rrhh/nomina" replace />} />

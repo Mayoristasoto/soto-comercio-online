@@ -87,6 +87,19 @@ export default function UnifiedAuth() {
           fullError: error
         });
 
+        // Registrar intento de login fallido
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: email,
+            p_evento: 'login_fallido',
+            p_metodo: 'email_password',
+            p_exitoso: false,
+            p_mensaje_error: error.message
+          });
+        } catch (logError) {
+          console.error('Error registrando log de autenticación:', logError);
+        }
+
         toast({
           title: "Error de autenticación",
           description: error.message,
@@ -100,6 +113,19 @@ export default function UnifiedAuth() {
           userId: data.user.id,
           email: data.user.email
         });
+
+        // Registrar login exitoso
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: email,
+            p_evento: 'login_exitoso',
+            p_metodo: 'email_password',
+            p_exitoso: true,
+            p_user_id: data.user.id
+          });
+        } catch (logError) {
+          console.error('Error registrando log de autenticación:', logError);
+        }
 
         toast({
           title: "Bienvenido",

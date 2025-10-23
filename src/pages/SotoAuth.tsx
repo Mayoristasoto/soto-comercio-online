@@ -79,6 +79,20 @@ export default function SotoAuth() {
           name: error.name,
           fullError: error
         });
+
+        // Registrar intento fallido
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: email,
+            p_evento: 'login_fallido',
+            p_metodo: 'email_password',
+            p_exitoso: false,
+            p_mensaje_error: error.message
+          });
+        } catch (logError) {
+          console.error('Error registrando log:', logError);
+        }
+
         throw error
       }
 
@@ -86,6 +100,19 @@ export default function SotoAuth() {
         userId: data?.user?.id,
         email: data?.user?.email
       });
+
+      // Registrar login exitoso
+      try {
+        await supabase.rpc('registrar_intento_login', {
+          p_email: email,
+          p_evento: 'login_exitoso',
+          p_metodo: 'email_password',
+          p_exitoso: true,
+          p_user_id: data?.user?.id
+        });
+      } catch (logError) {
+        console.error('Error registrando log:', logError);
+      }
 
       toast({
         title: "¡Bienvenido!",

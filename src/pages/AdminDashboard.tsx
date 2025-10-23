@@ -20,7 +20,8 @@ import {
   UserX,
   Plane,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -600,6 +601,14 @@ export default function AdminDashboard() {
                 <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Ver Reportes Detallados
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start border-red-300 text-red-700 hover:bg-red-50"
+                  onClick={() => window.location.href = '/admin/auth-logs'}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Logs de Autenticación
                 </Button>
               </CardContent>
             </Card>

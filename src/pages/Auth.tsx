@@ -86,6 +86,19 @@ const Auth = () => {
           fullError: error
         });
 
+        // Registrar intento fallido
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: email,
+            p_evento: 'login_fallido',
+            p_metodo: 'email_password',
+            p_exitoso: false,
+            p_mensaje_error: error.message
+          });
+        } catch (logError) {
+          console.error('Error registrando log:', logError);
+        }
+
         if (error.message.includes("Invalid login credentials")) {
           toast("Credenciales inválidas. Verifica tu email y contraseña.");
         } else {
@@ -96,6 +109,20 @@ const Auth = () => {
           userId: data?.user?.id,
           email: data?.user?.email
         });
+
+        // Registrar login exitoso
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: email,
+            p_evento: 'login_exitoso',
+            p_metodo: 'email_password',
+            p_exitoso: true,
+            p_user_id: data?.user?.id
+          });
+        } catch (logError) {
+          console.error('Error registrando log:', logError);
+        }
+
         toast("¡Bienvenido de vuelta!");
       }
     } catch (error) {

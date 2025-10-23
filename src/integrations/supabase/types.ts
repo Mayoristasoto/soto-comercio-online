@@ -284,6 +284,51 @@ export type Database = {
           },
         ]
       }
+      auth_logs: {
+        Row: {
+          created_at: string
+          datos_adicionales: Json | null
+          email: string
+          evento: string
+          exitoso: boolean
+          id: string
+          ip_address: unknown
+          mensaje_error: string | null
+          metodo: string | null
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          datos_adicionales?: Json | null
+          email: string
+          evento: string
+          exitoso?: boolean
+          id?: string
+          ip_address?: unknown
+          mensaje_error?: string | null
+          metodo?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          datos_adicionales?: Json | null
+          email?: string
+          evento?: string
+          exitoso?: boolean
+          id?: string
+          ip_address?: unknown
+          mensaje_error?: string | null
+          metodo?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       brand_partners: {
         Row: {
           created_at: string
@@ -3793,6 +3838,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      registrar_intento_login: {
+        Args: {
+          p_datos_adicionales?: Json
+          p_email: string
+          p_evento: string
+          p_exitoso?: boolean
+          p_mensaje_error?: string
+          p_metodo?: string
+          p_user_id?: string
+        }
+        Returns: string
       }
       reset_facial_auth_rate_limit: {
         Args: { p_ip_address: unknown }
