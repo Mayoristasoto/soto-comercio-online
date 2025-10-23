@@ -8,12 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Pencil, Trash2, Plus, User, Eye, Camera, FileText, Shield, FolderOpen } from "lucide-react"
+import { Pencil, Trash2, Plus, User, Eye, Camera, FileText, Shield, FolderOpen, Building2 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import EmployeeProfile from "./EmployeeProfile"
 import DocumentManager from "./DocumentManager"
 import PermissionsManager from "./PermissionsManager"
+import EmpleadosSucursalAssignment from "./EmpleadosSucursalAssignment"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Empleado {
   id: string
@@ -227,16 +229,29 @@ export default function EmployeeManagement() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
-              <span>Gestión de Empleados</span>
-            </CardTitle>
-            <CardDescription>
-              Administra los empleados del sistema
-            </CardDescription>
-          </div>
+        <CardTitle className="flex items-center space-x-2">
+          <User className="h-5 w-5" />
+          <span>Gestión de Empleados</span>
+        </CardTitle>
+        <CardDescription>
+          Administra los empleados del sistema
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="lista" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="lista">
+              <User className="h-4 w-4 mr-2" />
+              Lista de Empleados
+            </TabsTrigger>
+            <TabsTrigger value="asignar">
+              <Building2 className="h-4 w-4 mr-2" />
+              Asignar a Sucursales
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="lista" className="space-y-4">
+        <div className="flex items-center justify-end mb-4">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => {
@@ -350,8 +365,7 @@ export default function EmployeeManagement() {
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
-      <CardContent>
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -475,6 +489,12 @@ export default function EmployeeManagement() {
             )}
           </DialogContent>
         </Dialog>
+          </TabsContent>
+
+          <TabsContent value="asignar">
+            <EmpleadosSucursalAssignment />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   )
