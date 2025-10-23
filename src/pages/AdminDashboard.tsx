@@ -36,6 +36,7 @@ import { SidebarLinksManager } from "@/components/admin/SidebarLinksManager"
 import { EntregaElementos } from "@/components/admin/EntregaElementos"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import CalificacionesConfig from "@/components/admin/CalificacionesConfig"
+import SorteosParticipantes from "@/components/admin/SorteosParticipantes"
 
 interface DashboardStats {
   total_empleados: number
@@ -543,6 +544,8 @@ export default function AdminDashboard() {
               <TabsTrigger value="sidebar" className="whitespace-nowrap">Menú Sidebar</TabsTrigger>
               <TabsTrigger value="entregas" className="whitespace-nowrap">Entregas Elementos</TabsTrigger>
               <TabsTrigger value="sistema-comercial" className="whitespace-nowrap">Sistema Comercial</TabsTrigger>
+              <TabsTrigger value="calificaciones" className="whitespace-nowrap">Config. Calificaciones</TabsTrigger>
+              <TabsTrigger value="sorteos" className="whitespace-nowrap">Sorteos</TabsTrigger>
               <TabsTrigger value="activity" className="whitespace-nowrap">Actividad</TabsTrigger>
             </TabsList>
           </div>
@@ -735,6 +738,14 @@ export default function AdminDashboard() {
 
         <TabsContent value="sistema-comercial">
           <SistemaComercialConfig />
+        </TabsContent>
+
+        <TabsContent value="calificaciones">
+          <CalificacionesConfig />
+        </TabsContent>
+
+        <TabsContent value="sorteos">
+          <SorteosParticipantes />
         </TabsContent>
 
         <TabsContent value="activity">
