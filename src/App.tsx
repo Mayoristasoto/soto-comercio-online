@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 
 // Layout components
 import UnifiedLayout from "./components/UnifiedLayout";
+import { AdminLayout } from "./components/admin/AdminLayout";
 
 // Pages
 import Index from "./pages/Index";
@@ -116,15 +117,17 @@ const App = () => (
             <Route path="insignias" element={<Insignias />} />
             <Route path="premios" element={<Premios />} />
             
-            {/* Módulo Administración */}
-            <Route path="admin" element={<AdminDashboard />} />
-            <Route path="admin/empleados" element={<AdminDashboard />} />
-            <Route path="admin/asignar-sucursales" element={<AsignarSucursales />} />
-            <Route path="admin/sucursales" element={<AdminDashboard />} />
-            <Route path="admin/gondolas" element={<Gondolas />} />
-            <Route path="admin/gondolasedit" element={<GondolasEdit />} />
-            <Route path="admin/configuracion" element={<Configuracion />} />
-            <Route path="admin/auth-logs" element={<AdminAuthLogs />} />
+            {/* Módulo Administración con nuevo layout */}
+            <Route path="admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="empleados" element={<AdminDashboard />} />
+              <Route path="asignar-sucursales" element={<AsignarSucursales />} />
+              <Route path="sucursales" element={<AdminDashboard />} />
+              <Route path="gondolas" element={<Gondolas />} />
+              <Route path="gondolasedit" element={<GondolasEdit />} />
+              <Route path="configuracion" element={<Configuracion />} />
+              <Route path="auth-logs" element={<AdminAuthLogs />} />
+            </Route>
             
             {/* Redirects de compatibilidad (rutas antiguas -> nuevas) */}
             <Route path="nomina" element={<Navigate to="/rrhh/nomina" replace />} />
