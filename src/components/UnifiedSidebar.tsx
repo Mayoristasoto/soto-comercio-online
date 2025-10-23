@@ -245,6 +245,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 <SidebarMenuButton 
                                   tooltip={link.descripcion || link.nombre}
                                   isActive={isCurrentPath || hasActiveChild}
+                                  className="font-semibold text-primary"
                                 >
                                   <Icon className="h-4 w-4" />
                                   <span>{link.nombre}</span>
