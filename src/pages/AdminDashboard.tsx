@@ -3,7 +3,6 @@ import { useSearchParams, useLocation } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Users, 
   Building2, 
@@ -19,9 +18,13 @@ import {
   UserCheck,
   UserX,
   Plane,
-  ChevronLeft,
-  ChevronRight,
-  FileText
+  FileText,
+  GraduationCap,
+  Package,
+  Store,
+  Trophy,
+  Settings2,
+  ArrowLeft
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -72,8 +75,8 @@ export default function AdminDashboard() {
   const { toast } = useToast()
   const [searchParams] = useSearchParams()
   const location = useLocation()
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard')
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<string | null>(null)
   const [stats, setStats] = useState<DashboardStats>({
     total_empleados: 0,
     total_sucursales: 0,
@@ -95,26 +98,103 @@ export default function AdminDashboard() {
     loadDashboardData()
   }, [])
 
-  // Detectar hash en la URL y cambiar tab activo
+  // Detectar hash en la URL
   useEffect(() => {
     const hash = location.hash.replace('#', '')
     if (hash) {
-      setActiveTab(hash)
+      // Buscar en qué categoría está la sección
+      const category = categories.find(cat => 
+        cat.sections.some(sec => sec.id === hash)
+      )
+      if (category) {
+        setActiveCategory(category.id)
+        setActiveSection(hash)
+      }
     }
   }, [location.hash])
 
-  const scrollTabs = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = 200
-      const newScrollLeft = direction === 'left' 
-        ? scrollContainerRef.current.scrollLeft - scrollAmount
-        : scrollContainerRef.current.scrollLeft + scrollAmount
-      
-      scrollContainerRef.current.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth'
-      })
+  // Definición de categorías y secciones
+  const categories = [
+    {
+      id: 'rrhh',
+      nombre: 'Gestión RRHH',
+      icon: Users,
+      color: 'blue',
+      descripcion: 'Personal, capacitaciones y evaluaciones',
+      sections: [
+        { id: 'staff', nombre: 'Personal', icon: Users, component: <StaffOverview /> },
+        { id: 'training', nombre: 'Capacitaciones', icon: GraduationCap, component: <TrainingManagement /> },
+        { id: 'roles', nombre: 'Roles y Permisos', icon: Shield, component: <RoleManagement /> },
+        { id: 'puntualidad', nombre: 'Puntualidad', icon: Activity, component: <PuntualidadManager /> }
+      ]
+    },
+    {
+      id: 'operaciones',
+      nombre: 'Operaciones',
+      icon: Settings,
+      color: 'green',
+      descripcion: 'Sucursales, presupuesto y logística',
+      sections: [
+        { id: 'branches', nombre: 'Sucursales', icon: Building2, component: <BranchManagement /> },
+        { id: 'budget', nombre: 'Presupuesto', icon: DollarSign, component: <BudgetManagement /> },
+        { id: 'entregas', nombre: 'Entregas Elementos', icon: Package, component: <EntregaElementos /> },
+        { id: 'sistema-comercial', nombre: 'Sistema Comercial', icon: Store, component: <SistemaComercialConfig /> }
+      ]
+    },
+    {
+      id: 'reconocimiento',
+      nombre: 'Reconocimiento',
+      icon: Trophy,
+      color: 'amber',
+      descripcion: 'Desafíos, premios e incentivos',
+      sections: [
+        { id: 'challenges', nombre: 'Desafíos', icon: Target, component: <ChallengeManagement /> },
+        { id: 'prizes', nombre: 'Premios', icon: Award, component: <PrizeManagement /> },
+        { id: 'calificaciones', nombre: 'Calificaciones', icon: BarChart3, component: <CalificacionesConfig /> },
+        { id: 'sorteos', nombre: 'Sorteos', icon: Trophy, component: <SorteosParticipantes /> }
+      ]
+    },
+    {
+      id: 'configuracion',
+      nombre: 'Configuración',
+      icon: Settings2,
+      color: 'slate',
+      descripcion: 'Ajustes del sistema',
+      sections: [
+        { id: 'sidebar', nombre: 'Menú Sidebar', icon: FileText, component: <SidebarLinksManager /> },
+        { id: 'activity', nombre: 'Actividad del Sistema', icon: Activity, component: null }
+      ]
     }
+  ]
+
+  const getColorClasses = (color: string) => {
+    const colors: Record<string, any> = {
+      blue: {
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        icon: 'text-blue-600',
+        hover: 'hover:border-blue-300 hover:bg-blue-100'
+      },
+      green: {
+        bg: 'bg-green-50',
+        border: 'border-green-200',
+        icon: 'text-green-600',
+        hover: 'hover:border-green-300 hover:bg-green-100'
+      },
+      amber: {
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        icon: 'text-amber-600',
+        hover: 'hover:border-amber-300 hover:bg-amber-100'
+      },
+      slate: {
+        bg: 'bg-slate-50',
+        border: 'border-slate-200',
+        icon: 'text-slate-600',
+        hover: 'hover:border-slate-300 hover:bg-slate-100'
+      }
+    }
+    return colors[color] || colors.slate
   }
 
   const loadDashboardData = async () => {
@@ -515,55 +595,150 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Management Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="relative">
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full shadow-md"
-            onClick={() => scrollTabs('left')}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <div 
-            ref={scrollContainerRef}
-            className="overflow-x-auto scrollbar-hide mx-10"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            <TabsList className="inline-flex w-max">
-              <TabsTrigger value="dashboard" className="whitespace-nowrap">Dashboard</TabsTrigger>
-              <TabsTrigger value="staff" className="whitespace-nowrap">Personal</TabsTrigger>
-              <TabsTrigger value="branches" className="whitespace-nowrap">Sucursales</TabsTrigger>
-              <TabsTrigger value="budget" className="whitespace-nowrap">Presupuesto</TabsTrigger>
-              <TabsTrigger value="challenges" className="whitespace-nowrap">Desafíos</TabsTrigger>
-              <TabsTrigger value="training" className="whitespace-nowrap">Capacitaciones</TabsTrigger>
-              <TabsTrigger value="prizes" className="whitespace-nowrap">Premios</TabsTrigger>
-              <TabsTrigger value="puntualidad" className="whitespace-nowrap">Puntualidad</TabsTrigger>
-              <TabsTrigger value="roles" className="whitespace-nowrap">Roles</TabsTrigger>
-              <TabsTrigger value="sidebar" className="whitespace-nowrap">Menú Sidebar</TabsTrigger>
-              <TabsTrigger value="entregas" className="whitespace-nowrap">Entregas Elementos</TabsTrigger>
-              <TabsTrigger value="sistema-comercial" className="whitespace-nowrap">Sistema Comercial</TabsTrigger>
-              <TabsTrigger value="calificaciones" className="whitespace-nowrap">Config. Calificaciones</TabsTrigger>
-              <TabsTrigger value="sorteos" className="whitespace-nowrap">Sorteos</TabsTrigger>
-              <TabsTrigger value="activity" className="whitespace-nowrap">Actividad</TabsTrigger>
-            </TabsList>
+      {/* Vista de Categorías o Secciones */}
+      {activeCategory ? (
+        // Vista de Secciones dentro de una categoría
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                setActiveCategory(null)
+                setActiveSection(null)
+                window.history.pushState({}, '', '/admin')
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver a Categorías
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold">
+                {categories.find(c => c.id === activeCategory)?.nombre}
+              </h2>
+              <p className="text-muted-foreground">
+                {categories.find(c => c.id === activeCategory)?.descripcion}
+              </p>
+            </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full shadow-md"
-            onClick={() => scrollTabs('right')}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          {activeSection ? (
+            // Mostrar componente de la sección activa
+            <div>
+              {categories
+                .find(c => c.id === activeCategory)
+                ?.sections.find(s => s.id === activeSection)
+                ?.component || (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Activity className="h-5 w-5" />
+                        <span>Actividad Completa del Sistema</span>
+                      </CardTitle>
+                      <CardDescription>
+                        Registro detallado de todas las acciones del sistema
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {recentActivity.map((activity) => (
+                          <div key={activity.id} className="flex items-start space-x-3 p-3 rounded border">
+                            {getActivityIcon(activity.type)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm">{activity.description}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFecha(activity.fecha)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+            </div>
+          ) : (
+            // Mostrar grid de secciones de la categoría
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {categories
+                .find(c => c.id === activeCategory)
+                ?.sections.map((section) => {
+                  const SectionIcon = section.icon
+                  return (
+                    <Card 
+                      key={section.id}
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => {
+                        setActiveSection(section.id)
+                        window.history.pushState({}, '', `/admin#${section.id}`)
+                      }}
+                    >
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <SectionIcon className="h-8 w-8 text-primary" />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <h3 className="font-semibold text-lg mb-2">{section.nombre}</h3>
+                        <Button variant="outline" size="sm" className="w-full">
+                          Abrir
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+            </div>
+          )}
         </div>
+      ) : (
+        // Vista principal con cards de categorías
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold">Módulos de Gestión</h2>
+            <p className="text-muted-foreground">
+              Selecciona una categoría para administrar
+            </p>
+          </div>
 
-        <TabsContent value="dashboard">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {categories.map((category) => {
+              const CategoryIcon = category.icon
+              const colorClasses = getColorClasses(category.color)
+              
+              return (
+                <Card 
+                  key={category.id}
+                  className={`cursor-pointer transition-all ${colorClasses.bg} ${colorClasses.border} ${colorClasses.hover}`}
+                  onClick={() => setActiveCategory(category.id)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-4">
+                      <CategoryIcon className={`h-12 w-12 ${colorClasses.icon}`} />
+                      <Badge variant="secondary" className="text-lg font-bold">
+                        {category.sections.length}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-xl">{category.nombre}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {category.descripcion}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      {category.sections.map((section) => (
+                        <p key={section.id} className="text-xs text-muted-foreground">
+                          • {section.nombre}
+                        </p>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* Quick Access Dashboard */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
             <Card>
               <CardHeader>
                 <CardTitle>Acciones Rápidas</CardTitle>
@@ -571,9 +746,9 @@ export default function AdminDashboard() {
                   Gestiona los elementos principales del sistema
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+              <CardContent className="grid grid-cols-1 gap-3">
                 <Button 
-                  className="w-full justify-start bg-primary hover:bg-primary/90"
+                  className="w-full justify-start"
                   onClick={() => window.location.href = '/nomina?tab=employees'}
                 >
                   <Users className="h-4 w-4 mr-2" />
@@ -581,10 +756,10 @@ export default function AdminDashboard() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50"
+                  className="w-full justify-start"
                   onClick={() => {
-                    const challengeTab = document.querySelector('[value="challenges"]') as HTMLElement
-                    challengeTab?.click()
+                    setActiveCategory('reconocimiento')
+                    setActiveSection('challenges')
                   }}
                 >
                   <Target className="h-4 w-4 mr-2" />
@@ -592,19 +767,15 @@ export default function AdminDashboard() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50"
+                  className="w-full justify-start"
                   onClick={() => window.location.href = '/reconoce/medals'}
                 >
                   <Award className="h-4 w-4 mr-2" />
                   Configurar Premios
                 </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-50">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Ver Reportes Detallados
-                </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start border-red-300 text-red-700 hover:bg-red-50"
+                  className="w-full justify-start"
                   onClick={() => window.location.href = '/admin/auth-logs'}
                 >
                   <Shield className="h-4 w-4 mr-2" />
@@ -613,7 +784,6 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            {/* Recent Activity */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -649,8 +819,7 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Summary Cards - moved to dashboard tab */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>Resumen Semanal</CardTitle>
@@ -686,14 +855,14 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
-                    <Calendar className="h-4 w-4 text-slate-600" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div className="flex-1">
                       <p className="text-sm font-medium">Cierre desafío mensual</p>
                       <p className="text-xs text-muted-foreground">En 5 días</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Calendar className="h-4 w-4 text-slate-600" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div className="flex-1">
                       <p className="text-sm font-medium">Ranking semanal</p>
                       <p className="text-xs text-muted-foreground">En 2 días</p>
@@ -703,89 +872,8 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="staff">
-          <StaffOverview />
-        </TabsContent>
-
-        <TabsContent value="branches">
-          <BranchManagement />
-        </TabsContent>
-
-        <TabsContent value="budget">
-          <BudgetManagement />
-        </TabsContent>
-
-        <TabsContent value="challenges">
-          <ChallengeManagement />
-        </TabsContent>
-
-        <TabsContent value="training">
-          <TrainingManagement />
-        </TabsContent>
-
-        <TabsContent value="prizes">
-          <PrizeManagement />
-        </TabsContent>
-
-        <TabsContent value="puntualidad">
-          <PuntualidadManager />
-        </TabsContent>
-
-        <TabsContent value="roles">
-          <RoleManagement />
-        </TabsContent>
-
-        <TabsContent value="sidebar">
-          <SidebarLinksManager />
-        </TabsContent>
-
-        <TabsContent value="entregas">
-          <EntregaElementos />
-        </TabsContent>
-
-        <TabsContent value="sistema-comercial">
-          <SistemaComercialConfig />
-        </TabsContent>
-
-        <TabsContent value="calificaciones">
-          <CalificacionesConfig />
-        </TabsContent>
-
-        <TabsContent value="sorteos">
-          <SorteosParticipantes />
-        </TabsContent>
-
-        <TabsContent value="activity">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5" />
-                <span>Actividad Completa del Sistema</span>
-              </CardTitle>
-              <CardDescription>
-                Registro detallado de todas las acciones del sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded border">
-                    {getActivityIcon(activity.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">{activity.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFecha(activity.fecha)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   )
 }
