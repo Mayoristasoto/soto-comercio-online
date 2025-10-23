@@ -24,6 +24,7 @@ interface Props {
 }
 
 interface AnotacionExcel {
+  accion?: string // "nueva", "actualizar", "eliminar"
   id_anotacion?: string
   empleado_legajo: string
   empleado_nombre_completo: string
@@ -113,8 +114,9 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
 
       if (error) throw error
 
-      // Transformar datos a formato Excel
+      // Preparar datos para Excel con columna accion
       const excelData = (anotaciones || []).map((a: any) => ({
+        accion: '',
         id_anotacion: a.id,
         empleado_legajo: a.empleados?.legajo || '',
         empleado_nombre_completo: `${a.empleados?.apellido || ''}, ${a.empleados?.nombre || ''}`,
@@ -142,6 +144,7 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
 
       // Configurar anchos de columna OPTIMIZADOS
       ws['!cols'] = [
+        { wch: 14 }, // accion (NUEVA COLUMNA)
         { wch: 38 }, // id_anotacion (UUID completo)
         { wch: 15 }, // empleado_legajo
         { wch: 35 }, // empleado_nombre_completo
@@ -155,7 +158,7 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
       ]
 
       // Aplicar formato a los encabezados (primera fila)
-      const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1', 'J1']
+      const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1', 'J1', 'K1']
       headerCells.forEach(cell => {
         if (!ws[cell]) return
         ws[cell].s = {
@@ -353,6 +356,7 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
         ['EJEMPLO 1: Agregar una nueva anotación (Apercibimiento)'],
         ['───────────────────────────────────────────────────────────────────────────────────'],
         [''],
+        ['accion:                    nueva'],
         ['id_anotacion:              (DEJAR VACÍO - se genera automáticamente)'],
         ['empleado_legajo:           1234'],
         ['empleado_nombre_completo:  (NO EDITAR - se completa automático)'],
@@ -370,6 +374,7 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
         ['EJEMPLO 2: Reconocimiento positivo'],
         ['───────────────────────────────────────────────────────────────────────────────────'],
         [''],
+        ['accion:                    nueva'],
         ['id_anotacion:              (DEJAR VACÍO)'],
         ['empleado_legajo:           5678'],
         ['empleado_nombre_completo:  (NO EDITAR)'],
@@ -387,6 +392,7 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
         ['EJEMPLO 3: Ausencia injustificada'],
         ['───────────────────────────────────────────────────────────────────────────────────'],
         [''],
+        ['accion:                    nueva'],
         ['id_anotacion:              (DEJAR VACÍO)'],
         ['empleado_legajo:           9012'],
         ['empleado_nombre_completo:  (NO EDITAR)'],
@@ -405,12 +411,14 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
         ['───────────────────────────────────────────────────────────────────────────────────'],
         [''],
         ['Para modificar una anotación:'],
-        ['  1. Busca la fila con el id_anotacion que quieres modificar'],
-        ['  2. NO cambies el id_anotacion'],
-        ['  3. Modifica solo los campos necesarios'],
+        ['  1. Escribe "actualizar" en la columna "accion"'],
+        ['  2. Busca la fila con el id_anotacion que quieres modificar'],
+        ['  3. NO cambies el id_anotacion'],
+        ['  4. Modifica solo los campos necesarios'],
         [''],
         ['Ejemplo: Marcar seguimiento como completado'],
         [''],
+        ['accion:                    actualizar'],
         ['id_anotacion:              550e8400-e29b-41d4-a716-446655440000 (NO CAMBIAR)'],
         ['empleado_legajo:           1234 (no tocar si no es necesario)'],
         ['categoria:                 apercibimiento (igual)'],
@@ -524,22 +532,35 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
       errores: []
     }
 
-    // Crear mapa de IDs en Excel
-    const excelIds = new Set(
-      excelData
-        .map(a => a.id_anotacion)
-        .filter(id => id && id.trim() !== '')
-    )
-
-    // Detectar eliminadas (en DB pero no en Excel)
-    preview.eliminadas = dbData.filter(db => !excelIds.has(db.id))
+    // Crear mapas de IDs en Excel según acción
+    const excelIds = new Set<string>()
+    const idsAEliminar = new Set<string>()
 
     // Analizar cada fila del Excel
     for (let i = 0; i < excelData.length; i++) {
       const row = excelData[i]
       const fila = i + 2 // +2 porque Excel empieza en 1 y tiene header
+      const accion = row.accion?.toLowerCase().trim() || ''
 
       try {
+        // Si la acción es eliminar, agregar al set de eliminación
+        if (accion === 'eliminar') {
+          if (!row.id_anotacion || row.id_anotacion.trim() === '') {
+            preview.errores.push({
+              fila,
+              error: 'Para eliminar necesitas especificar el ID de la anotación'
+            })
+            continue
+          }
+          idsAEliminar.add(row.id_anotacion)
+          continue
+        }
+
+        // Agregar ID al set de IDs existentes en Excel (si no es eliminar)
+        if (row.id_anotacion && row.id_anotacion.trim() !== '') {
+          excelIds.add(row.id_anotacion)
+        }
+
         // Validar campos obligatorios
         if (!row.empleado_legajo || !row.categoria || !row.titulo) {
           preview.errores.push({
@@ -567,11 +588,13 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
           continue
         }
 
-        // Si no tiene ID, es nueva
-        if (!row.id_anotacion || row.id_anotacion.trim() === '') {
+        // Determinar si es nueva o modificada
+        const esNueva = !row.id_anotacion || row.id_anotacion.trim() === '' || accion === 'nueva'
+        
+        if (esNueva) {
           preview.nuevas.push(row)
-        } else {
-          // Buscar en DB para ver si fue modificada
+        } else if (accion === 'actualizar' || accion === '') {
+          // Buscar en DB para ver si existe y comparar
           const original = dbData.find(db => db.id === row.id_anotacion)
           
           if (!original) {
@@ -623,6 +646,12 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
         })
       }
     }
+
+    // Detectar eliminadas: IDs explícitamente marcados para eliminar + IDs que no están en Excel
+    const eliminadasExplicitas = dbData.filter(db => idsAEliminar.has(db.id))
+    const eliminadasImplicitas = dbData.filter(db => !excelIds.has(db.id) && !idsAEliminar.has(db.id))
+    
+    preview.eliminadas = [...eliminadasExplicitas, ...eliminadasImplicitas]
 
     return preview
   }
