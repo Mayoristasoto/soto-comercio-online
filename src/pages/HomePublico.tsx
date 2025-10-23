@@ -348,14 +348,14 @@ export default function HomePublico() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Settings className="h-5 w-5" />
-                <span>Panel Admin</span>
+                <span>Anotaciones</span>
               </CardTitle>
               <CardDescription>
-                Administrar sistema
+                Gestionar anotaciones
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link to="/reconoce/admin">
+              <Link to="/rrhh/anotaciones">
                 <Button variant="secondary" className="w-full">
                   <Settings className="h-4 w-4 mr-2" />
                   Acceder
