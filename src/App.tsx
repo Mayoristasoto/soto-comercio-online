@@ -22,6 +22,7 @@ import Insignias from "./pages/Insignias";
 import Premios from "./pages/Premios";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminStats from "./pages/AdminStats";
 import MedalManagement from "./pages/MedalManagement";
 import Nomina from "./pages/Nomina";
 import EmpleadoDashboard from "./pages/EmpleadoDashboard";
@@ -120,6 +121,7 @@ const App = () => (
             {/* Módulo Administración con nuevo layout */}
             <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminStats />} />
               <Route path="empleados" element={<AdminDashboard />} />
               <Route path="asignar-sucursales" element={<AsignarSucursales />} />
               <Route path="sucursales" element={<AdminDashboard />} />
