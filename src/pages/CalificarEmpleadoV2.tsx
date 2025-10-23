@@ -149,10 +149,10 @@ export default function CalificarEmpleadoV2() {
         return;
       }
 
-      const { data: empleadoData, error } = await (supabase.rpc as any)(
-        "get_empleado_for_rating",
-        { empleado_uuid: empleadoId }
-      );
+      const { data: empleadoData, error } = await supabase
+        .rpc('get_empleado_for_rating', { empleado_uuid: empleadoId });
+
+      console.log("RPC Response:", { empleadoData, error, empleadoId });
 
       if (error || !empleadoData || empleadoData.length === 0) {
         console.error("Error loading employee:", error);
