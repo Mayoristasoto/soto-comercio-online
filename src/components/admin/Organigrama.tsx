@@ -23,6 +23,15 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface EmpleadoOrg {
   id: string
@@ -68,10 +77,35 @@ export default function Organigrama() {
   const [niveles, setNiveles] = useState<NivelJerarquicoNode[]>([])
   const [empleadosSinDepartamento, setEmpleadosSinDepartamento] = useState<EmpleadoOrg[]>([])
   const [empleadosSinNivel, setEmpleadosSinNivel] = useState<EmpleadoOrg[]>([])
+  
+  // Dialog states for assignment
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
+  const [selectedLevel, setSelectedLevel] = useState<NivelJerarquicoNode | null>(null)
+  const [selectedDepartment, setSelectedDepartment] = useState<DepartamentoNode | null>(null)
+  const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set())
+  const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([])
+  const [targetSucursal, setTargetSucursal] = useState<string>("")
+  const [assigning, setAssigning] = useState(false)
 
   useEffect(() => {
     loadOrganigrama()
+    loadSucursales()
   }, [])
+
+  const loadSucursales = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sucursales')
+        .select('id, nombre')
+        .eq('activa', true)
+        .order('nombre')
+      
+      if (error) throw error
+      setSucursales(data || [])
+    } catch (error) {
+      console.error('Error loading sucursales:', error)
+    }
+  }
 
   const loadOrganigrama = async (isRefresh = false) => {
     try {
@@ -247,6 +281,81 @@ export default function Organigrama() {
     return niveles[nivel] || `Nivel ${nivel}`
   }
 
+  const handleOpenAssignDialog = (nivel?: NivelJerarquicoNode, departamento?: DepartamentoNode) => {
+    if (nivel) {
+      setSelectedLevel(nivel)
+      setSelectedDepartment(null)
+    } else if (departamento) {
+      setSelectedDepartment(departamento)
+      setSelectedLevel(null)
+    }
+    setSelectedEmployees(new Set())
+    setTargetSucursal("")
+    setAssignDialogOpen(true)
+  }
+
+  const handleToggleEmployee = (empleadoId: string) => {
+    const newSelected = new Set(selectedEmployees)
+    if (newSelected.has(empleadoId)) {
+      newSelected.delete(empleadoId)
+    } else {
+      newSelected.add(empleadoId)
+    }
+    setSelectedEmployees(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    const allEmployees = selectedLevel 
+      ? [...selectedLevel.gerentes, ...selectedLevel.empleados]
+      : selectedDepartment
+      ? [...selectedDepartment.gerentes, ...selectedDepartment.empleados]
+      : []
+    
+    if (selectedEmployees.size === allEmployees.length) {
+      setSelectedEmployees(new Set())
+    } else {
+      setSelectedEmployees(new Set(allEmployees.map(e => e.id)))
+    }
+  }
+
+  const handleAssignToSucursal = async () => {
+    if (!targetSucursal || selectedEmployees.size === 0) {
+      toast({
+        title: "Error",
+        description: "Selecciona una sucursal y al menos un empleado",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setAssigning(true)
+    try {
+      const { error } = await supabase
+        .from('empleados')
+        .update({ sucursal_id: targetSucursal })
+        .in('id', Array.from(selectedEmployees))
+
+      if (error) throw error
+
+      toast({
+        title: "Asignación exitosa",
+        description: `${selectedEmployees.size} empleado(s) asignado(s) a la sucursal`
+      })
+
+      setAssignDialogOpen(false)
+      loadOrganigrama(true)
+    } catch (error) {
+      console.error('Error assigning employees:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo asignar los empleados",
+        variant: "destructive"
+      })
+    } finally {
+      setAssigning(false)
+    }
+  }
+
   const EmpleadoCard = ({ empleado }: { empleado: EmpleadoOrg }) => {
     const initials = `${empleado.nombre[0]}${empleado.apellido[0]}`.toUpperCase()
     
@@ -411,11 +520,16 @@ export default function Organigrama() {
                         <div className="hidden lg:block absolute top-0 -left-3 w-3 h-0.5 bg-primary/30"></div>
                       )}
                       
-                      <Card className="border-2">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center space-x-2">
-                            <Briefcase className="h-4 w-4" />
-                            <span>{departamento.nombre}</span>
+                      <Card className="border-2 cursor-pointer hover:border-primary transition-all duration-200 hover:shadow-lg">
+                        <CardHeader className="pb-3" onClick={() => handleOpenAssignDialog(undefined, departamento)}>
+                          <CardTitle className="text-base flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Briefcase className="h-4 w-4" />
+                              <span>{departamento.nombre}</span>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-6 text-xs">
+                              Asignar
+                            </Button>
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -527,7 +641,10 @@ export default function Organigrama() {
                     )}
                     
                     <div className="text-center mb-6">
-                      <div className="inline-flex items-center space-x-2 bg-primary/10 px-6 py-3 rounded-full border-2 border-primary/30">
+                      <div 
+                        className="inline-flex items-center space-x-2 bg-primary/10 px-6 py-3 rounded-full border-2 border-primary/30 cursor-pointer hover:bg-primary/20 hover:border-primary transition-all duration-200 hover:scale-105"
+                        onClick={() => handleOpenAssignDialog(nivel)}
+                      >
                         <Star className="h-5 w-5 text-primary" />
                         <span className="font-semibold text-lg text-primary">
                           {nivel.nombre}
@@ -535,6 +652,9 @@ export default function Organigrama() {
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
                         {nivel.gerentes.length + nivel.empleados.length} {nivel.gerentes.length + nivel.empleados.length === 1 ? 'persona' : 'personas'}
+                      </p>
+                      <p className="text-xs text-primary mt-1 font-medium">
+                        Click para asignar a sucursal
                       </p>
                     </div>
                     
@@ -587,6 +707,119 @@ export default function Organigrama() {
         </Tabs>
         </CardContent>
       </Card>
+
+      {/* Dialog for assigning employees to sucursal */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Asignar a Sucursal - {selectedLevel?.nombre || selectedDepartment?.nombre}
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona empleados y asígnalos a una sucursal
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Select sucursal */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Sucursal Destino</label>
+              <Select value={targetSucursal} onValueChange={setTargetSucursal}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sucursales.map((sucursal) => (
+                    <SelectItem key={sucursal.id} value={sucursal.id}>
+                      {sucursal.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Employee list */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-medium">
+                  Empleados ({selectedEmployees.size} seleccionados)
+                </label>
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                  {selectedEmployees.size === (selectedLevel 
+                    ? selectedLevel.gerentes.length + selectedLevel.empleados.length
+                    : selectedDepartment 
+                    ? selectedDepartment.gerentes.length + selectedDepartment.empleados.length
+                    : 0) ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                </Button>
+              </div>
+
+              <div className="space-y-2 border rounded-lg p-3 max-h-96 overflow-y-auto">
+                {/* Gerentes */}
+                {(selectedLevel?.gerentes || selectedDepartment?.gerentes || []).map((empleado) => (
+                  <div key={empleado.id} className="flex items-center space-x-3 p-2 hover:bg-accent rounded-lg">
+                    <Checkbox
+                      checked={selectedEmployees.has(empleado.id)}
+                      onCheckedChange={() => handleToggleEmployee(empleado.id)}
+                    />
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={empleado.avatar_url} />
+                      <AvatarFallback className="text-xs">
+                        {empleado.nombre[0]}{empleado.apellido[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {empleado.nombre} {empleado.apellido}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {empleado.puesto || 'Sin puesto'} • {empleado.sucursal_nombre || 'Sin sucursal'}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">Gerente</Badge>
+                  </div>
+                ))}
+
+                {/* Empleados */}
+                {(selectedLevel?.empleados || selectedDepartment?.empleados || []).map((empleado) => (
+                  <div key={empleado.id} className="flex items-center space-x-3 p-2 hover:bg-accent rounded-lg">
+                    <Checkbox
+                      checked={selectedEmployees.has(empleado.id)}
+                      onCheckedChange={() => handleToggleEmployee(empleado.id)}
+                    />
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={empleado.avatar_url} />
+                      <AvatarFallback className="text-xs">
+                        {empleado.nombre[0]}{empleado.apellido[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {empleado.nombre} {empleado.apellido}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {empleado.puesto || 'Sin puesto'} • {empleado.sucursal_nombre || 'Sin sucursal'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAssignToSucursal}
+                disabled={assigning || selectedEmployees.size === 0 || !targetSucursal}
+              >
+                {assigning ? 'Asignando...' : `Asignar ${selectedEmployees.size} empleado(s)`}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
