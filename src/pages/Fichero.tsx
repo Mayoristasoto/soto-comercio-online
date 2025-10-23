@@ -68,6 +68,25 @@ export default function Fichero() {
     checkAuth()
     obtenerUbicacion()
     loadFichajes()
+    
+    // Detectar hash en la URL y activar la pestaña correspondiente
+    const hash = window.location.hash.replace('#', '')
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo'].includes(hash)) {
+      setActiveTab(hash as any)
+    }
+  }, [])
+
+  // Escuchar cambios en el hash
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '')
+      if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo'].includes(hash)) {
+        setActiveTab(hash as any)
+      }
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
   const checkAuth = async () => {
@@ -452,7 +471,11 @@ export default function Fichero() {
               key={key}
               variant={activeTab === key ? "default" : "ghost"}
               className="flex-1 whitespace-nowrap"
-              onClick={() => setActiveTab(key as any)}
+              onClick={() => {
+                setActiveTab(key as any)
+                // Actualizar el hash en la URL
+                window.location.hash = key
+              }}
             >
               <Icon className="h-4 w-4 mr-2" />
               {label}
