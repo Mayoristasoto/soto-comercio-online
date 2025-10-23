@@ -99,6 +99,11 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const currentFullPath = `${location.pathname}${location.hash || ''}`
   
   const isActive = (path: string) => {
+    // Si el path tiene un hash, comparar incluyendo el hash
+    if (path.includes('#')) {
+      return currentFullPath === path
+    }
+    // Si no tiene hash, comparar solo el pathname
     return location.pathname === path || location.pathname.startsWith(path + "/")
   }
 
@@ -211,12 +216,20 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                       // Renderizar link normal
                       const Icon = getIcon(link.icon)
                       const hasChildren = link.children && link.children.length > 0
-                      const isCurrentPath = isActive(fixPath(link.path, link.nombre))
+                      
+                      // Comparar con el path completo incluyendo hash si el link tiene hash
+                      const linkPath = fixPath(link.path, link.nombre)
+                      const isCurrentPath = linkPath.includes('#') 
+                        ? currentFullPath === linkPath 
+                        : isActive(linkPath)
                       
                       // Auto-expandir si algún hijo está activo
-                       const hasActiveChild = hasChildren && link.children.some((child: any) => 
-                        currentFullPath === fixPath(child.path, child.nombre)
-                      )
+                      const hasActiveChild = hasChildren && link.children.some((child: any) => {
+                        const childPath = fixPath(child.path, child.nombre)
+                        return childPath.includes('#') 
+                          ? currentFullPath === childPath 
+                          : location.pathname === childPath
+                      })
                       const shouldBeExpanded = expandedItems.has(link.id) || hasActiveChild
                       
                       return (
@@ -259,10 +272,18 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                             <CollapsibleContent>
                               <SidebarMenuSub>
                                 {link.children.map((child) => {
-                                  const ChildIcon = getIcon(child.icon)
-                                  const isChildActive = currentFullPath === fixPath(child.path, child.nombre)
-                                  const childHasChildren = (child as any).children && (child as any).children.length > 0
-                                  const childHasActiveGrand = childHasChildren && (child as any).children.some((g: any) => currentFullPath === fixPath(g.path, g.nombre))
+                                   const ChildIcon = getIcon(child.icon)
+                                   const childPath = fixPath(child.path, child.nombre)
+                                   const isChildActive = childPath.includes('#')
+                                     ? currentFullPath === childPath
+                                     : location.pathname === childPath
+                                   const childHasChildren = (child as any).children && (child as any).children.length > 0
+                                   const childHasActiveGrand = childHasChildren && (child as any).children.some((g: any) => {
+                                     const grandPath = fixPath(g.path, g.nombre)
+                                     return grandPath.includes('#')
+                                       ? currentFullPath === grandPath
+                                       : location.pathname === grandPath
+                                   })
 
                                   if (childHasChildren) {
                                     const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
@@ -279,9 +300,12 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                         </SidebarMenuSubItem>
                                         <CollapsibleContent>
                                           <SidebarMenuSub>
-                                            {(child as any).children.map((grand: any) => {
-                                              const GrandIcon = getIcon(grand.icon)
-                                              const isGrandActive = currentFullPath === fixPath(grand.path, grand.nombre)
+                                             {(child as any).children.map((grand: any) => {
+                                               const GrandIcon = getIcon(grand.icon)
+                                               const grandPath = fixPath(grand.path, grand.nombre)
+                                               const isGrandActive = grandPath.includes('#')
+                                                 ? currentFullPath === grandPath
+                                                 : location.pathname === grandPath
                                               return (
                                                 <SidebarMenuSubItem key={grand.id}>
                                                   <SidebarMenuSubButton asChild isActive={isGrandActive}>
