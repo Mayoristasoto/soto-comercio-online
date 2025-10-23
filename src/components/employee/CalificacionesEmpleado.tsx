@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface Calificacion {
@@ -58,6 +59,75 @@ export default function CalificacionesEmpleado({ empleadoId }: { empleadoId: str
       console.error("Error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const crearAnotacion = async (calificacion: Calificacion) => {
+    try {
+      // Obtener empleado actual para usar como creador
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("No se pudo identificar el usuario");
+        return;
+      }
+
+      const { data: empleadoCreador, error: empleadoError } = await supabase
+        .from("empleados")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (empleadoError || !empleadoCreador) {
+        toast.error("No se pudo identificar el empleado");
+        return;
+      }
+
+      // Determinar categoría según la calificación
+      let categoria = "actitud_positiva";
+      if (calificacion.calificacion <= 2) {
+        categoria = "llamado_atencion";
+      } else if (calificacion.calificacion === 3) {
+        categoria = "mejora_desempeno";
+      }
+
+      // Crear el título
+      const titulo = `Calificación de cliente: ${calificacion.calificacion} estrella${
+        calificacion.calificacion !== 1 ? "s" : ""
+      }`;
+
+      // Crear la descripción
+      let descripcion = `Calificación recibida: ${calificacion.calificacion}/5 estrellas\n`;
+      descripcion += `Fecha: ${new Date(calificacion.fecha_calificacion).toLocaleDateString("es-AR")}\n`;
+      if (calificacion.venta_id) {
+        descripcion += `Venta: ${calificacion.venta_id}\n`;
+      }
+      if (calificacion.comentario) {
+        descripcion += `\nComentario del cliente:\n${calificacion.comentario}`;
+      }
+
+      // Insertar la anotación
+      const { error: insertError } = await supabase
+        .from("empleados_anotaciones")
+        .insert([{
+          empleado_id: empleadoId,
+          creado_por: empleadoCreador.id,
+          categoria: categoria as any,
+          titulo,
+          descripcion,
+          es_critica: calificacion.calificacion <= 2,
+          fecha_anotacion: calificacion.fecha_calificacion,
+        }]);
+
+      if (insertError) {
+        console.error("Error creating annotation:", insertError);
+        toast.error("Error al crear la anotación");
+        return;
+      }
+
+      toast.success("Anotación creada exitosamente");
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al crear la anotación");
     }
   };
 
@@ -184,6 +254,17 @@ export default function CalificacionesEmpleado({ empleadoId }: { empleadoId: str
                       Venta: {cal.venta_id}
                     </div>
                   )}
+                  <div className="mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => crearAnotacion(cal)}
+                      className="gap-2"
+                    >
+                      <FileText className="w-3 h-3" />
+                      Crear Anotación
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
