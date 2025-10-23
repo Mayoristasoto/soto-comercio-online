@@ -3842,8 +3842,8 @@ export type Database = {
       registrar_intento_login: {
         Args: {
           p_datos_adicionales?: Json
-          p_email: string
-          p_evento: string
+          p_email?: string
+          p_evento?: string
           p_exitoso?: boolean
           p_mensaje_error?: string
           p_metodo?: string
