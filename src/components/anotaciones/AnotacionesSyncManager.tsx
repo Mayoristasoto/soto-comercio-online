@@ -21,6 +21,7 @@ interface UserInfo {
 interface Props {
   userInfo: UserInfo | null
   isAdmin: boolean
+  onSyncComplete?: () => void
 }
 
 interface AnotacionExcel {
@@ -78,7 +79,7 @@ const CATEGORIAS_LABELS: Record<string, string> = {
   "otro": "Otro"
 }
 
-export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
+export function AnotacionesSyncManager({ userInfo, isAdmin, onSyncComplete }: Props) {
   const [exporting, setExporting] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
@@ -770,6 +771,11 @@ export function AnotacionesSyncManager({ userInfo, isAdmin }: Props) {
 
       setShowPreview(false)
       setSyncPreview(null)
+      
+      // Notificar que la sincronización se completó
+      if (onSyncComplete) {
+        onSyncComplete()
+      }
 
     } catch (error) {
       console.error('Error en sincronización:', error)

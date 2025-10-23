@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useOutletContext } from "react-router-dom"
@@ -21,6 +22,11 @@ export default function Anotaciones() {
   const { userInfo } = useOutletContext<{ userInfo: UserInfo | null }>()
   const isAdmin = userInfo?.rol === 'admin_rrhh'
   const isGerente = userInfo?.rol === 'gerente_sucursal'
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  const handleSyncComplete = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
 
   if (!isAdmin && !isGerente) {
     return (
@@ -88,6 +94,7 @@ export default function Anotaciones() {
               <AnotacionesSyncManager 
                 userInfo={userInfo}
                 isAdmin={isAdmin}
+                onSyncComplete={handleSyncComplete}
               />
             </div>
             
@@ -95,6 +102,7 @@ export default function Anotaciones() {
               userInfo={userInfo}
               isAdmin={isAdmin}
               isGerente={isGerente}
+              refreshTrigger={refreshTrigger}
             />
           </TabsContent>
 

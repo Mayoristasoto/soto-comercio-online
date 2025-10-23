@@ -55,6 +55,7 @@ interface Props {
   userInfo: UserInfo | null
   isAdmin: boolean
   isGerente: boolean
+  refreshTrigger?: number
 }
 
 const CATEGORIAS_MAP: Record<string, { label: string; color: string }> = {
@@ -70,7 +71,7 @@ const CATEGORIAS_MAP: Record<string, { label: string; color: string }> = {
   otro: { label: "Otro", color: "secondary" },
 }
 
-export function HistorialAnotaciones({ userInfo, isAdmin, isGerente }: Props) {
+export function HistorialAnotaciones({ userInfo, isAdmin, isGerente, refreshTrigger }: Props) {
   const [anotaciones, setAnotaciones] = useState<Anotacion[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -80,7 +81,7 @@ export function HistorialAnotaciones({ userInfo, isAdmin, isGerente }: Props) {
 
   useEffect(() => {
     loadAnotaciones()
-  }, [])
+  }, [refreshTrigger])
 
   const loadAnotaciones = async () => {
     try {
