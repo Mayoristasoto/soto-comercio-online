@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast"
 import DocumentManager from "./DocumentManager"
 import PermissionsManager from "./PermissionsManager"
 import { AusenciasMedicas } from "./AusenciasMedicas"
+import CalificacionesEmpleado from "../employee/CalificacionesEmpleado"
 
 interface EmpleadoProfile {
   id: string
@@ -300,9 +301,10 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
       <CardContent>
         <Tabs defaultValue="personal" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="personal">Datos Personales</TabsTrigger>
             <TabsTrigger value="work">Información Laboral</TabsTrigger>
+            <TabsTrigger value="calificaciones">Calificaciones</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="ausencias">Ausencias Médicas</TabsTrigger>
             <TabsTrigger value="permissions">Permisos</TabsTrigger>
@@ -548,6 +550,10 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="calificaciones">
+            <CalificacionesEmpleado empleadoId={empleado.id} />
           </TabsContent>
 
           <TabsContent value="documents">

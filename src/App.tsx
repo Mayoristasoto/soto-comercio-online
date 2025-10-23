@@ -40,6 +40,8 @@ import NotFound from "./pages/NotFound";
 import KioscoCheckIn from "./pages/KioscoCheckIn";
 import Autogestion from "./pages/Autogestion";
 import PrintPreview from "./pages/PrintPreview";
+import CalificarEmpleado from "./pages/CalificarEmpleado";
+import GenerarQRDemo from "./pages/GenerarQRDemo";
 
 const queryClient = new QueryClient();
 
@@ -120,6 +122,14 @@ const App = () => (
           <Route path="/kiosco" element={<KioscoCheckIn />} />
           <Route path="/autogestion" element={<Autogestion />} />
           <Route path="/print-preview" element={<PrintPreview />} />
+          
+          {/* Calificación de empleados (página pública) */}
+          <Route path="/calificar/:token" element={<CalificarEmpleado />} />
+          
+          {/* Generador de QR Demo (protegido) */}
+          <Route path="/" element={<UnifiedLayout />}>
+            <Route path="admin/generar-qr-demo" element={<GenerarQRDemo />} />
+          </Route>
           
           {/* Redirects legacy */}
           <Route path="/gondolas" element={<Navigate to="/admin/gondolas" replace />} />

@@ -314,6 +314,42 @@ export type Database = {
         }
         Relationships: []
       }
+      calificaciones_empleados: {
+        Row: {
+          calificacion: number
+          comentario: string | null
+          created_at: string
+          empleado_id: string
+          fecha_calificacion: string
+          id: string
+          ip_address: unknown
+          token_usado: string
+          venta_id: string | null
+        }
+        Insert: {
+          calificacion: number
+          comentario?: string | null
+          created_at?: string
+          empleado_id: string
+          fecha_calificacion?: string
+          id?: string
+          ip_address?: unknown
+          token_usado: string
+          venta_id?: string | null
+        }
+        Update: {
+          calificacion?: number
+          comentario?: string | null
+          created_at?: string
+          empleado_id?: string
+          fecha_calificacion?: string
+          id?: string
+          ip_address?: unknown
+          token_usado?: string
+          venta_id?: string | null
+        }
+        Relationships: []
+      }
       capacitaciones: {
         Row: {
           activa: boolean
