@@ -131,9 +131,9 @@ export default function CalificarEmpleadoV2() {
 
     try {
       const decoded = atob(token);
-      const parts = decoded.split("-");
+      const parts = decoded.split("___");
       const empleadoId = parts[0];
-      const ventaId = parts.slice(1).join("-"); // Por si el venta_id tiene guiones
+      const ventaId = parts[1];
 
       console.log("Token decoded:", { empleadoId, ventaId });
 

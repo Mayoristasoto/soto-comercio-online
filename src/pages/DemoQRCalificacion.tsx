@@ -34,8 +34,7 @@ export default function DemoQRCalificacion() {
       return;
     }
 
-    const timestamp = Date.now();
-    const token = btoa(`${selectedEmpleado}-${ventaId}-${timestamp}`);
+    const token = btoa(`${selectedEmpleado}___${ventaId}`);
     const url = `${window.location.origin}/calificar-v2/${token}`;
     setQrUrl(url);
     toast.success("QR generado correctamente");
