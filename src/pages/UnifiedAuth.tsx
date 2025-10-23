@@ -151,6 +151,19 @@ export default function UnifiedAuth() {
       
       // El user_id ahora viene directamente del reconocimiento facial
       if (!user.user_id) {
+        // Log de intento facial sin cuenta asociada
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: user.email,
+            p_evento: 'intento_facial',
+            p_metodo: 'facial',
+            p_exitoso: false,
+            p_mensaje_error: 'usuario_sin_cuenta_asociada'
+          });
+        } catch (logErr) {
+          console.warn('No se pudo registrar intento facial sin cuenta:', logErr)
+        }
+
         console.error('UnifiedAuth: Usuario reconocido pero sin user_id asociado')
         toast({
           title: "Error",
@@ -171,6 +184,19 @@ export default function UnifiedAuth() {
       )
 
       if (authError || !authData?.email_otp) {
+        // Log de intento facial fallido (no se obtuvo OTP)
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: user.email,
+            p_evento: 'intento_facial',
+            p_metodo: 'facial',
+            p_exitoso: false,
+            p_mensaje_error: authError?.message || 'no_se_pudo_obtener_otp'
+          });
+        } catch (logErr) {
+          console.warn('No se pudo registrar intento facial fallido (OTP):', logErr)
+        }
+
         console.error('UnifiedAuth: Error obteniendo OTP:', authError)
         toast({
           title: "Error",
@@ -189,6 +215,19 @@ export default function UnifiedAuth() {
       })
 
       if (verifyError || !verifyData?.session) {
+        // Log de login facial fallido en verificación OTP
+        try {
+          await supabase.rpc('registrar_intento_login', {
+            p_email: user.email,
+            p_evento: 'login_fallido',
+            p_metodo: 'facial',
+            p_exitoso: false,
+            p_mensaje_error: verifyError?.message || 'otp_invalido'
+          });
+        } catch (logErr) {
+          console.warn('No se pudo registrar login facial fallido (verifyOtp):', logErr)
+        }
+
         console.error('UnifiedAuth: Error verificando OTP:', verifyError)
         toast({
           title: "Error",
@@ -196,6 +235,19 @@ export default function UnifiedAuth() {
           variant: "destructive",
         })
         return
+      }
+
+      // Log de login facial exitoso
+      try {
+        await supabase.rpc('registrar_intento_login', {
+          p_email: user.email,
+          p_evento: 'login_exitoso',
+          p_metodo: 'facial',
+          p_exitoso: true,
+          p_user_id: verifyData.user?.id || verifyData.session?.user.id
+        });
+      } catch (logErr) {
+        console.warn('No se pudo registrar login facial exitoso:', logErr)
       }
 
       toast({
