@@ -74,6 +74,14 @@ const App = () => (
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
+            <Route path="operaciones/fichero/informe" element={<Fichero />} />
+            <Route path="operaciones/fichero/estado-animo" element={<Fichero />} />
+            <Route path="operaciones/fichero/estadisticas" element={<Fichero />} />
+            <Route path="operaciones/fichero/incidencias" element={<Fichero />} />
+            <Route path="operaciones/fichero/historial" element={<Fichero />} />
+            <Route path="operaciones/fichero/horarios" element={<Fichero />} />
+            <Route path="operaciones/fichero/configuracion" element={<Fichero />} />
+            <Route path="operaciones/fichero/administrar" element={<Fichero />} />
             <Route path="operaciones/tareas" element={<Tareas />} />
             <Route path="operaciones/tareas/mis-tareas" element={<Tareas />} />
             <Route path="operaciones/tareas/asignadas" element={<Tareas />} />

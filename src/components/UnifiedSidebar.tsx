@@ -20,7 +20,10 @@ import {
   ChevronDown,
   LogOut,
   Moon,
-  Sun
+  Sun,
+  AlertTriangle,
+  History,
+  Shield
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
@@ -81,7 +84,9 @@ const iconMap: Record<string, any> = {
   Tablet: Building2,
   Tv: Building2,
   Edit: FileText,
-  Medal: Award
+  Medal: Award,
+  AlertTriangle: FileWarning,
+  History: Clock
 }
 
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
@@ -204,12 +209,18 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                       // Renderizar link normal
                       const Icon = getIcon(link.icon)
                       const hasChildren = link.children && link.children.length > 0
-                      const isExpanded = expandedItems.has(link.id)
+                      const isCurrentPath = isActive(fixPath(link.path, link.nombre))
+                      
+                      // Auto-expandir si algún hijo está activo
+                      const hasActiveChild = hasChildren && link.children.some((child: any) => 
+                        location.pathname === fixPath(child.path, child.nombre)
+                      )
+                      const shouldBeExpanded = expandedItems.has(link.id) || hasActiveChild
                       
                       return (
                         <Collapsible
                           key={link.id}
-                          open={isExpanded}
+                          open={shouldBeExpanded}
                           onOpenChange={() => toggleExpanded(link.id)}
                           className="group/collapsible"
                         >
@@ -218,6 +229,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                               <CollapsibleTrigger asChild>
                                 <SidebarMenuButton 
                                   tooltip={link.descripcion || link.nombre}
+                                  isActive={isCurrentPath || hasActiveChild}
                                 >
                                   <Icon className="h-4 w-4" />
                                   <span>{link.nombre}</span>
@@ -229,7 +241,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                             ) : (
                               <SidebarMenuButton 
                                 asChild 
-                                isActive={isActive(fixPath(link.path, link.nombre))}
+                                isActive={isCurrentPath}
                                 tooltip={link.descripcion || link.nombre}
                               >
                                 <NavLink to={fixPath(link.path, link.nombre)}>
@@ -246,11 +258,12 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                               <SidebarMenuSub>
                                 {link.children.map((child) => {
                                   const ChildIcon = getIcon(child.icon)
+                                  const isChildActive = location.pathname === fixPath(child.path, child.nombre)
                                   return (
                                     <SidebarMenuSubItem key={child.id}>
                                       <SidebarMenuSubButton 
                                         asChild 
-                                        isActive={location.pathname === fixPath(child.path, child.nombre)}
+                                        isActive={isChildActive}
                                       >
                                         <NavLink to={fixPath(child.path, child.nombre)}>
                                           <ChildIcon className="h-4 w-4" />
