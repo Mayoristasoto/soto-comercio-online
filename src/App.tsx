@@ -84,14 +84,14 @@ const App = () => (
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
-            <Route path="operaciones/fichero/informe" element={<Fichero />} />
-            <Route path="operaciones/fichero/estado-animo" element={<Fichero />} />
-            <Route path="operaciones/fichero/estadisticas" element={<Fichero />} />
-            <Route path="operaciones/fichero/incidencias" element={<Fichero />} />
-            <Route path="operaciones/fichero/historial" element={<Fichero />} />
-            <Route path="operaciones/fichero/horarios" element={<Fichero />} />
-            <Route path="operaciones/fichero/configuracion" element={<Fichero />} />
-            <Route path="operaciones/fichero/administrar" element={<Fichero />} />
+            <Route path="operaciones/fichero/informe" element={<Navigate to="/fichero#misfichadas" replace />} />
+            <Route path="operaciones/fichero/estado-animo" element={<Navigate to="/fichero#estado-animo" replace />} />
+            <Route path="operaciones/fichero/estadisticas" element={<Navigate to="/fichero#estadisticas" replace />} />
+            <Route path="operaciones/fichero/incidencias" element={<Navigate to="/fichero#incidencias" replace />} />
+            <Route path="operaciones/fichero/historial" element={<Navigate to="/fichero#historial" replace />} />
+            <Route path="operaciones/fichero/horarios" element={<Navigate to="/fichero#horarios" replace />} />
+            <Route path="operaciones/fichero/configuracion" element={<Navigate to="/fichero#config" replace />} />
+            <Route path="operaciones/fichero/administrar" element={<Navigate to="/fichero#admin" replace />} />
             <Route path="operaciones/tareas" element={<Tareas />} />
             <Route path="operaciones/tareas/mis-tareas" element={<Tareas />} />
             <Route path="operaciones/tareas/asignadas" element={<Tareas />} />
