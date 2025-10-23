@@ -112,6 +112,24 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
     return iconMap[iconName] || FileText
   }
 
+  // Normaliza rutas mal configuradas desde la BD
+  const fixPath = (path: string, name?: string) => {
+    if (!path) return path
+    let p = path
+
+    // Correcciones específicas conocidas
+    if (p.includes('anotaciones3') || p === '/reconoce/admin') {
+      p = '/rrhh/anotaciones'
+    }
+
+    // Si el nombre sugiere "Anotaciones" pero la ruta no coincide, corrige
+    if (name && name.toLowerCase().includes('anotacion') && !p.includes('/anotaciones')) {
+      p = '/rrhh/anotaciones'
+    }
+
+    return p
+  }
+
   const toggleExpanded = (linkId: string) => {
     setExpandedItems(prev => {
       const newSet = new Set(prev)
@@ -211,10 +229,10 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                             ) : (
                               <SidebarMenuButton 
                                 asChild 
-                                isActive={isActive(link.path)}
+                                isActive={isActive(fixPath(link.path, link.nombre))}
                                 tooltip={link.descripcion || link.nombre}
                               >
-                                <NavLink to={link.path}>
+                                <NavLink to={fixPath(link.path, link.nombre)}>
                                   <Icon className="h-4 w-4" />
                                   <span>{link.nombre}</span>
                                 </NavLink>
@@ -232,9 +250,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                     <SidebarMenuSubItem key={child.id}>
                                       <SidebarMenuSubButton 
                                         asChild 
-                                        isActive={location.pathname === child.path}
+                                        isActive={location.pathname === fixPath(child.path, child.nombre)}
                                       >
-                                        <NavLink to={child.path}>
+                                        <NavLink to={fixPath(child.path, child.nombre)}>
                                           <ChildIcon className="h-4 w-4" />
                                           <span>{child.nombre}</span>
                                         </NavLink>
