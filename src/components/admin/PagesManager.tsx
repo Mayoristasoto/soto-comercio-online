@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { Pencil, Trash2, Save, X, Plus, GripVertical, FileText } from "lucide-react"
+import { Pencil, Trash2, Save, X, Plus, GripVertical, FileText, FolderPlus } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -51,6 +51,7 @@ export function PagesManager() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [pageToDelete, setPageToDelete] = useState<string | null>(null)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
+  const [showSubPageForm, setShowSubPageForm] = useState<string | null>(null)
 
   useEffect(() => {
     loadPages()
@@ -147,9 +148,11 @@ export function PagesManager() {
     }
   }
 
-  const handleAddPage = async () => {
+  const handleAddPage = async (parentId: string | null = null) => {
     try {
-      if (!newPageForm.path || !newPageForm.nombre) {
+      const formToUse = parentId ? newPageForm : newPageForm
+      
+      if (!formToUse.path || !formToUse.nombre) {
         toast.error("Path y nombre son obligatorios")
         return
       }
@@ -157,22 +160,23 @@ export function PagesManager() {
       const { error } = await supabase
         .from("app_pages")
         .insert([{
-          path: newPageForm.path,
-          nombre: newPageForm.nombre,
-          titulo_pagina: newPageForm.titulo_pagina || null,
-          descripcion: newPageForm.descripcion || null,
-          icon: newPageForm.icon || "FileText",
-          orden: newPageForm.orden || 0,
-          visible: newPageForm.visible ?? true,
-          requiere_auth: newPageForm.requiere_auth ?? true,
-          roles_permitidos: newPageForm.roles_permitidos || ["empleado"],
-          parent_id: newPageForm.parent_id || null
+          path: formToUse.path,
+          nombre: formToUse.nombre,
+          titulo_pagina: formToUse.titulo_pagina || null,
+          descripcion: formToUse.descripcion || null,
+          icon: formToUse.icon || "FileText",
+          orden: formToUse.orden || 0,
+          visible: formToUse.visible ?? true,
+          requiere_auth: formToUse.requiere_auth ?? true,
+          roles_permitidos: formToUse.roles_permitidos || ["empleado"],
+          parent_id: parentId || formToUse.parent_id || null
         }])
 
       if (error) throw error
 
-      toast.success("Página creada")
+      toast.success(parentId ? "Sub-página creada" : "Página creada")
       setShowNewForm(false)
+      setShowSubPageForm(null)
       setNewPageForm({
         path: "",
         nombre: "",
@@ -190,6 +194,22 @@ export function PagesManager() {
       console.error("Error creating page:", error)
       toast.error("Error al crear página")
     }
+  }
+
+  const handleStartAddSubPage = (parentId: string) => {
+    setShowSubPageForm(parentId)
+    setNewPageForm({
+      path: "",
+      nombre: "",
+      titulo_pagina: "",
+      descripcion: "",
+      icon: "FileText",
+      orden: 0,
+      visible: true,
+      requiere_auth: true,
+      roles_permitidos: ["empleado"],
+      parent_id: parentId
+    })
   }
 
   const handleDeleteClick = (id: string) => {
@@ -395,6 +415,16 @@ export function PagesManager() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  {!page.parent_id && (
+                    <Button 
+                      onClick={() => handleStartAddSubPage(page.id)} 
+                      variant="outline" 
+                      size="sm"
+                      title="Agregar sub-página"
+                    >
+                      <FolderPlus className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Switch
                     checked={page.visible}
                     onCheckedChange={() => handleToggleVisibility(page.id, page.visible)}
@@ -410,6 +440,69 @@ export function PagesManager() {
             )}
           </CardContent>
         </Card>
+        
+        {/* Formulario de sub-página */}
+        {showSubPageForm === page.id && (
+          <Card className="border-primary ml-6 mt-2">
+            <CardHeader>
+              <CardTitle>Nueva Sub-página de "{page.nombre}"</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Path *</Label>
+                  <Input
+                    placeholder="/mi-subpagina"
+                    value={newPageForm.path}
+                    onChange={(e) => setNewPageForm({ ...newPageForm, path: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Nombre *</Label>
+                  <Input
+                    placeholder="Mi Sub-página"
+                    value={newPageForm.nombre}
+                    onChange={(e) => setNewPageForm({ ...newPageForm, nombre: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Título de Página</Label>
+                <Input
+                  placeholder="Título que aparecerá en el navegador"
+                  value={newPageForm.titulo_pagina}
+                  onChange={(e) => setNewPageForm({ ...newPageForm, titulo_pagina: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Descripción</Label>
+                <Textarea
+                  placeholder="Descripción de la sub-página"
+                  value={newPageForm.descripcion}
+                  onChange={(e) => setNewPageForm({ ...newPageForm, descripcion: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Icono</Label>
+                <Input
+                  placeholder="FileText"
+                  value={newPageForm.icon}
+                  onChange={(e) => setNewPageForm({ ...newPageForm, icon: e.target.value })}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => handleAddPage(page.id)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear Sub-página
+                </Button>
+                <Button onClick={() => setShowSubPageForm(null)} variant="outline">
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {page.children && page.children.map(child => renderPage(child, level + 1))}
       </div>
     )
@@ -506,7 +599,7 @@ export function PagesManager() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleAddPage}>
+              <Button onClick={() => handleAddPage()}>
                 <Plus className="h-4 w-4 mr-2" />
                 Crear Página
               </Button>
