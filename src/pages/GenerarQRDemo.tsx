@@ -48,9 +48,9 @@ export default function GenerarQRDemo() {
     const venta = ventaId || `VENTA-${timestamp}`;
     const token = btoa(`${selectedEmpleado}-${venta}-${timestamp}`);
     
-    // URL completa para calificación
+    // URL completa para calificación (nueva versión con sorteo)
     const baseUrl = window.location.origin;
-    const url = `${baseUrl}/calificar/${token}`;
+    const url = `${baseUrl}/calificar-v2/${token}`;
     
     setGeneratedUrl(url);
     toast.success("URL generada correctamente");

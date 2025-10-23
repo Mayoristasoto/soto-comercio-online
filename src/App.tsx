@@ -41,6 +41,7 @@ import KioscoCheckIn from "./pages/KioscoCheckIn";
 import Autogestion from "./pages/Autogestion";
 import PrintPreview from "./pages/PrintPreview";
 import CalificarEmpleado from "./pages/CalificarEmpleado";
+import CalificarEmpleadoV2 from "./pages/CalificarEmpleadoV2";
 import DemoQRCalificacion from "./pages/DemoQRCalificacion";
 
 const queryClient = new QueryClient();
@@ -143,6 +144,7 @@ const App = () => (
           
           {/* Calificación de empleados (página pública) */}
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />
+          <Route path="/calificar-v2/:token" element={<CalificarEmpleadoV2 />} />
           
           {/* Generador de QR Demo (protegido) */}
           <Route path="/" element={<UnifiedLayout />}>

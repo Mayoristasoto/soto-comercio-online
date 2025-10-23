@@ -35,6 +35,7 @@ import { PuntualidadManager } from "@/components/admin/PuntualidadManager"
 import { SidebarLinksManager } from "@/components/admin/SidebarLinksManager"
 import { EntregaElementos } from "@/components/admin/EntregaElementos"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
+import CalificacionesConfig from "@/components/admin/CalificacionesConfig"
 
 interface DashboardStats {
   total_empleados: number

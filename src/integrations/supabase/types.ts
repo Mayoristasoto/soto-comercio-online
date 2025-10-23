@@ -314,37 +314,100 @@ export type Database = {
         }
         Relationships: []
       }
+      calificaciones_config: {
+        Row: {
+          clave: string
+          descripcion: string | null
+          id: string
+          tipo: string | null
+          updated_at: string | null
+          updated_by: string | null
+          valor: string
+        }
+        Insert: {
+          clave: string
+          descripcion?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          valor: string
+        }
+        Update: {
+          clave?: string
+          descripcion?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calificaciones_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calificaciones_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calificaciones_empleados: {
         Row: {
           calificacion: number
+          calificacion_servicio: number | null
+          cliente_dni: string | null
+          cliente_nombre_completo: string | null
+          cliente_telefono: string | null
           comentario: string | null
           created_at: string
           empleado_id: string
           fecha_calificacion: string
           id: string
           ip_address: unknown
+          participa_sorteo: boolean | null
+          sorteo_numero: number | null
           token_usado: string
           venta_id: string | null
         }
         Insert: {
           calificacion: number
+          calificacion_servicio?: number | null
+          cliente_dni?: string | null
+          cliente_nombre_completo?: string | null
+          cliente_telefono?: string | null
           comentario?: string | null
           created_at?: string
           empleado_id: string
           fecha_calificacion?: string
           id?: string
           ip_address?: unknown
+          participa_sorteo?: boolean | null
+          sorteo_numero?: number | null
           token_usado: string
           venta_id?: string | null
         }
         Update: {
           calificacion?: number
+          calificacion_servicio?: number | null
+          cliente_dni?: string | null
+          cliente_nombre_completo?: string | null
+          cliente_telefono?: string | null
           comentario?: string | null
           created_at?: string
           empleado_id?: string
           fecha_calificacion?: string
           id?: string
           ip_address?: unknown
+          participa_sorteo?: boolean | null
+          sorteo_numero?: number | null
           token_usado?: string
           venta_id?: string | null
         }
