@@ -175,7 +175,7 @@ export default function CalificarEmpleado() {
           <CardTitle>Califica tu experiencia</CardTitle>
           <CardDescription>
             Atendido por: <strong>{empleado.nombre} {empleado.apellido}</strong>
-            {empleado.puesto && <div className="text-sm mt-1">{empleado.puesto}</div>}
+            {empleado.puesto && <span className="block text-sm mt-1">{empleado.puesto}</span>}
           </CardDescription>
         </CardHeader>
 

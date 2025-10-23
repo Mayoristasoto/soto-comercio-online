@@ -131,7 +131,11 @@ export default function CalificarEmpleadoV2() {
 
     try {
       const decoded = atob(token);
-      const [empleadoId, ventaId] = decoded.split("-");
+      const parts = decoded.split("-");
+      const empleadoId = parts[0];
+      const ventaId = parts.slice(1).join("-"); // Por si el venta_id tiene guiones
+
+      console.log("Token decoded:", { empleadoId, ventaId });
 
       const { data: existingRating } = await supabase
         .from("calificaciones_empleados")
@@ -367,9 +371,11 @@ export default function CalificarEmpleadoV2() {
             </Avatar>
           </div>
           <CardTitle className="text-2xl">¿Cómo fue tu experiencia?</CardTitle>
-          <CardDescription className="text-base">
-            Fuiste atendido por: <strong className="text-foreground">{empleado.nombre} {empleado.apellido}</strong>
-            {empleado.puesto && <div className="text-sm mt-1">{empleado.puesto}</div>}
+          <CardDescription className="space-y-1">
+            <span className="block">
+              Fuiste atendido por: <strong className="text-foreground">{empleado.nombre} {empleado.apellido}</strong>
+            </span>
+            {empleado.puesto && <span className="block text-sm">{empleado.puesto}</span>}
           </CardDescription>
         </CardHeader>
 
