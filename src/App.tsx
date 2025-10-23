@@ -41,7 +41,7 @@ import KioscoCheckIn from "./pages/KioscoCheckIn";
 import Autogestion from "./pages/Autogestion";
 import PrintPreview from "./pages/PrintPreview";
 import CalificarEmpleado from "./pages/CalificarEmpleado";
-import GenerarQRDemo from "./pages/GenerarQRDemo";
+import DemoQRCalificacion from "./pages/DemoQRCalificacion";
 
 const queryClient = new QueryClient();
 
@@ -128,7 +128,7 @@ const App = () => (
           
           {/* Generador de QR Demo (protegido) */}
           <Route path="/" element={<UnifiedLayout />}>
-            <Route path="admin/generar-qr-demo" element={<GenerarQRDemo />} />
+            <Route path="admin/demo-qr-calificacion" element={<DemoQRCalificacion />} />
           </Route>
           
           {/* Redirects legacy */}
