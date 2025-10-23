@@ -80,16 +80,27 @@ export function useSidebarLinks(userRole: string | null) {
         tipo: page.tipo || 'link'
       })) || [];
 
-      // Organizar en estructura jerárquica
-      const parentLinks = transformedData.filter((link: any) => !link.parent_id);
-      const linksWithChildren: SidebarLinkWithChildren[] = parentLinks.map((parent: any) => ({
-        ...parent,
-        children: transformedData
-          .filter((child: any) => child.parent_id === parent.id)
-          .sort((a: any, b: any) => a.orden - b.orden),
-      }));
+      // Organizar en estructura jerárquica (soporta múltiples niveles)
+      const items: SidebarLinkWithChildren[] = (transformedData as any[])
+        .sort((a, b) => a.orden - b.orden)
 
-      setLinks(linksWithChildren);
+      const byParent = new Map<string | null, SidebarLinkWithChildren[]>()
+      for (const item of items) {
+        const arr = byParent.get(item.parent_id) || []
+        arr.push({ ...item })
+        byParent.set(item.parent_id, arr)
+      }
+
+      const attachChildren = (node: SidebarLinkWithChildren) => {
+        const children = byParent.get(node.id) || []
+        node.children = children
+        for (const child of children) attachChildren(child as SidebarLinkWithChildren)
+      }
+
+      const roots: SidebarLinkWithChildren[] = (byParent.get(null) || []).map((r) => ({ ...r }))
+      for (const root of roots) attachChildren(root)
+
+      setLinks(roots)
     } catch (error) {
       console.error("Error loading sidebar links:", error);
       setLinks([]);

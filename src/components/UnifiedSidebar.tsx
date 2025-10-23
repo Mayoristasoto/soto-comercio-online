@@ -259,6 +259,44 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 {link.children.map((child) => {
                                   const ChildIcon = getIcon(child.icon)
                                   const isChildActive = location.pathname === fixPath(child.path, child.nombre)
+                                  const childHasChildren = (child as any).children && (child as any).children.length > 0
+                                  const childHasActiveGrand = childHasChildren && (child as any).children.some((g: any) => location.pathname === fixPath(g.path, g.nombre))
+
+                                  if (childHasChildren) {
+                                    const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
+                                    return (
+                                      <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)}>
+                                        <SidebarMenuSubItem>
+                                          <CollapsibleTrigger asChild>
+                                            <SidebarMenuSubButton isActive={isChildActive}>
+                                              <ChildIcon className="h-4 w-4" />
+                                              <span>{child.nombre}</span>
+                                              <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                                            </SidebarMenuSubButton>
+                                          </CollapsibleTrigger>
+                                        </SidebarMenuSubItem>
+                                        <CollapsibleContent>
+                                          <SidebarMenuSub>
+                                            {(child as any).children.map((grand: any) => {
+                                              const GrandIcon = getIcon(grand.icon)
+                                              const isGrandActive = location.pathname === fixPath(grand.path, grand.nombre)
+                                              return (
+                                                <SidebarMenuSubItem key={grand.id}>
+                                                  <SidebarMenuSubButton asChild isActive={isGrandActive}>
+                                                    <NavLink to={fixPath(grand.path, grand.nombre)}>
+                                                      <GrandIcon className="h-4 w-4" />
+                                                      <span>{grand.nombre}</span>
+                                                    </NavLink>
+                                                  </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                              )
+                                            })}
+                                          </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                      </Collapsible>
+                                    )
+                                  }
+
                                   return (
                                     <SidebarMenuSubItem key={child.id}>
                                       <SidebarMenuSubButton 
