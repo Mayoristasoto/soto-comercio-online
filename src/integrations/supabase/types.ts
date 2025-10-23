@@ -3564,6 +3564,16 @@ export type Database = {
           sucursal_id: string
         }[]
       }
+      get_empleado_for_rating: {
+        Args: { empleado_uuid: string }
+        Returns: {
+          apellido: string
+          avatar_url: string
+          id: string
+          nombre: string
+          puesto: string
+        }[]
+      }
       get_empleado_full_admin_only: {
         Args: { empleado_uuid: string }
         Returns: {

@@ -55,17 +55,10 @@ export default function CalificarEmpleado() {
       }
 
       // Cargar datos del empleado usando función RPC pública
-      const { data: empleadoData, error } = await supabase
-        .rpc("get_empleado_for_rating", { empleado_uuid: empleadoId }) as {
-          data: Array<{
-            id: string;
-            nombre: string;
-            apellido: string;
-            avatar_url: string | null;
-            puesto: string | null;
-          }> | null;
-          error: any;
-        };
+      const { data: empleadoData, error } = await (supabase.rpc as any)(
+        "get_empleado_for_rating", 
+        { empleado_uuid: empleadoId }
+      );
 
       if (error || !empleadoData || empleadoData.length === 0) {
         console.error("Error loading employee:", error);
