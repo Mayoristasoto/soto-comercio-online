@@ -29,6 +29,7 @@ import FicheroHistorial from "@/components/fichero/FicheroHistorial"
 import AttendanceReports from "@/components/admin/AttendanceReports"
 import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
 import EstadoAnimoEmpleado from "@/components/fichero/EstadoAnimoEmpleado"
+import { useLocation } from "react-router-dom"
 
 interface Empleado {
   id: string
@@ -63,6 +64,7 @@ export default function Fichero() {
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
   const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo'>('fichaje')
+  const location = useLocation()
 
   useEffect(() => {
     checkAuth()
@@ -76,18 +78,13 @@ export default function Fichero() {
     }
   }, [])
 
-  // Escuchar cambios en el hash
+  // Sincronizar cambios de hash usando React Router
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '')
-      if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo'].includes(hash)) {
-        setActiveTab(hash as any)
-      }
+    const hash = (location.hash || '').replace('#', '')
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo'].includes(hash)) {
+      setActiveTab(hash as any)
     }
-
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
+  }, [location.hash])
 
   const checkAuth = async () => {
     try {
