@@ -245,9 +245,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 <SidebarMenuButton 
                                   tooltip={link.descripcion || link.nombre}
                                   isActive={isCurrentPath || hasActiveChild}
-                                  className="font-semibold text-primary"
+                                  className="font-bold text-primary text-base hover:bg-accent/50"
                                 >
-                                  <Icon className="h-4 w-4" />
+                                  <Icon className="h-5 w-5" />
                                   <span>{link.nombre}</span>
                                   <ChevronDown 
                                     className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
