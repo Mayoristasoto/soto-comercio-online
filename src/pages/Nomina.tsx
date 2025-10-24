@@ -321,48 +321,37 @@ export default function Nomina() {
     const employee = employees.find(emp => emp.id === employeeId)
     if (!employee) return
 
-    const confirmMessage = `¿Estás seguro de que quieres eliminar a ${employee.nombre} ${employee.apellido}?\n\n` +
-      `Esta acción NO se puede deshacer y eliminará:\n` +
-      `• El registro del empleado\n` +
-      `• Sus fichajes y evaluaciones\n` +
-      `• Sus documentos y asignaciones\n` +
-      `${employee.user_id ? '• Su cuenta de usuario (acceso al sistema)' : ''}`
+    const confirmMessage = `¿Estás seguro de que quieres desactivar a ${employee.nombre} ${employee.apellido}?\n\n` +
+      `Esta acción marcará al empleado como inactivo:\n` +
+      `• El empleado no aparecerá en las listas activas\n` +
+      `• Se conservarán todos sus registros históricos\n` +
+      `• Los fichajes y evaluaciones permanecerán en el sistema\n` +
+      `${employee.user_id ? '• Su cuenta de usuario será deshabilitada' : ''}\n\n` +
+      `Podrás reactivarlo más tarde si es necesario.`
 
     if (!confirm(confirmMessage)) return
 
     try {
-      // Eliminar empleado (esto eliminará en cascada fichajes, evaluaciones, etc. si está configurado)
-      const { error: deleteError } = await supabase
+      // Marcar empleado como inactivo (soft delete)
+      const { error: updateError } = await supabase
         .from('empleados')
-        .delete()
+        .update({ activo: false })
         .eq('id', employeeId)
 
-      if (deleteError) throw deleteError
-
-      // Si tiene user_id, intentar eliminar el usuario de auth
-      if (employee.user_id) {
-        try {
-          const { error: authError } = await supabase.auth.admin.deleteUser(employee.user_id)
-          if (authError) {
-            console.warn('No se pudo eliminar el usuario de auth:', authError)
-          }
-        } catch (authError) {
-          console.warn('No se pudo eliminar el usuario de auth:', authError)
-        }
-      }
+      if (updateError) throw updateError
 
       toast({
-        title: "Empleado eliminado",
-        description: `${employee.nombre} ${employee.apellido} ha sido eliminado del sistema`
+        title: "Empleado desactivado",
+        description: `${employee.nombre} ${employee.apellido} ha sido marcado como inactivo`
       })
 
       // Recargar datos
       loadNominaData()
     } catch (error) {
-      console.error('Error eliminando empleado:', error)
+      console.error('Error desactivando empleado:', error)
       toast({
         title: "Error",
-        description: "No se pudo eliminar el empleado. Intenta nuevamente.",
+        description: "No se pudo desactivar el empleado. Intenta nuevamente.",
         variant: "destructive"
       })
     }
