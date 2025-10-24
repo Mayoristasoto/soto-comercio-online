@@ -90,6 +90,45 @@ const iconMap: Record<string, any> = {
   History
 }
 
+// Mapa de colores para cada icono
+const iconColors: Record<string, string> = {
+  Home: "text-blue-500",
+  Award: "text-yellow-500",
+  Trophy: "text-amber-500",
+  Medal: "text-orange-500",
+  Clock: "text-green-500",
+  CheckSquare: "text-emerald-500",
+  ClipboardCheck: "text-teal-500",
+  Settings: "text-gray-500",
+  Users: "text-purple-500",
+  User: "text-violet-500",
+  UserCheck: "text-indigo-500",
+  BarChart3: "text-cyan-500",
+  Calendar: "text-pink-500",
+  Target: "text-red-500",
+  Building2: "text-slate-500",
+  FileText: "text-blue-400",
+  FileSignature: "text-fuchsia-500",
+  FileWarning: "text-orange-600",
+  Plane: "text-sky-500",
+  LayoutDashboard: "text-blue-500",
+  ClipboardList: "text-teal-500",
+  Gift: "text-yellow-500",
+  DollarSign: "text-green-600",
+  BookOpen: "text-indigo-500",
+  Shield: "text-red-600",
+  Briefcase: "text-slate-600",
+  Tablet: "text-slate-500",
+  Tv: "text-slate-500",
+  Edit: "text-blue-400",
+  AlertTriangle: "text-amber-600",
+  History: "text-gray-600"
+}
+
+const getIconColor = (iconName: string): string => {
+  return iconColors[iconName] || "text-foreground"
+}
+
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -247,7 +286,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                   isActive={isCurrentPath || hasActiveChild}
                                   className="font-bold text-primary text-base hover:bg-accent/50"
                                 >
-                                  <Icon className="h-5 w-5" />
+                                  <Icon className={`h-5 w-5 ${getIconColor(link.icon)}`} />
                                   <span>{link.nombre}</span>
                                   <ChevronDown 
                                     className="ml-auto h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180"
@@ -261,7 +300,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 tooltip={link.descripcion || link.nombre}
                               >
                                 <NavLink to={fixPath(link.path, link.nombre)}>
-                                  <Icon className="h-4 w-4" />
+                                  <Icon className={`h-4 w-4 ${getIconColor(link.icon)}`} />
                                   <span>{link.nombre}</span>
                                 </NavLink>
                               </SidebarMenuButton>
@@ -291,9 +330,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                     return (
                                        <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
                                         <SidebarMenuSubItem>
-                                          <CollapsibleTrigger asChild>
+                                           <CollapsibleTrigger asChild>
                                             <SidebarMenuSubButton isActive={isChildActive}>
-                                              <ChildIcon className="h-4 w-4" />
+                                              <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
                                               <span>{child.nombre}</span>
                                               <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
                                             </SidebarMenuSubButton>
@@ -308,10 +347,10 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                                  ? currentFullPath === grandPath
                                                  : location.pathname === grandPath
                                               return (
-                                                <SidebarMenuSubItem key={grand.id}>
+                                                 <SidebarMenuSubItem key={grand.id}>
                                                   <SidebarMenuSubButton asChild isActive={isGrandActive}>
                                                     <NavLink to={fixPath(grand.path, grand.nombre)}>
-                                                      <GrandIcon className="h-4 w-4" />
+                                                      <GrandIcon className={`h-4 w-4 ${getIconColor(grand.icon)}`} />
                                                       <span>{grand.nombre}</span>
                                                     </NavLink>
                                                   </SidebarMenuSubButton>
@@ -331,7 +370,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                         isActive={isChildActive}
                                       >
                                         <NavLink to={fixPath(child.path, child.nombre)}>
-                                          <ChildIcon className="h-4 w-4" />
+                                          <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
                                           <span>{child.nombre}</span>
                                         </NavLink>
                                       </SidebarMenuSubButton>
