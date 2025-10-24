@@ -250,7 +250,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                   <Icon className="h-5 w-5" />
                                   <span>{link.nombre}</span>
                                   <ChevronDown 
-                                    className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+                                    className="ml-auto h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180"
                                   />
                                 </SidebarMenuButton>
                               </CollapsibleTrigger>
@@ -289,13 +289,13 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                   if (childHasChildren) {
                                     const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
                                     return (
-                                      <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)}>
+                                       <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
                                         <SidebarMenuSubItem>
                                           <CollapsibleTrigger asChild>
                                             <SidebarMenuSubButton isActive={isChildActive}>
                                               <ChildIcon className="h-4 w-4" />
                                               <span>{child.nombre}</span>
-                                              <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                                              <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
                                             </SidebarMenuSubButton>
                                           </CollapsibleTrigger>
                                         </SidebarMenuSubItem>
