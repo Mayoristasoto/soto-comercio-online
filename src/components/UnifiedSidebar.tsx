@@ -24,7 +24,8 @@ import {
   AlertTriangle,
   History,
   Shield,
-  Briefcase
+  Briefcase,
+  Package
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
@@ -87,7 +88,8 @@ const iconMap: Record<string, any> = {
   Edit: FileText,
   Medal: Award,
   AlertTriangle,
-  History
+  History,
+  Package
 }
 
 // Mapa de colores para cada icono
@@ -122,7 +124,8 @@ const iconColors: Record<string, string> = {
   Tv: "text-slate-500",
   Edit: "text-blue-400",
   AlertTriangle: "text-amber-600",
-  History: "text-gray-600"
+  History: "text-gray-600",
+  Package: "text-orange-500"
 }
 
 const getIconColor = (iconName: string): string => {
