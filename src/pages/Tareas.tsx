@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
 import { TaskDelegationInfo } from "@/components/tasks/TaskDelegationInfo"
 import { DelegateTaskDialog } from "@/components/tasks/DelegateTaskDialog"
+import { AsignarEmpleadosFeriado } from "@/components/tasks/AsignarEmpleadosFeriado"
 
 interface UserInfo {
   id: string
@@ -53,6 +54,7 @@ export default function Tareas() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [delegateDialogOpen, setDelegateDialogOpen] = useState(false)
   const [selectedTaskToDelegate, setSelectedTaskToDelegate] = useState<Tarea | null>(null)
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
 
   useEffect(() => {
     if (userInfo) {
@@ -146,6 +148,20 @@ export default function Tareas() {
   const openDelegateDialog = (tarea: Tarea) => {
     setSelectedTaskToDelegate(tarea);
     setDelegateDialogOpen(true);
+  }
+
+  const isFeriadoTask = (titulo: string) => {
+    return titulo.startsWith('Asignar personal para ')
+  }
+
+  const extractFeriadoFecha = (descripcion: string) => {
+    // Extraer la fecha del formato "DD/MM/YYYY" de la descripción
+    const match = descripcion.match(/(\d{2}\/\d{2}\/\d{4})/)
+    if (match) {
+      const [dia, mes, anio] = match[1].split('/')
+      return `${anio}-${mes}-${dia}` // Formato YYYY-MM-DD para Supabase
+    }
+    return null
   }
 
   const getPrioridadColor = (prioridad: string) => {
@@ -307,8 +323,22 @@ export default function Tareas() {
                       <span>Vence: {new Date(tarea.fecha_limite).toLocaleDateString()}</span>
                       <span>Creada: {new Date(tarea.created_at).toLocaleDateString()}</span>
                     </div>
+
+                    {/* Mostrar formulario de asignación de empleados para tareas de feriados */}
+                    {isFeriadoTask(tarea.titulo) && tarea.estado !== 'completada' && (
+                      <div className="mb-4">
+                        {extractFeriadoFecha(tarea.descripcion || '') && (
+                          <AsignarEmpleadosFeriado
+                            tareaId={tarea.id}
+                            feriadoFecha={extractFeriadoFecha(tarea.descripcion || '') || ''}
+                            onComplete={loadTareas}
+                          />
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex justify-end space-x-2">
-                      {tarea.estado === 'pendiente' && (
+                      {tarea.estado === 'pendiente' && !isFeriadoTask(tarea.titulo) && (
                         <>
                           <Button 
                             size="sm" 
