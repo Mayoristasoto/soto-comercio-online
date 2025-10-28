@@ -26,6 +26,7 @@ interface Turno {
   hora_salida: string;
   hora_pausa_inicio?: string;
   hora_pausa_fin?: string;
+  duracion_pausa_minutos?: number;
   tolerancia_entrada_minutos: number;
   tolerancia_salida_minutos: number;
   redondeo_minutos: number;
@@ -81,6 +82,7 @@ export default function FicheroHorarios() {
     hora_salida: '',
     hora_pausa_inicio: '',
     hora_pausa_fin: '',
+    duracion_pausa_minutos: 60,
     tolerancia_entrada_minutos: 10,
     tolerancia_salida_minutos: 10,
     redondeo_minutos: 5,
@@ -166,6 +168,7 @@ export default function FicheroHorarios() {
         sucursal_id: formData.sucursal_id === 'sin_asignar' ? null : formData.sucursal_id,
         hora_pausa_inicio: formData.hora_pausa_inicio || null,
         hora_pausa_fin: formData.hora_pausa_fin || null,
+        duracion_pausa_minutos: formData.duracion_pausa_minutos || null,
         activo: true
       };
 
@@ -298,6 +301,7 @@ export default function FicheroHorarios() {
       hora_salida: '',
       hora_pausa_inicio: '',
       hora_pausa_fin: '',
+      duracion_pausa_minutos: 60,
       tolerancia_entrada_minutos: 10,
       tolerancia_salida_minutos: 10,
       redondeo_minutos: 5,
@@ -315,6 +319,7 @@ export default function FicheroHorarios() {
       hora_salida: turno.hora_salida,
       hora_pausa_inicio: turno.hora_pausa_inicio || '',
       hora_pausa_fin: turno.hora_pausa_fin || '',
+      duracion_pausa_minutos: turno.duracion_pausa_minutos || 60,
       tolerancia_entrada_minutos: turno.tolerancia_entrada_minutos,
       tolerancia_salida_minutos: turno.tolerancia_salida_minutos,
       redondeo_minutos: turno.redondeo_minutos,
@@ -501,7 +506,7 @@ export default function FicheroHorarios() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="hora_pausa_inicio">Inicio de Pausa (opcional)</Label>
                       <Input
@@ -519,6 +524,20 @@ export default function FicheroHorarios() {
                         value={formData.hora_pausa_fin}
                         onChange={(e) => setFormData({...formData, hora_pausa_fin: e.target.value})}
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="duracion_pausa">Duración Máxima Pausa (min)</Label>
+                      <Input
+                        id="duracion_pausa"
+                        type="number"
+                        value={formData.duracion_pausa_minutos}
+                        onChange={(e) => setFormData({...formData, duracion_pausa_minutos: parseInt(e.target.value)})}
+                        min="0"
+                        placeholder="60"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Para detectar excesos en incidencias
+                      </p>
                     </div>
                   </div>
 
