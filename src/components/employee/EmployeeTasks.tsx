@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AsignarEmpleadosFeriado } from "@/components/tasks/AsignarEmpleadosFeriado"
 import { 
   CheckCircle2, 
   Clock, 
@@ -15,7 +16,8 @@ import {
   Briefcase,
   Camera,
   Upload,
-  X
+  X,
+  Users
 } from "lucide-react"
 
 interface Task {
@@ -57,6 +59,8 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
+  const [showFeriadoDialog, setShowFeriadoDialog] = useState(false)
+  const [feriadoTaskData, setFeriadoTaskData] = useState<{ tareaId: string, fecha: string } | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -86,9 +90,17 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
   }
 
   const openCompletionDialog = (task: Task) => {
-    setSelectedTask(task)
-    setShowCompletionDialog(true)
-    setSelectedFiles([])
+    // Detectar si es tarea de feriado
+    if (task.titulo.includes("Asignar personal para")) {
+      // Extraer fecha del feriado de la descripción o fecha_limite
+      const fecha = task.fecha_limite?.split('T')[0] || new Date().toISOString().split('T')[0]
+      setFeriadoTaskData({ tareaId: task.id, fecha })
+      setShowFeriadoDialog(true)
+    } else {
+      setSelectedTask(task)
+      setShowCompletionDialog(true)
+      setSelectedFiles([])
+    }
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -281,8 +293,17 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
                     disabled={updating === task.id}
                     className="hover:bg-green-50 hover:border-green-200"
                   >
-                    <Camera className="h-4 w-4 mr-1" />
-                    Completar
+                    {task.titulo.includes("Asignar personal para") ? (
+                      <>
+                        <Users className="h-4 w-4 mr-1" />
+                        Asignar Empleados
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="h-4 w-4 mr-1" />
+                        Completar
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
@@ -415,6 +436,30 @@ export function EmployeeTasks({ empleadoId, onTasksUpdate }: EmployeeTasksProps)
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para asignar empleados a feriado */}
+      <Dialog open={showFeriadoDialog} onOpenChange={setShowFeriadoDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Asignar Personal para Feriado</DialogTitle>
+            <DialogDescription>
+              Selecciona los empleados que trabajarán en el día feriado
+            </DialogDescription>
+          </DialogHeader>
+          
+          {feriadoTaskData && (
+            <AsignarEmpleadosFeriado
+              tareaId={feriadoTaskData.tareaId}
+              feriadoFecha={feriadoTaskData.fecha}
+              onComplete={() => {
+                setShowFeriadoDialog(false)
+                loadTasks()
+                onTasksUpdate?.()
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
