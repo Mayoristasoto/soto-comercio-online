@@ -115,6 +115,12 @@ export default function Nomina() {
 
   useEffect(() => {
     checkAccess()
+    
+    // Detectar hash en URL para activar tab
+    const hash = window.location.hash.replace('#', '')
+    if (hash && ['overview', 'employees', 'access-security', 'positions', 'documents', 'permissions', 'mandatory-docs', 'assignments', 'employee-view', 'entregas', 'organigrama'].includes(hash)) {
+      setActiveTab(hash)
+    }
   }, [])
 
   useEffect(() => {
@@ -595,7 +601,10 @@ export default function Nomina() {
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        setActiveTab(value)
+        window.location.hash = value
+      }} className="space-y-6">
         <div className="overflow-x-auto">
           <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-11 md:w-full">
             <TabsTrigger value="overview" className="whitespace-nowrap">Resumen</TabsTrigger>
