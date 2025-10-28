@@ -1968,6 +1968,76 @@ export type Database = {
           },
         ]
       }
+      fichajes_pausas_excedidas: {
+        Row: {
+          created_at: string | null
+          duracion_minutos: number
+          duracion_permitida_minutos: number
+          empleado_id: string
+          fecha_fichaje: string
+          hora_fin_pausa: string
+          hora_inicio_pausa: string
+          id: string
+          justificado: boolean | null
+          minutos_exceso: number
+          observaciones: string | null
+          turno_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duracion_minutos: number
+          duracion_permitida_minutos: number
+          empleado_id: string
+          fecha_fichaje: string
+          hora_fin_pausa: string
+          hora_inicio_pausa: string
+          id?: string
+          justificado?: boolean | null
+          minutos_exceso: number
+          observaciones?: string | null
+          turno_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duracion_minutos?: number
+          duracion_permitida_minutos?: number
+          empleado_id?: string
+          fecha_fichaje?: string
+          hora_fin_pausa?: string
+          hora_inicio_pausa?: string
+          id?: string
+          justificado?: boolean | null
+          minutos_exceso?: number
+          observaciones?: string | null
+          turno_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichajes_pausas_excedidas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_pausas_excedidas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_pausas_excedidas_turno_id_fkey"
+            columns: ["turno_id"]
+            isOneToOne: false
+            referencedRelation: "fichado_turnos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fichajes_tardios: {
         Row: {
           created_at: string

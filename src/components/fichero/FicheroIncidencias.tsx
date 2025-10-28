@@ -59,10 +59,29 @@ interface FichajeTardio {
   }
 }
 
+interface PausaExcedida {
+  id: string
+  empleado_id: string
+  fecha_fichaje: string
+  hora_inicio_pausa: string
+  hora_fin_pausa: string
+  duracion_minutos: number
+  duracion_permitida_minutos: number
+  minutos_exceso: number
+  justificado: boolean
+  observaciones?: string
+  created_at: string
+  empleado?: {
+    nombre: string
+    apellido: string
+  }
+}
+
 export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps) {
   const { toast } = useToast()
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
   const [fichajesToday, setFichajesToday] = useState<FichajeTardio[]>([])
+  const [pausasExcedidas, setPausasExcedidas] = useState<PausaExcedida[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingTardios, setLoadingTardios] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -77,6 +96,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   useEffect(() => {
     cargarIncidencias()
     cargarFichajesToday()
+    cargarPausasExcedidas()
   }, [empleado.id])
 
   const cargarIncidencias = async () => {
@@ -123,6 +143,26 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
       // No mostramos toast para esta función ya que es secundaria
     } finally {
       setLoadingTardios(false)
+    }
+  }
+
+  const cargarPausasExcedidas = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      
+      const { data, error } = await supabase
+        .from('fichajes_pausas_excedidas')
+        .select(`
+          *,
+          empleado:empleados!inner(nombre, apellido)
+        `)
+        .eq('fecha_fichaje', today)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setPausasExcedidas(data || [])
+    } catch (error) {
+      console.error('Error cargando pausas excedidas:', error)
     }
   }
 
@@ -210,9 +250,19 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const fichajesFiltrados = fichajesToday.filter(fichaje => {
     if (filtroActivo === 'todos') return true
     if (filtroActivo === 'llegada_tarde') return fichaje.minutos_retraso > 0
-    // Para implementar los otros filtros necesitarías datos adicionales
-    return true
+    return false
   })
+
+  const pausasFiltradas = pausasExcedidas.filter(pausa => {
+    if (filtroActivo === 'todos') return true
+    if (filtroActivo === 'exceso_descanso') return true
+    return false
+  })
+
+  const todasIncidencias = [
+    ...fichajesFiltrados.map(f => ({ ...f, tipo_incidencia: 'tardio' as const })),
+    ...pausasFiltradas.map(p => ({ ...p, tipo_incidencia: 'pausa' as const }))
+  ]
 
   if (loading) {
     return (
@@ -350,7 +400,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
             >
               {filtroActivo === 'todos' && <CheckCircle className="h-3 w-3" />}
               <span>Todos</span>
-              <Badge variant="secondary" className="ml-1">{fichajesToday.length}</Badge>
+              <Badge variant="secondary" className="ml-1">{fichajesToday.length + pausasExcedidas.length}</Badge>
             </Button>
 
             <Button
@@ -388,7 +438,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
               {filtroActivo === 'exceso_descanso' && <CheckCircle className="h-3 w-3" />}
               <AlertCircle className="h-3 w-3" />
               <span>Exceso Descanso</span>
-              <Badge variant="secondary" className="ml-1">0</Badge>
+              <Badge variant="secondary" className="ml-1">{pausasExcedidas.length}</Badge>
             </Button>
 
             {filtroActivo !== 'todos' && (
@@ -411,7 +461,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                 <div key={i} className="h-16 bg-orange-200 rounded"></div>
               ))}
             </div>
-          ) : fichajesFiltrados.length === 0 ? (
+          ) : todasIncidencias.length === 0 ? (
             <div className="text-center py-4">
               <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
@@ -422,34 +472,74 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
             </div>
           ) : (
             <div className="space-y-3">
-              {fichajesFiltrados.map((fichaje) => (
-                <div key={fichaje.id} className="bg-white border border-orange-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-orange-600" />
+              {todasIncidencias.map((incidencia) => {
+                if (incidencia.tipo_incidencia === 'tardio') {
+                  const fichaje = incidencia as FichajeTardio & { tipo_incidencia: 'tardio' }
+                  return (
+                    <div key={fichaje.id} className="bg-white border border-orange-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                            <Clock className="h-4 w-4 text-orange-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {fichaje.empleado?.nombre} {fichaje.empleado?.apellido}
+                            </p>
+                            <div className="text-xs text-muted-foreground space-x-4">
+                              <span>Hora programada: {fichaje.hora_programada}</span>
+                              <span>Llegó: {fichaje.hora_real}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Badge className="bg-red-100 text-red-800">
+                          +{fichaje.minutos_retraso} min tarde
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {fichaje.empleado?.nombre} {fichaje.empleado?.apellido}
+                      {fichaje.observaciones && (
+                        <p className="text-xs text-muted-foreground mt-2 pl-11">
+                          {fichaje.observaciones}
                         </p>
-                        <div className="text-xs text-muted-foreground space-x-4">
-                          <span>Hora programada: {fichaje.hora_programada}</span>
-                          <span>Llegó: {fichaje.hora_real}</span>
+                      )}
+                    </div>
+                  )
+                } else {
+                  const pausa = incidencia as PausaExcedida & { tipo_incidencia: 'pausa' }
+                  return (
+                    <div key={pausa.id} className="bg-white border border-purple-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <AlertCircle className="h-4 w-4 text-purple-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {pausa.empleado?.nombre} {pausa.empleado?.apellido}
+                            </p>
+                            <div className="text-xs text-muted-foreground space-x-4">
+                              <span>Pausa: {pausa.hora_inicio_pausa} - {pausa.hora_fin_pausa}</span>
+                              <span>Duración: {pausa.duracion_minutos} min</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className="bg-purple-100 text-purple-800">
+                            +{pausa.minutos_exceso} min de exceso
+                          </Badge>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Permitido: {pausa.duracion_permitida_minutos} min
+                          </p>
                         </div>
                       </div>
+                      {pausa.observaciones && (
+                        <p className="text-xs text-muted-foreground mt-2 pl-11">
+                          {pausa.observaciones}
+                        </p>
+                      )}
                     </div>
-                    <Badge className="bg-red-100 text-red-800">
-                      +{fichaje.minutos_retraso} min
-                    </Badge>
-                  </div>
-                  {fichaje.observaciones && (
-                    <p className="text-xs text-muted-foreground mt-2 pl-11">
-                      {fichaje.observaciones}
-                    </p>
-                  )}
-                </div>
-              ))}
+                  )
+                }
+              })}
             </div>
           )}
         </CardContent>
