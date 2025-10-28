@@ -50,6 +50,7 @@ import Organigrama from "@/components/admin/Organigrama"
 import FacialRecognitionStats from "@/components/admin/FacialRecognitionStats"
 import MultipleFaceManagement from "@/components/admin/MultipleFaceManagement"
 import { EntregaElementos } from "@/components/admin/EntregaElementos"
+import { CrucesRojasDemo } from "@/components/admin/CrucesRojasDemo"
 
 interface Employee {
   id: string
@@ -714,6 +715,11 @@ export default function Nomina() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+          
+          {/* Demo de Cruces Rojas */}
+          <div className="mt-6">
+            <CrucesRojasDemo />
           </div>
         </TabsContent>
 
