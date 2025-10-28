@@ -727,6 +727,84 @@ export type Database = {
         }
         Relationships: []
       }
+      empleado_cruces_rojas: {
+        Row: {
+          anulada: boolean | null
+          anulada_por: string | null
+          created_at: string | null
+          empleado_id: string
+          fecha_infraccion: string
+          fichaje_id: string | null
+          id: string
+          minutos_diferencia: number | null
+          motivo_anulacion: string | null
+          observaciones: string | null
+          tipo_infraccion: string
+        }
+        Insert: {
+          anulada?: boolean | null
+          anulada_por?: string | null
+          created_at?: string | null
+          empleado_id: string
+          fecha_infraccion?: string
+          fichaje_id?: string | null
+          id?: string
+          minutos_diferencia?: number | null
+          motivo_anulacion?: string | null
+          observaciones?: string | null
+          tipo_infraccion: string
+        }
+        Update: {
+          anulada?: boolean | null
+          anulada_por?: string | null
+          created_at?: string | null
+          empleado_id?: string
+          fecha_infraccion?: string
+          fichaje_id?: string | null
+          id?: string
+          minutos_diferencia?: number | null
+          motivo_anulacion?: string | null
+          observaciones?: string | null
+          tipo_infraccion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_cruces_rojas_anulada_por_fkey"
+            columns: ["anulada_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_anulada_por_fkey"
+            columns: ["anulada_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_fichaje_id_fkey"
+            columns: ["fichaje_id"]
+            isOneToOne: false
+            referencedRelation: "fichajes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleado_documentos: {
         Row: {
           activo: boolean
@@ -3716,6 +3794,35 @@ export type Database = {
       }
     }
     Views: {
+      empleado_cruces_rojas_semana_actual: {
+        Row: {
+          apellido: string | null
+          avatar_url: string | null
+          detalles: Json | null
+          empleado_id: string | null
+          llegadas_tarde: number | null
+          nombre: string | null
+          pausas_excedidas: number | null
+          salidas_tempranas: number | null
+          total_cruces_rojas: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_cruces_rojas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleados_basic: {
         Row: {
           activo: boolean | null
@@ -4006,6 +4113,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      insert_demo_cruces_rojas: {
+        Args: { p_empleado_id: string }
+        Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_manager: { Args: never; Returns: boolean }
