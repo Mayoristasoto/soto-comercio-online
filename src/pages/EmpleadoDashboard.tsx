@@ -26,6 +26,7 @@ import { HistorialEntregas } from "@/components/employee/HistorialEntregas"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Package, Star } from "lucide-react"
 import CalificacionesEmpleado from "@/components/employee/CalificacionesEmpleado"
+import { EmpleadoInstructivo } from "@/components/employee/EmpleadoInstructivo"
 
 interface UserInfo {
   id: string
@@ -146,6 +147,9 @@ export default function EmpleadoDashboard() {
           <span className="text-sm text-muted-foreground">{userInfo.email}</span>
         </div>
       </div>
+
+      {/* Guía Rápida para Empleados */}
+      <EmpleadoInstructivo />
 
       {/* Tarjetas de estadísticas personales */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
