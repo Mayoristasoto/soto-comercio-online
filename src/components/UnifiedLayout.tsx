@@ -96,18 +96,38 @@ export default function UnifiedLayout() {
 
       // Redirección y control de acceso basado en rol
       if (empleado.rol === 'empleado' || empleado.rol === 'gerente_sucursal') {
-        // Empleados y gerentes son redirigidos a su dashboard personal
-        const allowedPaths = ['/mi-dashboard', '/reconoce/premios']
         const currentPath = location.pathname
         
-        // Gerentes tienen acceso a más rutas además del dashboard
-        const isGerente = empleado.rol === 'gerente_sucursal'
-        const adminRoutes = ['/reconoce', '/fichero', '/tareas', '/evaluaciones', '/vacaciones', '/solicitudes', '/anotaciones']
-        const hasAdminAccess = isGerente && adminRoutes.some(route => currentPath.startsWith(route))
-
-        console.debug('Auth redirect check', { rol: empleado.rol, currentPath, isGerente, hasAdminAccess })
+        // Rutas base permitidas para empleados
+        const empleadoRoutes = [
+          '/mi-dashboard', 
+          '/reconoce/premios',
+          '/rrhh/vacaciones',
+          '/vacaciones', // redirect legacy
+          '/operaciones/tareas',
+          '/tareas', // redirect legacy
+          '/operaciones/fichero',
+          '/fichero', // redirect legacy
+          '/reconoce',
+          '/ranking',
+          '/desafios',
+          '/insignias',
+          '/premios'
+        ]
         
-        if (!allowedPaths.includes(currentPath) && !hasAdminAccess) {
+        // Gerentes tienen acceso a rutas administrativas adicionales
+        const isGerente = empleado.rol === 'gerente_sucursal'
+        const gerenteRoutes = ['/evaluaciones', '/rrhh/evaluaciones', '/solicitudes', '/rrhh/solicitudes', '/anotaciones', '/rrhh/anotaciones']
+        
+        const allowedRoutes = isGerente 
+          ? [...empleadoRoutes, ...gerenteRoutes]
+          : empleadoRoutes
+        
+        const hasAccess = allowedRoutes.some(route => currentPath.startsWith(route))
+
+        console.debug('Auth redirect check', { rol: empleado.rol, currentPath, isGerente, hasAccess })
+        
+        if (!hasAccess) {
           navigate('/mi-dashboard')
         }
       }
