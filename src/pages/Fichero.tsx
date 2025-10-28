@@ -29,6 +29,7 @@ import FicheroHistorial from "@/components/fichero/FicheroHistorial"
 import AttendanceReports from "@/components/admin/AttendanceReports"
 import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
 import EstadoAnimoEmpleado from "@/components/fichero/EstadoAnimoEmpleado"
+import { FeriadosConfig } from "@/components/admin/FeriadosConfig"
 import { useLocation } from "react-router-dom"
 
 interface Empleado {
@@ -63,7 +64,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados'>('fichaje')
   const location = useLocation()
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function Fichero() {
     
     // Detectar hash en la URL y activar la pestaña correspondiente
     const hash = window.location.hash.replace('#', '')
-    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo'].includes(hash)) {
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados'].includes(hash)) {
       setActiveTab(hash as any)
     }
   }, [])
@@ -81,7 +82,7 @@ export default function Fichero() {
   // Sincronizar cambios de hash usando React Router
   useEffect(() => {
     const hash = (location.hash || '').replace('#', '')
-    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo'].includes(hash)) {
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados'].includes(hash)) {
       setActiveTab(hash as any)
     }
   }, [location.hash])
@@ -461,6 +462,7 @@ export default function Fichero() {
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
+            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'feriados', label: 'Feriados', icon: Calendar }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'config', label: 'Configuración', icon: Settings }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'admin', label: 'Administrar', icon: Shield }] : []),
           ].map(({ key, label, icon: Icon }) => (
@@ -584,6 +586,10 @@ export default function Fichero() {
 
         {activeTab === 'estado-animo' && (
           <EstadoAnimoEmpleado />
+        )}
+
+        {activeTab === 'feriados' && empleado?.rol === 'admin_rrhh' && (
+          <FeriadosConfig />
         )}
         
         {/* Vista de administrador */}
