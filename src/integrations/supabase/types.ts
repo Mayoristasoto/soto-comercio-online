@@ -569,6 +569,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dias_feriados: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string | null
+          fecha: string
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          fecha: string
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          fecha?: string
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documentos_firmas: {
         Row: {
           created_at: string
@@ -1581,6 +1611,76 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      feriado_empleados_asignados: {
+        Row: {
+          asignado_por: string | null
+          created_at: string
+          empleado_id: string
+          feriado_id: string
+          id: string
+          sucursal_id: string
+        }
+        Insert: {
+          asignado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          feriado_id: string
+          id?: string
+          sucursal_id: string
+        }
+        Update: {
+          asignado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          feriado_id?: string
+          id?: string
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feriado_empleados_asignados_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feriado_empleados_asignados_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feriado_empleados_asignados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feriado_empleados_asignados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feriado_empleados_asignados_feriado_id_fkey"
+            columns: ["feriado_id"]
+            isOneToOne: false
+            referencedRelation: "dias_feriados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feriado_empleados_asignados_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fichado_configuracion: {
         Row: {
@@ -3678,6 +3778,10 @@ export type Database = {
         Args: { fecha_fin: string; fecha_inicio: string }
         Returns: number
       }
+      calcular_dias_laborales_antes: {
+        Args: { dias_laborales: number; fecha_objetivo: string }
+        Returns: string
+      }
       calcular_saldo_vacaciones: {
         Args: { p_anio: number; p_empleado_id: string }
         Returns: number
@@ -3696,6 +3800,7 @@ export type Database = {
         }[]
       }
       cleanup_old_rate_limits: { Args: never; Returns: number }
+      crear_tareas_feriados: { Args: never; Returns: undefined }
       current_user_is_admin: { Args: never; Returns: boolean }
       current_user_role: {
         Args: never
