@@ -3931,6 +3931,10 @@ export type Database = {
         Args: { fecha_fin: string; fecha_inicio: string }
         Returns: number
       }
+      calcular_dias_laborables_antes: {
+        Args: { dias_necesarios?: number; fecha_feriado: string }
+        Returns: string
+      }
       calcular_dias_laborales_antes: {
         Args: { dias_laborales: number; fecha_objetivo: string }
         Returns: string
