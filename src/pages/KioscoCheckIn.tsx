@@ -8,6 +8,7 @@ import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { useNavigate } from "react-router-dom"
 import { useAudioNotifications } from "@/hooks/useAudioNotifications"
+import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
 
 interface EmpleadoBasico {
   id: string
@@ -60,6 +61,8 @@ export default function KioscoCheckIn() {
   const [accionesDisponibles, setAccionesDisponibles] = useState<AccionDisponible[]>([])
   const [ultimoTipoFichaje, setUltimoTipoFichaje] = useState<TipoAccion | null>(null)
   const [emocionDetectada, setEmocionDetectada] = useState<string | null>(null)
+  const [crucesRojas, setCrucesRojas] = useState<any>(null)
+  const [showCrucesRojasAlert, setShowCrucesRojasAlert] = useState(false)
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -171,6 +174,24 @@ export default function KioscoCheckIn() {
       // Determinar acciones disponibles según el historial
       const acciones = await determinarTipoFichaje(empleadoId)
       setAccionesDisponibles(acciones)
+      
+      // 🔴 Verificar cruces rojas de esta semana
+      try {
+        const { data: crucesData, error: crucesError } = await supabase
+          .from('empleado_cruces_rojas_semana_actual')
+          .select('*')
+          .eq('empleado_id', empleadoId)
+          .single()
+        
+        if (!crucesError && crucesData && crucesData.total_cruces_rojas > 0) {
+          setCrucesRojas(crucesData)
+          setShowCrucesRojasAlert(true)
+          setShowFacialAuth(false)
+          return
+        }
+      } catch (error) {
+        console.log('No hay cruces rojas o error verificando:', error)
+      }
       
       if (acciones.length === 0) {
         // Ya completó su jornada, solo mostrar opción de otras consultas
@@ -649,6 +670,23 @@ export default function KioscoCheckIn() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      {/* Alerta de Cruces Rojas (Overlay) */}
+      {showCrucesRojasAlert && crucesRojas && (
+        <CrucesRojasKioscoAlert
+          empleadoNombre={`${recognizedEmployee?.data.nombre} ${recognizedEmployee?.data.apellido}`}
+          totalCruces={crucesRojas.total_cruces_rojas}
+          llegadasTarde={crucesRojas.llegadas_tarde}
+          salidasTempranas={crucesRojas.salidas_tempranas}
+          pausasExcedidas={crucesRojas.pausas_excedidas}
+          detalles={crucesRojas.detalles || []}
+          onDismiss={() => {
+            setShowCrucesRojasAlert(false)
+            setShowActionSelection(true)
+          }}
+          duracionSegundos={5}
+        />
+      )}
+      
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
