@@ -1303,6 +1303,7 @@ export type Database = {
           firma_empleado: string | null
           id: string
           observaciones: string | null
+          plantilla_id: string | null
           talla: string | null
           tipo_elemento: string
           updated_at: string
@@ -1319,6 +1320,7 @@ export type Database = {
           firma_empleado?: string | null
           id?: string
           observaciones?: string | null
+          plantilla_id?: string | null
           talla?: string | null
           tipo_elemento: string
           updated_at?: string
@@ -1335,6 +1337,7 @@ export type Database = {
           firma_empleado?: string | null
           id?: string
           observaciones?: string | null
+          plantilla_id?: string | null
           talla?: string | null
           tipo_elemento?: string
           updated_at?: string
@@ -1366,6 +1369,13 @@ export type Database = {
             columns: ["entregado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_elementos_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "plantillas_elementos"
             referencedColumns: ["id"]
           },
         ]
@@ -2793,6 +2803,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plantillas_elementos: {
+        Row: {
+          activo: boolean | null
+          campos_adicionales: Json | null
+          created_at: string | null
+          descripcion: string | null
+          id: string
+          nombre: string
+          template_html: string | null
+          tipo_elemento: string
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          campos_adicionales?: Json | null
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          template_html?: string | null
+          tipo_elemento: string
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          campos_adicionales?: Json | null
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          template_html?: string | null
+          tipo_elemento?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       preguntas_evaluacion: {
         Row: {

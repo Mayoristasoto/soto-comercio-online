@@ -31,7 +31,6 @@ import PrizeManagement from "@/components/admin/PrizeManagement"
 import StaffOverview from "@/components/admin/StaffOverview"
 import { PuntualidadManager } from "@/components/admin/PuntualidadManager"
 import { SidebarLinksManager } from "@/components/admin/SidebarLinksManager"
-import { EntregaElementos } from "@/components/admin/EntregaElementos"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import CalificacionesConfig from "@/components/admin/CalificacionesConfig"
 import SorteosParticipantes from "@/components/admin/SorteosParticipantes"
@@ -87,7 +86,6 @@ export default function AdminDashboard() {
       sections: [
         { id: 'branches', nombre: 'Sucursales', icon: Building2, component: <BranchManagement /> },
         { id: 'budget', nombre: 'Presupuesto', icon: DollarSign, component: <BudgetManagement /> },
-        { id: 'entregas', nombre: 'Entregas Elementos', icon: Package, component: <EntregaElementos /> },
         { id: 'sistema-comercial', nombre: 'Sistema Comercial', icon: Store, component: <SistemaComercialConfig /> }
       ]
     },

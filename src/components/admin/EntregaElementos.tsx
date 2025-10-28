@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Package, CheckCircle, Clock, Search } from "lucide-react";
+import { Package, CheckCircle, Clock, Search, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { PlantillasElementos } from "./PlantillasElementos";
+import { EntregaElementosImprimir } from "./EntregaElementosImprimir";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Empleado {
   id: string;
@@ -153,7 +156,17 @@ export function EntregaElementos() {
   ];
 
   return (
-    <div className="space-y-6">
+    <Tabs defaultValue="registrar" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="registrar">Registrar Entrega</TabsTrigger>
+        <TabsTrigger value="imprimir">
+          <Printer className="h-4 w-4 mr-2" />
+          Imprimir
+        </TabsTrigger>
+        <TabsTrigger value="plantillas">Plantillas</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="registrar" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -336,6 +349,15 @@ export function EntregaElementos() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </TabsContent>
+
+    <TabsContent value="imprimir">
+      <EntregaElementosImprimir onEntregaCreated={loadEntregas} />
+    </TabsContent>
+
+    <TabsContent value="plantillas">
+      <PlantillasElementos />
+    </TabsContent>
+  </Tabs>
   );
 }

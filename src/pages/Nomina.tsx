@@ -25,7 +25,8 @@ import {
   Save,
   ArrowUpDown,
   UserCheck,
-  Lock
+  Lock,
+  Package
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -48,6 +49,7 @@ import UserCreationForm from "@/components/admin/UserCreationForm"
 import Organigrama from "@/components/admin/Organigrama"
 import FacialRecognitionStats from "@/components/admin/FacialRecognitionStats"
 import MultipleFaceManagement from "@/components/admin/MultipleFaceManagement"
+import { EntregaElementos } from "@/components/admin/EntregaElementos"
 
 interface Employee {
   id: string
@@ -595,7 +597,7 @@ export default function Nomina() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="overflow-x-auto">
-          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-10 md:w-full">
+          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-11 md:w-full">
             <TabsTrigger value="overview" className="whitespace-nowrap">Resumen</TabsTrigger>
             <TabsTrigger value="employees" className="whitespace-nowrap">Empleados</TabsTrigger>
             <TabsTrigger value="access-security" className="whitespace-nowrap">Acceso y Seguridad</TabsTrigger>
@@ -605,6 +607,10 @@ export default function Nomina() {
             <TabsTrigger value="mandatory-docs" className="whitespace-nowrap">Doc. Obligatorios</TabsTrigger>
             <TabsTrigger value="assignments" className="whitespace-nowrap">Asignaciones</TabsTrigger>
             <TabsTrigger value="employee-view" className="whitespace-nowrap">Vista Empleado</TabsTrigger>
+            <TabsTrigger value="entregas" className="whitespace-nowrap">
+              <Package className="h-4 w-4 mr-2" />
+              Entregas
+            </TabsTrigger>
             <TabsTrigger value="organigrama" className="whitespace-nowrap">Organigrama</TabsTrigger>
           </TabsList>
         </div>
@@ -1111,6 +1117,10 @@ export default function Nomina() {
 
         <TabsContent value="organigrama">
           <Organigrama />
+        </TabsContent>
+
+        <TabsContent value="entregas">
+          <EntregaElementos />
         </TabsContent>
       </Tabs>
 
