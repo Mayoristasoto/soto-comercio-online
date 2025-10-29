@@ -552,9 +552,21 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                             </div>
                           </div>
                         </div>
-                        <Badge className="bg-red-100 text-red-800">
-                          +{fichaje.minutos_retraso} min tarde
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-red-100 text-red-800">
+                            +{fichaje.minutos_retraso} min tarde
+                          </Badge>
+                          {isAdminRole(userRole) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(fichaje.id)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       {fichaje.observaciones && (
                         <p className="text-xs text-muted-foreground mt-2 pl-11">
@@ -582,13 +594,25 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Badge className="bg-purple-100 text-purple-800">
-                            +{pausa.minutos_exceso} min de exceso
-                          </Badge>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Permitido: {pausa.duracion_permitida_minutos} min
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <Badge className="bg-purple-100 text-purple-800">
+                              +{pausa.minutos_exceso} min de exceso
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Permitido: {pausa.duracion_permitida_minutos} min
+                            </p>
+                          </div>
+                          {isAdminRole(userRole) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(pausa.id)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                       {pausa.observaciones && (
