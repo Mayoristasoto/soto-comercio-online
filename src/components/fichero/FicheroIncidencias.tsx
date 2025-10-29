@@ -24,8 +24,9 @@ import {
   Trash2
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+import { Checkbox } from "@/components/ui/checkbox"
 import { isAdminRole } from "@/lib/authSecurity"
+import { Separator } from "@/components/ui/separator"
 
 interface FicheroIncidenciasProps {
   empleado: {
@@ -92,6 +93,8 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const [incidenciaToDelete, setIncidenciaToDelete] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string>('')
   const [filtroActivo, setFiltroActivo] = useState<'todos' | 'llegada_tarde' | 'no_ficho' | 'exceso_descanso'>('todos')
+  const [selectedIncidencias, setSelectedIncidencias] = useState<string[]>([])
+  const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState({
     tipo: '' as 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | '',
     descripcion: '',
@@ -304,6 +307,55 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
         description: "No se pudo eliminar la incidencia",
         variant: "destructive"
       })
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIncidencias.length === todasIncidencias.length) {
+      setSelectedIncidencias([])
+    } else {
+      setSelectedIncidencias(todasIncidencias.map(inc => inc.id))
+    }
+  }
+
+  const toggleSelectIncidencia = (id: string) => {
+    setSelectedIncidencias(prev => 
+      prev.includes(id) 
+        ? prev.filter(incId => incId !== id)
+        : [...prev, id]
+    )
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedIncidencias.length === 0) return
+    
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('fichaje_incidencias')
+        .delete()
+        .in('id', selectedIncidencias)
+
+      if (error) throw error
+
+      toast({
+        title: "Incidencias eliminadas",
+        description: `${selectedIncidencias.length} incidencia(s) eliminada(s) correctamente`,
+      })
+      
+      setSelectedIncidencias([])
+      cargarIncidencias()
+      cargarFichajesToday()
+      cargarPausasExcedidas()
+    } catch (error) {
+      console.error('Error al eliminar incidencias:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar las incidencias",
+        variant: "destructive"
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -537,35 +589,45 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                   const fichaje = incidencia as FichajeTardio & { tipo_incidencia: 'tardio' }
                   return (
                     <div key={fichaje.id} className="bg-white border border-orange-200 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                            <Clock className="h-4 w-4 text-orange-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {fichaje.empleado?.nombre} {fichaje.empleado?.apellido}
-                            </p>
-                            <div className="text-xs text-muted-foreground space-x-4">
-                              <span>Hora programada: {fichaje.hora_programada}</span>
-                              <span>Llegó: {fichaje.hora_real}</span>
+                      <div className="flex items-center gap-3">
+                        {isAdminRole(userRole) && (
+                          <Checkbox 
+                            checked={selectedIncidencias.includes(fichaje.id)}
+                            onCheckedChange={() => toggleSelectIncidencia(fichaje.id)}
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                                <Clock className="h-4 w-4 text-orange-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {fichaje.empleado?.nombre} {fichaje.empleado?.apellido}
+                                </p>
+                                <div className="text-xs text-muted-foreground space-x-4">
+                                  <span>Hora programada: {fichaje.hora_programada}</span>
+                                  <span>Llegó: {fichaje.hora_real}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-red-100 text-red-800">
+                                +{fichaje.minutos_retraso} min tarde
+                              </Badge>
+                              {isAdminRole(userRole) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(fichaje.id)}
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-red-100 text-red-800">
-                            +{fichaje.minutos_retraso} min tarde
-                          </Badge>
-                          {isAdminRole(userRole) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(fichaje.id)}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
                       </div>
                       {fichaje.observaciones && (
@@ -579,40 +641,50 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                   const pausa = incidencia as PausaExcedida & { tipo_incidencia: 'pausa' }
                   return (
                     <div key={pausa.id} className="bg-white border border-purple-200 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <AlertCircle className="h-4 w-4 text-purple-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {pausa.empleado?.nombre} {pausa.empleado?.apellido}
-                            </p>
-                            <div className="text-xs text-muted-foreground space-x-4">
-                              <span>Pausa: {pausa.hora_inicio_pausa} - {pausa.hora_fin_pausa}</span>
-                              <span>Duración: {pausa.duracion_minutos} min</span>
+                      <div className="flex items-center gap-3">
+                        {isAdminRole(userRole) && (
+                          <Checkbox 
+                            checked={selectedIncidencias.includes(pausa.id)}
+                            onCheckedChange={() => toggleSelectIncidencia(pausa.id)}
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                <AlertCircle className="h-4 w-4 text-purple-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {pausa.empleado?.nombre} {pausa.empleado?.apellido}
+                                </p>
+                                <div className="text-xs text-muted-foreground space-x-4">
+                                  <span>Pausa: {pausa.hora_inicio_pausa} - {pausa.hora_fin_pausa}</span>
+                                  <span>Duración: {pausa.duracion_minutos} min</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <Badge className="bg-purple-100 text-purple-800">
+                                  +{pausa.minutos_exceso} min de exceso
+                                </Badge>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Permitido: {pausa.duracion_permitida_minutos} min
+                                </p>
+                              </div>
+                              {isAdminRole(userRole) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(pausa.id)}
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            <Badge className="bg-purple-100 text-purple-800">
-                              +{pausa.minutos_exceso} min de exceso
-                            </Badge>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Permitido: {pausa.duracion_permitida_minutos} min
-                            </p>
-                          </div>
-                          {isAdminRole(userRole) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(pausa.id)}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
                       </div>
                       {pausa.observaciones && (
