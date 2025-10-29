@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { 
@@ -19,10 +20,12 @@ import {
   AlertTriangle,
   User,
   Filter,
-  X
+  X,
+  Trash2
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { isAdminRole } from "@/lib/authSecurity"
 
 interface FicheroIncidenciasProps {
   empleado: {
@@ -85,6 +88,9 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const [loading, setLoading] = useState(true)
   const [loadingTardios, setLoadingTardios] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [incidenciaToDelete, setIncidenciaToDelete] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string>('')
   const [filtroActivo, setFiltroActivo] = useState<'todos' | 'llegada_tarde' | 'no_ficho' | 'exceso_descanso'>('todos')
   const [formData, setFormData] = useState({
     tipo: '' as 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | '',
@@ -97,7 +103,26 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     cargarIncidencias()
     cargarFichajesToday()
     cargarPausasExcedidas()
+    cargarUserRole()
   }, [empleado.id])
+
+  const cargarUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('empleados')
+        .select('rol')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) throw error
+      setUserRole(data?.rol || '')
+    } catch (error) {
+      console.error('Error cargando rol:', error)
+    }
+  }
 
   const cargarIncidencias = async () => {
     setLoading(true)
@@ -244,6 +269,41 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
         return <Badge className="bg-red-100 text-red-800">Rechazada</Badge>
       default: 
         return <Badge variant="secondary">{estado}</Badge>
+    }
+  }
+
+  const handleDeleteClick = (incidenciaId: string) => {
+    setIncidenciaToDelete(incidenciaId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!incidenciaToDelete) return
+
+    try {
+      const { error } = await supabase
+        .from('fichaje_incidencias')
+        .delete()
+        .eq('id', incidenciaToDelete)
+
+      if (error) throw error
+
+      toast({
+        title: "Incidencia eliminada",
+        description: "La incidencia ha sido eliminada correctamente",
+      })
+
+      setDeleteDialogOpen(false)
+      setIncidenciaToDelete(null)
+      cargarIncidencias()
+
+    } catch (error) {
+      console.error('Error eliminando incidencia:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la incidencia",
+        variant: "destructive"
+      })
     }
   }
 
@@ -568,7 +628,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
             <Card key={incidencia.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1">
                     <CardTitle className="text-lg flex items-center space-x-2">
                       {obtenerIconoEstado(incidencia.estado)}
                       <span>{obtenerTextoTipo(incidencia.tipo)}</span>
@@ -586,7 +646,19 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                       )}
                     </CardDescription>
                   </div>
-                  {obtenerBadgeEstado(incidencia.estado)}
+                  <div className="flex items-center gap-2">
+                    {obtenerBadgeEstado(incidencia.estado)}
+                    {isAdminRole(userRole) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClick(incidencia.id)}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               
@@ -635,6 +707,27 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
           </div>
         </CardContent>
       </Card>
+
+      {/* Diálogo de confirmación de eliminación */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar incidencia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La incidencia será eliminada permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
