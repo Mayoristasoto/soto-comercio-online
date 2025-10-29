@@ -293,6 +293,31 @@ export default function FicheroHorarios() {
     }
   };
 
+  const handleDeleteTurno = async (turnoId: string) => {
+    try {
+      const { error } = await supabase
+        .from('fichado_turnos')
+        .update({ activo: false })
+        .eq('id', turnoId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Turno eliminado correctamente",
+      });
+
+      loadData();
+    } catch (error) {
+      console.error('Error eliminando turno:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el turno",
+        variant: "destructive",
+      });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       nombre: '',
@@ -651,13 +676,23 @@ export default function FicheroHorarios() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(turno)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(turno)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteTurno(turno.id)}
+                        disabled={!turno.activo}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
