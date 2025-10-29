@@ -73,6 +73,7 @@ export default function FicheroHorarios() {
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showInactiveTurnos, setShowInactiveTurnos] = useState(false);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -470,6 +471,14 @@ export default function FicheroHorarios() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <Switch
+              id="show-inactive"
+              checked={showInactiveTurnos}
+              onCheckedChange={setShowInactiveTurnos}
+            />
+            <Label htmlFor="show-inactive">Mostrar turnos inactivos</Label>
+          </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
@@ -650,7 +659,7 @@ export default function FicheroHorarios() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {turnos.map((turno) => (
+              {turnos.filter(turno => showInactiveTurnos || turno.activo).map((turno) => (
                 <TableRow key={turno.id}>
                   <TableCell className="font-medium">{turno.nombre}</TableCell>
                   <TableCell>
