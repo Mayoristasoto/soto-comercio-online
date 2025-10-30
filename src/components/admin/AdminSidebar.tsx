@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { NavLink, useLocation } from "react-router-dom"
+import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
   Users,
@@ -17,7 +17,8 @@ import {
   Map,
   Wrench,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from "lucide-react"
 import {
   Sidebar,
@@ -32,6 +33,8 @@ import {
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 
 interface NavItem {
   title: string
@@ -98,6 +101,7 @@ const navigationGroups: NavGroup[] = [
 export function AdminSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
+  const navigate = useNavigate()
   const collapsed = state === "collapsed"
   
   const [openGroups, setOpenGroups] = useState<string[]>(
@@ -148,6 +152,23 @@ export function AdminSidebar() {
             </div>
           )}
         </div>
+
+        {/* Botón para volver al menú principal */}
+        <div className="px-3 pb-2">
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start gap-2 transition-all",
+              collapsed && "px-2 justify-center"
+            )}
+            onClick={() => navigate("/dashboard")}
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Volver al Menú Principal</span>}
+          </Button>
+        </div>
+        
+        <Separator className="mx-3" />
 
         {navigationGroups.map((group) => {
           const isOpen = openGroups.includes(group.title)
