@@ -89,11 +89,9 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const [loading, setLoading] = useState(true)
   const [loadingTardios, setLoadingTardios] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [incidenciaToDelete, setIncidenciaToDelete] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string>('')
   const [filtroActivo, setFiltroActivo] = useState<'todos' | 'llegada_tarde' | 'no_ficho' | 'exceso_descanso'>('todos')
-  const [selectedIncidencias, setSelectedIncidencias] = useState<string[]>([])
+  const [selectedIncidencias, setSelectedIncidencias] = useState<Array<{id: string, tipo: 'tardio' | 'pausa'}>>([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState({
     tipo: '' as 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | '',
@@ -275,30 +273,40 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     }
   }
 
-  const handleDeleteClick = (incidenciaId: string) => {
-    setIncidenciaToDelete(incidenciaId)
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!incidenciaToDelete) return
-
+  const handleDeleteClick = async (incidenciaId: string, tipo?: 'tardio' | 'pausa') => {
     try {
-      const { error } = await supabase
-        .from('fichaje_incidencias')
-        .delete()
-        .eq('id', incidenciaToDelete)
-
-      if (error) throw error
+      if (tipo === 'tardio') {
+        const { error } = await supabase
+          .from('fichajes_tardios')
+          .delete()
+          .eq('id', incidenciaId)
+        if (error) throw error
+      } else if (tipo === 'pausa') {
+        const { error } = await supabase
+          .from('fichajes_pausas_excedidas')
+          .delete()
+          .eq('id', incidenciaId)
+        if (error) throw error
+      } else {
+        // Incidencias reportadas por usuarios
+        const { error } = await supabase
+          .from('fichaje_incidencias')
+          .delete()
+          .eq('id', incidenciaId)
+        if (error) throw error
+      }
 
       toast({
         title: "Incidencia eliminada",
         description: "La incidencia ha sido eliminada correctamente",
       })
 
-      setDeleteDialogOpen(false)
-      setIncidenciaToDelete(null)
-      cargarIncidencias()
+      if (tipo) {
+        cargarFichajesToday()
+        cargarPausasExcedidas()
+      } else {
+        cargarIncidencias()
+      }
 
     } catch (error) {
       console.error('Error eliminando incidencia:', error)
@@ -314,16 +322,22 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     if (selectedIncidencias.length === todasIncidencias.length) {
       setSelectedIncidencias([])
     } else {
-      setSelectedIncidencias(todasIncidencias.map(inc => inc.id))
+      setSelectedIncidencias(todasIncidencias.map(inc => ({
+        id: inc.id,
+        tipo: inc.tipo_incidencia
+      })))
     }
   }
 
-  const toggleSelectIncidencia = (id: string) => {
-    setSelectedIncidencias(prev => 
-      prev.includes(id) 
-        ? prev.filter(incId => incId !== id)
-        : [...prev, id]
-    )
+  const toggleSelectIncidencia = (id: string, tipo: 'tardio' | 'pausa') => {
+    setSelectedIncidencias(prev => {
+      const exists = prev.find(inc => inc.id === id)
+      if (exists) {
+        return prev.filter(inc => inc.id !== id)
+      } else {
+        return [...prev, { id, tipo }]
+      }
+    })
   }
 
   const handleDeleteSelected = async () => {
@@ -331,12 +345,29 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     
     setIsDeleting(true)
     try {
-      const { error } = await supabase
-        .from('fichaje_incidencias')
-        .delete()
-        .in('id', selectedIncidencias)
+      // Separar por tipo
+      const tardios = selectedIncidencias.filter(inc => inc.tipo === 'tardio').map(inc => inc.id)
+      const pausas = selectedIncidencias.filter(inc => inc.tipo === 'pausa').map(inc => inc.id)
 
-      if (error) throw error
+      // Eliminar tardíos
+      if (tardios.length > 0) {
+        const { error: errorTardios } = await supabase
+          .from('fichajes_tardios')
+          .delete()
+          .in('id', tardios)
+        
+        if (errorTardios) throw errorTardios
+      }
+
+      // Eliminar pausas excedidas
+      if (pausas.length > 0) {
+        const { error: errorPausas } = await supabase
+          .from('fichajes_pausas_excedidas')
+          .delete()
+          .in('id', pausas)
+        
+        if (errorPausas) throw errorPausas
+      }
 
       toast({
         title: "Incidencias eliminadas",
@@ -344,7 +375,6 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
       })
       
       setSelectedIncidencias([])
-      cargarIncidencias()
       cargarFichajesToday()
       cargarPausasExcedidas()
     } catch (error) {
@@ -623,8 +653,8 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                       <div className="flex items-center gap-3">
                         {isAdminRole(userRole) && (
                           <Checkbox 
-                            checked={selectedIncidencias.includes(fichaje.id)}
-                            onCheckedChange={() => toggleSelectIncidencia(fichaje.id)}
+                            checked={selectedIncidencias.some(inc => inc.id === fichaje.id)}
+                            onCheckedChange={() => toggleSelectIncidencia(fichaje.id, 'tardio')}
                           />
                         )}
                         <div className="flex-1">
@@ -651,7 +681,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleDeleteClick(fichaje.id)}
+                                  onClick={() => handleDeleteClick(fichaje.id, 'tardio')}
                                   className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -675,8 +705,8 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                       <div className="flex items-center gap-3">
                         {isAdminRole(userRole) && (
                           <Checkbox 
-                            checked={selectedIncidencias.includes(pausa.id)}
-                            onCheckedChange={() => toggleSelectIncidencia(pausa.id)}
+                            checked={selectedIncidencias.some(inc => inc.id === pausa.id)}
+                            onCheckedChange={() => toggleSelectIncidencia(pausa.id, 'pausa')}
                           />
                         )}
                         <div className="flex-1">
@@ -708,7 +738,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleDeleteClick(pausa.id)}
+                                  onClick={() => handleDeleteClick(pausa.id, 'pausa')}
                                   className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -835,26 +865,6 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
         </CardContent>
       </Card>
 
-      {/* Diálogo de confirmación de eliminación */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar incidencia?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. La incidencia será eliminada permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
