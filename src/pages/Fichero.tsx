@@ -496,16 +496,45 @@ export default function Fichero() {
                     <span>Fichaje con Reconocimiento Facial</span>
                   </CardTitle>
                   <CardDescription>
-                    Use su rostro para registrar entrada, salida o pausas
+                    {empleado.rol === 'admin_rrhh' 
+                      ? 'Use su rostro para registrar entrada, salida o pausas'
+                      : 'Los fichajes deben realizarse desde el kiosco'
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FicheroFacialAuth
-                    empleado={empleado}
-                    tipoFichaje={obtenerTipoFichajeSiguiente()}
-                    onFichajeSuccess={(confianza, empleadoId, empleadoData, emocion) => procesarFichaje(obtenerTipoFichajeSiguiente(), confianza, empleadoId, empleadoData, emocion)}
-                    loading={fichajeEnProceso}
-                  />
+                  {empleado.rol === 'admin_rrhh' ? (
+                    <FicheroFacialAuth
+                      empleado={empleado}
+                      tipoFichaje={obtenerTipoFichajeSiguiente()}
+                      onFichajeSuccess={(confianza, empleadoId, empleadoData, emocion) => procesarFichaje(obtenerTipoFichajeSiguiente(), confianza, empleadoId, empleadoData, emocion)}
+                      loading={fichajeEnProceso}
+                    />
+                  ) : (
+                    <div className="text-center py-8 space-y-4">
+                      <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Shield className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">Registro desde Kiosco</h3>
+                        <p className="text-muted-foreground">
+                          Por seguridad, los fichajes deben realizarse únicamente desde el kiosco de la empresa
+                        </p>
+                      </div>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                        <p className="text-sm font-medium text-blue-900">Instrucciones:</p>
+                        <ul className="text-sm text-blue-700 space-y-1 text-left">
+                          <li>• Diríjase al kiosco de fichaje</li>
+                          <li>• Mire directamente a la cámara</li>
+                          <li>• El sistema reconocerá su rostro automáticamente</li>
+                          <li>• Su fichaje quedará registrado al instante</li>
+                        </ul>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Aquí puede consultar sus fichajes, estadísticas e incidencias
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
