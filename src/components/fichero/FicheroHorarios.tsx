@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { TimelineView } from './TimelineView';
 import HorariosDragDrop from './HorariosDragDrop';
 import ScheduleImport from './ScheduleImport';
@@ -76,6 +76,8 @@ export default function FicheroHorarios() {
   const [showInactiveTurnos, setShowInactiveTurnos] = useState(false);
   const [filterNombre, setFilterNombre] = useState('');
   const [filterHoraEntrada, setFilterHoraEntrada] = useState('');
+  const [sortField, setSortField] = useState<'nombre' | 'hora_entrada' | 'tipo'>('nombre');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -483,7 +485,7 @@ export default function FicheroHorarios() {
               <Label htmlFor="show-inactive">Mostrar turnos inactivos</Label>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="filter-nombre">Filtrar por nombre</Label>
                 <Input
@@ -501,6 +503,40 @@ export default function FicheroHorarios() {
                   value={filterHoraEntrada}
                   onChange={(e) => setFilterHoraEntrada(e.target.value)}
                 />
+              </div>
+              <div>
+                <Label htmlFor="sort-field">Ordenar por</Label>
+                <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
+                  <SelectTrigger id="sort-field">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nombre">Nombre</SelectItem>
+                    <SelectItem value="hora_entrada">Hora de Ingreso</SelectItem>
+                    <SelectItem value="tipo">Tipo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="sort-direction">Dirección</Label>
+                <Button
+                  id="sort-direction"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                >
+                  {sortDirection === 'asc' ? (
+                    <>
+                      <ArrowUp className="h-4 w-4 mr-2" />
+                      Ascendente
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDown className="h-4 w-4 mr-2" />
+                      Descendente
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -697,6 +733,19 @@ export default function FicheroHorarios() {
                     return false;
                   }
                   return true;
+                })
+                .sort((a, b) => {
+                  let comparison = 0;
+                  
+                  if (sortField === 'nombre') {
+                    comparison = a.nombre.localeCompare(b.nombre);
+                  } else if (sortField === 'hora_entrada') {
+                    comparison = a.hora_entrada.localeCompare(b.hora_entrada);
+                  } else if (sortField === 'tipo') {
+                    comparison = a.tipo.localeCompare(b.tipo);
+                  }
+                  
+                  return sortDirection === 'asc' ? comparison : -comparison;
                 })
                 .map((turno) => (
                 <TableRow key={turno.id}>
