@@ -567,6 +567,37 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
           </div>
         </CardHeader>
         <CardContent>
+          {/* Controles de selección múltiple */}
+          {isAdminRole(userRole) && todasIncidencias.length > 0 && (
+            <div className="mb-4 flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  checked={selectedIncidencias.length === todasIncidencias.length && todasIncidencias.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-sm font-medium">
+                  Seleccionar todas ({todasIncidencias.length})
+                </span>
+                {selectedIncidencias.length > 0 && (
+                  <Badge variant="secondary">
+                    {selectedIncidencias.length} seleccionada(s)
+                  </Badge>
+                )}
+              </div>
+              {selectedIncidencias.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteSelected}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar Seleccionadas
+                </Button>
+              )}
+            </div>
+          )}
+          
           {loadingTardios ? (
             <div className="animate-pulse space-y-2">
               {[1, 2].map(i => (
