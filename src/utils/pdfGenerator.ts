@@ -137,51 +137,51 @@ export const generateEmpleadoPermisosPDF = () => {
 
   const funciones = [
     {
-      titulo: '📊 Dashboard Personal',
+      titulo: '1. Dashboard Personal',
       descripcion: 'Vista personalizada con estadísticas, tareas pendientes, próximas capacitaciones y resumen de actividades.',
     },
     {
-      titulo: '✅ Tareas Asignadas',
+      titulo: '2. Tareas Asignadas',
       descripcion: 'Visualización y gestión de tareas asignadas por supervisores con fechas límite y seguimiento de estado.',
     },
     {
-      titulo: '📄 Documentos',
+      titulo: '3. Documentos',
       descripcion: 'Acceso a documentos personales, manuales, políticas de la empresa y documentos firmados.',
     },
     {
-      titulo: '🎓 Capacitaciones',
+      titulo: '4. Capacitaciones',
       descripcion: 'Materiales de entrenamiento, cursos en línea, evaluaciones y seguimiento de progreso educativo.',
     },
     {
-      titulo: '🏆 Medallas e Insignias',
+      titulo: '5. Medallas e Insignias',
       descripcion: 'Sistema de reconocimientos por logros, desempeño destacado y cumplimiento de objetivos.',
     },
     {
-      titulo: '⭐ Calificaciones',
+      titulo: '6. Calificaciones',
       descripcion: 'Visualización de evaluaciones de clientes y supervisores sobre el desempeño laboral.',
     },
     {
-      titulo: '📦 Entregas de Elementos',
+      titulo: '7. Entregas de Elementos',
       descripcion: 'Confirmación de recepción de uniformes, herramientas y equipamiento con firma digital.',
     },
     {
-      titulo: '🎁 Premios Disponibles',
+      titulo: '8. Premios Disponibles',
       descripcion: 'Catálogo de premios canjeables con puntos acumulados por desempeño y participación.',
     },
     {
-      titulo: '🎯 Desafíos Activos',
+      titulo: '9. Desafíos Activos',
       descripcion: 'Participación en retos y desafíos con otros colaboradores para ganar puntos y reconocimientos.',
     },
     {
-      titulo: '📈 Ranking',
+      titulo: '10. Ranking',
       descripcion: 'Visualización de posición en rankings por desempeño, puntualidad y participación en actividades.',
     },
     {
-      titulo: '📅 Eventos del Equipo',
+      titulo: '11. Eventos del Equipo',
       descripcion: 'Información sobre eventos, reuniones, celebraciones y actividades de integración del equipo.',
     },
     {
-      titulo: '🕐 Fichaje y Asistencia',
+      titulo: '12. Fichaje y Asistencia',
       descripcion: 'Consulta de historial de fichajes, horarios asignados, estadísticas de puntualidad (registro desde kiosco).',
     },
   ];
@@ -212,43 +212,43 @@ export const generateEmpleadoPermisosPDF = () => {
 
   const acciones = [
     {
-      titulo: '✓ Marcar Tareas como Completadas',
+      titulo: 'Marcar Tareas como Completadas',
       descripcion: 'Actualizar el estado de las tareas asignadas una vez finalizadas.',
     },
     {
-      titulo: '✓ Firmar Documentos Digitalmente',
+      titulo: 'Firmar Documentos Digitalmente',
       descripcion: 'Firmar documentos requeridos con firma digital legal y trazable.',
     },
     {
-      titulo: '✓ Completar Capacitaciones',
+      titulo: 'Completar Capacitaciones',
       descripcion: 'Realizar cursos asignados y obtener certificaciones.',
     },
     {
-      titulo: '✓ Confirmar Recepción de Elementos',
+      titulo: 'Confirmar Recepción de Elementos',
       descripcion: 'Registrar la recepción de uniformes y herramientas entregadas.',
     },
     {
-      titulo: '✓ Canjear Premios',
+      titulo: 'Canjear Premios',
       descripcion: 'Utilizar puntos acumulados para obtener premios del catálogo.',
     },
     {
-      titulo: '✓ Participar en Desafíos',
+      titulo: 'Participar en Desafíos',
       descripcion: 'Inscribirse y completar desafíos para ganar reconocimientos.',
     },
     {
-      titulo: '✓ Registrar Fichaje (solo desde kiosco)',
+      titulo: 'Registrar Fichaje (solo desde kiosco)',
       descripcion: 'Marcar entrada/salida usando reconocimiento facial en el kiosco.',
     },
     {
-      titulo: '✓ Solicitar Vacaciones',
+      titulo: 'Solicitar Vacaciones',
       descripcion: 'Crear solicitudes de días de descanso según disponibilidad.',
     },
     {
-      titulo: '✓ Crear Solicitudes',
+      titulo: 'Crear Solicitudes',
       descripcion: 'Generar solicitudes de permisos, cambios de turno u otros requerimientos.',
     },
     {
-      titulo: '✓ Descargar Documentos Personales',
+      titulo: 'Descargar Documentos Personales',
       descripcion: 'Obtener copias de contratos, recibos de pago y documentos propios.',
     },
   ];
@@ -279,35 +279,35 @@ export const generateEmpleadoPermisosPDF = () => {
 
   const restricciones = [
     {
-      titulo: '✗ Sin Acceso a Datos de Otros Empleados',
+      titulo: 'Sin Acceso a Datos de Otros Empleados',
       descripcion: 'Por privacidad, no puede ver información personal, tareas o documentos de otros colaboradores.',
     },
     {
-      titulo: '✗ Sin Acceso a Configuración del Sistema',
+      titulo: 'Sin Acceso a Configuración del Sistema',
       descripcion: 'No puede modificar parámetros globales, reglas de negocio o configuraciones de la plataforma.',
     },
     {
-      titulo: '✗ Sin Gestión de Usuarios',
+      titulo: 'Sin Gestión de Usuarios',
       descripcion: 'No puede crear, editar o eliminar cuentas de usuarios del sistema.',
     },
     {
-      titulo: '✗ Sin Asignación de Tareas',
+      titulo: 'Sin Asignación de Tareas',
       descripcion: 'No puede crear ni asignar tareas a otros empleados, solo gestionar las propias.',
     },
     {
-      titulo: '✗ Sin Gestión de Sucursales',
+      titulo: 'Sin Gestión de Sucursales',
       descripcion: 'No puede administrar información de sucursales, horarios ni asignaciones de personal.',
     },
     {
-      titulo: '✗ Sin Acceso a Reportes Generales',
+      titulo: 'Sin Acceso a Reportes Generales',
       descripcion: 'No puede generar reportes consolidados de toda la empresa o de otras áreas.',
     },
     {
-      titulo: '✗ Sin Gestión de Presupuestos',
+      titulo: 'Sin Gestión de Presupuestos',
       descripcion: 'No tiene acceso a información financiera o presupuestos de la empresa.',
     },
     {
-      titulo: '✗ Sin Aprobación de Solicitudes',
+      titulo: 'Sin Aprobación de Solicitudes',
       descripcion: 'No puede aprobar o rechazar solicitudes de vacaciones, permisos u otros colaboradores.',
     },
   ];
@@ -340,25 +340,26 @@ export const generateEmpleadoPermisosPDF = () => {
   doc.setTextColor(PDF_STYLES.colors.text);
 
   const seguridadInfo = [
-    '🔒 Row-Level Security (RLS)',
+    'Row-Level Security (RLS)',
     'Cada registro en la base de datos está protegido para que solo pueda ser',
     'accedido por el empleado propietario o administradores autorizados.',
     '',
-    '📝 Auditoría de Acciones',
+    'Auditoría de Acciones',
     'Todas las acciones importantes quedan registradas con fecha, hora y usuario',
     'para mantener trazabilidad y transparencia.',
     '',
-    '🔐 Protección de Datos Personales',
+    'Protección de Datos Personales',
     'La información personal está encriptada y solo es visible para el empleado',
     'y el departamento de recursos humanos según sea necesario.',
     '',
-    '👥 Acceso Limitado de Administradores',
+    'Acceso Limitado de Administradores',
     'Los administradores solo acceden a información específica cuando es',
     'estrictamente necesario para tareas de gestión y soporte.',
   ];
 
   seguridadInfo.forEach((line) => {
-    if (line.startsWith('🔒') || line.startsWith('📝') || line.startsWith('🔐') || line.startsWith('👥')) {
+    if (line === 'Row-Level Security (RLS)' || line === 'Auditoría de Acciones' || 
+        line === 'Protección de Datos Personales' || line === 'Acceso Limitado de Administradores') {
       checkNewPage(25);
       yPosition += 5;
       doc.setFontSize(PDF_STYLES.fonts.heading);
