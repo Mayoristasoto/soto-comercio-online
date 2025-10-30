@@ -74,6 +74,8 @@ export default function FicheroHorarios() {
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showInactiveTurnos, setShowInactiveTurnos] = useState(false);
+  const [filterNombre, setFilterNombre] = useState('');
+  const [filterHoraEntrada, setFilterHoraEntrada] = useState('');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -471,14 +473,38 @@ export default function FicheroHorarios() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Switch
-              id="show-inactive"
-              checked={showInactiveTurnos}
-              onCheckedChange={setShowInactiveTurnos}
-            />
-            <Label htmlFor="show-inactive">Mostrar turnos inactivos</Label>
+          <div className="space-y-4 mb-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-inactive"
+                checked={showInactiveTurnos}
+                onCheckedChange={setShowInactiveTurnos}
+              />
+              <Label htmlFor="show-inactive">Mostrar turnos inactivos</Label>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="filter-nombre">Filtrar por nombre</Label>
+                <Input
+                  id="filter-nombre"
+                  placeholder="Buscar turno por nombre..."
+                  value={filterNombre}
+                  onChange={(e) => setFilterNombre(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="filter-hora">Filtrar por hora de ingreso</Label>
+                <Input
+                  id="filter-hora"
+                  type="time"
+                  value={filterHoraEntrada}
+                  onChange={(e) => setFilterHoraEntrada(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
+          
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
@@ -659,7 +685,20 @@ export default function FicheroHorarios() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {turnos.filter(turno => showInactiveTurnos || turno.activo).map((turno) => (
+              {turnos
+                .filter(turno => showInactiveTurnos || turno.activo)
+                .filter(turno => {
+                  // Filtro por nombre
+                  if (filterNombre && !turno.nombre.toLowerCase().includes(filterNombre.toLowerCase())) {
+                    return false;
+                  }
+                  // Filtro por hora de entrada
+                  if (filterHoraEntrada && turno.hora_entrada !== filterHoraEntrada) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((turno) => (
                 <TableRow key={turno.id}>
                   <TableCell className="font-medium">{turno.nombre}</TableCell>
                   <TableCell>
