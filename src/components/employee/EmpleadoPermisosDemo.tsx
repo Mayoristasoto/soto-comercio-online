@@ -26,11 +26,28 @@ import {
   Users,
   BarChart3,
   Settings,
-  BookOpen
+  BookOpen,
+  FileDown
 } from "lucide-react"
+import { generateEmpleadoPermisosPDF } from "@/utils/pdfGenerator"
+import { toast } from "sonner"
 
 export const EmpleadoPermisosDemo = () => {
   const [activeDemo, setActiveDemo] = useState<string | null>(null)
+
+  const handleGeneratePDF = () => {
+    try {
+      const fileName = generateEmpleadoPermisosPDF();
+      toast.success("PDF generado correctamente", {
+        description: `Archivo descargado: ${fileName}`,
+      });
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      toast.error("Error al generar el PDF", {
+        description: "Por favor, intenta nuevamente",
+      });
+    }
+  };
 
   const permisos = {
     visualizar: [
@@ -236,9 +253,15 @@ export const EmpleadoPermisosDemo = () => {
               Funciones disponibles, restricciones y demos interactivas
             </CardDescription>
           </div>
-          <Badge variant="outline" className="text-lg px-3 py-1">
-            Rol: Empleado
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleGeneratePDF} variant="outline" size="sm">
+              <FileDown className="h-4 w-4 mr-2" />
+              Generar PDF
+            </Button>
+            <Badge variant="outline" className="text-lg px-3 py-1">
+              Rol: Empleado
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
