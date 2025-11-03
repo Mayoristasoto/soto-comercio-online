@@ -149,14 +149,14 @@ export const FacialPhotoApproval = () => {
     setProcessing(upload.id);
 
     try {
-      const { data: empleadoData } = await supabase.auth.admin.getUserById(upload.empleado_id);
-      
       // Guardar descriptor facial en empleados_datos_sensibles
       const { error: updateError } = await supabase
         .from('empleados_datos_sensibles')
         .upsert({
           empleado_id: upload.empleado_id,
           face_descriptor: detection.descriptor,
+        }, {
+          onConflict: 'empleado_id'
         });
 
       if (updateError) throw updateError;
