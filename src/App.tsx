@@ -46,6 +46,8 @@ import CalificarEmpleado from "./pages/CalificarEmpleado";
 import CalificarEmpleadoV2 from "./pages/CalificarEmpleadoV2";
 import DemoQRCalificacion from "./pages/DemoQRCalificacion";
 import AdminAuthLogs from "./pages/AdminAuthLogs";
+import SubirFotoFacial from "./pages/SubirFotoFacial";
+import AprobarFotosFaciales from "./pages/AprobarFotosFaciales";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,7 @@ const App = () => (
             <Route path="rrhh/vacaciones" element={<Vacaciones />} />
             <Route path="rrhh/solicitudes" element={<Solicitudes />} />
             <Route path="rrhh/anotaciones" element={<Anotaciones />} />
+            <Route path="rrhh/subir-foto-facial" element={<SubirFotoFacial />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
@@ -129,6 +132,7 @@ const App = () => (
               <Route path="gondolasedit" element={<GondolasEdit />} />
               <Route path="configuracion" element={<Configuracion />} />
               <Route path="auth-logs" element={<AdminAuthLogs />} />
+              <Route path="aprobar-fotos-faciales" element={<AprobarFotosFaciales />} />
             </Route>
             
             {/* Redirects de compatibilidad (rutas antiguas -> nuevas) */}

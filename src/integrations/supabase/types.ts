@@ -1670,6 +1670,71 @@ export type Database = {
         }
         Relationships: []
       }
+      facial_photo_uploads: {
+        Row: {
+          comentarios: string | null
+          created_at: string
+          empleado_id: string
+          estado: string
+          fecha_revision: string | null
+          id: string
+          photo_url: string
+          revisado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          comentarios?: string | null
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          fecha_revision?: string | null
+          id?: string
+          photo_url: string
+          revisado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comentarios?: string | null
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          fecha_revision?: string | null
+          id?: string
+          photo_url?: string
+          revisado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facial_photo_uploads_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_photo_uploads_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_photo_uploads_revisado_por_fkey"
+            columns: ["revisado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_photo_uploads_revisado_por_fkey"
+            columns: ["revisado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facial_recognition_config: {
         Row: {
           data_type: string | null
