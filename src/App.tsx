@@ -48,6 +48,7 @@ import DemoQRCalificacion from "./pages/DemoQRCalificacion";
 import AdminAuthLogs from "./pages/AdminAuthLogs";
 import SubirFotoFacial from "./pages/SubirFotoFacial";
 import AprobarFotosFaciales from "./pages/AprobarFotosFaciales";
+import KioscoFotoFacial from "./pages/KioscoFotoFacial";
 
 const queryClient = new QueryClient();
 
@@ -150,6 +151,7 @@ const App = () => (
 
           {/* Herramientas especiales (sin layout) */}
           <Route path="/kiosco" element={<KioscoCheckIn />} />
+          <Route path="/kiosco-foto-facial" element={<KioscoFotoFacial />} />
           <Route path="/autogestion" element={<Autogestion />} />
           <Route path="/print-preview" element={<PrintPreview />} />
           
