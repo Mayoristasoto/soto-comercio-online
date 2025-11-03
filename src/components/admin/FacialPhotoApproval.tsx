@@ -161,6 +161,18 @@ export const FacialPhotoApproval = () => {
 
       if (updateError) throw updateError;
 
+      // Registrar también en empleados_rostros (para reflejarse en Nómina)
+      const { error: rostroError } = await supabase
+        .from('empleados_rostros')
+        .insert({
+          empleado_id: upload.empleado_id,
+          face_descriptor: detection.descriptor,
+          version_name: 'default',
+          is_active: true,
+          confidence_score: detection.score,
+        });
+      if (rostroError) throw rostroError;
+
       // Obtener el empleado actual (para cumplir FK de revisado_por)
       const { data: currentUser } = await supabase.auth.getUser()
       const currentUserId = currentUser.user?.id
