@@ -197,7 +197,7 @@ export function AdminSidebar() {
                       )} />
                       {!collapsed && (
                         <span className={cn(
-                          "text-sm font-semibold",
+                          "text-sm font-bold",
                           isGroupHighlighted && "text-primary"
                         )}>
                           {group.title}
