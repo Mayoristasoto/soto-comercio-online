@@ -92,8 +92,8 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
   const beneficiosPortada = [
-    '✓ ROI en 6-8 meses  •  ✓ 70% menos tiempo administrativo',
-    '✓ 85% precisión en control horario  •  ✓ 40% más engagement'
+    'ROI en 6-8 meses | 70% menos tiempo administrativo',
+    '85% precisión en control horario | 40% más engagement'
   ];
   yPos += 18;
   beneficiosPortada.forEach(texto => {
@@ -133,11 +133,11 @@ export const generateInformeEjecutivoPDF = (): string => {
     '',
     'BENEFICIOS CLAVE:',
     '',
-    '• Reducción de hasta 70% en tiempo administrativo',
-    '• Mejora del 85% en precisión de control horario',
-    '• Incremento del 40% en engagement de empleados',
-    '• ROI positivo en menos de 6 meses',
-    '• Ahorro promedio de 15-20 horas semanales por gerente',
+    'Reducción de hasta 70% en tiempo administrativo',
+    'Mejora del 85% en precisión de control horario',
+    'Incremento del 40% en engagement de empleados',
+    'ROI positivo en menos de 6 meses',
+    'Ahorro promedio de 15-20 horas semanales por gerente',
   ];
 
   resumenTexto.forEach(line => {
@@ -145,10 +145,15 @@ export const generateInformeEjecutivoPDF = (): string => {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(126, 34, 206);
       doc.setFontSize(12);
-    } else if (line.startsWith('•')) {
+    } else if (line === '' || line.startsWith('Nuestro') || line.startsWith('revoluciona') || line.startsWith('de vanguardia')) {
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(10);
+    } else if (line.startsWith('Reducción') || line.startsWith('Mejora') || line.startsWith('Incremento') || line.startsWith('ROI') || line.startsWith('Ahorro')) {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(225, 29, 72);
       doc.setFontSize(10);
+      line = '- ' + line;
     } else {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(30, 41, 59);
@@ -196,13 +201,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const ficheroFunciones = [
-    '✓ Registro biométrico con reconocimiento facial',
-    '✓ Múltiples métodos de autenticación (facial, manual, kiosco)',
-    '✓ Gestión inteligente de horarios y turnos',
-    '✓ Control de horas extras y ausencias',
-    '✓ Configuración de feriados y días especiales',
-    '✓ Reportes de puntualidad y asistencia en tiempo real',
-    '✓ Sistema de estado de ánimo para monitoreo de clima laboral',
+    '- Registro biométrico con reconocimiento facial',
+    '- Múltiples métodos de autenticación (facial, manual, kiosco)',
+    '- Gestión inteligente de horarios y turnos',
+    '- Control de horas extras y ausencias',
+    '- Configuración de feriados y días especiales',
+    '- Reportes de puntualidad y asistencia en tiempo real',
+    '- Sistema de estado de ánimo para monitoreo de clima laboral',
   ];
 
   ficheroFunciones.forEach(func => {
@@ -224,12 +229,12 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
   const ficheroBeneficios = [
-    '→ Eliminación de fraudes en marcajes (buddy punching)',
-    '→ Precisión del 99.9% en registro de asistencia',
-    '→ Reducción de 12 horas/semana en tareas administrativas',
-    '→ Cumplimiento automático de normativas laborales',
-    '→ Datos en tiempo real para toma de decisiones',
-    '→ Mejora en planificación de personal y costos',
+    '> Eliminación de fraudes en marcajes (buddy punching)',
+    '> Precisión del 99.9% en registro de asistencia',
+    '> Reducción de 12 horas/semana en tareas administrativas',
+    '> Cumplimiento automático de normativas laborales',
+    '> Datos en tiempo real para toma de decisiones',
+    '> Mejora en planificación de personal y costos',
   ];
 
   ficheroBeneficios.forEach(beneficio => {
@@ -248,7 +253,7 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setTextColor(249, 115, 22);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('💼 CASO DE ÉXITO:', 23, yPos + 6);
+  doc.text('CASO DE ÉXITO:', 23, yPos + 6);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(9);
@@ -279,13 +284,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const evalFunciones = [
-    '✓ Sistema de calificaciones por QR para evaluación inmediata',
-    '✓ Configuración flexible de conceptos evaluables',
-    '✓ Evaluaciones 360° (autoevaluación, pares, superiores)',
-    '✓ Métricas personalizables por puesto y departamento',
-    '✓ Histórico completo de evaluaciones',
-    '✓ Dashboard de rendimiento individual y por equipo',
-    '✓ Alertas automáticas de bajo desempeño',
+    '- Sistema de calificaciones por QR para evaluación inmediata',
+    '- Configuración flexible de conceptos evaluables',
+    '- Evaluaciones 360° (autoevaluación, pares, superiores)',
+    '- Métricas personalizables por puesto y departamento',
+    '- Histórico completo de evaluaciones',
+    '- Dashboard de rendimiento individual y por equipo',
+    '- Alertas automáticas de bajo desempeño',
   ];
 
   evalFunciones.forEach(func => {
@@ -306,12 +311,12 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
   const evalBeneficios = [
-    '→ Proceso de evaluación 90% más rápido',
-    '→ Feedback en tiempo real mejora productividad en 35%',
-    '→ Identificación temprana de necesidades de capacitación',
-    '→ Reducción de 60% en tiempo de reuniones de evaluación',
-    '→ Decisiones basadas en datos objetivos',
-    '→ Mejora en retención de talento clave',
+    '> Proceso de evaluación 90% más rápido',
+    '> Feedback en tiempo real mejora productividad en 35%',
+    '> Identificación temprana de necesidades de capacitación',
+    '> Reducción de 60% en tiempo de reuniones de evaluación',
+    '> Decisiones basadas en datos objetivos',
+    '> Mejora en retención de talento clave',
   ];
 
   evalBeneficios.forEach(beneficio => {
@@ -340,13 +345,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const vacFunciones = [
-    '✓ Solicitud y aprobación de vacaciones en línea',
-    '✓ Calendario visual de disponibilidad de equipo',
-    '✓ Cálculo automático de días disponibles',
-    '✓ Gestión de bloqueos por temporada alta',
-    '✓ Workflow de aprobaciones multinivel',
-    '✓ Notificaciones automáticas',
-    '✓ Historial completo de solicitudes',
+    '- Solicitud y aprobación de vacaciones en línea',
+    '- Calendario visual de disponibilidad de equipo',
+    '- Cálculo automático de días disponibles',
+    '- Gestión de bloqueos por temporada alta',
+    '- Workflow de aprobaciones multinivel',
+    '- Notificaciones automáticas',
+    '- Historial completo de solicitudes',
   ];
 
   vacFunciones.forEach(func => {
@@ -367,11 +372,11 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
   const vacBeneficios = [
-    '→ Reducción de 85% en tiempo de gestión de ausencias',
-    '→ Eliminación de conflictos de cobertura',
-    '→ Mayor transparencia en proceso de aprobación',
-    '→ Planificación óptima de recursos',
-    '→ Cumplimiento legal automático',
+    '> Reducción de 85% en tiempo de gestión de ausencias',
+    '> Eliminación de conflictos de cobertura',
+    '> Mayor transparencia en proceso de aprobación',
+    '> Planificación óptima de recursos',
+    '> Cumplimiento legal automático',
   ];
 
   vacBeneficios.forEach(beneficio => {
@@ -400,13 +405,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const gamFunciones = [
-    '✓ Sistema de puntos por logros y desempeño',
-    '✓ Insignias y medallas personalizables',
-    '✓ Rankings y competencias saludables',
-    '✓ Desafíos individuales y por equipo',
-    '✓ Catálogo de premios canjeables',
-    '✓ Celebración de cumpleaños y aniversarios',
-    '✓ Pantalla de reconocimientos para TV',
+    '- Sistema de puntos por logros y desempeño',
+    '- Insignias y medallas personalizables',
+    '- Rankings y competencias saludables',
+    '- Desafíos individuales y por equipo',
+    '- Catálogo de premios canjeables',
+    '- Celebración de cumpleaños y aniversarios',
+    '- Pantalla de reconocimientos para TV',
   ];
 
   gamFunciones.forEach(func => {
@@ -427,11 +432,11 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
   const gamBeneficios = [
-    '→ Incremento de 40% en engagement de empleados',
-    '→ Reducción de 25% en rotación de personal',
-    '→ Mejora en clima organizacional',
-    '→ Mayor motivación y productividad',
-    '→ Cultura de reconocimiento continuo',
+    '> Incremento de 40% en engagement de empleados',
+    '> Reducción de 25% en rotación de personal',
+    '> Mejora en clima organizacional',
+    '> Mayor motivación y productividad',
+    '> Cultura de reconocimiento continuo',
   ];
 
   gamBeneficios.forEach(beneficio => {
@@ -510,11 +515,11 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const techItems = [
-    '• Arquitectura cloud escalable y de alto rendimiento',
-    '• Base de datos PostgreSQL con Supabase',
-    '• Interfaz responsive (móvil, tablet, desktop)',
-    '• API REST para integraciones',
-    '• Actualizaciones automáticas sin interrupciones',
+    '- Arquitectura cloud escalable y de alto rendimiento',
+    '- Base de datos PostgreSQL con Supabase',
+    '- Interfaz responsive (móvil, tablet, desktop)',
+    '- API REST para integraciones',
+    '- Actualizaciones automáticas sin interrupciones',
   ];
 
   techItems.forEach(item => {
@@ -531,13 +536,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const secItems = [
-    '• Encriptación de extremo a extremo',
-    '• Autenticación multifactor',
-    '• Control de acceso basado en roles (RBAC)',
-    '• Auditoría completa de acciones',
-    '• Cumplimiento GDPR y normativas locales',
-    '• Backups automáticos diarios',
-    '• Certificación SSL/TLS',
+    '- Encriptación de extremo a extremo',
+    '- Autenticación multifactor',
+    '- Control de acceso basado en roles (RBAC)',
+    '- Auditoría completa de acciones',
+    '- Cumplimiento GDPR y normativas locales',
+    '- Backups automáticos diarios',
+    '- Certificación SSL/TLS',
   ];
 
   secItems.forEach(item => {
@@ -556,6 +561,23 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setFont('helvetica', 'bold');
   doc.text('Retorno de Inversión (ROI)', 20, yPos + 3);
   yPos += 22;
+
+  // Información de Pricing
+  doc.setFillColor(239, 246, 255);
+  doc.roundedRect(18, yPos, pageWidth - 36, 28, 2, 2, 'F');
+  doc.setDrawColor(59, 130, 246);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(18, yPos, pageWidth - 36, 28, 2, 2, 'S');
+  doc.setTextColor(30, 64, 175);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('COSTO POR EMPLEADO: $5 USD/mes', 23, yPos + 9);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Precio competitivo que incluye todos los módulos y actualizaciones', 23, yPos + 16);
+  doc.text('Piloto de 1 mes con servicio técnico incluido sin costo adicional', 23, yPos + 22);
+  yPos += 38;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -614,7 +636,7 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setTextColor(21, 128, 61);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('✓ ROI Promedio: 6-8 meses', 25, yPos + 9);
+  doc.text('ROI Promedio: 6-8 meses', 25, yPos + 9);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
@@ -704,7 +726,7 @@ export const generateInformeEjecutivoPDF = (): string => {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     fase.actividades.forEach(act => {
-      doc.text(`✓ ${act}`, 28, yPos);
+      doc.text(`- ${act}`, 28, yPos);
       yPos += 5.5;
     });
     yPos += 6;
@@ -719,7 +741,7 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setTextColor(30, 64, 175);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('⏱️ Tiempo total de implementación: 5-8 semanas', 23, yPos + 7);
+  doc.text('Tiempo total de implementación: 5-8 semanas', 23, yPos + 7);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(30, 41, 59);
@@ -775,7 +797,7 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setTextColor(249, 115, 22);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('🎁 Oferta Especial', 25, yPos + 10);
+  doc.text('Oferta Especial', 25, yPos + 10);
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -801,11 +823,11 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  addCenteredText('📧 info@sotomayorista.com', yPos, 10, 'normal');
+  addCenteredText('Email: info@sotomayorista.com', yPos, 10, 'normal');
   yPos += 7;
-  addCenteredText('📞 +54 (11) 1234-5678', yPos, 10, 'normal');
+  addCenteredText('Teléfono: +54 (11) 1234-5678', yPos, 10, 'normal');
   yPos += 7;
-  addCenteredText('🌐 www.sotomayorista.com', yPos, 10, 'normal');
+  addCenteredText('Web: www.sotomayorista.com', yPos, 10, 'normal');
 
   // Footer elegante
   yPos = pageHeight - 35;
