@@ -667,9 +667,20 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                 <p className="font-medium text-sm">
                                   {fichaje.empleado?.nombre} {fichaje.empleado?.apellido}
                                 </p>
-                                <div className="text-xs text-muted-foreground space-x-4">
-                                  <span>Hora programada: {fichaje.hora_programada}</span>
-                                  <span>Llegó: {fichaje.hora_real}</span>
+                                <div className="text-xs text-muted-foreground">
+                                  <div className="mb-1">
+                                    <Calendar className="h-3 w-3 inline mr-1" />
+                                    {new Date(fichaje.fecha_fichaje).toLocaleDateString('es-AR', { 
+                                      weekday: 'short', 
+                                      day: '2-digit', 
+                                      month: '2-digit', 
+                                      year: 'numeric' 
+                                    })}
+                                  </div>
+                                  <div className="space-x-4">
+                                    <span>Hora programada: {fichaje.hora_programada}</span>
+                                    <span>Llegó: {fichaje.hora_real}</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -719,9 +730,20 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                 <p className="font-medium text-sm">
                                   {pausa.empleado?.nombre} {pausa.empleado?.apellido}
                                 </p>
-                                <div className="text-xs text-muted-foreground space-x-4">
-                                  <span>Pausa: {pausa.hora_inicio_pausa} - {pausa.hora_fin_pausa}</span>
-                                  <span>Duración: {pausa.duracion_minutos} min</span>
+                                <div className="text-xs text-muted-foreground">
+                                  <div className="mb-1">
+                                    <Calendar className="h-3 w-3 inline mr-1" />
+                                    {new Date(pausa.fecha_fichaje).toLocaleDateString('es-AR', { 
+                                      weekday: 'short', 
+                                      day: '2-digit', 
+                                      month: '2-digit', 
+                                      year: 'numeric' 
+                                    })}
+                                  </div>
+                                  <div className="space-x-4">
+                                    <span>Pausa: {pausa.hora_inicio_pausa} - {pausa.hora_fin_pausa}</span>
+                                    <span>Duración: {pausa.duracion_minutos} min</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
