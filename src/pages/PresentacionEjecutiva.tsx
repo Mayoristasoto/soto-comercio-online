@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Maximize, Minimize, Calendar, TrendingUp, Users, Shield, Clock, Award, CheckCircle, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Calendar, TrendingUp, Users, Shield, Clock, Award, CheckCircle, ArrowRight, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { generatePresentacionEjecutivaPDF } from '@/utils/presentacionEjecutivaPDF';
+import { toast } from 'sonner';
 
 const PresentacionEjecutiva = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -524,6 +526,17 @@ const PresentacionEjecutiva = () => {
     }
   }, []);
 
+  const handleGeneratePDF = async () => {
+    try {
+      toast.loading('Generando PDF de la presentación...');
+      await generatePresentacionEjecutivaPDF();
+      toast.success('PDF generado y descargado exitosamente');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Error al generar el PDF');
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
@@ -629,6 +642,16 @@ const PresentacionEjecutiva = () => {
           ) : (
             <Maximize className="w-6 h-6" />
           )}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleGeneratePDF}
+          className="ml-2 bg-white/90 backdrop-blur hover:bg-white"
+          title="Descargar como PDF"
+        >
+          <Download className="w-6 h-6" />
         </Button>
       </div>
 
