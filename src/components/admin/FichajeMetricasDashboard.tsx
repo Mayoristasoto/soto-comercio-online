@@ -16,7 +16,8 @@ import {
   FileText,
   Trash2,
   Check,
-  X as XIcon
+  X as XIcon,
+  AlertTriangle
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
@@ -358,6 +359,108 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const plasmarLlegadasTardeComoRojas = async () => {
+    if (fichajesToday.length === 0) {
+      toast({
+        title: "Sin datos",
+        description: "No hay llegadas tarde para plasmar como cruces rojas",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Usuario no autenticado")
+
+      const { data: empleado } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      // Crear cruces rojas para cada llegada tarde
+      const crucesRojas = fichajesToday.map(fichaje => ({
+        empleado_id: fichaje.empleado_id,
+        fecha_infraccion: fichaje.fecha_fichaje,
+        tipo_infraccion: 'llegada_tarde',
+        minutos_diferencia: fichaje.minutos_retraso,
+        observaciones: `Llegó ${fichaje.minutos_retraso} minutos tarde. Hora programada: ${formatearHora(fichaje.hora_programada)}, Hora real: ${formatearHora(fichaje.hora_real)}`
+      }))
+
+      const { error } = await supabase
+        .from('empleado_cruces_rojas')
+        .insert(crucesRojas)
+
+      if (error) throw error
+
+      toast({
+        title: "Cruces rojas plasmadas",
+        description: `Se plasmaron ${fichajesToday.length} llegadas tarde como cruces rojas`
+      })
+
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error plasmando cruces rojas:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron plasmar las cruces rojas",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const plasmarPausasExcedidasComoRojas = async () => {
+    if (pausasToday.length === 0) {
+      toast({
+        title: "Sin datos",
+        description: "No hay pausas excedidas para plasmar como cruces rojas",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Usuario no autenticado")
+
+      const { data: empleado } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      // Crear cruces rojas para cada pausa excedida
+      const crucesRojas = pausasToday.map(pausa => ({
+        empleado_id: pausa.empleado_id,
+        fecha_infraccion: pausa.fecha_fichaje,
+        tipo_infraccion: 'pausa_excedida',
+        minutos_diferencia: pausa.minutos_exceso,
+        observaciones: `Excedió pausa por ${pausa.minutos_exceso} minutos. Duración: ${pausa.duracion_minutos} min (permitido: ${pausa.duracion_permitida_minutos} min)`
+      }))
+
+      const { error } = await supabase
+        .from('empleado_cruces_rojas')
+        .insert(crucesRojas)
+
+      if (error) throw error
+
+      toast({
+        title: "Cruces rojas plasmadas",
+        description: `Se plasmaron ${pausasToday.length} pausas excedidas como cruces rojas`
+      })
+
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error plasmando cruces rojas:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron plasmar las cruces rojas",
+        variant: "destructive"
+      })
+    }
+  }
+
   const formatearHora = (hora: string): string => {
     if (!hora) return '--:--:--'
     const partes = hora.split('.')
@@ -467,10 +570,23 @@ export default function FichajeMetricasDashboard() {
         <TabsContent value="tardios" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Fichajes Tardíos de Hoy</CardTitle>
-              <CardDescription>
-                Empleados que llegaron tarde según su horario asignado
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Fichajes Tardíos de Hoy</CardTitle>
+                  <CardDescription>
+                    Empleados que llegaron tarde según su horario asignado
+                  </CardDescription>
+                </div>
+                {fichajesToday.length > 0 && (
+                  <Button
+                    onClick={plasmarLlegadasTardeComoRojas}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Plasmar como Cruces Rojas
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {fichajesToday.length === 0 ? (
@@ -525,10 +641,23 @@ export default function FichajeMetricasDashboard() {
         <TabsContent value="pausas" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Pausas Excedidas de Hoy</CardTitle>
-              <CardDescription>
-                Empleados que excedieron su tiempo de descanso permitido
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Pausas Excedidas de Hoy</CardTitle>
+                  <CardDescription>
+                    Empleados que excedieron su tiempo de descanso permitido
+                  </CardDescription>
+                </div>
+                {pausasToday.length > 0 && (
+                  <Button
+                    onClick={plasmarPausasExcedidasComoRojas}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Plasmar como Cruces Rojas
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {pausasToday.length === 0 ? (
