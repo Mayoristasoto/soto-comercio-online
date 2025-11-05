@@ -149,7 +149,35 @@ export const FacialPhotoApproval = () => {
     setProcessing(upload.id);
 
     try {
-      // Guardar descriptor facial en empleados_datos_sensibles
+      // Verificar si ya existen versiones de rostro para este empleado
+      const { data: existingVersions, error: versionCheckError } = await supabase
+        .from('empleados_rostros')
+        .select('version_name, is_active')
+        .eq('empleado_id', upload.empleado_id)
+        .order('created_at', { ascending: false });
+
+      if (versionCheckError) throw versionCheckError;
+
+      // Determinar el nombre de la versión
+      let versionName = 'Versión 1';
+      let versionNumber = 1;
+      
+      if (existingVersions && existingVersions.length > 0) {
+        // Calcular el siguiente número de versión
+        versionNumber = existingVersions.length + 1;
+        versionName = `Versión ${versionNumber}`;
+
+        // Desactivar todas las versiones anteriores (opcional, para que solo la nueva esté activa)
+        // Si prefieres que todas estén activas, comenta esta sección
+        const { error: deactivateError } = await supabase
+          .from('empleados_rostros')
+          .update({ is_active: false })
+          .eq('empleado_id', upload.empleado_id);
+
+        if (deactivateError) throw deactivateError;
+      }
+
+      // Guardar descriptor facial en empleados_datos_sensibles (mantener compatibilidad)
       const { error: updateError } = await supabase
         .from('empleados_datos_sensibles')
         .upsert({
@@ -161,13 +189,13 @@ export const FacialPhotoApproval = () => {
 
       if (updateError) throw updateError;
 
-      // Registrar también en empleados_rostros (para reflejarse en Nómina)
+      // Registrar la nueva versión en empleados_rostros
       const { error: rostroError } = await supabase
         .from('empleados_rostros')
         .insert({
           empleado_id: upload.empleado_id,
           face_descriptor: detection.descriptor,
-          version_name: 'default',
+          version_name: versionName,
           is_active: true,
           confidence_score: detection.score,
         });
@@ -196,9 +224,13 @@ export const FacialPhotoApproval = () => {
 
       if (approveError) throw approveError;
 
+      const versionMessage = versionNumber > 1 
+        ? `Se guardó como ${versionName}` 
+        : 'El reconocimiento facial ha sido activado';
+
       toast({
         title: 'Foto aprobada',
-        description: 'El reconocimiento facial ha sido activado para el empleado',
+        description: versionMessage,
       });
 
       await loadUploads();
