@@ -27,6 +27,8 @@ import DocumentManager from "./DocumentManager"
 import PermissionsManager from "./PermissionsManager"
 import { AusenciasMedicas } from "./AusenciasMedicas"
 import CalificacionesEmpleado from "../employee/CalificacionesEmpleado"
+import EmployeeIncidencias from "./EmployeeIncidencias"
+import EmployeeCrucesRojas from "./EmployeeCrucesRojas"
 
 interface EmpleadoProfile {
   id: string
@@ -301,13 +303,15 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
       <CardContent>
         <Tabs defaultValue="personal" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="personal">Datos Personales</TabsTrigger>
-            <TabsTrigger value="work">Información Laboral</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+            <TabsTrigger value="personal">Personal</TabsTrigger>
+            <TabsTrigger value="work">Laboral</TabsTrigger>
             <TabsTrigger value="calificaciones">Calificaciones</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
-            <TabsTrigger value="ausencias">Ausencias Médicas</TabsTrigger>
+            <TabsTrigger value="ausencias">Ausencias</TabsTrigger>
             <TabsTrigger value="permissions">Permisos</TabsTrigger>
+            <TabsTrigger value="incidencias">Incidencias</TabsTrigger>
+            <TabsTrigger value="cruces-rojas">Cruces Rojas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal" className="space-y-6">
@@ -569,6 +573,14 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
           <TabsContent value="permissions">
             <PermissionsManager empleadoId={empleado.id} />
+          </TabsContent>
+
+          <TabsContent value="incidencias">
+            <EmployeeIncidencias empleadoId={empleado.id} />
+          </TabsContent>
+
+          <TabsContent value="cruces-rojas">
+            <EmployeeCrucesRojas empleadoId={empleado.id} />
           </TabsContent>
         </Tabs>
       </CardContent>
