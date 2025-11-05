@@ -50,6 +50,7 @@ import SubirFotoFacial from "./pages/SubirFotoFacial";
 import AprobarFotosFaciales from "./pages/AprobarFotosFaciales";
 import KioscoFotoFacial from "./pages/KioscoFotoFacial";
 import InformeEjecutivo from "./pages/InformeEjecutivo";
+import PresentacionEjecutiva from "./pages/PresentacionEjecutiva";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="rrhh/anotaciones" element={<Anotaciones />} />
             <Route path="rrhh/subir-foto-facial" element={<SubirFotoFacial />} />
             <Route path="rrhh/informe-ejecutivo" element={<InformeEjecutivo />} />
+            <Route path="rrhh/presentacion-ejecutiva" element={<PresentacionEjecutiva />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
