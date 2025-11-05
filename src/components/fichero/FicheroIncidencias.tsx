@@ -328,6 +328,27 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     }
   }
 
+  const formatearHora = (hora: string): string => {
+    if (!hora) return '--:--'
+    
+    // Si la hora tiene formato completo con microsegundos (ej: 11:48:47.679812)
+    // o es solo HH:MM:SS, extraer solo HH:MM:SS
+    const partes = hora.split('.')
+    const horaSinMicrosegundos = partes[0]
+    
+    // Si ya tiene formato HH:MM:SS, devolverlo
+    if (horaSinMicrosegundos.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return horaSinMicrosegundos
+    }
+    
+    // Si tiene formato HH:MM, agregar :00
+    if (horaSinMicrosegundos.match(/^\d{2}:\d{2}$/)) {
+      return horaSinMicrosegundos + ':00'
+    }
+    
+    return horaSinMicrosegundos
+  }
+
   const handleDeleteClick = async (incidenciaId: string, tipo?: 'tardio' | 'pausa') => {
     try {
       if (tipo === 'tardio') {
@@ -757,8 +778,8 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                     })}
                                   </div>
                                   <div className="space-x-4">
-                                    <span>Hora programada: {fichaje.hora_programada}</span>
-                                    <span>Llegó: {fichaje.hora_real}</span>
+                                    <span>Hora programada: {formatearHora(fichaje.hora_programada)}</span>
+                                    <span>Llegó: {formatearHora(fichaje.hora_real)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -820,7 +841,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                     })}
                                   </div>
                                   <div className="space-x-4">
-                                    <span>Pausa: {pausa.hora_inicio_pausa} - {pausa.hora_fin_pausa}</span>
+                                    <span>Pausa: {formatearHora(pausa.hora_inicio_pausa)} - {formatearHora(pausa.hora_fin_pausa)}</span>
                                     <span>Duración: {pausa.duracion_minutos} min</span>
                                   </div>
                                 </div>
