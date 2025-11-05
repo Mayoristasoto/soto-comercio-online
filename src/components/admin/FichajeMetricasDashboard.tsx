@@ -410,6 +410,53 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const recalcularPausasExcedidas = async () => {
+    try {
+      // Obtener todos los empleados con pausas hoy
+      const { data: empleadosConPausas } = await supabase
+        .from('fichajes_pausas_excedidas')
+        .select('empleado_id')
+        .eq('fecha_fichaje', new Date().toISOString().split('T')[0])
+
+      if (!empleadosConPausas || empleadosConPausas.length === 0) {
+        toast({
+          title: "Sin datos",
+          description: "No hay pausas para recalcular",
+          variant: "destructive"
+        })
+        return
+      }
+
+      const empleadoIds = [...new Set(empleadosConPausas.map(p => p.empleado_id))]
+
+      // Recalcular para cada empleado
+      for (const empleadoId of empleadoIds) {
+        const { error } = await supabase.rpc('recalcular_pausas_excedidas_empleado', {
+          p_empleado_id: empleadoId,
+          p_fecha_desde: new Date().toISOString().split('T')[0]
+        })
+
+        if (error) {
+          console.error(`Error recalculando empleado ${empleadoId}:`, error)
+        }
+      }
+
+      toast({
+        title: "Recálculo completado",
+        description: "Las pausas excedidas fueron recalculadas con timezone correcto"
+      })
+
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error recalculando pausas:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron recalcular las pausas excedidas",
+        variant: "destructive"
+      })
+    }
+  }
+
   const plasmarPausasExcedidasComoRojas = async () => {
     if (pausasToday.length === 0) {
       toast({
@@ -648,15 +695,25 @@ export default function FichajeMetricasDashboard() {
                     Empleados que excedieron su tiempo de descanso permitido
                   </CardDescription>
                 </div>
-                {pausasToday.length > 0 && (
+                <div className="flex gap-2">
                   <Button
-                    onClick={plasmarPausasExcedidasComoRojas}
-                    className="bg-red-600 hover:bg-red-700"
+                    onClick={recalcularPausasExcedidas}
+                    variant="outline"
+                    size="sm"
                   >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Plasmar como Cruces Rojas
+                    <Clock className="h-4 w-4 mr-2" />
+                    Recalcular Timezone
                   </Button>
-                )}
+                  {pausasToday.length > 0 && (
+                    <Button
+                      onClick={plasmarPausasExcedidasComoRojas}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Plasmar como Cruces Rojas
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
