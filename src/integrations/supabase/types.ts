@@ -4243,6 +4243,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      recalcular_fichajes_tardios_empleado: {
+        Args: { p_empleado_id: string; p_fecha_desde?: string }
+        Returns: undefined
+      }
+      recalcular_incidencias_empleado: {
+        Args: { p_empleado_id: string; p_fecha_desde?: string }
+        Returns: Json
+      }
+      recalcular_pausas_excedidas_empleado: {
+        Args: { p_empleado_id: string; p_fecha_desde?: string }
+        Returns: undefined
+      }
       registrar_intento_login:
         | {
             Args: {

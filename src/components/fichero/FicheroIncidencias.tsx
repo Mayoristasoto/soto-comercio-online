@@ -192,6 +192,46 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     }
   }
 
+  const recalcularIncidencias = async () => {
+    setLoading(true)
+    try {
+      // Llamar a la función RPC para recalcular incidencias
+      const { data, error } = await supabase
+        .rpc('recalcular_incidencias_empleado', {
+          p_empleado_id: empleado.id,
+          p_fecha_desde: null // Recalcular últimos 30 días por defecto
+        })
+
+      if (error) throw error
+
+      const resultado = data as {
+        success: boolean
+        fichajes_tardios: { antes: number, despues: number }
+        pausas_excedidas: { antes: number, despues: number }
+      }
+
+      toast({
+        title: "Incidencias recalculadas",
+        description: `Llegadas tarde: ${resultado.fichajes_tardios.antes} → ${resultado.fichajes_tardios.despues} | Pausas excedidas: ${resultado.pausas_excedidas.antes} → ${resultado.pausas_excedidas.despues}`,
+      })
+
+      // Recargar los datos
+      await Promise.all([
+        cargarFichajesToday(),
+        cargarPausasExcedidas()
+      ])
+    } catch (error) {
+      console.error('Error recalculando incidencias:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron recalcular las incidencias",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -432,14 +472,25 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
           </p>
         </div>
         
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Incidencia
+        <div className="flex gap-2">
+          {isAdminRole(userRole) && (
+            <Button
+              variant="outline"
+              onClick={recalcularIncidencias}
+              disabled={loading}
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Recalcular Incidencias
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Incidencia
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Reportar Incidencia</DialogTitle>
               <DialogDescription>
@@ -515,6 +566,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Llegadas tardías de hoy */}
