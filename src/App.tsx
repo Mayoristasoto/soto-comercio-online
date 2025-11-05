@@ -49,6 +49,7 @@ import AdminAuthLogs from "./pages/AdminAuthLogs";
 import SubirFotoFacial from "./pages/SubirFotoFacial";
 import AprobarFotosFaciales from "./pages/AprobarFotosFaciales";
 import KioscoFotoFacial from "./pages/KioscoFotoFacial";
+import InformeEjecutivo from "./pages/InformeEjecutivo";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="rrhh/solicitudes" element={<Solicitudes />} />
             <Route path="rrhh/anotaciones" element={<Anotaciones />} />
             <Route path="rrhh/subir-foto-facial" element={<SubirFotoFacial />} />
+            <Route path="rrhh/informe-ejecutivo" element={<InformeEjecutivo />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
