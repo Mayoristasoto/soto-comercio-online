@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { PDF_STYLES } from './pdfStyles';
+import { PDF_STYLES, COMPANY_INFO } from './pdfStyles';
 
 export const generateInformeEjecutivoPDF = (): string => {
   const doc = new jsPDF({
@@ -31,49 +31,96 @@ export const generateInformeEjecutivoPDF = (): string => {
     return false;
   };
 
-  // PORTADA
-  doc.setFillColor(37, 99, 235); // Primary color
-  doc.rect(0, 0, pageWidth, 80, 'F');
+  // PORTADA CON DISEÑO MODERNO
+  // Gradiente de fondo (simulado con capas)
+  doc.setFillColor(126, 34, 206); // Morado SOTO
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
   
+  // Efecto de gradiente con transparencias simuladas
+  doc.setFillColor(225, 29, 72, 0.3); // Rosa semi-transparente
+  doc.circle(pageWidth * 0.8, 50, 80, 'F');
+  doc.setFillColor(249, 115, 22, 0.2); // Naranja semi-transparente
+  doc.circle(pageWidth * 0.2, pageHeight * 0.7, 100, 'F');
+
+  // Logo de la empresa
+  try {
+    const img = new Image();
+    img.src = COMPANY_INFO.logo;
+    doc.addImage(img, 'JPEG', pageWidth/2 - 40, 30, 80, 40);
+  } catch (error) {
+    console.log('Logo no disponible');
+  }
+
+  // Título principal
   doc.setTextColor(255, 255, 255);
-  addCenteredText('SISTEMA INTEGRAL DE', 35, 18, 'bold');
-  addCenteredText('GESTIÓN DE RECURSOS HUMANOS', 45, 18, 'bold');
+  yPos = 90;
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  addCenteredText('INFORME EJECUTIVO', yPos, 24, 'bold');
   
-  doc.setFontSize(12);
-  addCenteredText('Informe Ejecutivo de Funcionalidades y Beneficios', 60, 12, 'normal');
+  yPos += 12;
+  doc.setFontSize(16);
+  addCenteredText('Sistema de Gestión de Recursos Humanos', yPos, 16, 'normal');
 
-  doc.setTextColor(37, 99, 235);
-  yPos = 100;
-  addCenteredText('Transforme la gestión de su talento humano', yPos, 14, 'bold');
+  // Línea decorativa
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.8);
+  doc.line(pageWidth/2 - 40, yPos + 8, pageWidth/2 + 40, yPos + 8);
+
+  // Subtítulo
+  yPos += 25;
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  addCenteredText('Transforme la gestión de su talento humano', yPos, 14, 'normal');
+  
   yPos += 10;
-  
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(10);
-  addCenteredText('Solución completa para empresas modernas', yPos, 10, 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(240, 240, 240);
+  addCenteredText('Solución integral para empresas modernas', yPos, 12, 'normal');
 
-  // Logo placeholder area
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.5);
-  doc.rect(pageWidth/2 - 30, 120, 60, 60);
-  doc.setFontSize(8);
-  doc.setTextColor(148, 163, 184);
-  addCenteredText('LOGO EMPRESA', 155, 8, 'normal');
+  // Cuadro de beneficios destacados
+  yPos = pageHeight - 90;
+  doc.setFillColor(255, 255, 255, 0.95);
+  doc.roundedRect(25, yPos, pageWidth - 50, 60, 3, 3, 'F');
+  
+  doc.setTextColor(126, 34, 206);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BENEFICIOS CLAVE', pageWidth/2, yPos + 8, { align: 'center' });
+  
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(30, 41, 59);
+  const beneficiosPortada = [
+    '✓ ROI en 6-8 meses  •  ✓ 70% menos tiempo administrativo',
+    '✓ 85% precisión en control horario  •  ✓ 40% más engagement'
+  ];
+  yPos += 18;
+  beneficiosPortada.forEach(texto => {
+    addCenteredText(texto, yPos, 9, 'normal');
+    yPos += 7;
+  });
 
   // Footer de portada
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
   const fecha = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-  addCenteredText(fecha, pageHeight - 15, 9, 'normal');
+  addCenteredText(fecha, pageHeight - 12, 9, 'normal');
+  doc.setFontSize(8);
+  addCenteredText(`${COMPANY_INFO.name} | Versión ${COMPANY_INFO.version}`, pageHeight - 7, 8, 'normal');
 
   // PÁGINA 2: RESUMEN EJECUTIVO
   doc.addPage();
   yPos = 20;
   
-  doc.setTextColor(37, 99, 235);
-  doc.setFontSize(16);
+  // Header de sección con diseño moderno
+  doc.setFillColor(126, 34, 206);
+  doc.roundedRect(15, yPos - 8, pageWidth - 30, 14, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('Resumen Ejecutivo', 20, yPos);
-  yPos += 15;
+  doc.text('Resumen Ejecutivo', 20, yPos + 2);
+  yPos += 20;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
@@ -96,41 +143,49 @@ export const generateInformeEjecutivoPDF = (): string => {
   resumenTexto.forEach(line => {
     if (line.startsWith('BENEFICIOS')) {
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(37, 99, 235);
+      doc.setTextColor(126, 34, 206);
+      doc.setFontSize(12);
     } else if (line.startsWith('•')) {
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(22, 163, 74); // Green for benefits
+      doc.setTextColor(225, 29, 72);
+      doc.setFontSize(10);
     } else {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(30, 41, 59);
+      doc.setFontSize(10);
     }
     doc.text(line, 20, yPos);
     yPos += 6;
   });
 
-  yPos += 5;
-  doc.setDrawColor(226, 232, 240);
+  yPos += 8;
+  // Línea decorativa con gradiente simulado
+  doc.setDrawColor(126, 34, 206);
+  doc.setLineWidth(1);
   doc.line(20, yPos, pageWidth - 20, yPos);
 
-  // MÓDULOS PRINCIPALES
-  yPos += 10;
-  doc.setTextColor(37, 99, 235);
-  doc.setFontSize(14);
+  // MÓDULOS PRINCIPALES con diseño destacado
+  yPos += 12;
+  doc.setFillColor(250, 250, 250);
+  doc.roundedRect(15, yPos - 5, pageWidth - 30, 12, 2, 2, 'F');
+  doc.setTextColor(126, 34, 206);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Módulos Principales', 20, yPos);
-  yPos += 10;
+  doc.text('Módulos Principales', 20, yPos + 4);
+  yPos += 15;
 
   // PÁGINA 3: MÓDULO DE FICHERO
   doc.addPage();
   yPos = 20;
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  // Header del módulo con gradiente
+  doc.setFillColor(126, 34, 206);
+  doc.roundedRect(0, yPos - 8, pageWidth, 16, 0, 0, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('1. CONTROL HORARIO Y ASISTENCIA', 22, yPos + 4);
-  yPos += 20;
+  doc.text('1. CONTROL HORARIO Y ASISTENCIA', 20, yPos + 3);
+  yPos += 22;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -155,12 +210,15 @@ export const generateInformeEjecutivoPDF = (): string => {
     yPos += 6;
   });
 
-  yPos += 5;
-  doc.setFontSize(11);
+  yPos += 8;
+  // Caja de beneficios
+  doc.setFillColor(254, 242, 242);
+  doc.roundedRect(18, yPos - 3, pageWidth - 36, 5, 1, 1, 'F');
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(22, 163, 74);
-  doc.text('Beneficios de Negocio:', 20, yPos);
-  yPos += 7;
+  doc.setTextColor(225, 29, 72);
+  doc.text('Beneficios de Negocio:', 23, yPos + 1);
+  yPos += 9;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -180,32 +238,37 @@ export const generateInformeEjecutivoPDF = (): string => {
   });
 
   checkNewPage();
-  yPos += 5;
-  doc.setFillColor(240, 253, 244);
-  doc.rect(20, yPos, pageWidth - 40, 25, 'F');
-  doc.setTextColor(22, 163, 74);
-  doc.setFontSize(9);
+  yPos += 8;
+  // Caso de uso destacado
+  doc.setFillColor(254, 252, 232);
+  doc.roundedRect(18, yPos, pageWidth - 36, 28, 2, 2, 'F');
+  doc.setDrawColor(249, 115, 22);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(18, yPos, pageWidth - 36, 28, 2, 2, 'S');
+  doc.setTextColor(249, 115, 22);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('CASO DE USO:', 25, yPos + 5);
+  doc.text('💼 CASO DE ÉXITO:', 23, yPos + 6);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
+  doc.setFontSize(9);
   const casoFichero = doc.splitTextToSize(
     'Empresa retail con 200 empleados redujo en 85% los errores de marcaje y ahorró $3,200 mensuales en costos administrativos al implementar el sistema de reconocimiento facial.',
-    pageWidth - 50
+    pageWidth - 46
   );
-  doc.text(casoFichero, 25, yPos + 11);
+  doc.text(casoFichero, 23, yPos + 12);
 
   // PÁGINA 4: EVALUACIONES DE DESEMPEÑO
   doc.addPage();
   yPos = 20;
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  doc.setFillColor(225, 29, 72);
+  doc.roundedRect(0, yPos - 8, pageWidth, 16, 0, 0, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('2. EVALUACIONES DE DESEMPEÑO', 22, yPos + 4);
-  yPos += 20;
+  doc.text('2. EVALUACIONES DE DESEMPEÑO', 20, yPos + 3);
+  yPos += 22;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -230,12 +293,14 @@ export const generateInformeEjecutivoPDF = (): string => {
     yPos += 6;
   });
 
-  yPos += 5;
-  doc.setFontSize(11);
+  yPos += 8;
+  doc.setFillColor(254, 242, 242);
+  doc.roundedRect(18, yPos - 3, pageWidth - 36, 5, 1, 1, 'F');
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(22, 163, 74);
-  doc.text('Beneficios de Negocio:', 20, yPos);
-  yPos += 7;
+  doc.setTextColor(225, 29, 72);
+  doc.text('Beneficios de Negocio:', 23, yPos + 1);
+  yPos += 9;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -258,13 +323,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.addPage();
   yPos = 20;
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  doc.setFillColor(249, 115, 22);
+  doc.roundedRect(0, yPos - 8, pageWidth, 16, 0, 0, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('3. GESTIÓN DE VACACIONES Y PERMISOS', 22, yPos + 4);
-  yPos += 20;
+  doc.text('3. GESTIÓN DE VACACIONES Y PERMISOS', 20, yPos + 3);
+  yPos += 22;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -289,12 +354,14 @@ export const generateInformeEjecutivoPDF = (): string => {
     yPos += 6;
   });
 
-  yPos += 5;
-  doc.setFontSize(11);
+  yPos += 8;
+  doc.setFillColor(255, 247, 237);
+  doc.roundedRect(18, yPos - 3, pageWidth - 36, 5, 1, 1, 'F');
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(22, 163, 74);
-  doc.text('Beneficios de Negocio:', 20, yPos);
-  yPos += 7;
+  doc.setTextColor(249, 115, 22);
+  doc.text('Beneficios de Negocio:', 23, yPos + 1);
+  yPos += 9;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -316,13 +383,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   yPos += 10;
   checkNewPage();
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  doc.setFillColor(126, 34, 206);
+  doc.roundedRect(0, yPos - 8, pageWidth, 16, 0, 0, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('4. GAMIFICACIÓN Y RECONOCIMIENTO', 22, yPos + 4);
-  yPos += 20;
+  doc.text('4. GAMIFICACIÓN Y RECONOCIMIENTO', 20, yPos + 3);
+  yPos += 22;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -347,12 +414,14 @@ export const generateInformeEjecutivoPDF = (): string => {
     yPos += 6;
   });
 
-  yPos += 5;
-  doc.setFontSize(11);
+  yPos += 8;
+  doc.setFillColor(250, 245, 255);
+  doc.roundedRect(18, yPos - 3, pageWidth - 36, 5, 1, 1, 'F');
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(22, 163, 74);
-  doc.text('Beneficios de Negocio:', 20, yPos);
-  yPos += 7;
+  doc.setTextColor(126, 34, 206);
+  doc.text('Beneficios de Negocio:', 23, yPos + 1);
+  yPos += 9;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -374,11 +443,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.addPage();
   yPos = 20;
 
-  doc.setTextColor(37, 99, 235);
-  doc.setFontSize(14);
+  doc.setFillColor(250, 250, 250);
+  doc.roundedRect(15, yPos - 5, pageWidth - 30, 12, 2, 2, 'F');
+  doc.setTextColor(126, 34, 206);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Módulos Adicionales', 20, yPos);
-  yPos += 12;
+  doc.text('Módulos Adicionales', 20, yPos + 4);
+  yPos += 18;
 
   // Tabla de módulos adicionales
   const modulosData = [
@@ -397,17 +468,23 @@ export const generateInformeEjecutivoPDF = (): string => {
     body: modulosData,
     theme: 'striped',
     headStyles: { 
-      fillColor: [37, 99, 235],
-      fontSize: 10,
+      fillColor: [126, 34, 206],
+      fontSize: 11,
       fontStyle: 'bold',
+      textColor: [255, 255, 255],
     },
     styles: { 
       fontSize: 9,
-      cellPadding: 4,
+      cellPadding: 5,
+      lineColor: [229, 231, 235],
+      lineWidth: 0.1,
     },
     columnStyles: {
-      0: { cellWidth: 50, fontStyle: 'bold' },
+      0: { cellWidth: 50, fontStyle: 'bold', textColor: [126, 34, 206] },
       1: { cellWidth: 120 },
+    },
+    alternateRowStyles: {
+      fillColor: [250, 250, 250],
     },
   });
 
@@ -416,13 +493,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   // PÁGINA 8: TECNOLOGÍA Y SEGURIDAD
   checkNewPage();
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  doc.setFillColor(88, 28, 135);
+  doc.roundedRect(0, yPos - 8, pageWidth, 16, 0, 0, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Tecnología y Seguridad', 22, yPos + 4);
-  yPos += 20;
+  doc.text('Tecnología y Seguridad', 20, yPos + 3);
+  yPos += 22;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -472,13 +549,13 @@ export const generateInformeEjecutivoPDF = (): string => {
   doc.addPage();
   yPos = 20;
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  doc.setFillColor(16, 185, 129);
+  doc.roundedRect(0, yPos - 8, pageWidth, 16, 0, 0, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Retorno de Inversión (ROI)', 22, yPos + 4);
-  yPos += 20;
+  doc.text('Retorno de Inversión (ROI)', 20, yPos + 3);
+  yPos += 22;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -502,55 +579,62 @@ export const generateInformeEjecutivoPDF = (): string => {
     body: roiData.slice(1),
     theme: 'grid',
     headStyles: { 
-      fillColor: [37, 99, 235],
-      fontSize: 9,
+      fillColor: [16, 185, 129],
+      fontSize: 10,
       fontStyle: 'bold',
+      textColor: [255, 255, 255],
     },
     styles: { 
       fontSize: 9,
-      cellPadding: 3,
+      cellPadding: 4,
     },
     columnStyles: {
       0: { cellWidth: 80 },
-      1: { cellWidth: 45, halign: 'right' },
-      2: { cellWidth: 45, halign: 'right' },
+      1: { cellWidth: 45, halign: 'right', fontStyle: 'bold' },
+      2: { cellWidth: 45, halign: 'right', fontStyle: 'bold' },
     },
     didParseCell: (data) => {
       if (data.row.index === roiData.length - 2) {
         data.cell.styles.fontStyle = 'bold';
-        data.cell.styles.fillColor = [240, 253, 244];
+        data.cell.styles.fillColor = [220, 252, 231];
+        data.cell.styles.textColor = [21, 128, 61];
+        data.cell.styles.fontSize = 10;
       }
     },
   });
 
   yPos = (doc as any).lastAutoTable.finalY + 15;
 
-  doc.setFillColor(240, 253, 244);
-  doc.rect(20, yPos, pageWidth - 40, 30, 'F');
-  doc.setTextColor(22, 163, 74);
-  doc.setFontSize(12);
+  // Destacado ROI
+  doc.setFillColor(220, 252, 231);
+  doc.roundedRect(18, yPos, pageWidth - 36, 32, 2, 2, 'F');
+  doc.setDrawColor(16, 185, 129);
+  doc.setLineWidth(0.8);
+  doc.roundedRect(18, yPos, pageWidth - 36, 32, 2, 2, 'S');
+  doc.setTextColor(21, 128, 61);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('ROI Promedio: 6-8 meses', 25, yPos + 8);
+  doc.text('✓ ROI Promedio: 6-8 meses', 25, yPos + 9);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(30, 41, 59);
   const roiTexto = doc.splitTextToSize(
     'Los ahorros operativos y mejoras en productividad típicamente superan el costo de implementación en menos de 8 meses, generando valor continuo año tras año.',
-    pageWidth - 50
+    pageWidth - 46
   );
-  doc.text(roiTexto, 25, yPos + 15);
+  doc.text(roiTexto, 25, yPos + 16);
 
   // PÁGINA 10: PROCESO DE IMPLEMENTACIÓN
   doc.addPage();
   yPos = 20;
 
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  doc.setFillColor(59, 130, 246);
+  doc.roundedRect(0, yPos - 8, pageWidth, 16, 0, 0, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Proceso de Implementación', 22, yPos + 4);
-  yPos += 20;
+  doc.text('Proceso de Implementación', 20, yPos + 3);
+  yPos += 22;
 
   const fases = [
     {
@@ -595,52 +679,71 @@ export const generateInformeEjecutivoPDF = (): string => {
     },
   ];
 
+  const coloresFases = [
+    [126, 34, 206],
+    [225, 29, 72],
+    [249, 115, 22],
+    [16, 185, 129],
+  ];
+
   fases.forEach((fase, index) => {
     checkNewPage();
     
-    doc.setFillColor(241, 245, 249);
-    doc.rect(20, yPos, pageWidth - 40, 8, 'F');
-    doc.setTextColor(37, 99, 235);
-    doc.setFontSize(11);
+    const color = coloresFases[index];
+    doc.setFillColor(color[0], color[1], color[2], 0.1);
+    doc.roundedRect(18, yPos, pageWidth - 36, 10, 1, 1, 'F');
+    doc.setTextColor(color[0], color[1], color[2]);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(fase.fase, 25, yPos + 5.5);
-    doc.setTextColor(100, 116, 139);
+    doc.text(fase.fase, 23, yPos + 6.5);
     doc.setFontSize(9);
-    doc.text(`(${fase.duracion})`, pageWidth - 45, yPos + 5.5);
-    yPos += 12;
+    doc.text(`(${fase.duracion})`, pageWidth - 40, yPos + 6.5);
+    yPos += 14;
 
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     fase.actividades.forEach(act => {
-      doc.text(`• ${act}`, 30, yPos);
-      yPos += 5;
+      doc.text(`✓ ${act}`, 28, yPos);
+      yPos += 5.5;
     });
-    yPos += 5;
+    yPos += 6;
   });
 
   yPos += 5;
-  doc.setFillColor(219, 234, 254);
-  doc.rect(20, yPos, pageWidth - 40, 15, 'F');
-  doc.setTextColor(37, 99, 235);
-  doc.setFontSize(10);
+  doc.setFillColor(239, 246, 255);
+  doc.roundedRect(18, yPos, pageWidth - 36, 18, 2, 2, 'F');
+  doc.setDrawColor(59, 130, 246);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(18, yPos, pageWidth - 36, 18, 2, 2, 'S');
+  doc.setTextColor(30, 64, 175);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Tiempo total de implementación: 5-8 semanas', 25, yPos + 6);
+  doc.text('⏱️ Tiempo total de implementación: 5-8 semanas', 23, yPos + 7);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text('Incluye soporte continuo y seguimiento post-implementación', 25, yPos + 11);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Incluye soporte continuo y seguimiento post-implementación', 23, yPos + 13);
 
   // PÁGINA FINAL: CONTACTO Y PRÓXIMOS PASOS
   doc.addPage();
-  yPos = 20;
-
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, yPos - 5, pageWidth, 12, 'F');
+  
+  // Header con gradiente
+  doc.setFillColor(126, 34, 206);
+  doc.rect(0, 0, pageWidth, 60, 'F');
+  
+  yPos = 25;
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('Próximos Pasos', 22, yPos + 4);
-  yPos += 25;
+  addCenteredText('Próximos Pasos', yPos, 20, 'bold');
+  
+  yPos += 10;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  addCenteredText('Comience su transformación digital hoy', yPos, 11, 'normal');
+  
+  yPos = 75;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(11);
@@ -663,61 +766,74 @@ export const generateInformeEjecutivoPDF = (): string => {
   });
 
   yPos += 10;
-  doc.setFillColor(240, 253, 244);
-  doc.rect(20, yPos, pageWidth - 40, 40, 'F');
-  doc.setTextColor(22, 163, 74);
-  doc.setFontSize(12);
+  // Oferta destacada
+  doc.setFillColor(254, 252, 232);
+  doc.roundedRect(18, yPos, pageWidth - 36, 42, 3, 3, 'F');
+  doc.setDrawColor(249, 115, 22);
+  doc.setLineWidth(1);
+  doc.roundedRect(18, yPos, pageWidth - 36, 42, 3, 3, 'S');
+  doc.setTextColor(249, 115, 22);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Oferta Especial', 25, yPos + 8);
+  doc.text('🎁 Oferta Especial', 25, yPos + 10);
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const ofertaTexto = doc.splitTextToSize(
     'Primeros 3 meses con 30% de descuento para nuevos clientes. Incluye implementación, capacitación y soporte ilimitado durante el periodo de prueba.',
-    pageWidth - 50
+    pageWidth - 46
   );
-  doc.text(ofertaTexto, 25, yPos + 16);
+  doc.text(ofertaTexto, 25, yPos + 18);
 
   yPos += 50;
-  doc.setDrawColor(226, 232, 240);
-  doc.line(20, yPos, pageWidth - 20, yPos);
+  
+  // Sección de contacto con diseño moderno
+  doc.setFillColor(250, 250, 250);
+  doc.roundedRect(18, yPos, pageWidth - 36, 40, 2, 2, 'F');
+  
   yPos += 10;
-
-  doc.setTextColor(37, 99, 235);
-  doc.setFontSize(11);
+  doc.setTextColor(126, 34, 206);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text('Información de Contacto:', 20, yPos);
-  yPos += 8;
+  addCenteredText('Información de Contacto', yPos, 13, 'bold');
+  yPos += 10;
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Correo: info@sistemarrhh.com', 25, yPos);
-  yPos += 6;
-  doc.text('Teléfono: +1 (555) 123-4567', 25, yPos);
-  yPos += 6;
-  doc.text('Web: www.sistemarrhh.com', 25, yPos);
+  addCenteredText('📧 info@sotomayorista.com', yPos, 10, 'normal');
+  yPos += 7;
+  addCenteredText('📞 +54 (11) 1234-5678', yPos, 10, 'normal');
+  yPos += 7;
+  addCenteredText('🌐 www.sotomayorista.com', yPos, 10, 'normal');
 
-  yPos = pageHeight - 30;
-  doc.setFillColor(241, 245, 249);
-  doc.rect(20, yPos, pageWidth - 40, 20, 'F');
-  doc.setTextColor(100, 116, 139);
+  // Footer elegante
+  yPos = pageHeight - 35;
+  doc.setFillColor(126, 34, 206);
+  doc.rect(0, yPos, pageWidth, 35, 'F');
+  
+  yPos += 12;
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  addCenteredText(`Gracias por su interés en ${COMPANY_INFO.name}`, yPos, 10, 'bold');
+  yPos += 7;
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'italic');
-  addCenteredText('Gracias por su interés en nuestro Sistema de Gestión de RRHH', yPos + 8, 9, 'italic');
-  addCenteredText('Estamos comprometidos con transformar la gestión de talento en su empresa', yPos + 13, 9, 'italic');
+  doc.setFont('helvetica', 'normal');
+  addCenteredText('Estamos comprometidos con transformar la gestión de talento en su empresa', yPos, 9, 'normal');
 
-  // Agregar numeración de páginas
+  // Agregar numeración de páginas con diseño mejorado
   const pageCount = doc.getNumberOfPages();
   for (let i = 2; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setTextColor(148, 163, 184);
+    doc.setTextColor(156, 163, 175);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    doc.text(`${COMPANY_INFO.name}`, 20, pageHeight - 8);
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth - 20, pageHeight - 8, { align: 'right' });
   }
 
-  const fileName = `Informe_Ejecutivo_RRHH_${new Date().toISOString().split('T')[0]}.pdf`;
+  const fileName = `Informe_Ejecutivo_${COMPANY_INFO.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 
   return fileName;

@@ -1,27 +1,35 @@
 export const PDF_STYLES = {
   colors: {
-    primary: '#2563eb',
-    secondary: '#64748b',
-    accent: '#0ea5e9',
+    primary: '#7e22ce', // Morado corporativo SOTO
+    primaryDark: '#581c87',
+    secondary: '#e11d48', // Rosa/Rojo del gradiente
+    accent: '#f97316', // Naranja del gradiente
     success: '#10b981',
     warning: '#f59e0b',
     danger: '#ef4444',
     text: '#1e293b',
     textLight: '#64748b',
-    background: '#f8fafc',
-    border: '#e2e8f0',
+    background: '#fafafa',
+    backgroundLight: '#ffffff',
+    border: '#e5e7eb',
+    gradient: {
+      start: '#7e22ce',
+      middle: '#e11d48',
+      end: '#f97316',
+    },
   },
   fonts: {
-    title: 24,
-    subtitle: 18,
-    heading: 14,
+    title: 28,
+    subtitle: 20,
+    heading: 16,
+    subheading: 13,
     body: 11,
     small: 9,
   },
   spacing: {
     page: { top: 20, bottom: 20, left: 20, right: 20 },
-    section: 15,
-    item: 8,
+    section: 18,
+    item: 10,
   },
 };
 
@@ -32,7 +40,9 @@ export const PDF_CONFIG = {
 };
 
 export const COMPANY_INFO = {
-  name: 'Sistema de Gestión de Recursos Humanos',
-  documentTitle: 'Descripción de Funciones - Rol Empleado',
-  version: '1.0',
+  name: 'SOTO mayorista',
+  fullName: 'SOTO mayorista - Sistema de Gestión de RRHH',
+  documentTitle: 'Informe Ejecutivo',
+  version: '2.0',
+  logo: '/logo-soto.jpeg',
 };
