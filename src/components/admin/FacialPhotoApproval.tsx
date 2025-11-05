@@ -166,18 +166,9 @@ export const FacialPhotoApproval = () => {
         // Calcular el siguiente número de versión
         versionNumber = existingVersions.length + 1;
         versionName = `Versión ${versionNumber}`;
-
-        // Desactivar todas las versiones anteriores (opcional, para que solo la nueva esté activa)
-        // Si prefieres que todas estén activas, comenta esta sección
-        const { error: deactivateError } = await supabase
-          .from('empleados_rostros')
-          .update({ is_active: false })
-          .eq('empleado_id', upload.empleado_id);
-
-        if (deactivateError) throw deactivateError;
       }
 
-      // Guardar descriptor facial en empleados_datos_sensibles (mantener compatibilidad)
+      // Guardar descriptor facial en empleados_datos_sensibles (mantener compatibilidad con última versión)
       const { error: updateError } = await supabase
         .from('empleados_datos_sensibles')
         .upsert({
@@ -189,7 +180,7 @@ export const FacialPhotoApproval = () => {
 
       if (updateError) throw updateError;
 
-      // Registrar la nueva versión en empleados_rostros
+      // Registrar la nueva versión en empleados_rostros (todas las versiones permanecen activas)
       const { error: rostroError } = await supabase
         .from('empleados_rostros')
         .insert({
