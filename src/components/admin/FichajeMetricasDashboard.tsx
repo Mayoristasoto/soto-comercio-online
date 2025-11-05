@@ -412,13 +412,18 @@ export default function FichajeMetricasDashboard() {
 
   const recalcularPausasExcedidas = async () => {
     try {
+      toast({
+        title: "Recalculando...",
+        description: "Corrigiendo timezone de las pausas excedidas"
+      })
+
       // Obtener todos los empleados con pausas hoy
-      const { data: empleadosConPausas } = await supabase
+      const { data: pausasActuales } = await supabase
         .from('fichajes_pausas_excedidas')
         .select('empleado_id')
         .eq('fecha_fichaje', new Date().toISOString().split('T')[0])
 
-      if (!empleadosConPausas || empleadosConPausas.length === 0) {
+      if (!pausasActuales || pausasActuales.length === 0) {
         toast({
           title: "Sin datos",
           description: "No hay pausas para recalcular",
@@ -427,23 +432,101 @@ export default function FichajeMetricasDashboard() {
         return
       }
 
-      const empleadoIds = [...new Set(empleadosConPausas.map(p => p.empleado_id))]
+      const empleadoIds = [...new Set(pausasActuales.map(p => p.empleado_id))]
 
-      // Recalcular para cada empleado
+      // Eliminar registros actuales (con timezone incorrecto)
+      const { error: deleteError } = await supabase
+        .from('fichajes_pausas_excedidas')
+        .delete()
+        .eq('fecha_fichaje', new Date().toISOString().split('T')[0])
+        .in('empleado_id', empleadoIds)
+
+      if (deleteError) throw deleteError
+
+      // Recrear registros con timezone correcto
       for (const empleadoId of empleadoIds) {
-        const { error } = await supabase.rpc('recalcular_pausas_excedidas_empleado', {
-          p_empleado_id: empleadoId,
-          p_fecha_desde: new Date().toISOString().split('T')[0]
-        })
+        // Obtener todos los pares de pausas del día
+        const { data: fichajes, error: fichajesError } = await supabase
+          .from('fichajes')
+          .select(`
+            id,
+            tipo,
+            timestamp_real,
+            empleado_id
+          `)
+          .eq('empleado_id', empleadoId)
+          .gte('timestamp_real', new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+          .lte('timestamp_real', new Date().toISOString().split('T')[0] + 'T23:59:59Z')
+          .in('tipo', ['pausa_inicio', 'pausa_fin'])
+          .eq('estado', 'valido')
+          .order('timestamp_real', { ascending: true })
 
-        if (error) {
-          console.error(`Error recalculando empleado ${empleadoId}:`, error)
+        if (fichajesError) {
+          console.error('Error obteniendo fichajes:', fichajesError)
+          continue
+        }
+
+        // Obtener turno del empleado
+        const { data: turnoData } = await supabase
+          .from('empleado_turnos')
+          .select(`
+            turno_id,
+            fichado_turnos!inner(
+              duracion_pausa_minutos
+            )
+          `)
+          .eq('empleado_id', empleadoId)
+          .eq('activo', true)
+          .lte('fecha_inicio', new Date().toISOString().split('T')[0])
+          .or(`fecha_fin.gte.${new Date().toISOString().split('T')[0]},fecha_fin.is.null`)
+          .single()
+
+        if (!turnoData || !turnoData.fichado_turnos?.duracion_pausa_minutos) {
+          continue
+        }
+
+        const duracionPermitida = turnoData.fichado_turnos.duracion_pausa_minutos
+
+        // Procesar pares de pausas
+        for (let i = 0; i < fichajes.length; i++) {
+          if (fichajes[i].tipo === 'pausa_inicio' && fichajes[i + 1]?.tipo === 'pausa_fin') {
+            const inicio = new Date(fichajes[i].timestamp_real)
+            const fin = new Date(fichajes[i + 1].timestamp_real)
+            
+            // Convertir a hora argentina
+            const inicioArt = new Date(inicio.getTime() - 3 * 60 * 60 * 1000)
+            const finArt = new Date(fin.getTime() - 3 * 60 * 60 * 1000)
+            
+            const duracionMin = Math.round((fin.getTime() - inicio.getTime()) / 60000)
+            const excesoMin = duracionMin - duracionPermitida
+
+            if (excesoMin >= 1) {
+              // Formatear horas en formato HH:MM:SS
+              const horaInicio = inicioArt.toTimeString().split(' ')[0]
+              const horaFin = finArt.toTimeString().split(' ')[0]
+
+              await supabase
+                .from('fichajes_pausas_excedidas')
+                .insert({
+                  empleado_id: empleadoId,
+                  fecha_fichaje: new Date().toISOString().split('T')[0],
+                  hora_inicio_pausa: horaInicio,
+                  hora_fin_pausa: horaFin,
+                  duracion_minutos: duracionMin,
+                  duracion_permitida_minutos: duracionPermitida,
+                  minutos_exceso: excesoMin,
+                  turno_id: turnoData.turno_id
+                })
+            }
+            
+            i++ // Saltar el pausa_fin ya procesado
+          }
         }
       }
 
       toast({
         title: "Recálculo completado",
-        description: "Las pausas excedidas fueron recalculadas con timezone correcto"
+        description: "Las pausas excedidas fueron recalculadas con timezone correcto (hora argentina)"
       })
 
       await cargarDatos()
