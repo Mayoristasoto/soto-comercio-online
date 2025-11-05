@@ -21,7 +21,8 @@ import {
   User,
   Filter,
   X,
-  Trash2
+  Trash2,
+  RefreshCw
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -93,6 +94,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const [filtroActivo, setFiltroActivo] = useState<'todos' | 'llegada_tarde' | 'no_ficho' | 'exceso_descanso'>('todos')
   const [selectedIncidencias, setSelectedIncidencias] = useState<Array<{id: string, tipo: 'tardio' | 'pausa'}>>([])
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isRecalculating, setIsRecalculating] = useState(false)
   const [formData, setFormData] = useState({
     tipo: '' as 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | '',
     descripcion: '',
@@ -193,14 +195,26 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   }
 
   const recalcularIncidencias = async () => {
-    setLoading(true)
+    if (!isAdminRole(userRole)) {
+      toast({
+        title: "Permiso denegado",
+        description: "Solo los administradores pueden recalcular incidencias",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsRecalculating(true)
     try {
-      // Llamar a la función RPC para recalcular incidencias
-      const { data, error } = await supabase
-        .rpc('recalcular_incidencias_empleado', {
-          p_empleado_id: empleado.id,
-          p_fecha_desde: null // Recalcular últimos 30 días por defecto
-        })
+      // Calcular fecha de hace 30 días
+      const fechaDesde = new Date()
+      fechaDesde.setDate(fechaDesde.getDate() - 30)
+      const fechaDesdeStr = fechaDesde.toISOString().split('T')[0]
+
+      const { data, error } = await supabase.rpc('recalcular_incidencias_empleado', {
+        p_empleado_id: empleado.id,
+        p_fecha_desde: fechaDesdeStr
+      })
 
       if (error) throw error
 
@@ -211,24 +225,25 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
       }
 
       toast({
-        title: "Incidencias recalculadas",
-        description: `Llegadas tarde: ${resultado.fichajes_tardios.antes} → ${resultado.fichajes_tardios.despues} | Pausas excedidas: ${resultado.pausas_excedidas.antes} → ${resultado.pausas_excedidas.despues}`,
+        title: "✅ Incidencias recalculadas",
+        description: `Llegadas tarde: ${resultado.fichajes_tardios.antes} → ${resultado.fichajes_tardios.despues} | Pausas: ${resultado.pausas_excedidas.antes} → ${resultado.pausas_excedidas.despues}`,
+        duration: 5000
       })
 
-      // Recargar los datos
+      // Recargar datos
       await Promise.all([
         cargarFichajesToday(),
         cargarPausasExcedidas()
       ])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error recalculando incidencias:', error)
       toast({
         title: "Error",
-        description: "No se pudieron recalcular las incidencias",
+        description: error.message || "No se pudieron recalcular las incidencias",
         variant: "destructive"
       })
     } finally {
-      setLoading(false)
+      setIsRecalculating(false)
     }
   }
 
@@ -582,6 +597,18 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                 Filtre por tipo de incidencia para revisar el estado del equipo
               </CardDescription>
             </div>
+            {isAdminRole(userRole) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={recalcularIncidencias}
+                disabled={isRecalculating}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRecalculating ? 'animate-spin' : ''}`} />
+                {isRecalculating ? 'Recalculando...' : 'Recalcular Incidencias'}
+              </Button>
+            )}
           </div>
 
           {/* Filtros */}
