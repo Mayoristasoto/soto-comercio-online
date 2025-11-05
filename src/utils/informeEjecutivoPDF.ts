@@ -32,15 +32,9 @@ export const generateInformeEjecutivoPDF = (): string => {
   };
 
   // PORTADA CON DISEÑO MODERNO
-  // Gradiente de fondo (simulado con capas)
-  doc.setFillColor(126, 34, 206); // Morado SOTO
+  // Fondo blanco
+  doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
-  
-  // Efecto de gradiente con transparencias simuladas
-  doc.setFillColor(225, 29, 72, 0.3); // Rosa semi-transparente
-  doc.circle(pageWidth * 0.8, 50, 80, 'F');
-  doc.setFillColor(249, 115, 22, 0.2); // Naranja semi-transparente
-  doc.circle(pageWidth * 0.2, pageHeight * 0.7, 100, 'F');
 
   // Logo de la empresa
   try {
@@ -52,7 +46,7 @@ export const generateInformeEjecutivoPDF = (): string => {
   }
 
   // Título principal
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(75, 13, 109); // Púrpura oscuro SOTO
   yPos = 90;
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
@@ -60,37 +54,40 @@ export const generateInformeEjecutivoPDF = (): string => {
   
   yPos += 12;
   doc.setFontSize(16);
+  doc.setTextColor(149, 25, 141); // Magenta SOTO
   addCenteredText('Sistema de Gestión de Recursos Humanos', yPos, 16, 'normal');
 
   // Línea decorativa
-  doc.setDrawColor(255, 255, 255);
+  doc.setDrawColor(224, 68, 3); // Naranja SOTO
   doc.setLineWidth(0.8);
   doc.line(pageWidth/2 - 40, yPos + 8, pageWidth/2 + 40, yPos + 8);
 
   // Subtítulo
   yPos += 25;
   doc.setFontSize(14);
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(39, 44, 77); // Texto oscuro SOTO
   addCenteredText('Transforme la gestión de su talento humano', yPos, 14, 'normal');
   
   yPos += 10;
   doc.setFontSize(12);
-  doc.setTextColor(240, 240, 240);
+  doc.setTextColor(97, 110, 117); // Texto gris SOTO
   addCenteredText('Solución integral para empresas modernas', yPos, 12, 'normal');
 
   // Cuadro de beneficios destacados
   yPos = pageHeight - 90;
-  doc.setFillColor(255, 255, 255, 0.95);
-  doc.roundedRect(25, yPos, pageWidth - 50, 60, 3, 3, 'F');
+  doc.setFillColor(245, 245, 245); // Fondo gris claro
+  doc.setDrawColor(149, 25, 141); // Borde magenta SOTO
+  doc.setLineWidth(0.5);
+  doc.roundedRect(25, yPos, pageWidth - 50, 60, 3, 3, 'FD');
   
-  doc.setTextColor(126, 34, 206);
+  doc.setTextColor(75, 13, 109); // Púrpura oscuro SOTO
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text('BENEFICIOS CLAVE', pageWidth/2, yPos + 8, { align: 'center' });
   
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(30, 41, 59);
+  doc.setTextColor(39, 44, 77); // Texto oscuro SOTO
   const beneficiosPortada = [
     'ROI en 6-8 meses | 70% menos tiempo administrativo',
     '85% precisión en control horario | 40% más engagement'
