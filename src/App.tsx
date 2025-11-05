@@ -51,6 +51,7 @@ import AprobarFotosFaciales from "./pages/AprobarFotosFaciales";
 import KioscoFotoFacial from "./pages/KioscoFotoFacial";
 import InformeEjecutivo from "./pages/InformeEjecutivo";
 import PresentacionEjecutiva from "./pages/PresentacionEjecutiva";
+import FichajeMetricas from "./pages/FichajeMetricas";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +140,9 @@ const App = () => (
               <Route path="auth-logs" element={<AdminAuthLogs />} />
               <Route path="aprobar-fotos-faciales" element={<AprobarFotosFaciales />} />
             </Route>
+            
+            {/* Métricas de Fichaje */}
+            <Route path="operaciones/fichero/metricas" element={<FichajeMetricas />} />
             
             {/* Redirects de compatibilidad (rutas antiguas -> nuevas) */}
             <Route path="nomina" element={<Navigate to="/rrhh/nomina" replace />} />
