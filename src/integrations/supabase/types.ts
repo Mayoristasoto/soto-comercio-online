@@ -4256,6 +4256,13 @@ export type Database = {
         Args: { p_empleado_id: string; p_fecha_desde?: string }
         Returns: undefined
       }
+      recalcular_pausas_excedidas_fecha: {
+        Args: { p_fecha?: string }
+        Returns: {
+          registros_creados: number
+          registros_eliminados: number
+        }[]
+      }
       registrar_intento_login:
         | {
             Args: {
