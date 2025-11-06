@@ -94,6 +94,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Enlaces Sidebar", url: "/admin#sidebar-links", icon: Settings },
       { title: "Góndolas", url: "/admin/gondolas", icon: Map },
       { title: "Logs de Auth", url: "/admin/auth-logs", icon: Shield },
+      { title: "Aprobar Fotos Faciales", url: "/admin/aprobar-fotos-faciales", icon: Shield },
     ]
   }
 ]
