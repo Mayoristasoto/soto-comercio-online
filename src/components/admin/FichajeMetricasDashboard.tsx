@@ -178,13 +178,21 @@ export default function FichajeMetricasDashboard() {
   const cargarMetricas = async () => {
     const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
 
-    // Total fichajes del día seleccionado
+    // Construir ventana de tiempo en UTC para cubrir el día completo en Argentina (-03:00)
+    const nextDay = new Date(fechaFiltro)
+    nextDay.setDate(fechaFiltro.getDate() + 1)
+    const nextStr = format(nextDay, 'yyyy-MM-dd')
+
+    const startUtcStr = `${fechaStr}T03:00:00Z` // 00:00 ART
+    const endUtcStr = `${nextStr}T02:59:59Z`   // 23:59:59 ART
+
+    // Total fichajes del día seleccionado (considerando huso horario)
     let fichajesQuery = supabase
       .from('fichajes')
       .select('*', { count: 'exact', head: true })
       .eq('tipo', 'entrada')
-      .gte('timestamp_real', `${fechaStr}T00:00:00`)
-      .lte('timestamp_real', `${fechaStr}T23:59:59`)
+      .gte('timestamp_real', startUtcStr)
+      .lte('timestamp_real', endUtcStr)
     
     if (empleadoFiltro !== "todos") {
       fichajesQuery = fichajesQuery.eq('empleado_id', empleadoFiltro)
