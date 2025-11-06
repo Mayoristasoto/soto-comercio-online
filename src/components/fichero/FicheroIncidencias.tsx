@@ -353,6 +353,21 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     return horaSinMicrosegundos
   }
 
+  // Formatea un DATE (YYYY-MM-DD) sin desfasarlo por zona horaria
+  const formatearFechaArgentinaDateOnly = (dateStr: string): string => {
+    if (!dateStr) return ''
+    const [y, m, d] = dateStr.split('-').map(Number)
+    // Usar mediodía UTC para evitar que la conversión de zona cambie el día
+    const dateUtcNoon = new Date(Date.UTC(y, (m || 1) - 1, d || 1, 12, 0, 0))
+    return dateUtcNoon.toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
+
   const handleDeleteClick = async (incidenciaId: string, tipo?: 'tardio' | 'pausa') => {
     try {
       if (tipo === 'tardio') {
@@ -774,13 +789,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                 <div className="text-xs text-muted-foreground">
                                   <div className="mb-1">
                                     <Calendar className="h-3 w-3 inline mr-1" />
-                                    {new Date(fichaje.fecha_fichaje).toLocaleDateString('es-AR', { 
-                                      timeZone: 'America/Argentina/Buenos_Aires',
-                                      weekday: 'short', 
-                                      day: '2-digit', 
-                                      month: '2-digit', 
-                                      year: 'numeric' 
-                                    })}
+                                    {formatearFechaArgentinaDateOnly(fichaje.fecha_fichaje)}
                                   </div>
                                   <div className="space-x-4">
                                     <span>Hora programada: {formatearHora(fichaje.hora_programada)}</span>
@@ -838,13 +847,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                 <div className="text-xs text-muted-foreground">
                                   <div className="mb-1">
                                     <Calendar className="h-3 w-3 inline mr-1" />
-                                    {new Date(pausa.fecha_fichaje).toLocaleDateString('es-AR', { 
-                                      timeZone: 'America/Argentina/Buenos_Aires',
-                                      weekday: 'short', 
-                                      day: '2-digit', 
-                                      month: '2-digit', 
-                                      year: 'numeric' 
-                                    })}
+                                    {formatearFechaArgentinaDateOnly(pausa.fecha_fichaje)}
                                   </div>
                                   <div className="space-x-4">
                                     <span>Pausa: {formatearHora(pausa.hora_inicio_pausa)} - {formatearHora(pausa.hora_fin_pausa)}</span>
