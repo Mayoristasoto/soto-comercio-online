@@ -153,7 +153,12 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const cargarFichajesToday = async () => {
     setLoadingTardios(true)
     try {
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+      // Obtener fecha actual en Argentina desde el servidor
+      const { data: configData } = await supabase
+        .rpc('get_current_date_argentina')
+        .single()
+      
+      const today = configData || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
       
       const { data, error } = await supabase
         .from('fichajes_tardios')
@@ -176,7 +181,12 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
 
   const cargarPausasExcedidas = async () => {
     try {
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+      // Obtener fecha actual en Argentina desde el servidor
+      const { data: configData } = await supabase
+        .rpc('get_current_date_argentina')
+        .single()
+      
+      const today = configData || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
       
       const { data, error } = await supabase
         .from('fichajes_pausas_excedidas')
