@@ -139,20 +139,26 @@ export default function FicheroHistorial() {
       }
 
       if (filtros.fechaInicio) {
-        const fechaInicio = format(filtros.fechaInicio, 'yyyy-MM-dd')
-        query = query.gte('timestamp_real', `${fechaInicio}T00:00:00`)
+        const fechaInicioBA = format(filtros.fechaInicio, 'yyyy-MM-dd')
+        // Usar límites con zona horaria explícita de Buenos Aires
+        query = query.gte('timestamp_real', `${fechaInicioBA}T00:00:00-03:00`)
       }
 
       if (filtros.fechaFin) {
-        const fechaFin = format(filtros.fechaFin, 'yyyy-MM-dd')
-        query = query.lte('timestamp_real', `${fechaFin}T23:59:59`)
+        const fechaFinBA = format(filtros.fechaFin, 'yyyy-MM-dd')
+        query = query.lte('timestamp_real', `${fechaFinBA}T23:59:59-03:00`)
       }
 
       if (filtros.mes && filtros.mes !== 'all' && filtros.ano) {
-        const mesFormatted = filtros.mes.padStart(2, '0')
+        const mes = parseInt(filtros.mes, 10)
+        const anoNum = parseInt(filtros.ano, 10)
+        const mesFormatted = String(mes).padStart(2, '0')
+        const nextMonth = mes === 12 ? 1 : mes + 1
+        const nextYear = mes === 12 ? anoNum + 1 : anoNum
+        const nextMonthFormatted = String(nextMonth).padStart(2, '0')
         query = query
-          .gte('timestamp_real', `${filtros.ano}-${mesFormatted}-01T00:00:00`)
-          .lt('timestamp_real', `${filtros.ano}-${String(parseInt(mesFormatted) + 1).padStart(2, '0')}-01T00:00:00`)
+          .gte('timestamp_real', `${filtros.ano}-${mesFormatted}-01T00:00:00-03:00`)
+          .lt('timestamp_real', `${nextYear}-${nextMonthFormatted}-01T00:00:00-03:00`)
       }
 
       const { data, error } = await query

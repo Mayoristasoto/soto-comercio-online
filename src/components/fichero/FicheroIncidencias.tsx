@@ -153,7 +153,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const cargarFichajesToday = async () => {
     setLoadingTardios(true)
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
       
       const { data, error } = await supabase
         .from('fichajes_tardios')
@@ -176,7 +176,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
 
   const cargarPausasExcedidas = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
       
       const { data, error } = await supabase
         .from('fichajes_pausas_excedidas')
@@ -560,7 +560,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                   type="date"
                   value={formData.fecha_incidencia}
                   onChange={(e) => setFormData(prev => ({ ...prev, fecha_incidencia: e.target.value }))}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })}
                   required
                 />
               </div>
@@ -771,6 +771,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                   <div className="mb-1">
                                     <Calendar className="h-3 w-3 inline mr-1" />
                                     {new Date(fichaje.fecha_fichaje).toLocaleDateString('es-AR', { 
+                                      timeZone: 'America/Argentina/Buenos_Aires',
                                       weekday: 'short', 
                                       day: '2-digit', 
                                       month: '2-digit', 
@@ -834,6 +835,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                                   <div className="mb-1">
                                     <Calendar className="h-3 w-3 inline mr-1" />
                                     {new Date(pausa.fecha_fichaje).toLocaleDateString('es-AR', { 
+                                      timeZone: 'America/Argentina/Buenos_Aires',
                                       weekday: 'short', 
                                       day: '2-digit', 
                                       month: '2-digit', 
