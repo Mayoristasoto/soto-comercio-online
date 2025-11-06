@@ -49,6 +49,7 @@ interface FichajeTardio {
   minutos_retraso: number
   justificado: boolean
   observaciones?: string
+  created_at: string
   empleado: {
     nombre: string
     apellido: string
@@ -67,6 +68,7 @@ interface PausaExcedida {
   minutos_exceso: number
   justificado: boolean
   observaciones?: string
+  created_at: string
   empleado: {
     nombre: string
     apellido: string
@@ -710,7 +712,20 @@ export default function FichajeMetricasDashboard() {
   const formatearHora = (hora: string): string => {
     if (!hora) return '--:--:--'
     const partes = hora.split('.')
-    return partes[0]
+    return partes[0] + ' ART'
+  }
+  
+  const formatearHoraConTooltip = (horaArt: string, createdAtUtc: string) => {
+    if (!horaArt || !createdAtUtc) return { display: '--:--:--', tooltip: '' }
+    
+    const horaLimpia = horaArt.split('.')[0]
+    const utcDate = new Date(createdAtUtc)
+    const utcHora = utcDate.toISOString().split('T')[1].split('.')[0]
+    
+    return {
+      display: horaLimpia + ' ART',
+      tooltip: `Hora UTC: ${utcHora} | Hora Argentina: ${horaLimpia}`
+    }
   }
 
   const obtenerTextoTipo = (tipo: string) => {
@@ -749,7 +764,7 @@ export default function FichajeMetricasDashboard() {
             Filtros
           </CardTitle>
           <CardDescription>
-            Seleccione fecha y empleado para ver métricas específicas
+            Seleccione fecha y empleado para ver métricas específicas. <strong>Nota:</strong> Todas las horas mostradas están en zona horaria Argentina (ART = UTC-3)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -938,10 +953,12 @@ export default function FichajeMetricasDashboard() {
                                   </Badge>
                                 )}
                               </div>
-                              <div className="text-sm text-muted-foreground space-x-4">
-                                <span>Programada: {formatearHora(fichaje.hora_programada)}</span>
-                                <span>Llegó: {formatearHora(fichaje.hora_real)}</span>
-                              </div>
+                            <div className="text-sm text-muted-foreground space-x-4">
+                              <span>Programada: {formatearHora(fichaje.hora_programada)}</span>
+                              <span title={formatearHoraConTooltip(fichaje.hora_real, fichaje.created_at).tooltip}>
+                                Llegó: {formatearHoraConTooltip(fichaje.hora_real, fichaje.created_at).display}
+                              </span>
+                            </div>
                               {fichaje.observaciones && (
                                 <p className="text-xs text-muted-foreground mt-1">{fichaje.observaciones}</p>
                               )}
@@ -1051,8 +1068,10 @@ export default function FichajeMetricasDashboard() {
                                 )}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                <span>
-                                  {formatearHora(pausa.hora_inicio_pausa)} - {formatearHora(pausa.hora_fin_pausa)}
+                                <span 
+                                  title={`Inicio: ${formatearHoraConTooltip(pausa.hora_inicio_pausa, pausa.created_at).tooltip} | Fin: ${formatearHoraConTooltip(pausa.hora_fin_pausa, pausa.created_at).tooltip}`}
+                                >
+                                  {formatearHoraConTooltip(pausa.hora_inicio_pausa, pausa.created_at).display} - {formatearHoraConTooltip(pausa.hora_fin_pausa, pausa.created_at).display}
                                 </span>
                                 <span className="ml-4">
                                   Duración: {pausa.duracion_minutos} min (permitido: {pausa.duracion_permitida_minutos} min)
