@@ -258,12 +258,19 @@ export default function FicheroHistorial() {
     }
   }
 
+  const formatearHoraArgentina = (timestamp: string): string => {
+    // Convertir UTC a hora argentina (UTC-3)
+    const fecha = new Date(timestamp)
+    const fechaArgentina = new Date(fecha.getTime() - (3 * 60 * 60 * 1000))
+    return format(fechaArgentina, 'HH:mm:ss')
+  }
+
   const exportarCSV = () => {
     const headers = ['Empleado', 'Fecha', 'Hora', 'Tipo', 'Estado', 'Confianza Facial']
     const rows = fichajes.map(fichaje => [
       `${fichaje.empleado_nombre} ${fichaje.empleado_apellido}`,
       format(parseISO(fichaje.timestamp_real), 'dd/MM/yyyy', { locale: es }),
-      format(parseISO(fichaje.timestamp_real), 'HH:mm:ss'),
+      formatearHoraArgentina(fichaje.timestamp_real),
       fichaje.tipo.replace('_', ' '),
       fichaje.estado,
       fichaje.confianza_facial ? `${(fichaje.confianza_facial * 100).toFixed(1)}%` : 'N/A'
@@ -569,7 +576,7 @@ export default function FicheroHistorial() {
                         {format(parseISO(fichaje.timestamp_real), 'dd/MM/yyyy', { locale: es })}
                       </TableCell>
                       <TableCell>
-                        {format(parseISO(fichaje.timestamp_real), 'HH:mm:ss')}
+                        {formatearHoraArgentina(fichaje.timestamp_real)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
