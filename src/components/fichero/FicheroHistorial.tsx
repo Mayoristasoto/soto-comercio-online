@@ -269,11 +269,18 @@ export default function FicheroHistorial() {
     })
   }
 
+  const formatearFechaArgentina = (timestamp: string): string => {
+    const fecha = new Date(timestamp)
+    return fecha.toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires'
+    })
+  }
+
   const exportarCSV = () => {
     const headers = ['Empleado', 'Fecha', 'Hora', 'Tipo', 'Estado', 'Confianza Facial']
     const rows = fichajes.map(fichaje => [
       `${fichaje.empleado_nombre} ${fichaje.empleado_apellido}`,
-      format(parseISO(fichaje.timestamp_real), 'dd/MM/yyyy', { locale: es }),
+      formatearFechaArgentina(fichaje.timestamp_real),
       formatearHoraArgentina(fichaje.timestamp_real),
       fichaje.tipo.replace('_', ' '),
       fichaje.estado,
@@ -577,7 +584,7 @@ export default function FicheroHistorial() {
                         {fichaje.empleado_nombre} {fichaje.empleado_apellido}
                       </TableCell>
                       <TableCell>
-                        {format(parseISO(fichaje.timestamp_real), 'dd/MM/yyyy', { locale: es })}
+                        {formatearFechaArgentina(fichaje.timestamp_real)}
                       </TableCell>
                       <TableCell>
                         {formatearHoraArgentina(fichaje.timestamp_real)}
