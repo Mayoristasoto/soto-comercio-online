@@ -153,12 +153,9 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const cargarFichajesToday = async () => {
     setLoadingTardios(true)
     try {
-      // Obtener fecha actual en Argentina desde el servidor
-      const { data: configData } = await supabase
-        .rpc('get_current_date_argentina')
-        .single()
-      
-      const today = configData || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+      // Calcular fecha actual en Argentina de forma robusta
+      const nowBA = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }))
+      const today = nowBA.toISOString().split('T')[0]
       
       const { data, error } = await supabase
         .from('fichajes_tardios')
@@ -181,12 +178,9 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
 
   const cargarPausasExcedidas = async () => {
     try {
-      // Obtener fecha actual en Argentina desde el servidor
-      const { data: configData } = await supabase
-        .rpc('get_current_date_argentina')
-        .single()
-      
-      const today = configData || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+      // Calcular fecha actual en Argentina de forma robusta
+      const nowBA = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }))
+      const today = nowBA.toISOString().split('T')[0]
       
       const { data, error } = await supabase
         .from('fichajes_pausas_excedidas')
@@ -570,7 +564,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                   type="date"
                   value={formData.fecha_incidencia}
                   onChange={(e) => setFormData(prev => ({ ...prev, fecha_incidencia: e.target.value }))}
-                  max={new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })}
+                  max={new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' })).toISOString().split('T')[0]}
                   required
                 />
               </div>

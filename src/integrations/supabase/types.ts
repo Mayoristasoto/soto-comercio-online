@@ -4029,6 +4029,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       evaluar_puntualidad_mensual: { Args: never; Returns: undefined }
+      get_current_date_argentina: { Args: never; Returns: string }
       get_current_empleado: { Args: never; Returns: string }
       get_current_empleado_full: {
         Args: never
