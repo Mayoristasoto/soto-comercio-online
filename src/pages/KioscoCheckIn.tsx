@@ -63,6 +63,12 @@ export default function KioscoCheckIn() {
   const [emocionDetectada, setEmocionDetectada] = useState<string | null>(null)
   const [crucesRojas, setCrucesRojas] = useState<any>(null)
   const [showCrucesRojasAlert, setShowCrucesRojasAlert] = useState(false)
+  const [pausaActiva, setPausaActiva] = useState<{
+    inicio: Date
+    minutosPermitidos: number
+    minutosTranscurridos: number
+    minutosRestantes: number
+  } | null>(null)
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -86,6 +92,55 @@ export default function KioscoCheckIn() {
       window.removeEventListener('offline', handleOffline)
     }
   }, [])
+
+  // Función para verificar si hay una pausa activa y obtener detalles
+  const verificarPausaActiva = async (empleadoId: string) => {
+    try {
+      // Obtener el último fichaje de pausa_inicio del día de hoy
+      const hoy = new Date()
+      hoy.setHours(0, 0, 0, 0)
+      
+      const { data: pausaInicio, error: pausaError } = await supabase
+        .from('fichajes')
+        .select('timestamp_real')
+        .eq('empleado_id', empleadoId)
+        .eq('tipo', 'pausa_inicio')
+        .gte('timestamp_real', hoy.toISOString())
+        .order('timestamp_real', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (pausaError || !pausaInicio) {
+        setPausaActiva(null)
+        return
+      }
+      
+      // Obtener los minutos de pausa permitidos desde la configuración
+      const { data: configData } = await supabase
+        .from('fichero_configuracion' as any)
+        .select('minutos_pausa')
+        .single()
+      
+      const minutosPermitidos = (configData as any)?.minutos_pausa || 30
+      
+      // Calcular tiempo transcurrido en minutos
+      const inicioPausa = new Date(pausaInicio.timestamp_real)
+      const ahora = new Date()
+      const minutosTranscurridos = Math.floor((ahora.getTime() - inicioPausa.getTime()) / 60000)
+      const minutosRestantes = Math.max(0, minutosPermitidos - minutosTranscurridos)
+      
+      setPausaActiva({
+        inicio: inicioPausa,
+        minutosPermitidos,
+        minutosTranscurridos,
+        minutosRestantes
+      })
+      
+    } catch (error) {
+      console.error('Error verificando pausa activa:', error)
+      setPausaActiva(null)
+    }
+  }
 
   // Función para determinar el tipo de fichaje según el historial usando RPC segura
   const determinarTipoFichaje = async (empleadoId: string): Promise<AccionDisponible[]> => {
@@ -174,6 +229,13 @@ export default function KioscoCheckIn() {
       // Determinar acciones disponibles según el historial
       const acciones = await determinarTipoFichaje(empleadoId)
       setAccionesDisponibles(acciones)
+      
+      // Si hay una pausa activa (pausa_fin disponible), obtener información de la pausa
+      if (acciones.some(a => a.tipo === 'pausa_fin')) {
+        await verificarPausaActiva(empleadoId)
+      } else {
+        setPausaActiva(null)
+      }
       
       // 🔴 Verificar cruces rojas de esta semana
       try {
@@ -331,7 +393,20 @@ export default function KioscoCheckIn() {
       setUltimoTipoFichaje(null)
       setLastProcessTime(0) // Reset del debounce
       setEmocionDetectada(null)
+      setPausaActiva(null)
     }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
+  }
+  
+  const continuarEnDescanso = () => {
+    toast({
+      title: "Continúa tu descanso",
+      description: "Puedes volver cuando finalices tu pausa",
+      duration: 3000,
+    })
+    setShowActionSelection(false)
+    setRecognizedEmployee(null)
+    setSelectedEmployee(null)
+    setPausaActiva(null)
   }
 
   // Función para ejecutar una acción directamente (cuando solo hay una opción)
@@ -790,9 +865,48 @@ export default function KioscoCheckIn() {
                   <div className="text-xl font-semibold text-gray-900 mb-2">
                     {recognizedEmployee?.data.nombre} {recognizedEmployee?.data.apellido}
                   </div>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-600 mb-4">
                     ¿Qué desea realizar?
                   </p>
+                  
+                  {/* Información de Pausa Activa */}
+                  {pausaActiva && (
+                    <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 mb-4">
+                      <div className="flex items-center justify-center mb-4">
+                        <Coffee className="h-8 w-8 text-orange-600 mr-2" />
+                        <h3 className="text-xl font-bold text-orange-900">Pausa en Progreso</h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-white rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-600 mb-1">Tiempo Transcurrido</p>
+                          <p className="text-3xl font-bold text-orange-600">
+                            {pausaActiva.minutosTranscurridos}
+                          </p>
+                          <p className="text-xs text-gray-500">minutos</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-600 mb-1">Tiempo Restante</p>
+                          <p className="text-3xl font-bold text-green-600">
+                            {pausaActiva.minutosRestantes}
+                          </p>
+                          <p className="text-xs text-gray-500">minutos</p>
+                        </div>
+                      </div>
+                      {pausaActiva.minutosTranscurridos > pausaActiva.minutosPermitidos && (
+                        <div className="bg-red-100 border border-red-300 rounded-lg p-3 mb-2">
+                          <p className="text-red-800 text-sm font-semibold text-center">
+                            ⚠️ Has excedido el tiempo de pausa permitido ({pausaActiva.minutosPermitidos} min)
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-center text-sm text-gray-600">
+                        Pausa iniciada: {pausaActiva.inicio.toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  )}
                   
                   <div className="grid grid-cols-1 gap-4">
                     {/* Sin entrada del día - Mostrar que debe hacer entrada primero */}
@@ -826,6 +940,17 @@ export default function KioscoCheckIn() {
                         <span>{accion.label}</span>
                       </button>
                     ))}
+                    
+                    {/* Botón Continuar en Descanso - Solo visible si hay pausa activa */}
+                    {pausaActiva && (
+                      <button
+                        onClick={continuarEnDescanso}
+                        className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
+                      >
+                        <Coffee className="h-6 w-6" />
+                        <span>Continuar en Descanso</span>
+                      </button>
+                    )}
                     
                     {/* Botón Otras Consultas - Siempre visible */}
                     <button
