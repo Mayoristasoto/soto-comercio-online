@@ -142,6 +142,7 @@ const App = () => (
             </Route>
             
             {/* Métricas de Fichaje */}
+            <Route path="fichaje-metricas" element={<FichajeMetricas />} />
             <Route path="operaciones/fichero/metricas" element={<FichajeMetricas />} />
             
             {/* Redirects de compatibilidad (rutas antiguas -> nuevas) */}
