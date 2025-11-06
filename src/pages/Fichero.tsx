@@ -30,7 +30,7 @@ import AttendanceReports from "@/components/admin/AttendanceReports"
 import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
 import EstadoAnimoEmpleado from "@/components/fichero/EstadoAnimoEmpleado"
 import { FeriadosConfig } from "@/components/admin/FeriadosConfig"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 
 interface Empleado {
   id: string
@@ -57,6 +57,7 @@ interface UbicacionFichado {
 
 export default function Fichero() {
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [empleado, setEmpleado] = useState<Empleado | null>(null)
   const [loading, setLoading] = useState(true)
   const [ubicacion, setUbicacion] = useState<UbicacionFichado | null>(null)
@@ -598,7 +599,32 @@ export default function Fichero() {
         )}
 
         {activeTab === 'incidencias' && (
-          <FicheroIncidencias empleado={empleado} />
+          <div className="space-y-4">
+            {empleado?.rol === 'admin_rrhh' && (
+              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Settings className="h-5 w-5 text-blue-600" />
+                    <span>Administración de Incidencias</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Acceda al dashboard completo de métricas y aprobación de incidencias
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => navigate('/fichaje-metricas')}
+                    className="w-full"
+                    variant="default"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Ir a Administración de Incidencias
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            <FicheroIncidencias empleado={empleado} />
+          </div>
         )}
 
         {activeTab === 'historial' && empleado?.rol === 'admin_rrhh' && (
