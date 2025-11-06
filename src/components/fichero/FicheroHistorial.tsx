@@ -259,10 +259,14 @@ export default function FicheroHistorial() {
   }
 
   const formatearHoraArgentina = (timestamp: string): string => {
-    // Convertir UTC a hora argentina (UTC-3)
     const fecha = new Date(timestamp)
-    const fechaArgentina = new Date(fecha.getTime() - (3 * 60 * 60 * 1000))
-    return format(fechaArgentina, 'HH:mm:ss')
+    return fecha.toLocaleTimeString('es-AR', { 
+      timeZone: 'America/Argentina/Buenos_Aires',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
   }
 
   const exportarCSV = () => {
