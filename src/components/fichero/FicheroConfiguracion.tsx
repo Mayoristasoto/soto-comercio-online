@@ -50,6 +50,7 @@ interface ConfiguracionSistema {
   whatsapp_notificaciones_numero: string
   mensaje_cumpleanos: string
   mensaje_aniversario: string
+  kiosko_mostrar_cruces_rojas: boolean
 }
 
 export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionProps) {
@@ -73,7 +74,8 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     whatsapp_aniversario_activo: false,
     whatsapp_notificaciones_numero: '595985523065',
     mensaje_cumpleanos: 'Hoy {nombre} {apellido} cumple {edad} años. ¡Feliz cumpleaños! 🎂🎉',
-    mensaje_aniversario: 'Hoy {nombre} {apellido} cumple {años} años trabajando con nosotros. ¡Felicidades por su aniversario laboral! 🎊'
+    mensaje_aniversario: 'Hoy {nombre} {apellido} cumple {años} años trabajando con nosotros. ¡Felicidades por su aniversario laboral! 🎊',
+    kiosko_mostrar_cruces_rojas: false
   })
   const [ubicacionActual, setUbicacionActual] = useState<{lat: number, lng: number} | null>(null)
   const [tieneDescriptorFacial, setTieneDescriptorFacial] = useState(false)
@@ -115,7 +117,8 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'whatsapp_aniversario_activo',
           'whatsapp_notificaciones_numero',
           'mensaje_cumpleanos',
-          'mensaje_aniversario'
+          'mensaje_aniversario',
+          'kiosko_mostrar_cruces_rojas'
         ])
 
       if (error) throw error
@@ -257,6 +260,10 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'mensaje_aniversario',
           valor: configuracion.mensaje_aniversario
+        },
+        {
+          clave: 'kiosko_mostrar_cruces_rojas',
+          valor: configuracion.kiosko_mostrar_cruces_rojas.toString()
         }
       ]
 
@@ -725,6 +732,23 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
               onCheckedChange={(checked) => setConfiguracion(prev => ({
                 ...prev,
                 geocerca_obligatoria: checked
+              }))}
+              disabled={empleado.rol !== 'admin_rrhh'}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Mostrar cruces rojas en kiosco</Label>
+              <p className="text-sm text-muted-foreground">
+                Mostrar alerta de infracciones al hacer check-in en el kiosco
+              </p>
+            </div>
+            <Switch
+              checked={configuracion.kiosko_mostrar_cruces_rojas}
+              onCheckedChange={(checked) => setConfiguracion(prev => ({
+                ...prev,
+                kiosko_mostrar_cruces_rojas: checked
               }))}
               disabled={empleado.rol !== 'admin_rrhh'}
             />

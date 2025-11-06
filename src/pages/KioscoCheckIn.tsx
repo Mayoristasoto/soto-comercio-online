@@ -237,19 +237,30 @@ export default function KioscoCheckIn() {
         setPausaActiva(null)
       }
       
-      // 🔴 Verificar cruces rojas de esta semana
+      // 🔴 Verificar cruces rojas de esta semana (si está habilitado)
       try {
-        const { data: crucesData, error: crucesError } = await supabase
-          .from('empleado_cruces_rojas_semana_actual')
-          .select('*')
-          .eq('empleado_id', empleadoId)
+        // Verificar si la configuración permite mostrar cruces rojas
+        const { data: configData } = await supabase
+          .from('fichado_configuracion')
+          .select('valor')
+          .eq('clave', 'kiosko_mostrar_cruces_rojas')
           .single()
         
-        if (!crucesError && crucesData && crucesData.total_cruces_rojas > 0) {
-          setCrucesRojas(crucesData)
-          setShowCrucesRojasAlert(true)
-          setShowFacialAuth(false)
-          return
+        const mostrarCrucesRojas = configData?.valor === 'true'
+        
+        if (mostrarCrucesRojas) {
+          const { data: crucesData, error: crucesError } = await supabase
+            .from('empleado_cruces_rojas_semana_actual')
+            .select('*')
+            .eq('empleado_id', empleadoId)
+            .single()
+          
+          if (!crucesError && crucesData && crucesData.total_cruces_rojas > 0) {
+            setCrucesRojas(crucesData)
+            setShowCrucesRojasAlert(true)
+            setShowFacialAuth(false)
+            return
+          }
         }
       } catch (error) {
         console.log('No hay cruces rojas o error verificando:', error)
