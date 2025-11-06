@@ -256,8 +256,8 @@ export default function FicheroFacialAuth({
 
     setIsProcessing(true)
     
-    // Countdown
-    for (let i = 3; i > 0; i--) {
+    // Countdown reducido a 2 segundos
+    for (let i = 2; i > 0; i--) {
       setCountdown(i)
       await new Promise(resolve => setTimeout(resolve, 1000))
     }

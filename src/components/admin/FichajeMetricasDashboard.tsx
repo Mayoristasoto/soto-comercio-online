@@ -17,12 +17,20 @@ import {
   Trash2,
   Check,
   X as XIcon,
-  AlertTriangle
+  AlertTriangle,
+  Filter,
+  Shield
 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 interface MetricasResumen {
   total_fichajes_hoy: number
@@ -101,10 +109,34 @@ export default function FichajeMetricasDashboard() {
   const [comentarioAprobacion, setComentarioAprobacion] = useState("")
   const [selectedFichajes, setSelectedFichajes] = useState<Set<string>>(new Set())
   const [selectedPausas, setSelectedPausas] = useState<Set<string>>(new Set())
+  
+  // Filtros
+  const [fechaFiltro, setFechaFiltro] = useState<Date>(new Date())
+  const [empleadoFiltro, setEmpleadoFiltro] = useState<string>("todos")
+  const [empleados, setEmpleados] = useState<any[]>([])
+  
+  // Cruces rojas existentes
+  const [crucesRojasExistentes, setCrucesRojasExistentes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    cargarDatos()
+    cargarEmpleados()
   }, [])
+  
+  useEffect(() => {
+    cargarDatos()
+  }, [fechaFiltro, empleadoFiltro])
+
+  const cargarEmpleados = async () => {
+    const { data, error } = await supabase
+      .from('empleados')
+      .select('id, nombre, apellido')
+      .eq('activo', true)
+      .order('apellido', { ascending: true })
+    
+    if (!error && data) {
+      setEmpleados(data)
+    }
+  }
 
   const cargarDatos = async () => {
     setLoading(true)
@@ -113,7 +145,8 @@ export default function FichajeMetricasDashboard() {
         cargarMetricas(),
         cargarFichajesTardios(),
         cargarPausasExcedidas(),
-        cargarIncidenciasPendientes()
+        cargarIncidenciasPendientes(),
+        cargarCrucesRojasExistentes()
       ])
     } catch (error) {
       console.error('Error cargando datos:', error)
@@ -127,30 +160,63 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
-  const cargarMetricas = async () => {
-    const today = new Date().toISOString().split('T')[0]
+  const cargarCrucesRojasExistentes = async () => {
+    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
+    
+    const { data, error } = await supabase
+      .from('empleado_cruces_rojas')
+      .select('empleado_id, fecha_infraccion, tipo_infraccion')
+      .eq('fecha_infraccion', fechaStr)
+      .in('tipo_infraccion', ['llegada_tarde', 'pausa_excedida'])
+    
+    if (!error && data) {
+      const keys = new Set(data.map(cr => `${cr.empleado_id}-${cr.tipo_infraccion}`))
+      setCrucesRojasExistentes(keys)
+    }
+  }
 
-    // Total fichajes de hoy
-    const { count: totalFichajes } = await supabase
+  const cargarMetricas = async () => {
+    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
+
+    // Total fichajes del día seleccionado
+    let fichajesQuery = supabase
       .from('fichajes')
       .select('*', { count: 'exact', head: true })
       .eq('tipo', 'entrada')
-      .gte('timestamp_real', `${today}T00:00:00`)
-      .lte('timestamp_real', `${today}T23:59:59`)
+      .gte('timestamp_real', `${fechaStr}T00:00:00`)
+      .lte('timestamp_real', `${fechaStr}T23:59:59`)
+    
+    if (empleadoFiltro !== "todos") {
+      fichajesQuery = fichajesQuery.eq('empleado_id', empleadoFiltro)
+    }
 
-    // Llegadas tarde hoy
-    const { count: tardeHoy } = await supabase
+    const { count: totalFichajes } = await fichajesQuery
+
+    // Llegadas tarde del día
+    let tardeQuery = supabase
       .from('fichajes_tardios')
       .select('*', { count: 'exact', head: true })
-      .eq('fecha_fichaje', today)
+      .eq('fecha_fichaje', fechaStr)
+    
+    if (empleadoFiltro !== "todos") {
+      tardeQuery = tardeQuery.eq('empleado_id', empleadoFiltro)
+    }
 
-    // Pausas excedidas hoy
-    const { count: pausasHoy } = await supabase
+    const { count: tardeHoy } = await tardeQuery
+
+    // Pausas excedidas del día
+    let pausasQuery = supabase
       .from('fichajes_pausas_excedidas')
       .select('*', { count: 'exact', head: true })
-      .eq('fecha_fichaje', today)
+      .eq('fecha_fichaje', fechaStr)
+    
+    if (empleadoFiltro !== "todos") {
+      pausasQuery = pausasQuery.eq('empleado_id', empleadoFiltro)
+    }
 
-    // Incidencias pendientes
+    const { count: pausasHoy } = await pausasQuery
+
+    // Incidencias pendientes (siempre todas)
     const { count: pendientes } = await supabase
       .from('fichaje_incidencias')
       .select('*', { count: 'exact', head: true })
@@ -166,43 +232,42 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarFichajesTardios = async () => {
-    const today = new Date().toISOString().split('T')[0]
+    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
     
-    // Eliminar registro específico incorrecto de Julio Gomez Navarrete si existe
-    try {
-      await supabase
-        .from('fichajes_tardios')
-        .delete()
-        .eq('id', '10dd9836-da66-4cda-8aff-0cd50359fbdb')
-      console.log('Registro incorrecto eliminado')
-    } catch (error) {
-      console.log('Registro ya no existe o error al eliminar')
-    }
-    
-    const { data, error } = await supabase
+    let query = supabase
       .from('fichajes_tardios')
       .select(`
         *,
         empleado:empleados!inner(nombre, apellido, avatar_url)
       `)
-      .eq('fecha_fichaje', today)
-      .order('minutos_retraso', { ascending: false })
+      .eq('fecha_fichaje', fechaStr)
+    
+    if (empleadoFiltro !== "todos") {
+      query = query.eq('empleado_id', empleadoFiltro)
+    }
+
+    const { data, error } = await query.order('minutos_retraso', { ascending: false })
 
     if (error) throw error
     setFichajesToday(data || [])
   }
 
   const cargarPausasExcedidas = async () => {
-    const today = new Date().toISOString().split('T')[0]
+    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('fichajes_pausas_excedidas')
       .select(`
         *,
         empleado:empleados!inner(nombre, apellido, avatar_url)
       `)
-      .eq('fecha_fichaje', today)
-      .order('minutos_exceso', { ascending: false })
+      .eq('fecha_fichaje', fechaStr)
+    
+    if (empleadoFiltro !== "todos") {
+      query = query.eq('empleado_id', empleadoFiltro)
+    }
+
+    const { data, error } = await query.order('minutos_exceso', { ascending: false })
 
     if (error) throw error
     setPausasToday(data || [])
@@ -662,8 +727,65 @@ export default function FichajeMetricasDashboard() {
     )
   }
 
+  const tieneCruzRoja = (empleadoId: string, tipo: 'llegada_tarde' | 'pausa_excedida') => {
+    return crucesRojasExistentes.has(`${empleadoId}-${tipo}`)
+  }
+
   return (
     <div className="space-y-6">
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+          <CardDescription>
+            Seleccione fecha y empleado para ver métricas específicas
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Fecha</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {format(fechaFiltro, "PPP", { locale: es })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarComponent
+                    mode="single"
+                    selected={fechaFiltro}
+                    onSelect={(date) => date && setFechaFiltro(date)}
+                    locale={es}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Empleado</label>
+              <Select value={empleadoFiltro} onValueChange={setEmpleadoFiltro}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar empleado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los empleados</SelectItem>
+                  {empleados.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.apellido}, {emp.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Métricas principales */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
@@ -781,46 +903,61 @@ export default function FichajeMetricasDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {fichajesToday.map((fichaje) => (
-                    <div key={fichaje.id} className="flex items-center gap-3 p-4 border rounded-lg">
-                      <Checkbox
-                        checked={selectedFichajes.has(fichaje.id)}
-                        onCheckedChange={() => toggleFichajeSelection(fichaje.id)}
-                      />
-                      <div className="flex items-center justify-between flex-1">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                            <Clock className="h-5 w-5 text-orange-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              {fichaje.empleado.nombre} {fichaje.empleado.apellido}
-                            </p>
-                            <div className="text-sm text-muted-foreground space-x-4">
-                              <span>Programada: {formatearHora(fichaje.hora_programada)}</span>
-                              <span>Llegó: {formatearHora(fichaje.hora_real)}</span>
+                  {fichajesToday.map((fichaje) => {
+                    const yaRegistrado = tieneCruzRoja(fichaje.empleado_id, 'llegada_tarde')
+                    
+                    return (
+                      <div key={fichaje.id} className={`flex items-center gap-3 p-4 border rounded-lg ${yaRegistrado ? 'bg-muted/50' : ''}`}>
+                        <Checkbox
+                          checked={selectedFichajes.has(fichaje.id)}
+                          onCheckedChange={() => toggleFichajeSelection(fichaje.id)}
+                          disabled={yaRegistrado}
+                        />
+                        <div className="flex items-center justify-between flex-1">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                              <Clock className="h-5 w-5 text-orange-600" />
                             </div>
-                            {fichaje.observaciones && (
-                              <p className="text-xs text-muted-foreground mt-1">{fichaje.observaciones}</p>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">
+                                  {fichaje.empleado.nombre} {fichaje.empleado.apellido}
+                                </p>
+                                {yaRegistrado && (
+                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    En Legajo
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground space-x-4">
+                                <span>Programada: {formatearHora(fichaje.hora_programada)}</span>
+                                <span>Llegó: {formatearHora(fichaje.hora_real)}</span>
+                              </div>
+                              {fichaje.observaciones && (
+                                <p className="text-xs text-muted-foreground mt-1">{fichaje.observaciones}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge className="bg-red-100 text-red-800">
+                              +{fichaje.minutos_retraso} min
+                            </Badge>
+                            {!yaRegistrado && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => eliminarFichajeTardio(fichaje.id)}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Badge className="bg-red-100 text-red-800">
-                            +{fichaje.minutos_retraso} min
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => eliminarFichajeTardio(fichaje.id)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
@@ -878,50 +1015,65 @@ export default function FichajeMetricasDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {pausasToday.map((pausa) => (
-                    <div key={pausa.id} className="flex items-center gap-3 p-4 border rounded-lg">
-                      <Checkbox
-                        checked={selectedPausas.has(pausa.id)}
-                        onCheckedChange={() => togglePausaSelection(pausa.id)}
-                      />
-                      <div className="flex items-center justify-between flex-1">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <TrendingUp className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              {pausa.empleado.nombre} {pausa.empleado.apellido}
-                            </p>
-                            <div className="text-sm text-muted-foreground">
-                              <span>
-                                {formatearHora(pausa.hora_inicio_pausa)} - {formatearHora(pausa.hora_fin_pausa)}
-                              </span>
-                              <span className="ml-4">
-                                Duración: {pausa.duracion_minutos} min (permitido: {pausa.duracion_permitida_minutos} min)
-                              </span>
+                  {pausasToday.map((pausa) => {
+                    const yaRegistrado = tieneCruzRoja(pausa.empleado_id, 'pausa_excedida')
+                    
+                    return (
+                      <div key={pausa.id} className={`flex items-center gap-3 p-4 border rounded-lg ${yaRegistrado ? 'bg-muted/50' : ''}`}>
+                        <Checkbox
+                          checked={selectedPausas.has(pausa.id)}
+                          onCheckedChange={() => togglePausaSelection(pausa.id)}
+                          disabled={yaRegistrado}
+                        />
+                        <div className="flex items-center justify-between flex-1">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                              <TrendingUp className="h-5 w-5 text-purple-600" />
                             </div>
-                            {pausa.observaciones && (
-                              <p className="text-xs text-muted-foreground mt-1">{pausa.observaciones}</p>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">
+                                  {pausa.empleado.nombre} {pausa.empleado.apellido}
+                                </p>
+                                {yaRegistrado && (
+                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    En Legajo
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                <span>
+                                  {formatearHora(pausa.hora_inicio_pausa)} - {formatearHora(pausa.hora_fin_pausa)}
+                                </span>
+                                <span className="ml-4">
+                                  Duración: {pausa.duracion_minutos} min (permitido: {pausa.duracion_permitida_minutos} min)
+                                </span>
+                              </div>
+                              {pausa.observaciones && (
+                                <p className="text-xs text-muted-foreground mt-1">{pausa.observaciones}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge className="bg-purple-100 text-purple-800">
+                              +{pausa.minutos_exceso} min
+                            </Badge>
+                            {!yaRegistrado && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => eliminarPausaExcedida(pausa.id)}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Badge className="bg-purple-100 text-purple-800">
-                            +{pausa.minutos_exceso} min
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => eliminarPausaExcedida(pausa.id)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
