@@ -13,7 +13,10 @@ import {
   Menu, 
   LogOut,
   HelpCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  LogIn,
+  Lock,
+  Plane
 } from "lucide-react";
 
 export const EmpleadoInstructivo = () => {
@@ -31,6 +34,37 @@ export const EmpleadoInstructivo = () => {
       </CardHeader>
       <CardContent>
         <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="login">
+            <AccordionTrigger>
+              <div className="flex items-center gap-2">
+                <LogIn className="h-4 w-4" />
+                <span>Cómo Iniciar Sesión</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground space-y-2">
+              <p><strong>Acceso a tu cuenta</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Ingresa tu <strong>correo electrónico corporativo</strong></li>
+                <li>Escribe tu <strong>contraseña</strong> personal</li>
+                <li>Haz clic en "Iniciar Sesión"</li>
+                <li>Si es tu primer acceso, el sistema te pedirá cambiar tu contraseña</li>
+              </ul>
+              <Badge variant="destructive" className="mt-2">Primer Acceso</Badge>
+              <p className="mt-1">
+                <strong>¿Primera vez?</strong> Deberás crear una contraseña nueva y segura con:
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Mínimo 8 caracteres</li>
+                <li>Al menos una letra mayúscula</li>
+                <li>Al menos un número</li>
+                <li>Al menos un carácter especial (!@#$%)</li>
+              </ul>
+              <p className="text-primary font-medium mt-2">
+                🔒 Guarda tu contraseña en un lugar seguro
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
           <AccordionItem value="dashboard">
             <AccordionTrigger>
               <div className="flex items-center gap-2">
@@ -195,6 +229,36 @@ export const EmpleadoInstructivo = () => {
                 <li>Aniversarios laborales</li>
                 <li>Reuniones y actividades programadas</li>
               </ul>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="vacaciones">
+            <AccordionTrigger>
+              <div className="flex items-center gap-2">
+                <Plane className="h-4 w-4" />
+                <span>Solicitar Vacaciones</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground space-y-2">
+              <p><strong>Cómo solicitar tus vacaciones</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Ve a <strong>"Vacaciones"</strong> en el menú lateral</li>
+                <li>Haz clic en <strong>"Solicitar Vacaciones"</strong></li>
+                <li>Selecciona las fechas de inicio y fin</li>
+                <li>Verifica cuántos días disponibles tienes</li>
+                <li>Agrega un comentario si es necesario</li>
+                <li>Envía la solicitud y espera aprobación</li>
+              </ul>
+              <Badge variant="outline" className="mt-2">Importante</Badge>
+              <p className="mt-1">
+                <strong>Planifica con anticipación:</strong> Las solicitudes deben hacerse con al menos 15 días de anticipación.
+              </p>
+              <p className="mt-2">
+                <strong>Seguimiento:</strong> Puedes ver el estado de tus solicitudes (pendiente, aprobada, rechazada) en la misma sección.
+              </p>
+              <p className="text-primary font-medium mt-2">
+                🏖️ Revisa tu saldo de días disponibles antes de solicitar
+              </p>
             </AccordionContent>
           </AccordionItem>
 
