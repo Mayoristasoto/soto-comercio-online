@@ -52,6 +52,7 @@ import KioscoFotoFacial from "./pages/KioscoFotoFacial";
 import InformeEjecutivo from "./pages/InformeEjecutivo";
 import PresentacionEjecutiva from "./pages/PresentacionEjecutiva";
 import FichajeMetricas from "./pages/FichajeMetricas";
+import InstructivoScreenshots from "./pages/InstructivoScreenshots";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +140,7 @@ const App = () => (
               <Route path="configuracion" element={<Configuracion />} />
               <Route path="auth-logs" element={<AdminAuthLogs />} />
               <Route path="aprobar-fotos-faciales" element={<AprobarFotosFaciales />} />
+              <Route path="instructivo-screenshots" element={<InstructivoScreenshots />} />
             </Route>
             
             {/* Métricas de Fichaje */}

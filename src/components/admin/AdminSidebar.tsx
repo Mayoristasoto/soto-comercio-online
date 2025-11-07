@@ -18,7 +18,8 @@ import {
   Wrench,
   ChevronDown,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  Image
 } from "lucide-react"
 import {
   Sidebar,
@@ -95,6 +96,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Góndolas", url: "/admin/gondolas", icon: Map },
       { title: "Logs de Auth", url: "/admin/auth-logs", icon: Shield },
       { title: "Aprobar Fotos Faciales", url: "/admin/aprobar-fotos-faciales", icon: Shield },
+      { title: "Screenshots Instructivo", url: "/admin/instructivo-screenshots", icon: Image },
     ]
   }
 ]
