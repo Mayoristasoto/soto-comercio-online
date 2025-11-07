@@ -2653,6 +2653,36 @@ export type Database = {
           },
         ]
       }
+      instructivo_screenshots: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: string
+          imagen_url: string | null
+          orden: number | null
+          seccion: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          imagen_url?: string | null
+          orden?: number | null
+          seccion: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          imagen_url?: string | null
+          orden?: number | null
+          seccion?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       intentos_evaluacion: {
         Row: {
           aprobado: boolean

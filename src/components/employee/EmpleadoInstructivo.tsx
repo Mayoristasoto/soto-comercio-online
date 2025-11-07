@@ -34,6 +34,25 @@ interface EmpleadoInstructivoProps {
 
 export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleadoEmail }: EmpleadoInstructivoProps) => {
   const { toast } = useToast();
+  const [screenshots, setScreenshots] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    loadScreenshots();
+  }, []);
+
+  const loadScreenshots = async () => {
+    const { data, error } = await supabase
+      .from('instructivo_screenshots')
+      .select('*');
+    
+    if (data) {
+      const screenshotsMap = data.reduce((acc, item) => {
+        acc[item.seccion] = item.imagen_url;
+        return acc;
+      }, {} as Record<string, string>);
+      setScreenshots(screenshotsMap);
+    }
+  };
 
   const generarPDF = () => {
     try {
