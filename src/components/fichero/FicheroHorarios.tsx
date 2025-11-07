@@ -171,6 +171,9 @@ export default function FicheroHorarios() {
       const turnoData = {
         ...formData,
         sucursal_id: formData.sucursal_id === 'sin_asignar' ? null : formData.sucursal_id,
+        // Para turnos flexibles, guardar horarios como null
+        hora_entrada: formData.tipo === 'flexible' ? '00:00' : formData.hora_entrada,
+        hora_salida: formData.tipo === 'flexible' ? '23:59' : formData.hora_salida,
         hora_pausa_inicio: formData.hora_pausa_inicio || null,
         hora_pausa_fin: formData.hora_pausa_fin || null,
         duracion_pausa_minutos: formData.duracion_pausa_minutos || null,
@@ -571,7 +574,7 @@ export default function FicheroHorarios() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="flexible">Flexible</SelectItem>
+                          <SelectItem value="flexible">Flexible (sin horario fijo)</SelectItem>
                           <SelectItem value="nocturno">Nocturno</SelectItem>
                           <SelectItem value="partido">Partido</SelectItem>
                         </SelectContent>
@@ -579,63 +582,94 @@ export default function FicheroHorarios() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="hora_entrada">Hora de Entrada</Label>
-                      <Input
-                        id="hora_entrada"
-                        type="time"
-                        value={formData.hora_entrada}
-                        onChange={(e) => setFormData({...formData, hora_entrada: e.target.value})}
-                        required
-                      />
+                  {formData.tipo === 'flexible' && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                      <p className="text-sm text-blue-900 dark:text-blue-100">
+                        <strong>Turno Flexible:</strong> No requiere horario fijo de entrada/salida. 
+                        Los empleados pueden fichar a cualquier hora. Solo se configurará la duración máxima de descanso permitida.
+                      </p>
                     </div>
-                    <div>
-                      <Label htmlFor="hora_salida">Hora de Salida</Label>
-                      <Input
-                        id="hora_salida"
-                        type="time"
-                        value={formData.hora_salida}
-                        onChange={(e) => setFormData({...formData, hora_salida: e.target.value})}
-                        required
-                      />
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="hora_pausa_inicio">Inicio de Pausa (opcional)</Label>
-                      <Input
-                        id="hora_pausa_inicio"
-                        type="time"
-                        value={formData.hora_pausa_inicio}
-                        onChange={(e) => setFormData({...formData, hora_pausa_inicio: e.target.value})}
-                      />
+                  {formData.tipo !== 'flexible' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="hora_entrada">Hora de Entrada</Label>
+                        <Input
+                          id="hora_entrada"
+                          type="time"
+                          value={formData.hora_entrada}
+                          onChange={(e) => setFormData({...formData, hora_entrada: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="hora_salida">Hora de Salida</Label>
+                        <Input
+                          id="hora_salida"
+                          type="time"
+                          value={formData.hora_salida}
+                          onChange={(e) => setFormData({...formData, hora_salida: e.target.value})}
+                          required
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="hora_pausa_fin">Fin de Pausa (opcional)</Label>
-                      <Input
-                        id="hora_pausa_fin"
-                        type="time"
-                        value={formData.hora_pausa_fin}
-                        onChange={(e) => setFormData({...formData, hora_pausa_fin: e.target.value})}
-                      />
+                  )}
+
+                  {formData.tipo !== 'flexible' && (
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="hora_pausa_inicio">Inicio de Pausa (opcional)</Label>
+                        <Input
+                          id="hora_pausa_inicio"
+                          type="time"
+                          value={formData.hora_pausa_inicio}
+                          onChange={(e) => setFormData({...formData, hora_pausa_inicio: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="hora_pausa_fin">Fin de Pausa (opcional)</Label>
+                        <Input
+                          id="hora_pausa_fin"
+                          type="time"
+                          value={formData.hora_pausa_fin}
+                          onChange={(e) => setFormData({...formData, hora_pausa_fin: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="duracion_pausa">Duración Máxima Pausa (min)</Label>
+                        <Input
+                          id="duracion_pausa"
+                          type="number"
+                          value={formData.duracion_pausa_minutos}
+                          onChange={(e) => setFormData({...formData, duracion_pausa_minutos: parseInt(e.target.value)})}
+                          min="0"
+                          placeholder="60"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Para detectar excesos en incidencias
+                        </p>
+                      </div>
                     </div>
+                  )}
+
+                  {formData.tipo === 'flexible' && (
                     <div>
-                      <Label htmlFor="duracion_pausa">Duración Máxima Pausa (min)</Label>
+                      <Label htmlFor="duracion_pausa_flexible">Duración Máxima de Descanso (minutos)</Label>
                       <Input
-                        id="duracion_pausa"
+                        id="duracion_pausa_flexible"
                         type="number"
                         value={formData.duracion_pausa_minutos}
                         onChange={(e) => setFormData({...formData, duracion_pausa_minutos: parseInt(e.target.value)})}
                         min="0"
                         placeholder="60"
+                        required
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Para detectar excesos en incidencias
+                        Tiempo máximo permitido de descanso/pausa para turnos flexibles
                       </p>
                     </div>
-                  </div>
+                  )}
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
@@ -756,12 +790,17 @@ export default function FicheroHorarios() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {turno.hora_entrada} - {turno.hora_salida}
+                    {turno.tipo === 'flexible' 
+                      ? 'Horario flexible'
+                      : `${turno.hora_entrada} - ${turno.hora_salida}`
+                    }
                   </TableCell>
                   <TableCell>
-                    {turno.hora_pausa_inicio && turno.hora_pausa_fin 
-                      ? `${turno.hora_pausa_inicio} - ${turno.hora_pausa_fin}`
-                      : 'Sin pausa'
+                    {turno.tipo === 'flexible' && turno.duracion_pausa_minutos
+                      ? `Máx: ${turno.duracion_pausa_minutos} min`
+                      : turno.hora_pausa_inicio && turno.hora_pausa_fin 
+                        ? `${turno.hora_pausa_inicio} - ${turno.hora_pausa_fin}`
+                        : 'Sin pausa'
                     }
                   </TableCell>
                   <TableCell>
