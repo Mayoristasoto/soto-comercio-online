@@ -28,6 +28,7 @@ import { Package, Star } from "lucide-react"
 import CalificacionesEmpleado from "@/components/employee/CalificacionesEmpleado"
 import { EmpleadoInstructivo } from "@/components/employee/EmpleadoInstructivo"
 import { EmpleadoPermisosDemo } from "@/components/employee/EmpleadoPermisosDemo"
+import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
 
 interface UserInfo {
   id: string
@@ -46,6 +47,7 @@ export default function EmpleadoDashboard() {
   const location = useLocation()
   const [loading, setLoading] = useState(true)
   const [activeEntregasTab, setActiveEntregasTab] = useState("pendientes")
+  const [debeCambiarPassword, setDebeCambiarPassword] = useState(false)
   const [stats, setStats] = useState({
     tareas: 0,
     capacitaciones: 0,
@@ -55,9 +57,25 @@ export default function EmpleadoDashboard() {
 
   useEffect(() => {
     if (userInfo) {
+      checkPasswordChange()
       loadDashboardData()
     }
   }, [userInfo])
+
+  const checkPasswordChange = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('empleados')
+        .select('debe_cambiar_password')
+        .eq('id', userInfo.id)
+        .single()
+
+      if (error) throw error
+      setDebeCambiarPassword(data?.debe_cambiar_password || false)
+    } catch (error) {
+      console.error('Error checking password change requirement:', error)
+    }
+  }
 
   // Detectar hash en la URL para scroll y cambio de tab
   useEffect(() => {
@@ -129,6 +147,13 @@ export default function EmpleadoDashboard() {
 
   return (
     <div className="p-6 space-y-6">
+      {debeCambiarPassword && (
+        <ForcedPasswordChange 
+          empleadoId={userInfo.id}
+          empleadoEmail={userInfo.email}
+          onPasswordChanged={() => setDebeCambiarPassword(false)}
+        />
+      )}
       {/* Header personalizado */}
       <div>
         <h1 className="text-3xl font-bold flex items-center space-x-2">

@@ -1002,6 +1002,7 @@ export type Database = {
           apellido: string
           avatar_url: string | null
           created_at: string
+          debe_cambiar_password: boolean
           dni: string | null
           email: string
           fecha_ingreso: string
@@ -1021,6 +1022,7 @@ export type Database = {
           apellido: string
           avatar_url?: string | null
           created_at?: string
+          debe_cambiar_password?: boolean
           dni?: string | null
           email: string
           fecha_ingreso?: string
@@ -1040,6 +1042,7 @@ export type Database = {
           apellido?: string
           avatar_url?: string | null
           created_at?: string
+          debe_cambiar_password?: boolean
           dni?: string | null
           email?: string
           fecha_ingreso?: string
