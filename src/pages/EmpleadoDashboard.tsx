@@ -175,7 +175,11 @@ export default function EmpleadoDashboard() {
       </div>
 
       {/* Guía Rápida para Empleados */}
-      <EmpleadoInstructivo />
+      <EmpleadoInstructivo 
+        empleadoNombre={userInfo.nombre}
+        empleadoApellido={userInfo.apellido}
+        empleadoEmail={userInfo.email}
+      />
 
       {/* Permisos y Accesos Detallados */}
       <EmpleadoPermisosDemo />
