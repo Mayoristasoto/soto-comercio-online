@@ -18,7 +18,8 @@ import {
   LogIn,
   Lock,
   Plane,
-  Download
+  Download,
+  MessageCircleQuestion
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import { useToast } from "@/hooks/use-toast";
@@ -93,102 +94,128 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
       };
 
       // Secciones del instructivo
-      addSection('1. Cómo Iniciar Sesión', [
-        '• Ingresa tu correo electrónico corporativo',
-        '• Escribe tu contraseña personal',
-        '• Haz clic en "Iniciar Sesión"',
-        '• Si es tu primer acceso, el sistema te pedirá cambiar tu contraseña',
+      addSection('1. Como Iniciar Sesion', [
+        '* Ingresa tu correo electronico corporativo',
+        '* Escribe tu contrasena personal',
+        '* Haz clic en "Iniciar Sesion"',
+        '* Si es tu primer acceso, el sistema te pedira cambiar tu contrasena',
         '',
-        'Requisitos de contraseña (primer acceso):',
-        '  - Mínimo 8 caracteres',
-        '  - Al menos una letra mayúscula',
-        '  - Al menos un número',
-        '  - Al menos un carácter especial (!@#$%)',
+        'Requisitos de contrasena (primer acceso):',
+        '  - Minimo 8 caracteres',
+        '  - Al menos una letra mayuscula',
+        '  - Al menos un numero',
+        '  - Al menos un caracter especial (!@#$%)',
         '',
-        '⚠️ Guarda tu contraseña en un lugar seguro'
+        '[!] IMPORTANTE: Guarda tu contrasena en un lugar seguro'
       ]);
 
       addSection('2. Tu Dashboard Personal', [
-        'El dashboard es tu página principal donde verás:',
-        '• Resumen de tus tareas pendientes y completadas',
-        '• Capacitaciones activas y próximas',
-        '• Documentos que debes firmar o revisar',
-        '• Tus puntos y reconocimientos actuales',
+        'El dashboard es tu pagina principal donde veras:',
+        '* Resumen de tus tareas pendientes y completadas',
+        '* Capacitaciones activas y proximas',
+        '* Documentos que debes firmar o revisar',
+        '* Tus puntos y reconocimientos actuales',
         '',
-        '💡 Revisa tu dashboard diariamente para estar al día'
+        '[i] TIP: Revisa tu dashboard diariamente para estar al dia'
       ]);
 
-      addSection('3. Gestión de Tareas', [
-        '¿Qué puedes hacer?',
-        '• Ver todas las tareas que te han asignado',
-        '• Marcar tareas como completadas',
-        '• Ver fechas límite y prioridades',
-        '• Acceder desde el menú lateral → "Mis Tareas"',
+      addSection('3. Gestion de Tareas', [
+        'Que puedes hacer?',
+        '* Ver todas las tareas que te han asignado',
+        '* Marcar tareas como completadas',
+        '* Ver fechas limite y prioridades',
+        '* Acceder desde el menu lateral -> "Mis Tareas"',
         '',
-        'Acción rápida: Haz clic en cualquier tarea para ver más detalles o marcarla como finalizada.'
+        'Accion rapida: Haz clic en cualquier tarea para ver mas detalles o marcarla como finalizada.'
       ]);
 
       addSection('4. Capacitaciones', [
         'Tu desarrollo profesional:',
-        '• Accede a capacitaciones asignadas',
-        '• Revisa materiales de formación',
-        '• Marca capacitaciones como completadas',
-        '• Ve tu historial de formación',
+        '* Accede a capacitaciones asignadas',
+        '* Revisa materiales de formacion',
+        '* Marca capacitaciones como completadas',
+        '* Ve tu historial de formacion',
         '',
-        '📚 Completar capacitaciones puede sumar puntos a tu perfil'
+        '[i] TIP: Completar capacitaciones puede sumar puntos a tu perfil'
       ]);
 
       addSection('5. Documentos', [
-        'Gestiona tu documentación:',
-        '• Firma documentos obligatorios digitalmente',
-        '• Descarga copias de documentos firmados',
-        '• Ve el estado de cada documento (pendiente/firmado)',
-        '• Recibe notificaciones de nuevos documentos',
+        'Gestiona tu documentacion:',
+        '* Firma documentos obligatorios digitalmente',
+        '* Descarga copias de documentos firmados',
+        '* Ve el estado de cada documento (pendiente/firmado)',
+        '* Recibe notificaciones de nuevos documentos',
         '',
-        '⚠️ IMPORTANTE: Algunos documentos son obligatorios y deben firmarse en un plazo determinado.'
+        '[!] IMPORTANTE: Algunos documentos son obligatorios y deben firmarse en un plazo determinado.'
       ]);
 
       addSection('6. Solicitar Vacaciones', [
-        'Cómo solicitar tus vacaciones:',
-        '• Ve a "Vacaciones" en el menú lateral',
-        '• Haz clic en "Solicitar Vacaciones"',
-        '• Selecciona las fechas de inicio y fin',
-        '• Verifica cuántos días disponibles tienes',
-        '• Agrega un comentario si es necesario',
-        '• Envía la solicitud y espera aprobación',
+        'Como solicitar tus vacaciones:',
+        '* Ve a "Vacaciones" en el menu lateral',
+        '* Haz clic en "Solicitar Vacaciones"',
+        '* Selecciona las fechas de inicio y fin',
+        '* Verifica cuantos dias disponibles tienes',
+        '* Agrega un comentario si es necesario',
+        '* Envia la solicitud y espera aprobacion',
         '',
-        '⚠️ Planifica con anticipación: Las solicitudes deben hacerse con al menos 15 días de anticipación.',
-        '📋 Seguimiento: Puedes ver el estado de tus solicitudes (pendiente, aprobada, rechazada) en la misma sección.',
-        '🏖️ Revisa tu saldo de días disponibles antes de solicitar'
+        '[!] Planifica con anticipacion: Las solicitudes deben hacerse con al menos 15 dias de anticipacion.',
+        '[i] Seguimiento: Puedes ver el estado de tus solicitudes (pendiente, aprobada, rechazada) en la misma seccion.',
+        '[i] Revisa tu saldo de dias disponibles antes de solicitar'
       ]);
 
       addSection('7. Medallas y Reconocimientos', [
         'Tu progreso y logros:',
-        '• Ve todas las medallas que has ganado',
-        '• Revisa tus puntos acumulados',
-        '• Consulta premios disponibles para canjear',
-        '• Accede al ranking de empleados',
+        '* Ve todas las medallas que has ganado',
+        '* Revisa tus puntos acumulados',
+        '* Consulta premios disponibles para canjear',
+        '* Accede al ranking de empleados',
         '',
-        '🏆 Completa tareas y capacitaciones para ganar más puntos'
+        '[i] TIP: Completa tareas y capacitaciones para ganar mas puntos'
       ]);
 
-      addSection('8. Cerrar Sesión', [
+      addSection('8. Cerrar Sesion', [
         'Salir del sistema de forma segura:',
-        '• Busca el botón de "Cerrar Sesión" en el menú lateral',
-        '• Normalmente está al final del sidebar',
-        '• Siempre cierra sesión cuando termines, especialmente en computadoras compartidas',
+        '* Busca el boton de "Cerrar Sesion" en el menu lateral',
+        '* Normalmente esta al final del sidebar',
+        '* Siempre cierra sesion cuando termines, especialmente en computadoras compartidas',
         '',
-        '🔒 SEGURIDAD: Por tu seguridad, cierra sesión si dejas la computadora desatendida.'
+        '[!] SEGURIDAD: Por tu seguridad, cierra sesion si dejas la computadora desatendida.'
       ]);
 
-      addSection('9. ¿Necesitas Ayuda?', [
-        'Recursos de soporte:',
-        '• Contacta a tu supervisor directo',
-        '• Comunícate con el área de Recursos Humanos',
-        '• Revisa esta guía cuando tengas dudas',
-        '• Pregunta a compañeros que ya usan el sistema',
+      addSection('9. Preguntas Frecuentes (FAQ)', [
+        'P: Olvide mi contrasena, que hago?',
+        'R: Contacta a tu supervisor o al area de RRHH para solicitar un restablecimiento. El administrador podra generar una contrasena temporal y activar el cambio obligatorio.',
         '',
-        '💬 No dudes en pedir ayuda, estamos para apoyarte'
+        'P: Puedo acceder al sistema desde mi celular?',
+        'R: Si, el sistema es responsive y funciona en dispositivos moviles. Usa el mismo usuario y contrasena.',
+        '',
+        'P: Cuanto tiempo tengo para firmar un documento obligatorio?',
+        'R: El plazo varia segun el documento. Revisa la fecha limite en la seccion "Mis Documentos". Los documentos vencidos apareceran resaltados.',
+        '',
+        'P: Como se calculan mis puntos?',
+        'R: Los puntos se asignan automaticamente al completar tareas, capacitaciones y recibir medallas. Cada actividad tiene un valor especifico.',
+        '',
+        'P: Puedo cancelar una solicitud de vacaciones?',
+        'R: Si la solicitud esta pendiente de aprobacion, contacta a tu supervisor. Si ya fue aprobada, necesitaras autorizacion especial.',
+        '',
+        'P: Que hago si no veo una tarea que me asignaron?',
+        'R: Verifica que estes viendo la seccion correcta. Si el problema persiste, contacta a quien te asigno la tarea o al area de RRHH.',
+        '',
+        'P: El sistema no me deja registrar mi entrada en el kiosco',
+        'R: Verifica tu conexion a internet. Si el problema continua, usa el "Registro Manual" o contacta al supervisor de turno.',
+        '',
+        'P: Puedo descargar mis documentos firmados?',
+        'R: Si, en la seccion "Mis Documentos" encontraras un boton de descarga para cada documento que hayas firmado.',
+      ]);
+
+      addSection('10. Necesitas Ayuda?', [
+        'Recursos de soporte:',
+        '* Contacta a tu supervisor directo',
+        '* Comunicate con el area de Recursos Humanos',
+        '* Revisa esta guia cuando tengas dudas',
+        '* Pregunta a companeros que ya usan el sistema',
+        '',
+        '[i] No dudes en pedir ayuda, estamos para apoyarte'
       ]);
 
       // Footer
@@ -507,6 +534,56 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="mt-1">
                 Por tu seguridad, cierra sesión si dejas la computadora desatendida.
               </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="faq">
+            <AccordionTrigger>
+              <div className="flex items-center gap-2">
+                <MessageCircleQuestion className="h-4 w-4" />
+                <span>Preguntas Frecuentes (FAQ)</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground space-y-4">
+              <div>
+                <p className="font-semibold text-foreground">¿Olvidé mi contraseña, qué hago?</p>
+                <p>Contacta a tu supervisor o al área de RRHH para solicitar un restablecimiento. El administrador podrá generar una contraseña temporal y activar el cambio obligatorio.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Puedo acceder al sistema desde mi celular?</p>
+                <p>Sí, el sistema es responsive y funciona en dispositivos móviles. Usa el mismo usuario y contraseña.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Cuánto tiempo tengo para firmar un documento obligatorio?</p>
+                <p>El plazo varía según el documento. Revisa la fecha límite en la sección "Mis Documentos". Los documentos vencidos aparecerán resaltados.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Cómo se calculan mis puntos?</p>
+                <p>Los puntos se asignan automáticamente al completar tareas, capacitaciones y recibir medallas. Cada actividad tiene un valor específico.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Puedo cancelar una solicitud de vacaciones?</p>
+                <p>Si la solicitud está pendiente de aprobación, contacta a tu supervisor. Si ya fue aprobada, necesitarás autorización especial.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Qué hago si no veo una tarea que me asignaron?</p>
+                <p>Verifica que estés viendo la sección correcta. Si el problema persiste, contacta a quien te asignó la tarea o al área de RRHH.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">El sistema no me deja registrar mi entrada en el kiosco</p>
+                <p>Verifica tu conexión a internet. Si el problema continúa, usa el "Registro Manual" o contacta al supervisor de turno.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Puedo descargar mis documentos firmados?</p>
+                <p>Sí, en la sección "Mis Documentos" encontrarás un botón de descarga para cada documento que hayas firmado.</p>
+              </div>
             </AccordionContent>
           </AccordionItem>
 
