@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Pencil, Trash2, Plus, User, Eye, Camera, FileText, Shield, FolderOpen, Building2 } from "lucide-react"
+import { Pencil, Trash2, Plus, User, Eye, Camera, FileText, Shield, FolderOpen, Building2, UserCheck, UserX } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import EmployeeProfile from "./EmployeeProfile"
@@ -47,6 +47,7 @@ export default function EmployeeManagement() {
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [loading, setLoading] = useState(true)
+  const [showInactive, setShowInactive] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [documentsOpen, setDocumentsOpen] = useState(false)
@@ -185,28 +186,31 @@ export default function EmployeeManagement() {
     setPermissionsOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este empleado?')) return
+  const handleToggleActive = async (empleado: Empleado) => {
+    const newStatus = !empleado.activo
+    const action = newStatus ? 'reactivar' : 'desactivar'
+    
+    if (!confirm(`¿Estás seguro de que quieres ${action} a ${empleado.nombre} ${empleado.apellido}?`)) return
 
     try {
       const { error } = await supabase
         .from('empleados')
-        .delete()
-        .eq('id', id)
+        .update({ activo: newStatus })
+        .eq('id', empleado.id)
       
       if (error) throw error
       
       toast({
-        title: "Empleado eliminado",
-        description: "El empleado se eliminó correctamente"
+        title: newStatus ? "Empleado reactivado" : "Empleado desactivado",
+        description: `El empleado se ${newStatus ? 'reactivó' : 'desactivó'} correctamente. Su historial se mantiene.`
       })
       
       loadData()
     } catch (error) {
-      console.error('Error eliminando empleado:', error)
+      console.error('Error cambiando estado del empleado:', error)
       toast({
         title: "Error",
-        description: "No se pudo eliminar el empleado",
+        description: `No se pudo ${action} el empleado`,
         variant: "destructive"
       })
     }
@@ -251,7 +255,20 @@ export default function EmployeeManagement() {
           </TabsList>
 
           <TabsContent value="lista" className="space-y-4">
-        <div className="flex items-center justify-end mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="show-inactive"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <Label htmlFor="show-inactive" className="cursor-pointer">
+              Mostrar empleados inactivos
+            </Label>
+          </div>
+          
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => {
@@ -379,8 +396,10 @@ export default function EmployeeManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {empleados.map((empleado) => (
-              <TableRow key={empleado.id}>
+            {empleados
+              .filter(emp => showInactive || emp.activo)
+              .map((empleado) => (
+              <TableRow key={empleado.id} className={!empleado.activo ? 'opacity-60' : ''}>
                 <TableCell>
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-10 w-10">
@@ -442,8 +461,13 @@ export default function EmployeeManagement() {
                     <Button variant="outline" size="sm" onClick={() => handleEdit(empleado)} title="Editar">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(empleado.id)} title="Eliminar">
-                      <Trash2 className="h-4 w-4" />
+                    <Button 
+                      variant={empleado.activo ? "outline" : "default"}
+                      size="sm" 
+                      onClick={() => handleToggleActive(empleado)} 
+                      title={empleado.activo ? "Desactivar empleado" : "Reactivar empleado"}
+                    >
+                      {empleado.activo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                     </Button>
                   </div>
                 </TableCell>
