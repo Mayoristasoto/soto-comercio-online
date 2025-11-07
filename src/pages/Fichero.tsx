@@ -30,6 +30,7 @@ import AttendanceReports from "@/components/admin/AttendanceReports"
 import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
 import EstadoAnimoEmpleado from "@/components/fichero/EstadoAnimoEmpleado"
 import { FeriadosConfig } from "@/components/admin/FeriadosConfig"
+import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { useLocation, useNavigate } from "react-router-dom"
 
 interface Empleado {
@@ -66,12 +67,15 @@ export default function Fichero() {
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
   const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados'>('fichaje')
+  const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
+  const [confirmarTareasHabilitado, setConfirmarTareasHabilitado] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
     checkAuth()
     obtenerUbicacion()
     loadFichajes()
+    loadTareasConfig()
     
     // Detectar hash en la URL y activar la pestaña correspondiente
     const hash = window.location.hash.replace('#', '')
@@ -214,6 +218,23 @@ export default function Fichero() {
     }
   }
 
+  const loadTareasConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tareas_configuracion')
+        .select('confirmar_tareas_al_salir')
+        .limit(1)
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setConfirmarTareasHabilitado(data.confirmar_tareas_al_salir)
+      }
+    } catch (error) {
+      console.error('Error loading tareas config:', error)
+    }
+  }
+
   const procesarFichaje = async (tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin', confianzaFacial: number, empleadoId?: string, empleadoData?: any, emocion?: string) => {
     if (!empleado) {
       toast({
@@ -293,6 +314,11 @@ export default function Fichero() {
           break
         case 'salida':
           setEstadoEmpleado('fuera')
+          // Si está habilitada la confirmación de tareas y es salida, mostrar diálogo
+          if (confirmarTareasHabilitado && empleado.id !== 'demo-empleado') {
+            setShowConfirmarTareas(true)
+            return // No continuar hasta que se confirmen las tareas
+          }
           break
       }
 
@@ -652,6 +678,26 @@ export default function Fichero() {
           <AttendanceReports />
         )}
       </div>
+      
+      {/* Diálogo de confirmación de tareas al salir */}
+      {empleado && (
+        <ConfirmarTareasDia
+          open={showConfirmarTareas}
+          onOpenChange={setShowConfirmarTareas}
+          empleadoId={empleado.id}
+          onConfirm={() => {
+            // Redirigir a dashboard o mostrar mensaje de éxito
+            toast({
+              title: "✅ Check-out exitoso",
+              description: `Hasta mañana ${empleado.nombre} ${empleado.apellido}`,
+            })
+            // Redirigir después de un pequeño delay
+            setTimeout(() => {
+              window.location.href = '/dashboard'
+            }, 2000)
+          }}
+        />
+      )}
     </div>
   )
 }

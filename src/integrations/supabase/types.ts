@@ -3767,6 +3767,27 @@ export type Database = {
           },
         ]
       }
+      tareas_configuracion: {
+        Row: {
+          confirmar_tareas_al_salir: boolean | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          confirmar_tareas_al_salir?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          confirmar_tareas_al_salir?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
