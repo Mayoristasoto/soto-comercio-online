@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
-import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
+import { imprimirTareasDiariasAutomatico, previewTareasDiarias } from "@/utils/printManager"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { useNavigate } from "react-router-dom"
 import { useAudioNotifications } from "@/hooks/useAudioNotifications"
@@ -389,6 +389,28 @@ export default function KioscoCheckIn() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleVerPDF = async () => {
+    if (!registroExitoso) return
+    
+    try {
+      const empleadoCompleto = {
+        id: registroExitoso.empleado.id,
+        nombre: registroExitoso.empleado.nombre,
+        apellido: registroExitoso.empleado.apellido,
+        puesto: recognizedEmployee?.data.puesto || undefined
+      }
+      
+      await previewTareasDiarias(empleadoCompleto, 'termica')
+    } catch (error) {
+      console.error('Error mostrando PDF:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo mostrar el PDF de tareas",
+        variant: "destructive"
+      })
     }
   }
 
@@ -854,6 +876,14 @@ export default function KioscoCheckIn() {
                         </div>
                       ))}
                     </div>
+                    
+                    <button
+                      onClick={handleVerPDF}
+                      className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Ver PDF de Tareas</span>
+                    </button>
                   </div>
                 )}
                 <div className="text-sm text-gray-600">
