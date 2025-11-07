@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   BookOpen, 
   CheckSquare, 
@@ -23,6 +24,14 @@ import {
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import { useToast } from "@/hooks/use-toast";
+
+// Importar screenshots
+import loginScreenshot from "@/assets/screenshots/login-screenshot.png";
+import dashboardScreenshot from "@/assets/screenshots/dashboard-screenshot.png";
+import tareasScreenshot from "@/assets/screenshots/tareas-screenshot.png";
+import documentosScreenshot from "@/assets/screenshots/documentos-screenshot.png";
+import vacacionesScreenshot from "@/assets/screenshots/vacaciones-screenshot.png";
+import medallasScreenshot from "@/assets/screenshots/medallas-screenshot.png";
 
 interface EmpleadoInstructivoProps {
   empleadoNombre?: string;
@@ -245,35 +254,43 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
   };
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader>
-        <div className="flex items-center gap-2 flex-wrap">
-          <BookOpen className="h-5 w-5 text-primary" />
-          <CardTitle>Guía Rápida para Empleados</CardTitle>
-          <Badge variant="secondary">Nuevo</Badge>
-          <Button 
-            onClick={generarPDF}
-            size="sm" 
-            variant="outline" 
-            className="ml-auto flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Descargar PDF
-          </Button>
-        </div>
-        <CardDescription>
-          Aprende cómo usar el sistema en pocos minutos
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Accordion type="single" collapsible className="w-full">
+    <TooltipProvider>
+      <Card className="border-primary/20">
+        <CardHeader>
+          <div className="flex items-center gap-2 flex-wrap">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <CardTitle>Guía Rápida para Empleados</CardTitle>
+            <Badge variant="secondary">Nuevo</Badge>
+            <Button 
+              onClick={generarPDF}
+              size="sm" 
+              variant="outline" 
+              className="ml-auto flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Descargar PDF
+            </Button>
+          </div>
+          <CardDescription>
+            Aprende cómo usar el sistema en pocos minutos. Pasa el mouse sobre cada sección para ver un preview.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="login">
-            <AccordionTrigger>
-              <div className="flex items-center gap-2">
-                <LogIn className="h-4 w-4" />
-                <span>Cómo Iniciar Sesión</span>
-              </div>
-            </AccordionTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <LogIn className="h-4 w-4" />
+                    <span>Cómo Iniciar Sesión</span>
+                  </div>
+                </AccordionTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-md p-2">
+                <img src={loginScreenshot} alt="Login Screenshot" className="w-full rounded-md border" />
+              </TooltipContent>
+            </Tooltip>
             <AccordionContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Acceso a tu cuenta</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
@@ -299,12 +316,19 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
           </AccordionItem>
 
           <AccordionItem value="dashboard">
-            <AccordionTrigger>
-              <div className="flex items-center gap-2">
-                <LayoutDashboard className="h-4 w-4" />
-                <span>Tu Dashboard Personal</span>
-              </div>
-            </AccordionTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Tu Dashboard Personal</span>
+                  </div>
+                </AccordionTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-md p-2">
+                <img src={dashboardScreenshot} alt="Dashboard Screenshot" className="w-full rounded-md border" />
+              </TooltipContent>
+            </Tooltip>
             <AccordionContent className="text-sm text-muted-foreground space-y-2">
               <p>
                 El dashboard es tu página principal donde verás:
@@ -322,12 +346,19 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
           </AccordionItem>
 
           <AccordionItem value="tareas">
-            <AccordionTrigger>
-              <div className="flex items-center gap-2">
-                <CheckSquare className="h-4 w-4" />
-                <span>Gestión de Tareas</span>
-              </div>
-            </AccordionTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="h-4 w-4" />
+                    <span>Gestión de Tareas</span>
+                  </div>
+                </AccordionTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-md p-2">
+                <img src={tareasScreenshot} alt="Tareas Screenshot" className="w-full rounded-md border" />
+              </TooltipContent>
+            </Tooltip>
             <AccordionContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>¿Qué puedes hacer?</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
@@ -365,12 +396,19 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
           </AccordionItem>
 
           <AccordionItem value="documentos">
-            <AccordionTrigger>
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span>Documentos</span>
-              </div>
-            </AccordionTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span>Documentos</span>
+                  </div>
+                </AccordionTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-md p-2">
+                <img src={documentosScreenshot} alt="Documentos Screenshot" className="w-full rounded-md border" />
+              </TooltipContent>
+            </Tooltip>
             <AccordionContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Gestiona tu documentación</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
@@ -387,12 +425,19 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
           </AccordionItem>
 
           <AccordionItem value="reconocimientos">
-            <AccordionTrigger>
-              <div className="flex items-center gap-2">
-                <Award className="h-4 w-4" />
-                <span>Medallas y Reconocimientos</span>
-              </div>
-            </AccordionTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    <span>Medallas y Reconocimientos</span>
+                  </div>
+                </AccordionTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-md p-2">
+                <img src={medallasScreenshot} alt="Medallas Screenshot" className="w-full rounded-md border" />
+              </TooltipContent>
+            </Tooltip>
             <AccordionContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Tu progreso y logros</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
@@ -466,12 +511,19 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
           </AccordionItem>
 
           <AccordionItem value="vacaciones">
-            <AccordionTrigger>
-              <div className="flex items-center gap-2">
-                <Plane className="h-4 w-4" />
-                <span>Solicitar Vacaciones</span>
-              </div>
-            </AccordionTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2">
+                    <Plane className="h-4 w-4" />
+                    <span>Solicitar Vacaciones</span>
+                  </div>
+                </AccordionTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-md p-2">
+                <img src={vacacionesScreenshot} alt="Vacaciones Screenshot" className="w-full rounded-md border" />
+              </TooltipContent>
+            </Tooltip>
             <AccordionContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Cómo solicitar tus vacaciones</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
@@ -610,5 +662,6 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
         </Accordion>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 };
