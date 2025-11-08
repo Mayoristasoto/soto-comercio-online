@@ -33,6 +33,7 @@ interface Turno {
   permite_extras: boolean;
   sucursal_id?: string;
   activo: boolean;
+  dias_semana?: number[]; // 0=Domingo, 1=Lunes, ..., 6=Sábado
 }
 
 interface Empleado {
@@ -92,7 +93,8 @@ export default function FicheroHorarios() {
     tolerancia_salida_minutos: 10,
     redondeo_minutos: 5,
     permite_extras: true,
-    sucursal_id: 'sin_asignar'
+    sucursal_id: 'sin_asignar',
+    dias_semana: [1, 2, 3, 4, 5, 6] // Por defecto Lunes a Sábado
   });
 
   const [asignacionData, setAsignacionData] = useState({
@@ -339,7 +341,8 @@ export default function FicheroHorarios() {
       tolerancia_salida_minutos: 10,
       redondeo_minutos: 5,
       permite_extras: true,
-      sucursal_id: 'sin_asignar'
+      sucursal_id: 'sin_asignar',
+      dias_semana: [1, 2, 3, 4, 5, 6]
     });
   };
 
@@ -357,7 +360,8 @@ export default function FicheroHorarios() {
       tolerancia_salida_minutos: turno.tolerancia_salida_minutos,
       redondeo_minutos: turno.redondeo_minutos,
       permite_extras: turno.permite_extras,
-      sucursal_id: turno.sucursal_id || 'sin_asignar'
+      sucursal_id: turno.sucursal_id || 'sin_asignar',
+      dias_semana: turno.dias_semana || [1, 2, 3, 4, 5, 6]
     });
     setDialogOpen(true);
   };
@@ -730,6 +734,49 @@ export default function FicheroHorarios() {
                     <Label htmlFor="permite_extras">Permite horas extras</Label>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label>Días de la semana</Label>
+                    <div className="grid grid-cols-7 gap-2">
+                      {[
+                        { value: 1, label: 'Lun' },
+                        { value: 2, label: 'Mar' },
+                        { value: 3, label: 'Mié' },
+                        { value: 4, label: 'Jue' },
+                        { value: 5, label: 'Vie' },
+                        { value: 6, label: 'Sáb' },
+                        { value: 0, label: 'Dom' }
+                      ].map((dia) => (
+                        <div key={dia.value} className="flex flex-col items-center space-y-1">
+                          <input
+                            type="checkbox"
+                            id={`dia-${dia.value}`}
+                            checked={formData.dias_semana.includes(dia.value)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  dias_semana: [...formData.dias_semana, dia.value].sort()
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  dias_semana: formData.dias_semana.filter(d => d !== dia.value)
+                                });
+                              }
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <Label htmlFor={`dia-${dia.value}`} className="text-xs cursor-pointer">
+                            {dia.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Selecciona los días de la semana en los que aplica este turno
+                    </p>
+                  </div>
+
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                       Cancelar
@@ -748,6 +795,7 @@ export default function FicheroHorarios() {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Horario</TableHead>
+                <TableHead>Días</TableHead>
                 <TableHead>Pausa</TableHead>
                 <TableHead>Tolerancia</TableHead>
                 <TableHead>Estado</TableHead>
@@ -781,7 +829,12 @@ export default function FicheroHorarios() {
                   
                   return sortDirection === 'asc' ? comparison : -comparison;
                 })
-                .map((turno) => (
+                .map((turno) => {
+                  const diasLabels = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+                  const diasSemana = turno.dias_semana || [1, 2, 3, 4, 5, 6];
+                  const diasTexto = diasSemana.map(d => diasLabels[d]).join(', ');
+                  
+                  return (
                 <TableRow key={turno.id}>
                   <TableCell className="font-medium">{turno.nombre}</TableCell>
                   <TableCell>
@@ -795,6 +848,7 @@ export default function FicheroHorarios() {
                       : `${turno.hora_entrada} - ${turno.hora_salida}`
                     }
                   </TableCell>
+                  <TableCell className="text-xs">{diasTexto}</TableCell>
                   <TableCell>
                     {turno.tipo === 'flexible' && turno.duracion_pausa_minutos
                       ? `Máx: ${turno.duracion_pausa_minutos} min`
@@ -831,7 +885,8 @@ export default function FicheroHorarios() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                  );
+                })}
             </TableBody>
           </Table>
         </CardContent>

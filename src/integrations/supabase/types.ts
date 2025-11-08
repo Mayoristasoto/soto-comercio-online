@@ -1887,6 +1887,7 @@ export type Database = {
         Row: {
           activo: boolean | null
           created_at: string | null
+          dias_semana: number[] | null
           duracion_pausa_minutos: number | null
           hora_entrada: string
           hora_pausa_fin: string | null
@@ -1905,6 +1906,7 @@ export type Database = {
         Insert: {
           activo?: boolean | null
           created_at?: string | null
+          dias_semana?: number[] | null
           duracion_pausa_minutos?: number | null
           hora_entrada: string
           hora_pausa_fin?: string | null
@@ -1923,6 +1925,7 @@ export type Database = {
         Update: {
           activo?: boolean | null
           created_at?: string | null
+          dias_semana?: number[] | null
           duracion_pausa_minutos?: number | null
           hora_entrada?: string
           hora_pausa_fin?: string | null
