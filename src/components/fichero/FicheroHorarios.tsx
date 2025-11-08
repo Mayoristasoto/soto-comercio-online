@@ -34,6 +34,7 @@ interface Turno {
   sucursal_id?: string;
   activo: boolean;
   dias_semana?: number[]; // 0=Domingo, 1=Lunes, ..., 6=Sábado
+  horarios_por_dia?: Record<string, { hora_entrada: string; hora_salida: string }>; // Horarios específicos por día
 }
 
 interface Empleado {
@@ -94,7 +95,8 @@ export default function FicheroHorarios() {
     redondeo_minutos: 5,
     permite_extras: true,
     sucursal_id: 'sin_asignar',
-    dias_semana: [1, 2, 3, 4, 5, 6] // Por defecto Lunes a Sábado
+    dias_semana: [1, 2, 3, 4, 5, 6], // Por defecto Lunes a Sábado
+    horarios_por_dia: {} as Record<string, { hora_entrada: string; hora_salida: string }>
   });
 
   const [asignacionData, setAsignacionData] = useState({
@@ -118,7 +120,10 @@ export default function FicheroHorarios() {
         .order('nombre');
 
       if (turnosError) throw turnosError;
-      setTurnos(turnosData || []);
+      setTurnos((turnosData || []).map(turno => ({
+        ...turno,
+        horarios_por_dia: (turno.horarios_por_dia as any) || {}
+      })));
 
       // Cargar empleados
       const { data: empleadosData, error: empleadosError } = await supabase
@@ -152,7 +157,13 @@ export default function FicheroHorarios() {
         .order('fecha_inicio', { ascending: false });
 
       if (asignacionesError) throw asignacionesError;
-      setEmpleadoTurnos(asignacionesData || []);
+      setEmpleadoTurnos((asignacionesData || []).map(asignacion => ({
+        ...asignacion,
+        turno: {
+          ...asignacion.turno,
+          horarios_por_dia: (asignacion.turno.horarios_por_dia as any) || {}
+        }
+      })));
 
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -342,7 +353,8 @@ export default function FicheroHorarios() {
       redondeo_minutos: 5,
       permite_extras: true,
       sucursal_id: 'sin_asignar',
-      dias_semana: [1, 2, 3, 4, 5, 6]
+      dias_semana: [1, 2, 3, 4, 5, 6],
+      horarios_por_dia: {}
     });
   };
 
@@ -361,7 +373,8 @@ export default function FicheroHorarios() {
       redondeo_minutos: turno.redondeo_minutos,
       permite_extras: turno.permite_extras,
       sucursal_id: turno.sucursal_id || 'sin_asignar',
-      dias_semana: turno.dias_semana || [1, 2, 3, 4, 5, 6]
+      dias_semana: turno.dias_semana || [1, 2, 3, 4, 5, 6],
+      horarios_por_dia: turno.horarios_por_dia || {}
     });
     setDialogOpen(true);
   };
@@ -734,47 +747,139 @@ export default function FicheroHorarios() {
                     <Label htmlFor="permite_extras">Permite horas extras</Label>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Días de la semana</Label>
-                    <div className="grid grid-cols-7 gap-2">
-                      {[
-                        { value: 1, label: 'Lun' },
-                        { value: 2, label: 'Mar' },
-                        { value: 3, label: 'Mié' },
-                        { value: 4, label: 'Jue' },
-                        { value: 5, label: 'Vie' },
-                        { value: 6, label: 'Sáb' },
-                        { value: 0, label: 'Dom' }
-                      ].map((dia) => (
-                        <div key={dia.value} className="flex flex-col items-center space-y-1">
-                          <input
-                            type="checkbox"
-                            id={`dia-${dia.value}`}
-                            checked={formData.dias_semana.includes(dia.value)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  dias_semana: [...formData.dias_semana, dia.value].sort()
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  dias_semana: formData.dias_semana.filter(d => d !== dia.value)
-                                });
-                              }
-                            }}
-                            className="w-4 h-4"
-                          />
-                          <Label htmlFor={`dia-${dia.value}`} className="text-xs cursor-pointer">
-                            {dia.label}
-                          </Label>
-                        </div>
-                      ))}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Días de la semana</Label>
+                      <div className="grid grid-cols-7 gap-2">
+                        {[
+                          { value: 1, label: 'Lun' },
+                          { value: 2, label: 'Mar' },
+                          { value: 3, label: 'Mié' },
+                          { value: 4, label: 'Jue' },
+                          { value: 5, label: 'Vie' },
+                          { value: 6, label: 'Sáb' },
+                          { value: 0, label: 'Dom' }
+                        ].map((dia) => (
+                          <div key={dia.value} className="flex flex-col items-center space-y-1">
+                            <input
+                              type="checkbox"
+                              id={`dia-${dia.value}`}
+                              checked={formData.dias_semana.includes(dia.value)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({
+                                    ...formData,
+                                    dias_semana: [...formData.dias_semana, dia.value].sort()
+                                  });
+                                } else {
+                                  // Al desmarcar un día, también eliminar su horario específico si existe
+                                  const newHorarios = { ...formData.horarios_por_dia };
+                                  delete newHorarios[dia.value.toString()];
+                                  setFormData({
+                                    ...formData,
+                                    dias_semana: formData.dias_semana.filter(d => d !== dia.value),
+                                    horarios_por_dia: newHorarios
+                                  });
+                                }
+                              }}
+                              className="w-4 h-4"
+                            />
+                            <Label htmlFor={`dia-${dia.value}`} className="text-xs cursor-pointer">
+                              {dia.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selecciona los días de la semana en los que aplica este turno
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Selecciona los días de la semana en los que aplica este turno
-                    </p>
+
+                    {formData.tipo !== 'flexible' && formData.dias_semana.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Horarios específicos por día (opcional)</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Si no se define, se usará el horario base
+                          </p>
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                          {[
+                            { value: 1, label: 'Lunes' },
+                            { value: 2, label: 'Martes' },
+                            { value: 3, label: 'Miércoles' },
+                            { value: 4, label: 'Jueves' },
+                            { value: 5, label: 'Viernes' },
+                            { value: 6, label: 'Sábado' },
+                            { value: 0, label: 'Domingo' }
+                          ]
+                            .filter(dia => formData.dias_semana.includes(dia.value))
+                            .map((dia) => {
+                              const horarioEspecifico = formData.horarios_por_dia[dia.value.toString()];
+                              return (
+                                <div key={dia.value} className="grid grid-cols-12 gap-2 items-center">
+                                  <Label className="col-span-3 text-sm">{dia.label}</Label>
+                                  <Input
+                                    type="time"
+                                    placeholder="Entrada"
+                                    className="col-span-4"
+                                    value={horarioEspecifico?.hora_entrada || ''}
+                                    onChange={(e) => {
+                                      const newHorarios = { ...formData.horarios_por_dia };
+                                      if (e.target.value) {
+                                        newHorarios[dia.value.toString()] = {
+                                          hora_entrada: e.target.value,
+                                          hora_salida: horarioEspecifico?.hora_salida || formData.hora_salida
+                                        };
+                                      } else if (horarioEspecifico && !horarioEspecifico.hora_salida) {
+                                        delete newHorarios[dia.value.toString()];
+                                      } else if (horarioEspecifico) {
+                                        newHorarios[dia.value.toString()].hora_entrada = '';
+                                      }
+                                      setFormData({ ...formData, horarios_por_dia: newHorarios });
+                                    }}
+                                  />
+                                  <Input
+                                    type="time"
+                                    placeholder="Salida"
+                                    className="col-span-4"
+                                    value={horarioEspecifico?.hora_salida || ''}
+                                    onChange={(e) => {
+                                      const newHorarios = { ...formData.horarios_por_dia };
+                                      if (e.target.value) {
+                                        newHorarios[dia.value.toString()] = {
+                                          hora_entrada: horarioEspecifico?.hora_entrada || formData.hora_entrada,
+                                          hora_salida: e.target.value
+                                        };
+                                      } else if (horarioEspecifico && !horarioEspecifico.hora_entrada) {
+                                        delete newHorarios[dia.value.toString()];
+                                      } else if (horarioEspecifico) {
+                                        newHorarios[dia.value.toString()].hora_salida = '';
+                                      }
+                                      setFormData({ ...formData, horarios_por_dia: newHorarios });
+                                    }}
+                                  />
+                                  {horarioEspecifico && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="col-span-1 h-8 w-8 p-0"
+                                      onClick={() => {
+                                        const newHorarios = { ...formData.horarios_por_dia };
+                                        delete newHorarios[dia.value.toString()];
+                                        setFormData({ ...formData, horarios_por_dia: newHorarios });
+                                      }}
+                                    >
+                                      ×
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end space-x-2">
@@ -845,7 +950,21 @@ export default function FicheroHorarios() {
                   <TableCell>
                     {turno.tipo === 'flexible' 
                       ? 'Horario flexible'
-                      : `${turno.hora_entrada} - ${turno.hora_salida}`
+                      : turno.horarios_por_dia && Object.keys(turno.horarios_por_dia).length > 0
+                        ? (
+                          <div className="text-xs space-y-1">
+                            <div>{turno.hora_entrada} - {turno.hora_salida} (base)</div>
+                            {Object.entries(turno.horarios_por_dia).map(([dia, horario]) => {
+                              const diasLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                              return (
+                                <div key={dia} className="text-muted-foreground">
+                                  {diasLabels[parseInt(dia)]}: {horario.hora_entrada} - {horario.hora_salida}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )
+                        : `${turno.hora_entrada} - ${turno.hora_salida}`
                     }
                   </TableCell>
                   <TableCell className="text-xs">{diasTexto}</TableCell>

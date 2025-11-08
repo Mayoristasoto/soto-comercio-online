@@ -1893,6 +1893,7 @@ export type Database = {
           hora_pausa_fin: string | null
           hora_pausa_inicio: string | null
           hora_salida: string
+          horarios_por_dia: Json | null
           id: string
           nombre: string
           permite_extras: boolean | null
@@ -1912,6 +1913,7 @@ export type Database = {
           hora_pausa_fin?: string | null
           hora_pausa_inicio?: string | null
           hora_salida: string
+          horarios_por_dia?: Json | null
           id?: string
           nombre: string
           permite_extras?: boolean | null
@@ -1931,6 +1933,7 @@ export type Database = {
           hora_pausa_fin?: string | null
           hora_pausa_inicio?: string | null
           hora_salida?: string
+          horarios_por_dia?: Json | null
           id?: string
           nombre?: string
           permite_extras?: boolean | null
