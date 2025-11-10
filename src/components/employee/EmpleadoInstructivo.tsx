@@ -19,7 +19,10 @@ import {
   Lock,
   Plane,
   Download,
-  MessageCircleQuestion
+  MessageCircleQuestion,
+  Clock,
+  Shield,
+  KeyRound
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import { useToast } from "@/hooks/use-toast";
@@ -184,7 +187,59 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
         '[i] Revisa tu saldo de dias disponibles antes de solicitar'
       ]);
 
-      addSection('7. Medallas y Reconocimientos', [
+      addSection('7. Sistema de Fichaje - Entrada y Salida', [
+        'Registro de asistencia:',
+        '* Registra tu entrada al inicio de tu turno',
+        '* Registra tu salida al finalizar tu jornada',
+        '* El sistema puede usar reconocimiento facial (si esta habilitado)',
+        '* Puedes ver tu historial de fichajes',
+        '',
+        'Proceso de entrada:',
+        '  1. Ingresa al kiosco de fichaje o usa tu panel de empleado',
+        '  2. Verifica que sea tu turno programado',
+        '  3. Confirma tu identidad (facial o manual)',
+        '  4. El sistema registra automaticamente la hora de entrada',
+        '',
+        'Proceso de salida:',
+        '  1. Ve al kiosco o panel antes de finalizar tu turno',
+        '  2. Confirma las tareas completadas del dia (si aplica)',
+        '  3. Registra tu estado de animo (opcional)',
+        '  4. Confirma tu salida',
+        '',
+        '[!] IMPORTANTE: Registra puntualmente para mantener control preciso de asistencia',
+        '[i] Si olvidas fichar, contacta a tu supervisor para registro manual'
+      ]);
+
+      addSection('8. Confirmar Entregas de Elementos', [
+        'Gestion de equipos y uniformes:',
+        '* Revisa elementos pendientes de confirmar en "Entregas"',
+        '* Lee cuidadosamente la descripcion de cada elemento',
+        '* Verifica tallas, cantidades y estado',
+        '* Firma digitalmente para confirmar recepcion',
+        '',
+        'Proceso de confirmacion:',
+        '  1. Ve a la seccion "Entregas de Elementos"',
+        '  2. Revisa los elementos "Pendientes de Confirmacion"',
+        '  3. Haz clic en "Confirmar" para cada entrega',
+        '  4. Dibuja tu firma en el cuadro digital',
+        '  5. Confirma la recepcion',
+        '',
+        '[!] ATENCION: Al confirmar, aceptas la responsabilidad sobre los elementos recibidos',
+        '[i] Puedes ver el historial de todas tus entregas confirmadas'
+      ]);
+
+      addSection('9. Calificaciones de Clientes', [
+        'Tu feedback de servicio:',
+        '* Revisa calificaciones recibidas de clientes',
+        '* Ve comentarios y sugerencias de mejora',
+        '* Consulta tu promedio de calificacion',
+        '* Identifica areas de oportunidad',
+        '',
+        '[i] Las calificaciones positivas pueden sumarte puntos y reconocimientos',
+        '[i] Usa el feedback constructivo para mejorar tu servicio'
+      ]);
+
+      addSection('10. Medallas y Reconocimientos', [
         'Tu progreso y logros:',
         '* Ve todas las medallas que has ganado',
         '* Revisa tus puntos acumulados',
@@ -194,7 +249,30 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
         '[i] TIP: Completa tareas y capacitaciones para ganar mas puntos'
       ]);
 
-      addSection('8. Cerrar Sesion', [
+      addSection('11. Seguridad y Privacidad', [
+        'Protege tu cuenta y datos:',
+        '* Tu contraseña es personal e intransferible - nunca la compartas',
+        '* Cada empleado solo ve su propia informacion',
+        '* No puedes acceder a datos de otros empleados',
+        '* El sistema registra todos los accesos por seguridad',
+        '',
+        'Buenas practicas de seguridad:',
+        '  - Cambia tu contraseña periodicamente',
+        '  - No uses la misma contraseña de otras cuentas',
+        '  - Cierra sesion al terminar, especialmente en PCs compartidas',
+        '  - No dejes tu sesion abierta sin supervision',
+        '  - Reporta inmediatamente actividad sospechosa',
+        '',
+        'Proteccion de datos:',
+        '  - Tus datos personales estan protegidos',
+        '  - Solo personal autorizado puede ver informacion sensible',
+        '  - Cumplimos con politicas de privacidad de datos',
+        '',
+        '[!] ALERTA: Si sospechas que tu cuenta fue comprometida, contacta INMEDIATAMENTE a RRHH',
+        '[i] La seguridad de tu cuenta es tu responsabilidad'
+      ]);
+
+      addSection('12. Cerrar Sesion', [
         'Salir del sistema de forma segura:',
         '* Busca el boton de "Cerrar Sesion" en el menu lateral',
         '* Normalmente esta al final del sidebar',
@@ -203,12 +281,24 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
         '[!] SEGURIDAD: Por tu seguridad, cierra sesion si dejas la computadora desatendida.'
       ]);
 
-      addSection('9. Preguntas Frecuentes (FAQ)', [
+      addSection('13. Preguntas Frecuentes (FAQ)', [
         'P: Olvide mi contrasena, que hago?',
         'R: Contacta a tu supervisor o al area de RRHH para solicitar un restablecimiento. El administrador podra generar una contrasena temporal y activar el cambio obligatorio.',
         '',
+        'P: Como cambio mi contrasena despues del primer acceso?',
+        'R: Ve a tu perfil o seccion de configuracion. Busca la opcion "Cambiar contraseña" e ingresa tu contraseña actual y la nueva. Recuerda cumplir con los requisitos de seguridad.',
+        '',
         'P: Puedo acceder al sistema desde mi celular?',
         'R: Si, el sistema es responsive y funciona en dispositivos moviles. Usa el mismo usuario y contrasena.',
+        '',
+        'P: Puedo acceder desde mi casa o solo desde el trabajo?',
+        'R: Depende de la configuracion de tu empresa. Algunas funciones pueden estar disponibles desde cualquier lugar, mientras que otras (como el fichaje) pueden requerir estar en las instalaciones.',
+        '',
+        'P: Que hago si olvide fichar mi entrada/salida?',
+        'R: Contacta inmediatamente a tu supervisor o al area de RRHH. Ellos pueden realizar un registro manual con la justificacion correspondiente.',
+        '',
+        'P: Como se si tengo entregas pendientes de confirmar?',
+        'R: En tu dashboard veras una notificacion. Tambien puedes revisar la seccion "Entregas de Elementos" donde apareceran como "Pendientes de Confirmacion".',
         '',
         'P: Cuanto tiempo tengo para firmar un documento obligatorio?',
         'R: El plazo varia segun el documento. Revisa la fecha limite en la seccion "Mis Documentos". Los documentos vencidos apareceran resaltados.',
@@ -227,9 +317,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
         '',
         'P: Puedo descargar mis documentos firmados?',
         'R: Si, en la seccion "Mis Documentos" encontraras un boton de descarga para cada documento que hayas firmado.',
+        '',
+        'P: Otros empleados pueden ver mi informacion?',
+        'R: No. Cada empleado solo puede ver su propia informacion. Solo los administradores y supervisores autorizados tienen acceso a datos de multiples empleados.',
       ]);
 
-      addSection('10. Necesitas Ayuda?', [
+      addSection('14. Necesitas Ayuda?', [
         'Recursos de soporte:',
         '* Contacta a tu supervisor directo',
         '* Comunicate con el area de Recursos Humanos',
@@ -407,6 +500,42 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
             </AccordionContent>
           </AccordionItem>
 
+          <AccordionItem value="fichaje">
+            <AccordionTrigger>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>Sistema de Fichaje</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground space-y-2">
+              <p><strong>Registro de asistencia</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Registra tu entrada al inicio de tu turno</li>
+                <li>Registra tu salida al finalizar tu jornada</li>
+                <li>El sistema puede usar reconocimiento facial (si está habilitado)</li>
+                <li>Puedes ver tu historial de fichajes</li>
+              </ul>
+              <Badge variant="outline" className="mt-2">Proceso de Entrada</Badge>
+              <ol className="list-decimal list-inside space-y-1 ml-2 mt-1">
+                <li>Ingresa al kiosco de fichaje o usa tu panel</li>
+                <li>Verifica que sea tu turno programado</li>
+                <li>Confirma tu identidad (facial o manual)</li>
+                <li>El sistema registra automáticamente la hora</li>
+              </ol>
+              <Badge variant="outline" className="mt-2">Proceso de Salida</Badge>
+              <ol className="list-decimal list-inside space-y-1 ml-2 mt-1">
+                <li>Ve al kiosco o panel antes de finalizar</li>
+                <li>Confirma las tareas completadas del día (si aplica)</li>
+                <li>Registra tu estado de ánimo (opcional)</li>
+                <li>Confirma tu salida</li>
+              </ol>
+              <Badge variant="destructive" className="mt-2">Importante</Badge>
+              <p className="mt-1">
+                Registra puntualmente para mantener control preciso de asistencia. Si olvidas fichar, contacta a tu supervisor.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
           <AccordionItem value="reconocimientos">
             <AccordionTrigger>
               <div className="flex items-center gap-2">
@@ -443,6 +572,9 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
                 <li>Consulta tu promedio de calificación</li>
                 <li>Identifica áreas de mejora</li>
               </ul>
+              <p className="text-primary font-medium mt-2">
+                ⭐ Las calificaciones positivas pueden sumarte puntos y reconocimientos
+              </p>
             </AccordionContent>
           </AccordionItem>
 
@@ -450,20 +582,29 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
             <AccordionTrigger>
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                <span>Entregas de Elementos</span>
+                <span>Confirmar Entregas de Elementos</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Gestiona tus equipos y uniformes</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Confirma la recepción de elementos entregados</li>
-                <li>Ve el historial de entregas anteriores</li>
-                <li>Firma digitalmente los documentos de entrega</li>
-                <li>Consulta qué elementos tienes asignados</li>
+                <li>Revisa elementos pendientes de confirmar</li>
+                <li>Lee cuidadosamente la descripción de cada elemento</li>
+                <li>Verifica tallas, cantidades y estado</li>
+                <li>Firma digitalmente para confirmar recepción</li>
+                <li>Ve el historial de entregas confirmadas</li>
               </ul>
-              <Badge variant="outline" className="mt-2">Recordatorio</Badge>
+              <Badge variant="outline" className="mt-2">Proceso de Confirmación</Badge>
+              <ol className="list-decimal list-inside space-y-1 ml-2 mt-1">
+                <li>Ve a la sección "Entregas de Elementos"</li>
+                <li>Revisa los elementos "Pendientes de Confirmación"</li>
+                <li>Haz clic en "Confirmar" para cada entrega</li>
+                <li>Dibuja tu firma en el cuadro digital</li>
+                <li>Confirma la recepción</li>
+              </ol>
+              <Badge variant="destructive" className="mt-2">Atención</Badge>
               <p className="mt-1">
-                Debes confirmar las entregas para que queden registradas en el sistema.
+                Al confirmar, aceptas la responsabilidad sobre los elementos recibidos.
               </p>
             </AccordionContent>
           </AccordionItem>
@@ -537,6 +678,42 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
             </AccordionContent>
           </AccordionItem>
 
+          <AccordionItem value="seguridad">
+            <AccordionTrigger>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                <span>Seguridad y Privacidad</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="text-sm text-muted-foreground space-y-2">
+              <p><strong>Protege tu cuenta y datos</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Tu contraseña es personal e intransferible - <strong>nunca la compartas</strong></li>
+                <li>Cada empleado solo ve su propia información</li>
+                <li>No puedes acceder a datos de otros empleados</li>
+                <li>El sistema registra todos los accesos por seguridad</li>
+              </ul>
+              <Badge variant="outline" className="mt-2">Buenas Prácticas</Badge>
+              <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                <li>Cambia tu contraseña periódicamente</li>
+                <li>No uses la misma contraseña de otras cuentas</li>
+                <li>Cierra sesión al terminar, especialmente en PCs compartidas</li>
+                <li>No dejes tu sesión abierta sin supervisión</li>
+                <li>Reporta inmediatamente actividad sospechosa</li>
+              </ul>
+              <Badge variant="outline" className="mt-2">Protección de Datos</Badge>
+              <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                <li>Tus datos personales están protegidos</li>
+                <li>Solo personal autorizado puede ver información sensible</li>
+                <li>Cumplimos con políticas de privacidad de datos</li>
+              </ul>
+              <Badge variant="destructive" className="mt-2">Alerta</Badge>
+              <p className="mt-1">
+                Si sospechas que tu cuenta fue comprometida, contacta <strong>INMEDIATAMENTE</strong> a RRHH.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
           <AccordionItem value="cerrar-sesion">
             <AccordionTrigger>
               <div className="flex items-center gap-2">
@@ -572,8 +749,28 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               </div>
               
               <div>
+                <p className="font-semibold text-foreground">¿Cómo cambio mi contraseña después del primer acceso?</p>
+                <p>Ve a tu perfil o sección de configuración. Busca la opción "Cambiar contraseña" e ingresa tu contraseña actual y la nueva. Recuerda cumplir con los requisitos de seguridad (8 caracteres, mayúscula, número, símbolo).</p>
+              </div>
+              
+              <div>
                 <p className="font-semibold text-foreground">¿Puedo acceder al sistema desde mi celular?</p>
                 <p>Sí, el sistema es responsive y funciona en dispositivos móviles. Usa el mismo usuario y contraseña.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Puedo acceder desde mi casa o solo desde el trabajo?</p>
+                <p>Depende de la configuración de tu empresa. Algunas funciones pueden estar disponibles desde cualquier lugar, mientras que otras (como el fichaje) pueden requerir estar en las instalaciones.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Qué hago si olvidé fichar mi entrada/salida?</p>
+                <p>Contacta inmediatamente a tu supervisor o al área de RRHH. Ellos pueden realizar un registro manual con la justificación correspondiente.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Cómo sé si tengo entregas pendientes de confirmar?</p>
+                <p>En tu dashboard verás una notificación. También puedes revisar la sección "Entregas de Elementos" donde aparecerán como "Pendientes de Confirmación".</p>
               </div>
               
               <div>
@@ -604,6 +801,11 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <div>
                 <p className="font-semibold text-foreground">¿Puedo descargar mis documentos firmados?</p>
                 <p>Sí, en la sección "Mis Documentos" encontrarás un botón de descarga para cada documento que hayas firmado.</p>
+              </div>
+              
+              <div>
+                <p className="font-semibold text-foreground">¿Otros empleados pueden ver mi información?</p>
+                <p>No. Cada empleado solo puede ver su propia información. Solo los administradores y supervisores autorizados tienen acceso a datos de múltiples empleados.</p>
               </div>
             </AccordionContent>
           </AccordionItem>
