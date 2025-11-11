@@ -12,11 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3 } from 'lucide-react';
 import { TimelineView } from './TimelineView';
 import HorariosDragDrop from './HorariosDragDrop';
 import ScheduleImport from './ScheduleImport';
 import AssignmentImport from './AssignmentImport';
+import { useNavigate } from 'react-router-dom';
 
 interface Turno {
   id: string;
@@ -81,6 +82,7 @@ export default function FicheroHorarios() {
   const [sortField, setSortField] = useState<'nombre' | 'hora_entrada' | 'tipo'>('nombre');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -480,6 +482,13 @@ export default function FicheroHorarios() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/operaciones/fichero/reportes')}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Ver Reportes
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setImportDialogOpen(true)}

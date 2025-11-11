@@ -48,6 +48,7 @@ import DemoQRCalificacion from "./pages/DemoQRCalificacion";
 import AdminAuthLogs from "./pages/AdminAuthLogs";
 import SubirFotoFacial from "./pages/SubirFotoFacial";
 import AprobarFotosFaciales from "./pages/AprobarFotosFaciales";
+import ReportesHorarios from "./pages/ReportesHorarios";
 import KioscoFotoFacial from "./pages/KioscoFotoFacial";
 import InformeEjecutivo from "./pages/InformeEjecutivo";
 import PresentacionEjecutiva from "./pages/PresentacionEjecutiva";
@@ -98,6 +99,7 @@ const App = () => (
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
+            <Route path="operaciones/fichero/reportes" element={<ReportesHorarios />} />
             <Route path="operaciones/fichero/informe" element={<Navigate to="/operaciones/fichero#misfichadas" replace />} />
             <Route path="operaciones/fichero/estado-animo" element={<Navigate to="/operaciones/fichero#estado-animo" replace />} />
             <Route path="operaciones/fichero/estadisticas" element={<Navigate to="/operaciones/fichero#estadisticas" replace />} />
