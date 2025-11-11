@@ -35,7 +35,8 @@ import DesafiosTV from "./pages/DesafiosTV";
 
 // Legacy pages (mantener por compatibilidad)
 import Gondolas from "./pages/Gondolas";
-import Configuracion from "./pages/Configuracion";
+import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
+import ConfiguracionUsuario from "./pages/ConfiguracionUsuario";
 import GondolasEdit from "./pages/GondolasEdit";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -130,6 +131,9 @@ const App = () => (
             <Route path="insignias" element={<Insignias />} />
             <Route path="premios" element={<Premios />} />
             
+            {/* Configuración de Usuario (accesible para todos) */}
+            <Route path="mi-configuracion" element={<ConfiguracionUsuario />} />
+            
             {/* Módulo Administración con nuevo layout */}
             <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
@@ -139,7 +143,7 @@ const App = () => (
               <Route path="sucursales" element={<AdminDashboard />} />
               <Route path="gondolas" element={<Gondolas />} />
               <Route path="gondolasedit" element={<GondolasEdit />} />
-              <Route path="configuracion" element={<Configuracion />} />
+              <Route path="configuracion" element={<ConfiguracionAdmin />} />
               <Route path="auth-logs" element={<AdminAuthLogs />} />
               <Route path="aprobar-fotos-faciales" element={<AprobarFotosFaciales />} />
               <Route path="instructivo-screenshots" element={<InstructivoScreenshots />} />

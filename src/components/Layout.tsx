@@ -5,8 +5,9 @@ import { AppSidebar } from "@/components/AppSidebar"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
-import { User, LogOut } from "lucide-react"
+import { User, LogOut, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { GlobalSearch } from "@/components/GlobalSearch"
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -101,14 +102,35 @@ export default function Layout() {
           {/* Header con trigger del sidebar */}
           <header className="h-16 border-b bg-background flex items-center px-6">
             <SidebarTrigger />
-            <div className="flex-1" />
+            
+            {/* Búsqueda Global */}
+            <div className="flex-1 ml-4">
+              <Button
+                variant="outline"
+                className="w-full max-w-sm justify-start text-muted-foreground"
+                onClick={() => {
+                  const event = new KeyboardEvent('keydown', {
+                    key: 'k',
+                    ctrlKey: true,
+                    bubbles: true
+                  })
+                  document.dispatchEvent(event)
+                }}
+              >
+                <Search className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Buscar...</span>
+                <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </Button>
+            </div>
             
             {/* Información del usuario */}
             {userInfo && (
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium hidden md:inline">
                     {userInfo.nombre} {userInfo.apellido}
                   </span>
                   <Badge variant="secondary" className="text-xs">
@@ -126,11 +148,14 @@ export default function Layout() {
                   }}
                 >
                   <LogOut className="h-4 w-4 mr-1" />
-                  Salir
+                  <span className="hidden sm:inline">Salir</span>
                 </Button>
               </div>
             )}
           </header>
+
+          {/* Global Search Dialog */}
+          <GlobalSearch userRole={userInfo?.rol} />
 
           {/* Contenido principal */}
           <main className="flex-1 overflow-auto">
