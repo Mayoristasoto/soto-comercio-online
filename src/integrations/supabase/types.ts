@@ -876,6 +876,81 @@ export type Database = {
           },
         ]
       }
+      empleado_onboarding: {
+        Row: {
+          cambio_password_completado: boolean
+          created_at: string
+          documentos_firmados: boolean
+          empleado_id: string
+          entregas_confirmadas: boolean
+          fecha_completado: string | null
+          fecha_inicio: string
+          foto_facial_subida: boolean
+          id: string
+          notas: string | null
+          perfil_completado: boolean
+          porcentaje_completado: number
+          primera_capacitacion: boolean
+          primera_tarea_completada: boolean
+          tour_completado: boolean
+          ultima_actualizacion: string
+          updated_at: string
+        }
+        Insert: {
+          cambio_password_completado?: boolean
+          created_at?: string
+          documentos_firmados?: boolean
+          empleado_id: string
+          entregas_confirmadas?: boolean
+          fecha_completado?: string | null
+          fecha_inicio?: string
+          foto_facial_subida?: boolean
+          id?: string
+          notas?: string | null
+          perfil_completado?: boolean
+          porcentaje_completado?: number
+          primera_capacitacion?: boolean
+          primera_tarea_completada?: boolean
+          tour_completado?: boolean
+          ultima_actualizacion?: string
+          updated_at?: string
+        }
+        Update: {
+          cambio_password_completado?: boolean
+          created_at?: string
+          documentos_firmados?: boolean
+          empleado_id?: string
+          entregas_confirmadas?: boolean
+          fecha_completado?: string | null
+          fecha_inicio?: string
+          foto_facial_subida?: boolean
+          id?: string
+          notas?: string | null
+          perfil_completado?: boolean
+          porcentaje_completado?: number
+          primera_capacitacion?: boolean
+          primera_tarea_completada?: boolean
+          tour_completado?: boolean
+          ultima_actualizacion?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_onboarding_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_onboarding_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleado_permisos: {
         Row: {
           asignado_por: string | null

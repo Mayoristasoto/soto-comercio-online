@@ -13,6 +13,7 @@ import {
   Award,
   Briefcase
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { EmployeeDocuments } from "@/components/employee/EmployeeDocuments"
@@ -29,6 +30,8 @@ import CalificacionesEmpleado from "@/components/employee/CalificacionesEmpleado
 import { EmpleadoInstructivo } from "@/components/employee/EmpleadoInstructivo"
 import { EmpleadoPermisosDemo } from "@/components/employee/EmpleadoPermisosDemo"
 import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
+import { OnboardingDashboard } from "@/components/employee/OnboardingDashboard"
+import { useOnboarding } from "@/hooks/useOnboarding"
 
 interface UserInfo {
   id: string
@@ -54,6 +57,9 @@ export default function EmpleadoDashboard() {
     documentos: 0,
     puntos: 0
   })
+
+  // Hook de onboarding
+  const { isInOnboarding, loading: onboardingLoading } = useOnboarding(userInfo?.id)
 
   useEffect(() => {
     if (userInfo) {
@@ -130,7 +136,7 @@ export default function EmpleadoDashboard() {
     }
   }
 
-  if (loading) {
+  if (loading || onboardingLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="animate-pulse space-y-4">
@@ -145,8 +151,27 @@ export default function EmpleadoDashboard() {
     )
   }
 
+  // Si está en período de onboarding (primeros 30 días), mostrar dashboard especial
+  if (isInOnboarding) {
+    return (
+      <div className="p-6 space-y-6" data-tour="dashboard">
+        {debeCambiarPassword && (
+          <ForcedPasswordChange 
+            empleadoId={userInfo.id}
+            empleadoEmail={userInfo.email}
+            onPasswordChanged={() => setDebeCambiarPassword(false)}
+          />
+        )}
+        <OnboardingDashboard 
+          empleadoId={userInfo.id}
+          empleadoNombre={userInfo.nombre}
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" data-tour="dashboard">
       {debeCambiarPassword && (
         <ForcedPasswordChange 
           empleadoId={userInfo.id}
@@ -155,7 +180,7 @@ export default function EmpleadoDashboard() {
         />
       )}
       {/* Header personalizado */}
-      <div>
+      <div data-tour="sidebar">
         <h1 className="text-3xl font-bold flex items-center space-x-2">
           <User className="h-8 w-8 text-primary" />
           <span>Mi Dashboard Personal</span>
@@ -254,7 +279,7 @@ export default function EmpleadoDashboard() {
       {/* Secciones principales del dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sección: Mis Tareas */}
-        <Card className="animate-fade-in">
+        <Card className="animate-fade-in" data-tour="tareas">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <CheckCircle2 className="h-5 w-5 text-blue-600" />
@@ -273,7 +298,7 @@ export default function EmpleadoDashboard() {
         </Card>
 
         {/* Sección: Mis Capacitaciones */}
-        <Card className="animate-fade-in">
+        <Card className="animate-fade-in" data-tour="capacitaciones">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <BookOpen className="h-5 w-5 text-green-600" />
@@ -289,7 +314,7 @@ export default function EmpleadoDashboard() {
         </Card>
 
         {/* Sección: Documentos Asignados */}
-        <Card className="animate-fade-in">
+        <Card className="animate-fade-in" data-tour="documentos">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5 text-purple-600" />
@@ -333,6 +358,29 @@ export default function EmpleadoDashboard() {
           </CardHeader>
           <CardContent>
             <CalificacionesEmpleado empleadoId={userInfo.id} />
+          </CardContent>
+        </Card>
+
+        {/* Sección: Vacaciones */}
+        <Card className="animate-fade-in" data-tour="vacaciones">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-cyan-600" />
+              <span>Mis Vacaciones</span>
+            </CardTitle>
+            <CardDescription>
+              Acceso rápido al sistema de vacaciones
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center py-6">
+            <Button 
+              onClick={() => window.location.href = '/vacaciones'}
+              variant="outline"
+              className="w-full"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Ir a Vacaciones
+            </Button>
           </CardContent>
         </Card>
 
