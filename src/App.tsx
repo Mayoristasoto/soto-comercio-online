@@ -55,6 +55,7 @@ import InformeEjecutivo from "./pages/InformeEjecutivo";
 import PresentacionEjecutiva from "./pages/PresentacionEjecutiva";
 import FichajeMetricas from "./pages/FichajeMetricas";
 import InstructivoScreenshots from "./pages/InstructivoScreenshots";
+import Payroll from "./pages/Payroll";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,9 @@ const App = () => (
             <Route path="rrhh/nomina/documentos" element={<Nomina />} />
             <Route path="rrhh/nomina/permisos" element={<Nomina />} />
             <Route path="rrhh/nomina/doc-obligatorios" element={<Nomina />} />
+            
+            {/* Módulo Payroll */}
+            <Route path="rrhh/payroll" element={<Payroll />} />
             <Route path="rrhh/nomina/asignaciones" element={<Nomina />} />
             <Route path="rrhh/nomina/vista-empleado" element={<Nomina />} />
             <Route path="rrhh/nomina/organigrama" element={<Nomina />} />
