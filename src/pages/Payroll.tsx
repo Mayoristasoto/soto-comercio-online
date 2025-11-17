@@ -2,7 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ConveniosColectivos from "@/components/admin/payroll/ConveniosColectivos"
 import ConceptosLiquidacion from "@/components/admin/payroll/ConceptosLiquidacion"
 import ConfiguracionPayroll from "@/components/admin/payroll/ConfiguracionPayroll"
-import { FileText, Calculator, Settings } from "lucide-react"
+import GenerarReciboDemo from "@/components/admin/payroll/GenerarReciboDemo"
+import { FileText, Calculator, Settings, Download } from "lucide-react"
 
 export default function Payroll() {
   return (
@@ -15,7 +16,7 @@ export default function Payroll() {
       </div>
 
       <Tabs defaultValue="convenios" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="convenios" className="gap-2">
             <FileText className="h-4 w-4" />
             Convenios Colectivos
@@ -27,6 +28,10 @@ export default function Payroll() {
           <TabsTrigger value="configuracion" className="gap-2">
             <Settings className="h-4 w-4" />
             Configuración por Empleado
+          </TabsTrigger>
+          <TabsTrigger value="generar" className="gap-2">
+            <Download className="h-4 w-4" />
+            Generar Recibo (Demo)
           </TabsTrigger>
         </TabsList>
 
@@ -40,6 +45,10 @@ export default function Payroll() {
 
         <TabsContent value="configuracion" className="mt-6">
           <ConfiguracionPayroll />
+        </TabsContent>
+
+        <TabsContent value="generar" className="mt-6">
+          <GenerarReciboDemo />
         </TabsContent>
       </Tabs>
     </div>
