@@ -4,7 +4,10 @@ import ConceptosLiquidacion from "@/components/admin/payroll/ConceptosLiquidacio
 import ConfiguracionPayroll from "@/components/admin/payroll/ConfiguracionPayroll"
 import GenerarReciboDemo from "@/components/admin/payroll/GenerarReciboDemo"
 import ProcesarLiquidacion from "@/components/admin/payroll/ProcesarLiquidacion"
-import { FileText, Calculator, Settings, Download, PlayCircle } from "lucide-react"
+import ExportacionBancaria from "@/components/admin/payroll/ExportacionBancaria"
+import ConceptosVariables from "@/components/admin/payroll/ConceptosVariables"
+import CalculoSAC from "@/components/admin/payroll/CalculoSAC"
+import { FileText, Calculator, Settings, Download, PlayCircle, DollarSign, TrendingUp, Gift } from "lucide-react"
 
 export default function Payroll() {
   return (
@@ -17,10 +20,22 @@ export default function Payroll() {
       </div>
 
       <Tabs defaultValue="liquidacion" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="liquidacion" className="gap-2">
             <PlayCircle className="h-4 w-4" />
-            Procesar Liquidación
+            Liquidación
+          </TabsTrigger>
+          <TabsTrigger value="exportacion" className="gap-2">
+            <DollarSign className="h-4 w-4" />
+            Exportación
+          </TabsTrigger>
+          <TabsTrigger value="variables" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Variables
+          </TabsTrigger>
+          <TabsTrigger value="sac" className="gap-2">
+            <Gift className="h-4 w-4" />
+            SAC
           </TabsTrigger>
           <TabsTrigger value="convenios" className="gap-2">
             <FileText className="h-4 w-4" />
@@ -36,12 +51,24 @@ export default function Payroll() {
           </TabsTrigger>
           <TabsTrigger value="generar" className="gap-2">
             <Download className="h-4 w-4" />
-            Demo Individual
+            Demo
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="liquidacion" className="mt-6">
           <ProcesarLiquidacion />
+        </TabsContent>
+
+        <TabsContent value="exportacion" className="mt-6">
+          <ExportacionBancaria />
+        </TabsContent>
+
+        <TabsContent value="variables" className="mt-6">
+          <ConceptosVariables />
+        </TabsContent>
+
+        <TabsContent value="sac" className="mt-6">
+          <CalculoSAC />
         </TabsContent>
 
         <TabsContent value="convenios" className="mt-6">
