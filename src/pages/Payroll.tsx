@@ -3,7 +3,8 @@ import ConveniosColectivos from "@/components/admin/payroll/ConveniosColectivos"
 import ConceptosLiquidacion from "@/components/admin/payroll/ConceptosLiquidacion"
 import ConfiguracionPayroll from "@/components/admin/payroll/ConfiguracionPayroll"
 import GenerarReciboDemo from "@/components/admin/payroll/GenerarReciboDemo"
-import { FileText, Calculator, Settings, Download } from "lucide-react"
+import ProcesarLiquidacion from "@/components/admin/payroll/ProcesarLiquidacion"
+import { FileText, Calculator, Settings, Download, PlayCircle } from "lucide-react"
 
 export default function Payroll() {
   return (
@@ -15,25 +16,33 @@ export default function Payroll() {
         </p>
       </div>
 
-      <Tabs defaultValue="convenios" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="liquidacion" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="liquidacion" className="gap-2">
+            <PlayCircle className="h-4 w-4" />
+            Procesar Liquidación
+          </TabsTrigger>
           <TabsTrigger value="convenios" className="gap-2">
             <FileText className="h-4 w-4" />
-            Convenios Colectivos
+            Convenios
           </TabsTrigger>
           <TabsTrigger value="conceptos" className="gap-2">
             <Calculator className="h-4 w-4" />
-            Conceptos de Liquidación
+            Conceptos
           </TabsTrigger>
           <TabsTrigger value="configuracion" className="gap-2">
             <Settings className="h-4 w-4" />
-            Configuración por Empleado
+            Empleados
           </TabsTrigger>
           <TabsTrigger value="generar" className="gap-2">
             <Download className="h-4 w-4" />
-            Generar Recibo (Demo)
+            Demo Individual
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="liquidacion" className="mt-6">
+          <ProcesarLiquidacion />
+        </TabsContent>
 
         <TabsContent value="convenios" className="mt-6">
           <ConveniosColectivos />
