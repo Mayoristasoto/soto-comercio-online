@@ -320,12 +320,12 @@ export default function ConceptosLiquidacion() {
 
                 <div className="space-y-2">
                   <Label htmlFor="convenio_id">Convenio (opcional)</Label>
-                  <Select value={formData.convenio_id} onValueChange={(value) => setFormData({ ...formData, convenio_id: value })}>
+                  <Select value={formData.convenio_id || "none"} onValueChange={(value) => setFormData({ ...formData, convenio_id: value === "none" ? "" : value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sin convenio específico" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin convenio específico</SelectItem>
+                      <SelectItem value="none">Sin convenio específico</SelectItem>
                       {convenios.map((convenio) => (
                         <SelectItem key={convenio.id} value={convenio.id}>
                           {convenio.codigo} - {convenio.nombre}
