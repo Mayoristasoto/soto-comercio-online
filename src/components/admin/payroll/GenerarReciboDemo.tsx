@@ -45,52 +45,65 @@ export default function GenerarReciboDemo() {
       const mesNum = parseInt(selectedMes);
       const anioNum = parseInt(selectedAnio);
       
+      // Formato período: 'YYYY-MM'
+      const periodo = `${anioNum}-${mesNum.toString().padStart(2, '0')}`;
+      
       const { data: horasData, error: horasError } = await supabase.rpc('calcular_horas_mes', {
         p_empleado_id: selectedEmpleado,
-        p_mes: mesNum,
-        p_anio: anioNum
+        p_periodo: periodo
       });
 
       if (horasError) throw horasError;
-      const horasTrabajadas = horasData || 0;
+      
+      // La función retorna un array con un objeto
+      const horasResult = horasData?.[0];
+      const horasTrabajadas = horasResult 
+        ? horasResult.horas_normales + horasResult.horas_extras_50 + horasResult.horas_extras_100
+        : 0;
+      const diasTrabajados = horasResult?.dias_trabajados || 0;
 
-      // Obtener cantidad de días trabajados
-      const fechaInicio = new Date(anioNum, mesNum - 1, 1).toISOString().split('T')[0];
-      const fechaFin = new Date(anioNum, mesNum, 0).toISOString().split('T')[0];
+      // Obtener datos del convenio colectivo
+      let valorHoraBase = 0;
+      let horasMensuales = empleado.horas_mensuales || 160;
+      let porcentajeHE50 = 150;
+      let porcentajeHE100 = 200;
 
-      const { data: fichajesEntrada } = await supabase
-        .from('fichajes')
-        .select('id')
-        .eq('empleado_id', selectedEmpleado)
-        .gte('timestamp_real', fechaInicio)
-        .lte('timestamp_real', fechaFin)
-        .eq('tipo', 'entrada');
+      if (empleado.convenio_id) {
+        const { data: convenio } = await supabase
+          .from('convenios_colectivos')
+          .select('*')
+          .eq('id', empleado.convenio_id)
+          .maybeSingle();
 
-      const diasTrabajados = fichajesEntrada?.length || 0;
-
-      // Calcular conceptos básicos usando los datos de la vista
-      const valorHoraBase = empleado.valor_hora_base || 0;
-      const horasMensuales = empleado.horas_mensuales || 160;
-      const porcentajeHE50 = empleado.porcentaje_he_50 || 150;
-      const porcentajeHE100 = empleado.porcentaje_he_100 || 200;
+        if (convenio) {
+          valorHoraBase = convenio.valor_hora_base || 0;
+          horasMensuales = convenio.horas_mensuales;
+          porcentajeHE50 = convenio.porcentaje_he_50;
+          porcentajeHE100 = convenio.porcentaje_he_100;
+        }
+      }
       
       // Sueldo básico
       const sueldoBasico = empleado.sueldo_basico || (valorHoraBase * horasMensuales);
       
-      // Horas extras 50% (ejemplo: primeras 10 horas extras)
-      const horasExtras50 = Math.max(0, Math.min(10, horasTrabajadas - horasMensuales));
-      const valorHE50 = horasExtras50 * valorHoraBase * porcentajeHE50 / 100;
+      // Usar las horas del resultado si están disponibles
+      const horasExtras50 = horasResult?.horas_extras_50 || 0;
+      const valorHE50 = horasExtras50 * valorHoraBase * (porcentajeHE50 / 100);
       
-      // Horas extras 100% (resto de horas extras)
-      const horasExtras100 = Math.max(0, horasTrabajadas - horasMensuales - horasExtras50);
-      const valorHE100 = horasExtras100 * valorHoraBase * porcentajeHE100 / 100;
+      const horasExtras100 = horasResult?.horas_extras_100 || 0;
+      const valorHE100 = horasExtras100 * valorHoraBase * (porcentajeHE100 / 100);
       
-      // Antigüedad (1% por año)
-      const { data: antiguedadData } = await supabase.rpc('calcular_antiguedad_anios', {
-        fecha_ingreso: empleado.fecha_ingreso
-      });
-      const aniosAntiguedad = antiguedadData || 0;
-      const antiguedad = sueldoBasico * 0.01 * aniosAntiguedad;
+      // Antigüedad (1% por año) - solo si tenemos fecha de ingreso
+      let aniosAntiguedad = 0;
+      let antiguedad = 0;
+      
+      if (empleado.fecha_ingreso) {
+        const { data: antiguedadData } = await supabase.rpc('calcular_antiguedad_anios', {
+          fecha_ingreso: empleado.fecha_ingreso
+        });
+        aniosAntiguedad = antiguedadData || 0;
+        antiguedad = sueldoBasico * 0.01 * aniosAntiguedad;
+      }
 
       // Presentismo (ejemplo: 10% del básico)
       const presentismo = sueldoBasico * 0.10;
