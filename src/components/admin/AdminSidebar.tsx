@@ -19,7 +19,8 @@ import {
   ChevronDown,
   ChevronRight,
   ArrowLeft,
-  Image
+  Image,
+  Calculator
 } from "lucide-react"
 import {
   Sidebar,
@@ -64,6 +65,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Empleados", url: "/admin#empleados", icon: Users },
       { title: "Sucursales", url: "/admin#sucursales", icon: Building2 },
       { title: "Roles y Permisos", url: "/admin#roles", icon: UserCog },
+      { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
     ]
   },
   {
