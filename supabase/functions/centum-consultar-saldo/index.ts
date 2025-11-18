@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
 
     console.log('Endpoint con ID reemplazado:', endpointWithId);
 
-    // Construir URL completa: baseUrl + endpoint (sin agregar /SuiteConsumidorApiPublica/ID)
+    // Construir URL completa
     const baseUrlNormalized = (baseUrl || config.centum_base_url).replace(/\/+$/, '');
     
     // Normalizar endpoint (debe empezar con /)
@@ -94,8 +94,16 @@ Deno.serve(async (req) => {
       ? endpointWithId
       : `/${endpointWithId}`;
 
-    // URL final: baseUrl + endpoint
-    const consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
+    // Intentar con estructura /SuiteConsumidorApiPublica/{id}/{endpoint}
+    // Si el baseUrl ya contiene /SuiteConsumidorApiPublica, no agregarlo de nuevo
+    let consultaUrl: string;
+    if (baseUrlNormalized.includes('/SuiteConsumidorApiPublica')) {
+      // Ya tiene la estructura correcta
+      consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
+    } else {
+      // Agregar /SuiteConsumidorApiPublica/{id} antes del endpoint
+      consultaUrl = `${baseUrlNormalized}/SuiteConsumidorApiPublica/${suiteConsumidorId}${endpointNormalized}`;
+    }
 
     console.log('URL completa para Centum:', consultaUrl);
     console.log('Headers:', {
