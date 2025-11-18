@@ -58,25 +58,26 @@ Deno.serve(async (req) => {
     }
 
     // Generar token según la lógica de Postman
-    const fechaUTC = getUtcFormattedDate();
-    const guid = generateGuidN();
+    const fechaUTC = getUtcFormattedDate().trim();
+    const guid = generateGuidN().trim();
+    const clavePublicaTrim = clavePublica.trim();
     
     // Concatenar con espacios: fechaUTC guid clavePublica
-    const texto = `${fechaUTC} ${guid} ${clavePublica}`;
+    const texto = `${fechaUTC} ${guid} ${clavePublicaTrim}`;
     
     // Calcular hash SHA1
-    const hash = await sha1Hash(texto);
+    const hash = (await sha1Hash(texto)).trim();
     
-    // Token final: fechaUTC guid hash
-    const token = `${fechaUTC} ${guid} ${hash}`;
+    // Token final: fechaUTC guid hash (SIN saltos de línea ni espacios extras)
+    const token = `${fechaUTC} ${guid} ${hash}`.trim();
 
     console.log('Token generado exitosamente para Centum API');
 
     return new Response(
       JSON.stringify({
-        token,
-        baseUrl: config.centum_base_url,
-        suiteConsumidorId: config.centum_suite_consumidor_api_publica_id,
+        token: token.trim(),
+        baseUrl: config.centum_base_url.trim(),
+        suiteConsumidorId: config.centum_suite_consumidor_api_publica_id.trim(),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

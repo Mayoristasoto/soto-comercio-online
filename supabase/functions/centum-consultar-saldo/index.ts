@@ -79,12 +79,12 @@ Deno.serve(async (req) => {
       'CentumSuiteAccessToken': '***HIDDEN***'
     });
 
-    // Realizar consulta de saldo con los headers requeridos (igual que Postman)
+    // Realizar consulta de saldo con GET explícito y headers trimmed
     const response = await fetch(consultaUrl, {
-      method: 'GET',
+      method: 'GET', // Explícitamente GET
       headers: {
-        'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id,
-        'CentumSuiteAccessToken': token,
+        'CentumSuiteConsumidorApiPublicaId': (suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id).trim(),
+        'CentumSuiteAccessToken': token.trim(),
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
