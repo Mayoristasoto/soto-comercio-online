@@ -77,13 +77,14 @@ Deno.serve(async (req) => {
     const headersToSend = {
       CentumSuiteConsumidorApiPublicaId: (suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id).trim(),
       CentumSuiteAccessToken: token.trim(),
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
+      Accept: 'application/json'
     };
 
     console.log('URL completa para Centum:', consultaUrl);
     console.log('Token exacto enviado a Centum:', token.trim());
-    console.log('Headers:', headersToSend);
+    console.log('Headers enviados:');
+    console.log('CentumSuiteConsumidorApiPublicaId:', headersToSend.CentumSuiteConsumidorApiPublicaId);
+    console.log('CentumSuiteAccessToken:', headersToSend.CentumSuiteAccessToken);
 
     // Realizar consulta de saldo con GET explícito
     const response = await fetch(consultaUrl, {
