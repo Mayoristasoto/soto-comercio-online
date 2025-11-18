@@ -23,10 +23,10 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { empleado_id } = await req.json();
-    empleadoId = empleado_id;
+    const { empleado_id: empleadoIdFromRequest } = await req.json();
+    empleadoId = empleadoIdFromRequest;
 
-    if (!empleado_id) {
+    if (!empleadoIdFromRequest) {
       throw new Error('Se requiere el ID del empleado');
     }
 
