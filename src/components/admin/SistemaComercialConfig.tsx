@@ -43,7 +43,7 @@ export function SistemaComercialConfig() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionDebug, setConnectionDebug] = useState<string>('');
   const [idCentumTest, setIdCentumTest] = useState('6234');
-  const [endpointTest, setEndpointTest] = useState('/SaldosCuentasCorrientes/{idCentum}?fechaVencimientoHasta=2025-12-31&composicionReal=false');
+  const [endpointTest, setEndpointTest] = useState('/rubros');
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const { toast } = useToast();
@@ -439,19 +439,19 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
             <Input
               id="endpointTest"
               type="text"
-              placeholder="/SaldosCuentasCorrientes/{idCentum}?fechaVencimientoHasta=2025-12-31&composicionReal=false"
+              placeholder="/rubros"
               value={endpointTest}
               onChange={(e) => setEndpointTest(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Use {'{idCentum}'} como placeholder para el ID. Se reemplazará automáticamente.
+              Endpoint para probar la conexión (ej: /rubros, /SaldosCuentasCorrientes/{'{idCentum}'})
             </p>
           </div>
 
           <Button
             onClick={handleTestCentumConnection}
             variant="outline"
-            disabled={testingConnection || !idCentumTest || !endpointTest}
+            disabled={testingConnection || !endpointTest}
           >
             {testingConnection ? (
               <>

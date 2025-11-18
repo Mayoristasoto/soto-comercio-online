@@ -91,11 +91,17 @@ Deno.serve(async (req) => {
     // === CONSTRUCCIÓN DE URL (EXACTAMENTE COMO POSTMAN) ===
     
     // Usar endpoint personalizado si se proporciona, sino usar el de la config
-    let endpoint = (customEndpoint || config.endpoint_consulta_saldo || '/SaldosCuentasCorrientes/{{idCliente}}?fechaVencimientoHasta=2025-12-31&composicionReal=false')
-      .replace(/\{\{idCliente\}\}/gi, id_centum)
-      .replace(/\{idCliente\}/gi, id_centum)
-      .replace(/\{\{idCentum\}\}/gi, id_centum)
-      .replace(/\{idCentum\}/gi, id_centum);
+    let endpoint = customEndpoint || config.endpoint_consulta_saldo || '/rubros';
+    
+    // Reemplazar placeholders solo si existen
+    if (endpoint.includes('{idCliente}') || endpoint.includes('{{idCliente}}') || 
+        endpoint.includes('{idCentum}') || endpoint.includes('{{idCentum}}')) {
+      endpoint = endpoint
+        .replace(/\{\{idCliente\}\}/gi, id_centum)
+        .replace(/\{idCliente\}/gi, id_centum)
+        .replace(/\{\{idCentum\}\}/gi, id_centum)
+        .replace(/\{idCentum\}/gi, id_centum);
+    }
 
     if (!endpoint.startsWith('/')) {
       endpoint = `/${endpoint}`;
