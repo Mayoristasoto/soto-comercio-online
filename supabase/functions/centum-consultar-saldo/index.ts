@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
       throw new Error('Configuración de Centum incompleta');
     }
 
+    console.log('Configuración de Centum:');
+    console.log('centum_base_url:', config.centum_base_url);
+    console.log('centum_suite_consumidor_api_publica_id:', config.centum_suite_consumidor_api_publica_id);
+    console.log('endpoint_consulta_saldo:', config.endpoint_consulta_saldo);
+
     // Generar token de autenticación (edge function separada)
     const { data: tokenData, error: tokenError } = await supabaseClient.functions.invoke('centum-generate-token');
 
