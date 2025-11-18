@@ -64,22 +64,45 @@ Deno.serve(async (req) => {
       'Accept': 'application/json'
     };
 
+    console.log('=== REQUEST DEBUG ===');
     console.log('Headers a enviar:');
-    console.log('CentumSuiteConsumidorApiPublicaId:', headers.CentumSuiteConsumidorApiPublicaId);
-    console.log('CentumSuiteAccessToken (primeros 50):', headers.CentumSuiteAccessToken.substring(0, 50));
+    console.log('CentumSuiteConsumidorApiPublicaId:', headers.CentumSuiteConsumidorApiPublicaId, '(type:', typeof headers.CentumSuiteConsumidorApiPublicaId, ')');
+    console.log('CentumSuiteAccessToken (full):', headers.CentumSuiteAccessToken);
+    console.log('CentumSuiteAccessToken (length):', headers.CentumSuiteAccessToken.length);
+    console.log('Accept:', headers.Accept);
+    
+    // Validar formato del token antes de enviar
+    const tokenParts = headers.CentumSuiteAccessToken.split(' ');
+    console.log('Token parts count:', tokenParts.length);
+    if (tokenParts.length === 3) {
+      console.log('  Part 1 (fecha):', tokenParts[0], '(length:', tokenParts[0].length, ')');
+      console.log('  Part 2 (guid):', tokenParts[1], '(length:', tokenParts[1].length, ')');
+      console.log('  Part 3 (hash):', tokenParts[2], '(length:', tokenParts[2].length, ')');
+    } else {
+      console.error('ERROR: Token no tiene 3 partes separadas por espacios!');
+    }
 
     // Hacer petición GET
     console.log('Enviando petición GET...');
+    console.log('URL completa:', fullUrl);
     const startTime = Date.now();
     const response = await fetch(fullUrl, {
       method: 'GET',
       headers: headers,
     });
     const endTime = Date.now();
+    const duracionMs = endTime - startTime;
 
-    console.log('Respuesta recibida:', response.status, response.statusText);
+    console.log('=== RESPONSE DEBUG ===');
+    console.log('Status:', response.status, response.statusText);
+    console.log('Duración:', duracionMs, 'ms');
+    console.log('Response headers:');
+    response.headers.forEach((value, key) => {
+      console.log(`  ${key}: ${value}`);
+    });
 
     const responseText = await response.text();
+    console.log('Response body length:', responseText.length);
     console.log('Response body:', responseText);
 
     let responseData;
