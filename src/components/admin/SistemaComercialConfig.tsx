@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ExternalLink, Check, AlertCircle } from "lucide-react";
+import { Loader2, ExternalLink, Check, AlertCircle, Wallet } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface SistemaComercialConfig {
   id: string;
@@ -20,15 +22,30 @@ interface SistemaComercialConfig {
   centum_suite_consumidor_api_publica_id: string | null;
 }
 
+interface ApiLog {
+  id: string;
+  timestamp: string;
+  tipo: string;
+  empleado_id: string | null;
+  status_code: number | null;
+  exitoso: boolean;
+  error_message: string | null;
+  duracion_ms: number | null;
+}
+
 export function SistemaComercialConfig() {
   const [config, setConfig] = useState<SistemaComercialConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testingSaldo, setTestingSaldo] = useState(false);
+  const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadConfig();
+    loadApiLogs();
   }, []);
 
   const loadConfig = async () => {
@@ -49,6 +66,24 @@ export function SistemaComercialConfig() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadApiLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('api_logs')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setApiLogs(data || []);
+    } catch (error) {
+      console.error('Error loading API logs:', error);
+    } finally {
+      setLoadingLogs(false);
     }
   };
 
@@ -136,6 +171,48 @@ export function SistemaComercialConfig() {
       });
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleTestSaldo = async () => {
+    setTestingSaldo(true);
+    try {
+      // Obtener el empleado actual para usar su ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No hay usuario autenticado');
+
+      const { data: empleado } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!empleado) throw new Error('No se encontró el empleado');
+
+      const { data, error } = await supabase.functions.invoke('centum-consultar-saldo', {
+        body: { empleado_id: empleado.id }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Consulta exitosa",
+          description: `Saldo obtenido: ${JSON.stringify(data.saldo)}`,
+        });
+        loadApiLogs(); // Recargar logs después de la prueba
+      } else {
+        throw new Error(data.error || 'Error desconocido');
+      }
+    } catch (error: any) {
+      console.error('Error testing saldo:', error);
+      toast({
+        title: "Error en consulta de saldo",
+        description: error.message || "No se pudo consultar el saldo",
+        variant: "destructive"
+      });
+    } finally {
+      setTestingSaldo(false);
     }
   };
 
@@ -306,7 +383,7 @@ export function SistemaComercialConfig() {
         </Alert>
 
         {/* Botones de acción */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <Button
             onClick={handleTestConnection}
             variant="outline"
@@ -325,6 +402,24 @@ export function SistemaComercialConfig() {
             )}
           </Button>
 
+          <Button
+            onClick={handleTestSaldo}
+            variant="outline"
+            disabled={testingSaldo || !config.habilitado}
+          >
+            {testingSaldo ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Consultando...
+              </>
+            ) : (
+              <>
+                <Wallet className="h-4 w-4 mr-2" />
+                Probar Consulta Saldo
+              </>
+            )}
+          </Button>
+
           <Button onClick={handleSave} disabled={saving}>
             {saving ? (
               <>
@@ -338,6 +433,77 @@ export function SistemaComercialConfig() {
               </>
             )}
           </Button>
+        </div>
+
+        {/* Sección de logs de API */}
+        <div className="space-y-4 mt-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Logs de API</h3>
+              <p className="text-sm text-muted-foreground">
+                Historial de llamadas al sistema comercial
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadApiLogs}
+              disabled={loadingLogs}
+            >
+              {loadingLogs ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Actualizar"
+              )}
+            </Button>
+          </div>
+
+          {loadingLogs ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : apiLogs.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No hay logs de API disponibles
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha/Hora</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Duración</TableHead>
+                    <TableHead>Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {apiLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-mono text-xs">
+                        {new Date(log.timestamp).toLocaleString('es-AR')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{log.tipo}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={log.exitoso ? "default" : "destructive"}>
+                          {log.exitoso ? "Éxito" : "Error"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{log.status_code || '-'}</TableCell>
+                      <TableCell>{log.duracion_ms ? `${log.duracion_ms}ms` : '-'}</TableCell>
+                      <TableCell className="text-xs max-w-xs truncate">
+                        {log.error_message || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_logs: {
+        Row: {
+          created_at: string
+          duracion_ms: number | null
+          empleado_id: string | null
+          error_message: string | null
+          exitoso: boolean
+          id: string
+          ip_address: unknown
+          request_data: Json | null
+          response_data: Json | null
+          status_code: number | null
+          timestamp: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          duracion_ms?: number | null
+          empleado_id?: string | null
+          error_message?: string | null
+          exitoso?: boolean
+          id?: string
+          ip_address?: unknown
+          request_data?: Json | null
+          response_data?: Json | null
+          status_code?: number | null
+          timestamp?: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          duracion_ms?: number | null
+          empleado_id?: string | null
+          error_message?: string | null
+          exitoso?: boolean
+          id?: string
+          ip_address?: unknown
+          request_data?: Json | null
+          response_data?: Json | null
+          status_code?: number | null
+          timestamp?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_pages: {
         Row: {
           created_at: string

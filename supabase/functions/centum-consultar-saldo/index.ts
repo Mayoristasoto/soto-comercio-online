@@ -11,8 +11,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let statusCode: number | null = null;
+  let exitoso = false;
+  let errorMessage: string | null = null;
+  let empleadoId: string | null = null;
+
   try {
     const { empleado_id } = await req.json();
+    empleadoId = empleado_id;
 
     if (!empleado_id) {
       throw new Error('Se requiere el ID del empleado');
@@ -79,14 +86,28 @@ Deno.serve(async (req) => {
     });
 
     if (!response.ok) {
+      statusCode = response.status;
       const errorText = await response.text();
       console.error('Error en respuesta de Centum:', response.status, errorText);
       throw new Error(`Error al consultar saldo: ${response.status} ${response.statusText}`);
     }
 
+    statusCode = response.status;
     const saldoData = await response.json();
+    exitoso = true;
 
     console.log('Saldo obtenido exitosamente:', saldoData);
+
+    // Registrar log en la base de datos
+    const duracionMs = Date.now() - startTime;
+    await supabaseClient.from('api_logs').insert({
+      tipo: 'consulta_saldo',
+      empleado_id: empleadoId,
+      status_code: statusCode,
+      exitoso: true,
+      duracion_ms: duracionMs,
+      response_data: saldoData,
+    });
 
     return new Response(
       JSON.stringify({
@@ -100,11 +121,28 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
+    errorMessage = error.message || 'Error al consultar saldo de cuenta corriente';
     console.error('Error en centum-consultar-saldo:', error);
+
+    // Registrar log de error en la base de datos
+    const duracionMs = Date.now() - startTime;
+    try {
+      await supabaseClient.from('api_logs').insert({
+        tipo: 'consulta_saldo',
+        empleado_id: empleadoId,
+        status_code: statusCode,
+        exitoso: false,
+        error_message: errorMessage,
+        duracion_ms: duracionMs,
+      });
+    } catch (logError) {
+      console.error('Error al registrar log:', logError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || 'Error al consultar saldo de cuenta corriente'
+        error: errorMessage
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
