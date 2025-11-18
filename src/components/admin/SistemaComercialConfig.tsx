@@ -420,10 +420,24 @@ export function SistemaComercialConfig() {
         .select('*')
         .single();
 
-      if (!configData || !configData.centum_base_url || !configData.centum_suite_consumidor_api_publica_id || !configData.centum_clave_publica) {
+      if (!configData) {
         toast({
           title: "Error",
-          description: "Configuración incompleta",
+          description: "No se pudo cargar la configuración",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const missingFields = [];
+      if (!configData.centum_base_url) missingFields.push("URL Base");
+      if (!configData.centum_suite_consumidor_api_publica_id) missingFields.push("Suite Consumidor ID");
+      if (!configData.centum_clave_publica) missingFields.push("Clave Pública");
+
+      if (missingFields.length > 0) {
+        toast({
+          title: "Configuración incompleta",
+          description: `Faltan los siguientes campos: ${missingFields.join(", ")}`,
           variant: "destructive",
         });
         return;
