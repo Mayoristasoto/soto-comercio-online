@@ -260,9 +260,9 @@ export function SistemaComercialConfig() {
       const url = `${baseUrl}${endpoint}`;
 
       const curlCommand = `curl -v "${url}" \\
-  -H "CentumSuiteConsumidorApiPublicaId: ${suiteConsumidorId}" \\
-  -H "CentumSuiteAccessToken: ${token}" \\
-  -H "Accept: application/json"`;
+  -H 'CentumSuiteConsumidorApiPublicaId: ${suiteConsumidorId}' \\
+  -H 'CentumSuiteAccessToken: ${token}' \\
+  -H 'Accept: application/json'`;
 
       await navigator.clipboard.writeText(curlCommand);
       
