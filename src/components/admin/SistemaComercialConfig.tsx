@@ -14,6 +14,7 @@ interface SistemaComercialConfig {
   api_url: string | null;
   api_token: string | null;
   endpoint_acreditacion: string;
+  endpoint_consulta_saldo: string | null;
   habilitado: boolean;
   centum_base_url: string | null;
   centum_suite_consumidor_api_publica_id: string | null;
@@ -62,6 +63,7 @@ export function SistemaComercialConfig() {
           api_url: config.api_url,
           api_token: config.api_token,
           endpoint_acreditacion: config.endpoint_acreditacion,
+          endpoint_consulta_saldo: config.endpoint_consulta_saldo,
           habilitado: config.habilitado,
           centum_base_url: config.centum_base_url,
           centum_suite_consumidor_api_publica_id: config.centum_suite_consumidor_api_publica_id,
