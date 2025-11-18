@@ -33,16 +33,23 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Obtener clave pública desde el secreto
+    const clavePublica = Deno.env.get('SISTEMA_COMERCIAL_API_KEY');
+    
+    if (!clavePublica) {
+      throw new Error('La clave pública de Centum (SISTEMA_COMERCIAL_API_KEY) no está configurada');
+    }
+
     // Inicializar Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Obtener la configuración de Centum
+    // Obtener la configuración de Centum (base URL y suite ID)
     const { data: config, error: configError } = await supabaseClient
       .from('sistema_comercial_config')
-      .select('centum_clave_publica, centum_base_url, centum_suite_consumidor_api_publica_id')
+      .select('centum_base_url, centum_suite_consumidor_api_publica_id')
       .single();
 
     if (configError || !config) {
@@ -50,16 +57,12 @@ Deno.serve(async (req) => {
       throw new Error('No se pudo obtener la configuración de Centum');
     }
 
-    if (!config.centum_clave_publica) {
-      throw new Error('La clave pública de Centum no está configurada');
-    }
-
     // Generar token según la lógica de Postman
     const fechaUTC = getUtcFormattedDate();
     const guid = generateGuidN();
     
     // Concatenar con espacios: fechaUTC guid clavePublica
-    const texto = `${fechaUTC} ${guid} ${config.centum_clave_publica}`;
+    const texto = `${fechaUTC} ${guid} ${clavePublica}`;
     
     // Calcular hash SHA1
     const hash = await sha1Hash(texto);
