@@ -138,7 +138,8 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
           fecha_nacimiento: data.fecha_nacimiento,
           estado_civil: data.estado_civil,
           emergencia_contacto_nombre: data.emergencia_contacto_nombre,
-          emergencia_contacto_telefono: data.emergencia_contacto_telefono
+          emergencia_contacto_telefono: data.emergencia_contacto_telefono,
+          id_centum: data.id_centum
         }))
       }
     } catch (error) {
