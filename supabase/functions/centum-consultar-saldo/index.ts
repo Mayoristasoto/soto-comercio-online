@@ -119,7 +119,13 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       statusCode = response.status;
       const errorText = await response.text();
-      console.error('Error en respuesta de Centum:', response.status, errorText);
+      console.error('Error en respuesta de Centum:', response.status);
+      console.error('Response body:', errorText);
+      console.error('Request URL:', consultaUrl);
+      console.error('Request headers:', {
+        'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
+        'CentumSuiteAccessToken': token.substring(0, 30) + '...'
+      });
 
       // Registrar log detallado del error de Centum
       try {
