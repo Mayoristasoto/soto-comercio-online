@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer } from "lucide-react"
+import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 
@@ -33,7 +33,9 @@ export default function Autogestion() {
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
   const [loading, setLoading] = useState(true)
   const [solicitandoAdelanto, setSolicitandoAdelanto] = useState(false)
-  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos'>('menu')
+  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo'>('menu')
+  const [consultandoSaldo, setConsultandoSaldo] = useState(false)
+  const [saldoCuentaCorriente, setSaldoCuentaCorriente] = useState<any>(null)
 
   useEffect(() => {
     if (!empleadoId) {
@@ -122,6 +124,41 @@ export default function Autogestion() {
       })
     } finally {
       setSolicitandoAdelanto(false)
+    }
+  }
+
+  const consultarSaldo = async () => {
+    setConsultandoSaldo(true)
+    setVistaActual('saldo')
+    setSaldoCuentaCorriente(null)
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('centum-consultar-saldo', {
+        body: { empleado_id: empleadoId }
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        setSaldoCuentaCorriente(data.saldo)
+        toast({
+          title: "✅ Saldo consultado",
+          description: "El saldo se obtuvo correctamente",
+        })
+      } else {
+        throw new Error(data.error || 'Error al consultar saldo')
+      }
+
+    } catch (error) {
+      console.error('Error consultando saldo:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo consultar el saldo. Intente nuevamente.",
+        variant: "destructive"
+      })
+      setVistaActual('menu')
+    } finally {
+      setConsultandoSaldo(false)
     }
   }
 
@@ -258,7 +295,78 @@ export default function Autogestion() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={consultarSaldo}
+            >
+              <CardContent className="p-8">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-indigo-100 p-4 rounded-full">
+                    <Wallet className="h-8 w-8 text-indigo-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900">Consultar Saldo</h3>
+                    <p className="text-gray-600 mt-1">
+                      Ver saldo de cuenta corriente
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+        )}
+
+        {/* Vista de Saldo */}
+        {vistaActual === 'saldo' && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Wallet className="h-6 w-6" />
+                  <span>Saldo de Cuenta Corriente</span>
+                </CardTitle>
+                <Button variant="outline" onClick={() => setVistaActual('menu')}>
+                  Volver
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {consultandoSaldo ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Consultando saldo...</p>
+                </div>
+              ) : saldoCuentaCorriente !== null ? (
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-8 text-white shadow-lg">
+                    <p className="text-sm opacity-90 mb-2">Saldo Disponible</p>
+                    <p className="text-4xl font-bold">
+                      ${typeof saldoCuentaCorriente === 'number' 
+                        ? saldoCuentaCorriente.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : (saldoCuentaCorriente.saldo || saldoCuentaCorriente).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  
+                  <div className="text-center text-sm text-gray-500">
+                    Consultado: {new Date().toLocaleString('es-AR')}
+                  </div>
+                  
+                  <Button 
+                    onClick={consultarSaldo}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Actualizar Saldo
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600">No se pudo obtener el saldo</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Vista de Tareas */}
