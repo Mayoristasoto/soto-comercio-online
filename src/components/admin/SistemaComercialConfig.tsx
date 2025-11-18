@@ -413,6 +413,58 @@ export function SistemaComercialConfig() {
     }
   };
 
+  const handleExportTestSimpleCurl = async () => {
+    try {
+      const { data: configData } = await supabase
+        .from('sistema_comercial_config')
+        .select('*')
+        .single();
+
+      if (!configData || !configData.centum_base_url || !configData.centum_suite_consumidor_api_publica_id || !configData.centum_clave_publica) {
+        toast({
+          title: "Error",
+          description: "Configuración incompleta",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fechaUTC = new Date().toISOString();
+      const guid = crypto.randomUUID();
+      const clavePublicaTrim = configData.centum_clave_publica.trim();
+      const dataToHash = `${fechaUTC}${guid}${clavePublicaTrim}`;
+      
+      const encoder = new TextEncoder();
+      const data = encoder.encode(dataToHash);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const centumBaseUrl = configData.centum_base_url.trim();
+      const centumSuiteConsumidorApiPublicaId = configData.centum_suite_consumidor_api_publica_id.trim();
+      const endpoint = configData.endpoint_consulta_saldo || '/Rubros';
+      const url = `${centumBaseUrl}${endpoint}`;
+
+      const curlCommand = `curl -X GET '${url}' \\
+  -H 'Content-Type: application/json' \\
+  -H 'CentumSuiteAccessToken: ${fechaUTC.trim()};${guid.trim()};${hash.trim()}' \\
+  -H 'CentumSuiteConsumidorApiPublicaId: ${centumSuiteConsumidorApiPublicaId}'`;
+
+      await navigator.clipboard.writeText(curlCommand);
+      toast({
+        title: "Éxito",
+        description: "Comando curl copiado al portapapeles",
+      });
+    } catch (error: any) {
+      console.error('Error al exportar curl:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTestCentumConnection = async () => {
     setTestingConnection(true);
     setConnectionDebug('Iniciando prueba de conexión (Postman Exact)...\n');
@@ -779,6 +831,16 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
                 Test Simple
               </>
             )}
+          </Button>
+
+          <Button
+            onClick={handleExportTestSimpleCurl}
+            size="lg"
+            variant="secondary"
+            className="h-16"
+          >
+            <Copy className="mr-2 h-5 w-5" />
+            Exportar Test Simple cURL
           </Button>
 
           <Button
