@@ -99,10 +99,9 @@ Deno.serve(async (req) => {
       console.error('Error en respuesta de Centum:', response.status);
       console.error('Response body:', errorText);
       console.error('Request URL:', consultaUrl);
-      console.error('Request headers:', {
-        'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
-        'CentumSuiteAccessToken': token.substring(0, 30) + '...'
-      });
+      console.error('Request headers:');
+      console.error(`CentumSuiteConsumidorApiPublicaId: ${suiteConsumidorId}`);
+      console.error(`CentumSuiteAccessToken: ${token.substring(0, 50)}...`);
 
       // Registrar log detallado del error de Centum
       try {
