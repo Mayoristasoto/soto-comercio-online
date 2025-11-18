@@ -47,6 +47,7 @@ export function SistemaComercialConfig() {
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [jsonImport, setJsonImport] = useState('');
+  const [envImport, setEnvImport] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -335,16 +336,54 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
     }
   };
 
+  const replaceEnvironmentVariables = (text: string, envVars: Record<string, any>): string => {
+    let result = text;
+    Object.entries(envVars).forEach(([key, value]) => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      result = result.replace(regex, String(value));
+    });
+    return result;
+  };
+
   const handleTestJsonImport = async () => {
     setTestingConnection(true);
-    setConnectionDebug('Probando JSON importado...\n');
+    setConnectionDebug('Probando JSON con environment...\n');
     
     try {
-      const parsedConfig = JSON.parse(jsonImport);
+      let parsedConfig = JSON.parse(jsonImport);
+      let envVars: Record<string, any> = {};
+      
+      // Parsear environment si existe
+      if (envImport.trim()) {
+        try {
+          const parsedEnv = JSON.parse(envImport);
+          
+          // Postman environment format
+          if (parsedEnv.values && Array.isArray(parsedEnv.values)) {
+            parsedEnv.values.forEach((item: any) => {
+              envVars[item.key] = item.value;
+            });
+          } else {
+            // Simple key-value format
+            envVars = parsedEnv;
+          }
+          
+          setConnectionDebug(prev => prev + `\n✓ Variables de environment cargadas: ${Object.keys(envVars).length}\n`);
+        } catch (envError) {
+          throw new Error('Environment JSON inválido');
+        }
+      }
+      
+      // Reemplazar variables en la configuración
+      const configStr = JSON.stringify(parsedConfig);
+      const configWithEnv = replaceEnvironmentVariables(configStr, envVars);
+      parsedConfig = JSON.parse(configWithEnv);
       
       if (!parsedConfig.centum_base_url) {
         throw new Error('El JSON debe contener centum_base_url');
       }
+
+      setConnectionDebug(prev => prev + '\n✓ Configuración con variables reemplazadas\n');
 
       // Guardar temporalmente en la base de datos para probar
       const { error: updateError } = await supabase
@@ -358,21 +397,33 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
 
       if (updateError) throw updateError;
 
+      // Reemplazar variables en endpoint de prueba
+      const testEndpointWithEnv = replaceEnvironmentVariables(endpointTest, envVars);
+      const testIdWithEnv = replaceEnvironmentVariables(idCentumTest, envVars);
+
+      setConnectionDebug(prev => prev + '\n✓ Probando conexión...\n');
+
       // Probar conexión
       const { data, error } = await supabase.functions.invoke('centum-postman-exact', {
         body: { 
-          id_centum: idCentumTest,
-          endpoint: endpointTest
+          id_centum: testIdWithEnv,
+          endpoint: testEndpointWithEnv
         }
       });
 
       if (error) throw error;
 
       const debugInfo = `
-=== PRUEBA CON JSON IMPORTADO ===
+=== PRUEBA CON JSON + ENVIRONMENT ===
 
-✓ Configuración probada:
+✓ Variables de Environment:
+${Object.keys(envVars).length > 0 ? JSON.stringify(envVars, null, 2) : 'No se cargaron variables'}
+
+✓ Configuración Final (con variables reemplazadas):
 ${JSON.stringify(parsedConfig, null, 2)}
+
+✓ Endpoint de prueba: ${testEndpointWithEnv}
+✓ ID Centum de prueba: ${testIdWithEnv}
 
 ✓ Token Generado:
 ${data.debug?.token || 'No disponible'}
@@ -390,8 +441,8 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
       setConnectionDebug(debugInfo);
 
       toast({
-        title: data.success ? "JSON válido - Conexión exitosa" : "JSON válido - Error en conexión",
-        description: data.success ? "El JSON funciona correctamente" : "El JSON tiene errores de conexión",
+        title: data.success ? "Conexión exitosa" : "Error en conexión",
+        description: data.success ? "El JSON + Environment funcionan correctamente" : "Hay errores en la conexión",
         variant: data.success ? "default" : "destructive",
       });
 
@@ -533,55 +584,75 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
         <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
           <h3 className="font-medium flex items-center gap-2">
             <ExternalLink className="h-4 w-4" />
-            Importar/Exportar Configuración
+            Importar/Exportar Configuración (Postman)
           </h3>
           
-          <div className="space-y-2">
-            <Label htmlFor="jsonImport">Pegar JSON de configuración</Label>
-            <Textarea
-              id="jsonImport"
-              placeholder='{"centum_base_url": "...", "centum_suite_consumidor_api_publica_id": "..."}'
-              value={jsonImport}
-              onChange={(e) => setJsonImport(e.target.value)}
-              className="font-mono text-xs h-32"
-            />
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                onClick={handleTestJsonImport}
-                variant="default"
-                size="sm"
-                disabled={!jsonImport.trim() || testingConnection}
-              >
-                {testingConnection ? (
-                  <>
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                    Probando...
-                  </>
-                ) : (
-                  <>
-                    <Bug className="mr-2 h-3 w-3" />
-                    Probar JSON
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={handleImportJson}
-                variant="outline"
-                size="sm"
-                disabled={!jsonImport.trim()}
-              >
-                <Upload className="mr-2 h-3 w-3" />
-                Importar JSON
-              </Button>
-              <Button
-                onClick={handleExportJson}
-                variant="outline"
-                size="sm"
-              >
-                <Download className="mr-2 h-3 w-3" />
-                Copiar Config Actual
-              </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="envImport">Environment de Postman (opcional)</Label>
+              <Textarea
+                id="envImport"
+                placeholder='{"values": [{"key": "baseUrl", "value": "..."}]}'
+                value={envImport}
+                onChange={(e) => setEnvImport(e.target.value)}
+                className="font-mono text-xs h-32"
+              />
+              <p className="text-xs text-muted-foreground">
+                Formato Postman o JSON simple. Variables: {'{'}{'{'} variable {'}}'}
+              </p>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="jsonImport">JSON de configuración</Label>
+              <Textarea
+                id="jsonImport"
+                placeholder='{"centum_base_url": "{{baseUrl}}", ...}'
+                value={jsonImport}
+                onChange={(e) => setJsonImport(e.target.value)}
+                className="font-mono text-xs h-32"
+              />
+              <p className="text-xs text-muted-foreground">
+                Usa {'{'}{'{'} variable {'}}'} para referencias al environment
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={handleTestJsonImport}
+              variant="default"
+              size="sm"
+              disabled={!jsonImport.trim() || testingConnection}
+            >
+              {testingConnection ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Probando...
+                </>
+              ) : (
+                <>
+                  <Bug className="mr-2 h-3 w-3" />
+                  Probar JSON + Environment
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleImportJson}
+              variant="outline"
+              size="sm"
+              disabled={!jsonImport.trim()}
+            >
+              <Upload className="mr-2 h-3 w-3" />
+              Importar JSON
+            </Button>
+            <Button
+              onClick={handleExportJson}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="mr-2 h-3 w-3" />
+              Copiar Config Actual
+            </Button>
           </div>
         </div>
 
