@@ -258,89 +258,100 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
           </div>
         </div>
         <CardDescription>
-          Visualización de eventos importantes del mes
+          Eventos importantes del mes
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Leyenda */}
-        <div className="flex flex-wrap gap-3 text-xs">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-pink-500" />
-            <span>Cumpleaños</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span>Aniversario</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-orange-500" />
-            <span>Tareas</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span>Vacaciones</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span>Ausencias</span>
-          </div>
-        </div>
+      <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
+          {/* Columna izquierda: Calendario */}
+          <div className="space-y-4">
+            {/* Leyenda */}
+            <div className="flex flex-wrap gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-pink-500" />
+                <span>Cumpleaños</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span>Aniversario</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-orange-500" />
+                <span>Tareas</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <span>Vacaciones</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <span>Ausencias</span>
+              </div>
+            </div>
 
-        {/* Calendario */}
-        <div className="flex justify-center">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => date && setSelectedDate(date)}
-            locale={es}
-            className={cn("rounded-md border pointer-events-auto")}
-            modifiers={{
-              hasEvents: (date) => getEventsForDate(date).length > 0
-            }}
-            modifiersClassNames={{
-              hasEvents: "font-bold"
-            }}
-            components={{
-              DayContent: ({ date }) => (
-                <div className="relative w-full h-full flex flex-col items-center justify-center">
-                  <span>{format(date, 'd')}</span>
-                  {getDayContent(date)}
-                </div>
-              )
-            }}
-          />
-        </div>
-
-        {/* Eventos del día seleccionado */}
-        {selectedDayEvents.length > 0 && (
-          <div className="space-y-2 pt-4 border-t">
-            <h4 className="font-semibold text-sm">
-              Eventos del {format(selectedDate, "d 'de' MMMM", { locale: es })}
-            </h4>
-            <div className="space-y-2">
-              {selectedDayEvents.map((event, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-2 p-2 rounded-lg bg-muted/50 text-sm"
-                >
-                  {getEventIcon(event.type)}
-                  <div className="flex-1">
-                    <p className="font-medium">{event.title}</p>
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {event.type}
-                    </Badge>
+            {/* Calendario compacto */}
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              locale={es}
+              className={cn("rounded-md border pointer-events-auto")}
+              modifiers={{
+                hasEvents: (date) => getEventsForDate(date).length > 0
+              }}
+              modifiersClassNames={{
+                hasEvents: "font-bold"
+              }}
+              components={{
+                DayContent: ({ date }) => (
+                  <div className="relative w-full h-full flex flex-col items-center justify-center">
+                    <span className="text-sm">{format(date, 'd')}</span>
+                    {getDayContent(date)}
                   </div>
+                )
+              }}
+            />
+          </div>
+
+          {/* Columna derecha: Eventos del día seleccionado */}
+          <div className="flex flex-col min-h-[400px]">
+            <div className="border-l pl-6 flex-1">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                Eventos del {format(selectedDate, "d 'de' MMMM", { locale: es })}
+              </h4>
+              
+              {selectedDayEvents.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedDayEvents.map((event, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      {getEventIcon(event.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{event.title}</p>
+                        <Badge variant="secondary" className="text-xs mt-1">
+                          {event.type}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                  <CalendarIcon className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    No hay eventos programados
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    para este día
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        )}
-
-        {selectedDayEvents.length === 0 && (
-          <div className="text-center py-4 text-sm text-muted-foreground border-t">
-            No hay eventos para el {format(selectedDate, "d 'de' MMMM", { locale: es })}
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   )

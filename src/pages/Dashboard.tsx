@@ -260,6 +260,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Calendario de Eventos - Primero */}
+      {(isAdmin || isGerente) && (
+        <EventCalendar showAllEvents={true} />
+      )}
+
       {/* Módulo RRHH - Solo para Admin y Gerentes */}
       {(isAdmin || isGerente) && (
         <>
@@ -534,11 +539,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* Calendario de Eventos */}
-      <div className="mt-8">
-        <EventCalendar showAllEvents={isAdmin || isGerente} />
       </div>
     </div>
   )
