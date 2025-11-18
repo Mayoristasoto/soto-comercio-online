@@ -73,22 +73,22 @@ Deno.serve(async (req) => {
     // URL simple: baseUrl + endpoint
     const consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
 
+    // Preparar headers limpios (sin doble comillas ni espacios)
+    const headersToSend = {
+      CentumSuiteConsumidorApiPublicaId: (suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id).trim(),
+      CentumSuiteAccessToken: token.trim(),
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+
     console.log('URL completa para Centum:', consultaUrl);
     console.log('Token exacto enviado a Centum:', token.trim());
-    console.log('Headers:', {
-      'CentumSuiteConsumidorApiPublicaId': (suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id).trim(),
-      'CentumSuiteAccessToken': token.trim(),
-    });
+    console.log('Headers:', headersToSend);
 
-    // Realizar consulta de saldo con GET explícito y headers trimmed
+    // Realizar consulta de saldo con GET explícito
     const response = await fetch(consultaUrl, {
-      method: 'GET', // Explícitamente GET
-      headers: {
-        'CentumSuiteConsumidorApiPublicaId': (suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id).trim(),
-        'CentumSuiteAccessToken': token.trim(),
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+      method: 'GET',
+      headers: headersToSend,
     });
 
     const duracionMs = Date.now() - startTime;
