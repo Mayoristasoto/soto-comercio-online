@@ -23,7 +23,9 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { empleado_id: empleadoIdFromRequest } = await req.json();
+    // Obtener empleado_id de query parameters (GET) en lugar de body (POST)
+    const url = new URL(req.url);
+    const empleadoIdFromRequest = url.searchParams.get('empleado_id');
     empleadoId = empleadoIdFromRequest;
 
     if (!empleadoIdFromRequest) {

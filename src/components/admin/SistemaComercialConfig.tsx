@@ -315,10 +315,20 @@ export function SistemaComercialConfig() {
 
       console.log('Empleado ID:', empleadoData.id);
 
-      // Usar el edge function que ya existe
-      const { data, error } = await supabase.functions.invoke('centum-consultar-saldo', {
-        body: { empleado_id: empleadoData.id }
+      // Usar el edge function que ya existe (ahora con GET)
+      const functionUrl = `https://iizwnijtgfvanhqqjeyw.supabase.co/functions/v1/centum-consultar-saldo?empleado_id=${empleadoData.id}`;
+      
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      const response = await fetch(functionUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${sessionData.session?.access_token}`,
+        },
       });
+
+      const data = await response.json();
+      const error = !response.ok ? data : null;
 
       console.log('=== DEBUG: Respuesta del edge function ===');
       console.log('Data:', data);
