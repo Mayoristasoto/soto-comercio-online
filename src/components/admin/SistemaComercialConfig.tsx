@@ -370,6 +370,49 @@ export function SistemaComercialConfig() {
     }
   };
 
+  const handleTestSimpleConnection = async () => {
+    setSendingRequest(true);
+    try {
+      console.log('=== TEST SIMPLE CONNECTION ===');
+      
+      const { data, error } = await supabase.functions.invoke('centum-test-simple');
+
+      console.log('Respuesta test:', data);
+      console.log('Error test:', error);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.success) {
+        toast({
+          title: "Conexión exitosa",
+          description: `Status: ${data.status}. Ver consola para detalles.`,
+        });
+      } else {
+        toast({
+          title: "Error en conexión",
+          description: `Status: ${data.status} - ${data.statusText}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
   const handleTestCentumConnection = async () => {
     setTestingConnection(true);
     setConnectionDebug('Iniciando prueba de conexión (Postman Exact)...\n');
@@ -716,6 +759,26 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
           >
             <Copy className="mr-2 h-5 w-5" />
             Exportar Petición GET
+          </Button>
+
+          <Button
+            onClick={handleTestSimpleConnection}
+            disabled={sendingRequest}
+            size="lg"
+            variant="outline"
+            className="h-16"
+          >
+            {sendingRequest ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Probando...
+              </>
+            ) : (
+              <>
+                <Bug className="mr-2 h-5 w-5" />
+                Test Simple
+              </>
+            )}
           </Button>
 
           <Button
