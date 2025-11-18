@@ -84,7 +84,6 @@ Deno.serve(async (req) => {
         'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
         'CentumSuiteAccessToken': token,
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
       },
     });
 
