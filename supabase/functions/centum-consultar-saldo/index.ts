@@ -67,12 +67,14 @@ Deno.serve(async (req) => {
 
     console.log('Consultando saldo en:', consultaUrl);
 
-    // Realizar consulta de saldo
+    // Realizar consulta de saldo con todos los headers requeridos
     const response = await fetch(consultaUrl, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
+        'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
         'CentumSuiteAccessToken': token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
     });
 
