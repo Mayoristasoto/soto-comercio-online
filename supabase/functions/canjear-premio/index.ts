@@ -100,7 +100,7 @@ serve(async (req) => {
     let respuestaAPI = null
 
     // Si está habilitada la integración, llamar a la API del sistema comercial
-    if (config?.habilitado && config?.api_url && premio.tipo === 'monetario') {
+    if (config?.habilitado && premio.tipo === 'monetario') {
       try {
         const { data: empleado } = await supabaseClient
           .from('empleados')
@@ -108,14 +108,37 @@ serve(async (req) => {
           .eq('id', empleadoId)
           .single()
 
-        const apiUrl = `${config.api_url}${config.endpoint_acreditacion || '/api/empleados/acreditar'}`
-        
-        const headers: Record<string, string> = {
+        let apiUrl = config.api_url
+        let headers: Record<string, string> = {
           'Content-Type': 'application/json'
         }
-        
-        if (config.api_token) {
+
+        // Si hay configuración de Centum, usar autenticación Centum
+        if (config.centum_base_url && config.centum_clave_publica) {
+          // Generar token de Centum
+          const tokenResponse = await supabaseClient.functions.invoke('centum-generate-token')
+          
+          if (tokenResponse.error) {
+            throw new Error(`Error al generar token Centum: ${tokenResponse.error.message}`)
+          }
+
+          const { token, baseUrl, suiteConsumidorId } = tokenResponse.data
+
+          // Usar URL de Centum
+          apiUrl = `${baseUrl}/SuiteConsumidorApiPublica/${suiteConsumidorId}/CuentaCorriente`
+          
+          // Agregar header de autenticación Centum
+          headers['CentumSuiteAccessToken'] = token
+          
+          console.log('Token Centum generado, llamando a API:', apiUrl)
+        } else if (config.api_token) {
+          // Fallback a autenticación estándar
           headers['Authorization'] = `Bearer ${config.api_token}`
+          apiUrl = `${config.api_url}${config.endpoint_acreditacion || '/api/empleados/acreditar'}`
+        }
+
+        if (!apiUrl) {
+          throw new Error('No se pudo determinar la URL de la API')
         }
 
         const response = await fetch(apiUrl, {
