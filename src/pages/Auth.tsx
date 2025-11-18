@@ -124,6 +124,7 @@ const Auth = () => {
         }
 
         toast("¡Bienvenido de vuelta!");
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error("💥 [Auth.tsx] Error inesperado en signIn:", error);

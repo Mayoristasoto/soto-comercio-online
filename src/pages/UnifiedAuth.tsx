@@ -22,7 +22,7 @@ export default function UnifiedAuth() {
   const [showResetPassword, setShowResetPassword] = useState(false)
 
   // Obtener el módulo de destino de los parámetros de URL
-  const redirectTo = searchParams.get('redirect') || '/reconoce'
+  const redirectTo = searchParams.get('redirect') || '/dashboard'
 
   useEffect(() => {
     // Verificar si ya está autenticado

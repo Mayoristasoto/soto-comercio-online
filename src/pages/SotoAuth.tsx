@@ -119,7 +119,7 @@ export default function SotoAuth() {
         description: "Has iniciado sesión exitosamente"
       })
       
-      navigate('/reconoce/home')
+      navigate('/dashboard')
     } catch (error: any) {
       console.error('💥 [SotoAuth.tsx] Error inesperado en signIn:', error)
       toast({
