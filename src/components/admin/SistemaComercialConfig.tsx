@@ -285,7 +285,11 @@ export function SistemaComercialConfig() {
     setSendingRequest(true);
     try {
       // Generar token
+      console.log('=== DEBUG: Generando token ===');
       const { data: tokenData, error: tokenError } = await supabase.functions.invoke('centum-generate-token');
+      
+      console.log('Token Data recibido:', tokenData);
+      console.log('Token Error:', tokenError);
       
       if (tokenError || !tokenData) {
         toast({
@@ -296,21 +300,41 @@ export function SistemaComercialConfig() {
         return;
       }
 
-      const { centumSuiteAccessToken, centumBaseUrl, centumSuiteConsumidorApiPublicaId } = tokenData;
+      // Usar los nombres correctos según el edge function
+      const { token, baseUrl, suiteConsumidorId } = tokenData;
       const endpoint = config.endpoint_consulta_saldo || '/Rubros';
-      const url = `${centumBaseUrl}${endpoint}`;
+      const url = `${baseUrl}${endpoint}`;
+
+      console.log('=== DEBUG: Preparando petición ===');
+      console.log('URL:', url);
+      console.log('Token:', token);
+      console.log('Suite Consumidor ID:', suiteConsumidorId);
 
       // Realizar la petición GET
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'CentumSuiteConsumidorApiPublicaId': centumSuiteConsumidorApiPublicaId,
-          'CentumSuiteAccessToken': centumSuiteAccessToken,
+          'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
+          'CentumSuiteAccessToken': token,
           'Accept': 'application/json'
         }
       });
 
-      const data = await response.json();
+      console.log('=== DEBUG: Respuesta recibida ===');
+      console.log('Status:', response.status);
+      console.log('Status Text:', response.statusText);
+      console.log('Headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('Response Text:', responseText);
+
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch (e) {
+        console.error('Error parseando JSON:', e);
+        data = { error: 'Respuesta no es JSON válido', raw: responseText };
+      }
 
       if (response.ok) {
         toast({
@@ -321,7 +345,7 @@ export function SistemaComercialConfig() {
       } else {
         toast({
           title: "Error en la petición",
-          description: `Status: ${response.status}. ${JSON.stringify(data)}`,
+          description: `Status: ${response.status}. ${responseText}`,
           variant: "destructive",
         });
       }
