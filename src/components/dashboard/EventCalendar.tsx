@@ -576,9 +576,9 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
             <div className="border-t pt-4 mt-4">
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full" size="sm">
+                  <Button className="w-full" variant="default" size="lg">
                     <Plus className="h-4 w-4 mr-2" />
-                    Agregar al día {format(selectedDate, "d 'de' MMMM", { locale: es })}
+                    Agregar al Día {format(selectedDate, "d 'de' MMMM", { locale: es })}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
