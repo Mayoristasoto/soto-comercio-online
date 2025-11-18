@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       throw new Error('No se pudo generar el token de autenticación');
     }
 
-    const { token, baseUrl, suiteConsumidorId } = tokenData as {
+    const { token: centumSuiteAccessToken, baseUrl: centumBaseUrl, suiteConsumidorId: centumSuiteConsumidorApiPublicaId } = tokenData as {
       token: string;
       baseUrl: string;
       suiteConsumidorId: string;
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     console.log('Endpoint configurado:', endpoint);
 
     // Construir URL completa (igual que Postman: baseUrl + endpoint)
-    const baseUrlNormalized = (baseUrl || config.centum_base_url).replace(/\/+$/, '');
+    const baseUrlNormalized = (centumBaseUrl || config.centum_base_url).replace(/\/+$/, '');
     
     // Normalizar endpoint (debe empezar con /)
     const endpointNormalized = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -75,8 +75,8 @@ Deno.serve(async (req) => {
 
     // Preparar headers limpios (sin doble comillas ni espacios)
     const headersToSend = {
-      CentumSuiteConsumidorApiPublicaId: (suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id).trim(),
-      CentumSuiteAccessToken: token.trim(),
+      CentumSuiteConsumidorApiPublicaId: (centumSuiteConsumidorApiPublicaId ?? config.centum_suite_consumidor_api_publica_id).trim(),
+      CentumSuiteAccessToken: centumSuiteAccessToken.trim(),
       Accept: 'application/json'
     };
 
@@ -100,8 +100,8 @@ Deno.serve(async (req) => {
       console.error('Response body:', errorText);
       console.error('Request URL:', consultaUrl);
       console.error('Request headers:');
-      console.error(`CentumSuiteConsumidorApiPublicaId: ${suiteConsumidorId}`);
-      console.error(`CentumSuiteAccessToken: ${token.substring(0, 50)}...`);
+      console.error(`CentumSuiteConsumidorApiPublicaId: ${centumSuiteConsumidorApiPublicaId}`);
+      console.error(`CentumSuiteAccessToken: ${centumSuiteAccessToken.substring(0, 50)}...`);
 
       // Registrar log detallado del error de Centum
       try {

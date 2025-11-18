@@ -69,15 +69,15 @@ Deno.serve(async (req) => {
     const hash = (await sha1Hash(texto)).trim();
     
     // Token final: fechaUTC guid hash (SIN saltos de línea ni espacios extras)
-    const token = `${fechaUTC} ${guid} ${hash}`.trim();
+    const centumSuiteAccessToken = `${fechaUTC} ${guid} ${hash}`.trim();
 
     console.log('Token generado exitosamente para Centum API');
 
     return new Response(
       JSON.stringify({
-        token: token.trim(),
-        baseUrl: config.centum_base_url.trim(),
-        suiteConsumidorId: config.centum_suite_consumidor_api_publica_id.trim(),
+        token: centumSuiteAccessToken,
+        baseUrl: config.centum_base_url,
+        suiteConsumidorId: config.centum_suite_consumidor_api_publica_id,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
