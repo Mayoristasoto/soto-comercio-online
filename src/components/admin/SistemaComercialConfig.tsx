@@ -333,25 +333,6 @@ export function SistemaComercialConfig() {
           </p>
         </div>
 
-        {/* Información sobre el payload */}
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <p className="font-medium mb-2">Formato de datos enviados a la API:</p>
-            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-{`{
-  "empleado_id": "legajo o dni",
-  "empleado_dni": "12345678",
-  "empleado_email": "empleado@ejemplo.com",
-  "empleado_nombre": "Juan Pérez",
-  "monto": 1000,
-  "concepto": "Premio: Nombre del Premio",
-  "referencia_interna": "uuid-asignacion"
-}`}
-            </pre>
-          </AlertDescription>
-        </Alert>
-
         {/* Botones de acción */}
         <div className="flex gap-3 flex-wrap">
           <Button
