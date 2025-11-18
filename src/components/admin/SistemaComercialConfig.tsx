@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ExternalLink, Check, AlertCircle, Wallet } from "lucide-react";
+import { Loader2, ExternalLink, Check, AlertCircle, Wallet, Bug } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SistemaComercialConfig {
   id: string;
@@ -39,6 +40,9 @@ export function SistemaComercialConfig() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testingSaldo, setTestingSaldo] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionDebug, setConnectionDebug] = useState<string>('');
+  const [idCentumTest, setIdCentumTest] = useState('6234');
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const { toast } = useToast();
@@ -56,7 +60,7 @@ export function SistemaComercialConfig() {
         .single();
 
       if (error) throw error;
-      setConfig(data as any); // Cast needed while types update
+      setConfig(data as any);
     } catch (error) {
       console.error('Error loading config:', error);
       toast({
@@ -166,7 +170,7 @@ export function SistemaComercialConfig() {
       console.error('Error testing connection:', error);
       toast({
         title: "Error de conexión",
-        description: "No se pudo conectar con la API del sistema comercial",
+        description: "No se pudo conectar con la API",
         variant: "destructive"
       });
     } finally {
@@ -177,42 +181,114 @@ export function SistemaComercialConfig() {
   const handleTestSaldo = async () => {
     setTestingSaldo(true);
     try {
-      // Obtener el empleado actual para usar su ID
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No hay usuario autenticado');
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "No se pudo obtener el usuario actual",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      const { data: empleado } = await supabase
+      const { data: empleadoData, error: empleadoError } = await supabase
         .from('empleados')
         .select('id')
         .eq('user_id', user.id)
         .single();
 
-      if (!empleado) throw new Error('No se encontró el empleado');
+      if (empleadoError || !empleadoData) {
+        toast({
+          title: "Error",
+          description: "No se pudo encontrar el empleado asociado",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('centum-consultar-saldo', {
-        body: { empleado_id: empleado.id }
+        body: { empleado_id: empleadoData.id }
       });
 
       if (error) throw error;
 
       if (data.success) {
         toast({
-          title: "Consulta exitosa",
-          description: `Saldo obtenido: ${JSON.stringify(data.saldo)}`,
+          title: "Éxito",
+          description: `Saldo obtenido correctamente. ID Centum: ${data.id_centum}`,
         });
-        loadApiLogs(); // Recargar logs después de la prueba
+        loadApiLogs();
       } else {
-        throw new Error(data.error || 'Error desconocido');
+        toast({
+          title: "Error en la consulta",
+          description: data.error,
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
-      console.error('Error testing saldo:', error);
+      console.error('Error al probar consulta de saldo:', error);
       toast({
-        title: "Error en consulta de saldo",
-        description: error.message || "No se pudo consultar el saldo",
-        variant: "destructive"
+        title: "Error",
+        description: error.message || "Error al probar la consulta de saldo",
+        variant: "destructive",
       });
     } finally {
       setTestingSaldo(false);
+    }
+  };
+
+  const handleTestCentumConnection = async () => {
+    setTestingConnection(true);
+    setConnectionDebug('Iniciando prueba de conexión...\n');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('centum-test-connection', {
+        body: { id_centum: idCentumTest }
+      });
+
+      if (error) throw error;
+
+      const debugInfo = `
+=== PRUEBA DE CONEXIÓN CENTUM ===
+
+Token Generado:
+${data.token || 'No disponible'}
+
+URL Completa:
+${data.url || 'No disponible'}
+
+Headers Enviados:
+${JSON.stringify(data.headers, null, 2)}
+
+Respuesta de Centum:
+Status: ${data.status}
+${data.success ? '✓ Conexión exitosa' : '✗ Error en conexión'}
+
+${data.response ? `Datos recibidos:\n${JSON.stringify(data.response, null, 2)}` : ''}
+
+${data.error ? `Error: ${data.error}` : ''}
+
+IMPORTANTE: Revisa los logs del edge function para ver el token completo.
+      `;
+
+      setConnectionDebug(debugInfo);
+
+      toast({
+        title: data.success ? "Conexión exitosa" : "Error en conexión",
+        description: data.success ? "La conexión con Centum funciona correctamente" : data.error,
+        variant: data.success ? "default" : "destructive",
+      });
+    } catch (error: any) {
+      const errorInfo = `Error al probar conexión:\n${error.message}`;
+      setConnectionDebug(errorInfo);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -243,17 +319,28 @@ export function SistemaComercialConfig() {
           Integración Sistema Comercial
         </CardTitle>
         <CardDescription>
-          Configura la integración con el sistema comercial para acreditar automáticamente premios monetarios
+          Configuración de la API externa para acreditación de premios y consulta de saldos
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Estado de integración */}
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-          <div>
-            <Label className="text-base">Estado de la integración</Label>
-            <p className="text-sm text-muted-foreground">
-              {config.habilitado ? 'La integración está activa' : 'La integración está desactivada'}
-            </p>
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex items-center gap-3">
+            {config.habilitado ? (
+              <Check className="h-5 w-5 text-green-600" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-muted-foreground" />
+            )}
+            <div>
+              <p className="font-medium">
+                Estado: {config.habilitado ? 'Habilitado' : 'Deshabilitado'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {config.habilitado 
+                  ? 'La integración está activa' 
+                  : 'La integración está inactiva'}
+              </p>
+            </div>
           </div>
           <Switch
             checked={config.habilitado}
@@ -266,21 +353,21 @@ export function SistemaComercialConfig() {
           <Label htmlFor="centum_base_url">Centum Base URL</Label>
           <Input
             id="centum_base_url"
-            type="url"
+            type="text"
             placeholder="https://plataforma4.centum.com.ar:23990/BL11"
             value={config.centum_base_url || ''}
             onChange={(e) => setConfig({ ...config, centum_base_url: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
-            URL base de la API de Centum
+            URL base de Centum (sin /SuiteConsumidorApiPublica)
           </p>
         </div>
 
-        {/* Centum Suite Consumidor API Pública ID */}
+        {/* Centum Suite Consumidor API Publica ID */}
         <div className="space-y-2">
-          <Label htmlFor="centum_suite_consumidor_api_publica_id">Centum Suite Consumidor API Pública ID</Label>
+          <Label htmlFor="centum_suite_id">Centum Suite Consumidor API Publica ID</Label>
           <Input
-            id="centum_suite_consumidor_api_publica_id"
+            id="centum_suite_id"
             type="text"
             placeholder="3"
             value={config.centum_suite_consumidor_api_publica_id || ''}
@@ -314,23 +401,74 @@ export function SistemaComercialConfig() {
             onChange={(e) => setConfig({ ...config, endpoint_acreditacion: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
-            Ruta del endpoint para acreditar dinero en cuenta corriente
+            Ruta del endpoint para acreditar premios
           </p>
         </div>
 
         {/* Endpoint de consulta de saldo */}
         <div className="space-y-2">
-          <Label htmlFor="endpoint_consulta_saldo">Endpoint de Consulta de Saldo (Centum)</Label>
+          <Label htmlFor="endpoint_saldo">Endpoint de Consulta de Saldo</Label>
           <Input
-            id="endpoint_consulta_saldo"
+            id="endpoint_saldo"
             type="text"
-            placeholder="/CuentaCorriente/{idCentum}/Saldo"
+            placeholder="/SaldosCuentasCorrientes/{{idCentum}}?fechaVencimientoHasta=2025-12-31&composicionReal=false"
             value={config.endpoint_consulta_saldo || ''}
             onChange={(e) => setConfig({ ...config, endpoint_consulta_saldo: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
-            Ruta del endpoint para consultar saldo. Use {'{idCentum}'} como placeholder para el ID del empleado
+            Ruta del endpoint para consultar saldo. Use {'{idCentum}'} o {'{idCliente}'} como placeholder para el ID del empleado
           </p>
+        </div>
+
+        {/* Prueba de conexión Centum estilo Postman */}
+        <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2">
+            <Bug className="h-5 w-5" />
+            <h3 className="font-medium">Prueba de Conexión Centum (Debug)</h3>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="idCentumTest">ID Centum para prueba</Label>
+            <Input
+              id="idCentumTest"
+              type="text"
+              placeholder="6234"
+              value={idCentumTest}
+              onChange={(e) => setIdCentumTest(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Ingrese el ID Centum a consultar (ej: 6234 para Gonzalo Justiniano)
+            </p>
+          </div>
+
+          <Button
+            onClick={handleTestCentumConnection}
+            variant="outline"
+            disabled={testingConnection || !idCentumTest}
+          >
+            {testingConnection ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Probando...
+              </>
+            ) : (
+              <>
+                <Bug className="mr-2 h-4 w-4" />
+                Probar Conexión Centum
+              </>
+            )}
+          </Button>
+
+          {connectionDebug && (
+            <div className="space-y-2">
+              <Label>Resultado de la prueba:</Label>
+              <Textarea
+                value={connectionDebug}
+                readOnly
+                className="font-mono text-xs h-64"
+              />
+            </div>
+          )}
         </div>
 
         {/* Botones de acción */}
@@ -342,119 +480,110 @@ export function SistemaComercialConfig() {
           >
             {testing ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Probando...
               </>
             ) : (
-              <>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Probar Conexión
-              </>
+              'Probar Conexión API'
             )}
           </Button>
 
           <Button
             onClick={handleTestSaldo}
             variant="outline"
-            disabled={testingSaldo || !config.habilitado}
+            disabled={testingSaldo}
           >
             {testingSaldo ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Consultando...
               </>
             ) : (
               <>
-                <Wallet className="h-4 w-4 mr-2" />
+                <Wallet className="mr-2 h-4 w-4" />
                 Probar Consulta Saldo
               </>
             )}
           </Button>
 
-          <Button onClick={handleSave} disabled={saving}>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+          >
             {saving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Guardando...
               </>
             ) : (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Guardar Configuración
-              </>
+              'Guardar Configuración'
             )}
           </Button>
         </div>
 
-        {/* Sección de logs de API */}
-        <div className="space-y-4 mt-8">
+        {/* Logs de API */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Logs de API</h3>
-              <p className="text-sm text-muted-foreground">
-                Historial de llamadas al sistema comercial
-              </p>
-            </div>
+            <h3 className="text-lg font-medium">Logs de API (Últimos 50)</h3>
             <Button
+              onClick={loadApiLogs}
               variant="outline"
               size="sm"
-              onClick={loadApiLogs}
               disabled={loadingLogs}
             >
               {loadingLogs ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Cargando...
+                </>
               ) : (
-                "Actualizar"
+                'Refrescar'
               )}
             </Button>
           </div>
 
-          {loadingLogs ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : apiLogs.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              No hay logs de API disponibles
-            </div>
-          ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Status Code</TableHead>
+                  <TableHead>Duración (ms)</TableHead>
+                  <TableHead>Error</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {apiLogs.length === 0 ? (
                   <TableRow>
-                    <TableHead>Fecha/Hora</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Duración</TableHead>
-                    <TableHead>Error</TableHead>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      No hay logs disponibles
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {apiLogs.map((log) => (
+                ) : (
+                  apiLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-mono text-xs">
-                        {new Date(log.timestamp).toLocaleString('es-AR')}
+                        {new Date(log.timestamp).toLocaleString()}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{log.tipo}</Badge>
-                      </TableCell>
+                      <TableCell>{log.tipo}</TableCell>
                       <TableCell>
                         <Badge variant={log.exitoso ? "default" : "destructive"}>
-                          {log.exitoso ? "Éxito" : "Error"}
+                          {log.exitoso ? 'Éxito' : 'Error'}
                         </Badge>
                       </TableCell>
-                      <TableCell>{log.status_code || '-'}</TableCell>
-                      <TableCell>{log.duracion_ms ? `${log.duracion_ms}ms` : '-'}</TableCell>
-                      <TableCell className="text-xs max-w-xs truncate">
+                      <TableCell>{log.status_code || 'N/A'}</TableCell>
+                      <TableCell>{log.duracion_ms || 'N/A'}</TableCell>
+                      <TableCell className="max-w-xs truncate text-xs">
                         {log.error_message || '-'}
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </CardContent>
     </Card>
