@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { id_centum } = await req.json();
+    const { id_centum, endpoint: customEndpoint } = await req.json();
 
     if (!id_centum) {
       throw new Error('Se requiere id_centum');
@@ -90,8 +90,8 @@ Deno.serve(async (req) => {
 
     // === CONSTRUCCIÓN DE URL (EXACTAMENTE COMO POSTMAN) ===
     
-    // Reemplazar placeholder en endpoint
-    let endpoint = (config.endpoint_consulta_saldo || '/SaldosCuentasCorrientes/{{idCliente}}?fechaVencimientoHasta=2025-12-31&composicionReal=false')
+    // Usar endpoint personalizado si se proporciona, sino usar el de la config
+    let endpoint = (customEndpoint || config.endpoint_consulta_saldo || '/SaldosCuentasCorrientes/{{idCliente}}?fechaVencimientoHasta=2025-12-31&composicionReal=false')
       .replace(/\{\{idCliente\}\}/gi, id_centum)
       .replace(/\{idCliente\}/gi, id_centum)
       .replace(/\{\{idCentum\}\}/gi, id_centum)

@@ -43,6 +43,7 @@ export function SistemaComercialConfig() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionDebug, setConnectionDebug] = useState<string>('');
   const [idCentumTest, setIdCentumTest] = useState('6234');
+  const [endpointTest, setEndpointTest] = useState('/SaldosCuentasCorrientes/{idCentum}?fechaVencimientoHasta=2025-12-31&composicionReal=false');
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const { toast } = useToast();
@@ -244,7 +245,10 @@ export function SistemaComercialConfig() {
     
     try {
       const { data, error } = await supabase.functions.invoke('centum-postman-exact', {
-        body: { id_centum: idCentumTest }
+        body: { 
+          id_centum: idCentumTest,
+          endpoint: endpointTest
+        }
       });
 
       if (error) throw error;
@@ -394,21 +398,6 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
           </AlertDescription>
         </Alert>
 
-        {/* Endpoint de acreditación */}
-        <div className="space-y-2">
-          <Label htmlFor="endpoint">Endpoint de Acreditación</Label>
-          <Input
-            id="endpoint"
-            type="text"
-            placeholder="/api/empleados/acreditar"
-            value={config.endpoint_acreditacion}
-            onChange={(e) => setConfig({ ...config, endpoint_acreditacion: e.target.value })}
-          />
-          <p className="text-xs text-muted-foreground">
-            Ruta del endpoint para acreditar premios
-          </p>
-        </div>
-
         {/* Endpoint de consulta de saldo */}
         <div className="space-y-2">
           <Label htmlFor="endpoint_saldo">Endpoint de Consulta de Saldo</Label>
@@ -445,10 +434,24 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
             </p>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="endpointTest">Endpoint a probar</Label>
+            <Input
+              id="endpointTest"
+              type="text"
+              placeholder="/SaldosCuentasCorrientes/{idCentum}?fechaVencimientoHasta=2025-12-31&composicionReal=false"
+              value={endpointTest}
+              onChange={(e) => setEndpointTest(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Use {'{idCentum}'} como placeholder para el ID. Se reemplazará automáticamente.
+            </p>
+          </div>
+
           <Button
             onClick={handleTestCentumConnection}
             variant="outline"
-            disabled={testingConnection || !idCentumTest}
+            disabled={testingConnection || !idCentumTest || !endpointTest}
           >
             {testingConnection ? (
               <>
