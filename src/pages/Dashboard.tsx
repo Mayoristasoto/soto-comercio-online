@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import EventCalendar from "@/components/dashboard/EventCalendar"
 
 interface UserInfo {
   id: string
@@ -533,6 +534,11 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Calendario de Eventos */}
+      <div className="mt-8">
+        <EventCalendar showAllEvents={isAdmin || isGerente} />
       </div>
     </div>
   )
