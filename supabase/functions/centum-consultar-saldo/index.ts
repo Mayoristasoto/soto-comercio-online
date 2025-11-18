@@ -71,15 +71,22 @@ Deno.serve(async (req) => {
       suiteConsumidorId: string;
     };
 
-    // Construir URL para consultar saldo usando el endpoint configurado
-    // Soporta varios placeholders comunes: {idCentum}, {{idCentum}}, {idCliente}, {{idCliente}}
-    const endpointWithId = (config.endpoint_consulta_saldo as string)
-      .replace(/\{\{idCentum\}\}/gi, empleadoData.id_centum)
-      .replace(/\{idCentum\}/gi, empleadoData.id_centum)
-      .replace(/\{\{idCliente\}\}/gi, empleadoData.id_centum)
-      .replace(/\{idCliente\}/gi, empleadoData.id_centum);
+    // Obtener ID Centum y reemplazar en el endpoint
+    // Soporta: {{idCentum}}, {{idCliente}}, {idCentum}, {idCliente}
+    const idCentum = empleadoData.id_centum;
+    
+    console.log('ID Centum del empleado:', idCentum);
+    console.log('Endpoint original:', config.endpoint_consulta_saldo);
 
-    // Construir URL base completa con SuiteConsumidorApiPublica
+    const endpointWithId = (config.endpoint_consulta_saldo as string)
+      .replace(/\{\{idCentum\}\}/gi, idCentum)
+      .replace(/\{idCentum\}/gi, idCentum)
+      .replace(/\{\{idCliente\}\}/gi, idCentum)
+      .replace(/\{idCliente\}/gi, idCentum);
+
+    console.log('Endpoint con ID reemplazado:', endpointWithId);
+
+    // Construir URL completa según Postman: baseUrl/SuiteConsumidorApiPublica/ID/endpoint
     const baseUrlNormalized = (baseUrl || config.centum_base_url).replace(/\/+$/, '');
     const fullBaseUrl = `${baseUrlNormalized}/SuiteConsumidorApiPublica/${suiteConsumidorId}`;
     
@@ -88,10 +95,14 @@ Deno.serve(async (req) => {
       ? endpointWithId
       : `/${endpointWithId}`;
 
-    // URL final: baseUrl + /SuiteConsumidorApiPublica/ID + endpoint
+    // URL final
     const consultaUrl = `${fullBaseUrl}${endpointNormalized}`;
 
-    console.log('Consultando saldo en Centum:', consultaUrl);
+    console.log('URL completa para Centum:', consultaUrl);
+    console.log('Headers:', {
+      'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
+      'CentumSuiteAccessToken': '***HIDDEN***'
+    });
 
     // Realizar consulta de saldo con los headers requeridos (igual que Postman)
     const response = await fetch(consultaUrl, {
