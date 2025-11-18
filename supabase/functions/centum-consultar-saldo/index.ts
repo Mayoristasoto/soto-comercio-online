@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
 
   const startTime = Date.now();
   let statusCode: number | null = null;
-  let exitoso = false;
   let errorMessage: string | null = null;
   let empleadoId: string | null = null;
 
@@ -58,59 +57,102 @@ Deno.serve(async (req) => {
       throw new Error('Configuración de Centum incompleta');
     }
 
-    // Generar token de autenticación
+    // Generar token de autenticación (edge function separada)
     const { data: tokenData, error: tokenError } = await supabaseClient.functions.invoke('centum-generate-token');
-    
+
     if (tokenError || !tokenData) {
       console.error('Error generando token:', tokenError);
       throw new Error('No se pudo generar el token de autenticación');
     }
 
-    const { token, baseUrl, suiteConsumidorId } = tokenData;
+    const { token, baseUrl, suiteConsumidorId } = tokenData as {
+      token: string;
+      baseUrl: string;
+      suiteConsumidorId: string;
+    };
 
     // Construir URL para consultar saldo usando el endpoint configurado
-    // Reemplazar tanto {idCentum} como {{idCentum}}
-    const endpoint = config.endpoint_consulta_saldo
-      .replace(/\{\{idCentum\}\}/g, empleadoData.id_centum)
-      .replace(/\{idCentum\}/g, empleadoData.id_centum);
-    const consultaUrl = `${baseUrl}/SuiteConsumidorApiPublica/${suiteConsumidorId}${endpoint}`;
+    // Soporta varios placeholders comunes: {idCentum}, {{idCentum}}, {idCliente}, {{idCliente}}
+    const endpointWithId = (config.endpoint_consulta_saldo as string)
+      .replace(/\{\{idCentum\}\}/gi, empleadoData.id_centum)
+      .replace(/\{idCentum\}/gi, empleadoData.id_centum)
+      .replace(/\{\{idCliente\}\}/gi, empleadoData.id_centum)
+      .replace(/\{idCliente\}/gi, empleadoData.id_centum);
 
-    console.log('Consultando saldo en:', consultaUrl);
+    const baseUrlNormalized = (baseUrl || config.centum_base_url).replace(/\/+$/, '');
+    const endpointNormalized = endpointWithId.startsWith('/')
+      ? endpointWithId
+      : `/${endpointWithId}`;
 
-    // Realizar consulta de saldo con todos los headers requeridos (igual que Postman)
+    // Importante: replicar el comportamiento de Postman -> baseUrl + endpoint
+    const consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
+
+    console.log('Consultando saldo en Centum:', consultaUrl);
+
+    // Realizar consulta de saldo con los headers requeridos (igual que Postman)
     const response = await fetch(consultaUrl, {
       method: 'GET',
       headers: {
-        'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
+        'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id,
         'CentumSuiteAccessToken': token,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
     });
 
+    const duracionMs = Date.now() - startTime;
+
     if (!response.ok) {
       statusCode = response.status;
       const errorText = await response.text();
       console.error('Error en respuesta de Centum:', response.status, errorText);
-      throw new Error(`Error al consultar saldo: ${response.status} ${response.statusText}`);
+
+      // Registrar log detallado del error de Centum
+      try {
+        await supabaseClient.from('api_logs').insert({
+          tipo: 'consulta_saldo',
+          empleado_id: empleadoId,
+          status_code: statusCode,
+          exitoso: false,
+          error_message: `Error Centum ${response.status}: ${errorText?.slice(0, 500)}`,
+          duracion_ms: duracionMs,
+          response_data: null,
+        });
+      } catch (logError) {
+        console.error('Error al registrar log de error Centum:', logError);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Error al consultar saldo: ${response.status} ${response.statusText}`,
+          details: errorText,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
     }
 
     statusCode = response.status;
     const saldoData = await response.json();
-    exitoso = true;
 
     console.log('Saldo obtenido exitosamente:', saldoData);
 
-    // Registrar log en la base de datos
-    const duracionMs = Date.now() - startTime;
-    await supabaseClient.from('api_logs').insert({
-      tipo: 'consulta_saldo',
-      empleado_id: empleadoId,
-      status_code: statusCode,
-      exitoso: true,
-      duracion_ms: duracionMs,
-      response_data: saldoData,
-    });
+    // Registrar log exitoso en la base de datos
+    try {
+      await supabaseClient.from('api_logs').insert({
+        tipo: 'consulta_saldo',
+        empleado_id: empleadoId,
+        status_code: statusCode,
+        exitoso: true,
+        duracion_ms: Date.now() - startTime,
+        response_data: saldoData,
+      });
+    } catch (logError) {
+      console.error('Error al registrar log de éxito:', logError);
+    }
 
     return new Response(
       JSON.stringify({
@@ -123,11 +165,11 @@ Deno.serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
-    errorMessage = error.message || 'Error al consultar saldo de cuenta corriente';
+  } catch (error: any) {
+    errorMessage = error?.message || 'Error al consultar saldo de cuenta corriente';
     console.error('Error en centum-consultar-saldo:', error);
 
-    // Registrar log de error en la base de datos
+    // Registrar log de error genérico
     const duracionMs = Date.now() - startTime;
     try {
       await supabaseClient.from('api_logs').insert({
@@ -143,9 +185,9 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: false,
-        error: errorMessage
+        error: errorMessage,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
