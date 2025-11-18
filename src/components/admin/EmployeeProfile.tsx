@@ -44,6 +44,7 @@ interface EmpleadoProfile {
   estado_civil?: string
   emergencia_contacto_nombre?: string
   emergencia_contacto_telefono?: string
+  id_centum?: string
   rol: string
   sucursal_id?: string
   activo: boolean
@@ -119,7 +120,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
     try {
       const { data, error } = await supabase
         .from('empleados_datos_sensibles')
-        .select('telefono, direccion, salario, fecha_nacimiento, estado_civil, emergencia_contacto_nombre, emergencia_contacto_telefono')
+        .select('telefono, direccion, salario, fecha_nacimiento, estado_civil, emergencia_contacto_nombre, emergencia_contacto_telefono, id_centum')
         .eq('empleado_id', empleado.id)
         .maybeSingle()
 
@@ -490,18 +491,29 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="salario">Salario</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="salario">Salario</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="salario"
+                        type="number"
+                        step="0.01"
+                        value={formData.salario || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, salario: parseFloat(e.target.value) || undefined }))}
+                        className="pl-10"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="id_centum">ID Centum</Label>
                     <Input
-                      id="salario"
-                      type="number"
-                      step="0.01"
-                      value={formData.salario || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, salario: parseFloat(e.target.value) || undefined }))}
-                      className="pl-10"
-                      placeholder="0.00"
+                      id="id_centum"
+                      value={formData.id_centum || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, id_centum: e.target.value }))}
+                      placeholder="ID para consultar cuenta corriente"
                     />
                   </div>
                 </div>
