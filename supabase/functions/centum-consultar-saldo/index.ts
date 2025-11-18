@@ -87,10 +87,24 @@ Deno.serve(async (req) => {
       Accept: 'application/json'
     };
 
+    console.log('=== CENTUM CONSULTAR SALDO DEBUG ===');
     console.log('URL completa para Centum:', consultaUrl);
     console.log('Headers enviados:');
-    console.log(`CentumSuiteConsumidorApiPublicaId: ${headersToSend.CentumSuiteConsumidorApiPublicaId}`);
-    console.log(`CentumSuiteAccessToken: ${headersToSend.CentumSuiteAccessToken}`);
+    console.log('CentumSuiteAccessToken (full):', headersToSend.CentumSuiteAccessToken);
+    console.log('CentumSuiteAccessToken (length):', headersToSend.CentumSuiteAccessToken.length);
+    console.log('CentumSuiteConsumidorApiPublicaId:', headersToSend.CentumSuiteConsumidorApiPublicaId, '(type:', typeof headersToSend.CentumSuiteConsumidorApiPublicaId, ')');
+    console.log('Endpoint configurado:', endpoint);
+    
+    // Validar formato del token
+    const tokenParts = headersToSend.CentumSuiteAccessToken.split(' ');
+    console.log('Token parts count:', tokenParts.length);
+    if (tokenParts.length === 3) {
+      console.log('  Part 1 (fecha):', tokenParts[0], '(length:', tokenParts[0].length, ')');
+      console.log('  Part 2 (guid):', tokenParts[1], '(length:', tokenParts[1].length, ')');
+      console.log('  Part 3 (hash):', tokenParts[2], '(length:', tokenParts[2].length, ')');
+    } else {
+      console.error('ERROR: Token no tiene 3 partes separadas por espacios!');
+    }
 
     // Realizar consulta de saldo con GET explícito
     const response = await fetch(consultaUrl, {

@@ -62,14 +62,24 @@ Deno.serve(async (req) => {
     const guid = generateGuidN().trim();
     const clavePublicaTrim = clavePublica.trim();
     
+    console.log('=== TOKEN GENERATION DEBUG ===');
+    console.log('fechaUTC:', fechaUTC, '(length:', fechaUTC.length, ')');
+    console.log('guid:', guid, '(length:', guid.length, ')');
+    console.log('clavePublica (first 10 chars):', clavePublicaTrim.substring(0, 10), '(length:', clavePublicaTrim.length, ')');
+    
     // Concatenar con espacios: fechaUTC guid clavePublica
     const texto = `${fechaUTC} ${guid} ${clavePublicaTrim}`;
+    console.log('Texto para hash (length:', texto.length, ')');
+    console.log('Texto sample:', texto.substring(0, 80) + '...');
     
     // Calcular hash SHA1
     const hash = (await sha1Hash(texto)).trim();
+    console.log('Hash generado:', hash, '(length:', hash.length, ')');
     
     // Token final: fechaUTC guid hash (SIN saltos de línea ni espacios extras)
     const centumSuiteAccessToken = `${fechaUTC} ${guid} ${hash}`.trim();
+    console.log('Token final (length:', centumSuiteAccessToken.length, ')');
+    console.log('Token formato:', centumSuiteAccessToken.substring(0, 60) + '...');
 
     console.log('Token generado exitosamente para Centum API');
 
