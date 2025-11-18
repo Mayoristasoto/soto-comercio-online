@@ -303,36 +303,6 @@ export function SistemaComercialConfig() {
           </AlertDescription>
         </Alert>
 
-        {/* URL de la API */}
-        <div className="space-y-2">
-          <Label htmlFor="api_url">URL de la API del Sistema Comercial</Label>
-          <Input
-            id="api_url"
-            type="url"
-            placeholder="https://sistema-comercial.com/api"
-            value={config.api_url || ''}
-            onChange={(e) => setConfig({ ...config, api_url: e.target.value })}
-          />
-          <p className="text-xs text-muted-foreground">
-            URL base de la API del sistema comercial (sin el endpoint final)
-          </p>
-        </div>
-
-        {/* Token de autenticación */}
-        <div className="space-y-2">
-          <Label htmlFor="api_token">Token de Autenticación (opcional)</Label>
-          <Input
-            id="api_token"
-            type="password"
-            placeholder="Bearer token o API key"
-            value={config.api_token || ''}
-            onChange={(e) => setConfig({ ...config, api_token: e.target.value })}
-          />
-          <p className="text-xs text-muted-foreground">
-            Token para autenticarse con la API (si es requerido)
-          </p>
-        </div>
-
         {/* Endpoint de acreditación */}
         <div className="space-y-2">
           <Label htmlFor="endpoint">Endpoint de Acreditación</Label>
