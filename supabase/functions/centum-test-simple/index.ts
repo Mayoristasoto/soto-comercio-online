@@ -70,10 +70,12 @@ Deno.serve(async (req) => {
 
     // Hacer petición GET
     console.log('Enviando petición GET...');
+    const startTime = Date.now();
     const response = await fetch(fullUrl, {
       method: 'GET',
       headers: headers,
     });
+    const endTime = Date.now();
 
     console.log('Respuesta recibida:', response.status, response.statusText);
 
@@ -92,6 +94,30 @@ Deno.serve(async (req) => {
   -H 'Accept: application/json' \\
   -H 'CentumSuiteAccessToken: ${headers.CentumSuiteAccessToken}' \\
   -H 'CentumSuiteConsumidorApiPublicaId: ${headers.CentumSuiteConsumidorApiPublicaId}'`;
+
+    // Guardar log en la base de datos
+    try {
+      await supabaseClient.from('api_logs').insert({
+        tipo: 'test_connection',
+        empleado_id: null,
+        request_data: {
+          url: fullUrl,
+          method: 'GET',
+          headers: {
+            consumidorId: headers.CentumSuiteConsumidorApiPublicaId,
+            tokenPreview: headers.CentumSuiteAccessToken.substring(0, 50) + '...'
+          }
+        },
+        response_data: typeof responseData === 'string' ? { body: responseData } : responseData,
+        status_code: response.status,
+        exitoso: response.ok,
+        error_message: response.ok ? null : `${response.status} ${response.statusText}`,
+        duracion_ms: endTime - startTime,
+        ip_address: null
+      });
+    } catch (logError) {
+      console.error('Error guardando log:', logError);
+    }
 
     return new Response(
       JSON.stringify({
