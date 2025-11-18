@@ -113,7 +113,11 @@ export default function FichajeMetricasDashboard() {
   const [selectedPausas, setSelectedPausas] = useState<Set<string>>(new Set())
   
   // Filtros
-  const [fechaFiltro, setFechaFiltro] = useState<Date>(new Date())
+  const [fechaInicio, setFechaInicio] = useState<Date>(() => {
+    const today = new Date()
+    return new Date(today.getFullYear(), today.getMonth(), 1) // Primer día del mes actual
+  })
+  const [fechaFin, setFechaFin] = useState<Date>(new Date())
   const [empleadoFiltro, setEmpleadoFiltro] = useState<string>("todos")
   const [empleados, setEmpleados] = useState<any[]>([])
   
@@ -126,7 +130,7 @@ export default function FichajeMetricasDashboard() {
   
   useEffect(() => {
     cargarDatos()
-  }, [fechaFiltro, empleadoFiltro])
+  }, [fechaInicio, fechaFin, empleadoFiltro])
 
   const cargarEmpleados = async () => {
     const { data, error } = await supabase
@@ -163,32 +167,35 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarCrucesRojasExistentes = async () => {
-    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
+    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
     
     const { data, error } = await supabase
       .from('empleado_cruces_rojas')
       .select('empleado_id, fecha_infraccion, tipo_infraccion')
-      .eq('fecha_infraccion', fechaStr)
+      .gte('fecha_infraccion', fechaInicioStr)
+      .lte('fecha_infraccion', fechaFinStr)
       .in('tipo_infraccion', ['llegada_tarde', 'pausa_excedida'])
     
     if (!error && data) {
-      const keys = new Set(data.map(cr => `${cr.empleado_id}-${cr.tipo_infraccion}`))
+      const keys = new Set(data.map(cr => `${cr.empleado_id}-${cr.tipo_infraccion}-${cr.fecha_infraccion}`))
       setCrucesRojasExistentes(keys)
     }
   }
 
   const cargarMetricas = async () => {
-    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
+    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
 
-    // Construir ventana de tiempo en UTC para cubrir el día completo en Argentina (-03:00)
-    const nextDay = new Date(fechaFiltro)
-    nextDay.setDate(fechaFiltro.getDate() + 1)
+    // Construir ventana de tiempo en UTC para cubrir el rango completo en Argentina (-03:00)
+    const nextDay = new Date(fechaFin)
+    nextDay.setDate(fechaFin.getDate() + 1)
     const nextStr = format(nextDay, 'yyyy-MM-dd')
 
-    const startUtcStr = `${fechaStr}T03:00:00Z` // 00:00 ART
-    const endUtcStr = `${nextStr}T02:59:59Z`   // 23:59:59 ART
+    const startUtcStr = `${fechaInicioStr}T03:00:00Z` // 00:00 ART del día inicial
+    const endUtcStr = `${nextStr}T02:59:59Z`   // 23:59:59 ART del día final
 
-    // Total fichajes del día seleccionado (considerando huso horario)
+    // Total fichajes del rango (considerando huso horario)
     let fichajesQuery = supabase
       .from('fichajes')
       .select('*', { count: 'exact', head: true })
@@ -202,11 +209,12 @@ export default function FichajeMetricasDashboard() {
 
     const { count: totalFichajes } = await fichajesQuery
 
-    // Llegadas tarde del día
+    // Llegadas tarde del rango
     let tardeQuery = supabase
       .from('fichajes_tardios')
       .select('*', { count: 'exact', head: true })
-      .eq('fecha_fichaje', fechaStr)
+      .gte('fecha_fichaje', fechaInicioStr)
+      .lte('fecha_fichaje', fechaFinStr)
     
     if (empleadoFiltro !== "todos") {
       tardeQuery = tardeQuery.eq('empleado_id', empleadoFiltro)
@@ -214,11 +222,12 @@ export default function FichajeMetricasDashboard() {
 
     const { count: tardeHoy } = await tardeQuery
 
-    // Pausas excedidas del día
+    // Pausas excedidas del rango
     let pausasQuery = supabase
       .from('fichajes_pausas_excedidas')
       .select('*', { count: 'exact', head: true })
-      .eq('fecha_fichaje', fechaStr)
+      .gte('fecha_fichaje', fechaInicioStr)
+      .lte('fecha_fichaje', fechaFinStr)
     
     if (empleadoFiltro !== "todos") {
       pausasQuery = pausasQuery.eq('empleado_id', empleadoFiltro)
@@ -242,7 +251,8 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarFichajesTardios = async () => {
-    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
+    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
     
     let query = supabase
       .from('fichajes_tardios')
@@ -250,20 +260,24 @@ export default function FichajeMetricasDashboard() {
         *,
         empleado:empleados!inner(nombre, apellido, avatar_url)
       `)
-      .eq('fecha_fichaje', fechaStr)
+      .gte('fecha_fichaje', fechaInicioStr)
+      .lte('fecha_fichaje', fechaFinStr)
     
     if (empleadoFiltro !== "todos") {
       query = query.eq('empleado_id', empleadoFiltro)
     }
 
-    const { data, error } = await query.order('minutos_retraso', { ascending: false })
+    const { data, error } = await query
+      .order('fecha_fichaje', { ascending: false })
+      .order('minutos_retraso', { ascending: false })
 
     if (error) throw error
     setFichajesToday(data || [])
   }
 
   const cargarPausasExcedidas = async () => {
-    const fechaStr = format(fechaFiltro, 'yyyy-MM-dd')
+    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
     
     let query = supabase
       .from('fichajes_pausas_excedidas')
@@ -271,13 +285,16 @@ export default function FichajeMetricasDashboard() {
         *,
         empleado:empleados!inner(nombre, apellido, avatar_url)
       `)
-      .eq('fecha_fichaje', fechaStr)
+      .gte('fecha_fichaje', fechaInicioStr)
+      .lte('fecha_fichaje', fechaFinStr)
     
     if (empleadoFiltro !== "todos") {
       query = query.eq('empleado_id', empleadoFiltro)
     }
 
-    const { data, error } = await query.order('minutos_exceso', { ascending: false })
+    const { data, error } = await query
+      .order('fecha_fichaje', { ascending: false })
+      .order('minutos_exceso', { ascending: false })
 
     if (error) throw error
     setPausasToday(data || [])
@@ -750,8 +767,8 @@ export default function FichajeMetricasDashboard() {
     )
   }
 
-  const tieneCruzRoja = (empleadoId: string, tipo: 'llegada_tarde' | 'pausa_excedida') => {
-    return crucesRojasExistentes.has(`${empleadoId}-${tipo}`)
+  const tieneCruzRoja = (empleadoId: string, tipo: 'llegada_tarde' | 'pausa_excedida', fecha: string) => {
+    return crucesRojasExistentes.has(`${empleadoId}-${tipo}-${fecha}`)
   }
 
   return (
@@ -770,19 +787,39 @@ export default function FichajeMetricasDashboard() {
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Fecha</label>
+              <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left">
                     <Calendar className="mr-2 h-4 w-4" />
-                    {format(fechaFiltro, "PPP", { locale: es })}
+                    {format(fechaInicio, "PPP", { locale: es })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <CalendarComponent
                     mode="single"
-                    selected={fechaFiltro}
-                    onSelect={(date) => date && setFechaFiltro(date)}
+                    selected={fechaInicio}
+                    onSelect={(date) => date && setFechaInicio(date)}
+                    locale={es}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {format(fechaFin, "PPP", { locale: es })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarComponent
+                    mode="single"
+                    selected={fechaFin}
+                    onSelect={(date) => date && setFechaFin(date)}
                     locale={es}
                   />
                 </PopoverContent>
@@ -813,7 +850,7 @@ export default function FichajeMetricasDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fichajes Hoy</CardTitle>
+            <CardTitle className="text-sm font-medium">Fichajes Periodo</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -927,7 +964,7 @@ export default function FichajeMetricasDashboard() {
               ) : (
                 <div className="space-y-3">
                   {fichajesToday.map((fichaje) => {
-                    const yaRegistrado = tieneCruzRoja(fichaje.empleado_id, 'llegada_tarde')
+                    const yaRegistrado = tieneCruzRoja(fichaje.empleado_id, 'llegada_tarde', fichaje.fecha_fichaje)
                     
                     return (
                       <div key={fichaje.id} className={`flex items-center gap-3 p-4 border rounded-lg ${yaRegistrado ? 'bg-muted/50' : ''}`}>
@@ -1041,7 +1078,7 @@ export default function FichajeMetricasDashboard() {
               ) : (
                 <div className="space-y-3">
                   {pausasToday.map((pausa) => {
-                    const yaRegistrado = tieneCruzRoja(pausa.empleado_id, 'pausa_excedida')
+                    const yaRegistrado = tieneCruzRoja(pausa.empleado_id, 'pausa_excedida', pausa.fecha_fichaje)
                     
                     return (
                       <div key={pausa.id} className={`flex items-center gap-3 p-4 border rounded-lg ${yaRegistrado ? 'bg-muted/50' : ''}`}>
