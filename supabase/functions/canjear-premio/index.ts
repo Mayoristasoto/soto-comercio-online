@@ -114,7 +114,7 @@ serve(async (req) => {
         }
 
         // Si hay configuración de Centum, usar autenticación Centum
-        if (config.centum_base_url && config.centum_clave_publica) {
+        if (config.centum_base_url) {
           // Generar token de Centum
           const tokenResponse = await supabaseClient.functions.invoke('centum-generate-token')
           

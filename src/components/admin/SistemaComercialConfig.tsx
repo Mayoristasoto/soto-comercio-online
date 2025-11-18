@@ -17,7 +17,6 @@ interface SistemaComercialConfig {
   habilitado: boolean;
   centum_base_url: string | null;
   centum_suite_consumidor_api_publica_id: string | null;
-  centum_clave_publica: string | null;
 }
 
 export function SistemaComercialConfig() {
@@ -66,7 +65,6 @@ export function SistemaComercialConfig() {
           habilitado: config.habilitado,
           centum_base_url: config.centum_base_url,
           centum_suite_consumidor_api_publica_id: config.centum_suite_consumidor_api_publica_id,
-          centum_clave_publica: config.centum_clave_publica,
           updated_at: new Date().toISOString()
         })
         .eq('id', config.id);
@@ -215,19 +213,16 @@ export function SistemaComercialConfig() {
         </div>
 
         {/* Centum Clave Pública */}
-        <div className="space-y-2">
-          <Label htmlFor="centum_clave_publica">Centum Clave Pública</Label>
-          <Input
-            id="centum_clave_publica"
-            type="password"
-            placeholder="Clave pública para generar token"
-            value={config.centum_clave_publica || ''}
-            onChange={(e) => setConfig({ ...config, centum_clave_publica: e.target.value })}
-          />
-          <p className="text-xs text-muted-foreground">
-            Clave pública utilizada para generar el token de autenticación
-          </p>
-        </div>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <p className="font-medium mb-2">Clave Pública de Centum:</p>
+            <p className="text-sm">
+              La clave pública está configurada como secreto seguro <code className="bg-muted px-1 rounded">SISTEMA_COMERCIAL_API_KEY</code>.
+              Para actualizarla, contacte al administrador del sistema.
+            </p>
+          </AlertDescription>
+        </Alert>
 
         {/* URL de la API */}
         <div className="space-y-2">
