@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ExternalLink, Check, AlertCircle, Wallet, Bug, Download, Upload, Copy } from "lucide-react";
+import { Loader2, ExternalLink, Check, AlertCircle, Wallet, Bug, Download, Upload, Copy, Send } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,7 @@ export function SistemaComercialConfig() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testingSaldo, setTestingSaldo] = useState(false);
+  const [sendingRequest, setSendingRequest] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionDebug, setConnectionDebug] = useState<string>('');
   const [idCentumTest, setIdCentumTest] = useState('6234');
@@ -277,6 +278,64 @@ export function SistemaComercialConfig() {
         description: error.message || "Error al generar comando curl",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSendRequest = async () => {
+    setSendingRequest(true);
+    try {
+      // Generar token
+      const { data: tokenData, error: tokenError } = await supabase.functions.invoke('centum-generate-token');
+      
+      if (tokenError || !tokenData) {
+        toast({
+          title: "Error",
+          description: "No se pudo generar el token",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { centumSuiteAccessToken, centumBaseUrl, centumSuiteConsumidorApiPublicaId } = tokenData;
+      const endpoint = config.endpoint_consulta_saldo || '/Rubros';
+      const url = `${centumBaseUrl}${endpoint}`;
+
+      // Realizar la petición GET
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'CentumSuiteConsumidorApiPublicaId': centumSuiteConsumidorApiPublicaId,
+          'CentumSuiteAccessToken': centumSuiteAccessToken,
+          'Accept': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Petición exitosa",
+          description: `Status: ${response.status}. Datos recibidos correctamente.`,
+        });
+        console.log('Respuesta de Centum:', data);
+      } else {
+        toast({
+          title: "Error en la petición",
+          description: `Status: ${response.status}. ${JSON.stringify(data)}`,
+          variant: "destructive",
+        });
+      }
+
+      loadApiLogs();
+    } catch (error: any) {
+      console.error('Error al enviar petición:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al enviar la petición",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingRequest(false);
     }
   };
 
@@ -577,7 +636,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
         </div>
 
         {/* Botón de Test prominente */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Button
             onClick={handleTestCentumConnection}
             size="lg"
@@ -626,6 +685,26 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
           >
             <Copy className="mr-2 h-5 w-5" />
             Exportar Petición GET
+          </Button>
+
+          <Button
+            onClick={handleSendRequest}
+            disabled={sendingRequest}
+            size="lg"
+            variant="default"
+            className="h-16"
+          >
+            {sendingRequest ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-5 w-5" />
+                Enviar Petición
+              </>
+            )}
           </Button>
         </div>
 
