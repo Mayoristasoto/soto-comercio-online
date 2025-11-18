@@ -4479,6 +4479,7 @@ export type Database = {
           api_token: string | null
           api_url: string | null
           centum_base_url: string | null
+          centum_clave_publica: string | null
           centum_suite_consumidor_api_publica_id: string | null
           created_at: string | null
           endpoint_acreditacion: string | null
@@ -4490,6 +4491,7 @@ export type Database = {
           api_token?: string | null
           api_url?: string | null
           centum_base_url?: string | null
+          centum_clave_publica?: string | null
           centum_suite_consumidor_api_publica_id?: string | null
           created_at?: string | null
           endpoint_acreditacion?: string | null
@@ -4501,6 +4503,7 @@ export type Database = {
           api_token?: string | null
           api_url?: string | null
           centum_base_url?: string | null
+          centum_clave_publica?: string | null
           centum_suite_consumidor_api_publica_id?: string | null
           created_at?: string | null
           endpoint_acreditacion?: string | null

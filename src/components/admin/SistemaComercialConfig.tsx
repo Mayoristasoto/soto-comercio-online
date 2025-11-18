@@ -17,6 +17,7 @@ interface SistemaComercialConfig {
   habilitado: boolean;
   centum_base_url: string | null;
   centum_suite_consumidor_api_publica_id: string | null;
+  centum_clave_publica: string | null;
 }
 
 export function SistemaComercialConfig() {
@@ -65,6 +66,7 @@ export function SistemaComercialConfig() {
           habilitado: config.habilitado,
           centum_base_url: config.centum_base_url,
           centum_suite_consumidor_api_publica_id: config.centum_suite_consumidor_api_publica_id,
+          centum_clave_publica: config.centum_clave_publica,
           updated_at: new Date().toISOString()
         })
         .eq('id', config.id);
@@ -209,6 +211,21 @@ export function SistemaComercialConfig() {
           />
           <p className="text-xs text-muted-foreground">
             ID público de API de Centum Suite Consumidor
+          </p>
+        </div>
+
+        {/* Centum Clave Pública */}
+        <div className="space-y-2">
+          <Label htmlFor="centum_clave_publica">Centum Clave Pública</Label>
+          <Input
+            id="centum_clave_publica"
+            type="password"
+            placeholder="Clave pública para generar token"
+            value={config.centum_clave_publica || ''}
+            onChange={(e) => setConfig({ ...config, centum_clave_publica: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">
+            Clave pública utilizada para generar el token de autenticación
           </p>
         </div>
 
