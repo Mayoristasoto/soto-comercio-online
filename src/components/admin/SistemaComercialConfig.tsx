@@ -284,68 +284,65 @@ export function SistemaComercialConfig() {
   const handleSendRequest = async () => {
     setSendingRequest(true);
     try {
-      // Generar token
-      console.log('=== DEBUG: Generando token ===');
-      const { data: tokenData, error: tokenError } = await supabase.functions.invoke('centum-generate-token');
+      console.log('=== DEBUG: Enviando petición a través de edge function ===');
       
-      console.log('Token Data recibido:', tokenData);
-      console.log('Token Error:', tokenError);
+      // Obtener el empleado actual
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (tokenError || !tokenData) {
+      if (!user) {
         toast({
           title: "Error",
-          description: "No se pudo generar el token",
+          description: "No hay usuario autenticado",
           variant: "destructive",
         });
         return;
       }
 
-      // Usar los nombres correctos según el edge function
-      const { token, baseUrl, suiteConsumidorId } = tokenData;
-      const endpoint = config.endpoint_consulta_saldo || '/Rubros';
-      const url = `${baseUrl}${endpoint}`;
+      const { data: empleadoData, error: empleadoError } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-      console.log('=== DEBUG: Preparando petición ===');
-      console.log('URL:', url);
-      console.log('Token:', token);
-      console.log('Suite Consumidor ID:', suiteConsumidorId);
-
-      // Realizar la petición GET
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
-          'CentumSuiteAccessToken': token,
-          'Accept': 'application/json'
-        }
-      });
-
-      console.log('=== DEBUG: Respuesta recibida ===');
-      console.log('Status:', response.status);
-      console.log('Status Text:', response.statusText);
-      console.log('Headers:', Object.fromEntries(response.headers.entries()));
-
-      const responseText = await response.text();
-      console.log('Response Text:', responseText);
-
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch (e) {
-        console.error('Error parseando JSON:', e);
-        data = { error: 'Respuesta no es JSON válido', raw: responseText };
+      if (empleadoError || !empleadoData) {
+        toast({
+          title: "Error",
+          description: "No se pudo encontrar el empleado asociado",
+          variant: "destructive",
+        });
+        return;
       }
 
-      if (response.ok) {
+      console.log('Empleado ID:', empleadoData.id);
+
+      // Usar el edge function que ya existe
+      const { data, error } = await supabase.functions.invoke('centum-consultar-saldo', {
+        body: { empleado_id: empleadoData.id }
+      });
+
+      console.log('=== DEBUG: Respuesta del edge function ===');
+      console.log('Data:', data);
+      console.log('Error:', error);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Error al enviar la petición",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.success) {
         toast({
           title: "Petición exitosa",
-          description: `Status: ${response.status}. Datos recibidos correctamente.`,
+          description: `Saldo consultado correctamente. ID Centum: ${data.id_centum}`,
         });
-        console.log('Respuesta de Centum:', data);
+        console.log('Respuesta completa:', data);
       } else {
         toast({
           title: "Error en la petición",
-          description: `Status: ${response.status}. ${responseText}`,
+          description: data.error || "Error desconocido",
           variant: "destructive",
         });
       }
