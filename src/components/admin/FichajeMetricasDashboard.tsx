@@ -120,6 +120,7 @@ export default function FichajeMetricasDashboard() {
   const [fechaFin, setFechaFin] = useState<Date>(new Date())
   const [empleadoFiltro, setEmpleadoFiltro] = useState<string>("todos")
   const [empleados, setEmpleados] = useState<any[]>([])
+  const [ocultarRegistradas, setOcultarRegistradas] = useState(false)
   
   // Cruces rojas existentes
   const [crucesRojasExistentes, setCrucesRojasExistentes] = useState<Set<string>>(new Set())
@@ -454,6 +455,19 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const tieneCruzRoja = (empleadoId: string, tipo: string, fecha: string) => {
+    return crucesRojasExistentes.has(`${empleadoId}-${tipo}-${fecha}`)
+  }
+
+  // Filtrar incidencias según checkbox
+  const fichajesFiltrados = ocultarRegistradas 
+    ? fichajesToday.filter(f => !tieneCruzRoja(f.empleado_id, 'llegada_tarde', f.fecha_fichaje))
+    : fichajesToday
+
+  const pausasFiltradas = ocultarRegistradas
+    ? pausasToday.filter(p => !tieneCruzRoja(p.empleado_id, 'pausa_excedida', p.fecha_fichaje))
+    : pausasToday
+
   const toggleFichajeSelection = (id: string) => {
     const newSelection = new Set(selectedFichajes)
     if (newSelection.has(id)) {
@@ -465,10 +479,10 @@ export default function FichajeMetricasDashboard() {
   }
 
   const toggleAllFichajes = () => {
-    if (selectedFichajes.size === fichajesToday.length) {
+    if (selectedFichajes.size === fichajesFiltrados.length) {
       setSelectedFichajes(new Set())
     } else {
-      setSelectedFichajes(new Set(fichajesToday.map(f => f.id)))
+      setSelectedFichajes(new Set(fichajesFiltrados.map(f => f.id)))
     }
   }
 
@@ -483,10 +497,10 @@ export default function FichajeMetricasDashboard() {
   }
 
   const toggleAllPausas = () => {
-    if (selectedPausas.size === pausasToday.length) {
+    if (selectedPausas.size === pausasFiltradas.length) {
       setSelectedPausas(new Set())
     } else {
-      setSelectedPausas(new Set(pausasToday.map(p => p.id)))
+      setSelectedPausas(new Set(pausasFiltradas.map(p => p.id)))
     }
   }
 
@@ -767,9 +781,6 @@ export default function FichajeMetricasDashboard() {
     )
   }
 
-  const tieneCruzRoja = (empleadoId: string, tipo: 'llegada_tarde' | 'pausa_excedida', fecha: string) => {
-    return crucesRojasExistentes.has(`${empleadoId}-${tipo}-${fecha}`)
-  }
 
   return (
     <div className="space-y-6">
@@ -910,17 +921,33 @@ export default function FichajeMetricasDashboard() {
 
       {/* Tabs con detalles */}
       <Tabs defaultValue="tardios" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="tardios">
-            Llegadas Tarde ({fichajesToday.length})
-          </TabsTrigger>
-          <TabsTrigger value="pausas">
-            Pausas Excedidas ({pausasToday.length})
-          </TabsTrigger>
-          <TabsTrigger value="incidencias">
-            Incidencias Pendientes ({incidenciasPendientes.length})
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="tardios">
+              Llegadas Tarde ({fichajesFiltrados.length})
+            </TabsTrigger>
+            <TabsTrigger value="pausas">
+              Pausas Excedidas ({pausasFiltradas.length})
+            </TabsTrigger>
+            <TabsTrigger value="incidencias">
+              Incidencias Pendientes ({incidenciasPendientes.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="ocultar-registradas"
+              checked={ocultarRegistradas}
+              onCheckedChange={(checked) => setOcultarRegistradas(checked === true)}
+            />
+            <label 
+              htmlFor="ocultar-registradas" 
+              className="text-sm font-medium cursor-pointer select-none"
+            >
+              Ocultar incidencias ya registradas en legajo
+            </label>
+          </div>
+        </div>
 
         <TabsContent value="tardios" className="space-y-4">
           <Card>
@@ -932,14 +959,14 @@ export default function FichajeMetricasDashboard() {
                     Empleados que llegaron tarde según su horario asignado
                   </CardDescription>
                 </div>
-                {fichajesToday.length > 0 && (
+                {fichajesFiltrados.length > 0 && (
                   <div className="flex gap-2">
                     <Button
                       onClick={toggleAllFichajes}
                       variant="outline"
                       size="sm"
                     >
-                      {selectedFichajes.size === fichajesToday.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+                      {selectedFichajes.size === fichajesFiltrados.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
                     </Button>
                     <Button
                       onClick={plasmarLlegadasTardeComoRojas}
@@ -954,16 +981,16 @@ export default function FichajeMetricasDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {fichajesToday.length === 0 ? (
+              {fichajesFiltrados.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
                   <p className="text-muted-foreground">
-                    No hay llegadas tarde registradas hoy
+                    {fichajesToday.length === 0 ? 'No hay llegadas tarde registradas' : 'Todas las incidencias ya están registradas en legajo'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {fichajesToday.map((fichaje) => {
+                  {fichajesFiltrados.map((fichaje) => {
                     const yaRegistrado = tieneCruzRoja(fichaje.empleado_id, 'llegada_tarde', fichaje.fecha_fichaje)
                     
                     return (
@@ -1045,14 +1072,14 @@ export default function FichajeMetricasDashboard() {
                     <Clock className="h-4 w-4 mr-2" />
                     Recalcular Timezone
                   </Button>
-                  {pausasToday.length > 0 && (
+                  {pausasFiltradas.length > 0 && (
                     <>
                       <Button
                         onClick={toggleAllPausas}
                         variant="outline"
                         size="sm"
                       >
-                        {selectedPausas.size === pausasToday.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+                        {selectedPausas.size === pausasFiltradas.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
                       </Button>
                       <Button
                         onClick={plasmarPausasExcedidasComoRojas}
@@ -1068,16 +1095,16 @@ export default function FichajeMetricasDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {pausasToday.length === 0 ? (
+              {pausasFiltradas.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
                   <p className="text-muted-foreground">
-                    No hay pausas excedidas registradas hoy
+                    {pausasToday.length === 0 ? 'No hay pausas excedidas registradas' : 'Todas las incidencias ya están registradas en legajo'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {pausasToday.map((pausa) => {
+                  {pausasFiltradas.map((pausa) => {
                     const yaRegistrado = tieneCruzRoja(pausa.empleado_id, 'pausa_excedida', pausa.fecha_fichaje)
                     
                     return (
