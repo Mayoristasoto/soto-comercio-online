@@ -589,30 +589,30 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="envImport">Environment de Postman (opcional)</Label>
-              <Textarea
-                id="envImport"
-                placeholder='{"values": [{"key": "baseUrl", "value": "..."}]}'
-                value={envImport}
-                onChange={(e) => setEnvImport(e.target.value)}
-                className="font-mono text-xs h-32"
-              />
-              <p className="text-xs text-muted-foreground">
-                Formato Postman o JSON simple. Variables: {'{'}{'{'} variable {'}}'}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="jsonImport">JSON de configuración</Label>
+              <Label htmlFor="jsonImport">JSON de Postman (Request/Collection)</Label>
               <Textarea
                 id="jsonImport"
-                placeholder='{"centum_base_url": "{{baseUrl}}", ...}'
+                placeholder='Pega aquí el JSON del request o collection de Postman...'
                 value={jsonImport}
                 onChange={(e) => setJsonImport(e.target.value)}
                 className="font-mono text-xs h-32"
               />
               <p className="text-xs text-muted-foreground">
-                Usa {'{'}{'{'} variable {'}}'} para referencias al environment
+                Puede contener variables como {'{'}{'{'} variable {'}}'} que se reemplazarán con el environment
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="envImport">Archivo de Environment (Variables)</Label>
+              <Textarea
+                id="envImport"
+                placeholder='{"values": [{"key": "baseUrl", "value": "https://..."}, {"key": "token", "value": "..."}]}'
+                value={envImport}
+                onChange={(e) => setEnvImport(e.target.value)}
+                className="font-mono text-xs h-32"
+              />
+              <p className="text-xs text-muted-foreground">
+                Formato: Postman environment o JSON simple con pares clave-valor
               </p>
             </div>
           </div>
