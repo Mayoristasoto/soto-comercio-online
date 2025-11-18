@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ExternalLink, Check, AlertCircle, Wallet, Bug } from "lucide-react";
+import { Loader2, ExternalLink, Check, AlertCircle, Wallet, Bug, Download, Upload } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,7 @@ export function SistemaComercialConfig() {
   const [endpointTest, setEndpointTest] = useState('/rubros');
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [jsonImport, setJsonImport] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -300,6 +301,59 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
     }
   };
 
+  const handleImportJson = () => {
+    try {
+      const parsedConfig = JSON.parse(jsonImport);
+      
+      // Validar que tenga las propiedades necesarias
+      if (!parsedConfig) {
+        throw new Error('JSON inválido');
+      }
+
+      setConfig({
+        ...config!,
+        centum_base_url: parsedConfig.centum_base_url || config!.centum_base_url,
+        centum_suite_consumidor_api_publica_id: parsedConfig.centum_suite_consumidor_api_publica_id || config!.centum_suite_consumidor_api_publica_id,
+        endpoint_consulta_saldo: parsedConfig.endpoint_consulta_saldo || config!.endpoint_consulta_saldo,
+        api_url: parsedConfig.api_url || config!.api_url,
+        endpoint_acreditacion: parsedConfig.endpoint_acreditacion || config!.endpoint_acreditacion,
+        habilitado: parsedConfig.habilitado !== undefined ? parsedConfig.habilitado : config!.habilitado,
+      });
+
+      toast({
+        title: "Configuración importada",
+        description: "Los datos se han cargado correctamente. Revise y guarde los cambios."
+      });
+
+      setJsonImport('');
+    } catch (error: any) {
+      toast({
+        title: "Error al importar",
+        description: error.message || "El JSON no es válido",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExportJson = () => {
+    const exportData = {
+      centum_base_url: config?.centum_base_url,
+      centum_suite_consumidor_api_publica_id: config?.centum_suite_consumidor_api_publica_id,
+      endpoint_consulta_saldo: config?.endpoint_consulta_saldo,
+      api_url: config?.api_url,
+      endpoint_acreditacion: config?.endpoint_acreditacion,
+      habilitado: config?.habilitado,
+    };
+
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    navigator.clipboard.writeText(jsonStr);
+
+    toast({
+      title: "Configuración copiada",
+      description: "La configuración se copió al portapapeles"
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -354,6 +408,85 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
             checked={config.habilitado}
             onCheckedChange={(checked) => setConfig({ ...config, habilitado: checked })}
           />
+        </div>
+
+        {/* Botón de Test prominente */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Button
+            onClick={handleTestCentumConnection}
+            size="lg"
+            variant="default"
+            disabled={testingConnection}
+            className="h-16"
+          >
+            {testingConnection ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Probando Conexión...
+              </>
+            ) : (
+              <>
+                <Bug className="mr-2 h-5 w-5" />
+                Probar Conexión Centum
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleTestSaldo}
+            size="lg"
+            variant="outline"
+            disabled={testingSaldo}
+            className="h-16"
+          >
+            {testingSaldo ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Consultando Saldo...
+              </>
+            ) : (
+              <>
+                <Wallet className="mr-2 h-5 w-5" />
+                Probar Consulta de Saldo
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Importar/Exportar JSON */}
+        <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+          <h3 className="font-medium flex items-center gap-2">
+            <ExternalLink className="h-4 w-4" />
+            Importar/Exportar Configuración
+          </h3>
+          
+          <div className="space-y-2">
+            <Label htmlFor="jsonImport">Pegar JSON de configuración</Label>
+            <Textarea
+              id="jsonImport"
+              placeholder='{"centum_base_url": "...", "centum_suite_consumidor_api_publica_id": "..."}'
+              value={jsonImport}
+              onChange={(e) => setJsonImport(e.target.value)}
+              className="font-mono text-xs h-32"
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleImportJson}
+                variant="outline"
+                size="sm"
+                disabled={!jsonImport.trim()}
+              >
+                Importar JSON
+              </Button>
+              <Button
+                onClick={handleExportJson}
+                variant="outline"
+                size="sm"
+              >
+                Copiar Configuración Actual
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Centum Base URL */}
@@ -480,39 +613,6 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
 
         {/* Botones de acción */}
         <div className="flex gap-3 flex-wrap">
-          <Button
-            onClick={handleTestConnection}
-            variant="outline"
-            disabled={testing || !config.api_url}
-          >
-            {testing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Probando...
-              </>
-            ) : (
-              'Probar Conexión API'
-            )}
-          </Button>
-
-          <Button
-            onClick={handleTestSaldo}
-            variant="outline"
-            disabled={testingSaldo}
-          >
-            {testingSaldo ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Consultando...
-              </>
-            ) : (
-              <>
-                <Wallet className="mr-2 h-4 w-4" />
-                Probar Consulta Saldo
-              </>
-            )}
-          </Button>
-
           <Button
             onClick={handleSave}
             disabled={saving}
