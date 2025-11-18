@@ -240,43 +240,47 @@ export function SistemaComercialConfig() {
 
   const handleTestCentumConnection = async () => {
     setTestingConnection(true);
-    setConnectionDebug('Iniciando prueba de conexión...\n');
+    setConnectionDebug('Iniciando prueba de conexión (Postman Exact)...\n');
     
     try {
-      const { data, error } = await supabase.functions.invoke('centum-test-connection', {
+      const { data, error } = await supabase.functions.invoke('centum-postman-exact', {
         body: { id_centum: idCentumTest }
       });
 
       if (error) throw error;
 
       const debugInfo = `
-=== PRUEBA DE CONEXIÓN CENTUM ===
+=== PRUEBA DE CONEXIÓN CENTUM (POSTMAN EXACT) ===
 
-Token Generado:
-${data.token || 'No disponible'}
+✓ Token Generado:
+${data.debug?.token || 'No disponible'}
 
-URL Completa:
-${data.url || 'No disponible'}
+✓ URL Completa:
+${data.debug?.url || 'No disponible'}
 
-Headers Enviados:
-${JSON.stringify(data.headers, null, 2)}
+✓ Headers Enviados:
+${JSON.stringify(data.debug?.headers, null, 2)}
 
-Respuesta de Centum:
-Status: ${data.status}
-${data.success ? '✓ Conexión exitosa' : '✗ Error en conexión'}
+✓ Generación del Token:
+  - Fecha UTC: ${data.debug?.fechaUTC}
+  - GUID: ${data.debug?.guid}
+  - Texto para hash: ${data.debug?.textoParaHash}
+  - Hash SHA1: ${data.debug?.hash}
 
-${data.response ? `Datos recibidos:\n${JSON.stringify(data.response, null, 2)}` : ''}
+✓ Respuesta de Centum:
+  Status: ${data.status}
+  ${data.success ? '✓ Conexión exitosa' : '✗ Error en conexión'}
 
-${data.error ? `Error: ${data.error}` : ''}
+${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
 
-IMPORTANTE: Revisa los logs del edge function para ver el token completo.
+NOTA: Esta función replica EXACTAMENTE el script de Postman.
       `;
 
       setConnectionDebug(debugInfo);
 
       toast({
         title: data.success ? "Conexión exitosa" : "Error en conexión",
-        description: data.success ? "La conexión con Centum funciona correctamente" : data.error,
+        description: data.success ? "La conexión con Centum funciona correctamente" : "Error al conectar con Centum",
         variant: data.success ? "default" : "destructive",
       });
     } catch (error: any) {
