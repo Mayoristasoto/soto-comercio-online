@@ -30,18 +30,6 @@ Deno.serve(async (req) => {
       throw new Error('Se requiere el ID del empleado');
     }
 
-    // Obtener ID Centum del empleado
-    const { data: empleadoData, error: empleadoError } = await supabaseClient
-      .from('empleados_datos_sensibles')
-      .select('id_centum')
-      .eq('empleado_id', empleado_id)
-      .single();
-
-    if (empleadoError || !empleadoData?.id_centum) {
-      console.error('Error obteniendo ID Centum:', empleadoError);
-      throw new Error('No se encontró el ID Centum del empleado');
-    }
-
     // Obtener configuración de Centum
     const { data: config, error: configError } = await supabaseClient
       .from('sistema_comercial_config')
@@ -71,30 +59,18 @@ Deno.serve(async (req) => {
       suiteConsumidorId: string;
     };
 
-    // Obtener ID Centum y reemplazar en el endpoint
-    // Soporta: {{idCentum}}, {{idCliente}}, {idCentum}, {idCliente}
-    const idCentum = empleadoData.id_centum;
+    // Usar endpoint tal cual está configurado (sin reemplazos)
+    const endpoint = config.endpoint_consulta_saldo;
     
-    console.log('ID Centum del empleado:', idCentum);
-    console.log('Endpoint original:', config.endpoint_consulta_saldo);
-
-    const endpointWithId = (config.endpoint_consulta_saldo as string)
-      .replace(/\{\{idCentum\}\}/gi, idCentum)
-      .replace(/\{idCentum\}/gi, idCentum)
-      .replace(/\{\{idCliente\}\}/gi, idCentum)
-      .replace(/\{idCliente\}/gi, idCentum);
-
-    console.log('Endpoint con ID reemplazado:', endpointWithId);
+    console.log('Endpoint configurado:', endpoint);
 
     // Construir URL completa (igual que Postman: baseUrl + endpoint)
     const baseUrlNormalized = (baseUrl || config.centum_base_url).replace(/\/+$/, '');
     
     // Normalizar endpoint (debe empezar con /)
-    const endpointNormalized = endpointWithId.startsWith('/')
-      ? endpointWithId
-      : `/${endpointWithId}`;
+    const endpointNormalized = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-    // URL simple: baseUrl + endpoint (sin SuiteConsumidorApiPublica)
+    // URL simple: baseUrl + endpoint
     const consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
 
     console.log('URL completa para Centum:', consultaUrl);
@@ -178,7 +154,6 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         saldo: saldoData,
-        id_centum: empleadoData.id_centum,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
