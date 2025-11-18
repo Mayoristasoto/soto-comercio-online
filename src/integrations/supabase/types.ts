@@ -4478,6 +4478,8 @@ export type Database = {
         Row: {
           api_token: string | null
           api_url: string | null
+          centum_base_url: string | null
+          centum_suite_consumidor_api_publica_id: string | null
           created_at: string | null
           endpoint_acreditacion: string | null
           habilitado: boolean | null
@@ -4487,6 +4489,8 @@ export type Database = {
         Insert: {
           api_token?: string | null
           api_url?: string | null
+          centum_base_url?: string | null
+          centum_suite_consumidor_api_publica_id?: string | null
           created_at?: string | null
           endpoint_acreditacion?: string | null
           habilitado?: boolean | null
@@ -4496,6 +4500,8 @@ export type Database = {
         Update: {
           api_token?: string | null
           api_url?: string | null
+          centum_base_url?: string | null
+          centum_suite_consumidor_api_publica_id?: string | null
           created_at?: string | null
           endpoint_acreditacion?: string | null
           habilitado?: boolean | null
