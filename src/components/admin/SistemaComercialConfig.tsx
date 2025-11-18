@@ -15,6 +15,8 @@ interface SistemaComercialConfig {
   api_token: string | null;
   endpoint_acreditacion: string;
   habilitado: boolean;
+  centum_base_url: string | null;
+  centum_suite_consumidor_api_publica_id: string | null;
 }
 
 export function SistemaComercialConfig() {
@@ -61,6 +63,8 @@ export function SistemaComercialConfig() {
           api_token: config.api_token,
           endpoint_acreditacion: config.endpoint_acreditacion,
           habilitado: config.habilitado,
+          centum_base_url: config.centum_base_url,
+          centum_suite_consumidor_api_publica_id: config.centum_suite_consumidor_api_publica_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', config.id);
@@ -176,6 +180,36 @@ export function SistemaComercialConfig() {
             checked={config.habilitado}
             onCheckedChange={(checked) => setConfig({ ...config, habilitado: checked })}
           />
+        </div>
+
+        {/* Centum Base URL */}
+        <div className="space-y-2">
+          <Label htmlFor="centum_base_url">Centum Base URL</Label>
+          <Input
+            id="centum_base_url"
+            type="url"
+            placeholder="https://plataforma4.centum.com.ar:23990/BL11"
+            value={config.centum_base_url || ''}
+            onChange={(e) => setConfig({ ...config, centum_base_url: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">
+            URL base de la API de Centum
+          </p>
+        </div>
+
+        {/* Centum Suite Consumidor API Pública ID */}
+        <div className="space-y-2">
+          <Label htmlFor="centum_suite_consumidor_api_publica_id">Centum Suite Consumidor API Pública ID</Label>
+          <Input
+            id="centum_suite_consumidor_api_publica_id"
+            type="text"
+            placeholder="3"
+            value={config.centum_suite_consumidor_api_publica_id || ''}
+            onChange={(e) => setConfig({ ...config, centum_suite_consumidor_api_publica_id: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">
+            ID público de API de Centum Suite Consumidor
+          </p>
         </div>
 
         {/* URL de la API */}
