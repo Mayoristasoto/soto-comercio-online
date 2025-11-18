@@ -74,9 +74,10 @@ Deno.serve(async (req) => {
     const consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
 
     console.log('URL completa para Centum:', consultaUrl);
+    console.log('Token exacto enviado a Centum:', token.trim());
     console.log('Headers:', {
-      'CentumSuiteConsumidorApiPublicaId': suiteConsumidorId,
-      'CentumSuiteAccessToken': '***HIDDEN***'
+      'CentumSuiteConsumidorApiPublicaId': (suiteConsumidorId ?? config.centum_suite_consumidor_api_publica_id).trim(),
+      'CentumSuiteAccessToken': token.trim(),
     });
 
     // Realizar consulta de saldo con GET explícito y headers trimmed
