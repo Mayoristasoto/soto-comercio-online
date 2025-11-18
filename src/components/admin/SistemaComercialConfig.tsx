@@ -372,6 +372,7 @@ export function SistemaComercialConfig() {
 
   const handleTestSimpleConnection = async () => {
     setSendingRequest(true);
+    setConnectionDebug('');
     try {
       console.log('=== TEST SIMPLE CONNECTION ===');
       
@@ -389,10 +390,32 @@ export function SistemaComercialConfig() {
         return;
       }
 
+      // Mostrar headers enviados en el debug
+      const debugInfo = `=== HEADERS ENVIADOS A CENTUM ===
+
+URL: ${data.debug?.url || 'N/A'}
+Método: ${data.debug?.method || 'GET'}
+
+Headers:
+  CentumSuiteConsumidorApiPublicaId: ${data.debug?.headersUsed?.consumidorId || 'N/A'}
+  CentumSuiteAccessToken: ${data.debug?.headersUsed?.tokenPreview || 'N/A'}
+  Accept: application/json
+
+=== RESPUESTA DE CENTUM ===
+Status: ${data.status} ${data.statusText}
+
+${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : 'Sin datos'}
+
+=== CURL EQUIVALENTE ===
+${data.curlCommand || 'N/A'}
+`;
+
+      setConnectionDebug(debugInfo);
+
       if (data.success) {
         toast({
           title: "Conexión exitosa",
-          description: `Status: ${data.status}. Ver consola para detalles.`,
+          description: `Status: ${data.status}. Ver detalles abajo.`,
         });
       } else {
         toast({
@@ -403,6 +426,8 @@ export function SistemaComercialConfig() {
       }
     } catch (error: any) {
       console.error('Error:', error);
+      const errorInfo = `Error al enviar petición:\n${error.message}`;
+      setConnectionDebug(errorInfo);
       toast({
         title: "Error",
         description: error.message,
@@ -848,6 +873,21 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
             )}
           </Button>
         </div>
+
+        {/* Visualización de Headers y Respuesta */}
+        {connectionDebug && (
+          <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+            <Label className="flex items-center gap-2">
+              <Bug className="h-4 w-4" />
+              Detalles de la Petición
+            </Label>
+            <Textarea
+              value={connectionDebug}
+              readOnly
+              className="font-mono text-xs h-96 bg-background"
+            />
+          </div>
+        )}
 
         {/* Importar/Exportar JSON */}
         <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
