@@ -350,16 +350,16 @@ IMPORTANTE: Revisa los logs del edge function para ver el token completo.
 
         {/* Centum Base URL */}
         <div className="space-y-2">
-          <Label htmlFor="centum_base_url">Centum Base URL</Label>
+          <Label htmlFor="centum_base_url">Centum Base URL Completa</Label>
           <Input
             id="centum_base_url"
             type="text"
-            placeholder="https://plataforma4.centum.com.ar:23990/BL11"
+            placeholder="https://plataforma4.centum.com.ar:23990/BL11/SuiteConsumidorApiPublica/3"
             value={config.centum_base_url || ''}
             onChange={(e) => setConfig({ ...config, centum_base_url: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
-            URL base de Centum (sin /SuiteConsumidorApiPublica)
+            URL base completa de Centum (incluyendo /SuiteConsumidorApiPublica/ID)
           </p>
         </div>
 

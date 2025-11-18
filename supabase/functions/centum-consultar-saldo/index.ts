@@ -86,17 +86,16 @@ Deno.serve(async (req) => {
 
     console.log('Endpoint con ID reemplazado:', endpointWithId);
 
-    // Construir URL completa según Postman: baseUrl/SuiteConsumidorApiPublica/ID/endpoint
+    // Construir URL completa: baseUrl + endpoint (sin agregar /SuiteConsumidorApiPublica/ID)
     const baseUrlNormalized = (baseUrl || config.centum_base_url).replace(/\/+$/, '');
-    const fullBaseUrl = `${baseUrlNormalized}/SuiteConsumidorApiPublica/${suiteConsumidorId}`;
     
     // Normalizar endpoint (debe empezar con /)
     const endpointNormalized = endpointWithId.startsWith('/')
       ? endpointWithId
       : `/${endpointWithId}`;
 
-    // URL final
-    const consultaUrl = `${fullBaseUrl}${endpointNormalized}`;
+    // URL final: baseUrl + endpoint
+    const consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
 
     console.log('URL completa para Centum:', consultaUrl);
     console.log('Headers:', {
