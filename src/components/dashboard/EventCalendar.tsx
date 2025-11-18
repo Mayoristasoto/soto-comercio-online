@@ -443,12 +443,27 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
 
       toast({
         title: "Horario excepcional creado",
-        description: "El horario se registró correctamente"
+        description: "El horario se registró correctamente. Puedes recalcular incidencias ahora."
       })
 
+      // Guardar empleado_id para poder recalcular después
+      const empleadoIdGuardado = horarioForm.empleado_id
+      
       setHorarioForm({ empleado_id: '', hora_entrada: '', hora_salida: '', motivo: '' })
       setDialogOpen(false)
       loadEvents()
+
+      // Mostrar botón para recalcular incidencias
+      toast({
+        title: "¿Recalcular incidencias?",
+        description: "Click aquí para recalcular las incidencias de fichaje basándose en el nuevo horario",
+        action: (
+          <Button onClick={() => handleRecalcularIncidencias(empleadoIdGuardado, selectedDate)} size="sm">
+            Recalcular
+          </Button>
+        ),
+        duration: 10000
+      })
     } catch (error) {
       console.error('Error creando horario:', error)
       toast({
@@ -456,7 +471,117 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
         description: "No se pudo crear el horario excepcional",
         variant: "destructive"
       })
+  }
+
+  const handleRecalcularIncidencias = async (empleadoId: string, fecha: Date) => {
+    try {
+      const fechaStr = format(fecha, 'yyyy-MM-dd')
+      
+      // Obtener el horario excepcional para esta fecha y empleado
+      const { data: horario, error: horarioError } = await supabase
+        .from('horarios_excepcionales')
+        .select('*')
+        .eq('empleado_id', empleadoId)
+        .eq('fecha', fechaStr)
+        .single()
+
+      if (horarioError) throw horarioError
+
+      // Obtener los fichajes del empleado para este día
+      const { data: fichajes, error: fichajesError } = await supabase
+        .from('fichajes')
+        .select('*')
+        .eq('empleado_id', empleadoId)
+        .gte('timestamp_real', `${fechaStr}T00:00:00`)
+        .lte('timestamp_real', `${fechaStr}T23:59:59`)
+        .order('timestamp_real', { ascending: true })
+
+      if (fichajesError) throw fichajesError
+
+      if (!fichajes || fichajes.length === 0) {
+        toast({
+          title: "Información",
+          description: "No hay fichajes para recalcular en esta fecha"
+        })
+        return
+      }
+
+      // Eliminar cruces rojas existentes para este día
+      const { error: deleteError } = await supabase
+        .from('empleado_cruces_rojas')
+        .delete()
+        .eq('empleado_id', empleadoId)
+        .eq('fecha_infraccion', fechaStr)
+
+      if (deleteError) throw deleteError
+
+      // Recalcular incidencias basándose en el horario excepcional
+      const horaEntradaEsperada = new Date(`${fechaStr}T${horario.hora_entrada}`)
+      const horaSalidaEsperada = new Date(`${fechaStr}T${horario.hora_salida}`)
+
+      const fichajeEntrada = fichajes.find(f => f.tipo === 'entrada')
+      const fichajeSalida = fichajes.find(f => f.tipo === 'salida')
+
+      const nuevasIncidencias = []
+
+      // Verificar llegada tarde
+      if (fichajeEntrada) {
+        const horaEntradaReal = new Date(fichajeEntrada.timestamp_real)
+        const diffMinutos = Math.round((horaEntradaReal.getTime() - horaEntradaEsperada.getTime()) / 60000)
+        
+        if (diffMinutos > 5) { // Tolerancia de 5 minutos
+          nuevasIncidencias.push({
+            empleado_id: empleadoId,
+            tipo_infraccion: 'llegada_tarde',
+            fecha_infraccion: fechaStr,
+            fichaje_id: fichajeEntrada.id,
+            minutos_diferencia: diffMinutos,
+            observaciones: `Horario excepcional: entrada esperada ${horario.hora_entrada}`
+          })
+        }
+      }
+
+      // Verificar salida temprana
+      if (fichajeSalida) {
+        const horaSalidaReal = new Date(fichajeSalida.timestamp_real)
+        const diffMinutos = Math.round((horaSalidaEsperada.getTime() - horaSalidaReal.getTime()) / 60000)
+        
+        if (diffMinutos > 5) { // Tolerancia de 5 minutos
+          nuevasIncidencias.push({
+            empleado_id: empleadoId,
+            tipo_infraccion: 'salida_temprana',
+            fecha_infraccion: fechaStr,
+            fichaje_id: fichajeSalida.id,
+            minutos_diferencia: diffMinutos,
+            observaciones: `Horario excepcional: salida esperada ${horario.hora_salida}`
+          })
+        }
+      }
+
+      // Insertar nuevas incidencias si existen
+      if (nuevasIncidencias.length > 0) {
+        const { error: insertError } = await supabase
+          .from('empleado_cruces_rojas')
+          .insert(nuevasIncidencias)
+
+        if (insertError) throw insertError
+      }
+
+      toast({
+        title: "Incidencias recalculadas",
+        description: `Se encontraron ${nuevasIncidencias.length} incidencia(s) basándose en el horario excepcional`
+      })
+
+    } catch (error) {
+      console.error('Error al recalcular incidencias:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron recalcular las incidencias",
+        variant: "destructive"
+      })
     }
+  }
+
   }
 
   const selectedDayEvents = getEventsForDate(selectedDate)
