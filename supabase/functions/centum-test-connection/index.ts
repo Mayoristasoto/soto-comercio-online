@@ -91,8 +91,8 @@ Deno.serve(async (req) => {
       endpoint = `/${endpoint}`;
     }
 
-    // URL completa: baseUrl + /SuiteConsumidorApiPublica/ID + endpoint
-    const fullUrl = `${baseUrl}/SuiteConsumidorApiPublica/${suiteId}${endpoint}`;
+    // URL completa: baseUrl + endpoint (sin agregar /SuiteConsumidorApiPublica/ID)
+    const fullUrl = `${baseUrl}${endpoint}`;
 
     console.log('=== DEBUG CENTUM URL ===');
     console.log('Base URL:', baseUrl);
