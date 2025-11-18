@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ExternalLink, Check, AlertCircle, Wallet, Bug, Download, Upload } from "lucide-react";
+import { Loader2, ExternalLink, Check, AlertCircle, Wallet, Bug, Download, Upload, Copy } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -238,6 +238,45 @@ export function SistemaComercialConfig() {
       });
     } finally {
       setTestingSaldo(false);
+    }
+  };
+
+  const handleExportCurl = async () => {
+    try {
+      // Generar token
+      const { data: tokenData, error: tokenError } = await supabase.functions.invoke('centum-generate-token');
+      
+      if (tokenError || !tokenData) {
+        toast({
+          title: "Error",
+          description: "No se pudo generar el token",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { token, baseUrl, suiteConsumidorId } = tokenData;
+      const endpoint = config.endpoint_consulta_saldo || '/Rubros';
+      const url = `${baseUrl}${endpoint}`;
+
+      const curlCommand = `curl -v "${url}" \\
+  -H "CentumSuiteConsumidorApiPublicaId: ${suiteConsumidorId}" \\
+  -H "CentumSuiteAccessToken: ${token}" \\
+  -H "Accept: application/json"`;
+
+      await navigator.clipboard.writeText(curlCommand);
+      
+      toast({
+        title: "¡Copiado!",
+        description: "Comando curl copiado al portapapeles",
+      });
+    } catch (error: any) {
+      console.error('Error al exportar curl:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al generar comando curl",
+        variant: "destructive",
+      });
     }
   };
 
@@ -538,7 +577,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
         </div>
 
         {/* Botón de Test prominente */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Button
             onClick={handleTestCentumConnection}
             size="lg"
@@ -577,6 +616,16 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
                 Probar Consulta de Saldo
               </>
             )}
+          </Button>
+
+          <Button
+            onClick={handleExportCurl}
+            size="lg"
+            variant="secondary"
+            className="h-16"
+          >
+            <Copy className="mr-2 h-5 w-5" />
+            Exportar Petición GET
           </Button>
         </div>
 
