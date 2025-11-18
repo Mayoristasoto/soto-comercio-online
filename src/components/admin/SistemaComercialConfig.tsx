@@ -39,7 +39,7 @@ export function SistemaComercialConfig() {
         .single();
 
       if (error) throw error;
-      setConfig(data);
+      setConfig(data as any); // Cast needed while types update
     } catch (error) {
       console.error('Error loading config:', error);
       toast({
@@ -268,6 +268,21 @@ export function SistemaComercialConfig() {
           />
           <p className="text-xs text-muted-foreground">
             Ruta del endpoint para acreditar dinero en cuenta corriente
+          </p>
+        </div>
+
+        {/* Endpoint de consulta de saldo */}
+        <div className="space-y-2">
+          <Label htmlFor="endpoint_consulta_saldo">Endpoint de Consulta de Saldo (Centum)</Label>
+          <Input
+            id="endpoint_consulta_saldo"
+            type="text"
+            placeholder="/CuentaCorriente/{idCentum}/Saldo"
+            value={config.endpoint_consulta_saldo || ''}
+            onChange={(e) => setConfig({ ...config, endpoint_consulta_saldo: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">
+            Ruta del endpoint para consultar saldo. Use {'{idCentum}'} como placeholder para el ID del empleado
           </p>
         </div>
 

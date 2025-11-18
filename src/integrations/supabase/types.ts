@@ -4483,6 +4483,7 @@ export type Database = {
           centum_suite_consumidor_api_publica_id: string | null
           created_at: string | null
           endpoint_acreditacion: string | null
+          endpoint_consulta_saldo: string | null
           habilitado: boolean | null
           id: string
           updated_at: string | null
@@ -4495,6 +4496,7 @@ export type Database = {
           centum_suite_consumidor_api_publica_id?: string | null
           created_at?: string | null
           endpoint_acreditacion?: string | null
+          endpoint_consulta_saldo?: string | null
           habilitado?: boolean | null
           id?: string
           updated_at?: string | null
@@ -4507,6 +4509,7 @@ export type Database = {
           centum_suite_consumidor_api_publica_id?: string | null
           created_at?: string | null
           endpoint_acreditacion?: string | null
+          endpoint_consulta_saldo?: string | null
           habilitado?: boolean | null
           id?: string
           updated_at?: string | null
