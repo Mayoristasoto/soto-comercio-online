@@ -1650,6 +1650,7 @@ export type Database = {
           face_descriptor: number[] | null
           fecha_nacimiento: string | null
           id: string
+          id_centum: string | null
           salario: number | null
           telefono: string | null
           updated_at: string
@@ -1665,6 +1666,7 @@ export type Database = {
           face_descriptor?: number[] | null
           fecha_nacimiento?: string | null
           id?: string
+          id_centum?: string | null
           salario?: number | null
           telefono?: string | null
           updated_at?: string
@@ -1680,6 +1682,7 @@ export type Database = {
           face_descriptor?: number[] | null
           fecha_nacimiento?: string | null
           id?: string
+          id_centum?: string | null
           salario?: number | null
           telefono?: string | null
           updated_at?: string
