@@ -17,6 +17,12 @@ Deno.serve(async (req) => {
   let errorMessage: string | null = null;
   let empleadoId: string | null = null;
 
+  // Inicializar Supabase client fuera del try para que esté disponible en catch
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
   try {
     const { empleado_id } = await req.json();
     empleadoId = empleado_id;
@@ -24,12 +30,6 @@ Deno.serve(async (req) => {
     if (!empleado_id) {
       throw new Error('Se requiere el ID del empleado');
     }
-
-    // Inicializar Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Obtener ID Centum del empleado
     const { data: empleadoData, error: empleadoError } = await supabaseClient
@@ -69,7 +69,10 @@ Deno.serve(async (req) => {
     const { token, baseUrl, suiteConsumidorId } = tokenData;
 
     // Construir URL para consultar saldo usando el endpoint configurado
-    const endpoint = config.endpoint_consulta_saldo.replace('{idCentum}', empleadoData.id_centum);
+    // Reemplazar tanto {idCentum} como {{idCentum}}
+    const endpoint = config.endpoint_consulta_saldo
+      .replace(/\{\{idCentum\}\}/g, empleadoData.id_centum)
+      .replace(/\{idCentum\}/g, empleadoData.id_centum);
     const consultaUrl = `${baseUrl}/SuiteConsumidorApiPublica/${suiteConsumidorId}${endpoint}`;
 
     console.log('Consultando saldo en:', consultaUrl);
