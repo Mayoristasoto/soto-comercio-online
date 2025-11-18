@@ -79,13 +79,17 @@ Deno.serve(async (req) => {
       .replace(/\{\{idCliente\}\}/gi, empleadoData.id_centum)
       .replace(/\{idCliente\}/gi, empleadoData.id_centum);
 
+    // Construir URL base completa con SuiteConsumidorApiPublica
     const baseUrlNormalized = (baseUrl || config.centum_base_url).replace(/\/+$/, '');
+    const fullBaseUrl = `${baseUrlNormalized}/SuiteConsumidorApiPublica/${suiteConsumidorId}`;
+    
+    // Normalizar endpoint (debe empezar con /)
     const endpointNormalized = endpointWithId.startsWith('/')
       ? endpointWithId
       : `/${endpointWithId}`;
 
-    // Importante: replicar el comportamiento de Postman -> baseUrl + endpoint
-    const consultaUrl = `${baseUrlNormalized}${endpointNormalized}`;
+    // URL final: baseUrl + /SuiteConsumidorApiPublica/ID + endpoint
+    const consultaUrl = `${fullBaseUrl}${endpointNormalized}`;
 
     console.log('Consultando saldo en Centum:', consultaUrl);
 
