@@ -221,6 +221,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
           estado_civil: formData.estado_civil || null,
           emergencia_contacto_nombre: formData.emergencia_contacto_nombre || null,
           emergencia_contacto_telefono: formData.emergencia_contacto_telefono || null,
+          id_centum: formData.id_centum || null,
         }
 
         // Use RPC function to safely update sensitive data with proper admin check
@@ -232,7 +233,8 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
           p_fecha_nacimiento: sensitiveUpdate.fecha_nacimiento,
           p_estado_civil: sensitiveUpdate.estado_civil,
           p_emergencia_contacto_nombre: sensitiveUpdate.emergencia_contacto_nombre,
-          p_emergencia_contacto_telefono: sensitiveUpdate.emergencia_contacto_telefono
+          p_emergencia_contacto_telefono: sensitiveUpdate.emergencia_contacto_telefono,
+          p_id_centum: sensitiveUpdate.id_centum
         })
 
         sensitiveError = error
