@@ -335,6 +335,82 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
     }
   };
 
+  const handleTestJsonImport = async () => {
+    setTestingConnection(true);
+    setConnectionDebug('Probando JSON importado...\n');
+    
+    try {
+      const parsedConfig = JSON.parse(jsonImport);
+      
+      if (!parsedConfig.centum_base_url) {
+        throw new Error('El JSON debe contener centum_base_url');
+      }
+
+      // Guardar temporalmente en la base de datos para probar
+      const { error: updateError } = await supabase
+        .from('sistema_comercial_config')
+        .update({
+          centum_base_url: parsedConfig.centum_base_url,
+          centum_suite_consumidor_api_publica_id: parsedConfig.centum_suite_consumidor_api_publica_id,
+          endpoint_consulta_saldo: parsedConfig.endpoint_consulta_saldo,
+        })
+        .eq('id', config!.id);
+
+      if (updateError) throw updateError;
+
+      // Probar conexión
+      const { data, error } = await supabase.functions.invoke('centum-postman-exact', {
+        body: { 
+          id_centum: idCentumTest,
+          endpoint: endpointTest
+        }
+      });
+
+      if (error) throw error;
+
+      const debugInfo = `
+=== PRUEBA CON JSON IMPORTADO ===
+
+✓ Configuración probada:
+${JSON.stringify(parsedConfig, null, 2)}
+
+✓ Token Generado:
+${data.debug?.token || 'No disponible'}
+
+✓ URL Completa:
+${data.debug?.url || 'No disponible'}
+
+✓ Respuesta de Centum:
+  Status: ${data.status}
+  ${data.success ? '✓ Conexión exitosa' : '✗ Error en conexión'}
+
+${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
+      `;
+
+      setConnectionDebug(debugInfo);
+
+      toast({
+        title: data.success ? "JSON válido - Conexión exitosa" : "JSON válido - Error en conexión",
+        description: data.success ? "El JSON funciona correctamente" : "El JSON tiene errores de conexión",
+        variant: data.success ? "default" : "destructive",
+      });
+
+      // Recargar configuración original
+      await loadConfig();
+    } catch (error: any) {
+      const errorInfo = `Error al probar JSON:\n${error.message}`;
+      setConnectionDebug(errorInfo);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      await loadConfig();
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   const handleExportJson = () => {
     const exportData = {
       centum_base_url: config?.centum_base_url,
@@ -469,13 +545,32 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
               onChange={(e) => setJsonImport(e.target.value)}
               className="font-mono text-xs h-32"
             />
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={handleTestJsonImport}
+                variant="default"
+                size="sm"
+                disabled={!jsonImport.trim() || testingConnection}
+              >
+                {testingConnection ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Probando...
+                  </>
+                ) : (
+                  <>
+                    <Bug className="mr-2 h-3 w-3" />
+                    Probar JSON
+                  </>
+                )}
+              </Button>
               <Button
                 onClick={handleImportJson}
                 variant="outline"
                 size="sm"
                 disabled={!jsonImport.trim()}
               >
+                <Upload className="mr-2 h-3 w-3" />
                 Importar JSON
               </Button>
               <Button
@@ -483,7 +578,8 @@ NOTA: Esta función replica EXACTAMENTE el script de Postman.
                 variant="outline"
                 size="sm"
               >
-                Copiar Configuración Actual
+                <Download className="mr-2 h-3 w-3" />
+                Copiar Config Actual
               </Button>
             </div>
           </div>
