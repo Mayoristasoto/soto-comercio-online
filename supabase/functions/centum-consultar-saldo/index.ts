@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Obtener configuración de Centum
     const { data: config, error: configError } = await supabaseClient
       .from('sistema_comercial_config')
-      .select('centum_base_url, centum_suite_consumidor_api_publica_id')
+      .select('centum_base_url, centum_suite_consumidor_api_publica_id, endpoint_consulta_saldo')
       .single();
 
     if (configError || !config) {
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       throw new Error('No se pudo obtener la configuración de Centum');
     }
 
-    if (!config.centum_base_url || !config.centum_suite_consumidor_api_publica_id) {
+    if (!config.centum_base_url || !config.centum_suite_consumidor_api_publica_id || !config.endpoint_consulta_saldo) {
       throw new Error('Configuración de Centum incompleta');
     }
 
@@ -61,8 +61,9 @@ Deno.serve(async (req) => {
 
     const { token, baseUrl, suiteConsumidorId } = tokenData;
 
-    // Construir URL para consultar saldo
-    const consultaUrl = `${baseUrl}/SuiteConsumidorApiPublica/${suiteConsumidorId}/CuentaCorriente/${empleadoData.id_centum}/Saldo`;
+    // Construir URL para consultar saldo usando el endpoint configurado
+    const endpoint = config.endpoint_consulta_saldo.replace('{idCentum}', empleadoData.id_centum);
+    const consultaUrl = `${baseUrl}/SuiteConsumidorApiPublica/${suiteConsumidorId}${endpoint}`;
 
     console.log('Consultando saldo en:', consultaUrl);
 
