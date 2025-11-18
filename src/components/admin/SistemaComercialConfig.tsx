@@ -415,60 +415,31 @@ export function SistemaComercialConfig() {
 
   const handleExportTestSimpleCurl = async () => {
     try {
-      const { data: configData } = await supabase
-        .from('sistema_comercial_config')
-        .select('*')
-        .single();
+      // Invocar la función para obtener el curl command
+      const { data, error } = await supabase.functions.invoke('centum-test-simple');
 
-      if (!configData) {
+      if (error) {
         toast({
           title: "Error",
-          description: "No se pudo cargar la configuración",
+          description: error.message,
           variant: "destructive",
         });
         return;
       }
 
-      const missingFields = [];
-      if (!configData.centum_base_url) missingFields.push("URL Base");
-      if (!configData.centum_suite_consumidor_api_publica_id) missingFields.push("Suite Consumidor ID");
-      if (!configData.centum_clave_publica) missingFields.push("Clave Pública");
-
-      if (missingFields.length > 0) {
+      if (data.curlCommand) {
+        await navigator.clipboard.writeText(data.curlCommand);
         toast({
-          title: "Configuración incompleta",
-          description: `Faltan los siguientes campos: ${missingFields.join(", ")}`,
+          title: "Éxito",
+          description: "Comando curl copiado al portapapeles",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo generar el comando curl",
           variant: "destructive",
         });
-        return;
       }
-
-      const fechaUTC = new Date().toISOString();
-      const guid = crypto.randomUUID();
-      const clavePublicaTrim = configData.centum_clave_publica.trim();
-      const dataToHash = `${fechaUTC}${guid}${clavePublicaTrim}`;
-      
-      const encoder = new TextEncoder();
-      const data = encoder.encode(dataToHash);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-      const centumBaseUrl = configData.centum_base_url.trim();
-      const centumSuiteConsumidorApiPublicaId = configData.centum_suite_consumidor_api_publica_id.trim();
-      const endpoint = configData.endpoint_consulta_saldo || '/Rubros';
-      const url = `${centumBaseUrl}${endpoint}`;
-
-      const curlCommand = `curl -X GET '${url}' \\
-  -H 'Content-Type: application/json' \\
-  -H 'CentumSuiteAccessToken: ${fechaUTC.trim()};${guid.trim()};${hash.trim()}' \\
-  -H 'CentumSuiteConsumidorApiPublicaId: ${centumSuiteConsumidorApiPublicaId}'`;
-
-      await navigator.clipboard.writeText(curlCommand);
-      toast({
-        title: "Éxito",
-        description: "Comando curl copiado al portapapeles",
-      });
     } catch (error: any) {
       console.error('Error al exportar curl:', error);
       toast({

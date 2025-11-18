@@ -87,12 +87,19 @@ Deno.serve(async (req) => {
       responseData = responseText;
     }
 
+    // Generar comando curl para debugging
+    const curlCommand = `curl -X GET '${fullUrl}' \\
+  -H 'Accept: application/json' \\
+  -H 'CentumSuiteAccessToken: ${headers.CentumSuiteAccessToken}' \\
+  -H 'CentumSuiteConsumidorApiPublicaId: ${headers.CentumSuiteConsumidorApiPublicaId}'`;
+
     return new Response(
       JSON.stringify({
         success: response.ok,
         status: response.status,
         statusText: response.statusText,
         data: responseData,
+        curlCommand: curlCommand,
         debug: {
           url: fullUrl,
           method: 'GET',
