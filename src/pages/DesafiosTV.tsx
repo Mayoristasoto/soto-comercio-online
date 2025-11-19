@@ -64,24 +64,64 @@ export default function DesafiosTV() {
       const inicioSemana = new Date();
       inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
       inicioSemana.setHours(0, 0, 0, 0);
+      const inicioSemanaStr = inicioSemana.toISOString().split('T')[0];
 
       const { data: participantes } = await supabase.from('desafios_tv_participantes').select('empleado_id').eq('participa', true);
       const empleadosPermitidosIds = new Set(participantes?.map(p => p.empleado_id) || []);
       const { data: sucursales } = await supabase.from('sucursales').select('id, nombre').eq('activa', true).order('nombre');
-      const { data: crucesRojas } = await supabase.from('empleado_cruces_rojas').select('empleado_id, tipo_infraccion, empleados!empleado_cruces_rojas_empleado_id_fkey(nombre, apellido, avatar_url, sucursal_id)').gte('fecha_infraccion', inicioSemana.toISOString()).eq('anulada', false);
+      
+      // Obtener fichajes tardíos desde inicio de semana
+      const { data: fichajesTardios } = await supabase
+        .from('fichajes_tardios')
+        .select('empleado_id, empleados!fichajes_tardios_empleado_id_fkey(nombre, apellido, avatar_url, sucursal_id)')
+        .gte('fecha_fichaje', inicioSemanaStr);
+
+      // Obtener pausas excedidas desde inicio de semana
+      const { data: pausasExcedidas } = await supabase
+        .from('fichajes_pausas_excedidas')
+        .select('empleado_id, empleados!fichajes_pausas_excedidas_empleado_id_fkey(nombre, apellido, avatar_url, sucursal_id)')
+        .gte('fecha_fichaje', inicioSemanaStr);
 
       const empleadosPorSucursal = new Map<string, Map<string, any>>();
-      crucesRojas?.forEach((cruce: any) => {
-        const sucursalId = cruce.empleados?.sucursal_id;
-        if (!sucursalId || !(participantes?.length === 0 || empleadosPermitidosIds.has(cruce.empleado_id))) return;
+      
+      // Procesar fichajes tardíos
+      fichajesTardios?.forEach((fichaje: any) => {
+        const sucursalId = fichaje.empleados?.sucursal_id;
+        if (!sucursalId || !(participantes?.length === 0 || empleadosPermitidosIds.has(fichaje.empleado_id))) return;
         if (!empleadosPorSucursal.has(sucursalId)) empleadosPorSucursal.set(sucursalId, new Map());
         const sucursalMap = empleadosPorSucursal.get(sucursalId)!;
-        if (!sucursalMap.has(cruce.empleado_id)) {
-          sucursalMap.set(cruce.empleado_id, { empleado_id: cruce.empleado_id, nombre: cruce.empleados?.nombre || '', apellido: cruce.empleados?.apellido || '', avatar_url: cruce.empleados?.avatar_url || '', llegadas_tarde: 0, pausas_excedidas: 0 });
+        if (!sucursalMap.has(fichaje.empleado_id)) {
+          sucursalMap.set(fichaje.empleado_id, { 
+            empleado_id: fichaje.empleado_id, 
+            nombre: fichaje.empleados?.nombre || '', 
+            apellido: fichaje.empleados?.apellido || '', 
+            avatar_url: fichaje.empleados?.avatar_url || '', 
+            llegadas_tarde: 0, 
+            pausas_excedidas: 0 
+          });
         }
-        const emp = sucursalMap.get(cruce.empleado_id);
-        if (cruce.tipo_infraccion === 'llegada_tarde') emp.llegadas_tarde++;
-        else if (cruce.tipo_infraccion === 'pausa_excedida') emp.pausas_excedidas++;
+        const emp = sucursalMap.get(fichaje.empleado_id);
+        emp.llegadas_tarde++;
+      });
+
+      // Procesar pausas excedidas
+      pausasExcedidas?.forEach((pausa: any) => {
+        const sucursalId = pausa.empleados?.sucursal_id;
+        if (!sucursalId || !(participantes?.length === 0 || empleadosPermitidosIds.has(pausa.empleado_id))) return;
+        if (!empleadosPorSucursal.has(sucursalId)) empleadosPorSucursal.set(sucursalId, new Map());
+        const sucursalMap = empleadosPorSucursal.get(sucursalId)!;
+        if (!sucursalMap.has(pausa.empleado_id)) {
+          sucursalMap.set(pausa.empleado_id, { 
+            empleado_id: pausa.empleado_id, 
+            nombre: pausa.empleados?.nombre || '', 
+            apellido: pausa.empleados?.apellido || '', 
+            avatar_url: pausa.empleados?.avatar_url || '', 
+            llegadas_tarde: 0, 
+            pausas_excedidas: 0 
+          });
+        }
+        const emp = sucursalMap.get(pausa.empleado_id);
+        emp.pausas_excedidas++;
       });
 
       const { data: todosEmpleados } = await supabase.from('empleados').select('id, nombre, apellido, avatar_url, sucursal_id').eq('activo', true);
