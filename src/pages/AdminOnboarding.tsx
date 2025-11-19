@@ -21,10 +21,12 @@ import {
   Mail,
   Eye,
   Calendar,
-  Award
+  Award,
+  Settings
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ConfiguracionOnboarding } from "@/components/admin/ConfiguracionOnboarding";
 
 interface OnboardingEmpleado {
   id: string;
@@ -198,6 +200,17 @@ export default function AdminOnboarding() {
           </p>
         </div>
       </div>
+
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="configuracion">
+            <Settings className="h-4 w-4 mr-2" />
+            Configuración
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6 mt-6">
 
       {/* Estadísticas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -408,6 +421,12 @@ export default function AdminOnboarding() {
           </ScrollArea>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="configuracion">
+          <ConfiguracionOnboarding />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
