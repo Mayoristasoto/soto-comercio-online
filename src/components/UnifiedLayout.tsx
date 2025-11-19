@@ -167,16 +167,17 @@ export default function UnifiedLayout() {
       <div className="min-h-screen flex w-full">
         <UnifiedSidebar userInfo={userInfo} />
         
-        <div className="flex-1 flex flex-col">
-          {/* Header unificado */}
-          <header className="h-16 border-b bg-background flex items-center px-6">
-            <SidebarTrigger />
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header unificado - Responsive */}
+          <header className="sticky top-0 z-40 h-14 md:h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-3 md:px-6 gap-2 md:gap-4">
+            <SidebarTrigger className="shrink-0" />
             
-            {/* Búsqueda Global */}
-            <div className="flex-1 ml-4">
+            {/* Búsqueda Global - Oculta en móvil muy pequeño */}
+            <div className="flex-1 min-w-0">
               <Button
                 variant="outline"
-                className="w-full max-w-sm justify-start text-muted-foreground"
+                size="sm"
+                className="w-full max-w-sm justify-start text-muted-foreground h-9 md:h-10"
                 onClick={() => {
                   const event = new KeyboardEvent('keydown', {
                     key: 'k',
@@ -186,35 +187,49 @@ export default function UnifiedLayout() {
                   document.dispatchEvent(event)
                 }}
               >
-                <Search className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Buscar...</span>
-                <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                <Search className="h-4 w-4 mr-2 shrink-0" />
+                <span className="hidden sm:inline text-sm">Buscar...</span>
+                <span className="sm:hidden text-sm">Buscar</span>
+                <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 md:flex">
                   <span className="text-xs">⌘</span>K
                 </kbd>
               </Button>
             </div>
             
-            {/* Información del usuario */}
+            {/* Información del usuario - Adaptativa */}
             {userInfo && (
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2 md:gap-4 shrink-0">
+                {/* Desktop: Nombre completo + Badge */}
+                <div className="hidden lg:flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium hidden md:inline">
+                  <span className="text-sm font-medium">
                     {userInfo.nombre} {userInfo.apellido}
                   </span>
                   <Badge variant="secondary" className="text-xs">
-                    {userInfo.rol === 'admin_rrhh' ? 'Admin RRHH' : 
+                    {userInfo.rol === 'admin_rrhh' ? 'Admin' : 
                      userInfo.rol === 'gerente_sucursal' ? 'Gerente' : 
                      userInfo.rol === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
                 </div>
+                
+                {/* Tablet: Solo badge */}
+                <div className="hidden md:flex lg:hidden">
+                  <Badge variant="secondary" className="text-xs">
+                    {userInfo.rol === 'admin_rrhh' ? 'Admin' : 
+                     userInfo.rol === 'gerente_sucursal' ? 'Gerente' : 
+                     userInfo.rol === 'lider_grupo' ? 'Líder' : 'Empleado'}
+                  </Badge>
+                </div>
+                
+                {/* Botón logout - Adaptativo */}
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={handleLogout}
+                  className="h-9"
                 >
-                  <LogOut className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">Salir</span>
+                  <LogOut className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline text-sm">Salir</span>
                 </Button>
               </div>
             )}
@@ -223,9 +238,9 @@ export default function UnifiedLayout() {
           {/* Global Search Dialog */}
           <GlobalSearch userRole={userInfo?.rol} />
 
-          {/* Contenido principal */}
+          {/* Contenido principal - Responsive */}
           <main className="flex-1 overflow-auto bg-muted/30">
-            <div className="py-6">
+            <div className="py-4 md:py-6">
               <Breadcrumbs />
               <Outlet context={{ userInfo }} />
             </div>
