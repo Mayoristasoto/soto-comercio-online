@@ -364,6 +364,12 @@ export default function MultipleFaceManagement({
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
+                        <Badge 
+                          variant={version.confidence_score >= 0.7 ? "default" : version.confidence_score >= 0.5 ? "secondary" : "destructive"}
+                          className="min-w-[80px]"
+                        >
+                          {(version.confidence_score * 100).toFixed(1)}% confianza
+                        </Badge>
                         <Badge variant={version.is_active ? "default" : "secondary"}>
                           {version.is_active ? "Activa" : "Inactiva"}
                         </Badge>
