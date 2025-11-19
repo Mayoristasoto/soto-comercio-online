@@ -71,8 +71,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
         <Routes>
-          {/* Página de inicio - selección de tipo de cliente */}
-          <Route path="/" element={<Index />} />
+          {/* Redirigir raíz a autenticación */}
+          <Route path="/" element={<Navigate to="/auth" replace />} />
           
           {/* Autenticación unificada */}
           <Route path="/auth" element={<UnifiedAuth />} />
