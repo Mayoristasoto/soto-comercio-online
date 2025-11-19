@@ -65,6 +65,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Empleados", url: "/admin#empleados", icon: Users },
       { title: "Sucursales", url: "/admin#sucursales", icon: Building2 },
       { title: "Roles y Permisos", url: "/admin#roles", icon: UserCog },
+      { title: "Gestión de Onboarding", url: "/admin/onboarding", icon: Award },
       { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
     ]
   },

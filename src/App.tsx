@@ -59,6 +59,7 @@ import Payroll from "./pages/Payroll";
 import Install from "./pages/Install";
 import ConfiguracionTemas from "./pages/ConfiguracionTemas";
 import AdminSeguridad from "./pages/AdminSeguridad";
+import AdminOnboarding from "./pages/AdminOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -157,6 +158,7 @@ const App = () => (
               <Route path="configuracion" element={<ConfiguracionAdmin />} />
               <Route path="auth-logs" element={<AdminAuthLogs />} />
               <Route path="seguridad" element={<AdminSeguridad />} />
+              <Route path="onboarding" element={<AdminOnboarding />} />
               <Route path="aprobar-fotos-faciales" element={<AprobarFotosFaciales />} />
               <Route path="instructivo-screenshots" element={<InstructivoScreenshots />} />
             </Route>
