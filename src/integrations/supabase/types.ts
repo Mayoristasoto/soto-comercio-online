@@ -3831,6 +3831,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notificaciones: {
+        Row: {
+          created_at: string | null
+          id: string
+          leida: boolean | null
+          mensaje: string
+          metadata: Json | null
+          tipo: string
+          titulo: string
+          updated_at: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          leida?: boolean | null
+          mensaje: string
+          metadata?: Json | null
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          leida?: boolean | null
+          mensaje?: string
+          metadata?: Json | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       notificaciones_salida: {
         Row: {
           created_at: string
@@ -3869,6 +3905,59 @@ export type Database = {
           respuesta_api?: Json | null
         }
         Relationships: []
+      }
+      onboarding_tareas_puesto: {
+        Row: {
+          activa: boolean | null
+          categoria: string | null
+          created_at: string | null
+          descripcion: string | null
+          dias_limite: number | null
+          id: string
+          obligatoria: boolean | null
+          orden: number | null
+          puesto_id: string | null
+          tarea_tipo: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          dias_limite?: number | null
+          id?: string
+          obligatoria?: boolean | null
+          orden?: number | null
+          puesto_id?: string | null
+          tarea_tipo: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          dias_limite?: number | null
+          id?: string
+          obligatoria?: boolean | null
+          orden?: number | null
+          puesto_id?: string | null
+          tarea_tipo?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_tareas_puesto_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       participaciones: {
         Row: {
