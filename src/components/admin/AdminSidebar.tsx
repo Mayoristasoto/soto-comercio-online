@@ -81,6 +81,7 @@ const navigationGroups: NavGroup[] = [
     icon: Clock,
     items: [
       { title: "Asignar Sucursales", url: "/admin/asignar-sucursales", icon: Building2 },
+      { title: "Ranking de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
       { title: "Entrega Elementos", url: "/admin#entregas", icon: Package },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
     ]
