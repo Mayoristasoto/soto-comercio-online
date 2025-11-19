@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { User, LogOut, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GlobalSearch } from "@/components/GlobalSearch"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
@@ -223,8 +224,11 @@ export default function UnifiedLayout() {
           <GlobalSearch userRole={userInfo?.rol} />
 
           {/* Contenido principal */}
-          <main className="flex-1 overflow-auto">
-            <Outlet context={{ userInfo }} />
+          <main className="flex-1 overflow-auto bg-muted/30">
+            <div className="py-6">
+              <Breadcrumbs />
+              <Outlet context={{ userInfo }} />
+            </div>
           </main>
         </div>
       </div>
