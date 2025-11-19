@@ -1017,6 +1017,10 @@ export default function FichajeMetricasDashboard() {
                                   </Badge>
                                 )}
                               </div>
+                              <div className="text-sm text-muted-foreground mb-1">
+                                <Calendar className="h-3 w-3 inline mr-1" />
+                                {new Date(fichaje.fecha_fichaje).toLocaleDateString('es-AR')}
+                              </div>
                             <div className="text-sm text-muted-foreground space-x-4">
                               <span>Programada: {formatearHora(fichaje.hora_programada)}</span>
                               <span title={formatearHoraConTooltip(fichaje.hora_real, fichaje.created_at).tooltip}>
@@ -1130,6 +1134,10 @@ export default function FichajeMetricasDashboard() {
                                     En Legajo
                                   </Badge>
                                 )}
+                              </div>
+                              <div className="text-sm text-muted-foreground mb-1">
+                                <Calendar className="h-3 w-3 inline mr-1" />
+                                {new Date(pausa.fecha_fichaje).toLocaleDateString('es-AR')}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 <span 
