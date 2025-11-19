@@ -823,6 +823,79 @@ export type Database = {
         }
         Relationships: []
       }
+      desafios_tv_participantes: {
+        Row: {
+          configurado_por: string | null
+          created_at: string
+          empleado_id: string
+          id: string
+          motivo_exclusion: string | null
+          participa: boolean
+          updated_at: string
+        }
+        Insert: {
+          configurado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          id?: string
+          motivo_exclusion?: string | null
+          participa?: boolean
+          updated_at?: string
+        }
+        Update: {
+          configurado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          id?: string
+          motivo_exclusion?: string | null
+          participa?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desafios_tv_participantes_configurado_por_fkey"
+            columns: ["configurado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desafios_tv_participantes_configurado_por_fkey"
+            columns: ["configurado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desafios_tv_participantes_configurado_por_fkey"
+            columns: ["configurado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desafios_tv_participantes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desafios_tv_participantes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desafios_tv_participantes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dias_feriados: {
         Row: {
           activo: boolean
