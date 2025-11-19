@@ -40,29 +40,50 @@ export default function EmployeeCrucesRojas({ empleadoId }: EmployeeCrucesRojasP
   const cargarCrucesRojas = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('empleado_cruces_rojas_semana_actual')
+      // Obtener todas las cruces rojas del empleado
+      const { data: crucesData, error: crucesError } = await supabase
+        .from('empleado_cruces_rojas')
         .select('*')
         .eq('empleado_id', empleadoId)
+        .eq('anulada', false)
+        .order('fecha_infraccion', { ascending: false })
+
+      if (crucesError) throw crucesError
+
+      // Obtener datos del empleado
+      const { data: empleadoData, error: empleadoError } = await supabase
+        .from('empleados')
+        .select('nombre, apellido')
+        .eq('id', empleadoId)
         .single()
 
-      if (error) throw error
-      
-      // Parse detalles y crear objeto tipado
-      if (data) {
-        const crucesData: CrucesRojasData = {
-          empleado_id: data.empleado_id,
-          nombre: data.nombre,
-          apellido: data.apellido,
-          total_cruces_rojas: data.total_cruces_rojas,
-          llegadas_tarde: data.llegadas_tarde,
-          salidas_tempranas: data.salidas_tempranas,
-          pausas_excedidas: data.pausas_excedidas,
-          detalles: typeof data.detalles === 'string' 
-            ? JSON.parse(data.detalles) 
-            : (Array.isArray(data.detalles) ? data.detalles : [])
+      if (empleadoError) throw empleadoError
+
+      // Procesar datos
+      if (crucesData && empleadoData) {
+        const llegadas_tarde = crucesData.filter(c => c.tipo_infraccion === 'llegada_tarde').length
+        const salidas_tempranas = crucesData.filter(c => c.tipo_infraccion === 'salida_temprana').length
+        const pausas_excedidas = crucesData.filter(c => c.tipo_infraccion === 'pausa_excedida').length
+
+        const detalles: CruzRojaDetalle[] = crucesData.map(cruz => ({
+          tipo: cruz.tipo_infraccion as 'llegada_tarde' | 'salida_temprana' | 'pausa_excedida',
+          fecha: cruz.fecha_infraccion,
+          minutos: cruz.minutos_diferencia || 0,
+          observaciones: cruz.observaciones || ''
+        }))
+
+        const crucesRojasData: CrucesRojasData = {
+          empleado_id: empleadoId,
+          nombre: empleadoData.nombre,
+          apellido: empleadoData.apellido,
+          total_cruces_rojas: crucesData.length,
+          llegadas_tarde,
+          salidas_tempranas,
+          pausas_excedidas,
+          detalles
         }
-        setCrucesRojas(crucesData)
+        
+        setCrucesRojas(crucesRojasData)
       }
     } catch (error) {
       console.error('Error cargando cruces rojas:', error)
@@ -236,7 +257,7 @@ export default function EmployeeCrucesRojas({ empleadoId }: EmployeeCrucesRojasP
         <CardHeader>
           <CardTitle>Detalle de Infracciones</CardTitle>
           <CardDescription>
-            Lista completa de cruces rojas registradas esta semana
+            Lista completa de todas las cruces rojas registradas
           </CardDescription>
         </CardHeader>
         <CardContent>
