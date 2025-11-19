@@ -11,6 +11,7 @@ import { GlobalSearch } from "@/components/GlobalSearch"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { NotificationCenter, useNotifications } from "@/components/ui/notification-center"
 import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
+import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
@@ -233,7 +234,7 @@ export default function UnifiedLayout() {
               </Button>
             </div>
             
-            {/* Notificaciones y ayuda */}
+            {/* Notificaciones, tema y ayuda */}
             <div className="flex items-center gap-1 shrink-0">
               <NotificationCenter
                 notifications={notifications}
@@ -242,6 +243,7 @@ export default function UnifiedLayout() {
                 onClear={clear}
                 onClearAll={clearAll}
               />
+              <ThemeSwitcher />
               <ShortcutsHelp
                 shortcuts={[
                   {
