@@ -31,6 +31,7 @@ import { EmpleadoInstructivo } from "@/components/employee/EmpleadoInstructivo"
 import { EmpleadoPermisosDemo } from "@/components/employee/EmpleadoPermisosDemo"
 import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
 import { OnboardingDashboard } from "@/components/employee/OnboardingDashboard"
+import { OnboardingDashboardEnhanced } from "@/components/employee/OnboardingDashboardEnhanced"
 import { useOnboarding } from "@/hooks/useOnboarding"
 
 interface UserInfo {
@@ -162,10 +163,18 @@ export default function EmpleadoDashboard() {
             onPasswordChanged={() => setDebeCambiarPassword(false)}
           />
         )}
-        <OnboardingDashboard 
-          empleadoId={userInfo.id}
-          empleadoNombre={userInfo.nombre}
-        />
+        
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <User className="h-8 w-8 text-primary" />
+            Bienvenido, {userInfo.nombre}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Completa tu proceso de incorporación para acceder a todas las funcionalidades
+          </p>
+        </div>
+
+        <OnboardingDashboardEnhanced />
       </div>
     )
   }
