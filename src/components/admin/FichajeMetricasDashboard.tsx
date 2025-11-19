@@ -31,6 +31,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 interface MetricasResumen {
   total_fichajes_hoy: number
@@ -113,11 +114,13 @@ export default function FichajeMetricasDashboard() {
   const [selectedPausas, setSelectedPausas] = useState<Set<string>>(new Set())
   
   // Filtros
+  const [tipoFecha, setTipoFecha] = useState<'dia' | 'rango'>('dia')
   const [fechaInicio, setFechaInicio] = useState<Date>(() => {
     const today = new Date()
     return new Date(today.getFullYear(), today.getMonth(), 1) // Primer día del mes actual
   })
   const [fechaFin, setFechaFin] = useState<Date>(new Date())
+  const [fechaParticular, setFechaParticular] = useState<Date>(new Date())
   const [empleadoFiltro, setEmpleadoFiltro] = useState<string>("todos")
   const [empleados, setEmpleados] = useState<any[]>([])
   const [ocultarRegistradas, setOcultarRegistradas] = useState(false)
@@ -130,8 +133,10 @@ export default function FichajeMetricasDashboard() {
   }, [])
   
   useEffect(() => {
-    cargarDatos()
-  }, [fechaInicio, fechaFin, empleadoFiltro])
+    if (empleados.length > 0) {
+      cargarDatos()
+    }
+  }, [fechaInicio, fechaFin, fechaParticular, tipoFecha, empleadoFiltro, empleados])
 
   const cargarEmpleados = async () => {
     const { data, error } = await supabase
@@ -168,8 +173,10 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarCrucesRojasExistentes = async () => {
-    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
-    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
+    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
+    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
     const { data, error } = await supabase
       .from('empleado_cruces_rojas')
@@ -185,12 +192,14 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarMetricas = async () => {
-    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
-    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
+    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
+    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fin, 'yyyy-MM-dd')
 
     // Construir ventana de tiempo en UTC para cubrir el rango completo en Argentina (-03:00)
-    const nextDay = new Date(fechaFin)
-    nextDay.setDate(fechaFin.getDate() + 1)
+    const nextDay = new Date(fin)
+    nextDay.setDate(fin.getDate() + 1)
     const nextStr = format(nextDay, 'yyyy-MM-dd')
 
     const startUtcStr = `${fechaInicioStr}T03:00:00Z` // 00:00 ART del día inicial
@@ -252,8 +261,10 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarFichajesTardios = async () => {
-    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
-    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
+    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
+    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
     let query = supabase
       .from('fichajes_tardios')
@@ -277,8 +288,10 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarPausasExcedidas = async () => {
-    const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd')
-    const fechaFinStr = format(fechaFin, 'yyyy-MM-dd')
+    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
+    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
+    const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
     let query = supabase
       .from('fichajes_pausas_excedidas')
@@ -796,45 +809,94 @@ export default function FichajeMetricasDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {format(fechaInicio, "PPP", { locale: es })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
-                    mode="single"
-                    selected={fechaInicio}
-                    onSelect={(date) => date && setFechaInicio(date)}
-                    locale={es}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {format(fechaFin, "PPP", { locale: es })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
-                    mode="single"
-                    selected={fechaFin}
-                    onSelect={(date) => date && setFechaFin(date)}
-                    locale={es}
-                  />
-                </PopoverContent>
-              </Popover>
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Tipo de Filtro</label>
+                <Select value={tipoFecha} onValueChange={(value: 'dia' | 'rango') => setTipoFecha(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dia">Fecha Particular</SelectItem>
+                    <SelectItem value="rango">Rango de Fechas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {tipoFecha === 'dia' ? (
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Fecha</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !fechaParticular && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {fechaParticular ? format(fechaParticular, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={fechaParticular}
+                        onSelect={(date) => date && setFechaParticular(date)}
+                        initialFocus
+                        locale={es}
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {format(fechaInicio, "PPP", { locale: es })}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={fechaInicio}
+                          onSelect={(date) => date && setFechaInicio(date)}
+                          locale={es}
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {format(fechaFin, "PPP", { locale: es })}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={fechaFin}
+                          onSelect={(date) => date && setFechaFin(date)}
+                          locale={es}
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </>
+              )}
             </div>
             
             <div className="flex-1">
