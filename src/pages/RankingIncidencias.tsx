@@ -4,9 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw, Calculator } from "lucide-react";
+import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw, Calculator, CalendarIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface EmpleadoRanking {
   empleado_id: string;
@@ -30,11 +34,21 @@ export default function RankingIncidencias() {
   const [rankings, setRankings] = useState<RankingData[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
+  const [fechaInicio, setFechaInicio] = useState<Date>();
+  const [fechaFin, setFechaFin] = useState<Date>();
   const [periodoInicio, setPeriodoInicio] = useState('');
+  const [periodoFin, setPeriodoFin] = useState('');
 
   useEffect(() => {
+    initializeDefaultDates();
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (fechaInicio && fechaFin) {
+      loadRankingData();
+    }
+  }, [fechaInicio, fechaFin]);
 
   const checkAuth = async () => {
     try {
@@ -61,6 +75,20 @@ export default function RankingIncidencias() {
       console.error('Error checking auth:', error);
       navigate('/auth');
     }
+  };
+
+  const initializeDefaultDates = () => {
+    // Inicializar con el inicio de la semana actual
+    const inicioSemana = new Date();
+    inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
+    inicioSemana.setHours(0, 0, 0, 0);
+    
+    // Fin de hoy
+    const fin = new Date();
+    fin.setHours(23, 59, 59, 999);
+    
+    setFechaInicio(inicioSemana);
+    setFechaFin(fin);
   };
 
   const recalcularIncidencias = async () => {
@@ -105,13 +133,14 @@ export default function RankingIncidencias() {
   };
 
   const loadRankingData = async () => {
+    if (!fechaInicio || !fechaFin) return;
+    
     try {
       setLoading(true);
-      const inicioSemana = new Date();
-      inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
-      inicioSemana.setHours(0, 0, 0, 0);
-      const inicioSemanaStr = inicioSemana.toISOString().split('T')[0];
-      setPeriodoInicio(inicioSemanaStr);
+      const inicioStr = format(fechaInicio, 'yyyy-MM-dd');
+      const finStr = format(fechaFin, 'yyyy-MM-dd');
+      setPeriodoInicio(inicioStr);
+      setPeriodoFin(finStr);
 
       // Obtener todos los empleados activos con sus sucursales
       const { data: empleados } = await supabase
@@ -119,17 +148,19 @@ export default function RankingIncidencias() {
         .select('id, nombre, apellido, avatar_url, sucursal_id, sucursales(nombre)')
         .eq('activo', true);
 
-      // Obtener fichajes tardíos desde inicio de semana
+      // Obtener fichajes tardíos en el rango de fechas
       const { data: fichajesTardios } = await supabase
         .from('fichajes_tardios')
         .select('empleado_id')
-        .gte('fecha_fichaje', inicioSemanaStr);
+        .gte('fecha_fichaje', inicioStr)
+        .lte('fecha_fichaje', finStr);
 
-      // Obtener pausas excedidas desde inicio de semana
+      // Obtener pausas excedidas en el rango de fechas
       const { data: pausasExcedidas } = await supabase
         .from('fichajes_pausas_excedidas')
         .select('empleado_id')
-        .gte('fecha_fichaje', inicioSemanaStr);
+        .gte('fecha_fichaje', inicioStr)
+        .lte('fecha_fichaje', finStr);
 
       // Contar incidencias por empleado
       const incidenciasPorEmpleado = new Map<string, { llegadas_tarde: number; pausas_excedidas: number }>();
@@ -246,27 +277,95 @@ export default function RankingIncidencias() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Ranking de Incidencias</h1>
-          <p className="text-muted-foreground">
-            Empleados con más incidencias desde el {new Date(periodoInicio).toLocaleDateString('es-AR')}
-          </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Ranking de Incidencias</h1>
+            <p className="text-muted-foreground">
+              Empleados con más incidencias {periodoInicio && periodoFin && 
+                `del ${new Date(periodoInicio).toLocaleDateString('es-AR')} al ${new Date(periodoFin).toLocaleDateString('es-AR')}`
+              }
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={recalcularIncidencias} 
+              disabled={recalculating || loading}
+              variant="outline"
+            >
+              <Calculator className={`h-4 w-4 mr-2 ${recalculating ? 'animate-pulse' : ''}`} />
+              {recalculating ? 'Recalculando...' : 'Recalcular Incidencias'}
+            </Button>
+            <Button onClick={loadRankingData} disabled={loading || recalculating}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={recalcularIncidencias} 
-            disabled={recalculating || loading}
-            variant="outline"
-          >
-            <Calculator className={`h-4 w-4 mr-2 ${recalculating ? 'animate-pulse' : ''}`} />
-            {recalculating ? 'Recalculando...' : 'Recalcular Incidencias'}
-          </Button>
-          <Button onClick={loadRankingData} disabled={loading || recalculating}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Rango de Fechas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !fechaInicio && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fechaInicio ? format(fechaInicio, "PPP") : <span>Seleccionar fecha</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fechaInicio}
+                      onSelect={setFechaInicio}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !fechaFin && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fechaFin ? format(fechaFin, "PPP") : <span>Seleccionar fecha</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fechaFin}
+                      onSelect={setFechaFin}
+                      initialFocus
+                      disabled={(date) => fechaInicio ? date < fechaInicio : false}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="total" className="w-full">
