@@ -93,6 +93,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Premios", url: "/admin#premios", icon: Award },
       { title: "Presupuestos", url: "/admin#presupuesto", icon: BarChart3 },
       { title: "Capacitaciones", url: "/admin#capacitaciones", icon: FileText },
+      { title: "Participantes Desafíos TV", url: "/admin#desafios-tv-config", icon: Users },
     ]
   },
   {
