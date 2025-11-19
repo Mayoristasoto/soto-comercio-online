@@ -81,14 +81,21 @@ export function DesafiosTVConfig() {
 
   const handleToggleParticipacion = async (empleadoId: string, participa: boolean) => {
     try {
-      const { data: currentEmpleado } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Obtener el empleado_id del usuario actual
+      const { data: empleadoActual } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
       
       const { error } = await supabase
         .from('desafios_tv_participantes')
         .upsert({
           empleado_id: empleadoId,
           participa,
-          configurado_por: currentEmpleado?.user?.id,
+          configurado_por: empleadoActual?.id,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'empleado_id'
@@ -113,14 +120,21 @@ export function DesafiosTVConfig() {
     try {
       setSaving(true);
 
-      const { data: currentEmpleado } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Obtener el empleado_id del usuario actual
+      const { data: empleadoActual } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
       
       const { error } = await supabase
         .from('desafios_tv_participantes')
         .upsert({
           empleado_id: empleadoId,
           motivo_exclusion: motivo,
-          configurado_por: currentEmpleado?.user?.id,
+          configurado_por: empleadoActual?.id,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'empleado_id'
