@@ -9,6 +9,8 @@ import { User, LogOut, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GlobalSearch } from "@/components/GlobalSearch"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
+import { NotificationCenter, useNotifications } from "@/components/ui/notification-center"
+import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
@@ -25,6 +27,41 @@ export default function UnifiedLayout() {
     grupo_id?: string
     avatar_url?: string
   } | null>(null)
+
+  // Notificaciones
+  const {
+    notifications,
+    addNotification,
+    markAsRead,
+    markAllAsRead,
+    clear,
+    clearAll,
+  } = useNotifications();
+
+  // Atajos de teclado globales
+  useKeyboardShortcuts([
+    {
+      key: "h",
+      ctrl: true,
+      action: () => navigate("/"),
+      description: "Ir al inicio",
+      category: "Navegación",
+    },
+    {
+      key: "d",
+      ctrl: true,
+      action: () => navigate("/dashboard"),
+      description: "Ir al dashboard",
+      category: "Navegación",
+    },
+    {
+      key: "n",
+      ctrl: true,
+      action: () => navigate("/rrhh/nomina"),
+      description: "Ir a nómina",
+      category: "RRHH",
+    },
+  ]);
 
   useEffect(() => {
     checkAuth()
@@ -194,6 +231,49 @@ export default function UnifiedLayout() {
                   <span className="text-xs">⌘</span>K
                 </kbd>
               </Button>
+            </div>
+            
+            {/* Notificaciones y ayuda */}
+            <div className="flex items-center gap-1 shrink-0">
+              <NotificationCenter
+                notifications={notifications}
+                onMarkAsRead={markAsRead}
+                onMarkAllAsRead={markAllAsRead}
+                onClear={clear}
+                onClearAll={clearAll}
+              />
+              <ShortcutsHelp
+                shortcuts={[
+                  {
+                    key: "k",
+                    ctrl: true,
+                    action: () => {},
+                    description: "Búsqueda global",
+                    category: "General",
+                  },
+                  {
+                    key: "h",
+                    ctrl: true,
+                    action: () => {},
+                    description: "Ir al inicio",
+                    category: "Navegación",
+                  },
+                  {
+                    key: "d",
+                    ctrl: true,
+                    action: () => {},
+                    description: "Ir al dashboard",
+                    category: "Navegación",
+                  },
+                  {
+                    key: "?",
+                    shift: true,
+                    action: () => {},
+                    description: "Mostrar atajos",
+                    category: "General",
+                  },
+                ]}
+              />
             </div>
             
             {/* Información del usuario - Adaptativa */}
