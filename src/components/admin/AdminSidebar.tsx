@@ -59,14 +59,21 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   {
-    title: "Gestión RRHH",
+    title: "Gestión de Personal",
     icon: Users,
     items: [
       { title: "Empleados", url: "/admin#empleados", icon: Users },
       { title: "Sucursales", url: "/admin#sucursales", icon: Building2 },
       { title: "Roles y Permisos", url: "/admin#roles", icon: UserCog },
       { title: "Gestión de Onboarding", url: "/admin/onboarding", icon: Award },
+    ]
+  },
+  {
+    title: "Nómina y Payroll",
+    icon: Calculator,
+    items: [
       { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
+      { title: "Ausencias Médicas", url: "/admin#ausencias-medicas", icon: FileText },
     ]
   },
   {
@@ -89,17 +96,28 @@ const navigationGroups: NavGroup[] = [
     ]
   },
   {
-    title: "Configuración",
+    title: "Seguridad y Auditoría",
+    icon: Shield,
+    items: [
+      { title: "Panel de Seguridad", url: "/admin/seguridad", icon: Shield },
+      { title: "Logs de Autenticación", url: "/admin/auth-logs", icon: FileText },
+      { title: "Aprobar Fotos Faciales", url: "/admin/aprobar-fotos-faciales", icon: Users },
+    ]
+  },
+  {
+    title: "Configuración del Sistema",
     icon: Settings,
     items: [
       { title: "Sistema Comercial", url: "/admin#sistema-comercial", icon: Wrench },
       { title: "Calificaciones", url: "/admin#calificaciones", icon: Trophy },
       { title: "Sorteos", url: "/admin#sorteos", icon: Trophy },
       { title: "Enlaces Sidebar", url: "/admin#sidebar-links", icon: Settings },
-      { title: "Góndolas", url: "/admin/gondolas", icon: Map },
-      { title: "Seguridad y Auditoría", url: "/admin/seguridad", icon: Shield },
-      { title: "Logs de Auth", url: "/admin/auth-logs", icon: Shield },
-      { title: "Aprobar Fotos Faciales", url: "/admin/aprobar-fotos-faciales", icon: Shield },
+    ]
+  },
+  {
+    title: "Contenido y Recursos",
+    icon: Image,
+    items: [
       { title: "Screenshots Instructivo", url: "/admin/instructivo-screenshots", icon: Image },
     ]
   }
