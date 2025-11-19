@@ -345,7 +345,7 @@
     }
   }
 
-  /* Mobile-specific styles */
+  /* ========== RESPONSIVE MÓVIL ========== */
   @media (max-width: 768px) {
     .mobile-fullwidth {
       width: 100vw;
@@ -353,7 +353,44 @@
     }
     
     .mobile-safe-area {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
       padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    /* Ocultar en móvil */
+    .hide-mobile {
+      display: none !important;
+    }
+    
+    /* Stack en móvil */
+    .stack-mobile {
+      flex-direction: column !important;
+    }
+    
+    /* Texto más pequeño en móvil */
+    .text-responsive {
+      font-size: 0.875rem !important;
+    }
+    
+    /* Botones más grandes para touch */
+    .btn-touch {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+  
+  /* Tablets */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .hide-tablet {
+      display: none !important;
+    }
+  }
+  
+  /* Desktop */
+  @media (min-width: 1025px) {
+    .hide-desktop {
+      display: none !important;
     }
   }
 }
