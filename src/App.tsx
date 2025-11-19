@@ -61,6 +61,7 @@ import Install from "./pages/Install";
 import ConfiguracionTemas from "./pages/ConfiguracionTemas";
 import AdminSeguridad from "./pages/AdminSeguridad";
 import AdminOnboarding from "./pages/AdminOnboarding";
+import EmpleadoPerfilPage from "./pages/EmpleadoPerfilPage";
 
 const queryClient = new QueryClient();
 
@@ -152,6 +153,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="dashboard" element={<AdminStats />} />
               <Route path="empleados" element={<AdminDashboard />} />
+              <Route path="empleados/:id" element={<EmpleadoPerfilPage />} />
               <Route path="asignar-sucursales" element={<AsignarSucursales />} />
               <Route path="ranking-incidencias" element={<RankingIncidencias />} />
               <Route path="sucursales" element={<AdminDashboard />} />
