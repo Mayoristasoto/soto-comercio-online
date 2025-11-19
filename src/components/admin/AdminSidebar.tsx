@@ -96,6 +96,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Sorteos", url: "/admin#sorteos", icon: Trophy },
       { title: "Enlaces Sidebar", url: "/admin#sidebar-links", icon: Settings },
       { title: "Góndolas", url: "/admin/gondolas", icon: Map },
+      { title: "Seguridad y Auditoría", url: "/admin/seguridad", icon: Shield },
       { title: "Logs de Auth", url: "/admin/auth-logs", icon: Shield },
       { title: "Aprobar Fotos Faciales", url: "/admin/aprobar-fotos-faciales", icon: Shield },
       { title: "Screenshots Instructivo", url: "/admin/instructivo-screenshots", icon: Image },
