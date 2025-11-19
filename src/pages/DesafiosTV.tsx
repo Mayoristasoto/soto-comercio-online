@@ -73,6 +73,16 @@ export default function DesafiosTV() {
       inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
       inicioSemana.setHours(0, 0, 0, 0);
 
+      // Obtener empleados que participan en DesafíosTV
+      const { data: participantes } = await supabase
+        .from('desafios_tv_participantes')
+        .select('empleado_id')
+        .eq('participa', true);
+
+      const empleadosPermitidosIds = new Set(
+        participantes?.map(p => p.empleado_id) || []
+      );
+
       const { data: crucesRojas, error: crucesError } = await supabase
         .from('empleado_cruces_rojas')
         .select(`
@@ -94,6 +104,11 @@ export default function DesafiosTV() {
       
       crucesRojas?.forEach((cruce: any) => {
         const key = cruce.empleado_id;
+        
+        // Filtrar por empleados permitidos si existe configuración
+        const puedeParticipar = participantes?.length === 0 || empleadosPermitidosIds.has(key);
+        if (!puedeParticipar) return;
+        
         if (!empleadosMap.has(key)) {
           empleadosMap.set(key, {
             empleado_id: cruce.empleado_id,
@@ -118,8 +133,13 @@ export default function DesafiosTV() {
         .select('id, nombre, apellido, avatar_url')
         .eq('activo', true);
 
+      // Agregar empleados sin infracciones SOLO si participan en DesafíosTV
       todosEmpleados?.forEach((emp: any) => {
-        if (!empleadosMap.has(emp.id)) {
+        // Si no hay configuración, por defecto participan todos
+        // Si hay configuración, solo los que están permitidos
+        const puedeParticipar = participantes?.length === 0 || empleadosPermitidosIds.has(emp.id);
+        
+        if (puedeParticipar && !empleadosMap.has(emp.id)) {
           empleadosMap.set(emp.id, {
             empleado_id: emp.id,
             nombre: emp.nombre,

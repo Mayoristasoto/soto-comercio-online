@@ -35,6 +35,7 @@ import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfi
 import CalificacionesConfig from "@/components/admin/CalificacionesConfig"
 import SorteosParticipantes from "@/components/admin/SorteosParticipantes"
 import { TareasConfiguracion } from "@/components/admin/TareasConfiguracion"
+import { DesafiosTVConfig } from "@/components/admin/DesafiosTVConfig"
 
 export default function AdminDashboard() {
   const { toast } = useToast()
@@ -100,7 +101,8 @@ export default function AdminDashboard() {
         { id: 'challenges', nombre: 'Desafíos', icon: Target, component: <ChallengeManagement /> },
         { id: 'prizes', nombre: 'Premios', icon: Award, component: <PrizeManagement /> },
         { id: 'calificaciones', nombre: 'Calificaciones', icon: BarChart3, component: <CalificacionesConfig /> },
-        { id: 'sorteos', nombre: 'Sorteos', icon: Trophy, component: <SorteosParticipantes /> }
+        { id: 'sorteos', nombre: 'Sorteos', icon: Trophy, component: <SorteosParticipantes /> },
+        { id: 'desafios-tv-config', nombre: 'Participantes Desafíos TV', icon: Users, component: <DesafiosTVConfig /> }
       ]
     },
     {
