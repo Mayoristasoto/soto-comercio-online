@@ -57,6 +57,7 @@ import FichajeMetricas from "./pages/FichajeMetricas";
 import InstructivoScreenshots from "./pages/InstructivoScreenshots";
 import Payroll from "./pages/Payroll";
 import Install from "./pages/Install";
+import ConfiguracionTemas from "./pages/ConfiguracionTemas";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +142,7 @@ const App = () => (
             
             {/* Configuración de Usuario (accesible para todos) */}
             <Route path="mi-configuracion" element={<ConfiguracionUsuario />} />
+            <Route path="temas" element={<ConfiguracionTemas />} />
             
             {/* Módulo Administración con nuevo layout */}
             <Route path="admin" element={<AdminLayout />}>
