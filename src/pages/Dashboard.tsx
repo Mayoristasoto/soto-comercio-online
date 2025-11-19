@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import EventCalendar from "@/components/dashboard/EventCalendar"
+import { PWAInstallPrompt, PWAUpdatePrompt } from "@/components/PWAInstall"
 
 interface UserInfo {
   id: string
@@ -237,6 +238,10 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* PWA Install & Update */}
+      <PWAInstallPrompt />
+      <PWAUpdatePrompt />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
