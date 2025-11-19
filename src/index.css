@@ -6,89 +6,151 @@
 
 @layer base {
   :root {
+    /* ========== COLORES BASE ========== */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 222 47% 11%;
+    
+    /* ========== SUPERFICIES ========== */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 222 47% 11%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
+    --popover-foreground: 222 47% 11%;
+    
+    /* ========== BRAND COLORS ========== */
+    --primary: 221 83% 53%;        /* Azul vibrante profesional */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 221 83% 48%;   /* Hover más oscuro */
+    
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --secondary-hover: 210 40% 92%; /* Hover más visible */
+    
+    --accent: 142 76% 36%;          /* Verde corporativo */
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 142 76% 31%;
+    
+    /* ========== ESTADOS ========== */
+    --success: 142 76% 36%;         /* Verde */
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 95%;
+    
+    --warning: 38 92% 50%;          /* Amarillo/Naranja */
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+    
+    --error: 0 84% 60%;             /* Rojo */
+    --error-foreground: 0 0% 100%;
+    --error-light: 0 84% 95%;
+    
+    --info: 199 89% 48%;            /* Azul info */
+    --info-foreground: 0 0% 100%;
+    --info-light: 199 89% 95%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* ========== NEUTRALES ========== */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    
+    /* ========== BORDES Y RADIOS ========== */
     --radius: 0.5rem;
-
+    --radius-sm: 0.375rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    
+    /* ========== SOMBRAS ========== */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    /* ========== SIDEBAR ========== */
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 221 83% 53%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* ========== COLORES BASE ========== */
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
+    
+    /* ========== SUPERFICIES ========== */
+    --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
+    
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
+    
+    /* ========== BRAND COLORS ========== */
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 221 83% 58%;
+    
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --secondary-hover: 217 33% 22%;
+    
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 142 76% 41%;
+    
+    /* ========== ESTADOS ========== */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 15%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+    --warning-light: 38 92% 15%;
+    
+    --error: 0 63% 31%;
+    --error-foreground: 0 0% 100%;
+    --error-light: 0 84% 15%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 199 89% 15%;
+    
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* ========== NEUTRALES ========== */
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 221 83% 53%;
+    
+    /* ========== SOMBRAS (más sutiles en dark) ========== */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+    
+    /* ========== SIDEBAR ========== */
+    --sidebar-background: 240 6% 10%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 221 83% 53%;
   }
 }
 
@@ -109,12 +171,153 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* ========== TIPOGRAFÍA ========== */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  h1 {
+    @apply text-4xl lg:text-5xl;
+    line-height: 1.1;
+  }
+  
+  h2 {
+    @apply text-3xl lg:text-4xl;
+    line-height: 1.2;
+  }
+  
+  h3 {
+    @apply text-2xl lg:text-3xl;
+    line-height: 1.3;
+  }
+  
+  h4 {
+    @apply text-xl lg:text-2xl;
+    line-height: 1.4;
+  }
+  
+  h5 {
+    @apply text-lg lg:text-xl;
+    line-height: 1.5;
+  }
+  
+  h6 {
+    @apply text-base lg:text-lg;
+    line-height: 1.5;
+  }
+  
+  p {
+    @apply text-base leading-relaxed;
+  }
+  
+  small {
+    @apply text-sm;
   }
 }
 
 @layer utilities {
-  /* Mobile-optimized touch interactions */
+  /* ========== COMPONENTES REUTILIZABLES ========== */
+  
+  /* Cards con diferentes elevaciones */
+  .card-elevated {
+    @apply bg-card rounded-lg shadow-md border border-border;
+  }
+  
+  .card-flat {
+    @apply bg-card rounded-lg border border-border;
+  }
+  
+  .card-ghost {
+    @apply bg-transparent hover:bg-muted/50 rounded-lg transition-colors;
+  }
+  
+  /* Status badges */
+  .badge-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20;
+  }
+  
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/20;
+  }
+  
+  .badge-error {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-error/10 text-error border border-error/20;
+  }
+  
+  .badge-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-info/10 text-info border border-info/20;
+  }
+  
+  .badge-neutral {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border;
+  }
+  
+  /* Botones de acción rápida */
+  .btn-ghost {
+    @apply hover:bg-muted/50 rounded-md p-2 transition-colors;
+  }
+  
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-md p-2 hover:bg-muted/50 transition-colors;
+  }
+  
+  /* Separadores de sección */
+  .section-divider {
+    @apply border-t border-border my-6;
+  }
+  
+  .section-divider-thick {
+    @apply border-t-2 border-border my-8;
+  }
+  
+  /* Estados de carga */
+  .skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+  
+  /* Contenedores con espaciado estándar */
+  .container-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-spacing {
+    @apply py-8 sm:py-12 lg:py-16;
+  }
+  
+  /* Texto truncado con ellipsis */
+  .text-truncate {
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+  
+  .text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* Focus rings consistentes */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  /* Transiciones suaves */
+  .transition-smooth {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  
+  /* ========== INTERACCIONES MÓVILES ========== */
   .touch-optimized {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -123,7 +326,6 @@
     user-select: none;
   }
 
-  /* Smooth animations for mobile */
   .animate-scale-in {
     animation: scale-in 0.2s ease-out;
   }
@@ -132,13 +334,11 @@
     animation: fade-in 0.3s ease-out;
   }
 
-  /* Hardware acceleration for smooth interactions */
   .gpu-accelerated {
     transform: translateZ(0);
     will-change: transform;
   }
 
-  /* Gesture-friendly hover states */
   @media (hover: hover) {
     .hover-scale:hover {
       transform: scale(1.05);
