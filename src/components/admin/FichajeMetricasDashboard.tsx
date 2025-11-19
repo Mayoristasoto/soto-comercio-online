@@ -759,6 +759,17 @@ export default function FichajeMetricasDashboard() {
     return partes[0] + ' ART'
   }
   
+  const formatearFechaArgentina = (fechaStr: string): string => {
+    // Formatear fecha en zona horaria argentina
+    const [year, month, day] = fechaStr.split('-')
+    const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    return fecha.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
+  
   const formatearHoraConTooltip = (horaArt: string, createdAtUtc: string) => {
     if (!horaArt || !createdAtUtc) return { display: '--:--:--', tooltip: '' }
     
@@ -1081,7 +1092,7 @@ export default function FichajeMetricasDashboard() {
                               </div>
                               <div className="text-sm text-muted-foreground mb-1">
                                 <Calendar className="h-3 w-3 inline mr-1" />
-                                {new Date(fichaje.fecha_fichaje).toLocaleDateString('es-AR')}
+                                {formatearFechaArgentina(fichaje.fecha_fichaje)}
                               </div>
                             <div className="text-sm text-muted-foreground space-x-4">
                               <span>Programada: {formatearHora(fichaje.hora_programada)}</span>
@@ -1199,7 +1210,7 @@ export default function FichajeMetricasDashboard() {
                               </div>
                               <div className="text-sm text-muted-foreground mb-1">
                                 <Calendar className="h-3 w-3 inline mr-1" />
-                                {new Date(pausa.fecha_fichaje).toLocaleDateString('es-AR')}
+                                {formatearFechaArgentina(pausa.fecha_fichaje)}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 <span 
@@ -1287,7 +1298,7 @@ export default function FichajeMetricasDashboard() {
                         <div>
                           <span className="text-muted-foreground">Fecha incidencia:</span>{" "}
                           <span className="font-medium">
-                            {new Date(incidencia.fecha_incidencia).toLocaleDateString('es-AR')}
+                            {formatearFechaArgentina(incidencia.fecha_incidencia)}
                           </span>
                           {incidencia.hora_propuesta && (
                             <span className="ml-2 text-muted-foreground">
@@ -1338,7 +1349,7 @@ export default function FichajeMetricasDashboard() {
                 <div>
                   <span className="text-sm font-medium">Fecha:</span>
                   <p className="text-sm">
-                    {new Date(selectedIncidencia.fecha_incidencia).toLocaleDateString('es-AR')}
+                    {formatearFechaArgentina(selectedIncidencia.fecha_incidencia)}
                   </p>
                 </div>
                 {selectedIncidencia.hora_propuesta && (
