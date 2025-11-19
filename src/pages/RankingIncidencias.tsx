@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw } from "lucide-react";
+import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw, Calculator } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
@@ -29,6 +29,7 @@ export default function RankingIncidencias() {
   const navigate = useNavigate();
   const [rankings, setRankings] = useState<RankingData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
   const [periodoInicio, setPeriodoInicio] = useState('');
 
   useEffect(() => {
@@ -59,6 +60,47 @@ export default function RankingIncidencias() {
     } catch (error) {
       console.error('Error checking auth:', error);
       navigate('/auth');
+    }
+  };
+
+  const recalcularIncidencias = async () => {
+    try {
+      setRecalculating(true);
+      
+      // Obtener todos los empleados activos
+      const { data: empleados } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('activo', true);
+
+      if (!empleados || empleados.length === 0) {
+        console.log('No hay empleados activos para recalcular');
+        setRecalculating(false);
+        return;
+      }
+
+      // Recalcular incidencias para cada empleado
+      let procesados = 0;
+      for (const empleado of empleados) {
+        const { error } = await supabase.rpc('recalcular_incidencias_empleado', {
+          p_empleado_id: empleado.id
+        });
+
+        if (error) {
+          console.error(`Error recalculando empleado ${empleado.id}:`, error);
+        } else {
+          procesados++;
+        }
+      }
+
+      console.log(`Incidencias recalculadas para ${procesados} empleados`);
+      
+      // Recargar el ranking después del recálculo
+      await loadRankingData();
+      setRecalculating(false);
+    } catch (error) {
+      console.error('Error al recalcular incidencias:', error);
+      setRecalculating(false);
     }
   };
 
@@ -211,10 +253,20 @@ export default function RankingIncidencias() {
             Empleados con más incidencias desde el {new Date(periodoInicio).toLocaleDateString('es-AR')}
           </p>
         </div>
-        <Button onClick={loadRankingData} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={recalcularIncidencias} 
+            disabled={recalculating || loading}
+            variant="outline"
+          >
+            <Calculator className={`h-4 w-4 mr-2 ${recalculating ? 'animate-pulse' : ''}`} />
+            {recalculating ? 'Recalculando...' : 'Recalcular Incidencias'}
+          </Button>
+          <Button onClick={loadRankingData} disabled={loading || recalculating}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="total" className="w-full">
