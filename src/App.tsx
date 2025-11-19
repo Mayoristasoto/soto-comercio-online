@@ -32,6 +32,7 @@ import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
 import AsignarSucursales from "./pages/AsignarSucursales";
 import DesafiosTV from "./pages/DesafiosTV";
+import RankingIncidencias from "./pages/RankingIncidencias";
 
 // Legacy pages (mantener por compatibilidad)
 import Gondolas from "./pages/Gondolas";
@@ -152,6 +153,7 @@ const App = () => (
               <Route path="dashboard" element={<AdminStats />} />
               <Route path="empleados" element={<AdminDashboard />} />
               <Route path="asignar-sucursales" element={<AsignarSucursales />} />
+              <Route path="ranking-incidencias" element={<RankingIncidencias />} />
               <Route path="sucursales" element={<AdminDashboard />} />
               <Route path="gondolas" element={<Gondolas />} />
               <Route path="gondolasedit" element={<GondolasEdit />} />
