@@ -56,6 +56,7 @@ import PresentacionEjecutiva from "./pages/PresentacionEjecutiva";
 import FichajeMetricas from "./pages/FichajeMetricas";
 import InstructivoScreenshots from "./pages/InstructivoScreenshots";
 import Payroll from "./pages/Payroll";
+import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,9 @@ const App = () => (
           
           {/* Autenticación unificada */}
           <Route path="/auth" element={<UnifiedAuth />} />
+          
+          {/* Instalación PWA */}
+          <Route path="/install" element={<Install />} />
           
           {/* Rutas protegidas con layout unificado */}
           <Route path="/" element={<UnifiedLayout />}>
