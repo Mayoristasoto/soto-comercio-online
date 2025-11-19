@@ -242,34 +242,51 @@ export function GlobalSearch({ userRole }: GlobalSearchProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Buscar en el sistema... (Ctrl+K)" />
-      <CommandList>
-        <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-        {categories.map((category) => {
+      <CommandInput 
+        placeholder="Buscar páginas, funciones..." 
+        className="h-12 border-0 focus-visible:ring-0"
+      />
+      <CommandList className="max-h-[450px]">
+        <CommandEmpty className="py-8 text-center">
+          <p className="text-sm text-muted-foreground mb-1">
+            No se encontraron resultados
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Intenta con otros términos de búsqueda
+          </p>
+        </CommandEmpty>
+        
+        {categories.map((category, index) => {
           const items = allItems.filter(item => item.category === category)
+          if (items.length === 0) return null
+          
           return (
-            <CommandGroup key={category} heading={category}>
-              {items.map((item) => {
-                const Icon = item.icon
-                return (
-                  <CommandItem
-                    key={item.id}
-                    value={`${item.title} ${item.description} ${item.keywords?.join(' ')}`}
-                    onSelect={() => handleSelect(item.path)}
-                  >
-                    <Icon className="mr-2 h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span>{item.title}</span>
-                      {item.description && (
-                        <span className="text-xs text-muted-foreground">
-                          {item.description}
-                        </span>
-                      )}
-                    </div>
-                  </CommandItem>
-                )
-              })}
-            </CommandGroup>
+            <div key={category}>
+              <CommandGroup heading={category} className="px-2">
+                {items.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <CommandItem
+                      key={item.id}
+                      value={`${item.title} ${item.description} ${item.keywords?.join(' ')}`}
+                      onSelect={() => handleSelect(item.path)}
+                      className="cursor-pointer rounded-md px-3 py-3 aria-selected:bg-accent/50"
+                    >
+                      <Icon className="mr-3 h-5 w-5 text-primary shrink-0" />
+                      <div className="flex flex-col gap-0.5 flex-1">
+                        <span className="font-medium text-sm">{item.title}</span>
+                        {item.description && (
+                          <span className="text-xs text-muted-foreground line-clamp-1">
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+              {index < categories.length - 1 && <CommandSeparator className="my-1" />}
+            </div>
           )
         })}
       </CommandList>
