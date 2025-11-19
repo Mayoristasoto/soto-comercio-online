@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, AlertTriangle, Clock, Coffee } from "lucide-react";
+import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 interface EmpleadoRanking {
   empleado_id: string;
@@ -210,6 +211,10 @@ export default function RankingIncidencias() {
             Empleados con más incidencias desde el {new Date(periodoInicio).toLocaleDateString('es-AR')}
           </p>
         </div>
+        <Button onClick={loadRankingData} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Actualizar
+        </Button>
       </div>
 
       <Tabs defaultValue="total" className="w-full">
