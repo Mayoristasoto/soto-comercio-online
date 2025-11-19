@@ -405,7 +405,8 @@ export default function RankingIncidencias() {
                       return (
                         <div
                           key={empleado.empleado_id}
-                          className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                          className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/admin/empleados/${empleado.empleado_id}?tab=cruces-rojas`)}
                         >
                           <div className="flex items-center gap-2 min-w-[60px]">
                             {getPodiumIcon(posicion)}

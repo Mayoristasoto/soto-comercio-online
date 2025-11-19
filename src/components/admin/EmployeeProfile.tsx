@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -73,11 +74,15 @@ interface EmployeeProfileProps {
 
 export default function EmployeeProfile({ empleado, open, onOpenChange, onEmployeeUpdated }: EmployeeProfileProps) {
   const { toast } = useToast()
+  const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [puestos, setPuestos] = useState<Puesto[]>([])
   const [formData, setFormData] = useState<Partial<EmpleadoProfile>>({})
   const [isAdmin, setIsAdmin] = useState(false)
+  
+  // Obtener el tab de la URL o usar 'personal' por defecto
+  const defaultTab = searchParams.get('tab') || 'personal'
 
   useEffect(() => {
     if (empleado) {
@@ -306,7 +311,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
       </CardHeader>
 
       <CardContent>
-        <Tabs defaultValue="personal" className="space-y-4">
+        <Tabs defaultValue={defaultTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             <TabsTrigger value="work">Laboral</TabsTrigger>
