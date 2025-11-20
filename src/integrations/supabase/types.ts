@@ -700,6 +700,64 @@ export type Database = {
           },
         ]
       }
+      configuracion_ia: {
+        Row: {
+          clave: string
+          created_at: string | null
+          descripcion: string | null
+          id: string
+          opciones: Json | null
+          tipo: string | null
+          updated_at: string | null
+          updated_by: string | null
+          valor: string
+        }
+        Insert: {
+          clave: string
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          opciones?: Json | null
+          tipo?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          valor: string
+        }
+        Update: {
+          clave?: string
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          opciones?: Json | null
+          tipo?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configuracion_ia_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "configuracion_ia_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "configuracion_ia_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confirmaciones_lectura: {
         Row: {
           asignacion_id: string

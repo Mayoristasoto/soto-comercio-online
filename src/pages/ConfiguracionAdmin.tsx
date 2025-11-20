@@ -1,11 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { Settings, Brain, FileText, DollarSign, Layout } from "lucide-react"
+import { Settings, Brain, FileText, DollarSign, Layout, Sparkles } from "lucide-react"
 import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
 import { PagesManager } from "@/components/admin/PagesManager"
+import ConfiguracionModelosIA from "@/components/admin/ConfiguracionModelosIA"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
@@ -74,7 +75,7 @@ export default function Configuracion() {
       </div>
 
       <Tabs defaultValue="fichero" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="fichero" className="gap-2">
             <Settings className="h-4 w-4" />
             Fichero
@@ -82,6 +83,10 @@ export default function Configuracion() {
           <TabsTrigger value="facial" className="gap-2">
             <Brain className="h-4 w-4" />
             Reconocimiento Facial
+          </TabsTrigger>
+          <TabsTrigger value="ia" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Modelos IA
           </TabsTrigger>
           <TabsTrigger value="solicitudes" className="gap-2">
             <FileText className="h-4 w-4" />
@@ -105,6 +110,10 @@ export default function Configuracion() {
 
         <TabsContent value="facial" className="space-y-6">
           <FacialRecognitionConfig />
+        </TabsContent>
+
+        <TabsContent value="ia" className="space-y-6">
+          <ConfiguracionModelosIA />
         </TabsContent>
 
         <TabsContent value="solicitudes" className="space-y-6">
