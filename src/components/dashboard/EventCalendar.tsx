@@ -477,6 +477,7 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
         description: "No se pudo crear el horario excepcional",
         variant: "destructive"
       })
+    }
   }
 
   const handleRecalcularIncidencias = async (empleadoId: string, fecha: Date) => {
