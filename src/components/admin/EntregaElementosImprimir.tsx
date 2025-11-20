@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { Printer, FileText } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import DOMPurify from "dompurify"
 
 interface Empleado {
   id: string
@@ -285,7 +286,7 @@ export function EntregaElementosImprimir({ onEntregaCreated }: EntregaElementosI
           </DialogHeader>
           <div
             ref={printRef}
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }}
             className="border rounded-lg p-4"
           />
           <div className="flex justify-end gap-2">
