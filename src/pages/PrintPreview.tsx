@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import DOMPurify from "dompurify";
 
 const PrintPreview = () => {
   const [printerType, setPrinterType] = useState<"termica" | "a4">("termica");
@@ -91,7 +92,7 @@ const PrintPreview = () => {
   };
 
   const descargarEjemplo = () => {
-    const contenidoHTML = document.querySelector('.documento-impresion')?.innerHTML || '';
+    const contenidoHTML = DOMPurify.sanitize(document.querySelector('.documento-impresion')?.innerHTML || '');
     const htmlCompleto = `
       <!DOCTYPE html>
       <html>
