@@ -3573,6 +3573,55 @@ export type Database = {
           },
         ]
       }
+      imagenes_cumpleanos: {
+        Row: {
+          created_at: string | null
+          empleado_id: string
+          fecha_generacion: string | null
+          id: string
+          imagen_url: string
+          nombre_completo: string
+        }
+        Insert: {
+          created_at?: string | null
+          empleado_id: string
+          fecha_generacion?: string | null
+          id?: string
+          imagen_url: string
+          nombre_completo: string
+        }
+        Update: {
+          created_at?: string | null
+          empleado_id?: string
+          fecha_generacion?: string | null
+          id?: string
+          imagen_url?: string
+          nombre_completo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imagenes_cumpleanos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imagenes_cumpleanos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imagenes_cumpleanos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insignias: {
         Row: {
           activa: boolean
