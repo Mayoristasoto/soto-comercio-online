@@ -106,6 +106,9 @@ export default {
 				'safe-left': 'env(safe-area-inset-left)',
 				'safe-right': 'env(safe-area-inset-right)'
 			},
+			fontFamily: {
+				'celebration': ['Great Vibes', 'cursive'],
+			},
 			fontSize: {
 				'xs': ['0.75rem', { lineHeight: '1rem' }],
 				'sm': ['0.875rem', { lineHeight: '1.25rem' }],
