@@ -110,8 +110,7 @@ export default function ConfiguracionModelosIA() {
     try {
       const { data, error } = await supabase.functions.invoke('generar-imagen-cumpleanos', {
         body: { 
-          nombreCompleto: testPrompt,
-          esTest: true,
+          prompt: testPrompt,
           imagenReferencia: referenceImage 
         }
       });

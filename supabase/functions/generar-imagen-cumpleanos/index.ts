@@ -12,11 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { nombreCompleto, empleadoId } = await req.json();
+    const { nombreCompleto, empleadoId, prompt: customPrompt, imagenReferencia: customImagenReferencia } = await req.json();
     
-    if (!nombreCompleto) {
+    // Si se proporciona un prompt personalizado, no es necesario nombreCompleto
+    if (!customPrompt && !nombreCompleto) {
       return new Response(
-        JSON.stringify({ error: 'Nombre del empleado requerido' }),
+        JSON.stringify({ error: 'Se requiere un prompt o nombre del empleado' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -50,14 +51,18 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY no configurado');
     }
 
-    // Obtener la imagen de referencia del logo desde configuración
-    const { data: configLogo } = await supabase
-      .from('configuracion_ia')
-      .select('valor')
-      .eq('clave', 'imagen_referencia_cumpleanos')
-      .single();
-
-    const imagenReferencia = configLogo?.valor;
+    // Si se proporciona una imagen de referencia personalizada, usarla; sino, obtener de configuración
+    let imagenReferencia = customImagenReferencia;
+    
+    if (!imagenReferencia) {
+      const { data: configLogo } = await supabase
+        .from('configuracion_ia')
+        .select('valor')
+        .eq('clave', 'imagen_referencia_cumpleanos')
+        .single();
+      
+      imagenReferencia = configLogo?.valor;
+    }
 
     // Obtener el modelo configurado
     const { data: config } = await supabase
@@ -68,8 +73,8 @@ serve(async (req) => {
 
     const modelo = config?.valor || 'google/gemini-2.5-flash-image';
 
-    // Prompt detallado basado en la imagen de referencia del usuario
-    const prompt = `Create a festive birthday celebration image in 16:9 aspect ratio with these elements:
+    // Si se proporciona un prompt personalizado, usarlo; sino, usar el prompt de cumpleaños por defecto
+    const prompt = customPrompt || `Create a festive birthday celebration image in 16:9 aspect ratio with these elements:
 
 Background: Soft gradient from warm beige at top to slightly lighter beige at bottom, elegant and festive atmosphere
 
@@ -94,7 +99,7 @@ Lighting: Soft, warm lighting that makes the golden text glow, subtle shadows on
 Ultra high resolution, professional corporate design`;
 
     console.log('Generando imagen con modelo:', modelo);
-    console.log('Para empleado:', nombreCompleto);
+    console.log('Prompt:', customPrompt ? 'Personalizado' : 'Cumpleaños');
     console.log('Con imagen de referencia:', imagenReferencia ? 'Sí' : 'No');
 
     // Construir el contenido del mensaje
