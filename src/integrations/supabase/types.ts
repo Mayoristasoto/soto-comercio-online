@@ -5275,6 +5275,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_theme_preferences: {
+        Row: {
+          created_at: string | null
+          custom_colors: Json | null
+          font_size: string | null
+          high_contrast: boolean | null
+          id: string
+          reduced_motion: boolean | null
+          theme_mode: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          custom_colors?: Json | null
+          font_size?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          reduced_motion?: boolean | null
+          theme_mode?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          custom_colors?: Json | null
+          font_size?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          reduced_motion?: boolean | null
+          theme_mode?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       vacaciones_bloqueos: {
         Row: {
           activo: boolean
