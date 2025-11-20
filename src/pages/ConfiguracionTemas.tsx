@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useAccessibility } from '@/hooks/useAccessibility';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -232,36 +233,22 @@ export default function ConfiguracionTemas() {
     const randomStyle = paletteStyles[Math.floor(Math.random() * paletteStyles.length)];
     
     try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: `Generate an abstract color palette image with ${randomStyle}. Create a simple horizontal stripe pattern with 5 distinct colors that work well together. Make the colors bold and clear.`
-            }
-          ],
-          modalities: ["image", "text"]
-        })
+      const { data, error } = await supabase.functions.invoke('generate-color-palette', {
+        body: { style: randomStyle }
       });
 
-      const data = await response.json();
-      const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (error) throw error;
       
-      if (generatedImageUrl) {
+      if (data?.imageUrl) {
         const img = new Image();
         img.onload = () => {
-          setReferenceImage(generatedImageUrl);
+          setReferenceImage(data.imageUrl);
           extractColorsFromImage(img);
           toast.success("Paleta generada", {
             description: "Se han extraído los colores y generado variaciones"
           });
         };
-        img.src = generatedImageUrl;
+        img.src = data.imageUrl;
       } else {
         throw new Error("No se pudo generar la imagen");
       }
