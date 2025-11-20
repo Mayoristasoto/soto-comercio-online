@@ -679,10 +679,10 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
                       alt="¡Feliz Cumpleaños!" 
                       className="w-full h-auto"
                     />
-                    <div className="absolute inset-0 flex items-end justify-center pb-8">
+                    <div className="absolute inset-0 flex items-end justify-center pb-16">
                       <p 
-                        className="font-celebration text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
-                        style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
+                        className="font-celebration text-5xl md:text-6xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+                        style={{ textShadow: '3px 3px 6px rgba(0,0,0,0.7), 0 0 20px rgba(255,215,0,0.5)' }}
                       >
                         {selectedDayEvents
                           .filter(e => e.type === 'cumpleaños')
