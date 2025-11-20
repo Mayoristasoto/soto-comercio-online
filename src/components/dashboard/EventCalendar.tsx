@@ -726,7 +726,7 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
               
               {/* Mostrar imagen de cumpleaños generada con IA */}
               {hasBirthday && birthdayImage && (
-                <div className="mb-6">
+                <div className="mb-6 max-w-2xl mx-auto">
                   <div className="relative rounded-lg overflow-hidden shadow-lg">
                     <img 
                       src={birthdayImage}
