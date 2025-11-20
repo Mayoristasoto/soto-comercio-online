@@ -72,6 +72,8 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'nota' | 'horario'>('nota')
+  const [birthdayImage, setBirthdayImage] = useState<string | null>(null)
+  const [generatingImage, setGeneratingImage] = useState(false)
   
   // Form states
   const [notaForm, setNotaForm] = useState({
@@ -91,6 +93,7 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
     loadEvents()
     loadEmpleados()
   }, [selectedDate, empleadoId])
+
 
   const loadEmpleados = async () => {
     const { data } = await supabase
@@ -585,9 +588,44 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
     }
   }
 
+  const generarImagenCumpleanos = async () => {
+    setGeneratingImage(true)
+    try {
+      // Obtener el nombre del empleado que cumple años
+      const cumpleanosEvent = getEventsForDate(selectedDate).find(e => e.type === 'cumpleaños')
+      if (!cumpleanosEvent) return
+
+      const { data, error } = await supabase.functions.invoke('generar-imagen-cumpleanos', {
+        body: { nombreCompleto: cumpleanosEvent.title }
+      })
+
+      if (error) throw error
+      
+      if (data?.imageUrl) {
+        setBirthdayImage(data.imageUrl)
+      }
+    } catch (error: any) {
+      console.error('Error generando imagen:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo generar la imagen de cumpleaños",
+        variant: "destructive"
+      })
+    } finally {
+      setGeneratingImage(false)
+    }
   }
 
+
   const selectedDayEvents = getEventsForDate(selectedDate)
+  const hasBirthday = selectedDayEvents.some(e => e.type === 'cumpleaños')
+
+  // Generar imagen cuando hay un cumpleaños
+  useEffect(() => {
+    if (hasBirthday && !birthdayImage && !generatingImage) {
+      generarImagenCumpleanos()
+    }
+  }, [hasBirthday, selectedDate])
 
   return (
     <Card>
@@ -670,6 +708,28 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
                 Eventos del {format(selectedDate, "d 'de' MMMM", { locale: es })}
               </h4>
               
+              
+              {/* Mostrar imagen de cumpleaños generada con IA */}
+              {hasBirthday && birthdayImage && (
+                <div className="mb-6">
+                  <div className="relative rounded-lg overflow-hidden shadow-lg">
+                    <img 
+                      src={birthdayImage}
+                      alt="¡Feliz Cumpleaños!" 
+                      className="w-full h-auto"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {hasBirthday && generatingImage && (
+                <div className="mb-6 flex items-center justify-center p-8 bg-muted rounded-lg">
+                  <div className="text-center space-y-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                    <p className="text-sm text-muted-foreground">Generando imagen de cumpleaños...</p>
+                  </div>
+                </div>
+              )}
               
               {selectedDayEvents.length > 0 ? (
                 <div className="space-y-2">
