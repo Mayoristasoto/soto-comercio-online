@@ -26,6 +26,7 @@ import {
   StickyNote,
   CalendarClock
 } from "lucide-react"
+import birthdayImage from "@/assets/birthday-celebration.png"
 
 interface CalendarEvent {
   date: Date
@@ -668,6 +669,17 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
                 <CalendarIcon className="h-4 w-4" />
                 Eventos del {format(selectedDate, "d 'de' MMMM", { locale: es })}
               </h4>
+              
+              {/* Mostrar imagen de cumpleaños si hay cumpleaños hoy */}
+              {selectedDayEvents.some(e => e.type === 'cumpleaños') && (
+                <div className="mb-6 rounded-lg overflow-hidden shadow-lg">
+                  <img 
+                    src={birthdayImage} 
+                    alt="¡Feliz Cumpleaños!" 
+                    className="w-full h-auto"
+                  />
+                </div>
+              )}
               
               {selectedDayEvents.length > 0 ? (
                 <div className="space-y-2">
