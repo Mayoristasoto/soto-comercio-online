@@ -49,6 +49,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSidebarLinks } from "@/hooks/useSidebarLinks"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
@@ -129,7 +130,7 @@ const iconColors: Record<string, string> = {
 }
 
 const getIconColor = (iconName: string): string => {
-  return iconColors[iconName] || "text-foreground"
+  return "text-muted-foreground"
 }
 
 export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
@@ -328,19 +329,26 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                        : location.pathname === grandPath
                                    })
 
-                                  if (childHasChildren) {
-                                    const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
-                                    return (
-                                       <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
-                                        <SidebarMenuSubItem>
-                                           <CollapsibleTrigger asChild>
-                                            <SidebarMenuSubButton isActive={isChildActive}>
-                                              <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
-                                              <span>{child.nombre}</span>
-                                              <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
-                                            </SidebarMenuSubButton>
-                                          </CollapsibleTrigger>
-                                        </SidebarMenuSubItem>
+                                   if (childHasChildren) {
+                                     const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
+                                     return (
+                                        <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
+                                         <SidebarMenuSubItem>
+                                            <CollapsibleTrigger asChild>
+                                             <Tooltip>
+                                               <TooltipTrigger asChild>
+                                                 <SidebarMenuSubButton isActive={isChildActive}>
+                                                   <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
+                                                   <span>{child.nombre}</span>
+                                                   <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
+                                                 </SidebarMenuSubButton>
+                                               </TooltipTrigger>
+                                               <TooltipContent side="right">
+                                                 <p>{child.descripcion || child.nombre}</p>
+                                               </TooltipContent>
+                                             </Tooltip>
+                                           </CollapsibleTrigger>
+                                         </SidebarMenuSubItem>
                                         <CollapsibleContent>
                                           <SidebarMenuSub>
                                              {(child as any).children.map((grand: any) => {
@@ -349,16 +357,23 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                                const isGrandActive = grandPath.includes('#')
                                                  ? currentFullPath === grandPath
                                                  : location.pathname === grandPath
-                                              return (
-                                                 <SidebarMenuSubItem key={grand.id}>
-                                                  <SidebarMenuSubButton asChild isActive={isGrandActive}>
-                                                    <NavLink to={fixPath(grand.path, grand.nombre)}>
-                                                      <GrandIcon className={`h-4 w-4 ${getIconColor(grand.icon)}`} />
-                                                      <span>{grand.nombre}</span>
-                                                    </NavLink>
-                                                  </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                              )
+                                               return (
+                                                  <SidebarMenuSubItem key={grand.id}>
+                                                    <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                        <SidebarMenuSubButton asChild isActive={isGrandActive}>
+                                                          <NavLink to={fixPath(grand.path, grand.nombre)}>
+                                                            <GrandIcon className={`h-4 w-4 ${getIconColor(grand.icon)}`} />
+                                                            <span>{grand.nombre}</span>
+                                                          </NavLink>
+                                                        </SidebarMenuSubButton>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent side="right">
+                                                        <p>{grand.descripcion || grand.nombre}</p>
+                                                      </TooltipContent>
+                                                    </Tooltip>
+                                                  </SidebarMenuSubItem>
+                                               )
                                             })}
                                           </SidebarMenuSub>
                                         </CollapsibleContent>
@@ -368,15 +383,22 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
 
                                   return (
                                     <SidebarMenuSubItem key={child.id}>
-                                      <SidebarMenuSubButton 
-                                        asChild 
-                                        isActive={isChildActive}
-                                      >
-                                        <NavLink to={fixPath(child.path, child.nombre)}>
-                                          <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
-                                          <span>{child.nombre}</span>
-                                        </NavLink>
-                                      </SidebarMenuSubButton>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <SidebarMenuSubButton 
+                                            asChild 
+                                            isActive={isChildActive}
+                                          >
+                                            <NavLink to={fixPath(child.path, child.nombre)}>
+                                              <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
+                                              <span>{child.nombre}</span>
+                                            </NavLink>
+                                          </SidebarMenuSubButton>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">
+                                          <p>{child.descripcion || child.nombre}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
                                     </SidebarMenuSubItem>
                                   )
                                 })}
