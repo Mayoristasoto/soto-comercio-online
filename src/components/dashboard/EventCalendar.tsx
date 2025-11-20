@@ -33,6 +33,7 @@ interface CalendarEvent {
   type: 'cumpleaños' | 'aniversario' | 'tarea' | 'vacaciones' | 'fichaje' | 'ausencia' | 'nota' | 'horario_excepcional'
   title: string
   count?: number
+  empleadoId?: string // ID del empleado para eventos de cumpleaños
 }
 
 interface CalendarNote {
@@ -136,7 +137,8 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
               newEvents.push({
                 date: thisYearBirthday,
                 type: 'cumpleaños',
-                title: `Cumpleaños de ${emp.empleados?.nombre || ''} ${emp.empleados?.apellido || ''}`
+                title: `Cumpleaños de ${emp.empleados?.nombre || ''} ${emp.empleados?.apellido || ''}`,
+                empleadoId: emp.empleado_id // Agregar el ID para poder guardar/cargar la imagen
               })
             }
           }
@@ -592,18 +594,30 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   const generarImagenCumpleanos = async () => {
     setGeneratingImage(true)
     try {
-      // Obtener el nombre del empleado que cumple años
+      // Obtener el evento de cumpleaños
       const cumpleanosEvent = getEventsForDate(selectedDate).find(e => e.type === 'cumpleaños')
       if (!cumpleanosEvent) return
 
+      // Extraer el empleado_id del evento si está disponible
+      const empleadoId = (cumpleanosEvent as any).empleadoId
+
       const { data, error } = await supabase.functions.invoke('generar-imagen-cumpleanos', {
-        body: { nombreCompleto: cumpleanosEvent.title }
+        body: { 
+          nombreCompleto: cumpleanosEvent.title,
+          empleadoId: empleadoId 
+        }
       })
 
       if (error) throw error
       
       if (data?.imageUrl) {
         setBirthdayImage(data.imageUrl)
+        if (data.cached) {
+          toast({
+            title: "Imagen cargada",
+            description: "Mostrando imagen guardada previamente",
+          })
+        }
       }
     } catch (error: any) {
       console.error('Error generando imagen:', error)
@@ -621,12 +635,12 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   const selectedDayEvents = getEventsForDate(selectedDate)
   const hasBirthday = selectedDayEvents.some(e => e.type === 'cumpleaños')
 
-  // Generar imagen cuando hay un cumpleaños - DESHABILITADO para evitar regeneración en cada recarga
-  // useEffect(() => {
-  //   if (hasBirthday && !birthdayImage && !generatingImage) {
-  //     generarImagenCumpleanos()
-  //   }
-  // }, [hasBirthday, selectedDate])
+  // Cargar imagen de cumpleaños cuando se selecciona una fecha con cumpleaños
+  useEffect(() => {
+    if (hasBirthday && !birthdayImage && !generatingImage) {
+      generarImagenCumpleanos()
+    }
+  }, [hasBirthday, selectedDate])
 
   return (
     <Card>

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { nombreCompleto, imagenReferencia } = await req.json();
+    const { nombreCompleto, empleadoId } = await req.json();
     
     if (!nombreCompleto) {
       return new Response(
@@ -21,16 +21,43 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY no configurado');
-    }
-
     // Obtener el supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Si se proporciona empleadoId, verificar si ya existe una imagen generada
+    if (empleadoId) {
+      const { data: imagenExistente } = await supabase
+        .from('imagenes_cumpleanos')
+        .select('imagen_url')
+        .eq('empleado_id', empleadoId)
+        .single();
+
+      if (imagenExistente?.imagen_url) {
+        console.log('Imagen existente encontrada, reutilizando:', empleadoId);
+        return new Response(
+          JSON.stringify({ imageUrl: imagenExistente.imagen_url, cached: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY no configurado');
+    }
+
+    // Obtener la imagen de referencia del logo desde configuración
+    const { data: configLogo } = await supabase
+      .from('configuracion_ia')
+      .select('valor')
+      .eq('clave', 'imagen_referencia_cumpleanos')
+      .single();
+
+    const imagenReferencia = configLogo?.valor;
 
     // Obtener el modelo configurado
     const { data: config } = await supabase
@@ -137,8 +164,27 @@ Ultra high resolution, professional corporate design`;
 
     console.log('Imagen generada exitosamente');
 
+    // Si se proporciona empleadoId, guardar en la base de datos para reutilizar
+    if (empleadoId) {
+      const { error: insertError } = await supabase
+        .from('imagenes_cumpleanos')
+        .upsert({
+          empleado_id: empleadoId,
+          nombre_completo: nombreCompleto,
+          imagen_url: imageUrl
+        }, {
+          onConflict: 'empleado_id'
+        });
+
+      if (insertError) {
+        console.error('Error guardando imagen en BD:', insertError);
+      } else {
+        console.log('Imagen guardada en BD para empleado:', empleadoId);
+      }
+    }
+
     return new Response(
-      JSON.stringify({ imageUrl }),
+      JSON.stringify({ imageUrl, cached: false }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
