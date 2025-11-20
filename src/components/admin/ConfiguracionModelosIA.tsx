@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Sparkles, Save, Loader2 } from "lucide-react";
@@ -11,6 +12,9 @@ export default function ConfiguracionModelosIA() {
   const [modeloSeleccionado, setModeloSeleccionado] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testPrompt, setTestPrompt] = useState("");
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatingTest, setGeneratingTest] = useState(false);
 
   const modelos = [
     {
@@ -75,6 +79,37 @@ export default function ConfiguracionModelosIA() {
     }
   };
 
+  const handleTestGeneration = async () => {
+    if (!testPrompt.trim()) {
+      toast.error("Ingresa un prompt para generar la imagen");
+      return;
+    }
+
+    setGeneratingTest(true);
+    setGeneratedImage(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generar-imagen-cumpleanos', {
+        body: { 
+          nombreCompleto: testPrompt,
+          esTest: true 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.imageUrl) {
+        setGeneratedImage(data.imageUrl);
+        toast.success("¡Imagen generada correctamente!");
+      }
+    } catch (error: any) {
+      console.error('Error generando imagen de prueba:', error);
+      toast.error(error.message || "No se pudo generar la imagen de prueba");
+    } finally {
+      setGeneratingTest(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -86,63 +121,120 @@ export default function ConfiguracionModelosIA() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          Configuración de Modelos de IA
-        </CardTitle>
-        <CardDescription>
-          Selecciona el modelo de IA para generar imágenes de cumpleaños
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="modelo">Modelo para Generación de Imágenes</Label>
-          <Select value={modeloSeleccionado} onValueChange={setModeloSeleccionado}>
-            <SelectTrigger id="modelo">
-              <SelectValue placeholder="Seleccionar modelo" />
-            </SelectTrigger>
-            <SelectContent>
-              {modelos.map((modelo) => (
-                <SelectItem key={modelo.valor} value={modelo.valor}>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{modelo.nombre}</span>
-                    <span className="text-xs text-muted-foreground">{modelo.descripcion}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Configuración de Modelos de IA
+          </CardTitle>
+          <CardDescription>
+            Selecciona el modelo de IA para generar imágenes de cumpleaños
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="modelo">Modelo para Generación de Imágenes</Label>
+            <Select value={modeloSeleccionado} onValueChange={setModeloSeleccionado}>
+              <SelectTrigger id="modelo">
+                <SelectValue placeholder="Seleccionar modelo" />
+              </SelectTrigger>
+              <SelectContent>
+                {modelos.map((modelo) => (
+                  <SelectItem key={modelo.valor} value={modelo.valor}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{modelo.nombre}</span>
+                      <span className="text-xs text-muted-foreground">{modelo.descripcion}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="rounded-lg border border-muted bg-muted/50 p-4">
-          <h4 className="text-sm font-medium mb-2">Información sobre los modelos</h4>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• <strong>Nano Banana</strong>: Rápido y económico, ideal para uso frecuente</li>
-            <li>• <strong>Flash</strong>: Balance entre calidad y velocidad</li>
-            <li>• <strong>Pro</strong>: Máxima calidad, usa más créditos de IA</li>
-          </ul>
-        </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={guardarConfiguracion} 
+              disabled={saving || !modeloSeleccionado}
+              className="flex-1"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Guardar Configuración
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Button 
-          onClick={guardarConfiguracion} 
-          disabled={saving || !modeloSeleccionado}
-          className="w-full"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Guardar Configuración
-            </>
+      {/* Sección de prueba de generación */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Probar Generación de Imagen
+          </CardTitle>
+          <CardDescription>
+            Prueba el modelo seleccionado con un prompt personalizado
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="test-prompt">Prompt de Prueba</Label>
+            <Input
+              id="test-prompt"
+              placeholder="Ej: Juan Pérez o un texto descriptivo..."
+              value={testPrompt}
+              onChange={(e) => setTestPrompt(e.target.value)}
+              disabled={generatingTest}
+            />
+            <p className="text-xs text-muted-foreground">
+              El prompt se usará para generar una imagen de cumpleaños de prueba
+            </p>
+          </div>
+
+          <Button 
+            onClick={handleTestGeneration}
+            disabled={generatingTest || !testPrompt.trim()}
+            className="w-full"
+          >
+            {generatingTest ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generando imagen...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generar Imagen de Prueba
+              </>
+            )}
+          </Button>
+
+          {generatedImage && (
+            <div className="space-y-2">
+              <Label>Imagen Generada</Label>
+              <div className="relative rounded-lg overflow-hidden border">
+                <img 
+                  src={generatedImage}
+                  alt="Imagen de prueba generada" 
+                  className="w-full h-auto"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Modelo usado: <span className="font-medium">{modeloSeleccionado}</span>
+              </p>
+            </div>
           )}
-        </Button>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
