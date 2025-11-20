@@ -120,11 +120,12 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
       if (cumpleanos) {
         cumpleanos.forEach((emp: any) => {
           if (emp.fecha_nacimiento) {
-            const birthDate = new Date(emp.fecha_nacimiento)
+            // Parse fecha como YYYY-MM-DD para evitar problemas de zona horaria
+            const [year, month, day] = emp.fecha_nacimiento.split('-').map(Number)
             const thisYearBirthday = new Date(
               selectedDate.getFullYear(),
-              birthDate.getMonth(),
-              birthDate.getDate()
+              month - 1, // month es 0-indexed
+              day
             )
             
             if (thisYearBirthday >= monthStart && thisYearBirthday <= monthEnd) {
@@ -149,15 +150,16 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
 
       if (aniversarios) {
         aniversarios.forEach((emp) => {
-          const ingresoDate = new Date(emp.fecha_ingreso)
+          // Parse fecha como YYYY-MM-DD para evitar problemas de zona horaria
+          const [year, month, day] = emp.fecha_ingreso.split('-').map(Number)
           const thisYearAnniversary = new Date(
             selectedDate.getFullYear(),
-            ingresoDate.getMonth(),
-            ingresoDate.getDate()
+            month - 1, // month es 0-indexed
+            day
           )
           
           if (thisYearAnniversary >= monthStart && thisYearAnniversary <= monthEnd) {
-            const years = selectedDate.getFullYear() - ingresoDate.getFullYear()
+            const years = selectedDate.getFullYear() - year
             if (years > 0) {
               newEvents.push({
                 date: thisYearAnniversary,
