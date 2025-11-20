@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { nombreCompleto } = await req.json();
+    const { nombreCompleto, imagenReferencia } = await req.json();
     
     if (!nombreCompleto) {
       return new Response(
@@ -68,6 +68,26 @@ Ultra high resolution, professional corporate design`;
 
     console.log('Generando imagen con modelo:', modelo);
     console.log('Para empleado:', nombreCompleto);
+    console.log('Con imagen de referencia:', imagenReferencia ? 'Sí' : 'No');
+
+    // Construir el contenido del mensaje
+    let messageContent: any;
+    if (imagenReferencia) {
+      messageContent = [
+        {
+          type: 'text',
+          text: prompt
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: imagenReferencia
+          }
+        }
+      ];
+    } else {
+      messageContent = prompt;
+    }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -80,7 +100,7 @@ Ultra high resolution, professional corporate design`;
         messages: [
           {
             role: 'user',
-            content: prompt
+            content: messageContent
           }
         ],
         modalities: ['image', 'text']

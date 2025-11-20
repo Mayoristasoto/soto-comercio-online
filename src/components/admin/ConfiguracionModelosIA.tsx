@@ -15,6 +15,8 @@ export default function ConfiguracionModelosIA() {
   const [testPrompt, setTestPrompt] = useState("");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [generatingTest, setGeneratingTest] = useState(false);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
 
   const modelos = [
     {
@@ -79,6 +81,23 @@ export default function ConfiguracionModelosIA() {
     }
   };
 
+  const handleReferenceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("Por favor selecciona un archivo de imagen");
+      return;
+    }
+
+    setReferenceImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setReferenceImage(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleTestGeneration = async () => {
     if (!testPrompt.trim()) {
       toast.error("Ingresa un prompt para generar la imagen");
@@ -92,7 +111,8 @@ export default function ConfiguracionModelosIA() {
       const { data, error } = await supabase.functions.invoke('generar-imagen-cumpleanos', {
         body: { 
           nombreCompleto: testPrompt,
-          esTest: true 
+          esTest: true,
+          imagenReferencia: referenceImage 
         }
       });
 
@@ -198,6 +218,29 @@ export default function ConfiguracionModelosIA() {
             <p className="text-xs text-muted-foreground">
               El prompt se usará para generar una imagen de cumpleaños de prueba
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reference-image">Imagen de Referencia (Opcional)</Label>
+            <Input
+              id="reference-image"
+              type="file"
+              accept="image/*"
+              onChange={handleReferenceImageUpload}
+              disabled={generatingTest}
+            />
+            <p className="text-xs text-muted-foreground">
+              Sube una imagen como referencia para el estilo o composición
+            </p>
+            {referenceImage && (
+              <div className="relative rounded-lg overflow-hidden border max-w-xs">
+                <img 
+                  src={referenceImage}
+                  alt="Imagen de referencia" 
+                  className="w-full h-auto"
+                />
+              </div>
+            )}
           </div>
 
           <Button 
