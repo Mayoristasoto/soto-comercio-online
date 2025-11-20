@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +16,23 @@ import {
   Palette,
   Check,
   Upload,
-  Sparkles
+  Sparkles,
+  Trash2,
+  Save
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface ThemeColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+}
+
+interface CustomTheme {
+  id: string;
+  name: string;
+  colors: ThemeColors;
+}
 
 export default function ConfiguracionTemas() {
   const { theme, setTheme } = useTheme();
@@ -27,6 +41,9 @@ export default function ConfiguracionTemas() {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [themeVariations, setThemeVariations] = useState<CustomTheme[]>([]);
+  const [savedThemes, setSavedThemes] = useState<CustomTheme[]>([]);
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const temas = [
@@ -40,6 +57,76 @@ export default function ConfiguracionTemas() {
     { value: 'large' as const, label: 'Grande', size: 'text-lg' },
     { value: 'xlarge' as const, label: 'Muy grande', size: 'text-xl' },
   ];
+
+  // Cargar temas guardados del localStorage al iniciar
+  useEffect(() => {
+    const stored = localStorage.getItem('custom-themes');
+    if (stored) {
+      setSavedThemes(JSON.parse(stored));
+    }
+  }, []);
+
+  const generateThemeVariations = (colors: string[]) => {
+    if (colors.length < 3) return;
+
+    const variations: CustomTheme[] = [
+      { id: '1', name: 'Variación 1', colors: { primary: colors[0], secondary: colors[1], accent: colors[2] }},
+      { id: '2', name: 'Variación 2', colors: { primary: colors[1], secondary: colors[2], accent: colors[0] }},
+      { id: '3', name: 'Variación 3', colors: { primary: colors[2], secondary: colors[0], accent: colors[1] }},
+      { id: '4', name: 'Variación 4', colors: { primary: colors[0], secondary: colors[2], accent: colors[1] }},
+    ];
+
+    if (colors.length >= 5) {
+      variations.push(
+        { id: '5', name: 'Variación 5', colors: { primary: colors[3], secondary: colors[4], accent: colors[0] }},
+        { id: '6', name: 'Variación 6', colors: { primary: colors[4], secondary: colors[3], accent: colors[1] }}
+      );
+    }
+
+    setThemeVariations(variations);
+  };
+
+  const saveCustomTheme = (variation: CustomTheme) => {
+    const themeName = prompt('Nombre del tema:', variation.name) || variation.name;
+    const newTheme: CustomTheme = {
+      id: `custom-${Date.now()}`,
+      name: themeName,
+      colors: variation.colors
+    };
+
+    const updatedThemes = [...savedThemes, newTheme];
+    setSavedThemes(updatedThemes);
+    localStorage.setItem('custom-themes', JSON.stringify(updatedThemes));
+    
+    toast.success('Tema guardado', {
+      description: `"${themeName}" se ha guardado correctamente`
+    });
+  };
+
+  const deleteCustomTheme = (themeId: string) => {
+    const updatedThemes = savedThemes.filter(t => t.id !== themeId);
+    setSavedThemes(updatedThemes);
+    localStorage.setItem('custom-themes', JSON.stringify(updatedThemes));
+    
+    if (selectedThemeId === themeId) {
+      setSelectedThemeId(null);
+    }
+    
+    toast.success('Tema eliminado');
+  };
+
+  const applyCustomTheme = (themeColors: ThemeColors, themeId?: string) => {
+    const root = document.documentElement;
+    root.style.setProperty('--primary', themeColors.primary);
+    root.style.setProperty('--secondary', themeColors.secondary);
+    root.style.setProperty('--accent', themeColors.accent);
+    
+    if (themeId) {
+      setSelectedThemeId(themeId);
+    }
+    
+    toast.success('Tema aplicado');
+  };
 
   const rgbToHsl = (r: number, g: number, b: number) => {
     r /= 255;
@@ -100,6 +187,7 @@ export default function ConfiguracionTemas() {
       });
 
     setExtractedColors(sortedColors);
+    generateThemeVariations(sortedColors);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,36 +216,10 @@ export default function ConfiguracionTemas() {
     reader.readAsDataURL(file);
   };
 
-  const applyGeneratedTheme = () => {
-    if (extractedColors.length === 0) {
-      toast.error("Primero sube una imagen para extraer colores");
-      return;
-    }
-
-    // Aplicar colores al documento
-    const root = document.documentElement;
-    
-    // Primary: color más saturado y vibrante (generalmente el primero)
-    root.style.setProperty('--primary', extractedColors[0]);
-    
-    // Secondary: segundo color más prominente
-    if (extractedColors[1]) {
-      root.style.setProperty('--secondary', extractedColors[1]);
-    }
-    
-    // Accent: tercer color
-    if (extractedColors[2]) {
-      root.style.setProperty('--accent', extractedColors[2]);
-    }
-
-    toast.success("Tema personalizado aplicado", {
-      description: "Los colores se han aplicado correctamente"
-    });
-  };
-
   const handleReset = () => {
     resetSettings();
     setTheme('system');
+    setSelectedThemeId(null);
     // Resetear variables CSS personalizadas
     const root = document.documentElement;
     root.style.removeProperty('--primary');
@@ -205,9 +267,9 @@ export default function ConfiguracionTemas() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
-            Generar tema desde imagen
+            Generar temas desde imagen
           </CardTitle>
-          <CardDescription>Sube una imagen para extraer colores y generar un tema personalizado</CardDescription>
+          <CardDescription>Sube una imagen para extraer colores y generar variaciones de temas</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -223,7 +285,7 @@ export default function ConfiguracionTemas() {
               disabled={isExtracting}
             />
             <p className="text-xs text-muted-foreground">
-              Sube una imagen con los colores que te gusten para generar un tema
+              Sube una imagen con los colores que te gusten para generar variaciones de temas
             </p>
           </div>
 
@@ -237,33 +299,58 @@ export default function ConfiguracionTemas() {
                 />
               </div>
 
-              {extractedColors.length > 0 && (
+              {themeVariations.length > 0 && (
                 <div className="space-y-3">
-                  <Label>Colores extraídos</Label>
-                  <div className="flex gap-2 flex-wrap">
-                    {extractedColors.map((color, index) => (
+                  <Label>Variaciones generadas ({themeVariations.length})</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Haz clic en una variación para previsualizarla, y guárdala si te gusta
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {themeVariations.map((variation) => (
                       <div 
-                        key={index}
-                        className="group relative"
+                        key={variation.id}
+                        className="relative p-3 rounded-lg border-2 border-border hover:border-primary transition-all"
                       >
-                        <div 
-                          className="w-16 h-16 rounded-lg border-2 shadow-md transition-transform hover:scale-110"
-                          style={{ backgroundColor: `hsl(${color})` }}
-                        />
-                        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {index === 0 ? 'Primary' : index === 1 ? 'Secondary' : index === 2 ? 'Accent' : `Color ${index + 1}`}
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">{variation.name}</p>
+                          <div className="flex gap-1">
+                            <div 
+                              className="w-full h-8 rounded border"
+                              style={{ backgroundColor: `hsl(${variation.colors.primary})` }}
+                              title="Primary"
+                            />
+                            <div 
+                              className="w-full h-8 rounded border"
+                              style={{ backgroundColor: `hsl(${variation.colors.secondary})` }}
+                              title="Secondary"
+                            />
+                            <div 
+                              className="w-full h-8 rounded border"
+                              style={{ backgroundColor: `hsl(${variation.colors.accent})` }}
+                              title="Accent"
+                            />
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => applyCustomTheme(variation.colors)}
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => saveCustomTheme(variation)}
+                            >
+                              <Save className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                  
-                  <Button 
-                    onClick={applyGeneratedTheme}
-                    className="w-full"
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Aplicar tema generado
-                  </Button>
                 </div>
               )}
             </div>
@@ -273,6 +360,80 @@ export default function ConfiguracionTemas() {
           <canvas ref={canvasRef} className="hidden" />
         </CardContent>
       </Card>
+
+      {/* Temas guardados */}
+      {savedThemes.length > 0 && (
+        <Card className="border-2 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              Mis temas personalizados
+            </CardTitle>
+            <CardDescription>Temas que has guardado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {savedThemes.map((savedTheme) => {
+                const isActive = selectedThemeId === savedTheme.id;
+                
+                return (
+                  <div 
+                    key={savedTheme.id}
+                    className={`relative p-3 rounded-lg border-2 transition-all ${
+                      isActive 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium pr-6">{savedTheme.name}</p>
+                      <div className="flex gap-1">
+                        <div 
+                          className="w-full h-8 rounded border"
+                          style={{ backgroundColor: `hsl(${savedTheme.colors.primary})` }}
+                          title="Primary"
+                        />
+                        <div 
+                          className="w-full h-8 rounded border"
+                          style={{ backgroundColor: `hsl(${savedTheme.colors.secondary})` }}
+                          title="Secondary"
+                        />
+                        <div 
+                          className="w-full h-8 rounded border"
+                          style={{ backgroundColor: `hsl(${savedTheme.colors.accent})` }}
+                          title="Accent"
+                        />
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant={isActive ? "default" : "outline"}
+                          className="flex-1"
+                          onClick={() => applyCustomTheme(savedTheme.colors, savedTheme.id)}
+                        >
+                          Aplicar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteCustomTheme(savedTheme.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Selección de tema */}
       <Card>
