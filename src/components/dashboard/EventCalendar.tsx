@@ -681,7 +681,10 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
                     />
                   </div>
                   <div className="mt-3 text-center">
-                    <p className="text-lg font-semibold text-primary">
+                    <p className="text-2xl font-bold text-primary mb-1">
+                      ¡Feliz Cumpleaños!
+                    </p>
+                    <p className="text-lg font-semibold">
                       {selectedDayEvents
                         .filter(e => e.type === 'cumpleaños')
                         .map(e => e.title)
