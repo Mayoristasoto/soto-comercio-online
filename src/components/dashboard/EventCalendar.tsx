@@ -673,23 +673,20 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
               {/* Mostrar imagen de cumpleaños si hay cumpleaños hoy */}
               {selectedDayEvents.some(e => e.type === 'cumpleaños') && (
                 <div className="mb-6">
-                  <div className="rounded-lg overflow-hidden shadow-lg">
+                  <div className="relative rounded-lg overflow-hidden shadow-lg">
                     <img 
                       src={birthdayImage} 
                       alt="¡Feliz Cumpleaños!" 
                       className="w-full h-auto"
                     />
-                  </div>
-                  <div className="mt-3 text-center">
-                    <p className="text-2xl font-bold text-primary mb-1">
-                      ¡Feliz Cumpleaños!
-                    </p>
-                    <p className="text-lg font-semibold">
-                      {selectedDayEvents
-                        .filter(e => e.type === 'cumpleaños')
-                        .map(e => e.title)
-                        .join(', ')}
-                    </p>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/50 to-transparent p-6">
+                      <p className="text-3xl font-bold text-white text-center drop-shadow-lg">
+                        {selectedDayEvents
+                          .filter(e => e.type === 'cumpleaños')
+                          .map(e => e.title)
+                          .join(', ')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
