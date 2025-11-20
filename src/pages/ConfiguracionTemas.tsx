@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { supabase } from '@/integrations/supabase/client';
+import { useThemePreferences, ThemeColors } from '@/hooks/useThemePreferences';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -23,12 +24,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface ThemeColors {
-  primary: string;
-  secondary: string;
-  accent: string;
-}
-
 interface CustomTheme {
   id: string;
   name: string;
@@ -38,6 +33,7 @@ interface CustomTheme {
 export default function ConfiguracionTemas() {
   const { theme, setTheme } = useTheme();
   const { settings, updateSettings, resetSettings } = useAccessibility();
+  const { savePreferences, applyCustomColors, clearCustomColors } = useThemePreferences();
   const [previewText] = useState('Ejemplo de texto con el tema actual');
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
@@ -60,7 +56,7 @@ export default function ConfiguracionTemas() {
     { value: 'xlarge' as const, label: 'Muy grande', size: 'text-xl' },
   ];
 
-  // Cargar temas guardados del localStorage al iniciar
+  // Cargar temas guardados del localStorage al iniciar (para mantener compatibilidad)
   useEffect(() => {
     const stored = localStorage.getItem('custom-themes');
     if (stored) {
@@ -117,17 +113,28 @@ export default function ConfiguracionTemas() {
     toast.success('Tema eliminado');
   };
 
-  const applyCustomTheme = (themeColors: ThemeColors, themeId?: string) => {
-    const root = document.documentElement;
-    root.style.setProperty('--primary', themeColors.primary);
-    root.style.setProperty('--secondary', themeColors.secondary);
-    root.style.setProperty('--accent', themeColors.accent);
-    
-    if (themeId) {
-      setSelectedThemeId(themeId);
+  const applyCustomTheme = async (themeColors: ThemeColors, themeId?: string) => {
+    try {
+      // Aplicar colores CSS
+      applyCustomColors(themeColors);
+      
+      // Guardar en la base de datos
+      await savePreferences({
+        custom_colors: themeColors
+      });
+      
+      if (themeId) {
+        setSelectedThemeId(themeId);
+      }
+      
+      toast.success('Tema aplicado', {
+        description: 'El tema se aplicará en todas tus sesiones'
+      });
+    } catch (error) {
+      toast.error('Error al aplicar tema', {
+        description: 'No se pudo guardar la configuración'
+      });
     }
-    
-    toast.success('Tema aplicado');
   };
 
   const rgbToHsl = (r: number, g: number, b: number) => {
@@ -262,19 +269,30 @@ export default function ConfiguracionTemas() {
     }
   };
 
-  const handleReset = () => {
-    resetSettings();
-    setTheme('system');
-    setSelectedThemeId(null);
-    // Resetear variables CSS personalizadas
-    const root = document.documentElement;
-    root.style.removeProperty('--primary');
-    root.style.removeProperty('--secondary');
-    root.style.removeProperty('--accent');
-    
-    toast.success('Configuración restaurada', {
-      description: 'Se han restablecido los valores predeterminados'
-    });
+  const handleReset = async () => {
+    try {
+      resetSettings();
+      setTheme('system');
+      setSelectedThemeId(null);
+      
+      // Limpiar colores personalizados
+      clearCustomColors();
+      
+      // Guardar reset en la BD
+      await savePreferences({
+        theme_mode: 'system',
+        custom_colors: null,
+        font_size: 'normal',
+        high_contrast: false,
+        reduced_motion: false
+      });
+      
+      toast.success('Configuración restaurada', {
+        description: 'Se han restablecido los valores predeterminados'
+      });
+    } catch (error) {
+      toast.error('Error al restaurar configuración');
+    }
   };
 
   return (
@@ -535,7 +553,16 @@ export default function ConfiguracionTemas() {
               return (
                 <button
                   key={t.value}
-                  onClick={() => setTheme(t.value)}
+                  onClick={async () => {
+                    setTheme(t.value);
+                    try {
+                      await savePreferences({
+                        theme_mode: t.value as 'light' | 'dark' | 'system'
+                      });
+                    } catch (error) {
+                      console.error('Error saving theme:', error);
+                    }
+                  }}
                   className={`
                     relative p-4 rounded-lg border-2 transition-all
                     ${isActive 
@@ -576,7 +603,16 @@ export default function ConfiguracionTemas() {
               return (
                 <button
                   key={size.value}
-                  onClick={() => updateSettings({ fontSize: size.value })}
+                  onClick={async () => {
+                    updateSettings({ fontSize: size.value });
+                    try {
+                      await savePreferences({
+                        font_size: size.value
+                      });
+                    } catch (error) {
+                      console.error('Error saving font size:', error);
+                    }
+                  }}
                   className={`
                     relative p-4 rounded-lg border-2 transition-all
                     ${isActive 
@@ -622,7 +658,14 @@ export default function ConfiguracionTemas() {
             <Switch
               id="high-contrast"
               checked={settings.highContrast}
-              onCheckedChange={(checked) => updateSettings({ highContrast: checked })}
+              onCheckedChange={async (checked) => {
+                updateSettings({ highContrast: checked });
+                try {
+                  await savePreferences({ high_contrast: checked });
+                } catch (error) {
+                  console.error('Error saving high contrast:', error);
+                }
+              }}
             />
           </div>
 
@@ -640,7 +683,14 @@ export default function ConfiguracionTemas() {
             <Switch
               id="reduced-motion"
               checked={settings.reducedMotion}
-              onCheckedChange={(checked) => updateSettings({ reducedMotion: checked })}
+              onCheckedChange={async (checked) => {
+                updateSettings({ reducedMotion: checked });
+                try {
+                  await savePreferences({ reduced_motion: checked });
+                } catch (error) {
+                  console.error('Error saving reduced motion:', error);
+                }
+              }}
             />
           </div>
         </CardContent>
