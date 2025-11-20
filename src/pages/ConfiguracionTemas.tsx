@@ -44,6 +44,7 @@ export default function ConfiguracionTemas() {
   const [themeVariations, setThemeVariations] = useState<CustomTheme[]>([]);
   const [savedThemes, setSavedThemes] = useState<CustomTheme[]>([]);
   const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
+  const [isGeneratingPalette, setIsGeneratingPalette] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const temas = [
@@ -216,6 +217,64 @@ export default function ConfiguracionTemas() {
     reader.readAsDataURL(file);
   };
 
+  const generateRandomPalette = async () => {
+    setIsGeneratingPalette(true);
+    
+    const paletteStyles = [
+      'vibrant and energetic colors with high contrast',
+      'calm and professional colors with subtle contrast',
+      'modern and minimalist colors with clean aesthetics',
+      'warm and welcoming colors with harmonious tones',
+      'bold and dramatic colors with striking contrast',
+      'elegant and sophisticated colors with refined palette'
+    ];
+    
+    const randomStyle = paletteStyles[Math.floor(Math.random() * paletteStyles.length)];
+    
+    try {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [
+            {
+              role: "user",
+              content: `Generate an abstract color palette image with ${randomStyle}. Create a simple horizontal stripe pattern with 5 distinct colors that work well together. Make the colors bold and clear.`
+            }
+          ],
+          modalities: ["image", "text"]
+        })
+      });
+
+      const data = await response.json();
+      const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      
+      if (generatedImageUrl) {
+        const img = new Image();
+        img.onload = () => {
+          setReferenceImage(generatedImageUrl);
+          extractColorsFromImage(img);
+          toast.success("Paleta generada", {
+            description: "Se han extraído los colores y generado variaciones"
+          });
+        };
+        img.src = generatedImageUrl;
+      } else {
+        throw new Error("No se pudo generar la imagen");
+      }
+    } catch (error) {
+      console.error('Error generating palette:', error);
+      toast.error("Error al generar la paleta", {
+        description: "Por favor intenta nuevamente"
+      });
+    } finally {
+      setIsGeneratingPalette(false);
+    }
+  };
+
   const handleReset = () => {
     resetSettings();
     setTheme('system');
@@ -267,11 +326,47 @@ export default function ConfiguracionTemas() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
-            Generar temas desde imagen
+            Generar temas personalizados
           </CardTitle>
-          <CardDescription>Sube una imagen para extraer colores y generar variaciones de temas</CardDescription>
+          <CardDescription>Genera paletas automáticas con IA o sube una imagen de referencia</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Generar paleta automática
+            </Label>
+            <Button
+              onClick={generateRandomPalette}
+              disabled={isGeneratingPalette}
+              className="w-full"
+              size="lg"
+            >
+              {isGeneratingPalette ? (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                  Generando paleta...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generar paleta con IA
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Genera automáticamente una paleta de colores con buenos contrastes
+            </p>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">O</span>
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="theme-image" className="flex items-center gap-2">
               <Upload className="w-4 h-4" />
