@@ -621,12 +621,12 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   const selectedDayEvents = getEventsForDate(selectedDate)
   const hasBirthday = selectedDayEvents.some(e => e.type === 'cumpleaños')
 
-  // Generar imagen cuando hay un cumpleaños
-  useEffect(() => {
-    if (hasBirthday && !birthdayImage && !generatingImage) {
-      generarImagenCumpleanos()
-    }
-  }, [hasBirthday, selectedDate])
+  // Generar imagen cuando hay un cumpleaños - DESHABILITADO para evitar regeneración en cada recarga
+  // useEffect(() => {
+  //   if (hasBirthday && !birthdayImage && !generatingImage) {
+  //     generarImagenCumpleanos()
+  //   }
+  // }, [hasBirthday, selectedDate])
 
   return (
     <Card>
