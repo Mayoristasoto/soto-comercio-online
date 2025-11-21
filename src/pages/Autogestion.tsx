@@ -144,26 +144,21 @@ export default function Autogestion() {
         throw new Error('No se encontró el ID de Centum del empleado')
       }
 
-      // Hacer POST a n8n con el centum_id como variable
-      const n8nUrl = 'https://n8n.mayoristasoto.online/webhook-test/84826d09-c8c9-408e-ba3c-b94b9ea7d165'
-      
-      const response = await fetch(n8nUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          centum_id: datosEmpleado.id_centum
-        })
-      })
+      // Llamar al edge function que actúa como proxy a n8n
+      const { data: saldoData, error: saldoError } = await supabase.functions.invoke(
+        'consultar-saldo-centum',
+        {
+          body: {
+            centum_id: datosEmpleado.id_centum
+          }
+        }
+      )
 
-      if (!response.ok) {
-        throw new Error(`Error en la consulta: ${response.statusText}`)
+      if (saldoError) {
+        throw new Error(saldoError.message || 'Error al consultar saldo')
       }
 
-      const saldoData = await response.json()
-      
-      // El saldo viene directamente como número desde n8n
+      // El saldo viene directamente como número desde n8n a través del edge function
       const saldo = typeof saldoData === 'number' ? saldoData : saldoData.saldo
       
       setSaldoCuentaCorriente(saldo)
