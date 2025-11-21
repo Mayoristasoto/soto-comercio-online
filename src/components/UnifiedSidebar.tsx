@@ -331,26 +331,19 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
 
                                    if (childHasChildren) {
                                      const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
-                                     return (
-                                        <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
-                                         <SidebarMenuSubItem>
+                                      return (
+                                         <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
+                                          <SidebarMenuSubItem>
                                             <CollapsibleTrigger asChild>
-                                             <Tooltip>
-                                               <TooltipTrigger asChild>
-                                                 <SidebarMenuSubButton isActive={isChildActive}>
-                                                   <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
-                                                   <span>{child.nombre}</span>
-                                                   <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
-                                                 </SidebarMenuSubButton>
-                                               </TooltipTrigger>
-                                               <TooltipContent side="right">
-                                                 <p>{child.descripcion || child.nombre}</p>
-                                               </TooltipContent>
-                                             </Tooltip>
-                                           </CollapsibleTrigger>
-                                         </SidebarMenuSubItem>
-                                        <CollapsibleContent>
-                                          <SidebarMenuSub>
+                                              <SidebarMenuSubButton isActive={isChildActive}>
+                                                <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
+                                                <span>{child.nombre}</span>
+                                                <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
+                                              </SidebarMenuSubButton>
+                                            </CollapsibleTrigger>
+                                          </SidebarMenuSubItem>
+                                         <CollapsibleContent>
+                                           <SidebarMenuSub>
                                              {(child as any).children.map((grand: any) => {
                                                const GrandIcon = getIcon(grand.icon)
                                                const grandPath = fixPath(grand.path, grand.nombre)
