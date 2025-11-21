@@ -50,6 +50,7 @@ export function SistemaComercialConfig() {
   const [jsonImport, setJsonImport] = useState('');
   const [envImport, setEnvImport] = useState('');
   const [sendingToN8n, setSendingToN8n] = useState(false);
+  const [n8nResponse, setN8nResponse] = useState<{status: number, data: any} | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -718,6 +719,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
 
   const handleSendToN8n = async () => {
     setSendingToN8n(true);
+    setN8nResponse(null);
     try {
       const webhookUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
       
@@ -729,10 +731,17 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
         body: JSON.stringify({}), // Enviar objeto vacío
       });
 
+      const responseData = await response.json().catch(() => null);
+
+      setN8nResponse({
+        status: response.status,
+        data: responseData
+      });
+
       if (response.ok) {
         toast({
           title: "Enviado a n8n",
-          description: "Los datos se enviaron correctamente al webhook",
+          description: `Respuesta recibida con código ${response.status}`,
         });
       } else {
         toast({
@@ -743,6 +752,10 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
       }
     } catch (error: any) {
       console.error('Error al enviar a n8n:', error);
+      setN8nResponse({
+        status: 0,
+        data: { error: error.message }
+      });
       toast({
         title: "Error",
         description: error.message || "Error al enviar datos a n8n",
@@ -931,6 +944,29 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
             )}
           </Button>
         </div>
+
+        {/* Respuesta de n8n */}
+        {n8nResponse && (
+          <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+            <Label className="flex items-center gap-2">
+              <Send className="h-4 w-4" />
+              Respuesta del Webhook n8n
+            </Label>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Código de Estado:</span>
+                <Badge variant={n8nResponse.status >= 200 && n8nResponse.status < 300 ? "default" : "destructive"}>
+                  {n8nResponse.status}
+                </Badge>
+              </div>
+              <Textarea
+                value={JSON.stringify(n8nResponse.data, null, 2)}
+                readOnly
+                className="font-mono text-xs h-64 bg-background"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Visualización de Headers y Respuesta */}
         {connectionDebug && (
