@@ -724,9 +724,27 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     setSendingToN8n(true);
     setN8nResponse(null);
     try {
-      const webhookUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
+      const baseUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
       
-      const response = await fetch(webhookUrl, {
+      let queryParams = '';
+      if (n8nPostData.trim()) {
+        try {
+          const dataObj = JSON.parse(n8nPostData);
+          const params = new URLSearchParams();
+          
+          Object.entries(dataObj).forEach(([key, value]) => {
+            params.append(key, String(value));
+          });
+          
+          queryParams = '?' + params.toString();
+        } catch {
+          queryParams = '?data=' + encodeURIComponent(n8nPostData);
+        }
+      }
+
+      const fullUrl = baseUrl + queryParams;
+      
+      const response = await fetch(fullUrl, {
         method: 'GET',
       });
 
