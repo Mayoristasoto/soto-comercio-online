@@ -1060,7 +1060,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
               <Textarea
                 value={JSON.stringify(n8nResponse.data, null, 2)}
                 readOnly
-                className="font-mono text-xs h-64 bg-background"
+                className="font-mono text-xs h-96 bg-background"
               />
             </div>
           </div>
