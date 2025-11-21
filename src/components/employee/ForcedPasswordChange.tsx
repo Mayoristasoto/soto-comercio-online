@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { validatePassword } from "@/lib/passwordValidation"
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
 
 interface ForcedPasswordChangeProps {
   empleadoId: string
@@ -23,20 +25,6 @@ export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChan
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
 
-  const validatePassword = (password: string) => {
-    const minLength = password.length >= 8
-    const hasUpperCase = /[A-Z]/.test(password)
-    const hasNumber = /[0-9]/.test(password)
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-    
-    return {
-      minLength,
-      hasUpperCase,
-      hasNumber,
-      hasSpecialChar,
-      isValid: minLength && hasUpperCase && hasNumber && hasSpecialChar
-    }
-  }
 
   const handlePasswordChange = async () => {
     if (!newPassword || !confirmPassword) {
@@ -57,11 +45,11 @@ export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChan
       return
     }
 
-    const validation = validatePassword(newPassword)
-    if (!validation.isValid) {
+    const passwordValidation = validatePassword(newPassword)
+    if (!passwordValidation.isValid) {
       toast({
         title: "Contraseña no cumple los requisitos",
-        description: "La contraseña debe cumplir todos los requisitos de seguridad",
+        description: passwordValidation.errors[0] || "La contraseña debe cumplir todos los requisitos de seguridad",
         variant: "destructive"
       })
       return
@@ -103,7 +91,6 @@ export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChan
     }
   }
 
-  const passwordValidation = validatePassword(newPassword)
 
   return (
     <Dialog open={true}>
@@ -178,29 +165,11 @@ export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChan
               </div>
             </div>
 
-            {newPassword && (
-              <div className="space-y-2 text-xs">
-                <p className="font-medium text-muted-foreground">Requisitos de contraseña:</p>
-                <ul className="space-y-1">
-                  <li className={passwordValidation.minLength ? "text-green-600" : "text-muted-foreground"}>
-                    {passwordValidation.minLength ? "✓" : "○"} Mínimo 8 caracteres
-                  </li>
-                  <li className={passwordValidation.hasUpperCase ? "text-green-600" : "text-muted-foreground"}>
-                    {passwordValidation.hasUpperCase ? "✓" : "○"} Al menos una letra mayúscula
-                  </li>
-                  <li className={passwordValidation.hasNumber ? "text-green-600" : "text-muted-foreground"}>
-                    {passwordValidation.hasNumber ? "✓" : "○"} Al menos un número
-                  </li>
-                  <li className={passwordValidation.hasSpecialChar ? "text-green-600" : "text-muted-foreground"}>
-                    {passwordValidation.hasSpecialChar ? "✓" : "○"} Al menos un carácter especial (!@#$%)
-                  </li>
-                </ul>
-              </div>
-            )}
+            <PasswordStrengthIndicator password={newPassword} />
 
             <Button
               onClick={handlePasswordChange}
-              disabled={isUpdating || !passwordValidation.isValid || newPassword !== confirmPassword}
+              disabled={isUpdating || !validatePassword(newPassword).isValid || newPassword !== confirmPassword}
               className="w-full"
             >
               {isUpdating ? "Cambiando Contraseña..." : "Cambiar Contraseña"}

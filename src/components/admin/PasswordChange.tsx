@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { KeyRound, Eye, EyeOff } from "lucide-react"
+import { validatePassword } from "@/lib/passwordValidation"
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
 
 interface PasswordChangeProps {
   employeeId: string
@@ -34,21 +36,6 @@ export default function PasswordChange({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
 
-  const validatePassword = (password: string) => {
-    if (password.length < 8) {
-      return "La contraseña debe tener al menos 8 caracteres"
-    }
-    if (!/(?=.*[a-z])/.test(password)) {
-      return "Debe contener al menos una letra minúscula"
-    }
-    if (!/(?=.*[A-Z])/.test(password)) {
-      return "Debe contener al menos una letra mayúscula"
-    }
-    if (!/(?=.*\d)/.test(password)) {
-      return "Debe contener al menos un número"
-    }
-    return null
-  }
 
   const handlePasswordChange = async () => {
     if (!newPassword || !confirmPassword) {
@@ -60,11 +47,11 @@ export default function PasswordChange({
       return
     }
 
-    const passwordError = validatePassword(newPassword)
-    if (passwordError) {
+    const validation = validatePassword(newPassword)
+    if (!validation.isValid) {
       toast({
         title: "Contraseña inválida",
-        description: passwordError,
+        description: validation.errors[0] || "La contraseña no cumple los requisitos de seguridad",
         variant: "destructive"
       })
       return
@@ -208,24 +195,8 @@ export default function PasswordChange({
               </div>
             </div>
 
-            {/* Password Requirements */}
-            <div className="bg-muted p-3 rounded-lg">
-              <p className="text-sm font-medium mb-2">Requisitos de contraseña:</p>
-              <ul className="text-xs space-y-1 text-muted-foreground">
-                <li className={newPassword.length >= 8 ? "text-green-600" : ""}>
-                  • Mínimo 8 caracteres
-                </li>
-                <li className={/(?=.*[a-z])/.test(newPassword) ? "text-green-600" : ""}>
-                  • Al menos una letra minúscula
-                </li>
-                <li className={/(?=.*[A-Z])/.test(newPassword) ? "text-green-600" : ""}>
-                  • Al menos una letra mayúscula
-                </li>
-                <li className={/(?=.*\d)/.test(newPassword) ? "text-green-600" : ""}>
-                  • Al menos un número
-                </li>
-              </ul>
-            </div>
+            {/* Password Strength Indicator */}
+            <PasswordStrengthIndicator password={newPassword} />
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button
