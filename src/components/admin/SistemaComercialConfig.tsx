@@ -50,7 +50,9 @@ export function SistemaComercialConfig() {
   const [jsonImport, setJsonImport] = useState('');
   const [envImport, setEnvImport] = useState('');
   const [sendingToN8n, setSendingToN8n] = useState(false);
+  const [sendingPostToN8n, setSendingPostToN8n] = useState(false);
   const [n8nResponse, setN8nResponse] = useState<{status: number, data: any} | null>(null);
+  const [n8nPostData, setN8nPostData] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -762,6 +764,64 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     }
   };
 
+  const handleSendPostToN8n = async () => {
+    setSendingPostToN8n(true);
+    setN8nResponse(null);
+    try {
+      const webhookUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
+      
+      let bodyData = {};
+      if (n8nPostData.trim()) {
+        try {
+          bodyData = JSON.parse(n8nPostData);
+        } catch {
+          bodyData = { data: n8nPostData };
+        }
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bodyData),
+      });
+
+      const responseData = await response.json().catch(() => null);
+
+      setN8nResponse({
+        status: response.status,
+        data: responseData
+      });
+
+      if (response.ok) {
+        toast({
+          title: "POST enviado a n8n",
+          description: `Respuesta recibida con código ${response.status}`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `El webhook respondió con código ${response.status}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al enviar POST a n8n:', error);
+      setN8nResponse({
+        status: 0,
+        data: { error: error.message }
+      });
+      toast({
+        title: "Error",
+        description: error.message || "Error al enviar datos a n8n",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingPostToN8n(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -919,26 +979,68 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
               </>
             )}
           </Button>
+        </div>
 
-          <Button
-            onClick={handleSendToN8n}
-            disabled={sendingToN8n}
-            size="lg"
-            variant="default"
-            className="h-16"
-          >
-            {sendingToN8n ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Enviando a n8n...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-5 w-5" />
-                Enviar a n8n
-              </>
-            )}
-          </Button>
+        {/* Sección n8n */}
+        <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            <h3 className="font-medium">Integración n8n</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button
+              onClick={handleSendToN8n}
+              disabled={sendingToN8n}
+              size="lg"
+              variant="default"
+            >
+              {sendingToN8n ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Enviando GET...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-5 w-5" />
+                  Enviar GET a n8n
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleSendPostToN8n}
+              disabled={sendingPostToN8n}
+              size="lg"
+              variant="secondary"
+            >
+              {sendingPostToN8n ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Enviando POST...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-5 w-5" />
+                  Enviar POST a n8n
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="n8nPostData">Datos para POST (JSON o texto)</Label>
+            <Textarea
+              id="n8nPostData"
+              placeholder='{"clave": "valor"} o simplemente texto'
+              value={n8nPostData}
+              onChange={(e) => setN8nPostData(e.target.value)}
+              className="font-mono text-sm h-24"
+            />
+            <p className="text-xs text-muted-foreground">
+              Puedes ingresar JSON válido o texto plano. Si es JSON se enviará parseado, si no se enviará como {`{"data": "tu texto"}`}
+            </p>
+          </div>
         </div>
 
         {/* Respuesta de n8n */}
