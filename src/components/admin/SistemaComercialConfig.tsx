@@ -49,6 +49,7 @@ export function SistemaComercialConfig() {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [jsonImport, setJsonImport] = useState('');
   const [envImport, setEnvImport] = useState('');
+  const [sendingToN8n, setSendingToN8n] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -715,6 +716,43 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     });
   };
 
+  const handleSendToN8n = async () => {
+    setSendingToN8n(true);
+    try {
+      const webhookUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Enviar objeto vacío
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Enviado a n8n",
+          description: "Los datos se enviaron correctamente al webhook",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `El webhook respondió con código ${response.status}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al enviar a n8n:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al enviar datos a n8n",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingToN8n(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -869,6 +907,26 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
               <>
                 <Send className="mr-2 h-5 w-5" />
                 Enviar Petición
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleSendToN8n}
+            disabled={sendingToN8n}
+            size="lg"
+            variant="default"
+            className="h-16"
+          >
+            {sendingToN8n ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Enviando a n8n...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-5 w-5" />
+                Enviar a n8n
               </>
             )}
           </Button>
