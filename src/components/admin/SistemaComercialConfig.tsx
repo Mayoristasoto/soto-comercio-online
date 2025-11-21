@@ -724,11 +724,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
       const webhookUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
       
       const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}), // Enviar objeto vacío
+        method: 'GET',
       });
 
       const responseData = await response.json().catch(() => null);
