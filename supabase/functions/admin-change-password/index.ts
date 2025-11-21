@@ -71,6 +71,42 @@ serve(async (req) => {
       )
     }
 
+    // Validar fortaleza de contraseña en servidor
+    if (newPassword.length < 12) {
+      return new Response(
+        JSON.stringify({ error: 'La contraseña debe tener al menos 12 caracteres' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!/(?=.*[a-z])/.test(newPassword)) {
+      return new Response(
+        JSON.stringify({ error: 'La contraseña debe contener al menos una letra minúscula' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!/(?=.*[A-Z])/.test(newPassword)) {
+      return new Response(
+        JSON.stringify({ error: 'La contraseña debe contener al menos una letra mayúscula' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!/(?=.*\d)/.test(newPassword)) {
+      return new Response(
+        JSON.stringify({ error: 'La contraseña debe contener al menos un número' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(newPassword)) {
+      return new Response(
+        JSON.stringify({ error: 'La contraseña debe contener al menos un carácter especial' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Get the user_id for the employee
     // Get the employee record with user link and email
     const { data: targetEmpleado, error: targetError } = await supabase
