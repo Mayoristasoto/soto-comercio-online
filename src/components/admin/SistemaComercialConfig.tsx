@@ -54,6 +54,7 @@ export function SistemaComercialConfig() {
   const [sendingGetWithData, setSendingGetWithData] = useState(false);
   const [n8nResponse, setN8nResponse] = useState<{status: number, data: any} | null>(null);
   const [n8nPostData, setN8nPostData] = useState('');
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState('https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -724,7 +725,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     setSendingToN8n(true);
     setN8nResponse(null);
     try {
-      const baseUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
+      const baseUrl = n8nWebhookUrl;
       
       let queryParams = '';
       if (n8nPostData.trim()) {
@@ -787,7 +788,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     setSendingPostToN8n(true);
     setN8nResponse(null);
     try {
-      const webhookUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
+      const webhookUrl = n8nWebhookUrl;
       
       let bodyData = {};
       if (n8nPostData.trim()) {
@@ -845,7 +846,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     setSendingGetWithData(true);
     setN8nResponse(null);
     try {
-      const baseUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
+      const baseUrl = n8nWebhookUrl;
       
       let queryParams = '';
       if (n8nPostData.trim()) {
@@ -1068,6 +1069,17 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
           <div className="flex items-center gap-2">
             <Send className="h-5 w-5" />
             <h3 className="font-medium">Integración n8n</h3>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="n8nWebhookUrl">URL del Webhook n8n</Label>
+            <Input
+              id="n8nWebhookUrl"
+              placeholder="https://n8n.mayoristasoto.online/webhook-test/..."
+              value={n8nWebhookUrl}
+              onChange={(e) => setN8nWebhookUrl(e.target.value)}
+              className="font-mono text-sm"
+            />
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
