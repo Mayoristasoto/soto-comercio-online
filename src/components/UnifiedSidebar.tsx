@@ -289,6 +289,12 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                   tooltip={link.descripcion || link.nombre}
                                   isActive={isCurrentPath || hasActiveChild}
                                   className="font-bold text-primary text-base hover:bg-accent/50"
+                                  onClick={() => {
+                                    const pathToGo = fixPath(link.path, link.nombre)
+                                    if (pathToGo.startsWith('/')) {
+                                      navigate(pathToGo)
+                                    }
+                                  }}
                                 >
                                   <Icon className={`h-5 w-5 ${getIconColor(link.icon)}`} />
                                   <span>{link.nombre}</span>
