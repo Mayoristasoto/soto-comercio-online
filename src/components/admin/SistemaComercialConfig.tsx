@@ -51,6 +51,7 @@ export function SistemaComercialConfig() {
   const [envImport, setEnvImport] = useState('');
   const [sendingToN8n, setSendingToN8n] = useState(false);
   const [sendingPostToN8n, setSendingPostToN8n] = useState(false);
+  const [sendingGetWithData, setSendingGetWithData] = useState(false);
   const [n8nResponse, setN8nResponse] = useState<{status: number, data: any} | null>(null);
   const [n8nPostData, setN8nPostData] = useState('');
   const { toast } = useToast();
@@ -822,6 +823,69 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     }
   };
 
+  const handleSendGetWithDataToN8n = async () => {
+    setSendingGetWithData(true);
+    setN8nResponse(null);
+    try {
+      const baseUrl = "https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta";
+      
+      let queryParams = '';
+      if (n8nPostData.trim()) {
+        try {
+          const dataObj = JSON.parse(n8nPostData);
+          const params = new URLSearchParams();
+          
+          Object.entries(dataObj).forEach(([key, value]) => {
+            params.append(key, String(value));
+          });
+          
+          queryParams = '?' + params.toString();
+        } catch {
+          queryParams = '?data=' + encodeURIComponent(n8nPostData);
+        }
+      }
+
+      const fullUrl = baseUrl + queryParams;
+
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+      });
+
+      const responseData = await response.json().catch(() => null);
+
+      setN8nResponse({
+        status: response.status,
+        data: responseData
+      });
+
+      if (response.ok) {
+        toast({
+          title: "GET con datos enviado a n8n",
+          description: `Respuesta recibida con código ${response.status}`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `El webhook respondió con código ${response.status}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al enviar GET con datos a n8n:', error);
+      setN8nResponse({
+        status: 0,
+        data: { error: error.message }
+      });
+      toast({
+        title: "Error",
+        description: error.message || "Error al enviar datos a n8n",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingGetWithData(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -988,7 +1052,7 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
             <h3 className="font-medium">Integración n8n</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Button
               onClick={handleSendToN8n}
               disabled={sendingToN8n}
@@ -1004,6 +1068,25 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
                 <>
                   <Send className="mr-2 h-5 w-5" />
                   Enviar GET a n8n
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleSendGetWithDataToN8n}
+              disabled={sendingGetWithData}
+              size="lg"
+              variant="outline"
+            >
+              {sendingGetWithData ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Enviando GET...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-5 w-5" />
+                  Enviar GET con Datos
                 </>
               )}
             </Button>
