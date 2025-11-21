@@ -133,27 +133,50 @@ export default function Autogestion() {
     setSaldoCuentaCorriente(null)
     
     try {
-      const { data, error } = await supabase.functions.invoke('centum-consultar-saldo', {
-        body: { empleado_id: empleadoId }
+      // Obtener el id_centum del empleado
+      const { data: datosEmpleado, error: errorEmpleado } = await supabase
+        .from('empleados_datos_sensibles')
+        .select('id_centum')
+        .eq('empleado_id', empleadoId)
+        .single()
+
+      if (errorEmpleado || !datosEmpleado?.id_centum) {
+        throw new Error('No se encontró el ID de Centum del empleado')
+      }
+
+      // Hacer POST a n8n con el centum_id como variable
+      const n8nUrl = 'https://n8n.mayoristasoto.online/webhook-test/84826d09-c8c9-408e-ba3c-b94b9ea7d165'
+      
+      const response = await fetch(n8nUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          centum_id: datosEmpleado.id_centum
+        })
       })
 
-      if (error) throw error
-
-      if (data.success) {
-        setSaldoCuentaCorriente(data.saldo)
-        toast({
-          title: "✅ Saldo consultado",
-          description: "El saldo se obtuvo correctamente",
-        })
-      } else {
-        throw new Error(data.error || 'Error al consultar saldo')
+      if (!response.ok) {
+        throw new Error(`Error en la consulta: ${response.statusText}`)
       }
+
+      const saldoData = await response.json()
+      
+      // El saldo viene directamente como número desde n8n
+      const saldo = typeof saldoData === 'number' ? saldoData : saldoData.saldo
+      
+      setSaldoCuentaCorriente(saldo)
+      toast({
+        title: "✅ Saldo consultado",
+        description: "El saldo se obtuvo correctamente desde Centum",
+      })
 
     } catch (error) {
       console.error('Error consultando saldo:', error)
       toast({
         title: "Error",
-        description: "No se pudo consultar el saldo. Intente nuevamente.",
+        description: error instanceof Error ? error.message : "No se pudo consultar el saldo. Intente nuevamente.",
         variant: "destructive"
       })
       setVistaActual('menu')
