@@ -1145,14 +1145,29 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
             <Label htmlFor="n8nPostData">Datos para POST (JSON o texto)</Label>
             <Textarea
               id="n8nPostData"
-              placeholder='{"clave": "valor"} o simplemente texto'
+              placeholder='{"empleado_id": "96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4", "monto": 500, "concepto": "Acreditación"}'
               value={n8nPostData}
               onChange={(e) => setN8nPostData(e.target.value)}
-              className="font-mono text-sm h-24"
+              className="font-mono text-sm h-32"
             />
-            <p className="text-xs text-muted-foreground">
-              Puedes ingresar JSON válido o texto plano. Si es JSON se enviará parseado, si no se enviará como {`{"data": "tu texto"}`}
-            </p>
+            <div className="text-xs text-muted-foreground space-y-2 bg-muted/50 p-3 rounded-md">
+              <p className="font-semibold">💡 Cómo usar estos datos en n8n:</p>
+              <div className="space-y-1">
+                <p>Si envías JSON:</p>
+                <code className="block bg-background px-2 py-1 rounded text-xs">
+                  {"{{$json.empleado_id}} // \"96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4\""}
+                </code>
+                <code className="block bg-background px-2 py-1 rounded text-xs">
+                  {"{{$json.monto}} // 500"}
+                </code>
+                <code className="block bg-background px-2 py-1 rounded text-xs">
+                  {"{{$json.concepto}} // \"Acreditación\""}
+                </code>
+              </div>
+              <p className="text-muted-foreground pt-2">
+                También puedes enviar texto plano y se enviará como {`{"data": "tu texto"}`}
+              </p>
+            </div>
           </div>
         </div>
 
