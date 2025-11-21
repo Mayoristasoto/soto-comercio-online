@@ -55,6 +55,7 @@ export function SistemaComercialConfig() {
   const [n8nResponse, setN8nResponse] = useState<{status: number, data: any} | null>(null);
   const [n8nPostData, setN8nPostData] = useState('');
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta');
+  const [n8nVariables, setN8nVariables] = useState<Array<{key: string, value: string}>>([{key: '', value: ''}]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -791,7 +792,21 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
       const webhookUrl = n8nWebhookUrl;
       
       let bodyData = {};
-      if (n8nPostData.trim()) {
+      
+      // Primero intentar con las variables definidas
+      const varsObject = n8nVariables.reduce((acc, v) => {
+        if (v.key && v.value) {
+          acc[v.key] = v.value;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+      
+      // Si hay variables definidas, usarlas
+      if (Object.keys(varsObject).length > 0) {
+        bodyData = varsObject;
+      }
+      // Si no hay variables pero hay datos en el campo de texto, usar esos
+      else if (n8nPostData.trim()) {
         try {
           bodyData = JSON.parse(n8nPostData);
         } catch {
@@ -1141,33 +1156,89 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
             </Button>
           </div>
 
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Variables para n8n</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setN8nVariables([...n8nVariables, {key: '', value: ''}])}
+              >
+                + Agregar Variable
+              </Button>
+            </div>
+            
+            {n8nVariables.map((variable, index) => (
+              <div key={index} className="flex gap-2 items-start">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Nombre de variable</Label>
+                  <Input
+                    placeholder="empleado_id"
+                    value={variable.key}
+                    onChange={(e) => {
+                      const newVars = [...n8nVariables];
+                      newVars[index].key = e.target.value;
+                      setN8nVariables(newVars);
+                    }}
+                    className="font-mono text-sm"
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Valor</Label>
+                  <Input
+                    placeholder="96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4"
+                    value={variable.value}
+                    onChange={(e) => {
+                      const newVars = [...n8nVariables];
+                      newVars[index].value = e.target.value;
+                      setN8nVariables(newVars);
+                    }}
+                    className="font-mono text-sm"
+                  />
+                </div>
+                {n8nVariables.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const newVars = n8nVariables.filter((_, i) => i !== index);
+                      setN8nVariables(newVars);
+                    }}
+                    className="mt-6"
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+            ))}
+            
+            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-2">
+              <p className="font-semibold">💡 Uso en n8n:</p>
+              {n8nVariables.filter(v => v.key && v.value).map((v, i) => (
+                <code key={i} className="block bg-background px-2 py-1 rounded text-xs">
+                  {`{{$json.${v.key}}} // "${v.value}"`}
+                </code>
+              ))}
+              {n8nVariables.filter(v => v.key && v.value).length === 0 && (
+                <p className="text-muted-foreground">Agrega variables arriba para ver ejemplos</p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="n8nPostData">Datos para POST (JSON o texto)</Label>
+            <Label htmlFor="n8nPostData">O enviar JSON directamente</Label>
             <Textarea
               id="n8nPostData"
               placeholder='{"empleado_id": "96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4", "monto": 500, "concepto": "Acreditación"}'
               value={n8nPostData}
               onChange={(e) => setN8nPostData(e.target.value)}
-              className="font-mono text-sm h-32"
+              className="font-mono text-sm h-24"
             />
-            <div className="text-xs text-muted-foreground space-y-2 bg-muted/50 p-3 rounded-md">
-              <p className="font-semibold">💡 Cómo usar estos datos en n8n:</p>
-              <div className="space-y-1">
-                <p>Si envías JSON:</p>
-                <code className="block bg-background px-2 py-1 rounded text-xs">
-                  {"{{$json.empleado_id}} // \"96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4\""}
-                </code>
-                <code className="block bg-background px-2 py-1 rounded text-xs">
-                  {"{{$json.monto}} // 500"}
-                </code>
-                <code className="block bg-background px-2 py-1 rounded text-xs">
-                  {"{{$json.concepto}} // \"Acreditación\""}
-                </code>
-              </div>
-              <p className="text-muted-foreground pt-2">
-                También puedes enviar texto plano y se enviará como {`{"data": "tu texto"}`}
-              </p>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Las variables definidas arriba tienen prioridad. Si quieres usar este campo, borra las variables.
+            </p>
           </div>
         </div>
 
