@@ -11,6 +11,17 @@ serve(async (req) => {
   }
 
   try {
+    // Validate webhook secret for security
+    const webhookSecret = req.headers.get('X-Webhook-Secret');
+    const expectedSecret = Deno.env.get('TTS_WEBHOOK_SECRET');
+    
+    if (expectedSecret && webhookSecret !== expectedSecret) {
+      console.error('Invalid webhook secret');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     const { text, voice } = await req.json();
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
 

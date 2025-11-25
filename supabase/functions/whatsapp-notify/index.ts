@@ -26,6 +26,17 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate webhook secret for security
+    const webhookSecret = req.headers.get('X-Webhook-Secret')
+    const expectedSecret = Deno.env.get('WHATSAPP_WEBHOOK_SECRET')
+    
+    if (expectedSecret && webhookSecret !== expectedSecret) {
+      console.error('❌ Invalid webhook secret')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: corsHeaders }
+      )
+    }
     // Verificar si es modo prueba
     const body = await req.json().catch(() => ({}))
     const modoPrueba = body.modo_prueba === true
