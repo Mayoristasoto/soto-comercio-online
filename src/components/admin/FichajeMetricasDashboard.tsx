@@ -21,6 +21,7 @@ import {
   Filter,
   Shield
 } from "lucide-react"
+import { ExportButton } from "@/components/ui/export-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
@@ -793,6 +794,102 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const prepararDatosExportar = () => {
+    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
+    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const rangoTexto = tipoFecha === 'dia' 
+      ? format(fechaParticular, 'dd/MM/yyyy', { locale: es })
+      : `${format(fechaInicio, 'dd/MM/yyyy', { locale: es })} - ${format(fechaFin, 'dd/MM/yyyy', { locale: es })}`
+    
+    const empleadoTexto = empleadoFiltro === 'todos' 
+      ? 'Todos' 
+      : empleados.find(e => e.id === empleadoFiltro)?.apellido + ', ' + empleados.find(e => e.id === empleadoFiltro)?.nombre
+
+    const datosExport = []
+
+    // Resumen
+    datosExport.push({
+      'Tipo': 'RESUMEN',
+      'Período': rangoTexto,
+      'Empleado': empleadoTexto,
+      'Total Fichajes': metricas.total_fichajes_hoy,
+      'Empleados Puntuales': metricas.empleados_puntuales_hoy,
+      'Llegadas Tarde': metricas.llegadas_tarde_hoy,
+      'Pausas Excedidas': metricas.pausas_excedidas_hoy,
+      'Incidencias Pendientes': metricas.incidencias_pendientes
+    })
+    datosExport.push({}) // Fila vacía
+
+    // Llegadas Tarde
+    if (fichajesToday.length > 0) {
+      datosExport.push({ 'Tipo': 'LLEGADAS TARDE' })
+      fichajesToday.forEach(f => {
+        datosExport.push({
+          'Tipo': 'Llegada Tarde',
+          'Empleado': `${f.empleado.apellido}, ${f.empleado.nombre}`,
+          'Fecha': formatearFechaArgentina(f.fecha_fichaje),
+          'Hora Programada': formatearHora(f.hora_programada),
+          'Hora Real': formatearHora(f.hora_real),
+          'Minutos Retraso': f.minutos_retraso,
+          'Justificado': f.justificado ? 'Sí' : 'No',
+          'Observaciones': f.observaciones || '',
+          'Ya Registrado': tieneCruzRoja(f.empleado_id, 'llegada_tarde', f.fecha_fichaje) ? 'Sí' : 'No'
+        })
+      })
+      datosExport.push({}) // Fila vacía
+    }
+
+    // Pausas Excedidas
+    if (pausasToday.length > 0) {
+      datosExport.push({ 'Tipo': 'PAUSAS EXCEDIDAS' })
+      pausasToday.forEach(p => {
+        datosExport.push({
+          'Tipo': 'Pausa Excedida',
+          'Empleado': `${p.empleado.apellido}, ${p.empleado.nombre}`,
+          'Fecha': formatearFechaArgentina(p.fecha_fichaje),
+          'Hora Inicio': formatearHora(p.hora_inicio_pausa),
+          'Hora Fin': formatearHora(p.hora_fin_pausa),
+          'Duración (min)': p.duracion_minutos,
+          'Permitida (min)': p.duracion_permitida_minutos,
+          'Exceso (min)': p.minutos_exceso,
+          'Justificado': p.justificado ? 'Sí' : 'No',
+          'Observaciones': p.observaciones || '',
+          'Ya Registrado': tieneCruzRoja(p.empleado_id, 'pausa_excedida', p.fecha_fichaje) ? 'Sí' : 'No'
+        })
+      })
+      datosExport.push({}) // Fila vacía
+    }
+
+    // Incidencias Pendientes
+    if (incidenciasPendientes.length > 0) {
+      datosExport.push({ 'Tipo': 'INCIDENCIAS PENDIENTES' })
+      incidenciasPendientes.forEach(i => {
+        datosExport.push({
+          'Tipo': obtenerTextoTipo(i.tipo),
+          'Empleado': `${i.empleado.apellido}, ${i.empleado.nombre}`,
+          'Fecha Incidencia': formatearFechaArgentina(i.fecha_incidencia),
+          'Hora Propuesta': i.hora_propuesta || '',
+          'Descripción': i.descripcion,
+          'Estado': i.estado,
+          'Comentarios': i.comentarios_aprobador || '',
+          'Fecha Reporte': format(new Date(i.created_at), 'dd/MM/yyyy HH:mm', { locale: es })
+        })
+      })
+    }
+
+    return datosExport
+  }
+
+  const getNombreArchivoExport = () => {
+    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
+    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const fechaStr = tipoFecha === 'dia'
+      ? format(fechaParticular, 'yyyy-MM-dd')
+      : `${format(fechaInicio, 'yyyy-MM-dd')}_${format(fechaFin, 'yyyy-MM-dd')}`
+    
+    return `metricas-fichaje-${fechaStr}`
+  }
+
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
@@ -811,13 +908,24 @@ export default function FichajeMetricasDashboard() {
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-          <CardDescription>
-            Seleccione fecha y empleado para ver métricas específicas. <strong>Nota:</strong> Todas las horas mostradas están en zona horaria Argentina (ART = UTC-3)
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filtros
+              </CardTitle>
+              <CardDescription>
+                Seleccione fecha y empleado para ver métricas específicas. <strong>Nota:</strong> Todas las horas mostradas están en zona horaria Argentina (ART = UTC-3)
+              </CardDescription>
+            </div>
+            <ExportButton
+              data={prepararDatosExportar()}
+              filename={getNombreArchivoExport()}
+              sheetName="Métricas Fichaje"
+              formats={["excel", "csv"]}
+              className="ml-4"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
