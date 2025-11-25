@@ -274,7 +274,7 @@ export const FacialPhotoApproval = () => {
 
       toast({
         title: 'Foto rechazada',
-        description: 'Se ha notificado al empleado',
+        description: 'El empleado podrá ver el comentario en su historial',
       });
 
       await loadUploads();
