@@ -28,6 +28,7 @@ import Nomina from "./pages/Nomina";
 import EmpleadoDashboard from "./pages/EmpleadoDashboard";
 import Evaluaciones from "./pages/Evaluaciones";
 import PreviewEvaluacion from "./pages/PreviewEvaluacion";
+import MockupKioscoGerente from "./pages/MockupKioscoGerente";
 import Vacaciones from "./pages/Vacaciones";
 import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
@@ -107,6 +108,7 @@ const App = () => (
             <Route path="rrhh/nomina/organigrama" element={<Nomina />} />
             <Route path="rrhh/evaluaciones" element={<Evaluaciones />} />
             <Route path="preview-evaluacion" element={<PreviewEvaluacion />} />
+            <Route path="mockup-kiosco-gerente" element={<MockupKioscoGerente />} />
             <Route path="rrhh/vacaciones" element={<Vacaciones />} />
             <Route path="rrhh/solicitudes" element={<Solicitudes />} />
             <Route path="rrhh/anotaciones" element={<Anotaciones />} />
