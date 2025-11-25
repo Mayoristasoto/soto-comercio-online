@@ -47,14 +47,12 @@ serve(async (req) => {
       )
     }
 
-    // Check if user has admin_rrhh role
-    const { data: empleado, error: empleadoError } = await supabase
-      .from('empleados')
-      .select('rol')
-      .eq('user_id', user.id)
-      .single()
-
-    if (empleadoError || empleado?.rol !== 'admin_rrhh') {
+    // Verify admin role using secure RPC function
+    const { data: isAdmin, error: adminCheckError } = await supabase
+      .rpc('current_user_is_admin')
+    
+    if (adminCheckError || !isAdmin) {
+      console.error('Usuario no autorizado:', user.id)
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
