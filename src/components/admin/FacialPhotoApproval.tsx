@@ -250,11 +250,21 @@ export const FacialPhotoApproval = () => {
     setProcessing(uploadId);
 
     try {
+      // Obtener el empleado actual (para cumplir FK de revisado_por)
+      const { data: currentUser } = await supabase.auth.getUser();
+      const currentUserId = currentUser.user?.id;
+      const { data: empleadoReviewer } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .eq('activo', true)
+        .single();
+
       const { error } = await supabase
         .from('facial_photo_uploads')
         .update({
           estado: 'rechazado',
-          revisado_por: (await supabase.auth.getUser()).data.user?.id,
+          revisado_por: empleadoReviewer?.id ?? null,
           fecha_revision: new Date().toISOString(),
           comentarios: comentarios[uploadId],
         })
