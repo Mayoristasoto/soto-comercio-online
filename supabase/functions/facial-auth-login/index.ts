@@ -62,10 +62,10 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(user_id)
     
     if (userError || !userData.user) {
-      console.error('Error obteniendo usuario:', userError)
+      console.error('Facial auth failed - user lookup:', { user_id, error: userError })
       return new Response(
-        JSON.stringify({ error: 'Usuario no encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Authentication failed. Please try again.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -76,20 +76,20 @@ serve(async (req) => {
     })
 
     if (linkError || !linkData) {
-      console.error('Error generando link de acceso:', linkError)
+      console.error('Facial auth failed - link generation:', { user_id, error: linkError })
       return new Response(
-        JSON.stringify({ error: 'Error generando link de autenticación' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Authentication failed. Please try again.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const email_otp = linkData.properties?.email_otp
 
     if (!email_otp) {
-      console.error('No se obtuvo email_otp desde generateLink')
+      console.error('Facial auth failed - OTP missing:', { user_id })
       return new Response(
-        JSON.stringify({ error: 'No se pudo obtener OTP para autenticación' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Authentication failed. Please try again.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -105,7 +105,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error en facial-auth-login:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Authentication failed. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
