@@ -87,3 +87,6 @@ verify_jwt = false
 
 [functions.facial-auth-login]
 verify_jwt = true
+
+[functions.custom-http-request]
+verify_jwt = true

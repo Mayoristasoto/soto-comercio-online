@@ -56,6 +56,15 @@ export function SistemaComercialConfig() {
   const [n8nPostData, setN8nPostData] = useState('');
   const [n8nWebhookUrl, setN8nWebhookUrl] = useState('https://n8n.mayoristasoto.online/webhook-test/centum/oficial-http/venta');
   const [n8nVariables, setN8nVariables] = useState<Array<{key: string, value: string}>>([{key: '', value: ''}]);
+  
+  // Estados para HTTP Request personalizado
+  const [customHttpUrl, setCustomHttpUrl] = useState('');
+  const [customHttpMethod, setCustomHttpMethod] = useState('GET');
+  const [customHttpHeaders, setCustomHttpHeaders] = useState<Array<{key: string, value: string}>>([{key: 'Content-Type', value: 'application/json'}]);
+  const [customHttpBody, setCustomHttpBody] = useState('');
+  const [sendingCustomRequest, setSendingCustomRequest] = useState(false);
+  const [customHttpResponse, setCustomHttpResponse] = useState<{status: number, data: any, duration: number} | null>(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -920,6 +929,94 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
     }
   };
 
+  const handleSendCustomHttpRequest = async () => {
+    setSendingCustomRequest(true);
+    setCustomHttpResponse(null);
+    
+    try {
+      if (!customHttpUrl) {
+        toast({
+          title: "Error",
+          description: "Debes especificar una URL",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Preparar headers como objeto
+      const headersObject = customHttpHeaders.reduce((acc, h) => {
+        if (h.key && h.value) {
+          acc[h.key] = h.value;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+
+      // Preparar body
+      let bodyData = null;
+      if (['POST', 'PUT', 'PATCH'].includes(customHttpMethod) && customHttpBody.trim()) {
+        try {
+          bodyData = JSON.parse(customHttpBody);
+        } catch {
+          bodyData = customHttpBody;
+        }
+      }
+
+      console.log('=== ENVIANDO HTTP REQUEST PERSONALIZADO ===');
+      console.log('URL:', customHttpUrl);
+      console.log('Method:', customHttpMethod);
+      console.log('Headers:', headersObject);
+      console.log('Body:', bodyData);
+
+      const { data, error } = await supabase.functions.invoke('custom-http-request', {
+        body: {
+          method: customHttpMethod,
+          url: customHttpUrl,
+          headers: headersObject,
+          body: bodyData
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('=== RESPUESTA ===');
+      console.log('Data:', data);
+
+      setCustomHttpResponse({
+        status: data.status,
+        data: data.data,
+        duration: data.duration_ms
+      });
+
+      if (data.success) {
+        toast({
+          title: "Petición exitosa",
+          description: `Status: ${data.status} - Duración: ${data.duration_ms}ms`,
+        });
+      } else {
+        toast({
+          title: "Petición completada con errores",
+          description: `Status: ${data.status}`,
+          variant: "destructive",
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Error al enviar petición:', error);
+      setCustomHttpResponse({
+        status: 0,
+        data: { error: error.message },
+        duration: 0
+      });
+      toast({
+        title: "Error",
+        description: error.message || "Error al enviar la petición",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingCustomRequest(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -1264,6 +1361,174 @@ ${data.data ? `Datos recibidos:\n${JSON.stringify(data.data, null, 2)}` : ''}
             </div>
           </div>
         )}
+
+        {/* HTTP Request Personalizado */}
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Petición HTTP Personalizada
+            </CardTitle>
+            <CardDescription>
+              Ejecuta una petición HTTP con configuración personalizada de headers y body
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Método y URL */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customHttpMethod">Método</Label>
+                <select
+                  id="customHttpMethod"
+                  value={customHttpMethod}
+                  onChange={(e) => setCustomHttpMethod(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                  <option value="PATCH">PATCH</option>
+                </select>
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="customHttpUrl">URL del Endpoint</Label>
+                <Input
+                  id="customHttpUrl"
+                  type="url"
+                  placeholder="https://api.ejemplo.com/endpoint"
+                  value={customHttpUrl}
+                  onChange={(e) => setCustomHttpUrl(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Headers */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Headers Personalizados</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCustomHttpHeaders([...customHttpHeaders, {key: '', value: ''}])}
+                >
+                  + Agregar Header
+                </Button>
+              </div>
+              
+              {customHttpHeaders.map((header, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Nombre</Label>
+                    <Input
+                      placeholder="Content-Type"
+                      value={header.key}
+                      onChange={(e) => {
+                        const newHeaders = [...customHttpHeaders];
+                        newHeaders[index].key = e.target.value;
+                        setCustomHttpHeaders(newHeaders);
+                      }}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Valor</Label>
+                    <Input
+                      placeholder="application/json"
+                      value={header.value}
+                      onChange={(e) => {
+                        const newHeaders = [...customHttpHeaders];
+                        newHeaders[index].value = e.target.value;
+                        setCustomHttpHeaders(newHeaders);
+                      }}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  {customHttpHeaders.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const newHeaders = customHttpHeaders.filter((_, i) => i !== index);
+                        setCustomHttpHeaders(newHeaders);
+                      }}
+                      className="mt-6"
+                    >
+                      ✕
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Body (solo para POST/PUT/PATCH) */}
+            {['POST', 'PUT', 'PATCH'].includes(customHttpMethod) && (
+              <div className="space-y-2">
+                <Label htmlFor="customHttpBody">Body (JSON)</Label>
+                <Textarea
+                  id="customHttpBody"
+                  placeholder='{"key": "value", "data": "example"}'
+                  value={customHttpBody}
+                  onChange={(e) => setCustomHttpBody(e.target.value)}
+                  className="font-mono text-sm h-32"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formato JSON válido para el cuerpo de la petición
+                </p>
+              </div>
+            )}
+
+            {/* Botón de enviar */}
+            <Button
+              onClick={handleSendCustomHttpRequest}
+              disabled={sendingCustomRequest || !customHttpUrl}
+              size="lg"
+              className="w-full"
+            >
+              {sendingCustomRequest ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Enviando Petición...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-5 w-5" />
+                  Enviar Petición HTTP
+                </>
+              )}
+            </Button>
+
+            {/* Respuesta */}
+            {customHttpResponse && (
+              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+                <Label className="flex items-center gap-2">
+                  <Send className="h-4 w-4" />
+                  Respuesta
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Estado:</span>
+                      <Badge variant={customHttpResponse.status >= 200 && customHttpResponse.status < 300 ? "default" : "destructive"}>
+                        {customHttpResponse.status}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Duración: {customHttpResponse.duration}ms
+                    </div>
+                  </div>
+                  <Textarea
+                    value={JSON.stringify(customHttpResponse.data, null, 2)}
+                    readOnly
+                    className="font-mono text-xs h-96 bg-background"
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Visualización de Headers y Respuesta */}
         {connectionDebug && (
