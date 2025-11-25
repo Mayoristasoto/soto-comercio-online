@@ -12,8 +12,8 @@ interface FacialConfig {
 }
 
 const defaultConfig: FacialConfig = {
-  confidenceThresholdKiosk: 0.65,
-  confidenceThresholdSpecific: 0.60,
+  confidenceThresholdKiosk: 0.72,  // Más estricto: era 0.65
+  confidenceThresholdSpecific: 0.68, // Más estricto: era 0.60
   confidenceThresholdDemo: 0.35,
   maxAttemptsPerMinute: 3,
   livenessTimeoutSeconds: 30,

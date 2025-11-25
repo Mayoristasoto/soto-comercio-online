@@ -149,7 +149,7 @@ export default function FacialRecognitionConfig() {
                 }))}
               />
               <p className="text-xs text-muted-foreground">
-                Recomendado: 0.60-0.70
+                Recomendado: 0.70-0.80 (más alto = más estricto)
               </p>
             </div>
             
@@ -168,7 +168,7 @@ export default function FacialRecognitionConfig() {
                 }))}
               />
               <p className="text-xs text-muted-foreground">
-                Recomendado: 0.55-0.65
+                Recomendado: 0.65-0.75 (más alto = más estricto)
               </p>
             </div>
             
