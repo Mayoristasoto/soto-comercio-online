@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { isAdminRole } from "@/lib/authSecurity"
 import { Separator } from "@/components/ui/separator"
+import { ExportButton } from "@/components/ui/export-button"
 
 interface FicheroIncidenciasProps {
   empleado: {
@@ -501,6 +502,43 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     ...pausasFiltradas.map(p => ({ ...p, tipo_incidencia: 'pausa' as const }))
   ]
 
+  // Preparar datos para exportar
+  const datosParaExportar = [
+    ...fichajesToday.map(f => ({
+      'Tipo': 'Llegada Tarde',
+      'Empleado': `${f.empleado?.nombre || ''} ${f.empleado?.apellido || ''}`.trim(),
+      'Fecha': formatearFechaArgentinaDateOnly(f.fecha_fichaje),
+      'Hora Programada': formatearHora(f.hora_programada),
+      'Hora Real': formatearHora(f.hora_real),
+      'Minutos Retraso': f.minutos_retraso,
+      'Justificado': f.justificado ? 'Sí' : 'No',
+      'Observaciones': f.observaciones || ''
+    })),
+    ...pausasExcedidas.map(p => ({
+      'Tipo': 'Exceso Descanso',
+      'Empleado': `${p.empleado?.nombre || ''} ${p.empleado?.apellido || ''}`.trim(),
+      'Fecha': formatearFechaArgentinaDateOnly(p.fecha_fichaje),
+      'Hora Inicio Pausa': formatearHora(p.hora_inicio_pausa),
+      'Hora Fin Pausa': formatearHora(p.hora_fin_pausa),
+      'Duración (min)': p.duracion_minutos,
+      'Duración Permitida (min)': p.duracion_permitida_minutos,
+      'Minutos Exceso': p.minutos_exceso,
+      'Justificado': p.justificado ? 'Sí' : 'No',
+      'Observaciones': p.observaciones || ''
+    })),
+    ...incidencias.map(inc => ({
+      'Tipo': 'Reporte Usuario',
+      'Empleado': `${empleado.nombre} ${empleado.apellido}`,
+      'Fecha': formatearFechaArgentinaDateOnly(inc.fecha_incidencia),
+      'Tipo Incidencia': obtenerTextoTipo(inc.tipo),
+      'Descripción': inc.descripcion,
+      'Hora Propuesta': inc.hora_propuesta || '',
+      'Estado': inc.estado,
+      'Comentarios Aprobador': inc.comentarios_aprobador || '',
+      'Fecha Reporte': new Date(inc.created_at).toLocaleDateString('es-AR')
+    }))
+  ]
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -528,6 +566,12 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
         </div>
         
         <div className="flex gap-2">
+          <ExportButton 
+            data={datosParaExportar}
+            filename="informe-incidencias"
+            sheetName="Incidencias"
+            disabled={datosParaExportar.length === 0}
+          />
           {isAdminRole(userRole) && (
             <Button
               variant="outline"
