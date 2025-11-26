@@ -45,21 +45,22 @@ export function validatePassword(password: string): PasswordValidation {
 
   // Requisitos básicos
   const requirements = {
-    minLength: password.length >= 12,
+    minLength: password.length >= 8,
     hasUpperCase: /[A-Z]/.test(password),
     hasLowerCase: /[a-z]/.test(password),
     hasNumber: /[0-9]/.test(password),
     hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
     noCommonPatterns: !isCommonPassword(password),
-    noSequentialChars: !hasSequentialChars(password)
+    noSequentialChars: true // Ya no validamos secuencias
   }
 
   // Validar longitud mínima (requisito obligatorio)
   if (!requirements.minLength) {
-    errors.push('La contraseña debe tener al menos 12 caracteres')
+    errors.push('La contraseña debe tener al menos 8 caracteres')
   } else {
     score += 25
-    if (password.length >= 16) score += 10 // Bonus por longitud extra
+    if (password.length >= 12) score += 10 // Bonus por longitud extra
+    if (password.length >= 16) score += 15 // Bonus adicional
   }
 
   // Validar mayúsculas (requisito obligatorio)
@@ -83,9 +84,10 @@ export function validatePassword(password: string): PasswordValidation {
     score += 15
   }
 
-  // Validar caracteres especiales (requisito obligatorio)
+  // Validar caracteres especiales (opcional pero recomendado)
   if (!requirements.hasSpecialChar) {
-    errors.push('Debe contener al menos un carácter especial (!@#$%^&*)')
+    warnings.push('Considera usar caracteres especiales para mayor seguridad (!@#$%^&*)')
+    score = Math.max(0, score - 5)
   } else {
     score += 20
   }
@@ -96,11 +98,7 @@ export function validatePassword(password: string): PasswordValidation {
     score = Math.max(0, score - 30)
   }
 
-  // Verificar caracteres secuenciales (advertencia)
-  if (!requirements.noSequentialChars) {
-    warnings.push('Evita usar secuencias de caracteres (abc, 123, qwerty)')
-    score = Math.max(0, score - 10)
-  }
+  // Ya no validamos caracteres secuenciales
 
   // Bonificaciones adicionales por complejidad
   const uniqueChars = new Set(password).size
