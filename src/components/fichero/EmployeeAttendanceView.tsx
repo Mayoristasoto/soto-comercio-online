@@ -146,12 +146,16 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
     try {
       setLoading(true)
       
+      // Ajustar fechas a zona horaria de Argentina (UTC-3)
+      const fromDateArgentina = `${dateRange.from}T03:00:00Z` // 00:00 Argentina = 03:00 UTC
+      const toDateArgentina = `${dateRange.to}T02:59:59.999Z` // 23:59:59 Argentina = 02:59:59 UTC del día siguiente
+      
       const { data, error } = await supabase
         .from('fichajes')
         .select('*')
         .eq('empleado_id', currentEmpleadoId)
-        .gte('timestamp_real', `${dateRange.from}T00:00:00`)
-        .lte('timestamp_real', `${dateRange.to}T23:59:59`)
+        .gte('timestamp_real', fromDateArgentina)
+        .lte('timestamp_real', toDateArgentina)
         .order('timestamp_real', { ascending: false })
 
       if (error) throw error
@@ -176,7 +180,11 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
     const groups: { [key: string]: FichajeRecord[] } = {}
     
     fichajes.forEach(fichaje => {
-      const fecha = format(new Date(fichaje.timestamp_real), 'yyyy-MM-dd')
+      // Convertir a zona horaria de Argentina antes de agrupar
+      const fechaArgentina = new Date(fichaje.timestamp_real)
+      fechaArgentina.setHours(fechaArgentina.getHours() - 3) // Ajustar a UTC-3
+      const fecha = format(fechaArgentina, 'yyyy-MM-dd')
+      
       if (!groups[fecha]) {
         groups[fecha] = []
       }
