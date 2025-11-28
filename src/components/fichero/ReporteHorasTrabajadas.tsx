@@ -108,33 +108,63 @@ export default function ReporteHorasTrabajadas() {
         sucursal: emp.sucursales ? { nombre: emp.sucursales.nombre } : undefined
       })))
 
-      // Cargar horas trabajadas del período
+      // Cargar fichajes del período usando zona horaria Argentina
       const startDate = getArgentinaStartOfDay(fechaInicio)
       const endDate = getArgentinaEndOfDay(fechaFin)
       
-      const { data: horasData, error: horasError } = await supabase
-        .from('horas_trabajadas_registro')
-        .select('empleado_id, horas_trabajadas, horas_teoricas, fecha')
-        .gte('fecha', startDate.split('T')[0])
-        .lte('fecha', endDate.split('T')[0])
-        .eq('ausente', false)
+      const { data: fichajesData, error: fichajesError } = await supabase
+        .from('fichajes')
+        .select('empleado_id, tipo, timestamp_real')
+        .gte('timestamp_real', startDate)
+        .lte('timestamp_real', endDate)
+        .in('tipo', ['entrada', 'salida'])
+        .order('timestamp_real')
 
-      if (horasError) throw horasError
+      if (fichajesError) throw fichajesError
 
-      // Procesar datos por empleado
+      // Procesar fichajes por empleado y calcular horas
       const horasPorEmpleado = new Map<string, HorasDetalle>()
       
       empleadosData.forEach(emp => {
-        const registros = horasData?.filter(h => h.empleado_id === emp.id) || []
-        const diasTrabajados = new Set(registros.map(r => r.fecha)).size
+        const fichajesEmpleado = fichajesData?.filter(f => f.empleado_id === emp.id) || []
+        
+        // Agrupar fichajes por día (Argentina timezone)
+        const fichajesPorDia = new Map<string, typeof fichajesEmpleado>()
+        fichajesEmpleado.forEach(fichaje => {
+          const fecha = new Date(fichaje.timestamp_real)
+          // Ajustar a zona horaria Argentina
+          fecha.setHours(fecha.getHours() - 3)
+          const diaKey = fecha.toISOString().split('T')[0]
+          
+          if (!fichajesPorDia.has(diaKey)) {
+            fichajesPorDia.set(diaKey, [])
+          }
+          fichajesPorDia.get(diaKey)!.push(fichaje)
+        })
+        
+        // Calcular horas trabajadas por día
+        let horasTotales = 0
+        fichajesPorDia.forEach(fichajes => {
+          const entradas = fichajes.filter(f => f.tipo === 'entrada')
+          const salidas = fichajes.filter(f => f.tipo === 'salida')
+          
+          // Calcular diferencia entre última salida y primera entrada
+          if (entradas.length > 0 && salidas.length > 0) {
+            const primeraEntrada = new Date(entradas[0].timestamp_real).getTime()
+            const ultimaSalida = new Date(salidas[salidas.length - 1].timestamp_real).getTime()
+            const horasDia = (ultimaSalida - primeraEntrada) / (1000 * 60 * 60)
+            horasTotales += horasDia
+          }
+        })
+        
+        const diasTrabajados = fichajesPorDia.size
         const horasEsperadas = diasTrabajados * (emp.horas_jornada_estandar || 8)
-        const horasTrabajadas = registros.reduce((sum, r) => sum + (Number(r.horas_trabajadas) || 0), 0)
         
         horasPorEmpleado.set(emp.id, {
           empleado_id: emp.id,
-          total_horas_trabajadas: horasTrabajadas,
+          total_horas_trabajadas: horasTotales,
           total_horas_esperadas: horasEsperadas,
-          diferencia: horasTrabajadas - horasEsperadas,
+          diferencia: horasTotales - horasEsperadas,
           dias_trabajados: diasTrabajados
         })
       })
