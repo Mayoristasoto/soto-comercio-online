@@ -12,6 +12,12 @@ import {
   PieChart
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { 
+  getArgentinaStartOfDay, 
+  getArgentinaEndOfDay,
+  getArgentinaDateString,
+  getArgentinaTimeString
+} from "@/lib/dateUtils"
 
 interface FicheroEstadisticasProps {
   empleado: {
@@ -56,12 +62,15 @@ export default function FicheroEstadisticas({ empleado }: FicheroEstadisticasPro
       const fechas = obtenerRangoFechas()
       
       // Cargar fichajes del periodo
+      const startDate = getArgentinaStartOfDay(fechas.inicio)
+      const endDate = getArgentinaEndOfDay(fechas.fin)
+      
       const { data: fichajes, error } = await supabase
         .from('fichajes')
         .select('tipo, timestamp_real, estado')
         .eq('empleado_id', empleado.id)
-        .gte('timestamp_real', fechas.inicio)
-        .lte('timestamp_real', fechas.fin)
+        .gte('timestamp_real', startDate)
+        .lte('timestamp_real', endDate)
         .order('timestamp_real', { ascending: true })
 
       if (error) throw error
@@ -114,9 +123,9 @@ export default function FicheroEstadisticas({ empleado }: FicheroEstadisticasPro
   const procesarFichajesPorDia = (fichajes: any[]): EstadisticasDia[] => {
     const datosPorDia: { [fecha: string]: any[] } = {}
     
-    // Agrupar fichajes por día
+    // Agrupar fichajes por día en zona horaria Argentina
     fichajes.forEach(fichaje => {
-      const fecha = fichaje.timestamp_real.split('T')[0]
+      const fecha = getArgentinaDateString(fichaje.timestamp_real)
       if (!datosPorDia[fecha]) {
         datosPorDia[fecha] = []
       }
@@ -152,8 +161,8 @@ export default function FicheroEstadisticas({ empleado }: FicheroEstadisticasPro
 
       return {
         fecha,
-        entrada: entrada?.timestamp_real.split('T')[1].substring(0, 5),
-        salida: salida?.timestamp_real.split('T')[1].substring(0, 5),
+        entrada: entrada ? getArgentinaTimeString(entrada.timestamp_real) : undefined,
+        salida: salida ? getArgentinaTimeString(salida.timestamp_real) : undefined,
         total_horas: totalHoras,
         total_pausas: Math.floor(pausas.length / 2),
         tiempo_pausas: tiempoPausas,

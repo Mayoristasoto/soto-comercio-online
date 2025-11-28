@@ -19,6 +19,14 @@ import {
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { cn } from "@/lib/utils"
+import { 
+  getArgentinaStartOfDay, 
+  getArgentinaEndOfDay,
+  getArgentinaDateString,
+  getArgentinaTimeString,
+  toArgentinaTime
+} from "@/lib/dateUtils"
 import {
   Select,
   SelectContent,
@@ -146,9 +154,9 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
     try {
       setLoading(true)
       
-      // Ajustar fechas a zona horaria de Argentina (UTC-3)
-      const fromDateArgentina = `${dateRange.from}T03:00:00Z` // 00:00 Argentina = 03:00 UTC
-      const toDateArgentina = `${dateRange.to}T02:59:59.999Z` // 23:59:59 Argentina = 02:59:59 UTC del día siguiente
+      // Ajustar fechas a zona horaria de Argentina
+      const fromDateArgentina = getArgentinaStartOfDay(dateRange.from)
+      const toDateArgentina = getArgentinaEndOfDay(dateRange.to)
       
       const { data, error } = await supabase
         .from('fichajes')
@@ -180,10 +188,8 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
     const groups: { [key: string]: FichajeRecord[] } = {}
     
     fichajes.forEach(fichaje => {
-      // Convertir a zona horaria de Argentina antes de agrupar
-      const fechaArgentina = new Date(fichaje.timestamp_real)
-      fechaArgentina.setHours(fechaArgentina.getHours() - 3) // Ajustar a UTC-3
-      const fecha = format(fechaArgentina, 'yyyy-MM-dd')
+      // Convertir a zona horaria de Argentina usando la utilidad
+      const fecha = getArgentinaDateString(fichaje.timestamp_real)
       
       if (!groups[fecha]) {
         groups[fecha] = []
@@ -238,8 +244,9 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
   const initEditForm = (dayGroup: DayGroup) => {
     const formData: {[key: string]: {timestamp: string, observaciones: string}} = {}
     dayGroup.fichajes.forEach(fichaje => {
+      const argTime = toArgentinaTime(fichaje.timestamp_real)
       formData[fichaje.id] = {
-        timestamp: format(new Date(fichaje.timestamp_real), "HH:mm"),
+        timestamp: format(argTime, "HH:mm"),
         observaciones: fichaje.observaciones || ''
       }
     })
@@ -413,7 +420,7 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
                         <div className="flex items-center space-x-4">
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground">
-                              {dayGroup.entrada && format(new Date(dayGroup.entrada.timestamp_real), 'HH:mm')} - {dayGroup.salida && format(new Date(dayGroup.salida.timestamp_real), 'HH:mm')}
+                              {dayGroup.entrada && getArgentinaTimeString(dayGroup.entrada.timestamp_real)} - {dayGroup.salida && getArgentinaTimeString(dayGroup.salida.timestamp_real)}
                             </p>
                           </div>
                           <Badge variant="outline" className="font-mono">
@@ -460,7 +467,7 @@ export default function EmployeeAttendanceView({ empleadoId }: EmployeeAttendanc
                                   </div>
                                 ) : (
                                   <span className="font-mono font-medium">
-                                    {format(new Date(fichaje.timestamp_real), 'HH:mm')}
+                                    {getArgentinaTimeString(fichaje.timestamp_real)}
                                   </span>
                                 )}
                               </div>

@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { getArgentinaStartOfDay, getArgentinaEndOfDay } from "@/lib/dateUtils"
 
 interface EmpleadoReporte {
   id: string
@@ -108,11 +109,14 @@ export default function ReporteHorasTrabajadas() {
       })))
 
       // Cargar horas trabajadas del período
+      const startDate = getArgentinaStartOfDay(fechaInicio)
+      const endDate = getArgentinaEndOfDay(fechaFin)
+      
       const { data: horasData, error: horasError } = await supabase
         .from('horas_trabajadas_registro')
         .select('empleado_id, horas_trabajadas, horas_teoricas, fecha')
-        .gte('fecha', fechaInicio)
-        .lte('fecha', fechaFin)
+        .gte('fecha', startDate.split('T')[0])
+        .lte('fecha', endDate.split('T')[0])
         .eq('ausente', false)
 
       if (horasError) throw horasError
