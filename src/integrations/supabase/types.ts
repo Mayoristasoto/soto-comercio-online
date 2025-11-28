@@ -1530,6 +1530,7 @@ export type Database = {
           email: string
           fecha_ingreso: string
           grupo_id: string | null
+          horas_jornada_estandar: number | null
           id: string
           legajo: string | null
           nombre: string
@@ -1550,6 +1551,7 @@ export type Database = {
           email: string
           fecha_ingreso?: string
           grupo_id?: string | null
+          horas_jornada_estandar?: number | null
           id?: string
           legajo?: string | null
           nombre: string
@@ -1570,6 +1572,7 @@ export type Database = {
           email?: string
           fecha_ingreso?: string
           grupo_id?: string | null
+          horas_jornada_estandar?: number | null
           id?: string
           legajo?: string | null
           nombre?: string
