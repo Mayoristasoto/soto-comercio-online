@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, PieChart, FileSpreadsheet } from 'lucide-react';
+import { BarChart3, PieChart, FileSpreadsheet, Clock } from 'lucide-react';
 import { ReporteCobertura } from '@/components/fichero/ReporteCobertura';
 import { DashboardDistribucion } from '@/components/fichero/DashboardDistribucion';
 import { ExportarHorarios } from '@/components/fichero/ExportarHorarios';
+import ReporteHorasTrabajadas from '@/components/fichero/ReporteHorasTrabajadas';
 
 export default function ReportesHorarios() {
   return (
@@ -20,8 +21,12 @@ export default function ReportesHorarios() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="cobertura" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="horas" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="horas" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Horas Trabajadas
+          </TabsTrigger>
           <TabsTrigger value="cobertura" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Cobertura
@@ -35,6 +40,10 @@ export default function ReportesHorarios() {
             Exportar
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="horas" className="mt-6">
+          <ReporteHorasTrabajadas />
+        </TabsContent>
 
         <TabsContent value="cobertura" className="mt-6">
           <ReporteCobertura />
