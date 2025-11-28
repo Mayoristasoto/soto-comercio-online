@@ -18,6 +18,13 @@ import {
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { 
+  formatArgentinaDate, 
+  formatArgentinaTime,
+  formatArgentinaDateTime,
+  getArgentinaStartOfDay, 
+  getArgentinaEndOfDay 
+} from "@/lib/dateUtils"
 
 interface AttendanceRecord {
   id: string
@@ -49,8 +56,8 @@ export default function AttendanceReports() {
     try {
       setLoading(true)
       
-      const startDate = `${dateFilter}T00:00:00`
-      const endDate = `${dateFilter}T23:59:59`
+      const startDate = getArgentinaStartOfDay(dateFilter)
+      const endDate = getArgentinaEndOfDay(dateFilter)
 
       const { data, error } = await supabase
         .from('fichajes')
@@ -113,8 +120,8 @@ export default function AttendanceReports() {
       ...filteredRecords.map(record => [
         `"${record.empleado_nombre} ${record.empleado_apellido}"`,
         record.tipo,
-        format(new Date(record.timestamp_real), 'dd/MM/yyyy', { locale: es }),
-        format(new Date(record.timestamp_real), 'HH:mm:ss'),
+        formatArgentinaDate(record.timestamp_real, 'dd/MM/yyyy'),
+        formatArgentinaTime(record.timestamp_real),
         record.estado,
         record.confianza_facial ? `${(record.confianza_facial * 100).toFixed(1)}%` : 'N/A',
         record.latitud && record.longitud ? `${record.latitud}, ${record.longitud}` : 'Sin ubicación'
@@ -285,7 +292,7 @@ export default function AttendanceReports() {
                               {record.empleado_nombre} {record.empleado_apellido}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {format(new Date(record.timestamp_real), 'dd/MM/yyyy HH:mm:ss', { locale: es })}
+                              {formatArgentinaDateTime(record.timestamp_real, 'dd/MM/yyyy HH:mm:ss')}
                             </div>
                           </div>
                         </div>

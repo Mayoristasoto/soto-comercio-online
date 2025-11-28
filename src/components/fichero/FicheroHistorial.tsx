@@ -36,6 +36,12 @@ import {
 import { format, parseISO, differenceInMinutes } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { 
+  formatArgentinaDate, 
+  formatArgentinaTime, 
+  getArgentinaStartOfDay, 
+  getArgentinaEndOfDay 
+} from "@/lib/dateUtils"
 
 interface FichajeHistorial {
   id: string
@@ -139,14 +145,13 @@ export default function FicheroHistorial() {
       }
 
       if (filtros.fechaInicio) {
-        const fechaInicioBA = format(filtros.fechaInicio, 'yyyy-MM-dd')
-        // Usar límites con zona horaria explícita de Buenos Aires
-        query = query.gte('timestamp_real', `${fechaInicioBA}T00:00:00-03:00`)
+        const startDate = getArgentinaStartOfDay(filtros.fechaInicio)
+        query = query.gte('timestamp_real', startDate)
       }
 
       if (filtros.fechaFin) {
-        const fechaFinBA = format(filtros.fechaFin, 'yyyy-MM-dd')
-        query = query.lte('timestamp_real', `${fechaFinBA}T23:59:59-03:00`)
+        const endDate = getArgentinaEndOfDay(filtros.fechaFin)
+        query = query.lte('timestamp_real', endDate)
       }
 
       if (filtros.mes && filtros.mes !== 'all' && filtros.ano) {
@@ -264,30 +269,12 @@ export default function FicheroHistorial() {
     }
   }
 
-  const formatearHoraArgentina = (timestamp: string): string => {
-    const fecha = new Date(timestamp)
-    return fecha.toLocaleTimeString('es-AR', { 
-      timeZone: 'America/Argentina/Buenos_Aires',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    })
-  }
-
-  const formatearFechaArgentina = (timestamp: string): string => {
-    const fecha = new Date(timestamp)
-    return fecha.toLocaleDateString('es-AR', {
-      timeZone: 'America/Argentina/Buenos_Aires'
-    })
-  }
-
   const exportarCSV = () => {
     const headers = ['Empleado', 'Fecha', 'Hora', 'Tipo', 'Estado', 'Confianza Facial']
     const rows = fichajes.map(fichaje => [
       `${fichaje.empleado_nombre} ${fichaje.empleado_apellido}`,
-      formatearFechaArgentina(fichaje.timestamp_real),
-      formatearHoraArgentina(fichaje.timestamp_real),
+      formatArgentinaDate(fichaje.timestamp_real, 'dd/MM/yyyy'),
+      formatArgentinaTime(fichaje.timestamp_real),
       fichaje.tipo.replace('_', ' '),
       fichaje.estado,
       fichaje.confianza_facial ? `${(fichaje.confianza_facial * 100).toFixed(1)}%` : 'N/A'
@@ -590,10 +577,10 @@ export default function FicheroHistorial() {
                         {fichaje.empleado_nombre} {fichaje.empleado_apellido}
                       </TableCell>
                       <TableCell>
-                        {formatearFechaArgentina(fichaje.timestamp_real)}
+                        {formatArgentinaDate(fichaje.timestamp_real, 'dd/MM/yyyy')}
                       </TableCell>
                       <TableCell>
-                        {formatearHoraArgentina(fichaje.timestamp_real)}
+                        {formatArgentinaTime(fichaje.timestamp_real)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
