@@ -14,8 +14,22 @@ serve(async (req) => {
   try {
     const { user_id, face_descriptor } = await req.json()
 
+    // Get client IP for rate limiting and audit logging
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown'
+
+    console.log('🔐 [FACIAL AUTH] Intento de autenticación:', { 
+      user_id, 
+      clientIp, 
+      timestamp: new Date().toISOString(),
+      hasDescriptor: !!face_descriptor,
+      descriptorLength: face_descriptor?.length
+    })
+
     // Validate user_id
     if (!user_id) {
+      console.error('❌ [FACIAL AUTH] Falta user_id')
       return new Response(
         JSON.stringify({ error: 'user_id es requerido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -27,24 +41,24 @@ serve(async (req) => {
       if (!Array.isArray(face_descriptor) || 
           face_descriptor.length !== 128 ||
           !face_descriptor.every(v => typeof v === 'number' && !isNaN(v) && isFinite(v))) {
-        console.error('Invalid face descriptor format:', {
+        console.error('❌ [FACIAL AUTH] Formato de descriptor inválido:', {
+          user_id,
           isArray: Array.isArray(face_descriptor),
           length: face_descriptor?.length,
-          hasInvalidValues: face_descriptor?.some(v => typeof v !== 'number' || isNaN(v) || !isFinite(v))
+          hasInvalidValues: face_descriptor?.some(v => typeof v !== 'number' || isNaN(v) || !isFinite(v)),
+          sampleValues: face_descriptor?.slice(0, 5)
         })
         return new Response(
           JSON.stringify({ error: 'Invalid face descriptor format. Expected array of 128 numeric values.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+      console.log('✅ [FACIAL AUTH] Descriptor válido:', {
+        user_id,
+        length: face_descriptor.length,
+        sampleValues: face_descriptor.slice(0, 3)
+      })
     }
-
-    // Get client IP for rate limiting and audit logging
-    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown'
-    
-    console.log('Facial auth attempt:', { user_id, clientIp, timestamp: new Date().toISOString() })
 
     // Crear cliente de Supabase con service role para autenticación
     const supabaseAdmin = createClient(
@@ -62,21 +76,35 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(user_id)
     
     if (userError || !userData.user) {
-      console.error('Facial auth failed - user lookup:', { user_id, error: userError })
+      console.error('❌ [FACIAL AUTH] Usuario no encontrado:', { 
+        user_id, 
+        error: userError?.message,
+        clientIp 
+      })
       return new Response(
         JSON.stringify({ error: 'Authentication failed. Please try again.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    console.log('✅ [FACIAL AUTH] Usuario encontrado:', {
+      user_id,
+      email: userData.user.email
+    })
+
     // Generar link de acceso para el usuario
+    console.log('🔑 [FACIAL AUTH] Generando OTP para:', userData.user.email)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userData.user.email!,
     })
 
     if (linkError || !linkData) {
-      console.error('Facial auth failed - link generation:', { user_id, error: linkError })
+      console.error('❌ [FACIAL AUTH] Error generando link:', { 
+        user_id, 
+        email: userData.user.email,
+        error: linkError?.message 
+      })
       return new Response(
         JSON.stringify({ error: 'Authentication failed. Please try again.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -86,12 +114,22 @@ serve(async (req) => {
     const email_otp = linkData.properties?.email_otp
 
     if (!email_otp) {
-      console.error('Facial auth failed - OTP missing:', { user_id })
+      console.error('❌ [FACIAL AUTH] OTP no generado:', { 
+        user_id,
+        email: userData.user.email 
+      })
       return new Response(
         JSON.stringify({ error: 'Authentication failed. Please try again.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('✅ [FACIAL AUTH] Autenticación exitosa:', {
+      user_id,
+      email: userData.user.email,
+      clientIp,
+      timestamp: new Date().toISOString()
+    })
 
     // Devolver OTP para que el cliente cree la sesión con verifyOtp
     return new Response(
@@ -103,7 +141,10 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error en facial-auth-login:', error)
+    console.error('❌ [FACIAL AUTH] Error fatal:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return new Response(
       JSON.stringify({ error: 'Authentication failed. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
