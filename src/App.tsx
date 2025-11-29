@@ -64,6 +64,7 @@ import ConfiguracionTemas from "./pages/ConfiguracionTemas";
 import AdminSeguridad from "./pages/AdminSeguridad";
 import AdminOnboarding from "./pages/AdminOnboarding";
 import EmpleadoPerfilPage from "./pages/EmpleadoPerfilPage";
+import DashboardDemo from "./pages/DashboardDemo";
 
 const queryClient = new QueryClient();
 
@@ -194,6 +195,7 @@ const App = () => (
           <Route path="/kiosco-foto-facial" element={<KioscoFotoFacial />} />
           <Route path="/autogestion" element={<Autogestion />} />
           <Route path="/print-preview" element={<PrintPreview />} />
+          <Route path="/dashboard-demo" element={<DashboardDemo />} />
           
           {/* Calificación de empleados (página pública) */}
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />
