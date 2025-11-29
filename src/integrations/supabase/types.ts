@@ -2464,6 +2464,73 @@ export type Database = {
         }
         Relationships: []
       }
+      facial_recognition_logs: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          descriptor_valid: boolean | null
+          empleado_id: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          descriptor_valid?: boolean | null
+          empleado_id?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          descriptor_valid?: boolean | null
+          empleado_id?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facial_recognition_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_recognition_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_recognition_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feriado_empleados_asignados: {
         Row: {
           asignado_por: string | null

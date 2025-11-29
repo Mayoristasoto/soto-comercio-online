@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, FileCheck, Lock } from "lucide-react";
+import { Shield, FileCheck, Lock, ScanFace } from "lucide-react";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 import { TwoFactorSetup } from "@/components/admin/TwoFactorAuth";
 import { ComplianceReports } from "@/components/admin/ComplianceReports";
+import { FacialRecognitionLogs } from "@/components/admin/FacialRecognitionLogs";
 
 export default function AdminSeguridad() {
   return (
@@ -19,10 +20,14 @@ export default function AdminSeguridad() {
       </div>
 
       <Tabs defaultValue="audit" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="audit" className="gap-2">
             <FileCheck className="h-4 w-4" />
             Auditoría
+          </TabsTrigger>
+          <TabsTrigger value="facial" className="gap-2">
+            <ScanFace className="h-4 w-4" />
+            Reconocimiento Facial
           </TabsTrigger>
           <TabsTrigger value="2fa" className="gap-2">
             <Lock className="h-4 w-4" />
@@ -36,6 +41,10 @@ export default function AdminSeguridad() {
 
         <TabsContent value="audit" className="space-y-4">
           <AuditLogViewer />
+        </TabsContent>
+
+        <TabsContent value="facial" className="space-y-4">
+          <FacialRecognitionLogs />
         </TabsContent>
 
         <TabsContent value="2fa" className="space-y-4">
