@@ -131,6 +131,28 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     })
 
+    // Log successful authentication to database
+    try {
+      await supabaseAdmin
+        .from('facial_recognition_logs')
+        .insert({
+          user_id,
+          empleado_id: user_id, // Assuming user_id is empleado_id for kiosk auth
+          event_type: 'kiosk_login_success',
+          success: true,
+          confidence_score: null, // Will be set from client
+          descriptor_valid: !!face_descriptor,
+          ip_address: clientIp,
+          user_agent: req.headers.get('user-agent'),
+          metadata: {
+            has_descriptor: !!face_descriptor,
+            descriptor_length: face_descriptor?.length
+          }
+        })
+    } catch (logError) {
+      console.error('⚠️ [FACIAL AUTH] Error logging to database (non-blocking):', logError)
+    }
+
     // Devolver OTP para que el cliente cree la sesión con verifyOtp
     return new Response(
       JSON.stringify({ 
@@ -145,6 +167,27 @@ serve(async (req) => {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     })
+
+    // Log failed authentication to database
+    try {
+      await supabaseAdmin
+        .from('facial_recognition_logs')
+        .insert({
+          user_id: null,
+          empleado_id: null,
+          event_type: 'kiosk_login_error',
+          success: false,
+          error_message: error instanceof Error ? error.message : String(error),
+          ip_address: clientIp,
+          user_agent: req.headers.get('user-agent'),
+          metadata: {
+            stack: error instanceof Error ? error.stack : undefined
+          }
+        })
+    } catch (logError) {
+      console.error('⚠️ [FACIAL AUTH] Error logging to database (non-blocking):', logError)
+    }
+
     return new Response(
       JSON.stringify({ error: 'Authentication failed. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
