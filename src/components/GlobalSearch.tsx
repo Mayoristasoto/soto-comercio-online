@@ -125,7 +125,7 @@ export function GlobalSearch({ userRole }: GlobalSearchProps) {
       title: `${emp.nombre} ${emp.apellido}`,
       description: emp.puesto || 'Sin puesto asignado',
       category: 'Empleados',
-      path: `/empleado/${emp.id}`,
+      path: `/admin/empleados/${emp.id}`,
       icon: User,
       keywords: [emp.nombre.toLowerCase(), emp.apellido.toLowerCase(), emp.email.toLowerCase(), emp.puesto?.toLowerCase() || ''],
       avatarUrl: emp.avatar_url || undefined,
