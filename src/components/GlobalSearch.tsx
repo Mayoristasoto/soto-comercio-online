@@ -21,8 +21,11 @@ import {
   ClipboardCheck,
   BookOpen,
   HelpCircle,
-  Settings
+  Settings,
+  User
 } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface SearchItem {
   id: string
@@ -32,6 +35,18 @@ interface SearchItem {
   path: string
   icon: any
   keywords?: string[]
+  avatarUrl?: string
+  isEmployee?: boolean
+}
+
+interface Empleado {
+  id: string
+  nombre: string
+  apellido: string
+  puesto: string | null
+  avatar_url: string | null
+  email: string
+  activo: boolean
 }
 
 interface GlobalSearchProps {
@@ -40,6 +55,8 @@ interface GlobalSearchProps {
 
 export function GlobalSearch({ userRole }: GlobalSearchProps) {
   const [open, setOpen] = useState(false)
+  const [empleados, setEmpleados] = useState<Empleado[]>([])
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const isAdmin = userRole === 'admin_rrhh'
@@ -56,6 +73,30 @@ export function GlobalSearch({ userRole }: GlobalSearchProps) {
     document.addEventListener('keydown', down)
     return () => document.removeEventListener('keydown', down)
   }, [])
+
+  useEffect(() => {
+    const loadEmpleados = async () => {
+      if (!open) return
+      
+      setLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('empleados')
+          .select('id, nombre, apellido, puesto, avatar_url, email, activo')
+          .eq('activo', true)
+          .order('apellido', { ascending: true })
+        
+        if (error) throw error
+        setEmpleados(data || [])
+      } catch (error) {
+        console.error('Error loading employees:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadEmpleados()
+  }, [open])
 
   const allItems: SearchItem[] = [
     // Dashboard
@@ -77,6 +118,19 @@ export function GlobalSearch({ userRole }: GlobalSearchProps) {
       icon: LayoutDashboard,
       keywords: ['personal', 'mi', 'inicio']
     },
+
+    // Empleados
+    ...empleados.map(emp => ({
+      id: `empleado-${emp.id}`,
+      title: `${emp.nombre} ${emp.apellido}`,
+      description: emp.puesto || 'Sin puesto asignado',
+      category: 'Empleados',
+      path: `/empleado/${emp.id}`,
+      icon: User,
+      keywords: [emp.nombre.toLowerCase(), emp.apellido.toLowerCase(), emp.email.toLowerCase(), emp.puesto?.toLowerCase() || ''],
+      avatarUrl: emp.avatar_url || undefined,
+      isEmployee: true
+    })),
 
     // RRHH - Solo admin y gerentes
     ...(isAdmin || isGerente ? [
@@ -272,7 +326,22 @@ export function GlobalSearch({ userRole }: GlobalSearchProps) {
                       onSelect={() => handleSelect(item.path)}
                       className="cursor-pointer rounded-md px-3 py-3 aria-selected:bg-accent/50"
                     >
-                      <Icon className="mr-3 h-5 w-5 text-primary shrink-0" />
+                      {item.isEmployee && item.avatarUrl ? (
+                        <Avatar className="mr-3 h-8 w-8 shrink-0">
+                          <AvatarImage src={item.avatarUrl} alt={item.title} />
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {item.title.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : item.isEmployee ? (
+                        <Avatar className="mr-3 h-8 w-8 shrink-0">
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {item.title.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <Icon className="mr-3 h-5 w-5 text-primary shrink-0" />
+                      )}
                       <div className="flex flex-col gap-0.5 flex-1">
                         <span className="font-medium text-sm">{item.title}</span>
                         {item.description && (
