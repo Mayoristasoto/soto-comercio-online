@@ -300,7 +300,7 @@ export default function AttendanceReports() {
                               <div className="flex items-center space-x-1 text-xs text-muted-foreground mt-1">
                                 <MapPin className="h-3 w-3" />
                                 <a
-                                  href={`https://www.openstreetmap.org/?mlat=${record.latitud}&mlon=${record.longitud}&zoom=17`}
+                                  href={`https://www.google.com/maps?q=${record.latitud},${record.longitud}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="hover:text-primary flex items-center space-x-1"

@@ -755,7 +755,7 @@ export default function FicheroHistorial() {
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(
-                              `https://www.openstreetmap.org/?mlat=${fichaje.latitud}&mlon=${fichaje.longitud}&zoom=17`,
+                              `https://www.google.com/maps?q=${fichaje.latitud},${fichaje.longitud}`,
                               '_blank'
                             )}
                             className="h-8 gap-1 text-primary hover:text-primary hover:bg-primary/10"
