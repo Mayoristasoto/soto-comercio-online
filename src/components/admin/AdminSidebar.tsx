@@ -203,8 +203,8 @@ export function AdminSidebar() {
                       "flex items-center justify-between px-3 py-3 my-1 rounded-md",
                       "border-l-4",
                       isGroupHighlighted 
-                        ? "bg-primary/15 border-primary font-bold hover:bg-primary/20" 
-                        : "bg-muted border-transparent hover:bg-muted/80 hover:border-muted-foreground/20"
+                        ? "bg-primary/20 border-primary font-bold hover:bg-primary/25" 
+                        : "bg-accent/60 border-transparent hover:bg-accent/80 hover:border-muted-foreground/30"
                     )}
                   >
                     <div className="flex items-center gap-2">
