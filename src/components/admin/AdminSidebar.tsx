@@ -199,12 +199,12 @@ export function AdminSidebar() {
                 <CollapsibleTrigger asChild>
                   <SidebarGroupLabel
                     className={cn(
-                      "group/label cursor-pointer hover:bg-accent/80 transition-colors",
+                      "group/label cursor-pointer transition-colors",
                       "flex items-center justify-between px-3 py-3 my-1 rounded-md",
                       "border-l-4",
                       isGroupHighlighted 
-                        ? "bg-primary/10 border-primary font-bold" 
-                        : "bg-muted/50 border-transparent hover:border-muted-foreground/20"
+                        ? "bg-primary/15 border-primary font-bold hover:bg-primary/20" 
+                        : "bg-muted border-transparent hover:bg-muted/80 hover:border-muted-foreground/20"
                     )}
                   >
                     <div className="flex items-center gap-2">
