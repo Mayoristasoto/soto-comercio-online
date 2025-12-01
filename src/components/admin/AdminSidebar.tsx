@@ -52,18 +52,7 @@ interface NavGroup {
 
 const navigationGroups: NavGroup[] = [
   {
-    title: "Operaciones Diarias",
-    icon: LayoutDashboard,
-    items: [
-      { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-      { title: "Fichero", url: "/fichero", icon: Clock },
-      { title: "Evaluaciones", url: "/evaluaciones", icon: FileText },
-      { title: "Solicitudes", url: "/solicitudes", icon: FileText },
-      { title: "Anotaciones", url: "/anotaciones", icon: FileText },
-    ]
-  },
-  {
-    title: "Gestión de Personal",
+    title: "RRHH",
     icon: Users,
     items: [
       { title: "Empleados", url: "/admin#empleados", icon: Users },
@@ -74,30 +63,42 @@ const navigationGroups: NavGroup[] = [
       { title: "Documentos", url: "/admin#documentos", icon: FileText },
       { title: "Entrega de Elementos", url: "/admin#entregas", icon: Package },
       { title: "Ausencias Médicas", url: "/admin#ausencias-medicas", icon: FileText },
-    ]
-  },
-  {
-    title: "Nómina y Payroll",
-    icon: Calculator,
-    items: [
       { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
       { title: "Ranking de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
     ]
   },
   {
-    title: "Reconocimiento y Gamificación",
+    title: "Reconocimiento",
     icon: Trophy,
     items: [
       { title: "Desafíos", url: "/admin#desafios", icon: Target },
-      { title: "Desafíos TV", url: "/admin#desafios-tv-config", icon: Users },
       { title: "Premios", url: "/admin#premios", icon: Award },
       { title: "Presupuestos", url: "/admin#presupuesto", icon: BarChart3 },
       { title: "Capacitaciones", url: "/admin#capacitaciones", icon: FileText },
     ]
   },
   {
-    title: "Configuración y Seguridad",
+    title: "Operaciones",
+    icon: LayoutDashboard,
+    items: [
+      { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+      { title: "Fichero", url: "/fichero", icon: Clock },
+      { title: "Evaluaciones", url: "/evaluaciones", icon: FileText },
+      { title: "Solicitudes", url: "/solicitudes", icon: FileText },
+      { title: "Anotaciones", url: "/anotaciones", icon: FileText },
+    ]
+  },
+  {
+    title: "Desafíos TV",
+    icon: Target,
+    items: [
+      { title: "Configuración Participantes", url: "/admin#desafios-tv-config", icon: Users },
+      { title: "Ver Desafíos TV", url: "/desafios-tv", icon: Target },
+    ]
+  },
+  {
+    title: "Configuración",
     icon: Settings,
     items: [
       { title: "Seguridad", url: "/admin/seguridad", icon: Shield },
