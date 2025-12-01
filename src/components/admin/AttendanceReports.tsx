@@ -13,7 +13,9 @@ import {
   XCircle,
   Edit3,
   Filter,
-  Search
+  Search,
+  MapPin,
+  ExternalLink
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
@@ -294,6 +296,20 @@ export default function AttendanceReports() {
                             <div className="text-sm text-muted-foreground">
                               {formatArgentinaDateTime(record.timestamp_real, 'dd/MM/yyyy HH:mm:ss')}
                             </div>
+                            {record.latitud && record.longitud && (
+                              <div className="flex items-center space-x-1 text-xs text-muted-foreground mt-1">
+                                <MapPin className="h-3 w-3" />
+                                <a
+                                  href={`https://www.google.com/maps?q=${record.latitud},${record.longitud}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-primary flex items-center space-x-1"
+                                >
+                                  <span>{record.latitud.toFixed(6)}, {record.longitud.toFixed(6)}</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -303,6 +319,13 @@ export default function AttendanceReports() {
                           {record.confianza_facial && (
                             <Badge variant="outline">
                               {(record.confianza_facial * 100).toFixed(1)}%
+                            </Badge>
+                          )}
+                          
+                          {record.latitud && record.longitud && (
+                            <Badge variant="secondary" className="gap-1">
+                              <MapPin className="h-3 w-3" />
+                              GPS
                             </Badge>
                           )}
                           
