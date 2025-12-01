@@ -25,8 +25,7 @@ import {
   Calendar as CalendarDaysIcon,
   TrendingUp,
   History,
-  Zap,
-  MapPin
+  Zap
 } from "lucide-react"
 import {
   AlertDialog,
@@ -57,8 +56,6 @@ interface FichajeHistorial {
   timestamp_real: string
   estado: string
   confianza_facial?: number
-  latitud?: number
-  longitud?: number
 }
 
 interface EmpleadoResumen {
@@ -142,8 +139,6 @@ export default function FicheroHistorial() {
           timestamp_real,
           estado,
           confianza_facial,
-          latitud,
-          longitud,
           empleados!inner(nombre, apellido)
         `)
         .order('timestamp_real', { ascending: false })
@@ -187,9 +182,7 @@ export default function FicheroHistorial() {
         tipo: item.tipo,
         timestamp_real: item.timestamp_real,
         estado: item.estado,
-        confianza_facial: item.confianza_facial,
-        latitud: item.latitud,
-        longitud: item.longitud
+        confianza_facial: item.confianza_facial
       }))
 
       setFichajes(fichajesFormateados)
@@ -709,7 +702,6 @@ export default function FicheroHistorial() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Confianza</TableHead>
-                    <TableHead>Ubicación</TableHead>
                     {esAdmin && <TableHead className="text-right">Acciones</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -747,22 +739,6 @@ export default function FicheroHistorial() {
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">N/A</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {fichaje.latitud && fichaje.longitud ? (
-                          <a
-                            href={`https://www.google.com/maps?q=${fichaje.latitud},${fichaje.longitud}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
-                            title={`${fichaje.latitud.toFixed(6)}, ${fichaje.longitud.toFixed(6)}`}
-                          >
-                            <MapPin className="h-4 w-4" />
-                            <span className="text-xs">Ver mapa</span>
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">Sin GPS</span>
                         )}
                       </TableCell>
                       {esAdmin && (
