@@ -199,20 +199,23 @@ export function AdminSidebar() {
                 <CollapsibleTrigger asChild>
                   <SidebarGroupLabel
                     className={cn(
-                      "group/label cursor-pointer hover:bg-accent transition-colors",
-                      "flex items-center justify-between px-3 py-2",
-                      isGroupHighlighted && "bg-accent/50"
+                      "group/label cursor-pointer hover:bg-accent/80 transition-colors",
+                      "flex items-center justify-between px-3 py-3 my-1 rounded-md",
+                      "border-l-4",
+                      isGroupHighlighted 
+                        ? "bg-primary/10 border-primary font-bold" 
+                        : "bg-muted/50 border-transparent hover:border-muted-foreground/20"
                     )}
                   >
                     <div className="flex items-center gap-2">
                       <group.icon className={cn(
-                        "h-4 w-4 shrink-0",
-                        isGroupHighlighted && "text-primary"
+                        "h-5 w-5 shrink-0",
+                        isGroupHighlighted ? "text-primary" : "text-muted-foreground"
                       )} />
                       {!collapsed && (
                         <span className={cn(
-                          "text-sm font-bold",
-                          isGroupHighlighted && "text-primary"
+                          "text-sm font-semibold",
+                          isGroupHighlighted ? "text-primary" : "text-foreground"
                         )}>
                           {group.title}
                         </span>
@@ -220,9 +223,15 @@ export function AdminSidebar() {
                     </div>
                     {!collapsed && (
                       isOpen ? (
-                        <ChevronDown className="h-4 w-4 transition-transform" />
+                        <ChevronDown className={cn(
+                          "h-4 w-4 transition-transform",
+                          isGroupHighlighted ? "text-primary" : "text-muted-foreground"
+                        )} />
                       ) : (
-                        <ChevronRight className="h-4 w-4 transition-transform" />
+                        <ChevronRight className={cn(
+                          "h-4 w-4 transition-transform",
+                          isGroupHighlighted ? "text-primary" : "text-muted-foreground"
+                        )} />
                       )
                     )}
                   </SidebarGroupLabel>
@@ -232,7 +241,7 @@ export function AdminSidebar() {
                   "transition-all duration-200",
                   collapsed && "hidden"
                 )}>
-                  <SidebarGroupContent>
+                  <SidebarGroupContent className="pl-2">
                     <SidebarMenu>
                       {group.items.map((item) => {
                         const active = isActive(item.url)
@@ -241,14 +250,19 @@ export function AdminSidebar() {
                             <SidebarMenuButton
                               asChild
                               className={cn(
-                                "transition-all duration-200",
-                                active && "bg-primary/10 text-primary font-medium hover:bg-primary/20"
+                                "transition-all duration-200 my-0.5 rounded-md",
+                                active 
+                                  ? "bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-sm" 
+                                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                               )}
                               tooltip={collapsed ? item.title : undefined}
                             >
-                              <NavLink to={item.url} className="flex items-center gap-3 px-3">
-                                <item.icon className="h-4 w-4 shrink-0" />
-                                {!collapsed && <span>{item.title}</span>}
+                              <NavLink to={item.url} className="flex items-center gap-3 px-3 py-2">
+                                <item.icon className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  active && "text-primary-foreground"
+                                )} />
+                                {!collapsed && <span className="text-sm">{item.title}</span>}
                               </NavLink>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
