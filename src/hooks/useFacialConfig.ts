@@ -12,7 +12,7 @@ interface FacialConfig {
 }
 
 const defaultConfig: FacialConfig = {
-  confidenceThresholdKiosk: 0.50,  // Actualizado: 50% de confianza mínima para kiosko
+  confidenceThresholdKiosk: 0.60,  // Actualizado: 60% de confianza mínima para kiosko
   confidenceThresholdSpecific: 0.72, // 72% de confianza para empleado específico
   confidenceThresholdDemo: 0.30, // 30% para modo demo
   maxAttemptsPerMinute: 3,
