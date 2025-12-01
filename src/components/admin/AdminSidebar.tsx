@@ -52,10 +52,14 @@ interface NavGroup {
 
 const navigationGroups: NavGroup[] = [
   {
-    title: "Dashboard",
+    title: "Operaciones Diarias",
     icon: LayoutDashboard,
     items: [
-      { title: "Inicio", url: "/admin", icon: LayoutDashboard }
+      { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+      { title: "Fichero", url: "/fichero", icon: Clock },
+      { title: "Evaluaciones", url: "/evaluaciones", icon: FileText },
+      { title: "Solicitudes", url: "/solicitudes", icon: FileText },
+      { title: "Anotaciones", url: "/anotaciones", icon: FileText },
     ]
   },
   {
@@ -63,9 +67,13 @@ const navigationGroups: NavGroup[] = [
     icon: Users,
     items: [
       { title: "Empleados", url: "/admin#empleados", icon: Users },
+      { title: "Puestos de Trabajo", url: "/admin#puestos", icon: Wrench },
       { title: "Sucursales", url: "/admin#sucursales", icon: Building2 },
-      { title: "Roles y Permisos", url: "/admin#roles", icon: UserCog },
-      { title: "Gestión de Onboarding", url: "/admin/onboarding", icon: Award },
+      { title: "Asignar Sucursales", url: "/admin/asignar-sucursales", icon: Building2 },
+      { title: "Onboarding", url: "/admin/onboarding", icon: Award },
+      { title: "Documentos", url: "/admin#documentos", icon: FileText },
+      { title: "Entrega de Elementos", url: "/admin#entregas", icon: Package },
+      { title: "Ausencias Médicas", url: "/admin#ausencias-medicas", icon: FileText },
     ]
   },
   {
@@ -73,53 +81,32 @@ const navigationGroups: NavGroup[] = [
     icon: Calculator,
     items: [
       { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
-      { title: "Ausencias Médicas", url: "/admin#ausencias-medicas", icon: FileText },
-    ]
-  },
-  {
-    title: "Operaciones",
-    icon: Clock,
-    items: [
-      { title: "Asignar Sucursales", url: "/admin/asignar-sucursales", icon: Building2 },
-      { title: "Ranking de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
-      { title: "Entrega Elementos", url: "/admin#entregas", icon: Package },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
+      { title: "Ranking de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
     ]
   },
   {
-    title: "Reconocimiento",
-    icon: Award,
+    title: "Reconocimiento y Gamificación",
+    icon: Trophy,
     items: [
       { title: "Desafíos", url: "/admin#desafios", icon: Target },
+      { title: "Desafíos TV", url: "/admin#desafios-tv-config", icon: Users },
       { title: "Premios", url: "/admin#premios", icon: Award },
       { title: "Presupuestos", url: "/admin#presupuesto", icon: BarChart3 },
       { title: "Capacitaciones", url: "/admin#capacitaciones", icon: FileText },
-      { title: "Participantes Desafíos TV", url: "/admin#desafios-tv-config", icon: Users },
     ]
   },
   {
-    title: "Seguridad y Auditoría",
-    icon: Shield,
-    items: [
-      { title: "Panel de Seguridad", url: "/admin/seguridad", icon: Shield },
-      { title: "Logs de Autenticación", url: "/admin/auth-logs", icon: FileText },
-      { title: "Aprobar Fotos Faciales", url: "/admin/aprobar-fotos-faciales", icon: Users },
-    ]
-  },
-  {
-    title: "Configuración del Sistema",
+    title: "Configuración y Seguridad",
     icon: Settings,
     items: [
-      { title: "Sistema Comercial", url: "/admin#sistema-comercial", icon: Wrench },
-      { title: "Calificaciones", url: "/admin#calificaciones", icon: Trophy },
+      { title: "Seguridad", url: "/admin/seguridad", icon: Shield },
+      { title: "Logs de Autenticación", url: "/admin/auth-logs", icon: FileText },
+      { title: "Aprobar Fotos Faciales", url: "/admin/aprobar-fotos-faciales", icon: Users },
+      { title: "Roles y Permisos", url: "/admin#roles", icon: UserCog },
+      { title: "Configuración Sistema", url: "/admin/configuracion", icon: Settings },
+      { title: "Calificaciones QR", url: "/admin#calificaciones", icon: Trophy },
       { title: "Sorteos", url: "/admin#sorteos", icon: Trophy },
-      { title: "Enlaces Sidebar", url: "/admin#sidebar-links", icon: Settings },
-    ]
-  },
-  {
-    title: "Contenido y Recursos",
-    icon: Image,
-    items: [
       { title: "Screenshots Instructivo", url: "/admin/instructivo-screenshots", icon: Image },
     ]
   }
