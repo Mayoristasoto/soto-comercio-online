@@ -25,7 +25,8 @@ import {
   Calendar as CalendarDaysIcon,
   TrendingUp,
   History,
-  Zap
+  Zap,
+  MapPin
 } from "lucide-react"
 import {
   AlertDialog,
@@ -56,6 +57,8 @@ interface FichajeHistorial {
   timestamp_real: string
   estado: string
   confianza_facial?: number
+  latitud?: number | null
+  longitud?: number | null
 }
 
 interface EmpleadoResumen {
@@ -139,6 +142,8 @@ export default function FicheroHistorial() {
           timestamp_real,
           estado,
           confianza_facial,
+          latitud,
+          longitud,
           empleados!inner(nombre, apellido)
         `)
         .order('timestamp_real', { ascending: false })
@@ -182,7 +187,9 @@ export default function FicheroHistorial() {
         tipo: item.tipo,
         timestamp_real: item.timestamp_real,
         estado: item.estado,
-        confianza_facial: item.confianza_facial
+        confianza_facial: item.confianza_facial,
+        latitud: item.latitud,
+        longitud: item.longitud
       }))
 
       setFichajes(fichajesFormateados)
@@ -702,6 +709,7 @@ export default function FicheroHistorial() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Confianza</TableHead>
+                    <TableHead>Ubicación</TableHead>
                     {esAdmin && <TableHead className="text-right">Acciones</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -739,6 +747,24 @@ export default function FicheroHistorial() {
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {fichaje.latitud && fichaje.longitud ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(
+                              `https://www.google.com/maps?q=${fichaje.latitud},${fichaje.longitud}`,
+                              '_blank'
+                            )}
+                            className="h-8 gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                          >
+                            <MapPin className="h-4 w-4" />
+                            Ver
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Sin GPS</span>
                         )}
                       </TableCell>
                       {esAdmin && (
