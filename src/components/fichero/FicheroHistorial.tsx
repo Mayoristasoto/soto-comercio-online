@@ -21,7 +21,11 @@ import {
   Play,
   BarChart3,
   Filter,
-  Trash2
+  Trash2,
+  Calendar as CalendarDaysIcon,
+  TrendingUp,
+  History,
+  Zap
 } from "lucide-react"
 import {
   AlertDialog,
@@ -326,17 +330,148 @@ export default function FicheroHistorial() {
     return { value: year.toString(), label: year.toString() }
   })
 
+  const setFiltroRapido = (tipo: 'hoy' | 'semana' | 'mes' | 'mesAnterior' | 'todos') => {
+    const hoy = new Date()
+    const primerDiaSemana = new Date(hoy)
+    primerDiaSemana.setDate(hoy.getDate() - hoy.getDay())
+    
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)
+    
+    const primerDiaMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
+    const ultimoDiaMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth(), 0)
+
+    switch (tipo) {
+      case 'hoy':
+        setFiltros({
+          empleado: 'all',
+          fechaInicio: hoy,
+          fechaFin: hoy,
+          mes: 'all',
+          ano: hoy.getFullYear().toString()
+        })
+        break
+      case 'semana':
+        setFiltros({
+          empleado: 'all',
+          fechaInicio: primerDiaSemana,
+          fechaFin: hoy,
+          mes: 'all',
+          ano: hoy.getFullYear().toString()
+        })
+        break
+      case 'mes':
+        setFiltros({
+          empleado: 'all',
+          fechaInicio: primerDiaMes,
+          fechaFin: ultimoDiaMes,
+          mes: (hoy.getMonth() + 1).toString(),
+          ano: hoy.getFullYear().toString()
+        })
+        break
+      case 'mesAnterior':
+        setFiltros({
+          empleado: 'all',
+          fechaInicio: primerDiaMesAnterior,
+          fechaFin: ultimoDiaMesAnterior,
+          mes: (hoy.getMonth()).toString(),
+          ano: hoy.getFullYear().toString()
+        })
+        break
+      case 'todos':
+        setFiltros({
+          empleado: 'all',
+          fechaInicio: undefined,
+          fechaFin: undefined,
+          mes: 'all',
+          ano: hoy.getFullYear().toString()
+        })
+        break
+    }
+
+    toast({
+      title: "Filtro aplicado",
+      description: `Mostrando fichajes de: ${tipo === 'hoy' ? 'Hoy' : tipo === 'semana' ? 'Esta semana' : tipo === 'mes' ? 'Este mes' : tipo === 'mesAnterior' ? 'Mes anterior' : 'Todos'}`,
+    })
+  }
+
   return (
     <div className="space-y-6">
+      {/* Accesos Rápidos */}
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            Accesos Rápidos
+          </CardTitle>
+          <CardDescription>
+            Filtre rápidamente por periodos comunes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Button
+              onClick={() => setFiltroRapido('hoy')}
+              variant="outline"
+              className="h-auto flex-col py-4 hover:bg-primary/10 hover:border-primary"
+            >
+              <CalendarDaysIcon className="h-5 w-5 mb-2 text-primary" />
+              <span className="font-semibold">Hoy</span>
+              <span className="text-xs text-muted-foreground">Fichajes del día</span>
+            </Button>
+
+            <Button
+              onClick={() => setFiltroRapido('semana')}
+              variant="outline"
+              className="h-auto flex-col py-4 hover:bg-primary/10 hover:border-primary"
+            >
+              <TrendingUp className="h-5 w-5 mb-2 text-blue-600" />
+              <span className="font-semibold">Esta Semana</span>
+              <span className="text-xs text-muted-foreground">Últimos 7 días</span>
+            </Button>
+
+            <Button
+              onClick={() => setFiltroRapido('mes')}
+              variant="outline"
+              className="h-auto flex-col py-4 hover:bg-primary/10 hover:border-primary"
+            >
+              <CalendarIcon className="h-5 w-5 mb-2 text-green-600" />
+              <span className="font-semibold">Este Mes</span>
+              <span className="text-xs text-muted-foreground">Mes actual</span>
+            </Button>
+
+            <Button
+              onClick={() => setFiltroRapido('mesAnterior')}
+              variant="outline"
+              className="h-auto flex-col py-4 hover:bg-primary/10 hover:border-primary"
+            >
+              <History className="h-5 w-5 mb-2 text-orange-600" />
+              <span className="font-semibold">Mes Anterior</span>
+              <span className="text-xs text-muted-foreground">Mes pasado</span>
+            </Button>
+
+            <Button
+              onClick={() => setFiltroRapido('todos')}
+              variant="outline"
+              className="h-auto flex-col py-4 hover:bg-primary/10 hover:border-primary"
+            >
+              <Clock className="h-5 w-5 mb-2 text-purple-600" />
+              <span className="font-semibold">Todos</span>
+              <span className="text-xs text-muted-foreground">Sin filtro</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filtros */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filtros de Búsqueda
+            Filtros Avanzados
           </CardTitle>
           <CardDescription>
-            Filtre los fichajes por empleado, fecha o periodo
+            Filtre los fichajes por empleado, fecha o periodo específico
           </CardDescription>
         </CardHeader>
         <CardContent>
