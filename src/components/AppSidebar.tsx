@@ -159,19 +159,34 @@ export function AppSidebar() {
           
           return (
             <SidebarGroup key={parentLink.id}>
-              <SidebarGroupLabel className="text-black">
+              <SidebarGroupLabel 
+                className="
+                  font-semibold text-base transition-colors my-1 rounded-md px-3 py-3
+                  border-l-4 bg-accent/60 border-transparent hover:bg-accent/80
+                "
+              >
                 {parentLink.nombre}
               </SidebarGroupLabel>
-              <SidebarGroupContent>
+              <SidebarGroupContent className="pl-2">
                 <SidebarMenu>
                   {children.map((link) => {
                     const ChildIcon = getIcon(link.icon)
+                    const active = isActive(link.path)
                     return (
                       <SidebarMenuItem key={link.id}>
-                        <SidebarMenuButton asChild>
-                          <NavLink to={link.path} end className={getNavCls}>
-                            <ChildIcon className="h-4 w-4 text-black" />
-                            <span className="text-black">{link.nombre}</span>
+                        <SidebarMenuButton 
+                          asChild
+                          className={`
+                            transition-all duration-200 my-0.5 rounded-md
+                            ${active 
+                              ? 'bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-sm' 
+                              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                            }
+                          `}
+                        >
+                          <NavLink to={link.path} end className="flex items-center gap-3 px-3 py-2">
+                            <ChildIcon className={`h-4 w-4 shrink-0 ${active ? 'text-primary-foreground' : ''}`} />
+                            <span className="text-sm">{link.nombre}</span>
                           </NavLink>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

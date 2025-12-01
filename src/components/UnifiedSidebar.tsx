@@ -288,12 +288,19 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 <SidebarMenuButton 
                                   tooltip={link.descripcion || link.nombre}
                                   isActive={isCurrentPath || hasActiveChild}
-                                  className="font-bold text-primary text-base hover:bg-accent/50"
+                                  className={`
+                                    font-semibold text-base transition-colors my-1 rounded-md px-3 py-3
+                                    border-l-4
+                                    ${isCurrentPath || hasActiveChild 
+                                      ? 'bg-primary/20 border-primary hover:bg-primary/25' 
+                                      : 'bg-accent/60 border-transparent hover:bg-accent/80'
+                                    }
+                                  `}
                                 >
-                                  <Icon className={`h-5 w-5 ${getIconColor(link.icon)}`} />
+                                  <Icon className={`h-5 w-5 shrink-0 ${isCurrentPath || hasActiveChild ? 'text-primary' : 'text-muted-foreground'}`} />
                                   <span>{link.nombre}</span>
                                   <ChevronDown 
-                                    className="ml-auto h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180"
+                                    className={`ml-auto h-4 w-4 transition-transform duration-200 ${isCurrentPath || hasActiveChild ? 'text-primary' : 'text-muted-foreground'}`}
                                   />
                                 </SidebarMenuButton>
                               </CollapsibleTrigger>
@@ -302,10 +309,17 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 asChild 
                                 isActive={isCurrentPath}
                                 tooltip={link.descripcion || link.nombre}
+                                className={`
+                                  transition-all duration-200 my-0.5 rounded-md
+                                  ${isCurrentPath 
+                                    ? 'bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-sm' 
+                                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                  }
+                                `}
                               >
-                                <NavLink to={fixPath(link.path, link.nombre)}>
-                                  <Icon className={`h-4 w-4 ${getIconColor(link.icon)}`} />
-                                  <span>{link.nombre}</span>
+                                <NavLink to={fixPath(link.path, link.nombre)} className="flex items-center gap-3 px-3 py-2">
+                                  <Icon className={`h-4 w-4 shrink-0 ${isCurrentPath ? 'text-primary-foreground' : ''}`} />
+                                  <span className="text-sm">{link.nombre}</span>
                                 </NavLink>
                               </SidebarMenuButton>
                             )}
@@ -334,13 +348,22 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                       return (
                                          <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
                                           <SidebarMenuSubItem>
-                                            <CollapsibleTrigger asChild>
-                                              <SidebarMenuSubButton isActive={isChildActive}>
-                                                <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
-                                                <span>{child.nombre}</span>
-                                                <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 data-[state=open]:rotate-180" />
-                                              </SidebarMenuSubButton>
-                                            </CollapsibleTrigger>
+                                             <CollapsibleTrigger asChild>
+                                               <SidebarMenuSubButton 
+                                                 isActive={isChildActive}
+                                                 className={`
+                                                   transition-all duration-200 my-0.5 rounded-md pl-6
+                                                   ${isChildActive || childHasActiveGrand
+                                                     ? 'bg-primary/15 text-primary font-semibold hover:bg-primary/20' 
+                                                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                                   }
+                                                 `}
+                                               >
+                                                 <ChildIcon className={`h-4 w-4 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
+                                                 <span className="text-sm">{child.nombre}</span>
+                                                 <ChevronDown className={`ml-auto h-3 w-3 transition-transform duration-200 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
+                                               </SidebarMenuSubButton>
+                                             </CollapsibleTrigger>
                                           </SidebarMenuSubItem>
                                          <CollapsibleContent>
                                            <SidebarMenuSub>
@@ -351,21 +374,31 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                                  ? currentFullPath === grandPath
                                                  : location.pathname === grandPath
                                                return (
-                                                  <SidebarMenuSubItem key={grand.id}>
-                                                    <Tooltip>
-                                                      <TooltipTrigger asChild>
-                                                        <SidebarMenuSubButton asChild isActive={isGrandActive}>
-                                                          <NavLink to={fixPath(grand.path, grand.nombre)}>
-                                                            <GrandIcon className={`h-4 w-4 ${getIconColor(grand.icon)}`} />
-                                                            <span>{grand.nombre}</span>
-                                                          </NavLink>
-                                                        </SidebarMenuSubButton>
-                                                      </TooltipTrigger>
-                                                      <TooltipContent side="right">
-                                                        <p>{grand.descripcion || grand.nombre}</p>
-                                                      </TooltipContent>
-                                                    </Tooltip>
-                                                  </SidebarMenuSubItem>
+                                                   <SidebarMenuSubItem key={grand.id}>
+                                                     <Tooltip>
+                                                       <TooltipTrigger asChild>
+                                                         <SidebarMenuSubButton 
+                                                           asChild 
+                                                           isActive={isGrandActive}
+                                                           className={`
+                                                             transition-all duration-200 my-0.5 rounded-md pl-10
+                                                             ${isGrandActive 
+                                                               ? 'bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-sm' 
+                                                               : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                                             }
+                                                           `}
+                                                         >
+                                                           <NavLink to={fixPath(grand.path, grand.nombre)} className="flex items-center gap-3">
+                                                             <GrandIcon className={`h-4 w-4 ${isGrandActive ? 'text-primary-foreground' : ''}`} />
+                                                             <span className="text-sm">{grand.nombre}</span>
+                                                           </NavLink>
+                                                         </SidebarMenuSubButton>
+                                                       </TooltipTrigger>
+                                                       <TooltipContent side="right">
+                                                         <p>{grand.descripcion || grand.nombre}</p>
+                                                       </TooltipContent>
+                                                     </Tooltip>
+                                                   </SidebarMenuSubItem>
                                                )
                                             })}
                                           </SidebarMenuSub>
@@ -374,26 +407,33 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                     )
                                   }
 
-                                  return (
-                                    <SidebarMenuSubItem key={child.id}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <SidebarMenuSubButton 
-                                            asChild 
-                                            isActive={isChildActive}
-                                          >
-                                            <NavLink to={fixPath(child.path, child.nombre)}>
-                                              <ChildIcon className={`h-4 w-4 ${getIconColor(child.icon)}`} />
-                                              <span>{child.nombre}</span>
-                                            </NavLink>
-                                          </SidebarMenuSubButton>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right">
-                                          <p>{child.descripcion || child.nombre}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </SidebarMenuSubItem>
-                                  )
+                                   return (
+                                     <SidebarMenuSubItem key={child.id}>
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <SidebarMenuSubButton 
+                                             asChild 
+                                             isActive={isChildActive}
+                                             className={`
+                                               transition-all duration-200 my-0.5 rounded-md pl-6
+                                               ${isChildActive 
+                                                 ? 'bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-sm' 
+                                                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                               }
+                                             `}
+                                           >
+                                             <NavLink to={fixPath(child.path, child.nombre)} className="flex items-center gap-3">
+                                               <ChildIcon className={`h-4 w-4 ${isChildActive ? 'text-primary-foreground' : ''}`} />
+                                               <span className="text-sm">{child.nombre}</span>
+                                             </NavLink>
+                                           </SidebarMenuSubButton>
+                                         </TooltipTrigger>
+                                         <TooltipContent side="right">
+                                           <p>{child.descripcion || child.nombre}</p>
+                                         </TooltipContent>
+                                       </Tooltip>
+                                     </SidebarMenuSubItem>
+                                   )
                                 })}
                               </SidebarMenuSub>
                             </CollapsibleContent>
