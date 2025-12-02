@@ -78,13 +78,12 @@ export default function FicheroFacialAuth({
       })
     } catch (error) {
       console.error('Kiosco: ❌ Error cargando modelos:', error)
-      // Permitir modo demo solo como último recurso
-      setIsModelLoaded(true)
+      setIsModelLoaded(false)
       toast({
-        title: "⚠️ Modo demo activo",
-        description: "Error inicializando IA - funcionando en modo limitado",
+        title: "❌ Error de inicialización",
+        description: "No se pudieron cargar los modelos de reconocimiento facial. Recargue la página.",
         variant: "destructive",
-        duration: 4000,
+        duration: 10000,
       })
     }
   }
