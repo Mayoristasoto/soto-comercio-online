@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet } from "lucide-react"
+import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet, Camera } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 
@@ -327,6 +327,25 @@ export default function Autogestion() {
                     <h3 className="text-xl font-semibold text-gray-900">Consultar Saldo</h3>
                     <p className="text-gray-600 mt-1">
                       Ver saldo de cuenta corriente
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/kiosco-foto-facial')}
+            >
+              <CardContent className="p-8">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-pink-100 p-4 rounded-full">
+                    <Camera className="h-8 w-8 text-pink-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900">Subir Foto Facial</h3>
+                    <p className="text-gray-600 mt-1">
+                      Registrar foto para reconocimiento facial
                     </p>
                   </div>
                 </div>
