@@ -611,6 +611,115 @@ export type Database = {
         }
         Relationships: []
       }
+      cambios_horario: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          empleado_intercambio_id: string | null
+          estado: string
+          fecha: string
+          hora_entrada_nueva: string | null
+          hora_salida_nueva: string | null
+          id: string
+          justificacion: string
+          solicitado_por: string
+          tipo_cambio: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          empleado_intercambio_id?: string | null
+          estado?: string
+          fecha: string
+          hora_entrada_nueva?: string | null
+          hora_salida_nueva?: string | null
+          id?: string
+          justificacion: string
+          solicitado_por: string
+          tipo_cambio: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          empleado_intercambio_id?: string | null
+          estado?: string
+          fecha?: string
+          hora_entrada_nueva?: string | null
+          hora_salida_nueva?: string | null
+          id?: string
+          justificacion?: string
+          solicitado_por?: string
+          tipo_cambio?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cambios_horario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_empleado_intercambio_id_fkey"
+            columns: ["empleado_intercambio_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_empleado_intercambio_id_fkey"
+            columns: ["empleado_intercambio_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_empleado_intercambio_id_fkey"
+            columns: ["empleado_intercambio_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_solicitado_por_fkey"
+            columns: ["solicitado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_solicitado_por_fkey"
+            columns: ["solicitado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_solicitado_por_fkey"
+            columns: ["solicitado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capacitaciones: {
         Row: {
           activa: boolean
