@@ -4,12 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2, User, UserCheck, Camera } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2, User, UserCheck, Camera, History, Filter } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
 import { TaskDelegationInfo } from "@/components/tasks/TaskDelegationInfo"
 import { DelegateTaskDialog } from "@/components/tasks/DelegateTaskDialog"
+import { TaskHistoryDialog } from "@/components/tasks/TaskHistoryDialog"
 import { AsignarEmpleadosFeriado } from "@/components/tasks/AsignarEmpleadosFeriado"
 
 interface UserInfo {
@@ -20,6 +22,12 @@ interface UserInfo {
   rol: string
   sucursal_id: string
   grupo_id?: string
+}
+
+interface Categoria {
+  id: string
+  nombre: string
+  color: string
 }
 
 interface Tarea {
@@ -35,6 +43,7 @@ interface Tarea {
   created_at: string
   updated_at: string
   fotos_evidencia: string[]
+  categoria_id?: string
   empleado_asignado?: {
     nombre: string
     apellido: string
@@ -44,23 +53,47 @@ interface Tarea {
     nombre: string
     apellido: string
   }
+  categoria?: {
+    nombre: string
+    color: string
+  }
 }
 
 export default function Tareas() {
   const { userInfo } = useOutletContext<{ userInfo: UserInfo }>()
   const { toast } = useToast()
   const [tareas, setTareas] = useState<Tarea[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [delegateDialogOpen, setDelegateDialogOpen] = useState(false)
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
   const [selectedTaskToDelegate, setSelectedTaskToDelegate] = useState<Tarea | null>(null)
+  const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<{ id: string; titulo: string } | null>(null)
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("todas")
 
   useEffect(() => {
     if (userInfo) {
       loadTareas()
+      loadCategorias()
     }
   }, [userInfo])
+
+  const loadCategorias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tareas_categorias')
+        .select('id, nombre, color')
+        .eq('activa', true)
+        .order('nombre')
+
+      if (error) throw error
+      setCategorias(data || [])
+    } catch (error) {
+      console.error('Error cargando categorías:', error)
+    }
+  }
 
   const loadTareas = async () => {
     try {
@@ -69,7 +102,8 @@ export default function Tareas() {
         .select(`
           *,
           asignado_empleado:empleados!tareas_asignado_a_fkey(nombre, apellido, email),
-          creador_empleado:empleados!tareas_asignado_por_fkey(nombre, apellido)
+          creador_empleado:empleados!tareas_asignado_por_fkey(nombre, apellido),
+          categoria:tareas_categorias(nombre, color)
         `)
         .order('created_at', { ascending: false });
 
@@ -99,6 +133,10 @@ export default function Tareas() {
         empleado_creador: tarea.creador_empleado ? {
           nombre: tarea.creador_empleado.nombre,
           apellido: tarea.creador_empleado.apellido
+        } : undefined,
+        categoria: tarea.categoria ? {
+          nombre: tarea.categoria.nombre,
+          color: tarea.categoria.color
         } : undefined
       }));
 
@@ -149,6 +187,17 @@ export default function Tareas() {
     setSelectedTaskToDelegate(tarea);
     setDelegateDialogOpen(true);
   }
+
+  const openHistoryDialog = (tarea: Tarea) => {
+    setSelectedTaskForHistory({ id: tarea.id, titulo: tarea.titulo });
+    setHistoryDialogOpen(true);
+  }
+
+  const filteredTareas = tareas.filter(t => {
+    if (filtroCategoria === 'todas') return true;
+    if (filtroCategoria === 'sin_categoria') return !t.categoria_id;
+    return t.categoria_id === filtroCategoria;
+  });
 
   const isFeriadoTask = (titulo: string) => {
     return titulo.startsWith('Asignar personal para ')
@@ -214,6 +263,31 @@ export default function Tareas() {
 
       {/* Información de delegación */}
       <TaskDelegationInfo userRole={userInfo.rol} />
+
+      {/* Filtros */}
+      {categorias.length > 0 && (
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Filtrar por:</span>
+          </div>
+          <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas las categorías</SelectItem>
+              <SelectItem value="sin_categoria">Sin categoría</SelectItem>
+              {categorias.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  <span style={{ color: cat.color }}>● </span>
+                  {cat.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -285,7 +359,7 @@ export default function Tareas() {
 
         <TabsContent value="mis-tareas" className="space-y-4">
           <div className="grid gap-4">
-            {tareas.length === 0 ? (
+            {filteredTareas.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
@@ -296,12 +370,19 @@ export default function Tareas() {
                 </CardContent>
               </Card>
             ) : (
-              tareas.filter(t => t.asignado_a === userInfo.id).map((tarea) => (
+              filteredTareas.filter(t => t.asignado_a === userInfo.id).map((tarea) => (
                 <Card key={tarea.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
-                        <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
+                          {tarea.categoria && (
+                            <Badge variant="outline" style={{ borderColor: tarea.categoria.color, color: tarea.categoria.color }}>
+                              {tarea.categoria.nombre}
+                            </Badge>
+                          )}
+                        </div>
                         <CardDescription>{tarea.descripcion || 'Sin descripción'}</CardDescription>
                         {tarea.empleado_creador && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -311,6 +392,15 @@ export default function Tareas() {
                         )}
                       </div>
                       <div className="flex items-center space-x-2 ml-4">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0"
+                          onClick={() => openHistoryDialog(tarea)}
+                          title="Ver historial"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
                         <div className={`w-3 h-3 rounded-full ${getPrioridadColor(tarea.prioridad)}`} />
                         <Badge variant={getEstadoBadgeVariant(tarea.estado)}>
                           {tarea.estado.replace('_', ' ')}
@@ -556,6 +646,14 @@ export default function Tareas() {
         onTaskDelegated={loadTareas}
         task={selectedTaskToDelegate}
         userInfo={userInfo}
+      />
+
+      {/* Dialog para historial de tarea */}
+      <TaskHistoryDialog
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+        tareaId={selectedTaskForHistory?.id || null}
+        tareaTitulo={selectedTaskForHistory?.titulo || ''}
       />
     </div>
   )

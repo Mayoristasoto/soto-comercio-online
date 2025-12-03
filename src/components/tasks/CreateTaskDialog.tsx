@@ -43,10 +43,18 @@ interface Props {
   };
 }
 
+interface Categoria {
+  id: string;
+  nombre: string;
+  color: string;
+  icono: string;
+}
+
 export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }: Props) {
   const [loading, setLoading] = useState(false);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const { toast } = useToast();
@@ -56,7 +64,8 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
     descripcion: "",
     prioridad: "media" as "baja" | "media" | "alta" | "urgente",
     asignado_a: "",
-    fecha_limite: ""
+    fecha_limite: "",
+    categoria_id: ""
   });
 
   useEffect(() => {
@@ -64,8 +73,24 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
       console.log('Dialog abierto - User info:', userInfo);
       loadEmpleados();
       loadSucursales();
+      loadCategorias();
     }
   }, [open, userInfo.rol, userInfo.sucursal_id]);
+
+  const loadCategorias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tareas_categorias')
+        .select('id, nombre, color, icono')
+        .eq('activa', true)
+        .order('nombre');
+
+      if (error) throw error;
+      setCategorias(data || []);
+    } catch (error) {
+      console.error('Error loading categorias:', error);
+    }
+  };
 
   const loadEmpleados = async () => {
     console.log('=== INICIO loadEmpleados ===');
@@ -147,19 +172,48 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
         return;
       }
 
-      const { error } = await supabase
+      const insertData: any = {
+        titulo: formData.titulo.trim(),
+        descripcion: formData.descripcion.trim(),
+        prioridad: formData.prioridad,
+        asignado_a: formData.asignado_a,
+        asignado_por: userInfo.id,
+        fecha_limite: format(selectedDate, 'yyyy-MM-dd'),
+        estado: 'pendiente'
+      };
+
+      if (formData.categoria_id) {
+        insertData.categoria_id = formData.categoria_id;
+      }
+
+      const { data: newTask, error } = await supabase
         .from('tareas')
-        .insert([{
-          titulo: formData.titulo.trim(),
-          descripcion: formData.descripcion.trim(),
-          prioridad: formData.prioridad,
-          asignado_a: formData.asignado_a,
-          asignado_por: userInfo.id,
-          fecha_limite: format(selectedDate, 'yyyy-MM-dd'),
-          estado: 'pendiente'
-        }]);
+        .insert([insertData])
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Registrar en historial
+      if (newTask) {
+        await supabase.from('tareas_historial').insert({
+          tarea_id: newTask.id,
+          accion: 'creada',
+          empleado_destino_id: formData.asignado_a,
+          realizado_por: userInfo.id,
+          estado_nuevo: 'pendiente',
+          metadata: { titulo: formData.titulo, prioridad: formData.prioridad }
+        });
+
+        // Crear notificación
+        await supabase.from('notificaciones').insert({
+          usuario_id: formData.asignado_a,
+          titulo: 'Nueva tarea asignada',
+          mensaje: `Se te ha asignado la tarea: ${formData.titulo}`,
+          tipo: 'tarea_asignada',
+          metadata: { tarea_id: newTask.id, prioridad: formData.prioridad }
+        });
+      }
 
       toast({
         title: "Tarea creada",
@@ -172,7 +226,8 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
         descripcion: "",
         prioridad: "media",
         asignado_a: "",
-        fecha_limite: ""
+        fecha_limite: "",
+        categoria_id: ""
       });
       setSelectedDate(undefined);
       setSearchTerm("");
@@ -301,6 +356,29 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
                 </Popover>
               </div>
             </div>
+
+            {/* Categoría */}
+            {categorias.length > 0 && (
+              <div className="space-y-2">
+                <Label>Categoría</Label>
+                <Select
+                  value={formData.categoria_id}
+                  onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span style={{ color: cat.color }}>● </span>
+                        {cat.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* Selección de empleado */}
