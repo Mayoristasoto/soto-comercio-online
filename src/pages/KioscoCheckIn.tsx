@@ -9,6 +9,7 @@ import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { useNavigate } from "react-router-dom"
 import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
+import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 
 interface EmpleadoBasico {
   id: string
@@ -69,6 +70,8 @@ export default function KioscoCheckIn() {
     minutosTranscurridos: number
     minutosRestantes: number
   } | null>(null)
+  const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
+  const [pendingAccionSalida, setPendingAccionSalida] = useState(false)
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -427,7 +430,18 @@ export default function KioscoCheckIn() {
       setLastProcessTime(0) // Reset del debounce
       setEmocionDetectada(null)
       setPausaActiva(null)
+      setShowConfirmarTareas(false)
+      setPendingAccionSalida(false)
     }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
+  }
+
+  // Handler para cuando se confirman las tareas del día antes de salir
+  const handleConfirmarTareasYSalir = async () => {
+    setShowConfirmarTareas(false)
+    if (pendingAccionSalida) {
+      setPendingAccionSalida(false)
+      await procesarAccionFichaje('salida')
+    }
   }
   
   const continuarEnDescanso = () => {
@@ -574,6 +588,31 @@ export default function KioscoCheckIn() {
   }
 
   const ejecutarAccion = async (tipoAccion: TipoAccion) => {
+    if (!recognizedEmployee) return
+
+    // Si es salida y es gerente_sucursal, mostrar primero el diálogo de confirmación de tareas
+    if (tipoAccion === 'salida' && recognizedEmployee.data?.rol === 'gerente_sucursal') {
+      // Verificar si tiene tareas con fecha límite hoy
+      const hoy = new Date().toISOString().split('T')[0]
+      const { data: tareasHoy } = await supabase
+        .from('tareas')
+        .select('id')
+        .eq('asignado_a', recognizedEmployee.id)
+        .eq('estado', 'pendiente')
+        .eq('fecha_limite', hoy)
+        .limit(1)
+      
+      if (tareasHoy && tareasHoy.length > 0) {
+        setPendingAccionSalida(true)
+        setShowConfirmarTareas(true)
+        return
+      }
+    }
+
+    await procesarAccionFichaje(tipoAccion)
+  }
+
+  const procesarAccionFichaje = async (tipoAccion: TipoAccion) => {
     if (!recognizedEmployee) return
 
     setLoading(true)
@@ -792,6 +831,22 @@ export default function KioscoCheckIn() {
             setShowActionSelection(true)
           }}
           duracionSegundos={5}
+        />
+      )}
+
+      {/* Dialog para confirmar tareas del día antes de salir (Gerentes) */}
+      {recognizedEmployee && (
+        <ConfirmarTareasDia
+          open={showConfirmarTareas}
+          onOpenChange={(open) => {
+            setShowConfirmarTareas(open)
+            if (!open && pendingAccionSalida) {
+              // Si cierra sin confirmar, igual procesar salida
+              handleConfirmarTareasYSalir()
+            }
+          }}
+          empleadoId={recognizedEmployee.id}
+          onConfirm={handleConfirmarTareasYSalir}
         />
       )}
       
