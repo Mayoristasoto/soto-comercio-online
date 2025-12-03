@@ -5368,6 +5368,7 @@ export type Database = {
         Row: {
           asignado_a: string
           asignado_por: string | null
+          categoria_id: string | null
           created_at: string
           descripcion: string | null
           estado: Database["public"]["Enums"]["tarea_estado"]
@@ -5382,6 +5383,7 @@ export type Database = {
         Insert: {
           asignado_a: string
           asignado_por?: string | null
+          categoria_id?: string | null
           created_at?: string
           descripcion?: string | null
           estado?: Database["public"]["Enums"]["tarea_estado"]
@@ -5396,6 +5398,7 @@ export type Database = {
         Update: {
           asignado_a?: string
           asignado_por?: string | null
+          categoria_id?: string | null
           created_at?: string
           descripcion?: string | null
           estado?: Database["public"]["Enums"]["tarea_estado"]
@@ -5450,7 +5453,47 @@ export type Database = {
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tareas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "tareas_categorias"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      tareas_categorias: {
+        Row: {
+          activa: boolean | null
+          color: string | null
+          created_at: string | null
+          descripcion: string | null
+          icono: string | null
+          id: string
+          nombre: string
+          updated_at: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          color?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          icono?: string | null
+          id?: string
+          nombre: string
+          updated_at?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          color?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          icono?: string | null
+          id?: string
+          nombre?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       tareas_configuracion: {
         Row: {
@@ -5472,6 +5515,119 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      tareas_historial: {
+        Row: {
+          accion: string
+          comentarios: string | null
+          created_at: string | null
+          empleado_destino_id: string | null
+          empleado_origen_id: string | null
+          estado_anterior: string | null
+          estado_nuevo: string | null
+          id: string
+          metadata: Json | null
+          realizado_por: string
+          tarea_id: string
+        }
+        Insert: {
+          accion: string
+          comentarios?: string | null
+          created_at?: string | null
+          empleado_destino_id?: string | null
+          empleado_origen_id?: string | null
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          metadata?: Json | null
+          realizado_por: string
+          tarea_id: string
+        }
+        Update: {
+          accion?: string
+          comentarios?: string | null
+          created_at?: string | null
+          empleado_destino_id?: string | null
+          empleado_origen_id?: string | null
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          metadata?: Json | null
+          realizado_por?: string
+          tarea_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_historial_empleado_destino_id_fkey"
+            columns: ["empleado_destino_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_empleado_destino_id_fkey"
+            columns: ["empleado_destino_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_empleado_destino_id_fkey"
+            columns: ["empleado_destino_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_empleado_origen_id_fkey"
+            columns: ["empleado_origen_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_empleado_origen_id_fkey"
+            columns: ["empleado_origen_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_empleado_origen_id_fkey"
+            columns: ["empleado_origen_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_realizado_por_fkey"
+            columns: ["realizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_realizado_por_fkey"
+            columns: ["realizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_realizado_por_fkey"
+            columns: ["realizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -6133,6 +6289,14 @@ export type Database = {
           registros_creados: number
           registros_eliminados: number
         }[]
+      }
+      registrar_delegacion_tarea: {
+        Args: {
+          p_comentarios?: string
+          p_empleado_destino_id: string
+          p_tarea_id: string
+        }
+        Returns: string
       }
       registrar_intento_login:
         | {

@@ -121,36 +121,18 @@ export function DelegateTaskDialog({ open, onOpenChange, onTaskDelegated, task, 
     setLoading(true);
 
     try {
-      // Actualizar la tarea con el nuevo asignado
-      const updates: any = {
-        asignado_a: selectedEmployee,
-        estado: 'pendiente', // Reset estado a pendiente
-        updated_at: new Date().toISOString()
-      };
-
-      const { error } = await supabase
-        .from('tareas')
-        .update(updates)
-        .eq('id', task.id);
+      // Usar la función RPC que registra historial y notifica automáticamente
+      const { data, error } = await supabase.rpc('registrar_delegacion_tarea', {
+        p_tarea_id: task.id,
+        p_empleado_destino_id: selectedEmployee,
+        p_comentarios: comments.trim() || null
+      });
 
       if (error) throw error;
 
-      // Si hay comentarios, podrías guardarlos en una tabla de comentarios/historial
-      // Por ahora solo actualizamos la descripción si hay comentarios
-      if (comments.trim()) {
-        const descripcionActualizada = task.descripcion 
-          ? `${task.descripcion}\n\n--- Comentarios de delegación ---\n${comments}`
-          : `--- Comentarios de delegación ---\n${comments}`;
-          
-        await supabase
-          .from('tareas')
-          .update({ descripcion: descripcionActualizada })
-          .eq('id', task.id);
-      }
-
       toast({
         title: "Tarea delegada",
-        description: "La tarea ha sido delegada exitosamente"
+        description: "La tarea ha sido delegada y se notificó al empleado"
       });
 
       onTaskDelegated();
