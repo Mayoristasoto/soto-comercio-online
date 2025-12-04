@@ -90,18 +90,25 @@ Donde respuesta_correcta es el índice (0-3) de la opción correcta.`;
     
     console.log('Respuesta IA:', aiResponse);
 
-    // Extraer JSON de la respuesta
+    // Extraer JSON de la respuesta - limpiar markdown y parsear
     let preguntas;
     try {
-      // Buscar el JSON en la respuesta
-      const jsonMatch = aiResponse.match(/\{[\s\S]*"preguntas"[\s\S]*\}/);
+      // Remover bloques de código markdown si existen
+      let cleanedResponse = aiResponse
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      
+      // Buscar el JSON en la respuesta limpia
+      const jsonMatch = cleanedResponse.match(/\{[\s\S]*"preguntas"[\s\S]*\}/);
       if (jsonMatch) {
         preguntas = JSON.parse(jsonMatch[0]);
       } else {
-        throw new Error('No se encontró JSON válido');
+        throw new Error('No se encontró JSON válido en la respuesta');
       }
     } catch (parseError) {
       console.error('Error parseando respuesta:', parseError);
+      console.error('Respuesta original:', aiResponse);
       return new Response(
         JSON.stringify({ error: 'Error procesando respuesta de IA', raw: aiResponse }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
