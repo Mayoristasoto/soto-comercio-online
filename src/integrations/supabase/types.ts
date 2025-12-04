@@ -176,6 +176,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "asignaciones_capacitacion_capacitacion_id_fkey"
+            columns: ["capacitacion_id"]
+            isOneToOne: false
+            referencedRelation: "capacitaciones"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "asignaciones_capacitacion_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
