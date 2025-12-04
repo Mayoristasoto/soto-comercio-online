@@ -90,3 +90,6 @@ verify_jwt = true
 
 [functions.custom-http-request]
 verify_jwt = true
+
+[functions.generate-training-questions]
+verify_jwt = true

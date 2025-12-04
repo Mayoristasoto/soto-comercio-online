@@ -24,7 +24,9 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  BarChart3
+  BarChart3,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 
 interface Training {
@@ -129,6 +131,17 @@ export default function TrainingManagement() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [showYoutubeDialog, setShowYoutubeDialog] = useState(false);
   const [selectedTrainingForYoutube, setSelectedTrainingForYoutube] = useState<string>("");
+
+  // AI Question Generation
+  const [showAIDialog, setShowAIDialog] = useState(false);
+  const [aiContent, setAiContent] = useState("");
+  const [aiNumPreguntas, setAiNumPreguntas] = useState(5);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [generatedQuestions, setGeneratedQuestions] = useState<Array<{
+    pregunta: string;
+    opciones: string[];
+    respuesta_correcta: number;
+  }>>([]);
 
   useEffect(() => {
     loadData();
@@ -459,6 +472,109 @@ export default function TrainingManagement() {
         return <Badge className="bg-destructive/10 text-destructive border-destructive/20"><XCircle className="w-3 h-3 mr-1" />Vencida</Badge>;
       default:
         return <Badge className="bg-muted/10 text-muted-foreground border-muted/20"><Clock className="w-3 h-3 mr-1" />Pendiente</Badge>;
+    }
+  };
+
+  // Generate questions with AI
+  const handleGenerateQuestionsAI = async () => {
+    if (!selectedEvaluation || !aiContent.trim()) {
+      toast.error("Ingresa el contenido de la capacitación");
+      return;
+    }
+
+    setGeneratingQuestions(true);
+    setGeneratedQuestions([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-training-questions', {
+        body: {
+          content: aiContent,
+          titulo: selectedEvaluation.titulo,
+          numPreguntas: aiNumPreguntas
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (data.preguntas && Array.isArray(data.preguntas)) {
+        setGeneratedQuestions(data.preguntas);
+        toast.success(`${data.preguntas.length} preguntas generadas con IA`);
+      } else {
+        toast.error("Formato de respuesta inválido");
+      }
+    } catch (error: any) {
+      console.error("Error generating questions:", error);
+      toast.error(error.message || "Error al generar preguntas");
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
+
+  // Add generated question to evaluation
+  const handleAddGeneratedQuestion = async (question: {
+    pregunta: string;
+    opciones: string[];
+    respuesta_correcta: number;
+  }) => {
+    if (!selectedEvaluation) return;
+
+    try {
+      const { error } = await supabase
+        .from("preguntas_evaluacion")
+        .insert([{
+          evaluacion_id: selectedEvaluation.id,
+          pregunta: question.pregunta,
+          opciones: question.opciones,
+          respuesta_correcta: question.respuesta_correcta,
+          puntos: 1,
+          orden: questions.filter(q => q.evaluacion_id === selectedEvaluation.id).length + 1
+        }]);
+
+      if (error) throw error;
+
+      toast.success("Pregunta agregada");
+      setGeneratedQuestions(prev => prev.filter(q => q.pregunta !== question.pregunta));
+      loadQuestions();
+    } catch (error) {
+      console.error("Error adding question:", error);
+      toast.error("Error al agregar la pregunta");
+    }
+  };
+
+  // Add all generated questions
+  const handleAddAllGeneratedQuestions = async () => {
+    if (!selectedEvaluation || generatedQuestions.length === 0) return;
+
+    try {
+      const currentCount = questions.filter(q => q.evaluacion_id === selectedEvaluation.id).length;
+      const questionsToInsert = generatedQuestions.map((q, index) => ({
+        evaluacion_id: selectedEvaluation.id,
+        pregunta: q.pregunta,
+        opciones: q.opciones,
+        respuesta_correcta: q.respuesta_correcta,
+        puntos: 1,
+        orden: currentCount + index + 1
+      }));
+
+      const { error } = await supabase
+        .from("preguntas_evaluacion")
+        .insert(questionsToInsert);
+
+      if (error) throw error;
+
+      toast.success(`${questionsToInsert.length} preguntas agregadas`);
+      setGeneratedQuestions([]);
+      setShowAIDialog(false);
+      setAiContent("");
+      loadQuestions();
+    } catch (error) {
+      console.error("Error adding questions:", error);
+      toast.error("Error al agregar las preguntas");
     }
   };
 
@@ -1030,10 +1146,20 @@ export default function TrainingManagement() {
                     />
                   </div>
                 </div>
-                <Button onClick={handleAddQuestion}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Pregunta
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleAddQuestion}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Pregunta
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAIDialog(true)}
+                    className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generar con IA
+                  </Button>
+                </div>
               </div>
 
               <Separator />
@@ -1105,6 +1231,133 @@ export default function TrainingManagement() {
                 Agregar Video
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para generar preguntas con IA */}
+      <Dialog open={showAIDialog} onOpenChange={(open) => {
+        setShowAIDialog(open);
+        if (!open) {
+          setAiContent("");
+          setGeneratedQuestions([]);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Generar Preguntas con IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="ai-content">
+                  Pega aquí la transcripción o contenido del video/material
+                </Label>
+                <Textarea
+                  id="ai-content"
+                  value={aiContent}
+                  onChange={(e) => setAiContent(e.target.value)}
+                  placeholder="Pega aquí el contenido de la capacitación (transcripción del video, resumen del material, puntos clave, etc.)"
+                  className="min-h-[200px]"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tip: Puedes obtener la transcripción de YouTube usando extensiones del navegador o servicios como youtube-transcript.com
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-32">
+                  <Label htmlFor="num-preguntas">Cantidad</Label>
+                  <Select
+                    value={aiNumPreguntas.toString()}
+                    onValueChange={(v) => setAiNumPreguntas(parseInt(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[3, 5, 7, 10].map(n => (
+                        <SelectItem key={n} value={n.toString()}>{n} preguntas</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button 
+                  onClick={handleGenerateQuestionsAI}
+                  disabled={generatingQuestions || !aiContent.trim()}
+                  className="mt-6"
+                >
+                  {generatingQuestions ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generar Preguntas
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {generatedQuestions.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium">Preguntas generadas ({generatedQuestions.length})</h4>
+                    <Button onClick={handleAddAllGeneratedQuestions} size="sm">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Agregar todas
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    {generatedQuestions.map((question, index) => (
+                      <Card key={index} className="border-primary/20">
+                        <CardContent className="pt-4">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h5 className="font-medium flex-1">
+                                {index + 1}. {question.pregunta}
+                              </h5>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleAddGeneratedQuestion(question)}
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Agregar
+                              </Button>
+                            </div>
+                            <div className="space-y-1">
+                              {question.opciones.map((opcion, opcionIndex) => (
+                                <div
+                                  key={opcionIndex}
+                                  className={`text-sm p-2 rounded ${
+                                    opcionIndex === question.respuesta_correcta
+                                      ? 'bg-success/10 text-success border border-success/20'
+                                      : 'bg-muted/30'
+                                  }`}
+                                >
+                                  {String.fromCharCode(65 + opcionIndex)}. {opcion}
+                                  {opcionIndex === question.respuesta_correcta && (
+                                    <CheckCircle className="w-4 h-4 inline ml-2" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
