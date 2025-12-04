@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ClipboardCheck, Users, TrendingUp, Calendar, UserPlus } from "lucide-react";
+import { ClipboardCheck, Users, TrendingUp, Calendar, UserPlus, GraduationCap } from "lucide-react";
 import { EvaluacionesGerente } from "@/components/evaluaciones/EvaluacionesGerente";
 import { EvaluacionesAdmin } from "@/components/evaluaciones/EvaluacionesAdmin";
 import { HistorialEvaluaciones } from "@/components/evaluaciones/HistorialEvaluaciones";
 import { GestionConceptos } from "@/components/evaluaciones/GestionConceptos";
 import { AsignarEvaluacion } from "@/components/evaluaciones/AsignarEvaluacion";
 import { Badge } from "@/components/ui/badge";
+import TrainingManagement from "@/components/admin/TrainingManagement";
 
 interface UserInfo {
   id: string;
@@ -146,6 +147,10 @@ export default function Evaluaciones() {
           )}
           {isAdmin && (
             <>
+              <TabsTrigger value="capacitaciones">
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Capacitaciones
+              </TabsTrigger>
               <TabsTrigger value="seguimiento">
                 <ClipboardCheck className="h-4 w-4 mr-2" />
                 Seguimiento
@@ -177,6 +182,10 @@ export default function Evaluaciones() {
 
         {isAdmin && (
           <>
+            <TabsContent value="capacitaciones" className="space-y-4">
+              <TrainingManagement />
+            </TabsContent>
+
             <TabsContent value="seguimiento" className="space-y-4">
               <EvaluacionesAdmin />
             </TabsContent>
