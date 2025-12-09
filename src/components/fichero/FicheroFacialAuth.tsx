@@ -745,23 +745,6 @@ export default function FicheroFacialAuth({
                   <CameraOff className="h-4 w-4 mr-2" />
                   Desactivar Cámara
                 </Button>
-                
-                {/* Quick Demo Button */}
-                <Button 
-                  onClick={() => {
-                    setIsProcessing(true)
-                    setTimeout(() => {
-                      onFichajeSuccess(0.85)
-                      setIsProcessing(false)
-                    }, 1500)
-                  }}
-                  variant="outline"
-                  className="w-full"
-                  disabled={isProcessing || loading}
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Demo - {obtenerTextoAccion()}
-                </Button>
               </>
             )}
           </div>
