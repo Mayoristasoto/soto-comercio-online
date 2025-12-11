@@ -158,15 +158,26 @@ export const FacialPhotoApproval = () => {
 
       if (versionCheckError) throw versionCheckError;
 
-      // Determinar el nombre de la versión
-      let versionName = 'Versión 1';
+      // Determinar el nombre de la versión buscando el número más alto existente
       let versionNumber = 1;
       
       if (existingVersions && existingVersions.length > 0) {
-        // Calcular el siguiente número de versión
-        versionNumber = existingVersions.length + 1;
-        versionName = `Versión ${versionNumber}`;
+        // Extraer números de versión existentes y encontrar el máximo
+        const versionNumbers = existingVersions
+          .map(v => {
+            const match = v.version_name?.match(/Versión (\d+)/);
+            return match ? parseInt(match[1], 10) : 0;
+          })
+          .filter(n => !isNaN(n));
+        
+        if (versionNumbers.length > 0) {
+          versionNumber = Math.max(...versionNumbers) + 1;
+        } else {
+          versionNumber = existingVersions.length + 1;
+        }
       }
+      
+      const versionName = `Versión ${versionNumber}`;
 
       // Guardar descriptor facial en empleados_datos_sensibles (mantener compatibilidad con última versión)
       const { error: updateError } = await supabase
