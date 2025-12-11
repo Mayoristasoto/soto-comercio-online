@@ -76,6 +76,13 @@ export type Database = {
             foreignKeyName: "api_logs_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -194,6 +201,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_capacitacion_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -353,6 +367,13 @@ export type Database = {
             foreignKeyName: "ausencias_medicas_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ausencias_medicas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -368,6 +389,13 @@ export type Database = {
             columns: ["registrado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ausencias_medicas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -507,6 +535,13 @@ export type Database = {
             foreignKeyName: "calendario_notas_creado_por_fkey"
             columns: ["creado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_notas_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -553,6 +588,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calificaciones_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -680,6 +722,13 @@ export type Database = {
             foreignKeyName: "cambios_horario_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -701,6 +750,13 @@ export type Database = {
             foreignKeyName: "cambios_horario_empleado_intercambio_id_fkey"
             columns: ["empleado_intercambio_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_empleado_intercambio_id_fkey"
+            columns: ["empleado_intercambio_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -716,6 +772,13 @@ export type Database = {
             columns: ["solicitado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_solicitado_por_fkey"
+            columns: ["solicitado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -863,6 +926,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "configuracion_ia_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1044,6 +1114,13 @@ export type Database = {
             foreignKeyName: "desafios_tv_participantes_configurado_por_fkey"
             columns: ["configurado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desafios_tv_participantes_configurado_por_fkey"
+            columns: ["configurado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -1059,6 +1136,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: true
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desafios_tv_participantes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1151,6 +1235,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_firmas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1294,6 +1385,13 @@ export type Database = {
             foreignKeyName: "empleado_cruces_rojas_anulada_por_fkey"
             columns: ["anulada_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_anulada_por_fkey"
+            columns: ["anulada_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -1309,6 +1407,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1386,6 +1491,13 @@ export type Database = {
             foreignKeyName: "empleado_documentos_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_documentos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -1401,6 +1513,13 @@ export type Database = {
             columns: ["subido_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_documentos_subido_por_fkey"
+            columns: ["subido_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1489,6 +1608,13 @@ export type Database = {
             foreignKeyName: "empleado_onboarding_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: true
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_onboarding_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -1547,6 +1673,13 @@ export type Database = {
             foreignKeyName: "empleado_permisos_asignado_por_fkey"
             columns: ["asignado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_permisos_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -1562,6 +1695,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_permisos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1617,6 +1757,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_turnos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1791,6 +1938,13 @@ export type Database = {
             foreignKeyName: "empleados_anotaciones_creado_por_fkey"
             columns: ["creado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_anotaciones_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -1806,6 +1960,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_anotaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1861,6 +2022,13 @@ export type Database = {
             columns: ["empleado_accedido_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_empleados_audit_empleado"
+            columns: ["empleado_accedido_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -1950,6 +2118,13 @@ export type Database = {
             foreignKeyName: "empleados_configuracion_payroll_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: true
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_configuracion_payroll_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -2023,6 +2198,13 @@ export type Database = {
             foreignKeyName: "fk_empleados_datos_sensibles_empleado"
             columns: ["empleado_id"]
             isOneToOne: true
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_empleados_datos_sensibles_empleado"
+            columns: ["empleado_id"]
+            isOneToOne: true
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -2072,6 +2254,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_firmas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -2130,6 +2319,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_rostros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -2212,6 +2408,13 @@ export type Database = {
             foreignKeyName: "entregas_elementos_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_elementos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -2227,6 +2430,13 @@ export type Database = {
             columns: ["entregado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_elementos_entregado_por_fkey"
+            columns: ["entregado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -2415,6 +2625,13 @@ export type Database = {
             foreignKeyName: "evaluaciones_mensuales_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluaciones_mensuales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -2430,6 +2647,13 @@ export type Database = {
             columns: ["evaluador_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluaciones_mensuales_evaluador_id_fkey"
+            columns: ["evaluador_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -2524,6 +2748,13 @@ export type Database = {
             foreignKeyName: "facial_photo_uploads_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_photo_uploads_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -2539,6 +2770,13 @@ export type Database = {
             columns: ["revisado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_photo_uploads_revisado_por_fkey"
+            columns: ["revisado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -2642,6 +2880,13 @@ export type Database = {
             foreignKeyName: "facial_recognition_logs_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facial_recognition_logs_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -2691,6 +2936,13 @@ export type Database = {
             foreignKeyName: "feriado_empleados_asignados_asignado_por_fkey"
             columns: ["asignado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feriado_empleados_asignados_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -2706,6 +2958,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feriado_empleados_asignados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -2772,6 +3031,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichado_configuracion_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -2960,6 +3226,13 @@ export type Database = {
             foreignKeyName: "fichaje_auditoria_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_auditoria_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3033,6 +3306,13 @@ export type Database = {
             foreignKeyName: "fichaje_incidencias_aprobado_por_fkey"
             columns: ["aprobado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_incidencias_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3048,6 +3328,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichaje_incidencias_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -3146,6 +3433,13 @@ export type Database = {
             foreignKeyName: "fichajes_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3223,6 +3517,13 @@ export type Database = {
             foreignKeyName: "fichajes_pausas_excedidas_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_pausas_excedidas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3285,6 +3586,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fichajes_tardios_empleado"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -3514,6 +3822,13 @@ export type Database = {
             foreignKeyName: "fk_grupos_lider"
             columns: ["lider_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_grupos_lider"
+            columns: ["lider_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3588,6 +3903,13 @@ export type Database = {
             foreignKeyName: "horarios_excepcionales_aprobado_por_fkey"
             columns: ["aprobado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "horarios_excepcionales_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3609,6 +3931,13 @@ export type Database = {
             foreignKeyName: "horarios_excepcionales_creado_por_fkey"
             columns: ["creado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "horarios_excepcionales_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3624,6 +3953,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "horarios_excepcionales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -3733,6 +4069,13 @@ export type Database = {
             foreignKeyName: "horas_trabajadas_registro_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "horas_trabajadas_registro_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -3797,6 +4140,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: true
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imagenes_cumpleanos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -3879,6 +4229,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insignias_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -4141,6 +4498,13 @@ export type Database = {
             foreignKeyName: "liquidaciones_mensuales_aprobada_por_fkey"
             columns: ["aprobada_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidaciones_mensuales_aprobada_por_fkey"
+            columns: ["aprobada_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -4156,6 +4520,13 @@ export type Database = {
             columns: ["liquidada_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidaciones_mensuales_liquidada_por_fkey"
+            columns: ["liquidada_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -4388,6 +4759,13 @@ export type Database = {
             foreignKeyName: "participaciones_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -4410,6 +4788,13 @@ export type Database = {
             columns: ["validado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participaciones_validado_por_fkey"
+            columns: ["validado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -4732,6 +5117,13 @@ export type Database = {
             foreignKeyName: "puntos_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "puntos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -4895,6 +5287,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recibos_sueldo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -5100,6 +5499,13 @@ export type Database = {
             foreignKeyName: "solicitudes_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5115,6 +5521,13 @@ export type Database = {
             columns: ["respondido_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_respondido_por_fkey"
+            columns: ["respondido_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -5227,6 +5640,13 @@ export type Database = {
             foreignKeyName: "solicitudes_generales_aprobado_por_fkey"
             columns: ["aprobado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_generales_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5242,6 +5662,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_generales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -5312,6 +5739,13 @@ export type Database = {
             foreignKeyName: "solicitudes_vacaciones_aprobado_por_fkey"
             columns: ["aprobado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_vacaciones_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5327,6 +5761,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitudes_vacaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -5436,6 +5877,13 @@ export type Database = {
             foreignKeyName: "tareas_asignado_a_fkey"
             columns: ["asignado_a"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_asignado_a_fkey"
+            columns: ["asignado_a"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5451,6 +5899,13 @@ export type Database = {
             columns: ["asignado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -5582,6 +6037,13 @@ export type Database = {
             foreignKeyName: "tareas_historial_empleado_destino_id_fkey"
             columns: ["empleado_destino_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_empleado_destino_id_fkey"
+            columns: ["empleado_destino_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5603,6 +6065,13 @@ export type Database = {
             foreignKeyName: "tareas_historial_empleado_origen_id_fkey"
             columns: ["empleado_origen_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_empleado_origen_id_fkey"
+            columns: ["empleado_origen_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5618,6 +6087,13 @@ export type Database = {
             columns: ["realizado_por"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_historial_realizado_por_fkey"
+            columns: ["realizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -5749,6 +6225,13 @@ export type Database = {
             foreignKeyName: "vacaciones_bloqueos_creado_por_fkey"
             columns: ["creado_por"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_bloqueos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5804,6 +6287,13 @@ export type Database = {
             foreignKeyName: "vacaciones_saldo_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_saldo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
           },
@@ -5836,6 +6326,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_cruces_rojas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_kiosk_minimal"
             referencedColumns: ["id"]
           },
           {
@@ -5912,6 +6409,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      empleados_kiosk_minimal: {
+        Row: {
+          activo: boolean | null
+          apellido: string | null
+          avatar_url: string | null
+          id: string | null
+          nombre: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          apellido?: string | null
+          avatar_url?: string | null
+          id?: string | null
+          nombre?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          apellido?: string | null
+          avatar_url?: string | null
+          id?: string | null
+          nombre?: string | null
+        }
+        Relationships: []
       }
       empleados_payroll_completo: {
         Row: {
