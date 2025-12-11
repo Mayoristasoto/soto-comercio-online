@@ -44,7 +44,7 @@ export default function MultipleFaceManagement({
   const [isModelLoaded, setIsModelLoaded] = useState(false)
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
-  const [capturedFace, setCapturedFace] = useState<Float32Array | null>(null)
+  const [capturedFace, setCapturedFace] = useState<{ descriptor: Float32Array; confidence: number } | null>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [faceVersions, setFaceVersions] = useState<FaceVersion[]>([])
@@ -172,7 +172,12 @@ export default function MultipleFaceManagement({
       }
       
       const faceDescriptor = detections[0].descriptor
-      setCapturedFace(faceDescriptor)
+      const detectionScore = detections[0].detection.score
+      
+      setCapturedFace({ 
+        descriptor: faceDescriptor, 
+        confidence: detectionScore 
+      })
       setShowAddForm(true)
       
       // Generate default version name
@@ -181,7 +186,7 @@ export default function MultipleFaceManagement({
       
       toast({
         title: "Rostro capturado",
-        description: "El rostro ha sido capturado exitosamente"
+        description: `Confianza de detección: ${(detectionScore * 100).toFixed(1)}%`
       })
       
     } catch (error) {
@@ -201,17 +206,18 @@ export default function MultipleFaceManagement({
 
     setIsUpdating(true)
     try {
-      // Save new face version
+      // Save new face version with actual detection confidence
       const { error } = await supabase
         .from('empleados_rostros')
         .insert({ 
           empleado_id: empleado.id,
-          face_descriptor: Array.from(capturedFace),
+          face_descriptor: Array.from(capturedFace.descriptor),
           version_name: versionName.trim(),
-          confidence_score: 0.95, // Default confidence
+          confidence_score: capturedFace.confidence,
           capture_metadata: {
             captured_at: new Date().toISOString(),
-            device_info: navigator.userAgent
+            device_info: navigator.userAgent,
+            detection_confidence: capturedFace.confidence
           }
         })
 
@@ -480,11 +486,16 @@ export default function MultipleFaceManagement({
                     <Card className="bg-green-50 border-green-200">
                       <CardContent className="pt-6">
                         <div className="space-y-4">
-                          <div className="flex items-center space-x-2">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                            <p className="text-green-800 font-medium">
-                              Rostro capturado exitosamente
-                            </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                              <p className="text-green-800 font-medium">
+                                Rostro capturado exitosamente
+                              </p>
+                            </div>
+                            <Badge variant={capturedFace.confidence >= 0.7 ? "default" : "secondary"}>
+                              {(capturedFace.confidence * 100).toFixed(1)}% confianza
+                            </Badge>
                           </div>
                           
                           <div className="space-y-2">
