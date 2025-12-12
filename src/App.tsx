@@ -65,6 +65,7 @@ import AdminSeguridad from "./pages/AdminSeguridad";
 import AdminOnboarding from "./pages/AdminOnboarding";
 import EmpleadoPerfilPage from "./pages/EmpleadoPerfilPage";
 import DashboardDemo from "./pages/DashboardDemo";
+import KioscoDemo from "./pages/KioscoDemo";
 
 const queryClient = new QueryClient();
 
@@ -196,6 +197,7 @@ const App = () => (
           <Route path="/autogestion" element={<Autogestion />} />
           <Route path="/print-preview" element={<PrintPreview />} />
           <Route path="/dashboard-demo" element={<DashboardDemo />} />
+          <Route path="/kiosco-demo" element={<KioscoDemo />} />
           
           {/* Calificación de empleados (página pública) */}
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />
