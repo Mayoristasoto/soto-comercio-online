@@ -4421,6 +4421,206 @@ export type Database = {
           },
         ]
       }
+      planificacion_semanal: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          estado: string
+          fecha_inicio_semana: string
+          id: string
+          notas: string | null
+          plantilla_base_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          fecha_inicio_semana: string
+          id?: string
+          notas?: string | null
+          plantilla_base_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          fecha_inicio_semana?: string
+          id?: string
+          notas?: string | null
+          plantilla_base_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planificacion_semanal_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_plantilla_base_id_fkey"
+            columns: ["plantilla_base_id"]
+            isOneToOne: false
+            referencedRelation: "plantillas_trabajo_semanal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planificacion_semanal_detalle: {
+        Row: {
+          created_at: string
+          dia_semana: number
+          empleado_id: string
+          hora_entrada: string
+          hora_salida: string
+          id: string
+          planificacion_id: string
+          sucursal_id: string
+        }
+        Insert: {
+          created_at?: string
+          dia_semana: number
+          empleado_id: string
+          hora_entrada: string
+          hora_salida: string
+          id?: string
+          planificacion_id: string
+          sucursal_id: string
+        }
+        Update: {
+          created_at?: string
+          dia_semana?: number
+          empleado_id?: string
+          hora_entrada?: string
+          hora_salida?: string
+          id?: string
+          planificacion_id?: string
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planificacion_semanal_detalle_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_detalle_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_detalle_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_detalle_planificacion_id_fkey"
+            columns: ["planificacion_id"]
+            isOneToOne: false
+            referencedRelation: "planificacion_semanal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_detalle_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plantilla_trabajo_detalle: {
+        Row: {
+          created_at: string
+          dia_semana: number
+          empleado_id: string
+          hora_entrada: string
+          hora_salida: string
+          id: string
+          plantilla_id: string
+          sucursal_id: string
+        }
+        Insert: {
+          created_at?: string
+          dia_semana: number
+          empleado_id: string
+          hora_entrada: string
+          hora_salida: string
+          id?: string
+          plantilla_id: string
+          sucursal_id: string
+        }
+        Update: {
+          created_at?: string
+          dia_semana?: number
+          empleado_id?: string
+          hora_entrada?: string
+          hora_salida?: string
+          id?: string
+          plantilla_id?: string
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plantilla_trabajo_detalle_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantilla_trabajo_detalle_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantilla_trabajo_detalle_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantilla_trabajo_detalle_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "plantillas_trabajo_semanal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantilla_trabajo_detalle_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plantillas_elementos: {
         Row: {
           activo: boolean | null
@@ -4456,6 +4656,58 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      plantillas_trabajo_semanal: {
+        Row: {
+          activa: boolean
+          creado_por: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plantillas_trabajo_semanal_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantillas_trabajo_semanal_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantillas_trabajo_semanal_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       preguntas_evaluacion: {
         Row: {
