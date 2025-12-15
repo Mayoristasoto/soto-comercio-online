@@ -31,19 +31,22 @@ export const FacialPhotoCapture = () => {
   }, []);
 
   const loadEmpleados = async () => {
+    // Usar vista empleados_kiosk_minimal para acceso público (kiosco sin autenticación)
     const { data, error } = await supabase
-      .from('empleados')
-      .select('id, nombre, apellido, email, legajo')
+      .from('empleados_kiosk_minimal')
+      .select('id, nombre, apellido')
       .eq('activo', true)
       .order('apellido', { ascending: true });
 
     if (!error && data) {
       setEmpleados(data);
+    } else {
+      console.error('Error cargando empleados:', error);
     }
   };
 
   const filteredEmpleados = empleados.filter(emp => 
-    `${emp.nombre} ${emp.apellido} ${emp.legajo} ${emp.email}`
+    `${emp.nombre} ${emp.apellido}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
   );
@@ -182,13 +185,13 @@ export const FacialPhotoCapture = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Camera className="h-8 w-8 text-primary" />
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader className="text-center px-4 sm:px-6">
+          <div className="mx-auto mb-3 sm:mb-4 h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Camera className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
           </div>
-          <CardTitle className="text-3xl">Registro de Foto Facial</CardTitle>
-          <CardDescription className="text-lg">
+          <CardTitle className="text-xl sm:text-3xl">Registro de Foto Facial</CardTitle>
+          <CardDescription className="text-sm sm:text-lg">
             {step === 'identify' && 'Busca tu nombre para comenzar'}
             {step === 'capture' && 'Posiciónate frente a la cámara'}
             {step === 'confirm' && 'Revisa tu foto antes de enviar'}
@@ -196,21 +199,21 @@ export const FacialPhotoCapture = () => {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
           {/* Paso 1: Identificación */}
           {step === 'identify' && (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="search" className="text-lg">
+                <Label htmlFor="search" className="text-base sm:text-lg">
                   Buscar empleado
                 </Label>
                 <Input
                   id="search"
                   type="text"
-                  placeholder="Escribe tu nombre, apellido o legajo..."
+                  placeholder="Escribe tu nombre o apellido..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="mt-2 text-lg h-14"
+                  className="mt-2 text-base sm:text-lg h-12 sm:h-14"
                   autoFocus
                 />
               </div>
@@ -226,17 +229,13 @@ export const FacialPhotoCapture = () => {
                       <Button
                         key={emp.id}
                         variant="outline"
-                        className="w-full justify-start h-auto py-4"
+                        className="w-full justify-start h-auto py-3 sm:py-4"
                         onClick={() => handleSelectEmpleado(emp)}
                       >
-                        <User className="h-5 w-5 mr-3" />
+                        <User className="h-5 w-5 mr-3 flex-shrink-0" />
                         <div className="text-left">
-                          <div className="font-medium">
+                          <div className="font-medium text-sm sm:text-base">
                             {emp.apellido}, {emp.nombre}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {emp.legajo && `Legajo: ${emp.legajo} • `}
-                            {emp.email}
                           </div>
                         </div>
                       </Button>
