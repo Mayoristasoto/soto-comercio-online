@@ -47,15 +47,18 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
     try {
       const hoy = new Date().toISOString().split('T')[0];
       
+      // Buscar tareas pendientes: vencidas, de hoy, o sin fecha límite
       const { data, error } = await supabase
         .from('tareas')
         .select('id, titulo, descripcion, prioridad, fecha_limite')
         .eq('asignado_a', empleadoId)
         .eq('estado', 'pendiente')
-        .or(`fecha_limite.eq.${hoy},fecha_limite.is.null`)
+        .or(`fecha_limite.lte.${hoy},fecha_limite.is.null`)
         .order('prioridad', { ascending: false });
 
       if (error) throw error;
+      
+      console.log('Tareas pendientes encontradas:', data?.length, 'para empleado:', empleadoId);
 
       setTareas(data || []);
     } catch (error) {
