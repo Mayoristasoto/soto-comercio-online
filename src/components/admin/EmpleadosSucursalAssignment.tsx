@@ -7,9 +7,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Building2, Users, Search, ArrowRight, Check, X } from "lucide-react"
+import { Building2, Users, Search, ArrowRight, Check, X, FileText, Download } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
+import { ExportButton } from "@/components/ui/export-button"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 import {
   Table,
   TableBody,
@@ -206,6 +211,137 @@ export default function EmpleadosSucursalAssignment() {
     return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase()
   }
 
+  // Datos para exportar
+  const getExportData = () => {
+    return filteredEmpleados.map(emp => ({
+      Legajo: emp.legajo || 'N/A',
+      Nombre: emp.nombre,
+      Apellido: emp.apellido,
+      Email: emp.email,
+      Puesto: emp.puesto || '-',
+      Sucursal: emp.sucursal?.nombre || 'Sin asignar'
+    }))
+  }
+
+  // Generar PDF por sucursal para Discord
+  const generarPDFPorSucursal = () => {
+    const doc = new jsPDF()
+    const fechaActual = format(new Date(), "dd 'de' MMMM yyyy", { locale: es })
+    
+    // Título
+    doc.setFontSize(18)
+    doc.setFont("helvetica", "bold")
+    doc.text("Distribución Semanal de Personal", 105, 20, { align: "center" })
+    
+    doc.setFontSize(11)
+    doc.setFont("helvetica", "normal")
+    doc.text(`Generado: ${fechaActual}`, 105, 28, { align: "center" })
+
+    let yPosition = 40
+
+    // Agrupar empleados por sucursal
+    const empleadosPorSucursal = sucursales.map(suc => ({
+      sucursal: suc,
+      empleados: empleados.filter(e => e.sucursal_id === suc.id)
+    })).filter(g => g.empleados.length > 0)
+
+    // Empleados sin asignar
+    const sinAsignar = empleados.filter(e => !e.sucursal_id)
+
+    empleadosPorSucursal.forEach((grupo, idx) => {
+      if (yPosition > 250) {
+        doc.addPage()
+        yPosition = 20
+      }
+
+      // Header de sucursal
+      doc.setFillColor(59, 130, 246)
+      doc.rect(14, yPosition - 5, 182, 8, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(12)
+      doc.setFont("helvetica", "bold")
+      doc.text(`📍 ${grupo.sucursal.nombre}`, 16, yPosition)
+      doc.text(`(${grupo.empleados.length} empleados)`, 190, yPosition, { align: "right" })
+      
+      yPosition += 8
+
+      // Tabla de empleados
+      doc.setTextColor(0, 0, 0)
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Legajo', 'Nombre Completo', 'Puesto']],
+        body: grupo.empleados.map(e => [
+          e.legajo || 'N/A',
+          `${e.apellido}, ${e.nombre}`,
+          e.puesto || '-'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [100, 116, 139], fontSize: 9 },
+        bodyStyles: { fontSize: 9 },
+        margin: { left: 14, right: 14 },
+        tableWidth: 'auto'
+      })
+
+      yPosition = (doc as any).lastAutoTable.finalY + 15
+    })
+
+    // Sección sin asignar
+    if (sinAsignar.length > 0) {
+      if (yPosition > 250) {
+        doc.addPage()
+        yPosition = 20
+      }
+
+      doc.setFillColor(239, 68, 68)
+      doc.rect(14, yPosition - 5, 182, 8, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(12)
+      doc.setFont("helvetica", "bold")
+      doc.text(`⚠️ Sin Asignar`, 16, yPosition)
+      doc.text(`(${sinAsignar.length} empleados)`, 190, yPosition, { align: "right" })
+      
+      yPosition += 8
+
+      doc.setTextColor(0, 0, 0)
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Legajo', 'Nombre Completo', 'Puesto']],
+        body: sinAsignar.map(e => [
+          e.legajo || 'N/A',
+          `${e.apellido}, ${e.nombre}`,
+          e.puesto || '-'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [239, 68, 68], fontSize: 9 },
+        bodyStyles: { fontSize: 9 },
+        margin: { left: 14, right: 14 }
+      })
+    }
+
+    // Resumen final
+    doc.addPage()
+    doc.setFontSize(14)
+    doc.setFont("helvetica", "bold")
+    doc.text("Resumen de Distribución", 105, 20, { align: "center" })
+
+    autoTable(doc, {
+      startY: 30,
+      head: [['Sucursal', 'Cantidad de Empleados']],
+      body: [
+        ...empleadosPorSucursal.map(g => [g.sucursal.nombre, g.empleados.length.toString()]),
+        ...(sinAsignar.length > 0 ? [['Sin Asignar', sinAsignar.length.toString()]] : []),
+        ['TOTAL', empleados.length.toString()]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246] },
+      footStyles: { fillColor: [229, 231, 235], fontStyle: 'bold' }
+    })
+
+    const filename = `distribucion-personal-${format(new Date(), 'yyyy-MM-dd')}.pdf`
+    doc.save(filename)
+    toast.success("PDF generado correctamente", { description: filename })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -261,13 +397,33 @@ export default function EmpleadosSucursalAssignment() {
       {/* Panel de asignación */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Asignar Empleados a Sucursal
-          </CardTitle>
-          <CardDescription>
-            Selecciona empleados y asígnalos a una sucursal de forma rápida
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Asignar Empleados a Sucursal
+              </CardTitle>
+              <CardDescription>
+                Selecciona empleados y asígnalos a una sucursal de forma rápida
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <ExportButton
+                data={getExportData()}
+                filename={`asignacion-sucursales-${format(new Date(), 'yyyy-MM-dd')}`}
+                sheetName="Empleados"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generarPDFPorSucursal}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                PDF Discord
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filtros y búsqueda */}
