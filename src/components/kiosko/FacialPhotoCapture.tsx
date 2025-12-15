@@ -31,12 +31,8 @@ export const FacialPhotoCapture = () => {
   }, []);
 
   const loadEmpleados = async () => {
-    // Usar vista empleados_kiosk_minimal para acceso público (kiosco sin autenticación)
-    const { data, error } = await supabase
-      .from('empleados_kiosk_minimal')
-      .select('id, nombre, apellido')
-      .eq('activo', true)
-      .order('apellido', { ascending: true });
+    // Usar función SECURITY DEFINER para acceso público (kiosco sin autenticación)
+    const { data, error } = await supabase.rpc('get_empleados_kiosk_minimal');
 
     if (!error && data) {
       setEmpleados(data);
