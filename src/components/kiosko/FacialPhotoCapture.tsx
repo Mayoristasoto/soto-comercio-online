@@ -11,16 +11,18 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export const FacialPhotoCapture = () => {
   const [step, setStep] = useState<'identify' | 'capture' | 'confirm' | 'success'>('identify');
   const [loading, setLoading] = useState(false);
+  const [empleadosLoading, setEmpleadosLoading] = useState(false);
+  const [empleadosError, setEmpleadosError] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [empleados, setEmpleados] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmpleado, setSelectedEmpleado] = useState<any>(null);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,14 +33,27 @@ export const FacialPhotoCapture = () => {
   }, []);
 
   const loadEmpleados = async () => {
+    setEmpleadosLoading(true);
+    setEmpleadosError(null);
+
     // Usar función SECURITY DEFINER para acceso público (kiosco sin autenticación)
     const { data, error } = await supabase.rpc('get_empleados_kiosk_minimal');
 
     if (!error && data) {
-      setEmpleados(data);
+      setEmpleados(Array.isArray(data) ? data : []);
     } else {
+      const msg = error?.message || 'No se pudo cargar la lista de empleados.';
+      setEmpleados([]);
+      setEmpleadosError(msg);
       console.error('Error cargando empleados:', error);
+      toast({
+        title: 'Error cargando empleados',
+        description: msg,
+        variant: 'destructive',
+      });
     }
+
+    setEmpleadosLoading(false);
   };
 
   const filteredEmpleados = empleados.filter(emp => 
@@ -216,9 +231,29 @@ export const FacialPhotoCapture = () => {
 
               {searchTerm.length >= 2 && (
                 <div className="max-h-96 overflow-y-auto space-y-2 border rounded-lg p-2">
-                  {filteredEmpleados.length === 0 ? (
+                  {empleadosLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Cargando empleados...
+                    </div>
+                  ) : empleadosError ? (
+                    <div className="space-y-3 p-2">
+                      <Alert variant="destructive">
+                        <AlertDescription>
+                          {empleadosError}
+                        </AlertDescription>
+                      </Alert>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={loadEmpleados}
+                      >
+                        Reintentar
+                      </Button>
+                    </div>
+                  ) : filteredEmpleados.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No se encontraron empleados
+                      {empleados.length === 0 ? ' (lista vacía)' : ''}
                     </div>
                   ) : (
                     filteredEmpleados.map((emp) => (
