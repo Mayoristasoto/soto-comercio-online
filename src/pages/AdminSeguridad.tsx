@@ -1,10 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, FileCheck, Lock, ScanFace } from "lucide-react";
+import { Shield, FileCheck, Lock, ScanFace, Camera } from "lucide-react";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 import { TwoFactorSetup } from "@/components/admin/TwoFactorAuth";
 import { ComplianceReports } from "@/components/admin/ComplianceReports";
 import { FacialRecognitionLogs } from "@/components/admin/FacialRecognitionLogs";
+import FotosVerificacionViewer from "@/components/admin/FotosVerificacionViewer";
 
 export default function AdminSeguridad() {
   return (
@@ -20,18 +21,22 @@ export default function AdminSeguridad() {
       </div>
 
       <Tabs defaultValue="audit" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="audit" className="gap-2">
             <FileCheck className="h-4 w-4" />
             Auditoría
           </TabsTrigger>
           <TabsTrigger value="facial" className="gap-2">
             <ScanFace className="h-4 w-4" />
-            Reconocimiento Facial
+            Rec. Facial
+          </TabsTrigger>
+          <TabsTrigger value="fotos" className="gap-2">
+            <Camera className="h-4 w-4" />
+            Fotos Fichaje
           </TabsTrigger>
           <TabsTrigger value="2fa" className="gap-2">
             <Lock className="h-4 w-4" />
-            Autenticación 2FA
+            2FA
           </TabsTrigger>
           <TabsTrigger value="compliance" className="gap-2">
             <Shield className="h-4 w-4" />
@@ -45,6 +50,10 @@ export default function AdminSeguridad() {
 
         <TabsContent value="facial" className="space-y-4">
           <FacialRecognitionLogs />
+        </TabsContent>
+
+        <TabsContent value="fotos" className="space-y-4">
+          <FotosVerificacionViewer />
         </TabsContent>
 
         <TabsContent value="2fa" className="space-y-4">
