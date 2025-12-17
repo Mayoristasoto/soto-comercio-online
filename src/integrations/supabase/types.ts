@@ -3158,6 +3158,77 @@ export type Database = {
           },
         ]
       }
+      fichajes_fotos_verificacion: {
+        Row: {
+          confianza_facial: number | null
+          created_at: string
+          empleado_id: string
+          fichaje_id: string | null
+          foto_storage_path: string
+          foto_url: string
+          id: string
+          latitud: number | null
+          longitud: number | null
+          metodo_fichaje: string | null
+          timestamp_captura: string
+        }
+        Insert: {
+          confianza_facial?: number | null
+          created_at?: string
+          empleado_id: string
+          fichaje_id?: string | null
+          foto_storage_path: string
+          foto_url: string
+          id?: string
+          latitud?: number | null
+          longitud?: number | null
+          metodo_fichaje?: string | null
+          timestamp_captura?: string
+        }
+        Update: {
+          confianza_facial?: number | null
+          created_at?: string
+          empleado_id?: string
+          fichaje_id?: string | null
+          foto_storage_path?: string
+          foto_url?: string
+          id?: string
+          latitud?: number | null
+          longitud?: number | null
+          metodo_fichaje?: string | null
+          timestamp_captura?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichajes_fotos_verificacion_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_fotos_verificacion_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_fotos_verificacion_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichajes_fotos_verificacion_fichaje_id_fkey"
+            columns: ["fichaje_id"]
+            isOneToOne: false
+            referencedRelation: "fichajes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fichajes_pausas_excedidas: {
         Row: {
           created_at: string | null
