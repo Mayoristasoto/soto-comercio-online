@@ -65,6 +65,8 @@ export function KioskDeviceManagement() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [validationEnabled, setValidationEnabled] = useState(true)
+  const [savingConfig, setSavingConfig] = useState(false)
   const [newDevice, setNewDevice] = useState({
     device_name: "",
     sucursal_id: ""
@@ -73,7 +75,59 @@ export function KioskDeviceManagement() {
   useEffect(() => {
     fetchDevices()
     fetchSucursales()
+    fetchConfig()
   }, [])
+
+  const fetchConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from('facial_recognition_config')
+        .select('value')
+        .eq('key', 'kiosk_device_validation_enabled')
+        .single()
+      
+      if (data) {
+        setValidationEnabled(data.value === 'true')
+      }
+    } catch (error) {
+      // Config doesn't exist yet, default to true
+      console.log('Config not found, using default')
+    }
+  }
+
+  const handleToggleValidation = async () => {
+    setSavingConfig(true)
+    try {
+      const newValue = !validationEnabled
+      
+      const { error } = await supabase
+        .from('facial_recognition_config')
+        .upsert({
+          key: 'kiosk_device_validation_enabled',
+          value: newValue.toString(),
+          description: 'Habilita o deshabilita la validación de dispositivos en el kiosco'
+        }, { onConflict: 'key' })
+
+      if (error) throw error
+
+      setValidationEnabled(newValue)
+      toast({
+        title: newValue ? "Validación activada" : "Validación desactivada",
+        description: newValue 
+          ? "Solo dispositivos autorizados podrán usar el kiosco"
+          : "Cualquier dispositivo puede usar el kiosco"
+      })
+    } catch (error) {
+      console.error('Error updating config:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la configuración",
+        variant: "destructive"
+      })
+    } finally {
+      setSavingConfig(false)
+    }
+  }
 
   const fetchDevices = async () => {
     try {
@@ -237,6 +291,25 @@ export function KioskDeviceManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Toggle para activar/desactivar validación */}
+      <Card>
+        <CardContent className="flex items-center justify-between py-4">
+          <div className="space-y-0.5">
+            <h3 className="font-medium">Validación de dispositivos</h3>
+            <p className="text-sm text-muted-foreground">
+              {validationEnabled 
+                ? "Solo dispositivos autorizados pueden usar el kiosco"
+                : "Cualquier dispositivo puede usar el kiosco (desactivado)"}
+            </p>
+          </div>
+          <Switch
+            checked={validationEnabled}
+            onCheckedChange={handleToggleValidation}
+            disabled={savingConfig}
+          />
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Dispositivos Autorizados</h3>
