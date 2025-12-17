@@ -84,6 +84,19 @@ export default function KioscoCheckIn() {
   // Check device authorization on mount
   useEffect(() => {
     const checkDeviceAuthorization = async () => {
+      // First check if device validation is enabled
+      const { data: configData } = await supabase
+        .from('facial_recognition_config')
+        .select('value')
+        .eq('key', 'kiosk_device_validation_enabled')
+        .single()
+      
+      // If validation is disabled, allow access
+      if (configData?.value === 'false') {
+        setDeviceStatus('no_devices')
+        return
+      }
+
       // Check for activation token in URL
       const activateToken = searchParams.get('activate')
       if (activateToken) {
