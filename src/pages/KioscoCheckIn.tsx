@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText, Monitor, ShieldAlert } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import { imprimirTareasDiariasAutomatico, previewTareasDiarias } from "@/utils/printManager"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
+import { Button } from "@/components/ui/button"
 
 interface EmpleadoBasico {
   id: string
@@ -44,14 +45,17 @@ interface AccionDisponible {
   color: string
 }
 
+const DEVICE_TOKEN_KEY = 'kiosk_device_token'
+
 export default function KioscoCheckIn() {
   const { toast } = useToast()
   const { config } = useFacialConfig()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { reproducirMensajeBienvenida, reproducirMensajeTareas } = useAudioNotifications()
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [lastProcessTime, setLastProcessTime] = useState<number>(0) // Para prevenir múltiples procesamiento
+  const [lastProcessTime, setLastProcessTime] = useState<number>(0)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [selectedEmployee, setSelectedEmployee] = useState<EmpleadoBasico | null>(null)
   const [showFacialAuth, setShowFacialAuth] = useState(false)
@@ -72,6 +76,75 @@ export default function KioscoCheckIn() {
   } | null>(null)
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [pendingAccionSalida, setPendingAccionSalida] = useState(false)
+  
+  // Device authorization state
+  const [deviceStatus, setDeviceStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'no_devices'>('checking')
+  const [deviceName, setDeviceName] = useState<string | null>(null)
+
+  // Check device authorization on mount
+  useEffect(() => {
+    const checkDeviceAuthorization = async () => {
+      // Check for activation token in URL
+      const activateToken = searchParams.get('activate')
+      if (activateToken) {
+        // Validate and store the token
+        const { data, error } = await supabase.rpc('validate_kiosk_device', { p_device_token: activateToken })
+        
+        if (!error && data && data.length > 0 && data[0].is_valid) {
+          localStorage.setItem(DEVICE_TOKEN_KEY, activateToken)
+          setDeviceName(data[0].device_name)
+          setDeviceStatus('authorized')
+          toast({
+            title: "Dispositivo activado",
+            description: `Este dispositivo ha sido registrado como "${data[0].device_name}"`
+          })
+          // Remove the activate param from URL
+          navigate('/kiosco', { replace: true })
+          return
+        }
+      }
+
+      // Check if there are any registered devices
+      const { data: devicesData, error: devicesError } = await supabase
+        .from('kiosk_devices')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1)
+
+      if (devicesError) {
+        console.error('Error checking devices:', devicesError)
+        setDeviceStatus('no_devices') // Allow access on error
+        return
+      }
+
+      // If no devices are registered, allow access
+      if (!devicesData || devicesData.length === 0) {
+        setDeviceStatus('no_devices')
+        return
+      }
+
+      // Devices are registered, check if this device is authorized
+      const storedToken = localStorage.getItem(DEVICE_TOKEN_KEY)
+      if (!storedToken) {
+        setDeviceStatus('unauthorized')
+        return
+      }
+
+      // Validate the stored token
+      const { data: validationData, error: validationError } = await supabase.rpc('validate_kiosk_device', { p_device_token: storedToken })
+      
+      if (validationError || !validationData || validationData.length === 0 || !validationData[0].is_valid) {
+        localStorage.removeItem(DEVICE_TOKEN_KEY)
+        setDeviceStatus('unauthorized')
+        return
+      }
+
+      setDeviceName(validationData[0].device_name)
+      setDeviceStatus('authorized')
+    }
+
+    checkDeviceAuthorization()
+  }, [searchParams, navigate, toast])
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -815,6 +888,37 @@ export default function KioscoCheckIn() {
     })
   }
 
+  // Show loading while checking device
+  if (deviceStatus === 'checking') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <Monitor className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-pulse" />
+          <p className="text-lg font-medium">Verificando dispositivo...</p>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show unauthorized screen
+  if (deviceStatus === 'unauthorized') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-8 text-center">
+          <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-destructive mb-2">Dispositivo No Autorizado</h1>
+          <p className="text-muted-foreground mb-6">
+            Este dispositivo no está registrado para usar el kiosco de fichaje.
+            Contacte al administrador para obtener una URL de activación.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            Volver al inicio
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       {/* Alerta de Cruces Rojas (Overlay) */}
@@ -841,7 +945,6 @@ export default function KioscoCheckIn() {
           onOpenChange={(open) => {
             setShowConfirmarTareas(open)
             if (!open && pendingAccionSalida) {
-              // Si cierra sin confirmar, igual procesar salida
               handleConfirmarTareasYSalir()
             }
           }}
@@ -865,6 +968,12 @@ export default function KioscoCheckIn() {
               )}
               <span>{isOnline ? 'Conectado' : 'Sin conexión'}</span>
             </div>
+            {deviceName && (
+              <div className="flex items-center space-x-1 text-primary">
+                <Monitor className="h-4 w-4" />
+                <span>{deviceName}</span>
+              </div>
+            )}
           </div>
         </div>
 
