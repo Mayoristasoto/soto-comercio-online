@@ -6688,6 +6688,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_kiosk_device: {
+        Args: { p_device_token: string }
+        Returns: {
+          device_id: string
+          device_name: string
+          is_valid: boolean
+          sucursal_id: string
+        }[]
+      }
       verificar_empleados_sin_salida: {
         Args: never
         Returns: {
