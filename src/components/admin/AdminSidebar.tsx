@@ -67,7 +67,6 @@ const navigationGroups: NavGroup[] = [
       { title: "Ausencias Médicas", url: "/admin#ausencias-medicas", icon: FileText },
       { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
-      { title: "Ranking de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
     ]
   },
   {
@@ -86,6 +85,7 @@ const navigationGroups: NavGroup[] = [
     items: [
       { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
       { title: "Fichero", url: "/fichero", icon: Clock },
+      { title: "Reporte de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
       { title: "Evaluaciones", url: "/evaluaciones", icon: FileText },
       { title: "Solicitudes", url: "/solicitudes", icon: FileText },
       { title: "Anotaciones", url: "/anotaciones", icon: FileText },
