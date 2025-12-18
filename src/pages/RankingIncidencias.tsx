@@ -4,14 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw, Calculator, CalendarIcon } from "lucide-react";
+import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw, Calculator, CalendarIcon, FileDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
+import { generateReporteIncidenciasPDF } from "@/utils/reporteIncidenciasPDF";
+import { toast } from "sonner";
 interface EmpleadoRanking {
   empleado_id: string;
   nombre: string;
@@ -254,6 +255,101 @@ export default function RankingIncidencias() {
     }
   };
 
+  const handleExportPDF = async () => {
+    if (!fechaInicio || !fechaFin) {
+      toast.error('Selecciona un rango de fechas');
+      return;
+    }
+
+    try {
+      toast.loading('Generando reporte PDF...');
+      
+      const inicioStr = format(fechaInicio, 'yyyy-MM-dd');
+      const finStr = format(fechaFin, 'yyyy-MM-dd');
+
+      // Obtener empleados con incidencias
+      const { data: empleados } = await supabase
+        .from('empleados')
+        .select('id, nombre, apellido, sucursal_id, sucursales(nombre)')
+        .eq('activo', true);
+
+      // Obtener fichajes tardíos con detalle
+      const { data: fichajesTardios } = await supabase
+        .from('fichajes_tardios')
+        .select('*')
+        .gte('fecha_fichaje', inicioStr)
+        .lte('fecha_fichaje', finStr);
+
+      // Obtener pausas excedidas con detalle
+      const { data: pausasExcedidas } = await supabase
+        .from('fichajes_pausas_excedidas')
+        .select('*')
+        .gte('fecha_fichaje', inicioStr)
+        .lte('fecha_fichaje', finStr);
+
+      // Agrupar por empleado
+      const empleadosMap = new Map<string, any>();
+
+      empleados?.forEach((emp: any) => {
+        empleadosMap.set(emp.id, {
+          empleado_id: emp.id,
+          nombre: emp.nombre,
+          apellido: emp.apellido,
+          sucursal_nombre: emp.sucursales?.nombre || 'Sin sucursal',
+          llegadas_tarde: 0,
+          pausas_excedidas: 0,
+          total: 0,
+          detalle_llegadas: [],
+          detalle_pausas: []
+        });
+      });
+
+      fichajesTardios?.forEach((fichaje: any) => {
+        const emp = empleadosMap.get(fichaje.empleado_id);
+        if (emp) {
+          emp.llegadas_tarde++;
+          emp.total++;
+          emp.detalle_llegadas.push({
+            fecha: format(new Date(fichaje.fecha_fichaje), 'dd/MM/yyyy'),
+            hora_programada: fichaje.hora_programada || '-',
+            hora_real: fichaje.hora_real || '-',
+            minutos_retraso: fichaje.minutos_retraso || 0
+          });
+        }
+      });
+
+      pausasExcedidas?.forEach((pausa: any) => {
+        const emp = empleadosMap.get(pausa.empleado_id);
+        if (emp) {
+          emp.pausas_excedidas++;
+          emp.total++;
+          emp.detalle_pausas.push({
+            fecha: format(new Date(pausa.fecha_fichaje), 'dd/MM/yyyy'),
+            duracion_minutos: pausa.duracion_total_minutos || 0,
+            exceso_minutos: pausa.minutos_excedidos || 0
+          });
+        }
+      });
+
+      // Filtrar solo empleados con incidencias
+      const empleadosConIncidencias = Array.from(empleadosMap.values())
+        .filter(emp => emp.total > 0);
+
+      const fileName = generateReporteIncidenciasPDF({
+        fechaInicio,
+        fechaFin,
+        empleados: empleadosConIncidencias
+      });
+
+      toast.dismiss();
+      toast.success(`Reporte generado: ${fileName}`);
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      toast.dismiss();
+      toast.error('Error al generar el reporte PDF');
+    }
+  };
+
   const getPodiumIcon = (posicion: number) => {
     if (posicion === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
     if (posicion === 2) return <Medal className="h-5 w-5 text-gray-400" />;
@@ -289,12 +385,20 @@ export default function RankingIncidencias() {
           </div>
           <div className="flex gap-2">
             <Button 
+              onClick={handleExportPDF} 
+              disabled={loading || recalculating}
+              variant="outline"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </Button>
+            <Button 
               onClick={recalcularIncidencias} 
               disabled={recalculating || loading}
               variant="outline"
             >
               <Calculator className={`h-4 w-4 mr-2 ${recalculating ? 'animate-pulse' : ''}`} />
-              {recalculating ? 'Recalculando...' : 'Recalcular Incidencias'}
+              {recalculating ? 'Recalculando...' : 'Recalcular'}
             </Button>
             <Button onClick={loadRankingData} disabled={loading || recalculating}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
