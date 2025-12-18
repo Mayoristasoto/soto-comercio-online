@@ -241,6 +241,95 @@ export type Database = {
         }
         Relationships: []
       }
+      asignaciones_especiales: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          empleado_id: string
+          fecha: string
+          hora_entrada: string
+          hora_salida: string
+          id: string
+          sucursal_id: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          fecha: string
+          hora_entrada?: string
+          hora_salida?: string
+          id?: string
+          sucursal_id: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          fecha?: string
+          hora_entrada?: string
+          hora_salida?: string
+          id?: string
+          sucursal_id?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asignaciones_especiales_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asignaciones_premio: {
         Row: {
           acreditado_sistema_comercial: boolean | null

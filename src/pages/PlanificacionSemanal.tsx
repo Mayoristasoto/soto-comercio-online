@@ -252,14 +252,14 @@ export default function PlanificacionSemanal() {
   };
 
   const loadAsignacionesDomingo = async (fecha: string) => {
-    const { data, error } = await supabase
-      .from('asignaciones_especiales')
+    const { data, error } = await (supabase
+      .from('asignaciones_especiales' as any)
       .select('*')
       .eq('fecha', fecha)
-      .eq('tipo', 'domingo');
+      .eq('tipo', 'domingo') as any);
     
     if (data) {
-      const detallesConInfo: AsignacionEspecial[] = data.map(d => ({
+      const detallesConInfo: AsignacionEspecial[] = data.map((d: any) => ({
         ...d,
         empleado: empleados.find(e => e.id === d.empleado_id),
         sucursal: sucursales.find(s => s.id === d.sucursal_id),
@@ -271,15 +271,15 @@ export default function PlanificacionSemanal() {
   };
 
   const loadAsignacionesFeriado = async (fecha: string) => {
-    const { data, error } = await supabase
-      .from('asignaciones_especiales')
+    const { data, error } = await (supabase
+      .from('asignaciones_especiales' as any)
       .select('*')
       .eq('fecha', fecha)
-      .eq('tipo', 'feriado');
+      .eq('tipo', 'feriado') as any);
     
     if (data) {
       const feriado = feriados.find(f => f.fecha === fecha);
-      const detallesConInfo: AsignacionEspecial[] = data.map(d => ({
+      const detallesConInfo: AsignacionEspecial[] = data.map((d: any) => ({
         ...d,
         empleado: empleados.find(e => e.id === d.empleado_id),
         sucursal: sucursales.find(s => s.id === d.sucursal_id),
@@ -303,8 +303,8 @@ export default function PlanificacionSemanal() {
       return;
     }
 
-    const { error } = await supabase
-      .from('asignaciones_especiales')
+    const { error } = await (supabase
+      .from('asignaciones_especiales' as any)
       .insert({
         empleado_id: newAsignacionEspecial.empleado_id,
         sucursal_id: newAsignacionEspecial.sucursal_id,
@@ -312,7 +312,7 @@ export default function PlanificacionSemanal() {
         tipo: asignacionEspecialTipo,
         hora_entrada: newAsignacionEspecial.hora_entrada,
         hora_salida: newAsignacionEspecial.hora_salida,
-      });
+      }) as any);
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -334,7 +334,7 @@ export default function PlanificacionSemanal() {
   };
 
   const eliminarAsignacionEspecial = async (id: string, tipo: 'domingo' | 'feriado') => {
-    const { error } = await supabase.from('asignaciones_especiales').delete().eq('id', id);
+    const { error } = await (supabase.from('asignaciones_especiales' as any).delete().eq('id', id) as any);
     
     if (!error) {
       if (tipo === 'domingo') {
@@ -726,7 +726,7 @@ export default function PlanificacionSemanal() {
         </div>
 
         <Tabs defaultValue="planificacion" className="space-y-4">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="planificacion">
               <Calendar className="h-4 w-4 mr-2" />
               Planificación Semanal
@@ -734,6 +734,14 @@ export default function PlanificacionSemanal() {
             <TabsTrigger value="plantillas">
               <FileText className="h-4 w-4 mr-2" />
               Plantillas
+            </TabsTrigger>
+            <TabsTrigger value="domingo">
+              <Sun className="h-4 w-4 mr-2" />
+              Domingo
+            </TabsTrigger>
+            <TabsTrigger value="feriado">
+              <Flag className="h-4 w-4 mr-2" />
+              Feriado
             </TabsTrigger>
           </TabsList>
 
@@ -1009,6 +1017,195 @@ export default function PlanificacionSemanal() {
               </Card>
             </div>
           </TabsContent>
+
+          {/* Tab Domingo */}
+          <TabsContent value="domingo" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sun className="h-5 w-5 text-yellow-500" />
+                      Asignaciones para Domingo
+                    </CardTitle>
+                    <CardDescription>Asigne empleados para trabajar los días domingo</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Select
+                      value={selectedDomingo}
+                      onValueChange={setSelectedDomingo}
+                    >
+                      <SelectTrigger className="w-[280px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getNextSundays().map((sunday) => (
+                          <SelectItem key={sunday.toISOString()} value={format(sunday, 'yyyy-MM-dd')}>
+                            Domingo {format(sunday, "d 'de' MMMM", { locale: es })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={() => {
+                        setAsignacionEspecialTipo('domingo');
+                        setDialogAsignacionEspecialOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Empleado
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Empleado</TableHead>
+                      <TableHead>Sucursal</TableHead>
+                      <TableHead>Horario</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {asignacionesDomingo.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                          No hay empleados asignados para este domingo
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      asignacionesDomingo
+                        .sort((a, b) => (a.empleado?.apellido || '').localeCompare(b.empleado?.apellido || ''))
+                        .map((d) => (
+                          <TableRow key={d.id}>
+                            <TableCell className="font-medium">
+                              {d.empleado?.apellido}, {d.empleado?.nombre}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{d.sucursal?.nombre}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {d.hora_entrada?.slice(0, 5)} - {d.hora_salida?.slice(0, 5)}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => eliminarAsignacionEspecial(d.id, 'domingo')}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab Feriado */}
+          <TabsContent value="feriado" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Flag className="h-5 w-5 text-red-500" />
+                      Asignaciones para Feriados
+                    </CardTitle>
+                    <CardDescription>Asigne empleados para trabajar los días feriados</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Select
+                      value={selectedFeriado || ''}
+                      onValueChange={setSelectedFeriado}
+                    >
+                      <SelectTrigger className="w-[320px]">
+                        <SelectValue placeholder="Seleccione un feriado..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {feriados.length === 0 ? (
+                          <SelectItem value="none" disabled>No hay feriados configurados</SelectItem>
+                        ) : (
+                          feriados.map((f) => (
+                            <SelectItem key={f.id} value={f.fecha}>
+                              {format(new Date(f.fecha + 'T00:00:00'), "d 'de' MMMM", { locale: es })} - {f.nombre}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={() => {
+                        setAsignacionEspecialTipo('feriado');
+                        setDialogAsignacionEspecialOpen(true);
+                      }}
+                      disabled={!selectedFeriado}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Empleado
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!selectedFeriado ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Seleccione un feriado para ver y gestionar las asignaciones
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Empleado</TableHead>
+                        <TableHead>Sucursal</TableHead>
+                        <TableHead>Horario</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {asignacionesFeriado.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No hay empleados asignados para este feriado
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        asignacionesFeriado
+                          .sort((a, b) => (a.empleado?.apellido || '').localeCompare(b.empleado?.apellido || ''))
+                          .map((d) => (
+                            <TableRow key={d.id}>
+                              <TableCell className="font-medium">
+                                {d.empleado?.apellido}, {d.empleado?.nombre}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{d.sucursal?.nombre}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                {d.hora_entrada?.slice(0, 5)} - {d.hora_salida?.slice(0, 5)}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => eliminarAsignacionEspecial(d.id, 'feriado')}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Dialog Agregar Asignación */}
@@ -1102,6 +1299,85 @@ export default function PlanificacionSemanal() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+
+        {/* Dialog Agregar Asignación Especial (Domingo/Feriado) */}
+        <Dialog open={dialogAsignacionEspecialOpen} onOpenChange={setDialogAsignacionEspecialOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Agregar Empleado para {asignacionEspecialTipo === 'domingo' ? 'Domingo' : 'Feriado'}
+              </DialogTitle>
+              <DialogDescription>
+                {asignacionEspecialTipo === 'domingo' 
+                  ? `Domingo ${format(new Date(selectedDomingo + 'T00:00:00'), "d 'de' MMMM yyyy", { locale: es })}`
+                  : selectedFeriado && `${feriados.find(f => f.fecha === selectedFeriado)?.nombre} - ${format(new Date(selectedFeriado + 'T00:00:00'), "d 'de' MMMM yyyy", { locale: es })}`
+                }
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Empleado</Label>
+                <Select
+                  value={newAsignacionEspecial.empleado_id}
+                  onValueChange={(v) => setNewAsignacionEspecial({ ...newAsignacionEspecial, empleado_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione empleado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empleados.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.apellido}, {e.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Sucursal</Label>
+                <Select
+                  value={newAsignacionEspecial.sucursal_id}
+                  onValueChange={(v) => setNewAsignacionEspecial({ ...newAsignacionEspecial, sucursal_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione sucursal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Hora entrada</Label>
+                  <Input
+                    type="time"
+                    value={newAsignacionEspecial.hora_entrada}
+                    onChange={(e) => setNewAsignacionEspecial({ ...newAsignacionEspecial, hora_entrada: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Hora salida</Label>
+                  <Input
+                    type="time"
+                    value={newAsignacionEspecial.hora_salida}
+                    onChange={(e) => setNewAsignacionEspecial({ ...newAsignacionEspecial, hora_salida: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogAsignacionEspecialOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={agregarAsignacionEspecial}>Agregar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
