@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, Plus, FileText, Copy, Trash2, Download } from 'lucide-react';
+import { Calendar, Plus, FileText, Copy, Trash2, Download, Sun, Flag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { format, startOfWeek, addWeeks } from 'date-fns';
+import { format, startOfWeek, addWeeks, addDays, isSunday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const DIAS_SEMANA = [
   { value: 1, label: 'Lunes' },
@@ -25,6 +26,26 @@ const DIAS_SEMANA = [
   { value: 6, label: 'Sábado' },
   { value: 0, label: 'Domingo' },
 ];
+
+interface Feriado {
+  id: string;
+  fecha: string;
+  nombre: string;
+  descripcion: string | null;
+}
+
+interface AsignacionEspecial {
+  id: string;
+  empleado_id: string;
+  sucursal_id: string;
+  fecha: string;
+  tipo: 'domingo' | 'feriado';
+  hora_entrada: string;
+  hora_salida: string;
+  empleado?: Empleado;
+  sucursal?: Sucursal;
+  feriado_nombre?: string;
+}
 
 interface Empleado {
   id: string;
@@ -78,6 +99,25 @@ interface PlanificacionDetalle {
   sucursal?: Sucursal;
 }
 
+// Función helper para obtener el próximo domingo
+const getNextSunday = (): Date => {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysUntilSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
+  return addDays(today, daysUntilSunday);
+};
+
+// Obtener próximos 8 domingos
+const getNextSundays = (): Date[] => {
+  const sundays: Date[] = [];
+  let current = getNextSunday();
+  for (let i = 0; i < 8; i++) {
+    sundays.push(current);
+    current = addDays(current, 7);
+  }
+  return sundays;
+};
+
 export default function PlanificacionSemanal() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -97,6 +137,21 @@ export default function PlanificacionSemanal() {
   const [selectedPlanificacion, setSelectedPlanificacion] = useState<string | null>(null);
   const [planificacionDetalles, setPlanificacionDetalles] = useState<PlanificacionDetalle[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<Date>(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }));
+  
+  // Domingos y Feriados
+  const [feriados, setFeriados] = useState<Feriado[]>([]);
+  const [asignacionesDomingo, setAsignacionesDomingo] = useState<AsignacionEspecial[]>([]);
+  const [asignacionesFeriado, setAsignacionesFeriado] = useState<AsignacionEspecial[]>([]);
+  const [selectedDomingo, setSelectedDomingo] = useState<string>(format(getNextSunday(), 'yyyy-MM-dd'));
+  const [selectedFeriado, setSelectedFeriado] = useState<string | null>(null);
+  const [dialogAsignacionEspecialOpen, setDialogAsignacionEspecialOpen] = useState(false);
+  const [asignacionEspecialTipo, setAsignacionEspecialTipo] = useState<'domingo' | 'feriado'>('domingo');
+  const [newAsignacionEspecial, setNewAsignacionEspecial] = useState({
+    empleado_id: '',
+    sucursal_id: '',
+    hora_entrada: '09:00',
+    hora_salida: '18:00',
+  });
   
   // Agregar asignación
   const [dialogAsignacionOpen, setDialogAsignacionOpen] = useState(false);
@@ -125,20 +180,39 @@ export default function PlanificacionSemanal() {
     }
   }, [selectedPlanificacion]);
 
+  useEffect(() => {
+    if (selectedDomingo && empleados.length > 0 && sucursales.length > 0) {
+      loadAsignacionesDomingo(selectedDomingo);
+    }
+  }, [selectedDomingo, empleados, sucursales]);
+
+  useEffect(() => {
+    if (selectedFeriado && empleados.length > 0 && sucursales.length > 0) {
+      loadAsignacionesFeriado(selectedFeriado);
+    }
+  }, [selectedFeriado, empleados, sucursales]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [empRes, sucRes, plantRes, planRes] = await Promise.all([
+      const [empRes, sucRes, plantRes, planRes, feriadosRes] = await Promise.all([
         supabase.from('empleados').select('id, nombre, apellido').eq('activo', true).order('apellido'),
         supabase.from('sucursales').select('id, nombre').eq('activa', true).order('nombre'),
         supabase.from('plantillas_trabajo_semanal').select('*').order('nombre'),
         supabase.from('planificacion_semanal').select('*').order('fecha_inicio_semana', { ascending: false }),
+        supabase.from('dias_feriados').select('*').eq('activo', true).gte('fecha', format(new Date(), 'yyyy-MM-dd')).order('fecha'),
       ]);
       
       if (empRes.data) setEmpleados(empRes.data);
       if (sucRes.data) setSucursales(sucRes.data);
       if (plantRes.data) setPlantillas(plantRes.data);
       if (planRes.data) setPlanificaciones(planRes.data);
+      if (feriadosRes.data) {
+        setFeriados(feriadosRes.data);
+        if (feriadosRes.data.length > 0 && !selectedFeriado) {
+          setSelectedFeriado(feriadosRes.data[0].fecha);
+        }
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -174,6 +248,100 @@ export default function PlanificacionSemanal() {
         sucursal: sucursales.find(s => s.id === d.sucursal_id),
       }));
       setPlanificacionDetalles(detallesConInfo);
+    }
+  };
+
+  const loadAsignacionesDomingo = async (fecha: string) => {
+    const { data, error } = await supabase
+      .from('asignaciones_especiales')
+      .select('*')
+      .eq('fecha', fecha)
+      .eq('tipo', 'domingo');
+    
+    if (data) {
+      const detallesConInfo: AsignacionEspecial[] = data.map(d => ({
+        ...d,
+        empleado: empleados.find(e => e.id === d.empleado_id),
+        sucursal: sucursales.find(s => s.id === d.sucursal_id),
+      }));
+      setAsignacionesDomingo(detallesConInfo);
+    } else {
+      setAsignacionesDomingo([]);
+    }
+  };
+
+  const loadAsignacionesFeriado = async (fecha: string) => {
+    const { data, error } = await supabase
+      .from('asignaciones_especiales')
+      .select('*')
+      .eq('fecha', fecha)
+      .eq('tipo', 'feriado');
+    
+    if (data) {
+      const feriado = feriados.find(f => f.fecha === fecha);
+      const detallesConInfo: AsignacionEspecial[] = data.map(d => ({
+        ...d,
+        empleado: empleados.find(e => e.id === d.empleado_id),
+        sucursal: sucursales.find(s => s.id === d.sucursal_id),
+        feriado_nombre: feriado?.nombre,
+      }));
+      setAsignacionesFeriado(detallesConInfo);
+    } else {
+      setAsignacionesFeriado([]);
+    }
+  };
+
+  const agregarAsignacionEspecial = async () => {
+    if (!newAsignacionEspecial.empleado_id || !newAsignacionEspecial.sucursal_id) {
+      toast({ title: 'Error', description: 'Seleccione empleado y sucursal', variant: 'destructive' });
+      return;
+    }
+
+    const fecha = asignacionEspecialTipo === 'domingo' ? selectedDomingo : selectedFeriado;
+    if (!fecha) {
+      toast({ title: 'Error', description: 'Seleccione una fecha', variant: 'destructive' });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('asignaciones_especiales')
+      .insert({
+        empleado_id: newAsignacionEspecial.empleado_id,
+        sucursal_id: newAsignacionEspecial.sucursal_id,
+        fecha: fecha,
+        tipo: asignacionEspecialTipo,
+        hora_entrada: newAsignacionEspecial.hora_entrada,
+        hora_salida: newAsignacionEspecial.hora_salida,
+      });
+
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Éxito', description: 'Asignación agregada' });
+      if (asignacionEspecialTipo === 'domingo') {
+        loadAsignacionesDomingo(selectedDomingo);
+      } else if (selectedFeriado) {
+        loadAsignacionesFeriado(selectedFeriado);
+      }
+      setDialogAsignacionEspecialOpen(false);
+      setNewAsignacionEspecial({
+        empleado_id: '',
+        sucursal_id: '',
+        hora_entrada: '09:00',
+        hora_salida: '18:00',
+      });
+    }
+  };
+
+  const eliminarAsignacionEspecial = async (id: string, tipo: 'domingo' | 'feriado') => {
+    const { error } = await supabase.from('asignaciones_especiales').delete().eq('id', id);
+    
+    if (!error) {
+      if (tipo === 'domingo') {
+        loadAsignacionesDomingo(selectedDomingo);
+      } else if (selectedFeriado) {
+        loadAsignacionesFeriado(selectedFeriado);
+      }
     }
   };
 
