@@ -146,13 +146,11 @@ export const FacialPhotoCapture = () => {
         .from('facial-photos')
         .getPublicUrl(fileName);
 
-      // Crear registro en la tabla
+      // Crear registro usando función SECURITY DEFINER (bypasses RLS)
       const { error: insertError } = await supabase
-        .from('facial_photo_uploads')
-        .insert({
-          empleado_id: selectedEmpleado.id,
-          photo_url: publicUrl,
-          estado: 'pendiente',
+        .rpc('kiosk_upload_facial_photo', {
+          p_empleado_id: selectedEmpleado.id,
+          p_photo_url: publicUrl
         });
 
       if (insertError) throw insertError;
