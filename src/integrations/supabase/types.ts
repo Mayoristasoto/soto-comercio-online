@@ -6680,6 +6680,10 @@ export type Database = {
         }
         Returns: string
       }
+      kiosk_upload_facial_photo: {
+        Args: { p_empleado_id: string; p_photo_url: string }
+        Returns: string
+      }
       log_empleado_access: {
         Args: {
           p_datos_accedidos?: string[]
