@@ -62,7 +62,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     max_intentos_facial: 3,
     geocerca_obligatoria: true,
     ip_whitelist_obligatoria: false,
-    whatsapp_api_token: 'c73f7a8b69dd4e2c9f218d1376b1fa07',
+    whatsapp_api_token: '',
     whatsapp_api_endpoint: 'https://api.mayoristasoto.online/api/messages/send',
     whatsapp_notificaciones_activas: true,
     whatsapp_retraso_minutos: 15,
