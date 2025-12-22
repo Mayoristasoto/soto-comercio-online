@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -51,7 +51,7 @@ export const exportarPinsPDF = (pins: PinGenerado[]): string => {
     pin.ya_tenia_pin ? 'Actualizado' : 'Nuevo'
   ])
   
-  ;(doc as any).autoTable({
+  autoTable(doc, {
     startY: 52,
     head: [['#', 'Empleado', 'Legajo', 'PIN', 'Estado']],
     body: tableData,
@@ -76,7 +76,7 @@ export const exportarPinsPDF = (pins: PinGenerado[]): string => {
     },
     didDrawPage: (data: any) => {
       // Pie de página con número de página
-      const pageCount = (doc as any).internal.getNumberOfPages()
+      const pageCount = doc.getNumberOfPages()
       doc.setFontSize(8)
       doc.setTextColor(150)
       doc.text(
