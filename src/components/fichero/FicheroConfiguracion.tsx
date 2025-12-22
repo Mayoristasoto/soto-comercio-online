@@ -18,7 +18,8 @@ import {
   EyeOff,
   MessageSquare,
   TestTube,
-  Volume2
+  Volume2,
+  Key
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -51,6 +52,10 @@ interface ConfiguracionSistema {
   mensaje_cumpleanos: string
   mensaje_aniversario: string
   kiosko_mostrar_cruces_rojas: boolean
+  pin_habilitado: boolean
+  pin_longitud: number
+  pin_max_intentos: number
+  pin_bloqueo_minutos: number
 }
 
 export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionProps) {
@@ -75,7 +80,11 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     whatsapp_notificaciones_numero: '595985523065',
     mensaje_cumpleanos: 'Hoy {nombre} {apellido} cumple {edad} años. ¡Feliz cumpleaños! 🎂🎉',
     mensaje_aniversario: 'Hoy {nombre} {apellido} cumple {años} años trabajando con nosotros. ¡Felicidades por su aniversario laboral! 🎊',
-    kiosko_mostrar_cruces_rojas: false
+    kiosko_mostrar_cruces_rojas: false,
+    pin_habilitado: false,
+    pin_longitud: 4,
+    pin_max_intentos: 3,
+    pin_bloqueo_minutos: 15
   })
   const [ubicacionActual, setUbicacionActual] = useState<{lat: number, lng: number} | null>(null)
   const [tieneDescriptorFacial, setTieneDescriptorFacial] = useState(false)
@@ -118,7 +127,11 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
           'whatsapp_notificaciones_numero',
           'mensaje_cumpleanos',
           'mensaje_aniversario',
-          'kiosko_mostrar_cruces_rojas'
+          'kiosko_mostrar_cruces_rojas',
+          'pin_habilitado',
+          'pin_longitud',
+          'pin_max_intentos',
+          'pin_bloqueo_minutos'
         ])
 
       if (error) throw error
@@ -264,6 +277,22 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
         {
           clave: 'kiosko_mostrar_cruces_rojas',
           valor: configuracion.kiosko_mostrar_cruces_rojas.toString()
+        },
+        {
+          clave: 'pin_habilitado',
+          valor: configuracion.pin_habilitado.toString()
+        },
+        {
+          clave: 'pin_longitud',
+          valor: configuracion.pin_longitud.toString()
+        },
+        {
+          clave: 'pin_max_intentos',
+          valor: configuracion.pin_max_intentos.toString()
+        },
+        {
+          clave: 'pin_bloqueo_minutos',
+          valor: configuracion.pin_bloqueo_minutos.toString()
         }
       ]
 
@@ -705,6 +734,103 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
               </Dialog>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Configuración de PIN */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Key className="h-5 w-5" />
+            <span>Fichaje con PIN</span>
+          </CardTitle>
+          <CardDescription>
+            Permite a los empleados fichar usando un PIN numérico + foto de verificación
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Habilitar fichaje con PIN</Label>
+              <p className="text-sm text-muted-foreground">
+                Permite usar PIN como alternativa al reconocimiento facial
+              </p>
+            </div>
+            <Switch
+              checked={configuracion.pin_habilitado}
+              onCheckedChange={(checked) => setConfiguracion(prev => ({
+                ...prev,
+                pin_habilitado: checked
+              }))}
+              disabled={empleado.rol !== 'admin_rrhh'}
+            />
+          </div>
+
+          {configuracion.pin_habilitado && (
+            <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-2">
+                <Label>Longitud del PIN</Label>
+                <Input
+                  type="number"
+                  min="4"
+                  max="6"
+                  value={configuracion.pin_longitud}
+                  onChange={(e) => setConfiguracion(prev => ({
+                    ...prev,
+                    pin_longitud: parseInt(e.target.value) || 4
+                  }))}
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Cantidad de dígitos del PIN (4-6)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Máximo de intentos fallidos</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={configuracion.pin_max_intentos}
+                  onChange={(e) => setConfiguracion(prev => ({
+                    ...prev,
+                    pin_max_intentos: parseInt(e.target.value) || 3
+                  }))}
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Intentos antes de bloquear temporalmente el PIN
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tiempo de bloqueo (minutos)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={configuracion.pin_bloqueo_minutos}
+                  onChange={(e) => setConfiguracion(prev => ({
+                    ...prev,
+                    pin_bloqueo_minutos: parseInt(e.target.value) || 15
+                  }))}
+                  disabled={empleado.rol !== 'admin_rrhh'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tiempo que el PIN queda bloqueado después de exceder los intentos
+                </p>
+              </div>
+
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Cada fichaje con PIN requiere captura de foto para verificación posterior.
+                  Los PINs de empleados se gestionan desde la sección "Gestión de PINs" en el panel de administración.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         </CardContent>
       </Card>
 
