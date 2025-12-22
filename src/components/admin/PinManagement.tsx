@@ -34,10 +34,13 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Key
+  Key,
+  Download,
+  Shuffle
 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { exportarPinsPDF } from "@/utils/pinsExportPDF"
 
 interface EmpleadoPin {
   empleado_id: string
@@ -57,6 +60,7 @@ export default function PinManagement() {
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [procesando, setProcesando] = useState<string | null>(null)
+  const [generandoMasivo, setGenerandoMasivo] = useState(false)
   
   // Modal para configurar PIN
   const [modalOpen, setModalOpen] = useState(false)
@@ -234,6 +238,45 @@ export default function PinManagement() {
     }
   }
 
+  // Generar PINs masivo para todos los empleados
+  const generarPinsMasivo = async () => {
+    setGenerandoMasivo(true)
+    try {
+      const { data, error } = await supabase.rpc('generar_pins_masivo')
+      
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        toast({
+          title: "Sin empleados",
+          description: "No hay empleados activos para generar PINs",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Exportar a PDF
+      const filename = exportarPinsPDF(data)
+      
+      toast({
+        title: "PINs generados exitosamente",
+        description: `Se generaron ${data.length} PINs y se descargó el archivo ${filename}`
+      })
+
+      // Recargar lista de empleados
+      cargarEmpleados()
+    } catch (err: any) {
+      console.error('Error generando PINs masivo:', err)
+      toast({
+        title: "Error",
+        description: err.message || "No se pudieron generar los PINs",
+        variant: "destructive"
+      })
+    } finally {
+      setGenerandoMasivo(false)
+    }
+  }
+
   // Filtrar empleados
   const empleadosFiltrados = empleados.filter(emp => {
     const termino = busqueda.toLowerCase()
@@ -262,8 +305,8 @@ export default function PinManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Barra de búsqueda */}
-          <div className="flex gap-2 mb-4">
+          {/* Barra de búsqueda y acciones */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -273,9 +316,26 @@ export default function PinManagement() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" onClick={cargarEmpleados} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={cargarEmpleados} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button 
+                onClick={generarPinsMasivo} 
+                disabled={generandoMasivo || loading}
+                className="gap-2"
+              >
+                {generandoMasivo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Shuffle className="h-4 w-4" />
+                    <Download className="h-4 w-4" />
+                  </>
+                )}
+                Generar PINs y Exportar PDF
+              </Button>
+            </div>
           </div>
 
           {/* Tabla de empleados */}
