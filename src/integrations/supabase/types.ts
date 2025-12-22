@@ -6571,6 +6571,17 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       evaluar_puntualidad_mensual: { Args: never; Returns: undefined }
+      generar_pins_masivo: {
+        Args: never
+        Returns: {
+          apellido: string
+          empleado_id: string
+          legajo: string
+          nombre: string
+          pin_generado: string
+          ya_tenia_pin: boolean
+        }[]
+      }
       get_current_date_argentina: { Args: never; Returns: string }
       get_current_empleado: { Args: never; Returns: string }
       get_current_empleado_full: {
