@@ -6751,13 +6751,14 @@ export type Database = {
       }
       is_manager_of_branch: { Args: { branch_id: string }; Returns: boolean }
       kiosk_buscar_empleado: {
-        Args: { p_busqueda: string }
+        Args: { p_termino: string }
         Returns: {
           apellido: string
           avatar_url: string
           id: string
           legajo: string
           nombre: string
+          sucursal_nombre: string
           tiene_pin: boolean
         }[]
       }
