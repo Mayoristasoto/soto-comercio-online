@@ -2172,6 +2172,88 @@ export type Database = {
           },
         ]
       }
+      empleados_pin: {
+        Row: {
+          activo: boolean
+          bloqueado_hasta: string | null
+          creado_por: string | null
+          created_at: string
+          empleado_id: string
+          id: string
+          intentos_fallidos: number
+          pin_hash: string
+          ultimo_uso: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          bloqueado_hasta?: string | null
+          creado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          id?: string
+          intentos_fallidos?: number
+          pin_hash: string
+          ultimo_uso?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          bloqueado_hasta?: string | null
+          creado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          id?: string
+          intentos_fallidos?: number
+          pin_hash?: string
+          ultimo_uso?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleados_pin_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_pin_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_pin_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_pin_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_pin_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_pin_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleados_rostros: {
         Row: {
           capture_metadata: Json | null
@@ -6372,6 +6454,20 @@ export type Database = {
     }
     Functions: {
       actualizar_vacaciones_gozadas: { Args: never; Returns: undefined }
+      admin_desbloquear_pin: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          mensaje: string
+          success: boolean
+        }[]
+      }
+      admin_set_empleado_pin: {
+        Args: { p_empleado_id: string; p_nuevo_pin: string }
+        Returns: {
+          mensaje: string
+          success: boolean
+        }[]
+      }
       admin_update_empleado_rol: {
         Args: {
           p_empleado_id: string
@@ -6640,6 +6736,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_pin: { Args: { p_pin: string }; Returns: string }
       insert_demo_cruces_rojas: {
         Args: { p_empleado_id: string }
         Returns: undefined
@@ -6653,6 +6750,34 @@ export type Database = {
         Returns: boolean
       }
       is_manager_of_branch: { Args: { branch_id: string }; Returns: boolean }
+      kiosk_buscar_empleado: {
+        Args: { p_busqueda: string }
+        Returns: {
+          apellido: string
+          avatar_url: string
+          id: string
+          legajo: string
+          nombre: string
+          tiene_pin: boolean
+        }[]
+      }
+      kiosk_fichaje_pin: {
+        Args: {
+          p_datos?: Json
+          p_empleado_id: string
+          p_foto_base64?: string
+          p_lat?: number
+          p_lng?: number
+          p_pin: string
+          p_tipo?: string
+        }
+        Returns: {
+          fichaje_id: string
+          mensaje: string
+          success: boolean
+          tipo_fichaje: string
+        }[]
+      }
       kiosk_get_acciones: {
         Args: { p_empleado_id: string }
         Returns: {
@@ -6683,6 +6808,18 @@ export type Database = {
       kiosk_upload_facial_photo: {
         Args: { p_empleado_id: string; p_photo_url: string }
         Returns: string
+      }
+      kiosk_verificar_pin: {
+        Args: { p_empleado_id: string; p_pin: string }
+        Returns: {
+          apellido: string
+          email: string
+          empleado_id: string
+          intentos_restantes: number
+          mensaje: string
+          nombre: string
+          valido: boolean
+        }[]
       }
       log_empleado_access: {
         Args: {

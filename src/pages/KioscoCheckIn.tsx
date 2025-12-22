@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText, Monitor, ShieldAlert } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText, Monitor, ShieldAlert, Key, ScanFace } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
+import FicheroPinAuth from "@/components/kiosko/FicheroPinAuth"
 import { imprimirTareasDiariasAutomatico, previewTareasDiarias } from "@/utils/printManager"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { useNavigate, useSearchParams } from "react-router-dom"
@@ -11,6 +12,7 @@ import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface EmpleadoBasico {
   id: string
@@ -76,6 +78,11 @@ export default function KioscoCheckIn() {
   } | null>(null)
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [pendingAccionSalida, setPendingAccionSalida] = useState(false)
+  
+  // PIN mode state
+  const [modoAutenticacion, setModoAutenticacion] = useState<'facial' | 'pin'>('facial')
+  const [showPinAuth, setShowPinAuth] = useState(false)
+  const [pinHabilitado, setPinHabilitado] = useState(false)
   
   // Device authorization state
   const [deviceStatus, setDeviceStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'no_devices'>('checking')
@@ -157,6 +164,17 @@ export default function KioscoCheckIn() {
     }
 
     checkDeviceAuthorization()
+    
+    // Check if PIN mode is enabled
+    const checkPinEnabled = async () => {
+      const { data } = await supabase
+        .from('fichado_configuracion')
+        .select('valor')
+        .eq('clave', 'pin_habilitado')
+        .single()
+      setPinHabilitado(data?.valor === 'true')
+    }
+    checkPinEnabled()
   }, [searchParams, navigate, toast])
 
   // Actualizar reloj cada segundo
@@ -507,18 +525,19 @@ export default function KioscoCheckIn() {
     setTimeout(() => {
       setSelectedEmployee(null)
       setShowFacialAuth(false)
+      setShowPinAuth(false)
       setRegistroExitoso(null)
       setTareasPendientes([])
       setShowActionSelection(false)
       setRecognizedEmployee(null)
       setAccionesDisponibles([])
       setUltimoTipoFichaje(null)
-      setLastProcessTime(0) // Reset del debounce
+      setLastProcessTime(0)
       setEmocionDetectada(null)
       setPausaActiva(null)
       setShowConfirmarTareas(false)
       setPendingAccionSalida(false)
-    }, 6000) // Aumentado tiempo para mostrar confirmación y tareas
+    }, 6000)
   }
 
   // Handler para cuando se confirman las tareas del día antes de salir
@@ -833,14 +852,33 @@ export default function KioscoCheckIn() {
   }
 
   const iniciarCheckIn = () => {
-    // No usar empleado demo - el sistema reconocerá automáticamente al empleado
-    setSelectedEmployee({
-      id: 'recognition-mode',
-      nombre: 'Reconocimiento',
-      apellido: 'Facial'
-    })
-    setShowFacialAuth(true)
+    if (modoAutenticacion === 'pin') {
+      setShowPinAuth(true)
+    } else {
+      setSelectedEmployee({
+        id: 'recognition-mode',
+        nombre: 'Reconocimiento',
+        apellido: 'Facial'
+      })
+      setShowFacialAuth(true)
+    }
     setEmocionDetectada(null)
+  }
+
+  const handlePinSuccess = (empleadoId: string, empleadoData: any, fichajeId: string, tipoFichaje: string) => {
+    setRegistroExitoso({
+      empleado: { id: empleadoId, ...empleadoData },
+      timestamp: new Date()
+    })
+    
+    toast({
+      title: "✅ Fichaje exitoso",
+      description: `${empleadoData.nombre} ${empleadoData.apellido} - ${tipoFichaje} registrado`,
+      duration: 3000,
+    })
+
+    setShowPinAuth(false)
+    resetKiosco()
   }
 
   const obtenerEmojiEmocion = (emocion: string | null): string => {
