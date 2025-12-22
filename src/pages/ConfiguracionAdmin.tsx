@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor } from "lucide-react"
+import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor, Key } from "lucide-react"
 import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes"
@@ -9,6 +9,7 @@ import { PagesManager } from "@/components/admin/PagesManager"
 import ConfiguracionModelosIA from "@/components/admin/ConfiguracionModelosIA"
 import { RolePreview } from "@/components/admin/RolePreview"
 import { KioskDeviceManagement } from "@/components/admin/KioskDeviceManagement"
+import PinManagement from "@/components/admin/PinManagement"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
@@ -77,7 +78,7 @@ export default function Configuracion() {
       </div>
 
       <Tabs defaultValue="fichero" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="fichero" className="gap-2">
             <Settings className="h-4 w-4" />
             Fichero
@@ -85,6 +86,10 @@ export default function Configuracion() {
           <TabsTrigger value="facial" className="gap-2">
             <Brain className="h-4 w-4" />
             Reconocimiento
+          </TabsTrigger>
+          <TabsTrigger value="pins" className="gap-2">
+            <Key className="h-4 w-4" />
+            PINs
           </TabsTrigger>
           <TabsTrigger value="kiosk" className="gap-2">
             <Monitor className="h-4 w-4" />
@@ -120,6 +125,12 @@ export default function Configuracion() {
 
         <TabsContent value="facial" className="space-y-6">
           <FacialRecognitionConfig />
+        </TabsContent>
+
+        <TabsContent value="pins" className="space-y-6">
+          <Card className="p-6">
+            <PinManagement />
+          </Card>
         </TabsContent>
 
         <TabsContent value="kiosk" className="space-y-6">

@@ -1234,6 +1234,29 @@ export default function KioscoCheckIn() {
               </div>
             </CardContent>
           </Card>
+        ) : showPinAuth ? (
+          <FicheroPinAuth
+            onSuccess={(empleadoId, empleadoData, fichajeId, tipoFichaje) => {
+              setRegistroExitoso({
+                empleado: {
+                  id: empleadoId,
+                  nombre: empleadoData.nombre,
+                  apellido: empleadoData.apellido
+                },
+                timestamp: new Date()
+              })
+              setUltimoTipoFichaje(tipoFichaje as TipoAccion)
+              toast({
+                title: "✅ Fichaje exitoso",
+                description: `${empleadoData.nombre} ${empleadoData.apellido} - ${getAccionTexto(tipoFichaje as TipoAccion)}`,
+                duration: 3000,
+              })
+              resetKiosco()
+            }}
+            onCancel={() => {
+              setShowPinAuth(false)
+            }}
+          />
         ) : !showFacialAuth ? (
           <Card>
             <CardHeader>
@@ -1244,14 +1267,44 @@ export default function KioscoCheckIn() {
             </CardHeader>
             <CardContent className="p-8">
               <div className="text-center space-y-6">
+                {/* Selector de modo si PIN está habilitado */}
+                {pinHabilitado && (
+                  <Tabs value={modoAutenticacion} onValueChange={(v) => setModoAutenticacion(v as 'facial' | 'pin')} className="mb-4">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="facial" className="flex items-center gap-2">
+                        <ScanFace className="h-4 w-4" />
+                        Reconocimiento Facial
+                      </TabsTrigger>
+                      <TabsTrigger value="pin" className="flex items-center gap-2">
+                        <Key className="h-4 w-4" />
+                        PIN + Foto
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                )}
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <Clock className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Registre su entrada
-                  </h3>
-                   <p className="text-gray-600 mb-6">
-                    El sistema identificará automáticamente su rostro
-                  </p>
+                  {modoAutenticacion === 'facial' ? (
+                    <>
+                      <Clock className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        Registre su entrada
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        El sistema identificará automáticamente su rostro
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Key className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        Fichaje con PIN
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        Ingrese su PIN y se tomará una foto de verificación
+                      </p>
+                    </>
+                  )}
                   <button
                     onClick={iniciarCheckIn}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
@@ -1262,8 +1315,10 @@ export default function KioscoCheckIn() {
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                         <span>Procesando...</span>
                       </div>
-                    ) : (
+                    ) : modoAutenticacion === 'facial' ? (
                       'Iniciar Reconocimiento'
+                    ) : (
+                      'Ingresar PIN'
                     )}
                   </button>
                 </div>
