@@ -60,7 +60,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     
     try {
       const { data, error } = await supabase.rpc('kiosk_buscar_empleado', {
-        p_busqueda: query
+        p_termino: query
       })
       
       if (error) throw error
