@@ -86,6 +86,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
       { title: "Fichero", url: "/fichero", icon: Clock },
       { title: "Reporte de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
+      { title: "Listado Incidencias", url: "/admin/listado-incidencias", icon: FileText },
       { title: "Evaluaciones", url: "/evaluaciones", icon: FileText },
       { title: "Solicitudes", url: "/solicitudes", icon: FileText },
       { title: "Anotaciones", url: "/anotaciones", icon: FileText },
