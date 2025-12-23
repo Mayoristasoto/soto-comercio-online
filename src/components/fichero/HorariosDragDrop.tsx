@@ -81,8 +81,19 @@ export default function HorariosDragDrop() {
     }
   };
 
+  const normalizeToHHMM = (time: string): string => {
+    const parts = time.split(':');
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return time;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
   const timeToMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(':').map(Number);
+    const parts = time.split(':');
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 0;
     return hours * 60 + minutes;
   };
 
@@ -229,21 +240,35 @@ export default function HorariosDragDrop() {
 
     return { backgroundColor: palette.bg, borderColor: palette.border, color: palette.text } as React.CSSProperties;
   };
-  const getTimePosition = (time: string): number => {
-    const minutes = timeToMinutes(time);
-    const startMinutes = 6 * 60; // 6 AM
-    const totalMinutes = 13 * 60; // 13 horas
-    const relativeMinutes = minutes - startMinutes;
-    return (relativeMinutes / totalMinutes) * 100;
-  };
+  const getBlockPercents = (start: string, end: string): { leftPercent: number; widthPercent: number } => {
+    const startMinRaw = timeToMinutes(start);
+    let endMinRaw = timeToMinutes(end);
 
-  const getTimeDuration = (start: string, end: string): number => {
-    const startMin = timeToMinutes(start);
-    const endMin = timeToMinutes(end);
-    let duration = endMin - startMin;
-    if (duration < 0) duration += 24 * 60;
-    const totalMinutes = 13 * 60; // 13 horas
-    return (duration / totalMinutes) * 100;
+    // Handle overnight
+    if (endMinRaw < startMinRaw) endMinRaw += 24 * 60;
+
+    const visibleStart = 6 * 60; // 06:00
+    const visibleTotal = 13 * 60; // 06:00 -> 19:00
+
+    let startOffset = startMinRaw - visibleStart;
+    let duration = endMinRaw - startMinRaw;
+
+    // Clip to visible range
+    if (startOffset < 0) {
+      duration += startOffset;
+      startOffset = 0;
+    }
+
+    if (startOffset + duration > visibleTotal) {
+      duration = visibleTotal - startOffset;
+    }
+
+    const safeDuration = Math.max(0, duration);
+
+    return {
+      leftPercent: (startOffset / visibleTotal) * 100,
+      widthPercent: (safeDuration / visibleTotal) * 100,
+    };
   };
 
   if (loading) {
@@ -344,41 +369,79 @@ export default function HorariosDragDrop() {
                         className="h-16 border-b relative"
                       >
                         {/* Schedule block */}
-                        <div
-                          className="absolute h-12 top-2 rounded-lg border-2 hover:shadow-lg cursor-move transition-all shadow-md group"
-                          style={{
-                            left: `${getTimePosition(et.turno.hora_entrada)}%`,
-                            width: `${getTimeDuration(et.turno.hora_entrada, et.turno.hora_salida)}%`,
-                            ...getEmpleadoStyles(et.empleado_id),
-                          }}
-                          onMouseDown={(e) => handleMouseDown(e, et)}
-                        >
-                          {/* Resize handle - Start */}
-                          <div
-                            className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-500/20 rounded-l-lg transition-colors"
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleMouseDown(e, et, 'start');
-                            }}
-                          />
-                          
-                          {/* Content */}
-                          <div className="h-full flex items-center justify-center font-semibold text-xs px-3 select-none">
-                            <GripVertical className="h-4 w-4 mr-1 opacity-40 group-hover:opacity-70" />
-                            <span>
-                              {et.turno.hora_entrada} - {et.turno.hora_salida}
-                            </span>
-                          </div>
+                        {(() => {
+                          const { leftPercent, widthPercent } = getBlockPercents(
+                            et.turno.hora_entrada,
+                            et.turno.hora_salida
+                          );
 
-                          {/* Resize handle - End */}
-                          <div
-                            className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-500/20 rounded-r-lg transition-colors"
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleMouseDown(e, et, 'end');
-                            }}
-                          />
-                        </div>
+                          const isFlexibleByTime =
+                            normalizeToHHMM(et.turno.hora_entrada) === '00:00' &&
+                            (normalizeToHHMM(et.turno.hora_salida) === '23:59' ||
+                              normalizeToHHMM(et.turno.hora_salida) === '24:00');
+
+                          const isFlexible = et.turno.tipo === 'flexible' || isFlexibleByTime;
+
+                          const baseStyles = getEmpleadoStyles(et.empleado_id);
+
+                          if (isFlexible) {
+                            return (
+                              <div
+                                className="absolute h-12 top-2 rounded-lg border-2 transition-all shadow-md"
+                                style={{
+                                  left: '50%',
+                                  width: '28%',
+                                  transform: 'translateX(-50%)',
+                                  ...baseStyles,
+                                }}
+                              >
+                                <div className="h-full flex items-center justify-center font-semibold text-xs px-3 select-none">
+                                  <Badge variant="outline" className="bg-background/70">
+                                    Horario flexible
+                                  </Badge>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div
+                              className="absolute h-12 top-2 rounded-lg border-2 hover:shadow-lg cursor-move transition-all shadow-md group"
+                              style={{
+                                left: `${leftPercent}%`,
+                                width: `${widthPercent}%`,
+                                ...baseStyles,
+                              }}
+                              onMouseDown={(e) => handleMouseDown(e, et)}
+                            >
+                              {/* Resize handle - Start */}
+                              <div
+                                className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-500/20 rounded-l-lg transition-colors"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  handleMouseDown(e, et, 'start');
+                                }}
+                              />
+
+                              {/* Content */}
+                              <div className="h-full flex items-center justify-center font-semibold text-xs px-3 select-none">
+                                <GripVertical className="h-4 w-4 mr-1 opacity-40 group-hover:opacity-70" />
+                                <span>
+                                  {et.turno.hora_entrada} - {et.turno.hora_salida}
+                                </span>
+                              </div>
+
+                              {/* Resize handle - End */}
+                              <div
+                                className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-500/20 rounded-r-lg transition-colors"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  handleMouseDown(e, et, 'end');
+                                }}
+                              />
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>
