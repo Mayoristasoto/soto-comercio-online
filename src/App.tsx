@@ -36,6 +36,7 @@ import AsignarSucursales from "./pages/AsignarSucursales";
 import PlanificacionSemanal from "./pages/PlanificacionSemanal";
 import DesafiosTV from "./pages/DesafiosTV";
 import RankingIncidencias from "./pages/RankingIncidencias";
+import ListadoIncidencias from "./pages/ListadoIncidencias";
 
 // Legacy pages (mantener por compatibilidad)
 import Gondolas from "./pages/Gondolas";
@@ -165,6 +166,7 @@ const App = () => (
               <Route path="asignar-sucursales" element={<AsignarSucursales />} />
               <Route path="planificacion-semanal" element={<PlanificacionSemanal />} />
               <Route path="ranking-incidencias" element={<RankingIncidencias />} />
+              <Route path="listado-incidencias" element={<ListadoIncidencias />} />
               <Route path="sucursales" element={<AdminDashboard />} />
               <Route path="gondolas" element={<Gondolas />} />
               <Route path="gondolasedit" element={<GondolasEdit />} />
