@@ -276,6 +276,58 @@ export function TimelineView({
                             );
                             const color = block.shift.color_hint || hashStringToColor(employee.id);
                             
+                            // Detectar horario flexible (00:00 - 23:59 o similar)
+                            const isFlexible = 
+                              (block.shift.start_time === '00:00:00' || block.shift.start_time === '00:00') &&
+                              (block.shift.end_time === '23:59:00' || block.shift.end_time === '23:59' || block.shift.end_time === '24:00:00');
+                            
+                            // Si es horario flexible, mostrar un badge centrado en lugar de barra completa
+                            if (isFlexible) {
+                              return (
+                                <Tooltip key={`${block.shift.id}-${idx}`}>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      className="absolute cursor-pointer left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2"
+                                      onClick={() => setSelectedShift(block.shift)}
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-label={`Horario flexible de ${employee.name}`}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          setSelectedShift(block.shift);
+                                        }
+                                      }}
+                                    >
+                                      <Badge 
+                                        className="text-xs px-3 py-1.5 shadow-md hover:scale-105 transition-transform"
+                                        style={{
+                                          backgroundColor: color,
+                                          borderColor: color,
+                                          color: 'white'
+                                        }}
+                                      >
+                                        🕐 Horario Flexible
+                                      </Badge>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <div className="space-y-1">
+                                      <p className="font-medium">{employee.name} {employee.surname}</p>
+                                      <p className="text-xs">Horario flexible (sin horario fijo)</p>
+                                      {block.shift.location && (
+                                        <p className="text-xs text-muted-foreground">📍 {block.shift.location}</p>
+                                      )}
+                                      {block.shift.notes && (
+                                        <p className="text-xs text-muted-foreground italic">
+                                          {block.shift.notes}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            }
+                            
                             return (
                               <Tooltip key={`${block.shift.id}-${idx}`}>
                                 <TooltipTrigger asChild>
