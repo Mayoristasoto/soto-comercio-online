@@ -4,15 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw, Calculator, CalendarIcon, FileDown } from "lucide-react";
+import { Trophy, Medal, AlertTriangle, Clock, Coffee, RefreshCw, Calculator, CalendarIcon, FileDown, FileSpreadsheet, List } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { generateReporteIncidenciasPDF } from "@/utils/reporteIncidenciasPDF";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 interface EmpleadoRanking {
   empleado_id: string;
   nombre: string;
@@ -30,9 +35,21 @@ interface RankingData {
   ranking: EmpleadoRanking[];
 }
 
+interface IncidenciaDetallada {
+  id: string;
+  empleado_id: string;
+  empleado_nombre: string;
+  empleado_apellido: string;
+  empleado_legajo: string | null;
+  tipo_infraccion: string;
+  fecha_infraccion: string;
+  minutos_diferencia: number | null;
+}
+
 export default function RankingIncidencias() {
   const navigate = useNavigate();
   const [rankings, setRankings] = useState<RankingData[]>([]);
+  const [incidenciasDetalladas, setIncidenciasDetalladas] = useState<IncidenciaDetallada[]>([]);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [fechaInicio, setFechaInicio] = useState<Date>();
@@ -146,7 +163,7 @@ export default function RankingIncidencias() {
       // Obtener todos los empleados activos con sus sucursales
       const { data: empleados } = await supabase
         .from('empleados')
-        .select('id, nombre, apellido, avatar_url, sucursal_id, sucursales(nombre)')
+        .select('id, nombre, apellido, avatar_url, sucursal_id, legajo, sucursales(nombre)')
         .eq('activo', true);
 
       // Obtener fichajes tardíos en el rango de fechas
@@ -162,6 +179,44 @@ export default function RankingIncidencias() {
         .select('empleado_id')
         .gte('fecha_fichaje', inicioStr)
         .lte('fecha_fichaje', finStr);
+
+      // Obtener incidencias detalladas desde empleado_cruces_rojas
+      const { data: crucesRojas } = await supabase
+        .from('empleado_cruces_rojas')
+        .select(`
+          id,
+          empleado_id,
+          tipo_infraccion,
+          fecha_infraccion,
+          minutos_diferencia
+        `)
+        .gte('fecha_infraccion', inicioStr)
+        .lte('fecha_infraccion', finStr)
+        .eq('anulada', false)
+        .order('fecha_infraccion', { ascending: false });
+
+      // Crear mapa de empleados para el listado detallado
+      const empleadosMap = new Map<string, any>();
+      empleados?.forEach((emp: any) => {
+        empleadosMap.set(emp.id, emp);
+      });
+
+      // Formatear incidencias detalladas
+      const detalladasFormateadas: IncidenciaDetallada[] = (crucesRojas || []).map((cr: any) => {
+        const emp = empleadosMap.get(cr.empleado_id);
+        return {
+          id: cr.id,
+          empleado_id: cr.empleado_id,
+          empleado_nombre: emp?.nombre || 'N/A',
+          empleado_apellido: emp?.apellido || '',
+          empleado_legajo: emp?.legajo || null,
+          tipo_infraccion: cr.tipo_infraccion,
+          fecha_infraccion: cr.fecha_infraccion,
+          minutos_diferencia: cr.minutos_diferencia
+        };
+      });
+
+      setIncidenciasDetalladas(detalladasFormateadas);
 
       // Contar incidencias por empleado
       const incidenciasPorEmpleado = new Map<string, { llegadas_tarde: number; pausas_excedidas: number }>();
@@ -350,6 +405,118 @@ export default function RankingIncidencias() {
     }
   };
 
+  const getTipoLabel = (tipo: string) => {
+    switch (tipo) {
+      case "llegada_tarde":
+        return "Llegada Tarde";
+      case "pausa_excedida":
+        return "Exceso de Descanso";
+      case "salida_temprana":
+        return "Salida Temprana";
+      default:
+        return tipo;
+    }
+  };
+
+  const handleExportListadoPDF = () => {
+    if (incidenciasDetalladas.length === 0) {
+      toast.error('No hay incidencias para exportar');
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Listado Detallado de Incidencias", 14, 20);
+    
+    // Período
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Período: ${periodoInicio ? format(parseISO(periodoInicio), "dd/MM/yyyy", { locale: es }) : '-'} - ${periodoFin ? format(parseISO(periodoFin), "dd/MM/yyyy", { locale: es }) : '-'}`,
+      14,
+      28
+    );
+    doc.text(`Total de incidencias: ${incidenciasDetalladas.length}`, 14, 34);
+    doc.text(`Generado: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: es })}`, 14, 40);
+
+    // Tabla
+    const tableData = incidenciasDetalladas.map((inc, index) => [
+      index + 1,
+      `${inc.empleado_apellido}, ${inc.empleado_nombre}`,
+      inc.empleado_legajo || "-",
+      format(parseISO(inc.fecha_infraccion), "dd/MM/yyyy", { locale: es }),
+      getTipoLabel(inc.tipo_infraccion),
+      inc.minutos_diferencia ? `${inc.minutos_diferencia} min` : "-",
+    ]);
+
+    autoTable(doc, {
+      startY: 48,
+      head: [["#", "Empleado", "Legajo", "Fecha", "Tipo Incidencia", "Minutos"]],
+      body: tableData,
+      theme: "striped",
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+      },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 40 },
+        5: { cellWidth: 20 },
+      },
+      didDrawPage: (data: any) => {
+        const pageCount = doc.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+          `Página ${data.pageNumber} de ${pageCount}`,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 10,
+          { align: "center" }
+        );
+      },
+    });
+
+    const filename = `listado_incidencias_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
+    doc.save(filename);
+    toast.success("PDF generado correctamente");
+  };
+
+  const handleExportListadoExcel = () => {
+    if (incidenciasDetalladas.length === 0) {
+      toast.error('No hay incidencias para exportar');
+      return;
+    }
+
+    const dataExport = incidenciasDetalladas.map((inc, index) => ({
+      "#": index + 1,
+      "Apellido": inc.empleado_apellido,
+      "Nombre": inc.empleado_nombre,
+      "Legajo": inc.empleado_legajo || "-",
+      "Fecha": format(parseISO(inc.fecha_infraccion), "dd/MM/yyyy", { locale: es }),
+      "Tipo Incidencia": getTipoLabel(inc.tipo_infraccion),
+      "Minutos": inc.minutos_diferencia || 0,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Incidencias");
+    
+    const filename = `listado_incidencias_${format(new Date(), "yyyyMMdd_HHmm")}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    toast.success("Excel generado correctamente");
+  };
+
   const getPodiumIcon = (posicion: number) => {
     if (posicion === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
     if (posicion === 2) return <Medal className="h-5 w-5 text-gray-400" />;
@@ -473,7 +640,7 @@ export default function RankingIncidencias() {
       </div>
 
       <Tabs defaultValue="total" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           {rankings.map((ranking) => {
             const Icon = ranking.icon;
             return (
@@ -483,6 +650,10 @@ export default function RankingIncidencias() {
               </TabsTrigger>
             );
           })}
+          <TabsTrigger value="listado">
+            <List className="h-4 w-4 mr-2" />
+            Listado Detallado
+          </TabsTrigger>
         </TabsList>
 
         {rankings.map((ranking) => (
