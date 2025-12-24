@@ -9,9 +9,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { 
-  CalendarIcon, 
-  Download, 
+import {
+  CalendarIcon,
+  Download,
   Search,
   User,
   Clock,
@@ -31,11 +31,11 @@ import {
   KeyRound,
   Hand,
   Camera,
-  X
 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -366,24 +366,27 @@ export default function FicheroHistorial() {
     setFotoModal({ open: true, foto: null, loading: true })
     try {
       const { data, error } = await supabase
-        .from('fichajes_fotos_verificacion')
-        .select('id, foto_url, timestamp_captura, metodo_fichaje')
-        .eq('fichaje_id', fichajeId)
+        .from("fichajes_fotos_verificacion")
+        .select("id, foto_url, timestamp_captura, metodo_fichaje")
+        .eq("fichaje_id", fichajeId)
+        .neq("foto_url", "pending_upload")
+        .order("timestamp_captura", { ascending: false })
+        .limit(1)
         .maybeSingle()
 
       if (error) throw error
 
-      setFotoModal({ 
-        open: true, 
-        foto: data as FotoVerificacion | null, 
-        loading: false 
+      setFotoModal({
+        open: true,
+        foto: (data as FotoVerificacion | null) ?? null,
+        loading: false,
       })
     } catch (error) {
-      console.error('Error cargando foto:', error)
+      console.error("Error cargando foto:", error)
       toast({
         title: "Error",
         description: "No se pudo cargar la foto de verificación",
-        variant: "destructive"
+        variant: "destructive",
       })
       setFotoModal({ open: false, foto: null, loading: false })
     }
@@ -909,6 +912,9 @@ export default function FicheroHistorial() {
               <Camera className="h-5 w-5" />
               Foto de Verificación (PIN)
             </DialogTitle>
+            <DialogDescription>
+              Imagen capturada al fichar con PIN.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center min-h-[300px]">
             {fotoModal.loading ? (
