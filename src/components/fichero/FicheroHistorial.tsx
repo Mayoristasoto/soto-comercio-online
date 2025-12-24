@@ -26,8 +26,19 @@ import {
   TrendingUp,
   History,
   Zap,
-  MapPin
+  MapPin,
+  Scan,
+  KeyRound,
+  Hand,
+  Camera,
+  X
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,9 +67,17 @@ interface FichajeHistorial {
   tipo: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin'
   timestamp_real: string
   estado: string
+  metodo: string | null
   confianza_facial?: number
   latitud?: number | null
   longitud?: number | null
+}
+
+interface FotoVerificacion {
+  id: string
+  foto_url: string
+  timestamp_captura: string
+  metodo_fichaje: string
 }
 
 interface EmpleadoResumen {
@@ -85,6 +104,11 @@ export default function FicheroHistorial() {
   const [mostrarResumen, setMostrarResumen] = useState(false)
   const [fichajeAEliminar, setFichajeAEliminar] = useState<string | null>(null)
   const [esAdmin, setEsAdmin] = useState(false)
+  const [fotoModal, setFotoModal] = useState<{open: boolean, foto: FotoVerificacion | null, loading: boolean}>({
+    open: false,
+    foto: null,
+    loading: false
+  })
 
   useEffect(() => {
     verificarAdmin()
@@ -141,6 +165,7 @@ export default function FicheroHistorial() {
           tipo,
           timestamp_real,
           estado,
+          metodo,
           confianza_facial,
           latitud,
           longitud,
@@ -187,6 +212,7 @@ export default function FicheroHistorial() {
         tipo: item.tipo,
         timestamp_real: item.timestamp_real,
         estado: item.estado,
+        metodo: item.metodo,
         confianza_facial: item.confianza_facial,
         latitud: item.latitud,
         longitud: item.longitud
@@ -314,6 +340,52 @@ export default function FicheroHistorial() {
       case 'pausa_inicio': return <Pause className="h-4 w-4 text-yellow-600" />
       case 'pausa_fin': return <Play className="h-4 w-4 text-blue-600" />
       default: return <Clock className="h-4 w-4" />
+    }
+  }
+
+  const obtenerIconoMetodo = (metodo: string | null) => {
+    switch (metodo) {
+      case 'facial': return <Scan className="h-3 w-3" />
+      case 'pin': return <KeyRound className="h-3 w-3" />
+      case 'manual': return <Hand className="h-3 w-3" />
+      default: return null
+    }
+  }
+
+  const obtenerLabelMetodo = (metodo: string | null) => {
+    switch (metodo) {
+      case 'facial': return 'Facial'
+      case 'pin': return 'PIN'
+      case 'manual': return 'Manual'
+      case 'automatico': return 'Auto'
+      default: return 'N/A'
+    }
+  }
+
+  const cargarFotoVerificacion = async (fichajeId: string) => {
+    setFotoModal({ open: true, foto: null, loading: true })
+    try {
+      const { data, error } = await supabase
+        .from('fichajes_fotos_verificacion')
+        .select('id, foto_url, timestamp_captura, metodo_fichaje')
+        .eq('fichaje_id', fichajeId)
+        .maybeSingle()
+
+      if (error) throw error
+
+      setFotoModal({ 
+        open: true, 
+        foto: data as FotoVerificacion | null, 
+        loading: false 
+      })
+    } catch (error) {
+      console.error('Error cargando foto:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo cargar la foto de verificación",
+        variant: "destructive"
+      })
+      setFotoModal({ open: false, foto: null, loading: false })
     }
   }
 
@@ -702,70 +774,93 @@ export default function FicheroHistorial() {
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Empleado</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Hora</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Confianza</TableHead>
-                    <TableHead>Ubicación</TableHead>
-                    {esAdmin && <TableHead className="text-right">Acciones</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fichajes.map((fichaje) => (
-                    <TableRow key={fichaje.id}>
-                      <TableCell className="font-medium">
-                        {fichaje.empleado_nombre} {fichaje.empleado_apellido}
-                      </TableCell>
-                      <TableCell>
-                        {formatArgentinaDate(fichaje.timestamp_real, 'dd/MM/yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        {formatArgentinaTime(fichaje.timestamp_real)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {obtenerIconoFichaje(fichaje.tipo)}
-                          <span className="capitalize">
-                            {fichaje.tipo.replace('_', ' ')}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={fichaje.estado === 'valido' ? 'default' : 'secondary'}>
-                          {fichaje.estado}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {fichaje.confianza_facial ? (
-                          <Badge 
-                            variant={fichaje.confianza_facial > 0.8 ? 'default' : 'outline'}
-                          >
-                            {(fichaje.confianza_facial * 100).toFixed(1)}%
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">N/A</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {fichaje.latitud && fichaje.longitud ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(
-                              `https://www.google.com/maps?q=${fichaje.latitud},${fichaje.longitud}`,
-                              '_blank'
+                    <TableRow>
+                      <TableHead>Empleado</TableHead>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Hora</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Método</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Confianza</TableHead>
+                      <TableHead>Ubicación</TableHead>
+                      {esAdmin && <TableHead className="text-right">Acciones</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fichajes.map((fichaje) => (
+                      <TableRow key={fichaje.id}>
+                        <TableCell className="font-medium">
+                          {fichaje.empleado_nombre} {fichaje.empleado_apellido}
+                        </TableCell>
+                        <TableCell>
+                          {formatArgentinaDate(fichaje.timestamp_real, 'dd/MM/yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          {formatArgentinaTime(fichaje.timestamp_real)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {obtenerIconoFichaje(fichaje.tipo)}
+                            <span className="capitalize">
+                              {fichaje.tipo.replace('_', ' ')}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={fichaje.metodo === 'facial' ? 'default' : fichaje.metodo === 'pin' ? 'secondary' : 'outline'}
+                              className="gap-1"
+                            >
+                              {obtenerIconoMetodo(fichaje.metodo)}
+                              {obtenerLabelMetodo(fichaje.metodo)}
+                            </Badge>
+                            {fichaje.metodo === 'pin' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => cargarFotoVerificacion(fichaje.id)}
+                                title="Ver foto de verificación"
+                              >
+                                <Camera className="h-3 w-3" />
+                              </Button>
                             )}
-                            className="h-8 gap-1 text-primary hover:text-primary hover:bg-primary/10"
-                          >
-                            <MapPin className="h-4 w-4" />
-                            Ver
-                          </Button>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">Sin GPS</span>
-                        )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={fichaje.estado === 'valido' ? 'default' : 'secondary'}>
+                            {fichaje.estado}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {fichaje.confianza_facial ? (
+                            <Badge 
+                              variant={fichaje.confianza_facial > 0.8 ? 'default' : 'outline'}
+                            >
+                              {(fichaje.confianza_facial * 100).toFixed(1)}%
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {fichaje.latitud && fichaje.longitud ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(
+                                `https://www.google.com/maps?q=${fichaje.latitud},${fichaje.longitud}`,
+                                '_blank'
+                              )}
+                              className="h-8 gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                            >
+                              <MapPin className="h-4 w-4" />
+                              Ver
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Sin GPS</span>
+                          )}
                       </TableCell>
                       {esAdmin && (
                         <TableCell className="text-right">
@@ -805,6 +900,42 @@ export default function FicheroHistorial() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de foto de verificación */}
+      <Dialog open={fotoModal.open} onOpenChange={(open) => !open && setFotoModal({ open: false, foto: null, loading: false })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Foto de Verificación (PIN)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center min-h-[300px]">
+            {fotoModal.loading ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <span className="text-sm text-muted-foreground">Cargando foto...</span>
+              </div>
+            ) : fotoModal.foto ? (
+              <div className="space-y-4 w-full">
+                <img 
+                  src={fotoModal.foto.foto_url} 
+                  alt="Foto de verificación"
+                  className="w-full max-h-[400px] object-contain rounded-lg border"
+                />
+                <div className="text-sm text-muted-foreground text-center">
+                  Capturada: {formatArgentinaDate(fotoModal.foto.timestamp_captura, 'dd/MM/yyyy')} a las {formatArgentinaTime(fotoModal.foto.timestamp_captura)}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No hay foto de verificación para este fichaje</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
