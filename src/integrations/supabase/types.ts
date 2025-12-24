@@ -6969,7 +6969,7 @@ export type Database = {
       desafio_estado: "borrador" | "activo" | "finalizado"
       desafio_tipo_periodo: "semanal" | "mensual" | "semestral" | "anual"
       fichaje_estado: "valido" | "pendiente" | "rechazado" | "corregido"
-      fichaje_metodo: "facial" | "manual" | "automatico"
+      fichaje_metodo: "facial" | "manual" | "automatico" | "pin"
       fichaje_tipo: "entrada" | "salida" | "pausa_inicio" | "pausa_fin"
       forma_pago: "transferencia" | "efectivo" | "cheque"
       incidencia_estado: "pendiente" | "aprobada" | "rechazada"
@@ -7148,7 +7148,7 @@ export const Constants = {
       desafio_estado: ["borrador", "activo", "finalizado"],
       desafio_tipo_periodo: ["semanal", "mensual", "semestral", "anual"],
       fichaje_estado: ["valido", "pendiente", "rechazado", "corregido"],
-      fichaje_metodo: ["facial", "manual", "automatico"],
+      fichaje_metodo: ["facial", "manual", "automatico", "pin"],
       fichaje_tipo: ["entrada", "salida", "pausa_inicio", "pausa_fin"],
       forma_pago: ["transferencia", "efectivo", "cheque"],
       incidencia_estado: ["pendiente", "aprobada", "rechazada"],
