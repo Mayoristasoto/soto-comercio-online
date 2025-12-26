@@ -6797,6 +6797,18 @@ export type Database = {
           accion: string
         }[]
       }
+      kiosk_guardar_foto_verificacion: {
+        Args: {
+          p_empleado_id: string
+          p_fichaje_id: string
+          p_foto_storage_path: string
+          p_foto_url: string
+          p_latitud?: number
+          p_longitud?: number
+          p_metodo?: string
+        }
+        Returns: Json
+      }
       kiosk_insert_fichaje: {
         Args: {
           p_confianza: number

@@ -54,14 +54,15 @@ export async function guardarFotoVerificacion(data: FotoVerificacion): Promise<{
     
     // Guardar registro usando RPC segura (maneja upsert por fichaje_id)
     // Cast necesario porque la RPC aún no está en los tipos generados
+    // Orden de parámetros: p_fichaje_id, p_empleado_id, p_foto_url, p_foto_storage_path, p_metodo, p_latitud, p_longitud
     const { error: rpcError } = await (supabase.rpc as any)('kiosk_guardar_foto_verificacion', {
-      p_empleado_id: data.empleadoId,
       p_fichaje_id: data.fichajeId,
-      p_foto_storage_path: fileName,
+      p_empleado_id: data.empleadoId,
       p_foto_url: urlData.publicUrl,
+      p_foto_storage_path: fileName,
+      p_metodo: data.metodoFichaje,
       p_latitud: data.latitud ?? null,
-      p_longitud: data.longitud ?? null,
-      p_metodo: data.metodoFichaje
+      p_longitud: data.longitud ?? null
     })
     
     if (rpcError) {
