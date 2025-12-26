@@ -15,7 +15,10 @@ import {
   Lock,
   AlertTriangle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Clock,
+  Coffee,
+  LogOut
 } from "lucide-react"
 import { guardarFotoVerificacion, capturarImagenCanvas } from "@/lib/verificacionFotosService"
 
@@ -28,12 +31,21 @@ interface EmpleadoBusqueda {
   avatar_url: string | null
 }
 
+type TipoAccion = 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin'
+
+interface AccionDisponible {
+  tipo: TipoAccion
+  label: string
+  icon: 'Clock' | 'Coffee' | 'LogOut'
+  color: string
+}
+
 interface FicheroPinAuthProps {
   onSuccess: (empleadoId: string, empleadoData: any, fichajeId: string, tipoFichaje: string) => void
   onCancel: () => void
 }
 
-type Step = 'search' | 'pin' | 'photo' | 'processing'
+type Step = 'search' | 'pin' | 'action' | 'photo' | 'processing'
 
 export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthProps) {
   const { toast } = useToast()
@@ -45,6 +57,10 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [intentosRestantes, setIntentosRestantes] = useState<number | null>(null)
+  
+  // Acciones disponibles
+  const [accionesDisponibles, setAccionesDisponibles] = useState<AccionDisponible[]>([])
+  const [tipoAccionSeleccionado, setTipoAccionSeleccionado] = useState<TipoAccion | null>(null)
   
   // Camera state
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -148,6 +164,66 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     setError(null)
   }
 
+  // Obtener acciones disponibles
+  const obtenerAccionesDisponibles = async (empleadoId: string): Promise<AccionDisponible[]> => {
+    try {
+      const { data, error } = await (supabase.rpc as any)('kiosk_get_acciones', { p_empleado_id: empleadoId })
+      
+      if (error) {
+        console.error('Error obteniendo acciones:', error)
+        return []
+      }
+
+      if (!data || data.length === 0) {
+        return []
+      }
+
+      const acciones: AccionDisponible[] = []
+      
+      for (const accion of data) {
+        switch (accion.accion) {
+          case 'entrada':
+            acciones.push({
+              tipo: 'entrada',
+              label: 'Registrar Entrada',
+              icon: 'Clock',
+              color: 'bg-green-600 hover:bg-green-700'
+            })
+            break
+          case 'pausa_inicio':
+            acciones.push({
+              tipo: 'pausa_inicio',
+              label: 'Iniciar Descanso',
+              icon: 'Coffee',
+              color: 'bg-orange-600 hover:bg-orange-700'
+            })
+            break
+          case 'salida':
+            acciones.push({
+              tipo: 'salida',
+              label: 'Finalizar Jornada',
+              icon: 'LogOut',
+              color: 'bg-red-600 hover:bg-red-700'
+            })
+            break
+          case 'pausa_fin':
+            acciones.push({
+              tipo: 'pausa_fin',
+              label: 'Finalizar Descanso',
+              icon: 'Clock',
+              color: 'bg-blue-600 hover:bg-blue-700'
+            })
+            break
+        }
+      }
+
+      return acciones
+    } catch (err) {
+      console.error('Error obteniendo acciones:', err)
+      return []
+    }
+  }
+
   // Verificar PIN
   const handleVerificarPin = async () => {
     if (!empleadoSeleccionado || pin.length < 4) return
@@ -167,8 +243,22 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
       if (!result) throw new Error('Respuesta inválida del servidor')
       
       if (result.valido) {
-        // PIN correcto, ir a captura de foto
-        setStep('photo')
+        // PIN correcto, obtener acciones disponibles
+        const acciones = await obtenerAccionesDisponibles(empleadoSeleccionado.id)
+        setAccionesDisponibles(acciones)
+        
+        if (acciones.length === 1) {
+          // Solo una acción disponible, ir directo a foto
+          setTipoAccionSeleccionado(acciones[0].tipo)
+          setStep('photo')
+        } else if (acciones.length > 1) {
+          // Múltiples acciones, mostrar selector
+          setStep('action')
+        } else {
+          // Sin acciones disponibles (no debería pasar)
+          setStep('photo')
+          setTipoAccionSeleccionado(null)
+        }
         setFotoCapturada(null)
       } else {
         setError(result.mensaje)
@@ -182,6 +272,13 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     } finally {
       setLoading(false)
     }
+  }
+
+  // Seleccionar acción
+  const handleSeleccionarAccion = (tipo: TipoAccion) => {
+    setTipoAccionSeleccionado(tipo)
+    setStep('photo')
+    setFotoCapturada(null)
   }
 
   // Capturar foto
@@ -219,7 +316,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
       const { data, error } = await supabase.rpc('kiosk_fichaje_pin', {
         p_empleado_id: empleadoSeleccionado.id,
         p_pin: pin,
-        p_tipo: null, // Auto-determinar
+        p_tipo: tipoAccionSeleccionado, // Usar tipo seleccionado
         p_lat: ubicacion.latitud,
         p_lng: ubicacion.longitud,
         p_foto_base64: fotoCapturada,
@@ -284,9 +381,25 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
       setEmpleadoSeleccionado(null)
       setPin('')
       setStep('search')
+    } else if (step === 'action') {
+      setAccionesDisponibles([])
+      setStep('pin')
     } else if (step === 'photo') {
       setFotoCapturada(null)
-      setStep('pin')
+      if (accionesDisponibles.length > 1) {
+        setStep('action')
+      } else {
+        setStep('pin')
+      }
+    }
+  }
+
+  // Renderizar icono de acción
+  const renderIcon = (iconName: AccionDisponible['icon']) => {
+    switch (iconName) {
+      case 'Clock': return <Clock className="h-6 w-6" />
+      case 'Coffee': return <Coffee className="h-6 w-6" />
+      case 'LogOut': return <LogOut className="h-6 w-6" />
     }
   }
 
@@ -468,7 +581,54 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
           </div>
         )}
 
-        {/* PASO 3: Captura de foto */}
+        {/* PASO 3: Selección de acción */}
+        {step === 'action' && empleadoSeleccionado && (
+          <div className="space-y-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleBack}
+              className="mb-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Volver
+            </Button>
+
+            <div className="text-center">
+              <Avatar className="h-16 w-16 mx-auto mb-2">
+                <AvatarImage src={empleadoSeleccionado.avatar_url || undefined} />
+                <AvatarFallback className="text-xl">
+                  {empleadoSeleccionado.nombre[0]}{empleadoSeleccionado.apellido[0]}
+                </AvatarFallback>
+              </Avatar>
+              <p className="font-semibold">
+                {empleadoSeleccionado.nombre} {empleadoSeleccionado.apellido}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                ¿Qué desea registrar?
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {accionesDisponibles.map((accion) => (
+                <Button
+                  key={accion.tipo}
+                  onClick={() => handleSeleccionarAccion(accion.tipo)}
+                  className={`w-full h-16 text-lg font-semibold text-white ${accion.color}`}
+                >
+                  {renderIcon(accion.icon)}
+                  <span className="ml-2">{accion.label}</span>
+                </Button>
+              ))}
+            </div>
+
+            <Button variant="outline" onClick={onCancel} className="w-full">
+              Cancelar
+            </Button>
+          </div>
+        )}
+
+        {/* PASO 4: Captura de foto */}
         {step === 'photo' && (
           <div className="space-y-4">
             <Button 
@@ -546,7 +706,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
           </div>
         )}
 
-        {/* PASO 4: Procesando */}
+        {/* PASO 5: Procesando */}
         {step === 'processing' && (
           <div className="py-12 text-center">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
