@@ -165,14 +165,18 @@ export default function KioscoCheckIn() {
 
     checkDeviceAuthorization()
     
-    // Check if PIN mode is enabled
+    // Check if PIN mode is enabled using the secure RPC
     const checkPinEnabled = async () => {
-      const { data } = await supabase
-        .from('fichado_configuracion')
-        .select('valor')
-        .eq('clave', 'pin_habilitado')
-        .single()
-      setPinHabilitado(data?.valor === 'true')
+      try {
+        const { data, error } = await (supabase.rpc as any)('get_kiosk_config_value', {
+          p_clave: 'pin_habilitado'
+        })
+        if (!error && data) {
+          setPinHabilitado(data === 'true')
+        }
+      } catch (err) {
+        console.error('Error checking PIN config:', err)
+      }
     }
     checkPinEnabled()
   }, [searchParams, navigate, toast])

@@ -12,11 +12,18 @@ export interface FotoVerificacion {
 
 /**
  * Sube una foto de verificación de fichaje al storage y guarda el registro
+ * usando la RPC segura kiosk_guardar_foto_verificacion.
  */
 export async function guardarFotoVerificacion(data: FotoVerificacion): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!data.fichajeId) {
+      console.warn('guardarFotoVerificacion: fichajeId no proporcionado, omitiendo guardado')
+      return { success: false, error: 'fichajeId requerido' }
+    }
+
     const timestamp = Date.now()
-    const fileName = `${data.empleadoId}/${timestamp}.jpg`
+    // Path organizado por fichaje para evitar colisiones
+    const fileName = `${data.fichajeId}/${timestamp}.jpg`
     
     // Convertir base64 a blob
     const base64Data = data.fotoBase64.replace(/^data:image\/\w+;base64,/, '')
@@ -32,7 +39,7 @@ export async function guardarFotoVerificacion(data: FotoVerificacion): Promise<{
       .from('fichajes-verificacion')
       .upload(fileName, blob, {
         contentType: 'image/jpeg',
-        upsert: false
+        upsert: true
       })
     
     if (uploadError) {
@@ -45,28 +52,25 @@ export async function guardarFotoVerificacion(data: FotoVerificacion): Promise<{
       .from('fichajes-verificacion')
       .getPublicUrl(fileName)
     
-    // Guardar registro en la tabla
-    const { error: insertError } = await supabase
-      .from('fichajes_fotos_verificacion')
-      .insert({
-        empleado_id: data.empleadoId,
-        fichaje_id: data.fichajeId || null,
-        foto_url: urlData.publicUrl,
-        foto_storage_path: fileName,
-        latitud: data.latitud || null,
-        longitud: data.longitud || null,
-        metodo_fichaje: data.metodoFichaje,
-        confianza_facial: data.confianzaFacial,
-        timestamp_captura: new Date().toISOString()
-      })
+    // Guardar registro usando RPC segura (maneja upsert por fichaje_id)
+    // Cast necesario porque la RPC aún no está en los tipos generados
+    const { error: rpcError } = await (supabase.rpc as any)('kiosk_guardar_foto_verificacion', {
+      p_empleado_id: data.empleadoId,
+      p_fichaje_id: data.fichajeId,
+      p_foto_storage_path: fileName,
+      p_foto_url: urlData.publicUrl,
+      p_latitud: data.latitud ?? null,
+      p_longitud: data.longitud ?? null,
+      p_metodo: data.metodoFichaje
+    })
     
-    if (insertError) {
-      console.error('Error guardando registro de foto:', insertError)
+    if (rpcError) {
+      console.error('Error guardando registro de foto:', rpcError)
       // Intentar eliminar la foto subida si falla el registro
       await supabase.storage
         .from('fichajes-verificacion')
         .remove([fileName])
-      return { success: false, error: insertError.message }
+      return { success: false, error: rpcError.message }
     }
     
     console.log('✅ Foto de verificación guardada:', fileName)
