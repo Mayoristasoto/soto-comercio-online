@@ -1274,14 +1274,15 @@ export default function KioscoCheckIn() {
                 {/* Selector de modo si PIN está habilitado */}
                 {pinHabilitado && (
                   <Tabs value={modoAutenticacion} onValueChange={(v) => setModoAutenticacion(v as 'facial' | 'pin')} className="mb-4">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="facial" className="flex items-center gap-2">
-                        <ScanFace className="h-4 w-4" />
-                        Reconocimiento Facial
+                    <TabsList className="grid w-full grid-cols-2 h-auto">
+                      <TabsTrigger value="facial" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2">
+                        <ScanFace className="h-4 w-4 flex-shrink-0" />
+                        <span className="hidden xs:inline">Facial</span>
+                        <span className="xs:hidden">Facial</span>
                       </TabsTrigger>
-                      <TabsTrigger value="pin" className="flex items-center gap-2">
-                        <Key className="h-4 w-4" />
-                        PIN + Foto
+                      <TabsTrigger value="pin" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2">
+                        <Key className="h-4 w-4 flex-shrink-0" />
+                        <span>PIN + Foto</span>
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
