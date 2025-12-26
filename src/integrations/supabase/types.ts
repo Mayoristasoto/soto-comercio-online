@@ -6715,6 +6715,7 @@ export type Database = {
         }[]
       }
       get_facial_config: { Args: { config_key: string }; Returns: string }
+      get_kiosk_config_value: { Args: { p_clave: string }; Returns: string }
       get_manager_employee_view: {
         Args: never
         Returns: {
