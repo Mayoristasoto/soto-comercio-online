@@ -372,16 +372,17 @@ export default function FicheroHistorial() {
         .neq("foto_url", "pending_upload")
         .order("timestamp_captura", { ascending: false })
         .limit(1)
-        .maybeSingle()
 
       if (error) throw error
 
+      const foto = data?.[0] ?? null
+
       // Generar URL firmada para bucket privado
       let signedUrl: string | null = null
-      if (data?.foto_storage_path) {
+      if (foto?.foto_storage_path) {
         const { data: signedData, error: signedError } = await supabase.storage
           .from("fichajes-verificacion")
-          .createSignedUrl(data.foto_storage_path, 300) // 5 minutos
+          .createSignedUrl(foto.foto_storage_path, 300) // 5 minutos
         if (!signedError && signedData?.signedUrl) {
           signedUrl = signedData.signedUrl
         }
@@ -389,7 +390,7 @@ export default function FicheroHistorial() {
 
       setFotoModal({
         open: true,
-        foto: data ? { ...data, foto_url: signedUrl || data.foto_url } as FotoVerificacion : null,
+        foto: foto ? ({ ...foto, foto_url: signedUrl || foto.foto_url } as FotoVerificacion) : null,
         loading: false,
       })
     } catch (error) {
