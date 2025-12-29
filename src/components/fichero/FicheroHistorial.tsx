@@ -934,23 +934,16 @@ export default function FicheroHistorial() {
                 <span className="text-sm text-muted-foreground">Cargando foto...</span>
               </div>
             ) : fotoModal.foto ? (
-              fotoModal.foto.foto_url === 'pending_upload' ? (
-                <div className="text-center text-muted-foreground">
-                  <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Foto pendiente de carga para este fichaje</p>
+              <div className="space-y-4 w-full">
+                <img 
+                  src={fotoModal.foto.foto_url} 
+                  alt="Foto de verificación"
+                  className="w-full max-h-[400px] object-contain rounded-lg border"
+                />
+                <div className="text-sm text-muted-foreground text-center">
+                  Capturada: {formatArgentinaDate(fotoModal.foto.timestamp_captura, 'dd/MM/yyyy')} a las {formatArgentinaTime(fotoModal.foto.timestamp_captura)}
                 </div>
-              ) : (
-                <div className="space-y-4 w-full">
-                  <img 
-                    src={fotoModal.foto.foto_url} 
-                    alt="Foto de verificación"
-                    className="w-full max-h-[400px] object-contain rounded-lg border"
-                  />
-                  <div className="text-sm text-muted-foreground text-center">
-                    Capturada: {formatArgentinaDate(fotoModal.foto.timestamp_captura, 'dd/MM/yyyy')} a las {formatArgentinaTime(fotoModal.foto.timestamp_captura)}
-                  </div>
-                </div>
-              )
+              </div>
             ) : (
               <div className="text-center text-muted-foreground">
                 <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
