@@ -42,9 +42,9 @@ serve(async (req) => {
   try {
     const body = (await req.json()) as UploadBody
 
-    if (!body?.fichajeId || !body?.empleadoId || !body?.fotoBase64 || !body?.metodoFichaje || !body?.deviceToken) {
+    if (!body?.fichajeId || !body?.empleadoId || !body?.fotoBase64 || !body?.metodoFichaje) {
       console.warn("[kiosk-upload-verification-photo] missing params", { requestId })
-      return json(400, { success: false, error: "Parámetros requeridos: fichajeId, empleadoId, fotoBase64, metodoFichaje, deviceToken" })
+      return json(400, { success: false, error: "Parámetros requeridos: fichajeId, empleadoId, fotoBase64, metodoFichaje" })
     }
 
     const supabaseAdmin = createClient(
@@ -55,19 +55,51 @@ serve(async (req) => {
       }
     )
 
+    // Requerir token de dispositivo SOLO si la validación de dispositivos está activa
+    // y existen dispositivos activos (evita romper entornos donde se permite kiosco sin registro).
+    let requireDeviceToken = true
+    try {
+      const { data: configRow } = await supabaseAdmin
+        .from("facial_recognition_config")
+        .select("value")
+        .eq("key", "kiosk_device_validation_enabled")
+        .maybeSingle()
+
+      const validationEnabled = configRow?.value !== "false"
+
+      const { data: activeDevices } = await supabaseAdmin
+        .from("kiosk_devices")
+        .select("id")
+        .eq("is_active", true)
+        .limit(1)
+
+      const hasActiveDevices = Array.isArray(activeDevices) && activeDevices.length > 0
+      requireDeviceToken = validationEnabled && hasActiveDevices
+    } catch (e) {
+      // Fallback seguro: si no podemos determinarlo, requerir token.
+      requireDeviceToken = true
+    }
+
+    if (requireDeviceToken && !body?.deviceToken) {
+      console.warn("[kiosk-upload-verification-photo] missing deviceToken", { requestId })
+      return json(400, { success: false, error: "Parámetro requerido: deviceToken" })
+    }
+
     // Validar dispositivo (evita abuso del endpoint público)
-    const { data: validData, error: validError } = await supabaseAdmin.rpc("validate_kiosk_device", {
-      p_device_token: body.deviceToken,
-    })
-
-    const isValid = !validError && Array.isArray(validData) && validData[0]?.is_valid === true
-
-    if (!isValid) {
-      console.warn("[kiosk-upload-verification-photo] invalid device", {
-        requestId,
-        validError: validError?.message,
+    if (requireDeviceToken) {
+      const { data: validData, error: validError } = await supabaseAdmin.rpc("validate_kiosk_device", {
+        p_device_token: body.deviceToken,
       })
-      return json(401, { success: false, error: "Dispositivo no autorizado" })
+
+      const isValid = !validError && Array.isArray(validData) && validData[0]?.is_valid === true
+
+      if (!isValid) {
+        console.warn("[kiosk-upload-verification-photo] invalid device", {
+          requestId,
+          validError: validError?.message,
+        })
+        return json(401, { success: false, error: "Dispositivo no autorizado" })
+      }
     }
 
     const storagePath = body.desiredStoragePath || `${body.fichajeId}/${Date.now()}.jpg`
