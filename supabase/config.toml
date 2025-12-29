@@ -96,3 +96,6 @@ verify_jwt = true
 
 [functions.kiosk-upload-verification-photo]
 verify_jwt = false
+
+[functions.kiosk-get-verification-photo-url]
+verify_jwt = false
