@@ -93,3 +93,6 @@ verify_jwt = true
 
 [functions.generate-training-questions]
 verify_jwt = true
+
+[functions.kiosk-upload-verification-photo]
+verify_jwt = false

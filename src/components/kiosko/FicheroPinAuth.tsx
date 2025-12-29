@@ -335,16 +335,25 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
         throw new Error(result.mensaje)
       }
 
-      // Guardar foto en storage
-      await guardarFotoVerificacion({
-        empleadoId: empleadoSeleccionado.id,
-        fichajeId: result.fichaje_id,
-        fotoBase64: fotoCapturada,
-        latitud: ubicacion.latitud ?? undefined,
-        longitud: ubicacion.longitud ?? undefined,
-        metodoFichaje: 'pin',
-        confianzaFacial: 0
-      })
+       // Guardar foto en storage
+       const photoResult = await guardarFotoVerificacion({
+         empleadoId: empleadoSeleccionado.id,
+         fichajeId: result.fichaje_id,
+         fotoBase64: fotoCapturada,
+         latitud: ubicacion.latitud ?? undefined,
+         longitud: ubicacion.longitud ?? undefined,
+         metodoFichaje: 'pin',
+         confianzaFacial: 0,
+         deviceToken: localStorage.getItem('kiosk_device_token') ?? undefined,
+       })
+
+       if (!photoResult.success) {
+         toast({
+           title: 'Foto pendiente',
+           description: photoResult.error || 'El fichaje se registró, pero la foto quedó pendiente de carga.',
+           variant: 'destructive',
+         })
+       }
 
       // Notificar éxito
       onSuccess(
