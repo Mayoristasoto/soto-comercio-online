@@ -56,6 +56,7 @@ export default function FotosVerificacionViewer() {
           id,
           empleado_id,
           foto_url,
+          foto_storage_path,
           latitud,
           longitud,
           timestamp_captura,
@@ -73,14 +74,27 @@ export default function FotosVerificacionViewer() {
 
       if (error) throw error
 
-      // Agregar datos de empleado
-      const fotosConEmpleado = (data || []).map(foto => {
+      // Agregar datos de empleado + signed URL (bucket privado)
+      const fotosConEmpleado = await Promise.all((data || []).map(async (foto) => {
+        let finalUrl = foto.foto_url
+
+        if (foto.foto_storage_path) {
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('fichajes-verificacion')
+            .createSignedUrl(foto.foto_storage_path, 300)
+
+          if (!signedError && signedData?.signedUrl) {
+            finalUrl = signedData.signedUrl
+          }
+        }
+
         const emp = empData?.find(e => e.id === foto.empleado_id)
         return {
           ...foto,
+          foto_url: finalUrl,
           empleado: emp ? { nombre: emp.nombre, apellido: emp.apellido } : undefined
         }
-      })
+      }))
 
       setFotos(fotosConEmpleado)
     } catch (error) {

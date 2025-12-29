@@ -76,6 +76,7 @@ interface FichajeHistorial {
 interface FotoVerificacion {
   id: string
   foto_url: string
+  foto_storage_path?: string | null
   timestamp_captura: string
   metodo_fichaje: string
 }
@@ -374,16 +375,35 @@ export default function FicheroHistorial() {
 
       if (error) throw error
 
-      const foto = data?.[0] ?? null
+      const foto = (data?.[0] as FotoVerificacion | undefined) ?? null
 
-      // Generar URL firmada para bucket privado
+      // Bucket es privado: intentamos signed URL con sesión.
       let signedUrl: string | null = null
       if (foto?.foto_storage_path) {
         const { data: signedData, error: signedError } = await supabase.storage
           .from("fichajes-verificacion")
           .createSignedUrl(foto.foto_storage_path, 300) // 5 minutos
+
         if (!signedError && signedData?.signedUrl) {
           signedUrl = signedData.signedUrl
+        }
+      }
+
+      // Fallback para /kiosco sin sesión: pedir signed URL a Edge Function (valida deviceToken si aplica).
+      if (foto?.foto_storage_path && !signedUrl) {
+        const deviceToken = localStorage.getItem("kiosk_device_token")
+        const { data: fnData, error: fnError } = await supabase.functions.invoke(
+          "kiosk-get-verification-photo-url",
+          {
+            body: {
+              storagePath: foto.foto_storage_path,
+              deviceToken,
+            },
+          }
+        )
+
+        if (!fnError && (fnData as any)?.signedUrl) {
+          signedUrl = (fnData as any).signedUrl
         }
       }
 
