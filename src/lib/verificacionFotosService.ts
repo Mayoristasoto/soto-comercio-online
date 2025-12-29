@@ -8,6 +8,8 @@ export interface FotoVerificacion {
   longitud?: number
   metodoFichaje: string
   confianzaFacial: number
+  /** Token de dispositivo de kiosco (si aplica, para fallback server-side) */
+  deviceToken?: string
 }
 
 /**
@@ -35,15 +37,58 @@ export async function guardarFotoVerificacion(data: FotoVerificacion): Promise<{
     const blob = new Blob([bytes], { type: 'image/jpeg' })
     
     // Subir al bucket
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('fichajes-verificacion')
       .upload(fileName, blob, {
         contentType: 'image/jpeg',
         upsert: true
       })
-    
+
     if (uploadError) {
       console.error('Error subiendo foto de verificación:', uploadError)
+
+      // Fallback: si el kiosco no tiene sesión/auth, subir desde Edge Function (con device token)
+      const status = (uploadError as any)?.statusCode as number | undefined
+      const isAuthError = status === 401 || status === 403 || /unauthorized|not authorized|jwt/i.test(uploadError.message)
+
+      if (isAuthError) {
+        try {
+          const deviceToken = data.deviceToken ?? localStorage.getItem('kiosk_device_token') ?? null
+
+          const { data: fnData, error: fnError } = await supabase.functions.invoke(
+            'kiosk-upload-verification-photo',
+            {
+              body: {
+                fichajeId: data.fichajeId,
+                empleadoId: data.empleadoId,
+                fotoBase64: data.fotoBase64,
+                metodoFichaje: data.metodoFichaje,
+                latitud: data.latitud ?? null,
+                longitud: data.longitud ?? null,
+                deviceToken,
+                desiredStoragePath: fileName,
+              },
+            }
+          )
+
+          if (fnError) {
+            return { success: false, error: fnError.message }
+          }
+
+          if ((fnData as any)?.success) {
+            return { success: true }
+          }
+
+          return { success: false, error: (fnData as any)?.error || 'No se pudo subir la foto (server)' }
+        } catch (fallbackError) {
+          console.error('Error en fallback de foto (Edge Function):', fallbackError)
+          return {
+            success: false,
+            error: fallbackError instanceof Error ? fallbackError.message : 'Error desconocido'
+          }
+        }
+      }
+
       return { success: false, error: uploadError.message }
     }
     

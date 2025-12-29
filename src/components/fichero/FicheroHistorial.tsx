@@ -369,7 +369,6 @@ export default function FicheroHistorial() {
         .from("fichajes_fotos_verificacion")
         .select("id, foto_url, foto_storage_path, timestamp_captura, metodo_fichaje")
         .eq("fichaje_id", fichajeId)
-        .neq("foto_url", "pending_upload")
         .order("timestamp_captura", { ascending: false })
         .limit(1)
 
@@ -935,16 +934,23 @@ export default function FicheroHistorial() {
                 <span className="text-sm text-muted-foreground">Cargando foto...</span>
               </div>
             ) : fotoModal.foto ? (
-              <div className="space-y-4 w-full">
-                <img 
-                  src={fotoModal.foto.foto_url} 
-                  alt="Foto de verificación"
-                  className="w-full max-h-[400px] object-contain rounded-lg border"
-                />
-                <div className="text-sm text-muted-foreground text-center">
-                  Capturada: {formatArgentinaDate(fotoModal.foto.timestamp_captura, 'dd/MM/yyyy')} a las {formatArgentinaTime(fotoModal.foto.timestamp_captura)}
+              fotoModal.foto.foto_url === 'pending_upload' ? (
+                <div className="text-center text-muted-foreground">
+                  <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Foto pendiente de carga para este fichaje</p>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-4 w-full">
+                  <img 
+                    src={fotoModal.foto.foto_url} 
+                    alt="Foto de verificación"
+                    className="w-full max-h-[400px] object-contain rounded-lg border"
+                  />
+                  <div className="text-sm text-muted-foreground text-center">
+                    Capturada: {formatArgentinaDate(fotoModal.foto.timestamp_captura, 'dd/MM/yyyy')} a las {formatArgentinaTime(fotoModal.foto.timestamp_captura)}
+                  </div>
+                </div>
+              )
             ) : (
               <div className="text-center text-muted-foreground">
                 <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
