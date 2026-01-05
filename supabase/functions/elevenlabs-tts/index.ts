@@ -11,11 +11,20 @@ serve(async (req) => {
   }
 
   try {
-    // Validate webhook secret for security
+    // Validate webhook secret for security (fail closed)
     const webhookSecret = req.headers.get('X-Webhook-Secret');
     const expectedSecret = Deno.env.get('TTS_WEBHOOK_SECRET');
     
-    if (expectedSecret && webhookSecret !== expectedSecret) {
+    // Fail closed: reject if secret not configured
+    if (!expectedSecret) {
+      console.error('CRITICAL: TTS_WEBHOOK_SECRET not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server misconfiguration' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (webhookSecret !== expectedSecret) {
       console.error('Invalid webhook secret');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
