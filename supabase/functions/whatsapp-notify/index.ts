@@ -26,11 +26,20 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Validate webhook secret for security
+    // Validate webhook secret for security (fail closed)
     const webhookSecret = req.headers.get('X-Webhook-Secret')
     const expectedSecret = Deno.env.get('WHATSAPP_WEBHOOK_SECRET')
     
-    if (expectedSecret && webhookSecret !== expectedSecret) {
+    // Fail closed: reject if secret not configured
+    if (!expectedSecret) {
+      console.error('❌ CRITICAL: WHATSAPP_WEBHOOK_SECRET not configured')
+      return new Response(
+        JSON.stringify({ error: 'Server misconfiguration' }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
+    
+    if (webhookSecret !== expectedSecret) {
       console.error('❌ Invalid webhook secret')
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
