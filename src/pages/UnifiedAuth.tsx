@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Shield, Mail, Lock, User, Building, Scan } from "lucide-react"
+import { Shield, Mail, Lock, User, Building, Scan, KeyRound } from "lucide-react"
 import FacialRecognitionAuth from "@/components/FacialRecognitionAuth"
+import PinLoginAuth from "@/components/auth/PinLoginAuth"
 
 export default function UnifiedAuth() {
   const navigate = useNavigate()
@@ -321,8 +322,12 @@ export default function UnifiedAuth() {
 
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="signin">Email</TabsTrigger>
+              <TabsTrigger value="pin">
+                <KeyRound className="h-4 w-4 mr-1" />
+                PIN
+              </TabsTrigger>
               <TabsTrigger value="facial">
                 <Scan className="h-4 w-4 mr-1" />
                 Facial
@@ -414,6 +419,10 @@ export default function UnifiedAuth() {
                 </Button>
               </form>
               )}
+            </TabsContent>
+
+            <TabsContent value="pin">
+              <PinLoginAuth onSuccess={() => navigate(redirectTo)} />
             </TabsContent>
 
             <TabsContent value="facial">
