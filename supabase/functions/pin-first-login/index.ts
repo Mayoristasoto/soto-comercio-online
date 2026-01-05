@@ -70,7 +70,7 @@ serve(async (req) => {
     // Get employee data
     const { data: empleado, error: empError } = await supabaseAdmin
       .from('empleados')
-      .select('id, email, nombre, apellido, user_id, activo')
+      .select('id, email, nombre, apellido, user_id, activo, rol')
       .eq('id', empleado_id)
       .single()
 
@@ -85,6 +85,15 @@ serve(async (req) => {
     if (!empleado.activo) {
       return new Response(
         JSON.stringify({ error: 'Empleado inactivo' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Block admin_rrhh from using PIN login - they must use email/password
+    if (empleado.rol === 'admin_rrhh') {
+      console.log('[pin-first-login] Administrador intentó login con PIN, bloqueado')
+      return new Response(
+        JSON.stringify({ error: 'Los administradores deben usar email y contraseña' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

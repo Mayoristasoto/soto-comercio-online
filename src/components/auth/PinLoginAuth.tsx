@@ -22,6 +22,7 @@ interface EmpleadoBusqueda {
   legajo: string | null
   tiene_pin: boolean
   avatar_url: string | null
+  rol?: string
 }
 
 interface PinLoginAuthProps {
@@ -41,7 +42,7 @@ export default function PinLoginAuth({ onSuccess }: PinLoginAuthProps) {
   const [error, setError] = useState<string | null>(null)
   const [intentosRestantes, setIntentosRestantes] = useState<number | null>(null)
 
-  // Search employees
+  // Search employees (exclude admin_rrhh)
   const buscarEmpleados = useCallback(async (query: string) => {
     if (query.length < 2) {
       setEmpleados([])
@@ -54,7 +55,10 @@ export default function PinLoginAuth({ onSuccess }: PinLoginAuthProps) {
       })
       
       if (error) throw error
-      setEmpleados(data || [])
+      
+      // Filter out admin_rrhh - they must use email/password login
+      const empleadosNoAdmin = (data || []).filter((emp: any) => emp.rol !== 'admin_rrhh')
+      setEmpleados(empleadosNoAdmin)
     } catch (err) {
       console.error('Error buscando empleados:', err)
       setEmpleados([])
