@@ -10,6 +10,7 @@ import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
+import { PausaExcedidaAlert } from "@/components/kiosko/PausaExcedidaAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -78,6 +79,11 @@ export default function KioscoCheckIn() {
   } | null>(null)
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [pendingAccionSalida, setPendingAccionSalida] = useState(false)
+  const [showPausaExcedidaAlert, setShowPausaExcedidaAlert] = useState(false)
+  const [pausaExcedidaInfo, setPausaExcedidaInfo] = useState<{
+    minutosUsados: number
+    minutosPermitidos: number
+  } | null>(null)
   
   // PIN mode state
   const [modoAutenticacion, setModoAutenticacion] = useState<'facial' | 'pin'>('facial')
@@ -541,6 +547,8 @@ export default function KioscoCheckIn() {
       setPausaActiva(null)
       setShowConfirmarTareas(false)
       setPendingAccionSalida(false)
+      setShowPausaExcedidaAlert(false)
+      setPausaExcedidaInfo(null)
     }, 6000)
   }
 
@@ -676,6 +684,18 @@ export default function KioscoCheckIn() {
         } catch (error) {
           console.error('Error reproduciendo audio:', error)
         }
+      }
+
+      // 🔔 Verificar si la pausa fue excedida y mostrar alerta
+      if (tipoAccion === 'pausa_fin' && pausaActiva && pausaActiva.minutosRestantes < 0) {
+        setPausaExcedidaInfo({
+          minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
+          minutosPermitidos: pausaActiva.minutosPermitidos
+        })
+        setShowPausaExcedidaAlert(true)
+        setShowFacialAuth(false)
+        // resetKiosco se llamará cuando se cierre el alert
+        return
       }
 
       setShowFacialAuth(false)
@@ -825,6 +845,18 @@ export default function KioscoCheckIn() {
         } catch (error) {
           console.error('Error reproduciendo audio:', error)
         }
+      }
+
+      // 🔔 Verificar si la pausa fue excedida y mostrar alerta
+      if (tipoAccion === 'pausa_fin' && pausaActiva && pausaActiva.minutosRestantes < 0) {
+        setPausaExcedidaInfo({
+          minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
+          minutosPermitidos: pausaActiva.minutosPermitidos
+        })
+        setShowPausaExcedidaAlert(true)
+        setShowActionSelection(false)
+        // resetKiosco se llamará cuando se cierre el alert
+        return
       }
 
       setShowActionSelection(false)
@@ -988,6 +1020,21 @@ export default function KioscoCheckIn() {
           onDismiss={() => {
             setShowCrucesRojasAlert(false)
             setShowActionSelection(true)
+          }}
+          duracionSegundos={5}
+        />
+      )}
+
+      {/* Alerta de Pausa Excedida (Overlay) */}
+      {showPausaExcedidaAlert && pausaExcedidaInfo && recognizedEmployee && (
+        <PausaExcedidaAlert
+          empleadoNombre={`${recognizedEmployee.data.nombre} ${recognizedEmployee.data.apellido}`}
+          minutosUsados={pausaExcedidaInfo.minutosUsados}
+          minutosPermitidos={pausaExcedidaInfo.minutosPermitidos}
+          onDismiss={() => {
+            setShowPausaExcedidaAlert(false)
+            setPausaExcedidaInfo(null)
+            resetKiosco()
           }}
           duracionSegundos={5}
         />
