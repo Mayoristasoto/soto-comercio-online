@@ -99,3 +99,6 @@ verify_jwt = false
 
 [functions.kiosk-get-verification-photo-url]
 verify_jwt = false
+
+[functions.pin-first-login]
+verify_jwt = false
