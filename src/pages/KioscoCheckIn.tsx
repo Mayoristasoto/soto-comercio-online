@@ -97,76 +97,53 @@ export default function KioscoCheckIn() {
   // Check device authorization on mount
   useEffect(() => {
     const checkDeviceAuthorization = async () => {
-      // First check if device validation is enabled
-      const { data: configData } = await supabase
-        .from('facial_recognition_config')
-        .select('value')
-        .eq('key', 'kiosk_device_validation_enabled')
-        .single()
-      
-      // If validation is disabled, allow access
-      if (configData?.value === 'false') {
-        setDeviceStatus('no_devices')
-        return
-      }
+      try {
+        const activateToken = searchParams.get('activate')
+        const storedToken = localStorage.getItem(DEVICE_TOKEN_KEY)
 
-      // Check for activation token in URL
-      const activateToken = searchParams.get('activate')
-      if (activateToken) {
-        // Validate and store the token
-        const { data, error } = await supabase.rpc('validate_kiosk_device', { p_device_token: activateToken })
-        
-        if (!error && data && data.length > 0 && data[0].is_valid) {
-          localStorage.setItem(DEVICE_TOKEN_KEY, activateToken)
-          setDeviceName(data[0].device_name)
-          setDeviceStatus('authorized')
-          toast({
-            title: "Dispositivo activado",
-            description: `Este dispositivo ha sido registrado como "${data[0].device_name}"`
-          })
-          // Remove the activate param from URL
-          navigate('/kiosco', { replace: true })
+        const { data, error } = await supabase.functions.invoke('kiosk-device-status', {
+          body: {
+            activateToken,
+            deviceToken: storedToken,
+          },
+        })
+
+        if (error || !data?.success) {
+          console.error('Error checking device status:', error)
+          setDeviceStatus('unauthorized')
           return
         }
-      }
 
-      // Check if there are any registered devices
-      const { data: devicesData, error: devicesError } = await supabase
-        .from('kiosk_devices')
-        .select('id')
-        .eq('is_active', true)
-        .limit(1)
+        if (data.status === 'no_devices') {
+          setDeviceStatus('no_devices')
+          return
+        }
 
-      if (devicesError) {
-        console.error('Error checking devices:', devicesError)
-        setDeviceStatus('no_devices') // Allow access on error
-        return
-      }
+        if (data.status !== 'authorized') {
+          if (data.invalidate_stored_token) {
+            localStorage.removeItem(DEVICE_TOKEN_KEY)
+          }
+          setDeviceStatus('unauthorized')
+          return
+        }
 
-      // If no devices are registered, allow access
-      if (!devicesData || devicesData.length === 0) {
-        setDeviceStatus('no_devices')
-        return
-      }
+        // Authorized
+        setDeviceName(data.device_name ?? null)
+        setDeviceStatus('authorized')
 
-      // Devices are registered, check if this device is authorized
-      const storedToken = localStorage.getItem(DEVICE_TOKEN_KEY)
-      if (!storedToken) {
+        // If it was an activation URL, persist token and clean URL
+        if (activateToken && data.used_token === 'activate') {
+          localStorage.setItem(DEVICE_TOKEN_KEY, activateToken)
+          toast({
+            title: 'Dispositivo activado',
+            description: data.device_name ? `Este dispositivo ha sido registrado como "${data.device_name}"` : undefined,
+          })
+          navigate('/kiosco', { replace: true })
+        }
+      } catch (e) {
+        console.error('Error checking device authorization:', e)
         setDeviceStatus('unauthorized')
-        return
       }
-
-      // Validate the stored token
-      const { data: validationData, error: validationError } = await supabase.rpc('validate_kiosk_device', { p_device_token: storedToken })
-      
-      if (validationError || !validationData || validationData.length === 0 || !validationData[0].is_valid) {
-        localStorage.removeItem(DEVICE_TOKEN_KEY)
-        setDeviceStatus('unauthorized')
-        return
-      }
-
-      setDeviceName(validationData[0].device_name)
-      setDeviceStatus('authorized')
     }
 
     checkDeviceAuthorization()
