@@ -261,12 +261,32 @@ export function KioskDeviceManagement() {
     }
   }
 
+  const getAppBaseUrl = () => {
+    // If we're in Lovable preview, use the preview URL
+    const origin = window.location.origin
+    // Check if it's a Lovable editor URL and convert to preview URL
+    if (origin.includes('lovable.dev') && !origin.includes('id-')) {
+      // Already on the correct preview URL or deployed URL
+      return origin
+    }
+    return origin
+  }
+
   const copyActivationUrl = (token: string) => {
-    const url = `${window.location.origin}/kiosco?activate=${token}`
+    const baseUrl = getAppBaseUrl()
+    const url = `${baseUrl}/kiosco?activate=${token}`
     navigator.clipboard.writeText(url)
     toast({
       title: "URL copiada",
       description: "Abre esta URL en el dispositivo del kiosco para activarlo"
+    })
+  }
+
+  const copyTokenOnly = (token: string) => {
+    navigator.clipboard.writeText(token)
+    toast({
+      title: "Token copiado",
+      description: "Ingresa este token manualmente en el kiosco"
     })
   }
 
@@ -442,7 +462,16 @@ export function KioskDeviceManagement() {
                         onClick={() => copyActivationUrl(device.device_token)}
                         title="Copiar URL de activación"
                       >
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">URL</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyTokenOnly(device.device_token)}
+                        title="Copiar solo el token"
+                      >
+                        Token
                       </Button>
                       <Button
                         variant="destructive"
