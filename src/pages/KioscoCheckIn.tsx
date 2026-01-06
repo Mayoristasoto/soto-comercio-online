@@ -987,32 +987,8 @@ export default function KioscoCheckIn() {
     )
   }
 
-  // Show unauthorized screen with option to skip validation (for testing)
+  // Show unauthorized screen - device must be registered by admin
   if (deviceStatus === 'unauthorized') {
-    const handleSkipValidation = () => {
-      setDeviceStatus('no_devices')
-    }
-
-    const handleActivateDevice = async () => {
-      try {
-        const deviceToken = crypto.randomUUID()
-        const { error } = await supabase.from('kiosk_devices').insert({
-          device_token: deviceToken,
-          device_name: `Kiosco ${new Date().toLocaleDateString('es-AR')}`,
-          is_active: true
-        })
-        
-        if (error) throw error
-        
-        localStorage.setItem('kiosk_device_token', deviceToken)
-        toast({ title: 'Dispositivo activado correctamente' })
-        setDeviceStatus('authorized')
-      } catch (error) {
-        console.error('Error activating device:', error)
-        toast({ title: 'Error al activar el dispositivo', variant: 'destructive' })
-      }
-    }
-    
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 text-center">
@@ -1020,23 +996,11 @@ export default function KioscoCheckIn() {
           <h1 className="text-2xl font-bold text-destructive mb-2">Dispositivo No Autorizado</h1>
           <p className="text-muted-foreground mb-6">
             Este dispositivo no está registrado para usar el kiosco de fichaje.
+            Contacte al administrador para obtener una URL de activación.
           </p>
-          <div className="space-y-3">
-            <Button onClick={handleActivateDevice} className="w-full">
-              Activar este dispositivo
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/')} className="w-full">
-              Volver al inicio
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleSkipValidation}
-              className="text-muted-foreground"
-            >
-              Continuar sin validación (demo)
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => navigate('/')} className="w-full">
+            Volver al inicio
+          </Button>
         </Card>
       </div>
     )
