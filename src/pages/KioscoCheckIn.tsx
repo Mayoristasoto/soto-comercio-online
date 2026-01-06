@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText, Monitor, ShieldAlert, Key, ScanFace } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText, Monitor, ShieldAlert, Key, ScanFace, Smartphone } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import { supabase } from "@/integrations/supabase/client"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import FicheroPinAuth from "@/components/kiosko/FicheroPinAuth"
@@ -49,6 +50,181 @@ interface AccionDisponible {
 }
 
 const DEVICE_TOKEN_KEY = 'kiosk_device_token'
+
+// Component for unauthorized device screen
+function UnauthorizedDeviceScreen({ 
+  navigate, 
+  toast, 
+  onActivated 
+}: { 
+  navigate: (path: string) => void
+  toast: ReturnType<typeof useToast>['toast']
+  onActivated: (name?: string) => void 
+}) {
+  const [manualToken, setManualToken] = useState('')
+  const [isActivating, setIsActivating] = useState(false)
+  const [isAdminActivating, setIsAdminActivating] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ id: string; rol: string } | null>(null)
+
+  // Check if current user is admin
+  useEffect(() => {
+    const checkCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: empleado } = await supabase
+          .from('empleados')
+          .select('id, rol')
+          .eq('user_id', user.id)
+          .single()
+        if (empleado) {
+          setCurrentUser(empleado)
+        }
+      }
+    }
+    checkCurrentUser()
+  }, [])
+
+  const handleManualActivation = async () => {
+    if (!manualToken.trim()) {
+      toast({
+        title: 'Token requerido',
+        description: 'Ingrese el token de activación proporcionado por el administrador',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    setIsActivating(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('kiosk-device-status', {
+        body: { activateToken: manualToken.trim() }
+      })
+
+      if (error || !data?.success || data.status !== 'authorized') {
+        toast({
+          title: 'Token inválido',
+          description: 'El token ingresado no es válido o ha expirado',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      // Save token and notify success
+      localStorage.setItem(DEVICE_TOKEN_KEY, manualToken.trim())
+      toast({
+        title: 'Dispositivo activado',
+        description: data.device_name ? `Registrado como "${data.device_name}"` : 'Dispositivo registrado correctamente'
+      })
+      onActivated(data.device_name)
+    } catch (e) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo validar el token',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsActivating(false)
+    }
+  }
+
+  const handleAdminQuickActivation = async () => {
+    setIsAdminActivating(true)
+    try {
+      // Create a new device for this kiosk
+      const deviceName = `Kiosco ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+      const newToken = crypto.randomUUID()
+
+      const { error } = await supabase
+        .from('kiosk_devices')
+        .insert({
+          device_token: newToken,
+          device_name: deviceName,
+          is_active: true
+        })
+
+      if (error) throw error
+
+      // Activate this device immediately
+      localStorage.setItem(DEVICE_TOKEN_KEY, newToken)
+      toast({
+        title: 'Dispositivo activado',
+        description: `Registrado como "${deviceName}"`
+      })
+      onActivated(deviceName)
+    } catch (e) {
+      console.error('Error creating device:', e)
+      toast({
+        title: 'Error',
+        description: 'No se pudo crear el dispositivo',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsAdminActivating(false)
+    }
+  }
+
+  const isAdmin = currentUser?.rol === 'admin' || currentUser?.rol === 'gerente'
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full p-6 text-center space-y-6">
+        <div>
+          <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-destructive mb-2">Dispositivo No Autorizado</h1>
+          <p className="text-muted-foreground text-sm">
+            Este dispositivo no está registrado para usar el kiosco de fichaje.
+          </p>
+        </div>
+
+        {/* Manual token input */}
+        <div className="space-y-3 pt-4 border-t">
+          <p className="text-sm font-medium text-foreground">¿Tiene un token de activación?</p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Ingrese el token..."
+              value={manualToken}
+              onChange={(e) => setManualToken(e.target.value)}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleManualActivation} 
+              disabled={isActivating || !manualToken.trim()}
+              size="sm"
+            >
+              {isActivating ? (
+                <span className="animate-pulse">...</span>
+              ) : (
+                <Key className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Admin quick activation */}
+        {isAdmin && (
+          <div className="space-y-3 pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              Sesión detectada: <span className="font-medium text-primary">{currentUser?.rol}</span>
+            </p>
+            <Button 
+              onClick={handleAdminQuickActivation}
+              disabled={isAdminActivating}
+              className="w-full"
+              variant="default"
+            >
+              <Smartphone className="h-4 w-4 mr-2" />
+              {isAdminActivating ? 'Activando...' : 'Activar este dispositivo ahora'}
+            </Button>
+          </div>
+        )}
+
+        <Button variant="outline" onClick={() => navigate('/')} className="w-full">
+          Volver al inicio
+        </Button>
+      </Card>
+    </div>
+  )
+}
 
 export default function KioscoCheckIn() {
   const { toast } = useToast()
@@ -966,21 +1142,14 @@ export default function KioscoCheckIn() {
 
   // Show unauthorized screen - device must be registered by admin
   if (deviceStatus === 'unauthorized') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center">
-          <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-destructive mb-2">Dispositivo No Autorizado</h1>
-          <p className="text-muted-foreground mb-6">
-            Este dispositivo no está registrado para usar el kiosco de fichaje.
-            Contacte al administrador para obtener una URL de activación.
-          </p>
-          <Button variant="outline" onClick={() => navigate('/')} className="w-full">
-            Volver al inicio
-          </Button>
-        </Card>
-      </div>
-    )
+    return <UnauthorizedDeviceScreen 
+      navigate={navigate} 
+      toast={toast}
+      onActivated={(name) => {
+        setDeviceName(name ?? null)
+        setDeviceStatus('authorized')
+      }}
+    />
   }
 
   return (
