@@ -32,7 +32,8 @@ serve(async (req) => {
       .single()
 
     if (premioError || !premio) {
-      throw new Error('Premio no encontrado')
+      console.error('Error fetching premio:', premioError)
+      throw new Error('No se pudo procesar la solicitud')
     }
 
     // Verificar puntos del empleado
@@ -44,12 +45,12 @@ serve(async (req) => {
     const totalPuntos = puntosData?.reduce((sum, p) => sum + p.puntos, 0) || 0
 
     if (totalPuntos < premio.monto_presupuestado) {
-      throw new Error('Puntos insuficientes')
+      throw new Error('No se puede completar la operación en este momento')
     }
 
     // Verificar stock
     if (premio.stock !== null && premio.stock <= 0) {
-      throw new Error('Premio sin stock disponible')
+      throw new Error('No se puede completar la operación en este momento')
     }
 
     // Crear asignación del premio
@@ -66,7 +67,8 @@ serve(async (req) => {
       .single()
 
     if (asignacionError) {
-      throw new Error('Error al crear asignación del premio')
+      console.error('Error creating assignment:', asignacionError)
+      throw new Error('Error al procesar la solicitud')
     }
 
     // Deducir puntos
@@ -79,7 +81,8 @@ serve(async (req) => {
       }])
 
     if (puntosError) {
-      throw new Error('Error al deducir puntos')
+      console.error('Error deducting points:', puntosError)
+      throw new Error('Error al procesar la solicitud')
     }
 
     // Actualizar stock si aplica

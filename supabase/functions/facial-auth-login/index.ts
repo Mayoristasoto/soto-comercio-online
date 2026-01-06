@@ -49,7 +49,7 @@ serve(async (req) => {
           sampleValues: face_descriptor?.slice(0, 5)
         })
         return new Response(
-          JSON.stringify({ error: 'Invalid face descriptor format. Expected array of 128 numeric values.' }),
+          JSON.stringify({ error: 'Formato de datos inválido. Por favor, intente nuevamente.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
