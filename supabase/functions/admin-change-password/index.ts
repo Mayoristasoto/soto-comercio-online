@@ -114,8 +114,9 @@ serve(async (req) => {
       .single()
 
     if (targetError || !targetEmpleado) {
+      console.error('Error fetching employee:', targetError)
       return new Response(
-        JSON.stringify({ error: 'Empleado no encontrado' }),
+        JSON.stringify({ error: 'No se pudo procesar la solicitud' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -137,7 +138,7 @@ serve(async (req) => {
       if (createError || !created?.user?.id) {
         console.error('Error creating auth user for employee:', createError)
         return new Response(
-          JSON.stringify({ error: 'No se pudo crear el usuario para el empleado' }),
+          JSON.stringify({ error: 'Error al procesar la solicitud. Intente nuevamente.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -152,7 +153,7 @@ serve(async (req) => {
       if (linkError) {
         console.error('Error linking auth user to empleado:', linkError)
         return new Response(
-          JSON.stringify({ error: 'No se pudo vincular el usuario al empleado' }),
+          JSON.stringify({ error: 'Error al procesar la solicitud. Intente nuevamente.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
