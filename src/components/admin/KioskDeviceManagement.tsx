@@ -184,7 +184,7 @@ export function KioskDeviceManagement() {
         .insert({
           device_name: newDevice.device_name,
           device_token: crypto.randomUUID() + '-' + Date.now(),
-          sucursal_id: newDevice.sucursal_id || null
+          sucursal_id: newDevice.sucursal_id && newDevice.sucursal_id !== 'none' ? newDevice.sucursal_id : null
         })
 
       if (error) throw error
@@ -351,7 +351,7 @@ export function KioskDeviceManagement() {
                     <SelectValue placeholder="Seleccionar sucursal" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin sucursal asignada</SelectItem>
+                    <SelectItem value="none">Sin sucursal asignada</SelectItem>
                     {sucursales.map((s) => (
                       <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
                     ))}
