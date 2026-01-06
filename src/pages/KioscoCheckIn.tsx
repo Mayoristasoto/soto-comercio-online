@@ -987,8 +987,12 @@ export default function KioscoCheckIn() {
     )
   }
 
-  // Show unauthorized screen
+  // Show unauthorized screen with option to skip validation (for testing)
   if (deviceStatus === 'unauthorized') {
+    const handleSkipValidation = () => {
+      setDeviceStatus('no_devices')
+    }
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 text-center">
@@ -998,9 +1002,19 @@ export default function KioscoCheckIn() {
             Este dispositivo no está registrado para usar el kiosco de fichaje.
             Contacte al administrador para obtener una URL de activación.
           </p>
-          <Button variant="outline" onClick={() => navigate('/')}>
-            Volver al inicio
-          </Button>
+          <div className="space-y-3">
+            <Button variant="outline" onClick={() => navigate('/')}>
+              Volver al inicio
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSkipValidation}
+              className="text-muted-foreground"
+            >
+              Continuar sin validación (demo)
+            </Button>
+          </div>
         </Card>
       </div>
     )
