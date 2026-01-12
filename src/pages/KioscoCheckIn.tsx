@@ -872,19 +872,19 @@ export default function KioscoCheckIn() {
   const ejecutarAccion = async (tipoAccion: TipoAccion) => {
     if (!recognizedEmployee) return
 
-    // Si es salida y es gerente_sucursal, mostrar primero el diálogo de confirmación de tareas
-    if (tipoAccion === 'salida' && recognizedEmployee.data?.rol === 'gerente_sucursal') {
-      // Verificar si tiene tareas con fecha límite hoy
+    // Si es salida, verificar si tiene tareas pendientes con fecha límite vencida o de hoy
+    if (tipoAccion === 'salida') {
       const hoy = new Date().toISOString().split('T')[0]
-      const { data: tareasHoy } = await supabase
+      const { data: tareasPendientes } = await supabase
         .from('tareas')
         .select('id')
         .eq('asignado_a', recognizedEmployee.id)
         .eq('estado', 'pendiente')
-        .eq('fecha_limite', hoy)
+        .not('fecha_limite', 'is', null)
+        .lte('fecha_limite', hoy)
         .limit(1)
       
-      if (tareasHoy && tareasHoy.length > 0) {
+      if (tareasPendientes && tareasPendientes.length > 0) {
         setPendingAccionSalida(true)
         setShowConfirmarTareas(true)
         return
