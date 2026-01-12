@@ -1240,7 +1240,7 @@ export default function KioscoCheckIn() {
             setPausaExcedidaInfo(null)
             resetKiosco()
           }}
-          duracionSegundos={8}
+          duracionSegundos={3}
         />
       )}
 
