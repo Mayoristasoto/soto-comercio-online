@@ -252,6 +252,7 @@ export default function KioscoCheckIn() {
     minutosPermitidos: number
     minutosTranscurridos: number
     minutosRestantes: number
+    excedida: boolean
   } | null>(null)
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [pendingAccionSalida, setPendingAccionSalida] = useState(false)
@@ -397,13 +398,16 @@ export default function KioscoCheckIn() {
       const inicioPausa = new Date(pausaInicio.timestamp_real)
       const ahora = new Date()
       const minutosTranscurridos = Math.floor((ahora.getTime() - inicioPausa.getTime()) / 60000)
-      const minutosRestantes = Math.max(0, minutosPermitidos - minutosTranscurridos)
+      // Permitir valores negativos para detectar exceso de pausa
+      const minutosRestantes = minutosPermitidos - minutosTranscurridos
+      const excedida = minutosTranscurridos > minutosPermitidos
       
       setPausaActiva({
         inicio: inicioPausa,
         minutosPermitidos,
         minutosTranscurridos,
-        minutosRestantes
+        minutosRestantes,
+        excedida
       })
       
     } catch (error) {
@@ -840,7 +844,7 @@ export default function KioscoCheckIn() {
       }
 
       // 🔔 Verificar si la pausa fue excedida y mostrar alerta
-      if (tipoAccion === 'pausa_fin' && pausaActiva && pausaActiva.minutosRestantes < 0) {
+      if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
         setPausaExcedidaInfo({
           minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
           minutosPermitidos: pausaActiva.minutosPermitidos
@@ -1001,7 +1005,7 @@ export default function KioscoCheckIn() {
       }
 
       // 🔔 Verificar si la pausa fue excedida y mostrar alerta
-      if (tipoAccion === 'pausa_fin' && pausaActiva && pausaActiva.minutosRestantes < 0) {
+      if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
         setPausaExcedidaInfo({
           minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
           minutosPermitidos: pausaActiva.minutosPermitidos
