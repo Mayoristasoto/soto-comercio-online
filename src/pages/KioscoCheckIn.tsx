@@ -709,7 +709,7 @@ export default function KioscoCheckIn() {
       setPendingAccionSalida(false)
       setShowPausaExcedidaAlert(false)
       setPausaExcedidaInfo(null)
-    }, 6000)
+    }, 3000)
   }
 
   // Handler para cuando se confirman las tareas del día antes de salir
