@@ -580,83 +580,35 @@ export default function FicheroFacialAuth({
 
         console.log('Generando audio para mensaje:', mensaje)
 
-        // Intentar primero con ElevenLabs, si falla usar Web Speech API
-        let audioGenerado = false
-        
-        try {
-          const { data: audioBlob, error } = await supabase.functions.invoke('elevenlabs-tts', {
-            body: { text: mensaje }
-          })
-
-          if (!error && audioBlob) {
-            console.log('Audio recibido de ElevenLabs')
-            
-            // Convertir la respuesta a Blob si es necesario
-            let blob: Blob
-            if (audioBlob instanceof Blob) {
-              blob = audioBlob
-            } else if (audioBlob instanceof ArrayBuffer) {
-              blob = new Blob([audioBlob], { type: 'audio/mpeg' })
-            } else {
-              throw new Error('Formato inesperado')
-            }
-
-            // Reproducir audio
-            const audioUrl = URL.createObjectURL(blob)
-            const audio = new Audio(audioUrl)
-            
-            audio.onended = () => {
-              URL.revokeObjectURL(audioUrl)
-              setReproducirAudio(false)
-              setNombreEmpleadoAudio('')
-            }
-
-            audio.onerror = () => {
-              URL.revokeObjectURL(audioUrl)
-              throw new Error('Error reproduciendo')
-            }
-
-            await audio.play()
-            audioGenerado = true
-            console.log('Reproduciendo con ElevenLabs')
-          } else {
-            throw new Error(error?.message || 'No se recibió audio')
-          }
-        } catch (elevenLabsError) {
-          console.warn('ElevenLabs no disponible, usando Web Speech API:', elevenLabsError)
-        }
-
-        // Fallback a Web Speech API si ElevenLabs falla
-        if (!audioGenerado) {
-          if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(mensaje)
-            utterance.lang = 'es-ES'
-            utterance.rate = 0.9
-            utterance.pitch = 1.0
-            
-            utterance.onend = () => {
-              setReproducirAudio(false)
-              setNombreEmpleadoAudio('')
-            }
-            
-            utterance.onerror = (error) => {
-              console.error('Error con Web Speech API:', error)
-              setReproducirAudio(false)
-              setNombreEmpleadoAudio('')
-            }
-            
-            window.speechSynthesis.speak(utterance)
-            console.log('Reproduciendo con Web Speech API')
-          } else {
-            console.error('Speech Synthesis no disponible')
-            toast({
-              title: "Audio no disponible",
-              description: "El navegador no soporta síntesis de voz",
-              variant: "destructive"
-            })
+        // Usar Web Speech API directamente (ElevenLabs desactivado)
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(mensaje)
+          utterance.lang = 'es-ES'
+          utterance.rate = 0.9
+          utterance.pitch = 1.0
+          
+          utterance.onend = () => {
             setReproducirAudio(false)
             setNombreEmpleadoAudio('')
           }
+          
+          utterance.onerror = (error) => {
+            console.error('Error con Web Speech API:', error)
+            setReproducirAudio(false)
+            setNombreEmpleadoAudio('')
+          }
+          
+          window.speechSynthesis.speak(utterance)
+          console.log('Reproduciendo con Web Speech API')
+        } else {
+          console.error('Speech Synthesis no disponible')
+          toast({
+            title: "Audio no disponible",
+            description: "El navegador no soporta síntesis de voz",
+            variant: "destructive"
+          })
+          setReproducirAudio(false)
+          setNombreEmpleadoAudio('')
         }
       } catch (error) {
         console.error('Error reproduciendo mensaje:', error)

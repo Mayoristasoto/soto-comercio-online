@@ -70,28 +70,7 @@ export const useAudioNotifications = () => {
   }
 
   const reproducirTexto = async (texto: string) => {
-    try {
-      // Intentar usar ElevenLabs primero
-      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-        body: {
-          text: texto,
-          voice: 'Aria',
-          model: 'eleven_turbo_v2_5'
-        }
-      })
-
-      if (error) throw error
-
-      if (data?.audioContent) {
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`)
-        await audio.play()
-        return
-      }
-    } catch (error) {
-      console.log('ElevenLabs no disponible, usando Web Speech API:', error)
-    }
-
-    // Fallback a Web Speech API
+    // Usar Web Speech API directamente (ElevenLabs desactivado)
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(texto)
       utterance.lang = 'es-ES'
