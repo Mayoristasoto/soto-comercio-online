@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, AlertTriangle } from 'lucide-react';
+import { Clock, AlertTriangle, FileWarning, XCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
 
@@ -9,6 +9,7 @@ interface PausaExcedidaAlertProps {
   minutosPermitidos: number;
   onDismiss: () => void;
   duracionSegundos?: number;
+  registrado?: boolean;
 }
 
 export function PausaExcedidaAlert({
@@ -16,7 +17,8 @@ export function PausaExcedidaAlert({
   minutosUsados,
   minutosPermitidos,
   onDismiss,
-  duracionSegundos = 5
+  duracionSegundos = 8,
+  registrado = false
 }: PausaExcedidaAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos);
   const [isShaking, setIsShaking] = useState(true);
@@ -98,12 +100,45 @@ export function PausaExcedidaAlert({
           </Card>
         </div>
 
-        {/* Mensaje informativo */}
-        <div className="text-center mb-4">
-          <p className="text-muted-foreground">
-            Este exceso quedará registrado. Por favor, respeta el tiempo de pausa asignado.
-          </p>
-        </div>
+        {/* Sección de registro en legajo */}
+        <Card className="p-5 bg-destructive/10 border-2 border-destructive/50 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="bg-destructive/20 p-3 rounded-full shrink-0">
+              <FileWarning className="w-8 h-8 text-destructive" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-destructive flex items-center gap-2 mb-2">
+                <XCircle className="w-5 h-5" />
+                INCIDENCIA REGISTRADA EN TU LEGAJO
+              </h3>
+              <p className="text-sm text-foreground mb-3">
+                Esta incidencia queda registrada en tu historial laboral como <strong className="text-destructive">Cruz Roja</strong> por exceso de pausa.
+              </p>
+              <div className="bg-background/50 rounded-lg p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Esto puede afectar:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-destructive rounded-full"></span>
+                    Evaluaciones de desempeño
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-destructive rounded-full"></span>
+                    Bonificaciones por puntualidad
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-destructive rounded-full"></span>
+                    Participación en sorteos y premios
+                  </li>
+                </ul>
+              </div>
+              {registrado && (
+                <p className="text-xs text-destructive mt-2 font-medium">
+                  ✓ Incidencia registrada correctamente
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
 
         {/* Countdown */}
         <div className="text-center">
