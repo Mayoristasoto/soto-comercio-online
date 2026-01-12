@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, UserCheck, CalendarX } from "lucide-react";
+import { formatArgentinaDate } from "@/lib/dateUtils";
 
 interface Task {
   id: string;
@@ -13,6 +14,11 @@ interface Task {
   descripcion: string;
   prioridad: 'baja' | 'media' | 'alta' | 'urgente';
   fecha_limite: string | null;
+  asignado_por: string | null;
+  empleado_asignador?: {
+    nombre: string;
+    apellido: string;
+  } | null;
 }
 
 interface ConfirmarTareasDiaProps {
@@ -47,13 +53,18 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
     try {
       const hoy = new Date().toISOString().split('T')[0];
       
-      // Buscar tareas pendientes: vencidas, de hoy, o sin fecha límite
+      // Buscar tareas pendientes con fecha límite vencida o de hoy
       const { data, error } = await supabase
         .from('tareas')
-        .select('id, titulo, descripcion, prioridad, fecha_limite')
+        .select(`
+          id, titulo, descripcion, prioridad, fecha_limite, asignado_por,
+          empleado_asignador:empleados!tareas_asignado_por_fkey(nombre, apellido)
+        `)
         .eq('asignado_a', empleadoId)
         .eq('estado', 'pendiente')
-        .or(`fecha_limite.lte.${hoy},fecha_limite.is.null`)
+        .not('fecha_limite', 'is', null)
+        .lte('fecha_limite', hoy)
+        .order('fecha_limite', { ascending: true })
         .order('prioridad', { ascending: false });
 
       if (error) throw error;
@@ -131,16 +142,56 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
     onOpenChange(false);
   };
 
+  const isDelegada = (tarea: Task) => {
+    return tarea.asignado_por && tarea.asignado_por !== empleadoId;
+  };
+
+  const getDiasVencimiento = (fechaLimite: string | null) => {
+    if (!fechaLimite) return null;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const limite = new Date(fechaLimite);
+    limite.setHours(0, 0, 0, 0);
+    const diffTime = hoy.getTime() - limite.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getVencimientoBadge = (fechaLimite: string | null) => {
+    const dias = getDiasVencimiento(fechaLimite);
+    if (dias === null) return null;
+    
+    if (dias === 0) {
+      return (
+        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+          <Clock className="h-3 w-3 mr-1" />
+          Vence hoy
+        </Badge>
+      );
+    } else if (dias > 0) {
+      return (
+        <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-xs">
+          <CalendarX className="h-3 w-3 mr-1" />
+          Vencida hace {dias} día{dias > 1 ? 's' : ''}
+        </Badge>
+      );
+    }
+    return null;
+  };
+
+  const tareasVencidas = tareas.filter(t => getDiasVencimiento(t.fecha_limite)! > 0);
+  const tareasHoy = tareas.filter(t => getDiasVencimiento(t.fecha_limite) === 0);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Clock className="h-5 w-5" />
-            <span>Revisar Tareas del Día</span>
+            <span>Revisar Tareas Pendientes</span>
           </DialogTitle>
           <DialogDescription>
-            Marca las tareas que completaste hoy antes de salir
+            Marca las tareas que completaste antes de salir
           </DialogDescription>
         </DialogHeader>
 
@@ -153,19 +204,29 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
             <div className="text-center py-8 text-muted-foreground">
               <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p className="font-medium">¡Excelente!</p>
-              <p className="text-sm">No tienes tareas pendientes para hoy</p>
+              <p className="text-sm">No tienes tareas pendientes</p>
             </div>
           ) : (
             <>
-              <div className="text-sm text-muted-foreground mb-2">
-                <AlertCircle className="h-4 w-4 inline mr-1" />
-                Tienes {tareas.length} tarea(s) pendiente(s) para hoy
-              </div>
+              {tareasVencidas.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-destructive mb-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="font-medium">{tareasVencidas.length} tarea(s) vencida(s)</span>
+                </div>
+              )}
+              {tareasHoy.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <Clock className="h-4 w-4" />
+                  <span>{tareasHoy.length} tarea(s) vencen hoy</span>
+                </div>
+              )}
               
               {tareas.map((tarea) => (
                 <div
                   key={tarea.id}
-                  className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className={`flex items-start space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors ${
+                    getDiasVencimiento(tarea.fecha_limite)! > 0 ? 'border-destructive/50 bg-destructive/5' : ''
+                  }`}
                 >
                   <Checkbox
                     id={`tarea-${tarea.id}`}
@@ -185,11 +246,23 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
                         {tarea.descripcion}
                       </p>
                     )}
-                    <div className="mt-2">
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       <Badge variant="outline" className={priorityColors[tarea.prioridad]}>
                         {tarea.prioridad}
                       </Badge>
+                      {getVencimientoBadge(tarea.fecha_limite)}
+                      {isDelegada(tarea) && tarea.empleado_asignador && (
+                        <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 text-xs">
+                          <UserCheck className="h-3 w-3 mr-1" />
+                          Delegada por {tarea.empleado_asignador.nombre} {tarea.empleado_asignador.apellido}
+                        </Badge>
+                      )}
                     </div>
+                    {tarea.fecha_limite && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Fecha límite: {formatArgentinaDate(tarea.fecha_limite)}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
