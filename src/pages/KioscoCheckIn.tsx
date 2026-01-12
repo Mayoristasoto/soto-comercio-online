@@ -387,13 +387,15 @@ export default function KioscoCheckIn() {
         return
       }
       
-      // Obtener los minutos de pausa permitidos desde la configuración
-      const { data: configData } = await supabase
-        .from('fichero_configuracion' as any)
-        .select('minutos_pausa')
+      // Obtener los minutos de pausa desde el turno asignado al empleado
+      const { data: turnoData } = await supabase
+        .from('empleado_turnos')
+        .select('turno:fichado_turnos(duracion_pausa_minutos)')
+        .eq('empleado_id', empleadoId)
+        .eq('activo', true)
         .single()
       
-      const minutosPermitidos = (configData as any)?.minutos_pausa || 30
+      const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
       
       // Calcular tiempo transcurrido en minutos
       const inicioPausa = new Date(pausaInicio.timestamp_real)
