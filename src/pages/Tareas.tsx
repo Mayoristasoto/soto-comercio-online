@@ -5,13 +5,17 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, Edit, Trash2, User, UserCheck, Camera, History, Filter } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
 import { TaskDelegationInfo } from "@/components/tasks/TaskDelegationInfo"
 import { DelegateTaskDialog } from "@/components/tasks/DelegateTaskDialog"
 import { TaskHistoryDialog } from "@/components/tasks/TaskHistoryDialog"
+import { BulkDelegateDialog } from "@/components/tasks/BulkDelegateDialog"
+import { WorkloadDashboard } from "@/components/tasks/WorkloadDashboard"
+import { TaskTemplates } from "@/components/tasks/TaskTemplates"
 import { AsignarEmpleadosFeriado } from "@/components/tasks/AsignarEmpleadosFeriado"
 
 interface UserInfo {
@@ -68,10 +72,11 @@ export default function Tareas() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [delegateDialogOpen, setDelegateDialogOpen] = useState(false)
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
+  const [bulkDelegateDialogOpen, setBulkDelegateDialogOpen] = useState(false)
   const [selectedTaskToDelegate, setSelectedTaskToDelegate] = useState<Tarea | null>(null)
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<{ id: string; titulo: string } | null>(null)
-  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas")
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([])
 
   useEffect(() => {
     if (userInfo) {
@@ -141,6 +146,7 @@ export default function Tareas() {
       }));
 
       setTareas(tareasFormateadas);
+      setSelectedTasks([]); // Limpiar selección al recargar
     } catch (error) {
       console.error('Error cargando tareas:', error);
       toast({
@@ -193,6 +199,28 @@ export default function Tareas() {
     setHistoryDialogOpen(true);
   }
 
+  const toggleTaskSelection = (tareaId: string) => {
+    setSelectedTasks(prev => 
+      prev.includes(tareaId) 
+        ? prev.filter(id => id !== tareaId)
+        : [...prev, tareaId]
+    )
+  }
+
+  const clearSelection = () => {
+    setSelectedTasks([])
+  }
+
+  const selectAllPending = () => {
+    const pendingIds = filteredTareas
+      .filter(t => 
+        (t.estado === 'pendiente' || t.estado === 'en_progreso') &&
+        t.asignado_por === userInfo.id
+      )
+      .map(t => t.id)
+    setSelectedTasks(pendingIds)
+  }
+
   const filteredTareas = tareas.filter(t => {
     if (filtroCategoria === 'todas') return true;
     if (filtroCategoria === 'sin_categoria') return !t.categoria_id;
@@ -233,6 +261,11 @@ export default function Tareas() {
     }
   }
 
+  // Obtener tareas seleccionadas para delegación masiva
+  const selectedTasksForBulk = tareas.filter(t => selectedTasks.includes(t.id))
+
+  const canBulkDelegate = userInfo.rol === 'admin_rrhh' || userInfo.rol === 'gerente_sucursal'
+
   if (loading) {
     return (
       <div className="p-6">
@@ -264,30 +297,56 @@ export default function Tareas() {
       {/* Información de delegación */}
       <TaskDelegationInfo userRole={userInfo.rol} />
 
-      {/* Filtros */}
-      {categorias.length > 0 && (
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Filtrar por:</span>
+      {/* Barra de selección múltiple */}
+      {selectedTasks.length > 0 && canBulkDelegate && (
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="text-sm">
+              {selectedTasks.length} tarea{selectedTasks.length > 1 ? 's' : ''} seleccionada{selectedTasks.length > 1 ? 's' : ''}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              <X className="h-4 w-4 mr-1" />
+              Limpiar
+            </Button>
           </div>
-          <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas las categorías</SelectItem>
-              <SelectItem value="sin_categoria">Sin categoría</SelectItem>
-              {categorias.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  <span style={{ color: cat.color }}>● </span>
-                  {cat.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button onClick={() => setBulkDelegateDialogOpen(true)}>
+            <Users className="h-4 w-4 mr-2" />
+            Delegar {selectedTasks.length} Tarea{selectedTasks.length > 1 ? 's' : ''}
+          </Button>
         </div>
       )}
+
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-4">
+        {categorias.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Filtrar:</span>
+            <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las categorías</SelectItem>
+                <SelectItem value="sin_categoria">Sin categoría</SelectItem>
+                {categorias.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <span style={{ color: cat.color }}>● </span>
+                    {cat.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        
+        {canBulkDelegate && (
+          <Button variant="outline" size="sm" onClick={selectAllPending}>
+            <Layers className="h-4 w-4 mr-2" />
+            Seleccionar todas pendientes
+          </Button>
+        )}
+      </div>
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -340,16 +399,26 @@ export default function Tareas() {
 
       {/* Contenido principal con tabs */}
       <Tabs defaultValue="mis-tareas" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="mis-tareas" className="flex items-center space-x-2">
             <CheckSquare className="h-4 w-4" />
             <span>Mis Tareas</span>
           </TabsTrigger>
           {(userInfo.rol === 'gerente_sucursal' || userInfo.rol === 'admin_rrhh') && (
-            <TabsTrigger value="asignadas" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>{userInfo.rol === 'admin_rrhh' ? 'Todas las Tareas' : 'Tareas Delegadas'}</span>
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="asignadas" className="flex items-center space-x-2">
+                <Users className="h-4 w-4" />
+                <span>{userInfo.rol === 'admin_rrhh' ? 'Todas las Tareas' : 'Tareas Delegadas'}</span>
+              </TabsTrigger>
+              <TabsTrigger value="carga" className="flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Carga de Trabajo</span>
+              </TabsTrigger>
+              <TabsTrigger value="plantillas" className="flex items-center space-x-2">
+                <FileText className="h-4 w-4" />
+                <span>Plantillas</span>
+              </TabsTrigger>
+            </>
           )}
           <TabsTrigger value="calendario" className="flex items-center space-x-2">
             <Calendar className="h-4 w-4" />
@@ -359,7 +428,7 @@ export default function Tareas() {
 
         <TabsContent value="mis-tareas" className="space-y-4">
           <div className="grid gap-4">
-            {filteredTareas.length === 0 ? (
+            {filteredTareas.filter(t => t.asignado_a === userInfo.id).length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
@@ -529,105 +598,144 @@ export default function Tareas() {
         </TabsContent>
 
         {(userInfo.rol === 'gerente_sucursal' || userInfo.rol === 'admin_rrhh') && (
-          <TabsContent value="asignadas" className="space-y-4">
-            <div className="grid gap-4">
-              {tareas.filter(t => t.asignado_por === userInfo.id).length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">
-                      {userInfo.rol === 'admin_rrhh' ? 'No has creado tareas' : 'No has delegado tareas'}
-                    </h3>
-                    <p className="text-muted-foreground text-center">
-                      {userInfo.rol === 'admin_rrhh' 
-                        ? 'Las tareas que crees para el equipo aparecerán aquí'
-                        : 'Las tareas que delegues a empleados de tu sucursal aparecerán aquí'
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                tareas.filter(t => t.asignado_por === userInfo.id).map((tarea) => (
-                  <Card key={tarea.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1 flex-1">
-                          <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
-                          <CardDescription>{tarea.descripcion || 'Sin descripción'}</CardDescription>
-                          {tarea.empleado_asignado && (
-                            <div className="flex items-center gap-2 text-sm text-primary">
-                              <User className="h-4 w-4" />
-                              <span>Asignada a: {tarea.empleado_asignado.nombre} {tarea.empleado_asignado.apellido}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2 ml-4">
-                          <div className={`w-3 h-3 rounded-full ${getPrioridadColor(tarea.prioridad)}`} />
-                          <Badge variant={getEstadoBadgeVariant(tarea.estado)}>
-                            {tarea.estado.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                        <span>Vence: {new Date(tarea.fecha_limite).toLocaleDateString()}</span>
-                        <span>Creada: {new Date(tarea.created_at).toLocaleDateString()}</span>
-                      </div>
-                      {tarea.estado === 'completada' && tarea.fecha_completada && (
-                        <div className="mb-3">
-                          <div className="text-sm text-green-600 mb-2">
-                            ✅ Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
-                          </div>
-                          
-                          {/* Mostrar fotos de evidencia si existen */}
-                          {tarea.fotos_evidencia && tarea.fotos_evidencia.length > 0 && (
-                            <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                              <p className="text-sm font-medium text-green-800 mb-2 flex items-center">
-                                <Camera className="h-4 w-4 mr-1" />
-                                Fotos de evidencia ({tarea.fotos_evidencia.length})
-                              </p>
-                              <div className="grid grid-cols-3 gap-2">
-                                {tarea.fotos_evidencia.map((url, index) => (
-                                  <a
-                                    key={index}
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block rounded-lg overflow-hidden border-2 border-green-300 hover:border-green-500 transition-all hover:shadow-md"
-                                  >
-                                    <img 
-                                      src={url} 
-                                      alt={`Evidencia ${index + 1} de ${tarea.titulo}`}
-                                      className="w-full h-24 object-cover"
-                                    />
-                                  </a>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {/* Botones de gestión para tareas delegadas */}
-                      {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && 
-                       (tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && (
-                        <div className="flex justify-end mt-4">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => openDelegateDialog(tarea)}
-                          >
-                            <UserCheck className="h-3 w-3 mr-1" />
-                            Re-delegar
-                          </Button>
-                        </div>
-                      )}
+          <>
+            <TabsContent value="asignadas" className="space-y-4">
+              <div className="grid gap-4">
+                {tareas.filter(t => t.asignado_por === userInfo.id).length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">
+                        {userInfo.rol === 'admin_rrhh' ? 'No has creado tareas' : 'No has delegado tareas'}
+                      </h3>
+                      <p className="text-muted-foreground text-center">
+                        {userInfo.rol === 'admin_rrhh' 
+                          ? 'Las tareas que crees para el equipo aparecerán aquí'
+                          : 'Las tareas que delegues a empleados de tu sucursal aparecerán aquí'
+                        }
+                      </p>
                     </CardContent>
                   </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
+                ) : (
+                  tareas.filter(t => t.asignado_por === userInfo.id).map((tarea) => (
+                    <Card key={tarea.id} className={`hover:shadow-md transition-shadow ${selectedTasks.includes(tarea.id) ? 'ring-2 ring-primary' : ''}`}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            {/* Checkbox para selección múltiple */}
+                            {(tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && (
+                              <Checkbox
+                                checked={selectedTasks.includes(tarea.id)}
+                                onCheckedChange={() => toggleTaskSelection(tarea.id)}
+                                className="mt-1"
+                              />
+                            )}
+                            <div className="space-y-1 flex-1">
+                              <CardTitle className="text-lg">{tarea.titulo}</CardTitle>
+                              <CardDescription>{tarea.descripcion || 'Sin descripción'}</CardDescription>
+                              {tarea.empleado_asignado && (
+                                <div className="flex items-center gap-2 text-sm text-primary">
+                                  <User className="h-4 w-4" />
+                                  <span>Asignada a: {tarea.empleado_asignado.nombre} {tarea.empleado_asignado.apellido}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2 ml-4">
+                            <div className={`w-3 h-3 rounded-full ${getPrioridadColor(tarea.prioridad)}`} />
+                            <Badge variant={getEstadoBadgeVariant(tarea.estado)}>
+                              {tarea.estado.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                          <span>Vence: {new Date(tarea.fecha_limite).toLocaleDateString()}</span>
+                          <span>Creada: {new Date(tarea.created_at).toLocaleDateString()}</span>
+                        </div>
+                        {tarea.estado === 'completada' && tarea.fecha_completada && (
+                          <div className="mb-3">
+                            <div className="text-sm text-green-600 mb-2">
+                              ✅ Completada: {new Date(tarea.fecha_completada).toLocaleDateString()}
+                            </div>
+                            
+                            {/* Mostrar fotos de evidencia si existen */}
+                            {tarea.fotos_evidencia && tarea.fotos_evidencia.length > 0 && (
+                              <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                <p className="text-sm font-medium text-green-800 mb-2 flex items-center">
+                                  <Camera className="h-4 w-4 mr-1" />
+                                  Fotos de evidencia ({tarea.fotos_evidencia.length})
+                                </p>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {tarea.fotos_evidencia.map((url, index) => (
+                                    <a
+                                      key={index}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block rounded-lg overflow-hidden border-2 border-green-300 hover:border-green-500 transition-all hover:shadow-md"
+                                    >
+                                      <img 
+                                        src={url} 
+                                        alt={`Evidencia ${index + 1} de ${tarea.titulo}`}
+                                        className="w-full h-24 object-cover"
+                                      />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* Botones de gestión para tareas delegadas */}
+                        {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && 
+                         (tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && (
+                          <div className="flex justify-end mt-4">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => openDelegateDialog(tarea)}
+                            >
+                              <UserCheck className="h-3 w-3 mr-1" />
+                              Re-delegar
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="carga" className="space-y-4">
+              <WorkloadDashboard sucursalFilter={userInfo.rol === 'gerente_sucursal' ? userInfo.sucursal_id : null} />
+            </TabsContent>
+
+            <TabsContent value="plantillas" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Plantillas de Tareas</CardTitle>
+                  <CardDescription>
+                    Crea plantillas para agilizar la creación de tareas recurrentes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TaskTemplates 
+                    onCreateFromTemplate={(plantilla) => {
+                      // Aquí podrías abrir el dialog de crear tarea con datos pre-llenados
+                      setCreateDialogOpen(true)
+                      toast({
+                        title: "Plantilla seleccionada",
+                        description: `Creando tarea basada en: ${plantilla.titulo}`
+                      })
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </>
         )}
       </Tabs>
 
@@ -654,6 +762,15 @@ export default function Tareas() {
         onOpenChange={setHistoryDialogOpen}
         tareaId={selectedTaskForHistory?.id || null}
         tareaTitulo={selectedTaskForHistory?.titulo || ''}
+      />
+
+      {/* Dialog para delegación masiva */}
+      <BulkDelegateDialog
+        open={bulkDelegateDialogOpen}
+        onOpenChange={setBulkDelegateDialogOpen}
+        tareas={selectedTasksForBulk}
+        onDelegationComplete={loadTareas}
+        userInfo={userInfo}
       />
     </div>
   )
