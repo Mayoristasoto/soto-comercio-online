@@ -260,6 +260,7 @@ export default function KioscoCheckIn() {
   const [pausaExcedidaInfo, setPausaExcedidaInfo] = useState<{
     minutosUsados: number
     minutosPermitidos: number
+    registrado: boolean
   } | null>(null)
   
   // PIN mode state
@@ -845,9 +846,34 @@ export default function KioscoCheckIn() {
 
       // 🔔 Verificar si la pausa fue excedida y mostrar alerta
       if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
+        const minutosExceso = Math.round(pausaActiva.minutosTranscurridos - pausaActiva.minutosPermitidos)
+        
+        // Registrar incidencia en empleado_cruces_rojas
+        let registradoExitoso = false
+        try {
+          const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
+            empleado_id: empleadoData.id,
+            tipo_infraccion: 'pausa_excedida',
+            fecha_infraccion: new Date().toISOString().split('T')[0],
+            fichaje_id: fichajeId,
+            minutos_diferencia: minutosExceso,
+            observaciones: `Pausa excedida en kiosco: ${Math.round(pausaActiva.minutosTranscurridos)} min usados de ${pausaActiva.minutosPermitidos} min permitidos`
+          })
+          
+          if (!cruceError) {
+            registradoExitoso = true
+            console.log('Cruz roja por pausa excedida registrada correctamente')
+          } else {
+            console.error('Error registrando cruz roja:', cruceError)
+          }
+        } catch (err) {
+          console.error('Error al registrar cruz roja por pausa excedida:', err)
+        }
+
         setPausaExcedidaInfo({
           minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
-          minutosPermitidos: pausaActiva.minutosPermitidos
+          minutosPermitidos: pausaActiva.minutosPermitidos,
+          registrado: registradoExitoso
         })
         setShowPausaExcedidaAlert(true)
         setShowFacialAuth(false)
@@ -1006,9 +1032,34 @@ export default function KioscoCheckIn() {
 
       // 🔔 Verificar si la pausa fue excedida y mostrar alerta
       if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
+        const minutosExceso = Math.round(pausaActiva.minutosTranscurridos - pausaActiva.minutosPermitidos)
+        
+        // Registrar incidencia en empleado_cruces_rojas
+        let registradoExitoso = false
+        try {
+          const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
+            empleado_id: recognizedEmployee.id,
+            tipo_infraccion: 'pausa_excedida',
+            fecha_infraccion: new Date().toISOString().split('T')[0],
+            fichaje_id: fichajeId,
+            minutos_diferencia: minutosExceso,
+            observaciones: `Pausa excedida en kiosco: ${Math.round(pausaActiva.minutosTranscurridos)} min usados de ${pausaActiva.minutosPermitidos} min permitidos`
+          })
+          
+          if (!cruceError) {
+            registradoExitoso = true
+            console.log('Cruz roja por pausa excedida registrada correctamente')
+          } else {
+            console.error('Error registrando cruz roja:', cruceError)
+          }
+        } catch (err) {
+          console.error('Error al registrar cruz roja por pausa excedida:', err)
+        }
+
         setPausaExcedidaInfo({
           minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
-          minutosPermitidos: pausaActiva.minutosPermitidos
+          minutosPermitidos: pausaActiva.minutosPermitidos,
+          registrado: registradoExitoso
         })
         setShowPausaExcedidaAlert(true)
         setShowActionSelection(false)
@@ -1181,12 +1232,13 @@ export default function KioscoCheckIn() {
           empleadoNombre={`${recognizedEmployee.data.nombre} ${recognizedEmployee.data.apellido}`}
           minutosUsados={pausaExcedidaInfo.minutosUsados}
           minutosPermitidos={pausaExcedidaInfo.minutosPermitidos}
+          registrado={pausaExcedidaInfo.registrado}
           onDismiss={() => {
             setShowPausaExcedidaAlert(false)
             setPausaExcedidaInfo(null)
             resetKiosco()
           }}
-          duracionSegundos={5}
+          duracionSegundos={8}
         />
       )}
 
