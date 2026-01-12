@@ -17,7 +17,7 @@ export function PausaExcedidaAlert({
   minutosUsados,
   minutosPermitidos,
   onDismiss,
-  duracionSegundos = 8,
+  duracionSegundos = 3,
   registrado = false
 }: PausaExcedidaAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos);
