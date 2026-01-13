@@ -102,3 +102,6 @@ verify_jwt = false
 
 [functions.pin-first-login]
 verify_jwt = false
+
+[functions.generar-tareas-diarias]
+verify_jwt = false
