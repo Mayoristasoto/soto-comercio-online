@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react"
-import { useOutletContext } from "react-router-dom"
+import { useOutletContext, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X } from "lucide-react"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X, BookOpen } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
@@ -286,12 +286,20 @@ export default function Tareas() {
             Sistema de delegación y seguimiento de tareas
           </p>
         </div>
-        {(userInfo.rol === 'admin_rrhh' || userInfo.rol === 'gerente_sucursal') && (
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {userInfo.rol === 'admin_rrhh' ? 'Nueva Tarea' : 'Crear Tarea'}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <Link to="/instructivo/delegacion-tareas">
+            <Button variant="outline" size="sm">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Ver Instructivo
+            </Button>
+          </Link>
+          {(userInfo.rol === 'admin_rrhh' || userInfo.rol === 'gerente_sucursal') && (
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              {userInfo.rol === 'admin_rrhh' ? 'Nueva Tarea' : 'Crear Tarea'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Información de delegación */}

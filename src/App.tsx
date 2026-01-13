@@ -68,6 +68,7 @@ import AdminOnboarding from "./pages/AdminOnboarding";
 import EmpleadoPerfilPage from "./pages/EmpleadoPerfilPage";
 import DashboardDemo from "./pages/DashboardDemo";
 import KioscoDemo from "./pages/KioscoDemo";
+import InstructivoDelegacionTareas from "./pages/InstructivoDelegacionTareas";
 
 const queryClient = new QueryClient();
 
@@ -136,7 +137,7 @@ const App = () => (
             <Route path="operaciones/tareas/asignadas" element={<Tareas />} />
             <Route path="operaciones/tareas/calendario" element={<Tareas />} />
             <Route path="operaciones/tareas/reportes" element={<Tareas />} />
-            
+            <Route path="instructivo/delegacion-tareas" element={<InstructivoDelegacionTareas />} />
             {/* Módulo Reconocimiento */}
             <Route path="reconoce" element={<HomePublico />} />
             <Route path="reconoce/dashboard" element={<Dashboard />} />
