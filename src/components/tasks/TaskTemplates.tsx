@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { 
   Plus, Edit2, Trash2, Copy, FileText, Clock, 
-  Calendar, AlertCircle, Loader2, Search 
+  Calendar, Loader2, Search, Play, RefreshCw
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -27,6 +27,9 @@ interface Plantilla {
   frecuencia: string
   activa: boolean
   created_at: string
+  ultima_generacion?: string | null
+  sucursal_id?: string | null
+  empleados_asignados?: string[] | null
 }
 
 interface Categoria {
@@ -41,6 +44,7 @@ interface Props {
 export function TaskTemplates({ onCreateFromTemplate }: Props) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -230,8 +234,72 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
     )
   }
 
+  const handleGenerateDailyTasks = async () => {
+    setGenerating(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('generar-tareas-diarias', {
+        body: { force: false }
+      })
+
+      if (error) throw error
+
+      if (data?.success) {
+        toast.success(data.message || `Se crearon ${data.tareas_creadas} tareas`)
+        loadData() // Reload to update ultima_generacion
+      } else {
+        throw new Error(data?.error || 'Error desconocido')
+      }
+    } catch (error: any) {
+      console.error('Error generando tareas diarias:', error)
+      toast.error(error.message || 'Error al generar tareas diarias')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const dailyTemplatesCount = plantillas.filter(p => p.frecuencia === 'diaria' && p.activa).length
+
   return (
     <div className="space-y-4">
+      {/* Daily Tasks Generation Card */}
+      {dailyTemplatesCount > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <RefreshCw className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Tareas Diarias Automáticas</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {dailyTemplatesCount} plantilla{dailyTemplatesCount !== 1 ? 's' : ''} diaria{dailyTemplatesCount !== 1 ? 's' : ''} activa{dailyTemplatesCount !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleGenerateDailyTasks} 
+                disabled={generating}
+                variant="outline"
+                className="gap-2"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Generar Ahora
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="relative flex-1 max-w-md">
@@ -318,6 +386,11 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                     <Badge variant="secondary">Inactiva</Badge>
                   )}
                 </div>
+                {plantilla.frecuencia === 'diaria' && plantilla.ultima_generacion && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Última generación: {new Date(plantilla.ultima_generacion).toLocaleDateString('es-AR')}
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
