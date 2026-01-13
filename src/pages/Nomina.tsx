@@ -26,7 +26,8 @@ import {
   ArrowUpDown,
   UserCheck,
   Lock,
-  Package
+  Package,
+  AlertTriangle
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -51,6 +52,7 @@ import FacialRecognitionStats from "@/components/admin/FacialRecognitionStats"
 import MultipleFaceManagement from "@/components/admin/MultipleFaceManagement"
 import { EntregaElementos } from "@/components/admin/EntregaElementos"
 import { CrucesRojasDemo } from "@/components/admin/CrucesRojasDemo"
+import { ReporteDatosIncompletos } from "@/components/admin/ReporteDatosIncompletos"
 
 interface Employee {
   id: string
@@ -119,7 +121,7 @@ export default function Nomina() {
     
     // Detectar hash en URL para activar tab
     const hash = window.location.hash.replace('#', '')
-    if (hash && ['overview', 'employees', 'access-security', 'positions', 'documents', 'permissions', 'mandatory-docs', 'assignments', 'employee-view', 'entregas', 'organigrama'].includes(hash)) {
+    if (hash && ['overview', 'employees', 'access-security', 'positions', 'documents', 'permissions', 'mandatory-docs', 'assignments', 'employee-view', 'entregas', 'organigrama', 'datos-incompletos'].includes(hash)) {
       setActiveTab(hash)
     }
   }, [])
@@ -607,7 +609,7 @@ export default function Nomina() {
         window.location.hash = value
       }} className="space-y-6">
         <div className="overflow-x-auto">
-          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-11 md:w-full">
+          <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-12 md:w-full">
             <TabsTrigger value="overview" className="whitespace-nowrap">Resumen</TabsTrigger>
             <TabsTrigger value="employees" className="whitespace-nowrap">Empleados</TabsTrigger>
             <TabsTrigger value="access-security" className="whitespace-nowrap">Acceso y Seguridad</TabsTrigger>
@@ -622,6 +624,10 @@ export default function Nomina() {
               Entregas
             </TabsTrigger>
             <TabsTrigger value="organigrama" className="whitespace-nowrap">Organigrama</TabsTrigger>
+            <TabsTrigger value="datos-incompletos" className="whitespace-nowrap">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Datos Incompletos
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -1136,6 +1142,10 @@ export default function Nomina() {
 
         <TabsContent value="entregas">
           <EntregaElementos />
+        </TabsContent>
+
+        <TabsContent value="datos-incompletos">
+          <ReporteDatosIncompletos />
         </TabsContent>
       </Tabs>
 
