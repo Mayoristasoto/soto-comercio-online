@@ -6535,6 +6535,76 @@ export type Database = {
         }
         Relationships: []
       }
+      tareas_generadas_log: {
+        Row: {
+          created_at: string | null
+          empleado_id: string | null
+          fecha_generacion: string
+          id: string
+          plantilla_id: string | null
+          tarea_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          empleado_id?: string | null
+          fecha_generacion?: string
+          id?: string
+          plantilla_id?: string | null
+          tarea_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          empleado_id?: string | null
+          fecha_generacion?: string
+          id?: string
+          plantilla_id?: string | null
+          tarea_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_generadas_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_generadas_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_generadas_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_generadas_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_generadas_log_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "tareas_plantillas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_generadas_log_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tareas_historial: {
         Row: {
           accion: string
@@ -6678,10 +6748,14 @@ export type Database = {
           created_by: string | null
           descripcion: string | null
           dias_limite_default: number | null
+          empleados_asignados: string[] | null
           frecuencia: string | null
+          hora_generacion: string | null
           id: string
           prioridad: string | null
+          sucursal_id: string | null
           titulo: string
+          ultima_generacion: string | null
           updated_at: string | null
         }
         Insert: {
@@ -6692,10 +6766,14 @@ export type Database = {
           created_by?: string | null
           descripcion?: string | null
           dias_limite_default?: number | null
+          empleados_asignados?: string[] | null
           frecuencia?: string | null
+          hora_generacion?: string | null
           id?: string
           prioridad?: string | null
+          sucursal_id?: string | null
           titulo: string
+          ultima_generacion?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -6706,10 +6784,14 @@ export type Database = {
           created_by?: string | null
           descripcion?: string | null
           dias_limite_default?: number | null
+          empleados_asignados?: string[] | null
           frecuencia?: string | null
+          hora_generacion?: string | null
           id?: string
           prioridad?: string | null
+          sucursal_id?: string | null
           titulo?: string
+          ultima_generacion?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -6746,6 +6828,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_plantillas_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
             referencedColumns: ["id"]
           },
         ]
