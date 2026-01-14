@@ -7652,6 +7652,16 @@ export type Database = {
         Args: { p_empleado_id: string }
         Returns: undefined
       }
+      insert_fichaje_auditoria: {
+        Args: {
+          p_accion: string
+          p_datos_anteriores?: Json
+          p_datos_nuevos?: Json
+          p_registro_id: string
+          p_tabla_afectada: string
+        }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_manager: { Args: never; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
@@ -7661,6 +7671,7 @@ export type Database = {
         Returns: boolean
       }
       is_manager_of_branch: { Args: { branch_id: string }; Returns: boolean }
+      is_valid_rating_token: { Args: { token_value: string }; Returns: boolean }
       kiosk_buscar_empleado: {
         Args: { p_termino: string }
         Returns: {
