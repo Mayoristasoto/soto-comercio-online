@@ -1664,7 +1664,9 @@ export default function KioscoCheckIn() {
       {/* Alerta de Tareas Pendientes (Overlay) */}
       {showTareasPendientesAlert && tareasPendientes.length > 0 && registroExitoso && (
         <TareasPendientesAlert
-          empleadoNombre={`${registroExitoso.empleado.nombre} ${registroExitoso.empleado.apellido}`}
+          empleadoNombre={registroExitoso.empleado.nombre}
+          empleadoId={registroExitoso.empleado.id}
+          empleadoApellido={registroExitoso.empleado.apellido}
           tareas={tareasPendientes}
           onDismiss={() => {
             setShowTareasPendientesAlert(false)
