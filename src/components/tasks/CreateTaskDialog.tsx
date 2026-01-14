@@ -6,14 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, UserPlus, Search } from "lucide-react";
+import { CalendarIcon, UserPlus, Search, Building2, User, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 
 interface Empleado {
   id: string;
@@ -28,6 +31,14 @@ interface Empleado {
 interface Sucursal {
   id: string;
   nombre: string;
+}
+
+interface SucursalConGerente extends Sucursal {
+  gerente?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  } | null;
 }
 
 interface Props {
@@ -54,10 +65,15 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
   const [loading, setLoading] = useState(false);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
+  const [sucursalesConGerente, setSucursalesConGerente] = useState<SucursalConGerente[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const { toast } = useToast();
+
+  // Tipo de asignación: 'empleado' o 'sucursal'
+  const [tipoAsignacion, setTipoAsignacion] = useState<'empleado' | 'sucursal'>('empleado');
+  const [sucursalesSeleccionadas, setSucursalesSeleccionadas] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     titulo: "",
@@ -74,6 +90,10 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
       loadEmpleados();
       loadSucursales();
       loadCategorias();
+      loadSucursalesConGerentes();
+      // Reset tipo asignación al abrir
+      setTipoAsignacion('empleado');
+      setSucursalesSeleccionadas([]);
     }
   }, [open, userInfo.rol, userInfo.sucursal_id]);
 
@@ -89,6 +109,45 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
       setCategorias(data || []);
     } catch (error) {
       console.error('Error loading categorias:', error);
+    }
+  };
+
+  const loadSucursalesConGerentes = async () => {
+    try {
+      // Cargar sucursales
+      const { data: sucursalesData, error: sucursalesError } = await supabase
+        .from('sucursales')
+        .select('id, nombre')
+        .eq('activa', true)
+        .order('nombre');
+
+      if (sucursalesError) throw sucursalesError;
+
+      // Cargar gerentes
+      const { data: gerentesData, error: gerentesError } = await supabase
+        .from('empleados')
+        .select('id, nombre, apellido, sucursal_id')
+        .eq('rol', 'gerente_sucursal')
+        .eq('activo', true);
+
+      if (gerentesError) throw gerentesError;
+
+      // Combinar sucursales con gerentes
+      const sucursalesConGerentes = (sucursalesData || []).map(sucursal => {
+        const gerente = (gerentesData || []).find(g => g.sucursal_id === sucursal.id);
+        return {
+          ...sucursal,
+          gerente: gerente ? {
+            id: gerente.id,
+            nombre: gerente.nombre,
+            apellido: gerente.apellido
+          } : null
+        };
+      });
+
+      setSucursalesConGerente(sucursalesConGerentes);
+    } catch (error) {
+      console.error('Error loading sucursales con gerentes:', error);
     }
   };
 
@@ -158,67 +217,196 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
     }
   };
 
+  const handleSucursalToggle = (sucursalId: string) => {
+    setSucursalesSeleccionadas(prev => 
+      prev.includes(sucursalId)
+        ? prev.filter(id => id !== sucursalId)
+        : [...prev, sucursalId]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (!formData.titulo.trim() || !formData.asignado_a || !selectedDate) {
+      // Validaciones básicas
+      if (!formData.titulo.trim() || !selectedDate) {
         toast({
           title: "Campos requeridos",
-          description: "Por favor completa todos los campos obligatorios",
+          description: "Por favor completa el título y la fecha límite",
           variant: "destructive"
         });
+        setLoading(false);
         return;
       }
 
-      const insertData: any = {
-        titulo: formData.titulo.trim(),
-        descripcion: formData.descripcion.trim(),
-        prioridad: formData.prioridad,
-        asignado_a: formData.asignado_a,
-        asignado_por: userInfo.id,
-        fecha_limite: format(selectedDate, 'yyyy-MM-dd'),
-        estado: 'pendiente'
-      };
-
-      if (formData.categoria_id) {
-        insertData.categoria_id = formData.categoria_id;
+      // Validar según tipo de asignación
+      if (tipoAsignacion === 'empleado' && !formData.asignado_a) {
+        toast({
+          title: "Empleado requerido",
+          description: "Por favor selecciona un empleado",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
       }
 
-      const { data: newTask, error } = await supabase
-        .from('tareas')
-        .insert([insertData])
-        .select('id')
-        .single();
-
-      if (error) throw error;
-
-      // Registrar en historial
-      if (newTask) {
-        await supabase.from('tareas_historial').insert({
-          tarea_id: newTask.id,
-          accion: 'creada',
-          empleado_destino_id: formData.asignado_a,
-          realizado_por: userInfo.id,
-          estado_nuevo: 'pendiente',
-          metadata: { titulo: formData.titulo, prioridad: formData.prioridad }
+      if (tipoAsignacion === 'sucursal' && sucursalesSeleccionadas.length === 0) {
+        toast({
+          title: "Sucursal requerida",
+          description: "Por favor selecciona al menos una sucursal",
+          variant: "destructive"
         });
-
-        // Crear notificación
-        await supabase.from('notificaciones').insert({
-          usuario_id: formData.asignado_a,
-          titulo: 'Nueva tarea asignada',
-          mensaje: `Se te ha asignado la tarea: ${formData.titulo}`,
-          tipo: 'tarea_asignada',
-          metadata: { tarea_id: newTask.id, prioridad: formData.prioridad }
-        });
+        setLoading(false);
+        return;
       }
 
-      toast({
-        title: "Tarea creada",
-        description: "La tarea ha sido asignada exitosamente"
-      });
+      // Verificar que las sucursales tengan gerente
+      if (tipoAsignacion === 'sucursal') {
+        const sucursalesSinGerente = sucursalesSeleccionadas.filter(sucId => {
+          const suc = sucursalesConGerente.find(s => s.id === sucId);
+          return !suc?.gerente;
+        });
+
+        if (sucursalesSinGerente.length > 0) {
+          toast({
+            title: "Sucursales sin gerente",
+            description: "Algunas sucursales seleccionadas no tienen gerente asignado",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      const fechaLimite = format(selectedDate, 'yyyy-MM-dd');
+
+      if (tipoAsignacion === 'empleado') {
+        // Crear tarea normal para empleado
+        const insertData: any = {
+          titulo: formData.titulo.trim(),
+          descripcion: formData.descripcion.trim(),
+          prioridad: formData.prioridad,
+          asignado_a: formData.asignado_a,
+          asignado_por: userInfo.id,
+          fecha_limite: fechaLimite,
+          estado: 'pendiente',
+          tipo_asignacion: 'empleado'
+        };
+
+        if (formData.categoria_id) {
+          insertData.categoria_id = formData.categoria_id;
+        }
+
+        const { data: newTask, error } = await supabase
+          .from('tareas')
+          .insert([insertData])
+          .select('id')
+          .single();
+
+        if (error) throw error;
+
+        // Registrar en historial y crear notificación
+        if (newTask) {
+          await Promise.all([
+            supabase.from('tareas_historial').insert({
+              tarea_id: newTask.id,
+              accion: 'creada',
+              empleado_destino_id: formData.asignado_a,
+              realizado_por: userInfo.id,
+              estado_nuevo: 'pendiente',
+              metadata: { titulo: formData.titulo, prioridad: formData.prioridad }
+            }),
+            supabase.from('notificaciones').insert({
+              usuario_id: formData.asignado_a,
+              titulo: 'Nueva tarea asignada',
+              mensaje: `Se te ha asignado la tarea: ${formData.titulo}`,
+              tipo: 'tarea_asignada',
+              metadata: { tarea_id: newTask.id, prioridad: formData.prioridad }
+            })
+          ]);
+        }
+
+        toast({
+          title: "Tarea creada",
+          description: "La tarea ha sido asignada al empleado exitosamente"
+        });
+      } else {
+        // Crear una tarea por cada sucursal seleccionada
+        const tareasCreadas: string[] = [];
+
+        for (const sucursalId of sucursalesSeleccionadas) {
+          const sucursal = sucursalesConGerente.find(s => s.id === sucursalId);
+          if (!sucursal?.gerente) continue;
+
+          const insertData: any = {
+            titulo: formData.titulo.trim(),
+            descripcion: formData.descripcion.trim(),
+            prioridad: formData.prioridad,
+            asignado_a: sucursal.gerente.id,
+            asignado_por: userInfo.id,
+            fecha_limite: fechaLimite,
+            estado: 'pendiente',
+            tipo_asignacion: 'sucursal'
+          };
+
+          if (formData.categoria_id) {
+            insertData.categoria_id = formData.categoria_id;
+          }
+
+          const { data: newTask, error } = await supabase
+            .from('tareas')
+            .insert([insertData])
+            .select('id')
+            .single();
+
+          if (error) {
+            console.error('Error creating task for sucursal:', sucursalId, error);
+            continue;
+          }
+
+          if (newTask) {
+            tareasCreadas.push(newTask.id);
+
+            // Insertar en tareas_sucursales para tracking
+            await supabase.from('tareas_sucursales').insert({
+              tarea_id: newTask.id,
+              sucursal_id: sucursalId,
+              gerente_id: sucursal.gerente.id
+            });
+
+            // Registrar en historial y crear notificación
+            await Promise.all([
+              supabase.from('tareas_historial').insert({
+                tarea_id: newTask.id,
+                accion: 'creada',
+                empleado_destino_id: sucursal.gerente.id,
+                realizado_por: userInfo.id,
+                estado_nuevo: 'pendiente',
+                metadata: { 
+                  titulo: formData.titulo, 
+                  prioridad: formData.prioridad,
+                  tipo_asignacion: 'sucursal',
+                  sucursal_nombre: sucursal.nombre
+                }
+              }),
+              supabase.from('notificaciones').insert({
+                usuario_id: sucursal.gerente.id,
+                titulo: 'Nueva tarea asignada (Sucursal)',
+                mensaje: `Se te ha asignado la tarea "${formData.titulo}" para la sucursal ${sucursal.nombre}`,
+                tipo: 'tarea_asignada',
+                metadata: { tarea_id: newTask.id, prioridad: formData.prioridad, sucursal_id: sucursalId }
+              })
+            ]);
+          }
+        }
+
+        toast({
+          title: "Tareas creadas",
+          description: `Se crearon ${tareasCreadas.length} tarea(s) para los gerentes de las sucursales seleccionadas`
+        });
+      }
 
       // Reset form
       setFormData({
@@ -231,6 +419,8 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
       });
       setSelectedDate(undefined);
       setSearchTerm("");
+      setTipoAsignacion('empleado');
+      setSucursalesSeleccionadas([]);
       
       onTaskCreated();
       onOpenChange(false);
@@ -266,6 +456,8 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
     }
   };
 
+  const canAssignToSucursales = userInfo.rol === 'admin_rrhh';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -276,7 +468,7 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
           </DialogTitle>
           <DialogDescription>
             {userInfo.rol === 'admin_rrhh' 
-              ? 'Asigna una nueva tarea a cualquier empleado o gerente' 
+              ? 'Asigna una tarea a empleados específicos o a sucursales completas' 
               : 'Crea y asigna una nueva tarea a un empleado de tu sucursal'
             }
           </DialogDescription>
@@ -381,75 +573,183 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
             )}
           </div>
 
-          {/* Selección de empleado */}
-          <div className="space-y-4">
-            <Label>Asignar a empleado *</Label>
-            
-            <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar empleado por nombre o email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+          {/* Tipo de asignación (solo para admin_rrhh) */}
+          {canAssignToSucursales && (
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <Label className="text-base font-semibold">Tipo de asignación</Label>
+              <RadioGroup
+                value={tipoAsignacion}
+                onValueChange={(value) => {
+                  setTipoAsignacion(value as 'empleado' | 'sucursal');
+                  setFormData({ ...formData, asignado_a: '' });
+                  setSucursalesSeleccionadas([]);
+                }}
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="empleado" id="tipo-empleado" />
+                  <Label htmlFor="tipo-empleado" className="flex items-center gap-2 cursor-pointer">
+                    <User className="h-4 w-4" />
+                    Empleado específico
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="sucursal" id="tipo-sucursal" />
+                  <Label htmlFor="tipo-sucursal" className="flex items-center gap-2 cursor-pointer">
+                    <Building2 className="h-4 w-4" />
+                    Sucursal(es)
+                  </Label>
+                </div>
+              </RadioGroup>
 
-            <div className="max-h-48 overflow-y-auto space-y-2">
-              {filteredEmpleados.length === 0 ? (
-                <Card>
-                  <CardContent className="flex items-center justify-center py-6">
-                    <p className="text-muted-foreground text-sm">
-                      {searchTerm 
-                        ? 'No se encontraron empleados con ese criterio' 
-                        : userInfo.rol === 'gerente_sucursal' && !userInfo.sucursal_id
-                        ? 'Sin sucursal asignada - contacta al administrador'
-                        : userInfo.rol === 'gerente_sucursal' && empleados.length === 0
-                        ? `No hay empleados en tu sucursal (${userInfo.sucursal_id}) disponibles para asignar`
-                        : empleados.length === 0 
-                        ? 'No hay empleados disponibles para asignar'
-                        : 'Cargando empleados...'
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                filteredEmpleados.map((empleado) => (
-                  <Card
-                    key={empleado.id}
-                    className={cn(
-                      "cursor-pointer transition-colors hover:bg-accent",
-                      formData.asignado_a === empleado.id && "ring-2 ring-primary bg-accent"
-                    )}
-                    onClick={() => setFormData({ ...formData, asignado_a: empleado.id })}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <p className="font-medium text-sm">
-                            {empleado.nombre} {empleado.apellido}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {empleado.email}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs font-medium capitalize">
-                            {empleado.rol.replace('_', ' ')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {getSucursalNombre(empleado.sucursal_id)}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+              {tipoAsignacion === 'sucursal' && (
+                <p className="text-sm text-muted-foreground">
+                  La tarea se asignará automáticamente al gerente de cada sucursal seleccionada
+                </p>
               )}
             </div>
-          </div>
+          )}
+
+          {/* Selección de empleado (cuando tipoAsignacion === 'empleado') */}
+          {tipoAsignacion === 'empleado' && (
+            <div className="space-y-4">
+              <Label>Asignar a empleado *</Label>
+              
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar empleado por nombre o email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-48 overflow-y-auto space-y-2">
+                {filteredEmpleados.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-6">
+                      <p className="text-muted-foreground text-sm">
+                        {searchTerm 
+                          ? 'No se encontraron empleados con ese criterio' 
+                          : userInfo.rol === 'gerente_sucursal' && !userInfo.sucursal_id
+                          ? 'Sin sucursal asignada - contacta al administrador'
+                          : userInfo.rol === 'gerente_sucursal' && empleados.length === 0
+                          ? `No hay empleados en tu sucursal (${userInfo.sucursal_id}) disponibles para asignar`
+                          : empleados.length === 0 
+                          ? 'No hay empleados disponibles para asignar'
+                          : 'Cargando empleados...'
+                        }
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredEmpleados.map((empleado) => (
+                    <Card
+                      key={empleado.id}
+                      className={cn(
+                        "cursor-pointer transition-colors hover:bg-accent",
+                        formData.asignado_a === empleado.id && "ring-2 ring-primary bg-accent"
+                      )}
+                      onClick={() => setFormData({ ...formData, asignado_a: empleado.id })}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <p className="font-medium text-sm">
+                              {empleado.nombre} {empleado.apellido}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {empleado.email}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-medium capitalize">
+                              {empleado.rol.replace('_', ' ')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {getSucursalNombre(empleado.sucursal_id)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Selección de sucursales (cuando tipoAsignacion === 'sucursal') */}
+          {tipoAsignacion === 'sucursal' && canAssignToSucursales && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Seleccionar sucursales *</Label>
+                {sucursalesSeleccionadas.length > 0 && (
+                  <Badge variant="secondary">
+                    {sucursalesSeleccionadas.length} seleccionada(s)
+                  </Badge>
+                )}
+              </div>
+
+              <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
+                {sucursalesConGerente.map((sucursal) => {
+                  const isSelected = sucursalesSeleccionadas.includes(sucursal.id);
+                  const hasGerente = !!sucursal.gerente;
+
+                  return (
+                    <div
+                      key={sucursal.id}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border transition-colors",
+                        isSelected && "bg-primary/10 border-primary",
+                        !hasGerente && "opacity-50 cursor-not-allowed",
+                        hasGerente && "cursor-pointer hover:bg-accent"
+                      )}
+                      onClick={() => hasGerente && handleSucursalToggle(sucursal.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isSelected}
+                          disabled={!hasGerente}
+                          onCheckedChange={() => hasGerente && handleSucursalToggle(sucursal.id)}
+                        />
+                        <div>
+                          <p className="font-medium text-sm flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            {sucursal.nombre}
+                          </p>
+                          {hasGerente ? (
+                            <p className="text-xs text-muted-foreground">
+                              Gerente: {sucursal.gerente?.nombre} {sucursal.gerente?.apellido}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-destructive flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Sin gerente asignado
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {!hasGerente && (
+                        <Badge variant="destructive" className="text-xs">
+                          No disponible
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {sucursalesConGerente.filter(s => !s.gerente).length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  ⚠️ Las sucursales sin gerente no pueden recibir tareas
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Botones de acción */}
           <div className="flex justify-end space-x-2 pt-4 border-t">
@@ -462,7 +762,9 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Creando..." : "Crear Tarea"}
+              {loading ? "Creando..." : tipoAsignacion === 'sucursal' && sucursalesSeleccionadas.length > 1 
+                ? `Crear ${sucursalesSeleccionadas.length} Tareas` 
+                : "Crear Tarea"}
             </Button>
           </div>
         </form>

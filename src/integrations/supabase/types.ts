@@ -6371,7 +6371,7 @@ export type Database = {
       }
       tareas: {
         Row: {
-          asignado_a: string
+          asignado_a: string | null
           asignado_por: string | null
           categoria_id: string | null
           created_at: string
@@ -6382,11 +6382,12 @@ export type Database = {
           fotos_evidencia: string[] | null
           id: string
           prioridad: Database["public"]["Enums"]["tarea_prioridad"]
+          tipo_asignacion: string | null
           titulo: string
           updated_at: string
         }
         Insert: {
-          asignado_a: string
+          asignado_a?: string | null
           asignado_por?: string | null
           categoria_id?: string | null
           created_at?: string
@@ -6397,11 +6398,12 @@ export type Database = {
           fotos_evidencia?: string[] | null
           id?: string
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
+          tipo_asignacion?: string | null
           titulo: string
           updated_at?: string
         }
         Update: {
-          asignado_a?: string
+          asignado_a?: string | null
           asignado_por?: string | null
           categoria_id?: string | null
           created_at?: string
@@ -6412,6 +6414,7 @@ export type Database = {
           fotos_evidencia?: string[] | null
           id?: string
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
+          tipo_asignacion?: string | null
           titulo?: string
           updated_at?: string
         }
@@ -6835,6 +6838,73 @@ export type Database = {
             columns: ["sucursal_id"]
             isOneToOne: false
             referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tareas_sucursales: {
+        Row: {
+          created_at: string | null
+          gerente_id: string | null
+          id: string
+          sucursal_id: string
+          tarea_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          gerente_id?: string | null
+          id?: string
+          sucursal_id: string
+          tarea_id: string
+        }
+        Update: {
+          created_at?: string | null
+          gerente_id?: string | null
+          id?: string
+          sucursal_id?: string
+          tarea_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_sucursales_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_sucursales_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_sucursales_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_sucursales_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_sucursales_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_sucursales_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
             referencedColumns: ["id"]
           },
         ]
