@@ -541,7 +541,6 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated, userInfo }
                       selected={selectedDate}
                       onSelect={setSelectedDate}
                       disabled={(date) => date < new Date()}
-                      initialFocus
                       locale={es}
                     />
                   </PopoverContent>
