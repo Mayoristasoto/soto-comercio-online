@@ -14,9 +14,12 @@ import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAle
 import { PausaExcedidaAlert } from "@/components/kiosko/PausaExcedidaAlert"
 import { LlegadaTardeAlert } from "@/components/kiosko/LlegadaTardeAlert"
 import { TareasPendientesAlert } from "@/components/kiosko/TareasPendientesAlert"
+import { TareasVencenHoyAlert } from "@/components/kiosko/TareasVencenHoyAlert"
+import { ImprimirTareasDistribucionDialog, TareaParaDistribuir } from "@/components/kiosko/ImprimirTareasDistribucionDialog"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { registrarActividadTarea } from "@/lib/tareasLogService"
 
 interface EmpleadoBasico {
   id: string

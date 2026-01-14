@@ -6484,6 +6484,72 @@ export type Database = {
           },
         ]
       }
+      tareas_actividad_log: {
+        Row: {
+          created_at: string | null
+          dispositivo: string | null
+          empleado_id: string | null
+          id: string
+          metadata: Json | null
+          tarea_id: string | null
+          tipo_actividad: string
+        }
+        Insert: {
+          created_at?: string | null
+          dispositivo?: string | null
+          empleado_id?: string | null
+          id?: string
+          metadata?: Json | null
+          tarea_id?: string | null
+          tipo_actividad: string
+        }
+        Update: {
+          created_at?: string | null
+          dispositivo?: string | null
+          empleado_id?: string | null
+          id?: string
+          metadata?: Json | null
+          tarea_id?: string | null
+          tipo_actividad?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_actividad_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_actividad_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_actividad_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_actividad_log_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_actividad_log_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tareas_categorias: {
         Row: {
           activa: boolean | null
