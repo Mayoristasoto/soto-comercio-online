@@ -483,45 +483,39 @@ const generarHTMLTareasA4 = (empleado: EmpleadoInfo, tareas: TareaDiaria[], fech
   `
 }
 
-// Función para obtener las tareas del empleado
+// Función para obtener las tareas del empleado usando RPC (bypassa RLS)
 const obtenerTareasEmpleado = async (empleadoId: string): Promise<TareaDiaria[]> => {
-  const { data: tareas, error } = await supabase
-    .from('tareas')
-    .select('id, titulo, descripcion, prioridad, fecha_limite')
-    .eq('asignado_a', empleadoId)
-    .eq('estado', 'pendiente')
-    .order('prioridad', { ascending: false })
-    .order('fecha_limite', { ascending: true })
+  const { data: tareas, error } = await supabase.rpc('kiosk_get_tareas', {
+    p_empleado_id: empleadoId,
+    p_limit: 20
+  })
 
   if (error) {
-    console.error('Error obteniendo tareas:', error)
+    console.error('Error obteniendo tareas via RPC:', error)
     return []
   }
 
-  return tareas || []
+  return (tareas || []).map((t: { id: string; titulo: string; descripcion: string | null; prioridad: string; fecha_limite: string | null }) => ({
+    id: t.id,
+    titulo: t.titulo,
+    descripcion: t.descripcion || undefined,
+    prioridad: t.prioridad as TareaDiaria['prioridad'],
+    fecha_limite: t.fecha_limite
+  }))
 }
 
-// Función para verificar si es el primer check-in del día
+// Función para verificar si es el primer check-in del día usando RPC (bypassa RLS)
 export const esPrimerCheckinDelDia = async (empleadoId: string): Promise<boolean> => {
-  const hoy = new Date()
-  const inicioDelDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
-  
-  const { data: fichajes, error } = await supabase
-    .from('fichajes')
-    .select('id')
-    .eq('empleado_id', empleadoId)
-    .eq('tipo', 'entrada')
-    .eq('estado', 'valido')
-    .gte('timestamp_real', inicioDelDia.toISOString())
-    .lt('timestamp_real', new Date(inicioDelDia.getTime() + 24 * 60 * 60 * 1000).toISOString())
+  const { data, error } = await supabase.rpc('kiosk_es_primer_checkin_del_dia', {
+    p_empleado_id: empleadoId
+  })
 
   if (error) {
-    console.error('Error verificando primer check-in:', error)
+    console.error('Error verificando primer check-in via RPC:', error)
     return false
   }
 
-  // Es el primer check-in si hay exactamente 1 entrada (la que se acaba de registrar)
-  return fichajes?.length === 1
+  return data === true
 }
 
 // Función principal para imprimir tareas automáticamente (térmica por defecto)

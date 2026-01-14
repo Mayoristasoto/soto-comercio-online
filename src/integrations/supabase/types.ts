@@ -7684,6 +7684,10 @@ export type Database = {
           tiene_pin: boolean
         }[]
       }
+      kiosk_es_primer_checkin_del_dia: {
+        Args: { p_empleado_id: string }
+        Returns: boolean
+      }
       kiosk_fichaje_pin: {
         Args: {
           p_datos?: Json
