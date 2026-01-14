@@ -12,6 +12,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
 import { PausaExcedidaAlert } from "@/components/kiosko/PausaExcedidaAlert"
+import { LlegadaTardeAlert } from "@/components/kiosko/LlegadaTardeAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -260,6 +261,16 @@ export default function KioscoCheckIn() {
   const [pausaExcedidaInfo, setPausaExcedidaInfo] = useState<{
     minutosUsados: number
     minutosPermitidos: number
+    registrado: boolean
+  } | null>(null)
+  
+  // State for late arrival alert
+  const [showLlegadaTardeAlert, setShowLlegadaTardeAlert] = useState(false)
+  const [llegadaTardeInfo, setLlegadaTardeInfo] = useState<{
+    horaEntradaProgramada: string
+    horaLlegadaReal: string
+    minutosRetraso: number
+    toleranciaMinutos: number
     registrado: boolean
   } | null>(null)
   
@@ -709,6 +720,8 @@ export default function KioscoCheckIn() {
       setPendingAccionSalida(false)
       setShowPausaExcedidaAlert(false)
       setPausaExcedidaInfo(null)
+      setShowLlegadaTardeAlert(false)
+      setLlegadaTardeInfo(null)
     }, 3000)
   }
 
@@ -815,6 +828,70 @@ export default function KioscoCheckIn() {
           await imprimirTareasDiariasAutomatico(empleadoCompleto)
         } catch (error) {
           console.error('Error en impresión automática:', error)
+        }
+        
+        // 🔔 Verificar si llegó tarde y mostrar alerta
+        try {
+          // Obtener turno asignado del empleado
+          const { data: turnoData } = await supabase
+            .from('empleado_turnos')
+            .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
+            .eq('empleado_id', empleadoParaFichaje.id)
+            .eq('activo', true)
+            .single()
+          
+          if (turnoData?.turno) {
+            const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
+            const horaEntradaProgramada = turno.hora_entrada // "08:00:00"
+            const tolerancia = turno.tolerancia_entrada_minutos ?? 5
+            
+            // Calcular hora límite con tolerancia
+            const [h, m] = horaEntradaProgramada.split(':').map(Number)
+            const horaLimite = new Date()
+            horaLimite.setHours(h, m + tolerancia, 0, 0)
+            
+            const horaActual = new Date()
+            
+            if (horaActual > horaLimite) {
+              const minutosRetraso = Math.round((horaActual.getTime() - horaLimite.getTime()) / 60000)
+              
+              // Registrar cruz roja por llegada tarde
+              let registradoExitoso = false
+              try {
+                const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
+                  empleado_id: empleadoParaFichaje.id,
+                  tipo_infraccion: 'llegada_tarde',
+                  fecha_infraccion: horaActual.toISOString().split('T')[0],
+                  fichaje_id: fichajeId,
+                  minutos_diferencia: minutosRetraso,
+                  observaciones: `Llegada tarde en kiosco: ${horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} (programado: ${horaEntradaProgramada.substring(0, 5)}, tolerancia: ${tolerancia} min)`
+                })
+                
+                if (!cruceError) {
+                  registradoExitoso = true
+                  console.log('Cruz roja por llegada tarde registrada correctamente')
+                } else {
+                  console.error('Error registrando cruz roja por llegada tarde:', cruceError)
+                }
+              } catch (err) {
+                console.error('Error al registrar cruz roja por llegada tarde:', err)
+              }
+
+              setLlegadaTardeInfo({
+                horaEntradaProgramada: horaEntradaProgramada.substring(0, 5),
+                horaLlegadaReal: horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+                minutosRetraso,
+                toleranciaMinutos: tolerancia,
+                registrado: registradoExitoso
+              })
+              setShowLlegadaTardeAlert(true)
+              setShowFacialAuth(false)
+              // resetKiosco se llamará cuando se cierre el alert
+              return
+            }
+          }
+        } catch (error) {
+          console.error('Error verificando llegada tarde:', error)
         }
       }
 
@@ -1001,6 +1078,70 @@ export default function KioscoCheckIn() {
           await imprimirTareasDiariasAutomatico(empleadoCompleto)
         } catch (error) {
           console.error('Error en impresión automática:', error)
+        }
+        
+        // 🔔 Verificar si llegó tarde y mostrar alerta
+        try {
+          // Obtener turno asignado del empleado
+          const { data: turnoData } = await supabase
+            .from('empleado_turnos')
+            .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
+            .eq('empleado_id', empleadoParaFichaje.id)
+            .eq('activo', true)
+            .single()
+          
+          if (turnoData?.turno) {
+            const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
+            const horaEntradaProgramada = turno.hora_entrada // "08:00:00"
+            const tolerancia = turno.tolerancia_entrada_minutos ?? 5
+            
+            // Calcular hora límite con tolerancia
+            const [h, m] = horaEntradaProgramada.split(':').map(Number)
+            const horaLimite = new Date()
+            horaLimite.setHours(h, m + tolerancia, 0, 0)
+            
+            const horaActual = new Date()
+            
+            if (horaActual > horaLimite) {
+              const minutosRetraso = Math.round((horaActual.getTime() - horaLimite.getTime()) / 60000)
+              
+              // Registrar cruz roja por llegada tarde
+              let registradoExitoso = false
+              try {
+                const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
+                  empleado_id: empleadoParaFichaje.id,
+                  tipo_infraccion: 'llegada_tarde',
+                  fecha_infraccion: horaActual.toISOString().split('T')[0],
+                  fichaje_id: fichajeId,
+                  minutos_diferencia: minutosRetraso,
+                  observaciones: `Llegada tarde en kiosco: ${horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} (programado: ${horaEntradaProgramada.substring(0, 5)}, tolerancia: ${tolerancia} min)`
+                })
+                
+                if (!cruceError) {
+                  registradoExitoso = true
+                  console.log('Cruz roja por llegada tarde registrada correctamente')
+                } else {
+                  console.error('Error registrando cruz roja por llegada tarde:', cruceError)
+                }
+              } catch (err) {
+                console.error('Error al registrar cruz roja por llegada tarde:', err)
+              }
+
+              setLlegadaTardeInfo({
+                horaEntradaProgramada: horaEntradaProgramada.substring(0, 5),
+                horaLlegadaReal: horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+                minutosRetraso,
+                toleranciaMinutos: tolerancia,
+                registrado: registradoExitoso
+              })
+              setShowLlegadaTardeAlert(true)
+              setShowActionSelection(false)
+              // resetKiosco se llamará cuando se cierre el alert
+              return
+            }
+          }
+        } catch (error) {
+          console.error('Error verificando llegada tarde:', error)
         }
       }
 
@@ -1241,6 +1382,24 @@ export default function KioscoCheckIn() {
             resetKiosco()
           }}
           duracionSegundos={3}
+        />
+      )}
+
+      {/* Alerta de Llegada Tarde (Overlay) */}
+      {showLlegadaTardeAlert && llegadaTardeInfo && recognizedEmployee && (
+        <LlegadaTardeAlert
+          empleadoNombre={`${recognizedEmployee.data.nombre} ${recognizedEmployee.data.apellido}`}
+          horaEntradaProgramada={llegadaTardeInfo.horaEntradaProgramada}
+          horaLlegadaReal={llegadaTardeInfo.horaLlegadaReal}
+          minutosRetraso={llegadaTardeInfo.minutosRetraso}
+          toleranciaMinutos={llegadaTardeInfo.toleranciaMinutos}
+          registrado={llegadaTardeInfo.registrado}
+          onDismiss={() => {
+            setShowLlegadaTardeAlert(false)
+            setLlegadaTardeInfo(null)
+            resetKiosco()
+          }}
+          duracionSegundos={5}
         />
       )}
 
