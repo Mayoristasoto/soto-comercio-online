@@ -43,7 +43,9 @@ export default function FacialRecognitionConfig() {
         { key: 'maxAttemptsPerMinute', value: editedConfig.maxAttemptsPerMinute },
         { key: 'livenessTimeoutSeconds', value: editedConfig.livenessTimeoutSeconds },
         { key: 'faceDescriptorVersion', value: editedConfig.faceDescriptorVersion },
-        { key: 'emotionRecognitionEnabled', value: editedConfig.emotionRecognitionEnabled.toString() }
+        { key: 'emotionRecognitionEnabled', value: editedConfig.emotionRecognitionEnabled.toString() },
+        { key: 'autoPrintTasksEnabled', value: editedConfig.autoPrintTasksEnabled.toString() },
+        { key: 'lateArrivalAlertEnabled', value: editedConfig.lateArrivalAlertEnabled.toString() }
       ]
 
       for (const update of updates) {
@@ -251,6 +253,45 @@ export default function FacialRecognitionConfig() {
               onCheckedChange={(checked) => setEditedConfig(prev => ({
                 ...prev,
                 emotionRecognitionEnabled: checked
+              }))}
+            />
+          </div>
+        </div>
+
+        {/* Configuración del Kiosco */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Configuración del Kiosco</h3>
+          
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-print-tasks">Impresión Automática de Tareas</Label>
+              <p className="text-xs text-muted-foreground">
+                Imprime automáticamente las tareas del día al fichar entrada
+              </p>
+            </div>
+            <Switch
+              id="auto-print-tasks"
+              checked={editedConfig.autoPrintTasksEnabled}
+              onCheckedChange={(checked) => setEditedConfig(prev => ({
+                ...prev,
+                autoPrintTasksEnabled: checked
+              }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="late-arrival-alert">Alerta de Llegada Tarde</Label>
+              <p className="text-xs text-muted-foreground">
+                Muestra una alerta cuando el empleado llega después de su hora de entrada
+              </p>
+            </div>
+            <Switch
+              id="late-arrival-alert"
+              checked={editedConfig.lateArrivalAlertEnabled}
+              onCheckedChange={(checked) => setEditedConfig(prev => ({
+                ...prev,
+                lateArrivalAlertEnabled: checked
               }))}
             />
           </div>
