@@ -81,11 +81,12 @@ export default function Tareas() {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
 
   useEffect(() => {
-    if (userInfo) {
+    if (userInfo?.id) {
       loadTareas()
       loadCategorias()
     }
-  }, [userInfo])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo?.id, userInfo?.rol, userInfo?.sucursal_id])
 
   const loadCategorias = async () => {
     try {
