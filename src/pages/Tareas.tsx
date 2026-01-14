@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X, BookOpen } from "lucide-react"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X, BookOpen, Trash2 } from "lucide-react"
+import { useConfirm } from "@/hooks/useConfirm"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
@@ -66,6 +67,7 @@ interface Tarea {
 export default function Tareas() {
   const { userInfo } = useOutletContext<{ userInfo: UserInfo }>()
   const { toast } = useToast()
+  const { confirm, ConfirmationDialog } = useConfirm()
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
@@ -187,6 +189,56 @@ export default function Tareas() {
         variant: "destructive"
       });
     }
+  }
+
+  const deleteTask = async (tarea: Tarea) => {
+    const confirmed = await confirm({
+      title: "¿Eliminar tarea?",
+      description: `Se eliminará la tarea "${tarea.titulo}" de forma permanente. Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar",
+      cancelLabel: "Cancelar",
+      variant: "destructive"
+    })
+
+    if (!confirmed) return
+
+    try {
+      // Primero eliminar registros relacionados en tareas_sucursales
+      await supabase
+        .from('tareas_sucursales')
+        .delete()
+        .eq('tarea_id', tarea.id)
+
+      // Luego eliminar la tarea
+      const { error } = await supabase
+        .from('tareas')
+        .delete()
+        .eq('id', tarea.id)
+
+      if (error) throw error
+
+      toast({
+        title: "Tarea eliminada",
+        description: "La tarea se ha eliminado correctamente"
+      })
+
+      loadTareas()
+    } catch (error) {
+      console.error('Error eliminando tarea:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la tarea",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const canDeleteTask = (tarea: Tarea) => {
+    // Admin puede eliminar cualquier tarea
+    if (userInfo.rol === 'admin_rrhh') return true
+    // Gerente puede eliminar tareas que él creó
+    if (userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id) return true
+    return false
   }
 
   const openDelegateDialog = (tarea: Tarea) => {
@@ -478,6 +530,17 @@ export default function Tareas() {
                         >
                           <History className="h-4 w-4" />
                         </Button>
+                        {canDeleteTask(tarea) && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => deleteTask(tarea)}
+                            title="Eliminar tarea"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                         <div className={`w-3 h-3 rounded-full ${getPrioridadColor(tarea.prioridad)}`} />
                         <Badge variant={getEstadoBadgeVariant(tarea.estado)}>
                           {tarea.estado.replace('_', ' ')}
@@ -697,17 +760,28 @@ export default function Tareas() {
                           </div>
                         )}
                         {/* Botones de gestión para tareas delegadas */}
-                        {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && 
-                         (tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && (
-                          <div className="flex justify-end mt-4">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => openDelegateDialog(tarea)}
-                            >
-                              <UserCheck className="h-3 w-3 mr-1" />
-                              Re-delegar
+                        {(tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && (
+                          <div className="flex justify-end mt-4 gap-2">
+                            {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDelegateDialog(tarea)}
+                              >
+                                <UserCheck className="h-3 w-3 mr-1" />
+                                Re-delegar
+                              </Button>
+                            )}
+                            {canDeleteTask(tarea) && (
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => deleteTask(tarea)}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                              Eliminar
                             </Button>
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -780,6 +854,9 @@ export default function Tareas() {
         onDelegationComplete={loadTareas}
         userInfo={userInfo}
       />
+
+      {/* Dialog de confirmación */}
+      <ConfirmationDialog />
     </div>
   )
 }
