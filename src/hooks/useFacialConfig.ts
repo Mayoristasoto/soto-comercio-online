@@ -9,6 +9,8 @@ interface FacialConfig {
   livenessTimeoutSeconds: number
   faceDescriptorVersion: string
   emotionRecognitionEnabled: boolean
+  autoPrintTasksEnabled: boolean
+  lateArrivalAlertEnabled: boolean
 }
 
 const defaultConfig: FacialConfig = {
@@ -18,7 +20,9 @@ const defaultConfig: FacialConfig = {
   maxAttemptsPerMinute: 3,
   livenessTimeoutSeconds: 30,
   faceDescriptorVersion: "1.0",
-  emotionRecognitionEnabled: true
+  emotionRecognitionEnabled: true,
+  autoPrintTasksEnabled: false,
+  lateArrivalAlertEnabled: false
 }
 
 export function useFacialConfig() {
@@ -63,6 +67,18 @@ export function useFacialConfig() {
             if (typeof raw === 'boolean') return raw;
             const str = String(raw).toLowerCase();
             return str === 'true' || str === '1' || str === 'yes';
+          })(),
+          autoPrintTasksEnabled: (() => {
+            const raw = configMap.auto_print_tasks_enabled;
+            if (typeof raw === 'boolean') return raw;
+            const str = String(raw).toLowerCase();
+            return str === 'true' || str === '1' || str === 'yes';
+          })(),
+          lateArrivalAlertEnabled: (() => {
+            const raw = configMap.late_arrival_alert_enabled;
+            if (typeof raw === 'boolean') return raw;
+            const str = String(raw).toLowerCase();
+            return str === 'true' || str === '1' || str === 'yes';
           })()
         })
       }
@@ -83,7 +99,9 @@ export function useFacialConfig() {
         maxAttemptsPerMinute: 'max_attempts_per_minute',
         livenessTimeoutSeconds: 'liveness_timeout_seconds',
         faceDescriptorVersion: 'face_descriptor_version',
-        emotionRecognitionEnabled: 'emotion_recognition_enabled'
+        emotionRecognitionEnabled: 'emotion_recognition_enabled',
+        autoPrintTasksEnabled: 'auto_print_tasks_enabled',
+        lateArrivalAlertEnabled: 'late_arrival_alert_enabled'
       }[key]
 
       const { error: updateError } = await supabase

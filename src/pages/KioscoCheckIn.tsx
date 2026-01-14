@@ -642,18 +642,20 @@ export default function KioscoCheckIn() {
       setTareasPendientes(tareas)
 
       // 🖨️ FUNCIONALIDAD DE IMPRESIÓN AUTOMÁTICA
-      // Imprimir tareas automáticamente si es el primer check-in del día
-      try {
-        const empleadoCompleto = {
-          id: empleadoParaFichaje.id,
-          nombre: empleadoParaFichaje.nombre,
-          apellido: empleadoParaFichaje.apellido,
-          puesto: empleadoData?.puesto || undefined
+      // Imprimir tareas automáticamente si es el primer check-in del día (si está habilitado)
+      if (config.autoPrintTasksEnabled) {
+        try {
+          const empleadoCompleto = {
+            id: empleadoParaFichaje.id,
+            nombre: empleadoParaFichaje.nombre,
+            apellido: empleadoParaFichaje.apellido,
+            puesto: empleadoData?.puesto || undefined
+          }
+          await imprimirTareasDiariasAutomatico(empleadoCompleto)
+        } catch (error) {
+          console.error('Error en impresión automática:', error)
+          // No mostrar error al usuario para no interrumpir el flujo de check-in
         }
-        await imprimirTareasDiariasAutomatico(empleadoCompleto)
-      } catch (error) {
-        console.error('Error en impresión automática:', error)
-        // No mostrar error al usuario para no interrumpir el flujo de check-in
       }
 
       // Mostrar tarjeta de confirmación
@@ -1014,8 +1016,8 @@ export default function KioscoCheckIn() {
       setTareasPendientes(tareas)
 
       // 🖨️ FUNCIONALIDAD DE IMPRESIÓN AUTOMÁTICA PARA ACCIONES DIRECTAS
-      // Imprimir tareas automáticamente si es entrada (primer check-in del día)
-      if (tipoAccion === 'entrada') {
+      // Imprimir tareas automáticamente si es entrada (primer check-in del día) y si está habilitado
+      if (tipoAccion === 'entrada' && config.autoPrintTasksEnabled) {
         try {
           const empleadoCompleto = {
             id: empleadoParaFichaje.id,
@@ -1027,8 +1029,10 @@ export default function KioscoCheckIn() {
         } catch (error) {
           console.error('Error en impresión automática:', error)
         }
+      }
         
-        // 🔔 Verificar si llegó tarde y mostrar alerta
+      // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
+      if (tipoAccion === 'entrada' && config.lateArrivalAlertEnabled) {
         try {
           // Obtener turno asignado del empleado
           const { data: turnoData } = await supabase
@@ -1284,8 +1288,8 @@ export default function KioscoCheckIn() {
       setTareasPendientes(tareas)
 
       // 🖨️ FUNCIONALIDAD DE IMPRESIÓN AUTOMÁTICA PARA ACCIONES SELECCIONADAS
-      // Imprimir tareas automáticamente si es entrada (primer check-in del día)
-      if (tipoAccion === 'entrada') {
+      // Imprimir tareas automáticamente si es entrada (primer check-in del día) y si está habilitado
+      if (tipoAccion === 'entrada' && config.autoPrintTasksEnabled) {
         try {
           const empleadoCompleto = {
             id: empleadoParaFichaje.id,
@@ -1297,7 +1301,10 @@ export default function KioscoCheckIn() {
         } catch (error) {
           console.error('Error en impresión automática:', error)
         }
-        
+      }
+      
+      // Solo ejecutar flujos especiales si es entrada
+      if (tipoAccion === 'entrada') {
         // 🏢 FLUJO ESPECIAL PARA GERENTE_SUCURSAL
         // Si es gerente_sucursal, verificar si tiene tareas delegadas por admin_rrhh para distribuir
         const rolEmpleado = recognizedEmployee.data?.rol
@@ -1340,8 +1347,9 @@ export default function KioscoCheckIn() {
           }
         }
         
-        // 🔔 Verificar si llegó tarde y mostrar alerta
-        try {
+        // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
+        if (config.lateArrivalAlertEnabled) {
+          try {
           // Obtener turno asignado del empleado
           const { data: turnoData } = await supabase
             .from('empleado_turnos')
@@ -1405,8 +1413,9 @@ export default function KioscoCheckIn() {
               return
             }
           }
-        } catch (error) {
-          console.error('Error verificando llegada tarde:', error)
+          } catch (error) {
+            console.error('Error verificando llegada tarde:', error)
+          }
         }
       }
 
