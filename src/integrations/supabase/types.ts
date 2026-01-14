@@ -7707,6 +7707,27 @@ export type Database = {
           accion: string
         }[]
       }
+      kiosk_get_tareas: {
+        Args: { p_empleado_id: string; p_limit?: number }
+        Returns: {
+          descripcion: string
+          estado: string
+          fecha_limite: string
+          id: string
+          prioridad: string
+          titulo: string
+        }[]
+      }
+      kiosk_get_tareas_vencen_hoy: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          descripcion: string
+          fecha_limite: string
+          id: string
+          prioridad: string
+          titulo: string
+        }[]
+      }
       kiosk_guardar_foto_verificacion: {
         Args: {
           p_empleado_id: string
