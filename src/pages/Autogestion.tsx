@@ -13,6 +13,7 @@ interface TareaPendiente {
   descripcion: string | null
   prioridad: 'baja' | 'media' | 'alta' | 'urgente'
   fecha_limite: string | null
+  estado: string
 }
 
 interface EmpleadoData {
@@ -65,12 +66,13 @@ export default function Autogestion() {
       if (empError) throw empError
       setEmpleado(empData)
 
-      // Cargar tareas pendientes
+      // Cargar tareas pendientes y en progreso
       const { data: tareas, error: tareasError } = await supabase
         .from('tareas')
-        .select('id, titulo, descripcion, prioridad, fecha_limite')
+        .select('id, titulo, descripcion, prioridad, fecha_limite, estado')
         .eq('asignado_a', empleadoId)
-        .eq('estado', 'pendiente')
+        .in('estado', ['pendiente', 'en_progreso'])
+        .order('prioridad', { ascending: false })
         .order('fecha_limite', { ascending: true })
 
       if (tareasError) throw tareasError
@@ -198,11 +200,28 @@ export default function Autogestion() {
   const formatFechaLimite = (fecha: string | null) => {
     if (!fecha) return 'Sin fecha límite'
     const fechaObj = new Date(fecha)
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    fechaObj.setHours(0, 0, 0, 0)
+    
+    const diffDays = Math.ceil((fechaObj.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (diffDays < 0) return `⚠️ Vencida hace ${Math.abs(diffDays)} día(s)`
+    if (diffDays === 0) return '🔴 Vence hoy'
+    if (diffDays === 1) return '🟠 Vence mañana'
+    if (diffDays <= 3) return `🟡 Vence en ${diffDays} días`
     return fechaObj.toLocaleDateString('es-ES', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     })
+  }
+
+  const getEstadoBadge = (estado: string) => {
+    if (estado === 'en_progreso') {
+      return <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">En progreso</span>
+    }
+    return <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full">Pendiente</span>
   }
 
   const handleReimprimirTareas = async () => {
@@ -424,14 +443,17 @@ export default function Autogestion() {
                       key={tarea.id}
                       className={`border-2 rounded-lg p-4 ${getPriorityColor(tarea.prioridad)}`}
                     >
-                      <div className="font-semibold text-lg mb-2">{tarea.titulo}</div>
-                      {tarea.descripcion && (
-                        <p className="text-sm mb-2 opacity-90">{tarea.descripcion}</p>
-                      )}
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium capitalize">{tarea.prioridad}</span>
-                        <span>Vence: {formatFechaLimite(tarea.fecha_limite)}</span>
-                      </div>
+                        <div className="font-semibold text-lg mb-2 flex items-center justify-between">
+                          <span>{tarea.titulo}</span>
+                          {getEstadoBadge(tarea.estado)}
+                        </div>
+                        {tarea.descripcion && (
+                          <p className="text-sm mb-2 opacity-90">{tarea.descripcion}</p>
+                        )}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium capitalize">{tarea.prioridad}</span>
+                          <span>{formatFechaLimite(tarea.fecha_limite)}</span>
+                        </div>
                     </div>
                   ))}
                 </div>

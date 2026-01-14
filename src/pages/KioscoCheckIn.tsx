@@ -13,6 +13,7 @@ import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
 import { PausaExcedidaAlert } from "@/components/kiosko/PausaExcedidaAlert"
 import { LlegadaTardeAlert } from "@/components/kiosko/LlegadaTardeAlert"
+import { TareasPendientesAlert } from "@/components/kiosko/TareasPendientesAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -273,6 +274,9 @@ export default function KioscoCheckIn() {
     toleranciaMinutos: number
     registrado: boolean
   } | null>(null)
+  
+  // State for pending tasks alert
+  const [showTareasPendientesAlert, setShowTareasPendientesAlert] = useState(false)
   
   // PIN mode state
   const [modoAutenticacion, setModoAutenticacion] = useState<'facial' | 'pin'>('facial')
@@ -722,6 +726,7 @@ export default function KioscoCheckIn() {
       setPausaExcedidaInfo(null)
       setShowLlegadaTardeAlert(false)
       setLlegadaTardeInfo(null)
+      setShowTareasPendientesAlert(false)
     }, 3000)
   }
 
@@ -920,6 +925,14 @@ export default function KioscoCheckIn() {
           }
         } catch (error) {
           console.error('Error reproduciendo audio:', error)
+        }
+        
+        // 📋 Mostrar alerta de tareas pendientes si hay tareas
+        if (tareas && tareas.length > 0) {
+          setShowTareasPendientesAlert(true)
+          setShowFacialAuth(false)
+          // resetKiosco se llamará cuando se cierre el alert
+          return
         }
       }
 
@@ -1171,6 +1184,14 @@ export default function KioscoCheckIn() {
         } catch (error) {
           console.error('Error reproduciendo audio:', error)
         }
+        
+        // 📋 Mostrar alerta de tareas pendientes si hay tareas
+        if (tareas && tareas.length > 0) {
+          setShowTareasPendientesAlert(true)
+          setShowActionSelection(false)
+          // resetKiosco se llamará cuando se cierre el alert
+          return
+        }
       }
 
       // 🔔 Verificar si la pausa fue excedida y mostrar alerta
@@ -1400,6 +1421,23 @@ export default function KioscoCheckIn() {
             resetKiosco()
           }}
           duracionSegundos={5}
+        />
+      )}
+
+      {/* Alerta de Tareas Pendientes (Overlay) */}
+      {showTareasPendientesAlert && tareasPendientes.length > 0 && registroExitoso && (
+        <TareasPendientesAlert
+          empleadoNombre={`${registroExitoso.empleado.nombre} ${registroExitoso.empleado.apellido}`}
+          tareas={tareasPendientes}
+          onDismiss={() => {
+            setShowTareasPendientesAlert(false)
+            resetKiosco()
+          }}
+          onVerAutoGestion={() => {
+            setShowTareasPendientesAlert(false)
+            navigate(`/autogestion?empleado=${registroExitoso.empleado.id}`)
+          }}
+          duracionSegundos={10}
         />
       )}
 
