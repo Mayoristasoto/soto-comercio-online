@@ -1,16 +1,22 @@
 import { useState, useEffect } from "react"
-import { ClipboardList, AlertTriangle, Clock, CheckCircle } from "lucide-react"
+import { ClipboardList, AlertTriangle, Clock, CheckCircle, Printer, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { imprimirTareasManual } from "@/utils/printManager"
+import { toast } from "sonner"
 
 interface TareaPendiente {
   id: string
   titulo: string
+  descripcion?: string
   prioridad: 'baja' | 'media' | 'alta' | 'urgente'
   fecha_limite: string | null
 }
 
 interface TareasPendientesAlertProps {
   empleadoNombre: string
+  empleadoId: string
+  empleadoApellido?: string
+  empleadoLegajo?: string
   tareas: TareaPendiente[]
   onDismiss: () => void
   onVerAutoGestion: () => void
@@ -19,14 +25,21 @@ interface TareasPendientesAlertProps {
 
 export function TareasPendientesAlert({
   empleadoNombre,
+  empleadoId,
+  empleadoApellido = "",
+  empleadoLegajo = "",
   tareas,
   onDismiss,
   onVerAutoGestion,
   duracionSegundos = 8
 }: TareasPendientesAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos)
+  const [isImprimiendo, setIsImprimiendo] = useState(false)
+  const [pauseCountdown, setPauseCountdown] = useState(false)
 
   useEffect(() => {
+    if (pauseCountdown) return
+    
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -39,7 +52,38 @@ export function TareasPendientesAlert({
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [duracionSegundos, onDismiss])
+  }, [duracionSegundos, onDismiss, pauseCountdown])
+
+  const handleImprimir = async () => {
+    setPauseCountdown(true)
+    setIsImprimiendo(true)
+    
+    try {
+      const empleadoInfo = {
+        id: empleadoId,
+        nombre: empleadoNombre,
+        apellido: empleadoApellido,
+        legajo: empleadoLegajo
+      }
+      
+      const tareasFormateadas = tareas.map(t => ({
+        id: t.id,
+        titulo: t.titulo,
+        descripcion: t.descripcion || null,
+        prioridad: t.prioridad,
+        fecha_limite: t.fecha_limite
+      }))
+      
+      await imprimirTareasManual(empleadoInfo, tareasFormateadas)
+      toast.success(`${tareas.length} tarea(s) enviadas a imprimir`)
+    } catch (error) {
+      console.error('Error al imprimir:', error)
+      toast.error('Error al imprimir las tareas')
+    } finally {
+      setIsImprimiendo(false)
+      setPauseCountdown(false)
+    }
+  }
 
   const getPriorityColor = (prioridad: string) => {
     switch (prioridad) {
@@ -140,12 +184,27 @@ export function TareasPendientesAlert({
             </Button>
             
             <Button
+              onClick={handleImprimir}
+              variant="secondary"
+              className="w-full py-5"
+              disabled={isImprimiendo}
+            >
+              {isImprimiendo ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4 mr-2" />
+              )}
+              {isImprimiendo ? 'Imprimiendo...' : `Imprimir ${tareas.length} Tarea(s)`}
+            </Button>
+            
+            <Button
               onClick={onDismiss}
               variant="outline"
               className="w-full py-4"
+              disabled={isImprimiendo}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Entendido ({countdown}s)
+              Entendido {!pauseCountdown && `(${countdown}s)`}
             </Button>
           </div>
         </div>

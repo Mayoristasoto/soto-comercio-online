@@ -884,6 +884,45 @@ export const previewTareasDiarias = async (
 }
 
 // Función para preview de tareas individuales (para testing)
+/**
+ * Imprime tareas manualmente sin verificar si es el primer check-in
+ * Útil para impresión bajo demanda desde el modal de tareas pendientes
+ */
+export const imprimirTareasManual = async (
+  empleado: EmpleadoInfo,
+  tareas: TareaDiaria[]
+): Promise<boolean> => {
+  if (!tareas || tareas.length === 0) {
+    console.log('📋 No hay tareas para imprimir')
+    return false
+  }
+
+  console.log(`🖨️ Imprimiendo ${tareas.length} tareas manualmente para ${empleado.nombre} ${empleado.apellido}`)
+
+  const fechaActual = new Date()
+  
+  for (let i = 0; i < tareas.length; i++) {
+    const tarea = tareas[i]
+    const html = generarHTMLTareaIndividual(empleado, tarea, fechaActual, i + 1, tareas.length)
+    
+    const printWindow = window.open('', '_blank', 'width=400,height=600')
+    if (printWindow) {
+      printWindow.document.write(html)
+      printWindow.document.close()
+      printWindow.focus()
+      printWindow.print()
+    }
+    
+    // Pausa entre tickets
+    if (i < tareas.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1500))
+    }
+  }
+
+  console.log('✅ Impresión manual completada')
+  return true
+}
+
 export const previewTareasIndividuales = async (
   empleado: EmpleadoInfo
 ): Promise<void> => {
