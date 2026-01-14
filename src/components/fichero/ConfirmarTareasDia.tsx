@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Clock, AlertCircle, UserCheck, CalendarX } from "lucide-react";
 import { formatArgentinaDate } from "@/lib/dateUtils";
+import { registrarActividadTarea } from "@/lib/tareasLogService";
 
 interface Task {
   id: string;
@@ -105,7 +106,7 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
 
     setCompleting(true);
     try {
-      // Actualizar las tareas marcadas como completadas
+      // Actualizar las tareas marcadas como completadas y registrar logs
       for (const tareaId of tareasCompletadas) {
         const { error } = await supabase
           .from('tareas')
@@ -116,6 +117,38 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
           .eq('id', tareaId);
 
         if (error) throw error;
+
+        // Registrar log de tarea completada
+        await registrarActividadTarea(
+          tareaId,
+          empleadoId,
+          'completada',
+          'kiosco',
+          { confirmado_en_salida: true }
+        );
+      }
+
+      // Registrar log de tareas omitidas en la salida
+      for (const tarea of tareas) {
+        if (!tareasCompletadas.has(tarea.id)) {
+          await registrarActividadTarea(
+            tarea.id,
+            empleadoId,
+            'omitida_salida',
+            'kiosco',
+            { fecha_limite: tarea.fecha_limite }
+          );
+        }
+      }
+
+      // Registrar que se mostró la confirmación de salida
+      for (const tarea of tareas) {
+        await registrarActividadTarea(
+          tarea.id,
+          empleadoId,
+          'confirmacion_salida_mostrada',
+          'kiosco'
+        );
       }
 
       toast({

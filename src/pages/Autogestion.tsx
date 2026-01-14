@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet } from "lucide-react"
+import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet, Check } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
+import { registrarActividadTarea } from "@/lib/tareasLogService"
 
 interface TareaPendiente {
   id: string
@@ -37,6 +38,7 @@ export default function Autogestion() {
   const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo'>('menu')
   const [consultandoSaldo, setConsultandoSaldo] = useState(false)
   const [saldoCuentaCorriente, setSaldoCuentaCorriente] = useState<any>(null)
+  const [completandoTarea, setCompletandoTarea] = useState<string | null>(null)
 
   useEffect(() => {
     if (!empleadoId) {
@@ -50,6 +52,17 @@ export default function Autogestion() {
     }
 
     cargarDatosEmpleado()
+
+    // Registrar consulta de tareas cuando se carga la página
+    if (empleadoId) {
+      registrarActividadTarea(
+        '', // No hay tarea específica, es una consulta general
+        empleadoId,
+        'consultada',
+        'kiosco_autogestion',
+        { tipo: 'consulta_general' }
+      ).catch(console.error)
+    }
   }, [empleadoId])
 
   const cargarDatosEmpleado = async () => {
@@ -222,6 +235,54 @@ export default function Autogestion() {
       return <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">En progreso</span>
     }
     return <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full">Pendiente</span>
+  }
+
+  const completarTarea = async (tareaId: string) => {
+    if (!empleadoId) return
+    
+    setCompletandoTarea(tareaId)
+    try {
+      // Actualizar estado de la tarea
+      const { error } = await supabase
+        .from('tareas')
+        .update({
+          estado: 'completada',
+          fecha_completada: new Date().toISOString()
+        })
+        .eq('id', tareaId)
+
+      if (error) throw error
+
+      // Registrar log de tarea completada desde autogestión
+      await registrarActividadTarea(
+        tareaId,
+        empleadoId,
+        'completada',
+        'kiosco_autogestion',
+        { 
+          completado_desde: 'autogestion',
+          fecha: new Date().toISOString()
+        }
+      )
+
+      toast({
+        title: "✅ Tarea completada",
+        description: "La tarea ha sido marcada como completada",
+        duration: 3000
+      })
+
+      // Recargar lista de tareas
+      cargarDatosEmpleado()
+    } catch (error) {
+      console.error('Error completando tarea:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo completar la tarea",
+        variant: "destructive"
+      })
+    } finally {
+      setCompletandoTarea(null)
+    }
   }
 
   const handleReimprimirTareas = async () => {
@@ -453,6 +514,26 @@ export default function Autogestion() {
                         <div className="flex items-center justify-between text-sm">
                           <span className="font-medium capitalize">{tarea.prioridad}</span>
                           <span>{formatFechaLimite(tarea.fecha_limite)}</span>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-current/20">
+                          <Button
+                            size="sm"
+                            onClick={() => completarTarea(tarea.id)}
+                            disabled={completandoTarea === tarea.id}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {completandoTarea === tarea.id ? (
+                              <span className="flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Completando...
+                              </span>
+                            ) : (
+                              <span className="flex items-center">
+                                <Check className="h-4 w-4 mr-2" />
+                                Marcar como Completada
+                              </span>
+                            )}
+                          </Button>
                         </div>
                     </div>
                   ))}
