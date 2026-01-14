@@ -483,6 +483,232 @@ const generarHTMLTareasA4 = (empleado: EmpleadoInfo, tareas: TareaDiaria[], fech
   `
 }
 
+// Función para generar HTML de una tarea individual (ticket separado)
+const generarHTMLTareaIndividual = (empleado: EmpleadoInfo, tarea: TareaDiaria, fecha: Date, numeroTarea: number, totalTareas: number): string => {
+  const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+
+  const horaFormateada = fecha.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+
+  const prioridadConfig = {
+    urgente: { texto: 'URGENTE', simbolo: '!!!', color: '#dc2626', bgColor: '#fee2e2' },
+    alta: { texto: 'ALTA', simbolo: '!!', color: '#ea580c', bgColor: '#fed7aa' },
+    media: { texto: 'MEDIA', simbolo: '!', color: '#d97706', bgColor: '#fef3c7' },
+    baja: { texto: 'BAJA', simbolo: '', color: '#16a34a', bgColor: '#dcfce7' }
+  }
+
+  const config = prioridadConfig[tarea.prioridad] || prioridadConfig.media
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Tarea ${numeroTarea} - ${empleado.nombre} ${empleado.apellido}</title>
+      <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body {
+          font-family: 'Courier New', monospace;
+          font-size: 9pt;
+          line-height: 1.3;
+          color: #000;
+          width: 80mm;
+          padding: 5mm;
+          background: white;
+        }
+        .divider {
+          border-top: 1px dashed #000;
+          margin: 8px 0;
+        }
+        .divider-double {
+          border-top: 2px solid #000;
+          margin: 10px 0;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .header h1 {
+          font-size: 12pt;
+          font-weight: bold;
+          margin-bottom: 2px;
+        }
+        .header .subtitle {
+          font-size: 8pt;
+          margin-bottom: 2px;
+        }
+        .destinatario-box {
+          border: 2px solid #000;
+          padding: 8px;
+          margin: 8px 0;
+          text-align: center;
+          background: #f5f5f5;
+        }
+        .destinatario-label {
+          font-size: 8pt;
+          margin-bottom: 3px;
+        }
+        .destinatario-nombre {
+          font-size: 12pt;
+          font-weight: bold;
+          text-transform: uppercase;
+        }
+        .destinatario-puesto {
+          font-size: 8pt;
+          margin-top: 2px;
+        }
+        .tarea-numero {
+          text-align: center;
+          font-size: 8pt;
+          margin: 5px 0;
+        }
+        .tarea-content {
+          margin: 10px 0;
+        }
+        .tarea-titulo {
+          font-size: 11pt;
+          font-weight: bold;
+          margin-bottom: 6px;
+          word-wrap: break-word;
+        }
+        .tarea-desc {
+          font-size: 8pt;
+          margin-bottom: 6px;
+          word-wrap: break-word;
+          line-height: 1.4;
+        }
+        .prioridad-box {
+          display: inline-block;
+          padding: 3px 8px;
+          font-weight: bold;
+          font-size: 9pt;
+          margin: 5px 0;
+        }
+        .fecha-vence {
+          font-size: 9pt;
+          font-weight: bold;
+          margin: 5px 0;
+        }
+        .confirmacion-section {
+          margin-top: 10px;
+          padding-top: 8px;
+        }
+        .confirmacion-title {
+          font-size: 9pt;
+          font-weight: bold;
+          margin-bottom: 6px;
+        }
+        .checkbox-item {
+          margin: 5px 0;
+          font-size: 8pt;
+        }
+        .checkbox {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border: 2px solid #000;
+          margin-right: 6px;
+          vertical-align: middle;
+        }
+        .firma-section {
+          margin-top: 12px;
+        }
+        .firma-line {
+          border-bottom: 1px solid #000;
+          margin: 18px 0 4px 0;
+        }
+        .firma-label {
+          text-align: center;
+          font-size: 7pt;
+        }
+        .footer {
+          margin-top: 10px;
+          padding-top: 6px;
+          border-top: 1px dashed #000;
+          text-align: center;
+          font-size: 7pt;
+        }
+        @media print {
+          body {
+            padding: 2mm;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>📋 TAREA ASIGNADA</h1>
+        <div class="subtitle">${fechaFormateada} - ${horaFormateada}</div>
+      </div>
+
+      <div class="divider-double"></div>
+
+      <div class="destinatario-box">
+        <div class="destinatario-label">PARA:</div>
+        <div class="destinatario-nombre">${empleado.nombre} ${empleado.apellido}</div>
+        ${empleado.puesto ? `<div class="destinatario-puesto">${empleado.puesto}</div>` : ''}
+      </div>
+
+      <div class="tarea-numero">Tarea ${numeroTarea} de ${totalTareas}</div>
+
+      <div class="divider"></div>
+
+      <div class="tarea-content">
+        <div class="tarea-titulo">${tarea.titulo}</div>
+        ${tarea.descripcion ? `<div class="tarea-desc">${tarea.descripcion}</div>` : ''}
+        
+        <div class="prioridad-box" style="background: ${config.bgColor}; color: ${config.color};">
+          ${config.simbolo} ${config.texto}
+        </div>
+        
+        ${tarea.fecha_limite ? `
+          <div class="fecha-vence">
+            ⏰ VENCE: ${new Date(tarea.fecha_limite).toLocaleDateString('es-ES')}
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="confirmacion-section">
+        <div class="confirmacion-title">CONFIRMACIÓN</div>
+        <div class="checkbox-item">
+          <span class="checkbox"></span>
+          Tarea recibida
+        </div>
+        <div class="checkbox-item">
+          <span class="checkbox"></span>
+          Tarea completada
+        </div>
+      </div>
+
+      <div class="firma-section">
+        <div class="firma-line"></div>
+        <div class="firma-label">Firma empleado</div>
+      </div>
+
+      <div class="footer">
+        <div>Sistema Kiosco CheckIn</div>
+      </div>
+    </body>
+    </html>
+  `
+}
+
 // Función para obtener las tareas del empleado usando RPC (bypassa RLS)
 const obtenerTareasEmpleado = async (empleadoId: string): Promise<TareaDiaria[]> => {
   const { data: tareas, error } = await supabase.rpc('kiosk_get_tareas', {
@@ -518,7 +744,32 @@ export const esPrimerCheckinDelDia = async (empleadoId: string): Promise<boolean
   return data === true
 }
 
-// Función principal para imprimir tareas automáticamente (térmica por defecto)
+// Función auxiliar para imprimir un ticket individual
+const imprimirTicketIndividual = (htmlContent: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const printWindow = window.open('', '_blank', 'width=400,height=600')
+    if (!printWindow) {
+      console.error('❌ No se pudo abrir ventana de impresión')
+      resolve(false)
+      return
+    }
+
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print()
+        setTimeout(() => {
+          printWindow.close()
+          resolve(true)
+        }, 500)
+      }, 300)
+    }
+  })
+}
+
+// Función principal para imprimir tareas automáticamente (cada tarea en hoja separada)
 export const imprimirTareasDiariasAutomatico = async (
   empleado: EmpleadoInfo, 
   tipoImpresora: 'termica' | 'a4' = 'termica'
@@ -537,38 +788,80 @@ export const imprimirTareasDiariasAutomatico = async (
     const tareas = await obtenerTareasEmpleado(empleado.id)
     console.log(`📋 Tareas encontradas: ${tareas.length}`)
 
-    // Generar HTML según tipo de impresora
+    if (tareas.length === 0) {
+      console.log('📋 No hay tareas para imprimir')
+      return true
+    }
+
+    const fecha = new Date()
+
+    // Imprimir cada tarea en un ticket separado
+    for (let i = 0; i < tareas.length; i++) {
+      const tarea = tareas[i]
+      console.log(`🖨️ Imprimiendo tarea ${i + 1} de ${tareas.length}: ${tarea.titulo}`)
+      
+      const htmlContent = generarHTMLTareaIndividual(
+        empleado, 
+        tarea, 
+        fecha, 
+        i + 1, 
+        tareas.length
+      )
+      
+      await imprimirTicketIndividual(htmlContent)
+      
+      // Pausa entre impresiones para evitar problemas
+      if (i < tareas.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+
+    console.log(`✅ ${tareas.length} tickets enviados a impresora`)
+    return true
+
+  } catch (error) {
+    console.error('❌ Error en impresión automática:', error)
+    return false
+  }
+}
+
+// Función para imprimir tareas todas juntas en un solo documento (versión legacy)
+export const imprimirTareasDiariasAgrupadas = async (
+  empleado: EmpleadoInfo, 
+  tipoImpresora: 'termica' | 'a4' = 'termica'
+): Promise<boolean> => {
+  try {
+    const esPrimero = await esPrimerCheckinDelDia(empleado.id)
+    if (!esPrimero) {
+      return false
+    }
+
+    const tareas = await obtenerTareasEmpleado(empleado.id)
+    
     const htmlContent = tipoImpresora === 'termica' 
       ? generarHTMLTareasTermica(empleado, tareas, new Date())
       : generarHTMLTareasA4(empleado, tareas, new Date())
 
-    // Crear ventana de impresión
     const printWindow = window.open('', '_blank', 'width=800,height=600')
     if (!printWindow) {
-      console.error('❌ No se pudo abrir ventana de impresión (bloqueador de popups?)')
       return false
     }
 
-    // Escribir contenido y preparar para imprimir
     printWindow.document.write(htmlContent)
     printWindow.document.close()
 
-    // Esperar a que cargue completamente antes de imprimir
     printWindow.onload = () => {
       setTimeout(() => {
         printWindow.print()
-        // Cerrar ventana después de imprimir
         setTimeout(() => {
           printWindow.close()
         }, 1000)
       }, 500)
     }
 
-    console.log('✅ Documento enviado a impresora')
     return true
-
   } catch (error) {
-    console.error('❌ Error en impresión automática:', error)
+    console.error('❌ Error en impresión agrupada:', error)
     return false
   }
 }
@@ -587,5 +880,22 @@ export const previewTareasDiarias = async (
   if (previewWindow) {
     previewWindow.document.write(htmlContent)
     previewWindow.document.close()
+  }
+}
+
+// Función para preview de tareas individuales (para testing)
+export const previewTareasIndividuales = async (
+  empleado: EmpleadoInfo
+): Promise<void> => {
+  const tareas = await obtenerTareasEmpleado(empleado.id)
+  const fecha = new Date()
+  
+  for (let i = 0; i < tareas.length; i++) {
+    const htmlContent = generarHTMLTareaIndividual(empleado, tareas[i], fecha, i + 1, tareas.length)
+    const previewWindow = window.open('', '_blank', 'width=400,height=600')
+    if (previewWindow) {
+      previewWindow.document.write(htmlContent)
+      previewWindow.document.close()
+    }
   }
 }
