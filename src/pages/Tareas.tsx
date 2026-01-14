@@ -760,9 +760,9 @@ export default function Tareas() {
                           </div>
                         )}
                         {/* Botones de gestión para tareas delegadas */}
-                        {(tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && (
-                          <div className="flex justify-end mt-4 gap-2">
-                            {userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && (
+                        <div className="flex justify-end mt-4 gap-2">
+                          {(tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && 
+                            userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
@@ -772,18 +772,17 @@ export default function Tareas() {
                                 Re-delegar
                               </Button>
                             )}
-                            {canDeleteTask(tarea) && (
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                onClick={() => deleteTask(tarea)}
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
+                          {canDeleteTask(tarea) && (
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => deleteTask(tarea)}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
                               Eliminar
                             </Button>
-                            )}
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))
