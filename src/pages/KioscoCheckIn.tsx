@@ -626,16 +626,20 @@ export default function KioscoCheckIn() {
         throw new Error(error.message || 'Error al registrar fichaje')
       }
 
-      // Obtener tareas pendientes del empleado
-      const { data: tareas } = await supabase
-        .from('tareas')
-        .select('id, titulo, prioridad, fecha_limite')
-        .eq('asignado_a', empleadoParaFichaje.id)
-        .eq('estado', 'pendiente')
-        .order('fecha_limite', { ascending: true })
-        .limit(5)
+      // Obtener tareas pendientes del empleado usando RPC seguro del kiosco
+      const { data: tareasRpc } = await supabase.rpc('kiosk_get_tareas', {
+        p_empleado_id: empleadoParaFichaje.id,
+        p_limit: 5
+      })
 
-      setTareasPendientes(tareas || [])
+      const tareas: TareaPendiente[] = (tareasRpc || []).map(t => ({
+        id: t.id,
+        titulo: t.titulo,
+        prioridad: t.prioridad as TareaPendiente['prioridad'],
+        fecha_limite: t.fecha_limite
+      }))
+
+      setTareasPendientes(tareas)
 
       // 🖨️ FUNCIONALIDAD DE IMPRESIÓN AUTOMÁTICA
       // Imprimir tareas automáticamente si es el primer check-in del día
@@ -811,15 +815,9 @@ export default function KioscoCheckIn() {
   // Función para obtener tareas que vencen hoy del gerente
   const obtenerTareasQueVencenHoy = async (empleadoId: string): Promise<TareaPendiente[]> => {
     try {
-      const hoy = new Date().toISOString().split('T')[0]
-      
-      const { data, error } = await supabase
-        .from('tareas')
-        .select('id, titulo, prioridad, fecha_limite')
-        .eq('asignado_a', empleadoId)
-        .eq('estado', 'pendiente')
-        .eq('fecha_limite', hoy)
-        .order('prioridad', { ascending: true })
+      const { data, error } = await supabase.rpc('kiosk_get_tareas_vencen_hoy', {
+        p_empleado_id: empleadoId
+      })
 
       if (error) {
         console.error('Error obteniendo tareas que vencen hoy:', error)
@@ -998,17 +996,19 @@ export default function KioscoCheckIn() {
       }
 
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
-      let tareas = []
+      let tareas: TareaPendiente[] = []
       if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
-        const { data: tareasData } = await supabase
-          .from('tareas')
-          .select('id, titulo, prioridad, fecha_limite')
-          .eq('asignado_a', empleadoParaFichaje.id)
-          .eq('estado', 'pendiente')
-          .order('fecha_limite', { ascending: true })
-          .limit(5)
+        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
+          p_empleado_id: empleadoParaFichaje.id,
+          p_limit: 5
+        })
 
-        tareas = tareasData || []
+        tareas = (tareasData || []).map(t => ({
+          id: t.id,
+          titulo: t.titulo,
+          prioridad: t.prioridad as TareaPendiente['prioridad'],
+          fecha_limite: t.fecha_limite
+        }))
       }
 
       setTareasPendientes(tareas)
@@ -1256,17 +1256,19 @@ export default function KioscoCheckIn() {
       }
 
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
-      let tareas = []
+      let tareas: TareaPendiente[] = []
       if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
-        const { data: tareasData } = await supabase
-          .from('tareas')
-          .select('id, titulo, prioridad, fecha_limite')
-          .eq('asignado_a', empleadoParaFichaje.id)
-          .eq('estado', 'pendiente')
-          .order('fecha_limite', { ascending: true })
-          .limit(5)
+        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
+          p_empleado_id: empleadoParaFichaje.id,
+          p_limit: 5
+        })
 
-        tareas = tareasData || []
+        tareas = (tareasData || []).map(t => ({
+          id: t.id,
+          titulo: t.titulo,
+          prioridad: t.prioridad as TareaPendiente['prioridad'],
+          fecha_limite: t.fecha_limite
+        }))
       }
 
       setTareasPendientes(tareas)
