@@ -1082,9 +1082,14 @@ export default function KioscoCheckIn() {
                 toleranciaMinutos: tolerancia,
                 registrado: registradoExitoso
               })
+              // Setear registroExitoso para que esté disponible cuando se muestren las tareas
+              setRegistroExitoso({
+                empleado: empleadoParaFichaje,
+                timestamp: new Date()
+              })
               setShowLlegadaTardeAlert(true)
               setShowFacialAuth(false)
-              // resetKiosco se llamará cuando se cierre el alert
+              // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
               return
             }
           }
@@ -1160,9 +1165,14 @@ export default function KioscoCheckIn() {
           minutosPermitidos: pausaActiva.minutosPermitidos,
           registrado: registradoExitoso
         })
+        // Setear registroExitoso para que esté disponible cuando se muestren las tareas
+        setRegistroExitoso({
+          empleado: empleadoParaFichaje,
+          timestamp: new Date()
+        })
         setShowPausaExcedidaAlert(true)
         setShowFacialAuth(false)
-        // resetKiosco se llamará cuando se cierre el alert
+        // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
         return
       }
 
@@ -1384,9 +1394,14 @@ export default function KioscoCheckIn() {
                 toleranciaMinutos: tolerancia,
                 registrado: registradoExitoso
               })
+              // Setear registroExitoso para que esté disponible cuando se muestren las tareas
+              setRegistroExitoso({
+                empleado: empleadoParaFichaje,
+                timestamp: new Date()
+              })
               setShowLlegadaTardeAlert(true)
               setShowActionSelection(false)
-              // resetKiosco se llamará cuando se cierre el alert
+              // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
               return
             }
           }
@@ -1462,9 +1477,14 @@ export default function KioscoCheckIn() {
           minutosPermitidos: pausaActiva.minutosPermitidos,
           registrado: registradoExitoso
         })
+        // Setear registroExitoso para que esté disponible cuando se muestren las tareas
+        setRegistroExitoso({
+          empleado: empleadoParaFichaje,
+          timestamp: new Date()
+        })
         setShowPausaExcedidaAlert(true)
         setShowActionSelection(false)
-        // resetKiosco se llamará cuando se cierre el alert
+        // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
         return
       }
 
@@ -1637,7 +1657,12 @@ export default function KioscoCheckIn() {
           onDismiss={() => {
             setShowPausaExcedidaAlert(false)
             setPausaExcedidaInfo(null)
-            resetKiosco()
+            // Si hay tareas pendientes, mostrar el modal en lugar de resetear
+            if (tareasPendientes.length > 0) {
+              setShowTareasPendientesAlert(true)
+            } else {
+              resetKiosco()
+            }
           }}
           duracionSegundos={3}
         />
@@ -1655,7 +1680,12 @@ export default function KioscoCheckIn() {
           onDismiss={() => {
             setShowLlegadaTardeAlert(false)
             setLlegadaTardeInfo(null)
-            resetKiosco()
+            // Si hay tareas pendientes, mostrar el modal en lugar de resetear
+            if (tareasPendientes.length > 0) {
+              setShowTareasPendientesAlert(true)
+            } else {
+              resetKiosco()
+            }
           }}
           duracionSegundos={5}
         />
