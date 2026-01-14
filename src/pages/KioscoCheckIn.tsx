@@ -281,6 +281,12 @@ export default function KioscoCheckIn() {
   // State for pending tasks alert
   const [showTareasPendientesAlert, setShowTareasPendientesAlert] = useState(false)
   
+  // State for gerente_sucursal task distribution flow
+  const [showTareasVencenHoyAlert, setShowTareasVencenHoyAlert] = useState(false)
+  const [tareasVencenHoy, setTareasVencenHoy] = useState<TareaPendiente[]>([])
+  const [showImprimirTareasDialog, setShowImprimirTareasDialog] = useState(false)
+  const [tareasParaDistribuir, setTareasParaDistribuir] = useState<TareaParaDistribuir[]>([])
+  
   // PIN mode state
   const [modoAutenticacion, setModoAutenticacion] = useState<'facial' | 'pin'>('facial')
   const [showPinAuth, setShowPinAuth] = useState(false)
@@ -730,7 +736,191 @@ export default function KioscoCheckIn() {
       setShowLlegadaTardeAlert(false)
       setLlegadaTardeInfo(null)
       setShowTareasPendientesAlert(false)
+      setShowTareasVencenHoyAlert(false)
+      setTareasVencenHoy([])
+      setShowImprimirTareasDialog(false)
+      setTareasParaDistribuir([])
     }, 3000)
+  }
+
+  // Función para obtener tareas delegadas por admin_rrhh al gerente
+  const obtenerTareasParaDistribuirGerente = async (gerenteId: string): Promise<TareaParaDistribuir[]> => {
+    try {
+      // Buscar tareas delegadas donde el gerente es el delegado_a
+      // @ts-ignore - Supabase types are too complex here
+      const { data: tareasDelegadas, error } = await supabase
+        .from('tareas')
+        .select('id, titulo, descripcion, prioridad, fecha_limite, asignado_a, delegado_por, delegado_a')
+        .eq('delegado_a', gerenteId)
+        .eq('estado', 'pendiente')
+
+      if (error) {
+        console.error('Error obteniendo tareas delegadas:', error)
+        return []
+      }
+
+      if (!tareasDelegadas || tareasDelegadas.length === 0) {
+        return []
+      }
+
+      // Obtener info de delegadores y empleados destino
+      const delegadorIds = [...new Set((tareasDelegadas as any[]).map((t) => t.delegado_por).filter(Boolean))] as string[]
+      const destinoIds = [...new Set((tareasDelegadas as any[]).map((t) => t.asignado_a).filter(Boolean))] as string[]
+      
+      let delegadoresData: any[] = []
+      let destinosData: any[] = []
+
+      if (delegadorIds.length > 0) {
+        const { data } = await supabase.from('empleados').select('id, nombre, apellido, rol').in('id', delegadorIds)
+        delegadoresData = data || []
+      }
+
+      if (destinoIds.length > 0) {
+        const { data } = await supabase.from('empleados').select('id, nombre, apellido, puesto').in('id', destinoIds)
+        destinosData = data || []
+      }
+
+      const delegadoresMap = new Map(delegadoresData.map((e) => [e.id, e]))
+      const destinosMap = new Map(destinosData.map((e) => [e.id, e]))
+
+      // Filtrar solo las que vienen de admin o admin_rrhh
+      const tareasDeAdmin = (tareasDelegadas as any[]).filter((t) => {
+        const delegador = delegadoresMap.get(t.delegado_por)
+        return delegador?.rol === 'admin' || delegador?.rol === 'admin_rrhh'
+      })
+
+      return tareasDeAdmin.map((t) => {
+        const destino = destinosMap.get(t.asignado_a)
+        return {
+          id: t.id,
+          titulo: t.titulo,
+          descripcion: t.descripcion || '',
+          prioridad: t.prioridad as TareaParaDistribuir['prioridad'],
+          fecha_limite: t.fecha_limite,
+          empleado_destino_id: destino?.id || t.asignado_a,
+          empleado_destino_nombre: destino?.nombre || 'Sin nombre',
+          empleado_destino_apellido: destino?.apellido || ''
+        }
+      }).filter((t) => t.empleado_destino_id)
+    } catch (error) {
+      console.error('Error obteniendo tareas para distribuir:', error)
+      return []
+    }
+  }
+
+  // Función para obtener tareas que vencen hoy del gerente
+  const obtenerTareasQueVencenHoy = async (empleadoId: string): Promise<TareaPendiente[]> => {
+    try {
+      const hoy = new Date().toISOString().split('T')[0]
+      
+      const { data, error } = await supabase
+        .from('tareas')
+        .select('id, titulo, prioridad, fecha_limite')
+        .eq('asignado_a', empleadoId)
+        .eq('estado', 'pendiente')
+        .eq('fecha_limite', hoy)
+        .order('prioridad', { ascending: true })
+
+      if (error) {
+        console.error('Error obteniendo tareas que vencen hoy:', error)
+        return []
+      }
+
+      return (data || []).map(t => ({
+        id: t.id,
+        titulo: t.titulo,
+        prioridad: t.prioridad as TareaPendiente['prioridad'],
+        fecha_limite: t.fecha_limite
+      }))
+    } catch (error) {
+      console.error('Error obteniendo tareas que vencen hoy:', error)
+      return []
+    }
+  }
+
+  // Handler para cuando gerente imprime tareas para distribución
+  const handleImprimirTareasDistribucion = async (tareasIds: string[]) => {
+    // Marcar tareas como impresas en la base de datos
+    try {
+      for (const tareaId of tareasIds) {
+        // Log de impresión
+        await registrarActividadTarea(
+          tareaId,
+          recognizedEmployee?.id || '',
+          'impresa',
+          'kiosco',
+          { impreso_para_distribucion: true }
+        )
+        
+        // Actualizar tarea como impresa (si existe el campo)
+        await supabase
+          .from('tareas')
+          .update({ impreso_por_gerente: true } as any)
+          .eq('id', tareaId)
+      }
+    } catch (error) {
+      console.error('Error registrando impresión de tareas:', error)
+    }
+    
+    setShowImprimirTareasDialog(false)
+    setTareasParaDistribuir([])
+    
+    // Continuar con el flujo - verificar tareas que vencen hoy
+    if (recognizedEmployee) {
+      const tareasHoy = await obtenerTareasQueVencenHoy(recognizedEmployee.id)
+      if (tareasHoy.length > 0) {
+        setTareasVencenHoy(tareasHoy)
+        setShowTareasVencenHoyAlert(true)
+        // Registrar log de alerta mostrada
+        for (const tarea of tareasHoy) {
+          await registrarActividadTarea(
+            tarea.id,
+            recognizedEmployee.id,
+            'alerta_vencimiento_mostrada',
+            'kiosco'
+          )
+        }
+      } else {
+        // Mostrar tareas pendientes normales si las hay
+        if (tareasPendientes.length > 0) {
+          setShowTareasPendientesAlert(true)
+        } else {
+          resetKiosco()
+        }
+      }
+    }
+  }
+
+  // Handler para omitir impresión de tareas
+  const handleOmitirImpresion = async () => {
+    setShowImprimirTareasDialog(false)
+    setTareasParaDistribuir([])
+    
+    // Continuar con el flujo
+    if (recognizedEmployee) {
+      const tareasHoy = await obtenerTareasQueVencenHoy(recognizedEmployee.id)
+      if (tareasHoy.length > 0) {
+        setTareasVencenHoy(tareasHoy)
+        setShowTareasVencenHoyAlert(true)
+      } else if (tareasPendientes.length > 0) {
+        setShowTareasPendientesAlert(true)
+      } else {
+        resetKiosco()
+      }
+    }
+  }
+
+  // Handler para cerrar alerta de tareas que vencen hoy
+  const handleDismissTareasVencenHoy = () => {
+    setShowTareasVencenHoyAlert(false)
+    setTareasVencenHoy([])
+    
+    // Continuar con tareas pendientes o resetear
+    if (tareasPendientes.length > 0) {
+      setShowTareasPendientesAlert(true)
+    } else {
+      resetKiosco()
+    }
   }
 
   // Handler para cuando se confirman las tareas del día antes de salir
@@ -1096,6 +1286,48 @@ export default function KioscoCheckIn() {
           console.error('Error en impresión automática:', error)
         }
         
+        // 🏢 FLUJO ESPECIAL PARA GERENTE_SUCURSAL
+        // Si es gerente_sucursal, verificar si tiene tareas delegadas por admin_rrhh para distribuir
+        const rolEmpleado = recognizedEmployee.data?.rol
+        if (rolEmpleado === 'gerente_sucursal' || rolEmpleado === 'gerente') {
+          try {
+            const tareasParaDistribuirData = await obtenerTareasParaDistribuirGerente(empleadoParaFichaje.id)
+            
+            if (tareasParaDistribuirData.length > 0) {
+              // Mostrar diálogo de impresión de tareas para distribución
+              setTareasParaDistribuir(tareasParaDistribuirData)
+              setShowImprimirTareasDialog(true)
+              setShowActionSelection(false)
+              
+              // El flujo continuará cuando el gerente cierre el diálogo
+              // No hacemos return aquí porque el diálogo maneja la continuación
+              console.log(`📋 Gerente ${empleadoParaFichaje.nombre} tiene ${tareasParaDistribuirData.length} tareas para distribuir`)
+              return
+            }
+            
+            // Si no tiene tareas para distribuir, verificar tareas que vencen hoy
+            const tareasHoy = await obtenerTareasQueVencenHoy(empleadoParaFichaje.id)
+            if (tareasHoy.length > 0) {
+              setTareasVencenHoy(tareasHoy)
+              setShowTareasVencenHoyAlert(true)
+              setShowActionSelection(false)
+              
+              // Registrar log de alerta mostrada
+              for (const tarea of tareasHoy) {
+                await registrarActividadTarea(
+                  tarea.id,
+                  empleadoParaFichaje.id,
+                  'alerta_vencimiento_mostrada',
+                  'kiosco'
+                )
+              }
+              return
+            }
+          } catch (error) {
+            console.error('Error en flujo de gerente:', error)
+          }
+        }
+        
         // 🔔 Verificar si llegó tarde y mostrar alerta
         try {
           // Obtener turno asignado del empleado
@@ -1441,6 +1673,46 @@ export default function KioscoCheckIn() {
             navigate(`/autogestion?empleado=${registroExitoso.empleado.id}`)
           }}
           duracionSegundos={10}
+        />
+      )}
+
+      {/* Alerta de Tareas que Vencen Hoy para Gerentes (Overlay) */}
+      {recognizedEmployee && (
+        <TareasVencenHoyAlert
+          open={showTareasVencenHoyAlert}
+          onOpenChange={(open) => {
+            if (!open) handleDismissTareasVencenHoy()
+          }}
+          empleadoId={recognizedEmployee.id}
+          empleadoNombre={`${recognizedEmployee.data.nombre} ${recognizedEmployee.data.apellido}`}
+          tareasVencenHoy={tareasVencenHoy}
+          onDismiss={handleDismissTareasVencenHoy}
+          onVerAutoGestion={() => {
+            setShowTareasVencenHoyAlert(false)
+            setTareasVencenHoy([])
+            navigate(`/autogestion?empleado=${recognizedEmployee.id}`)
+          }}
+        />
+      )}
+
+      {/* Dialog para imprimir tareas de distribución para Gerentes */}
+      {recognizedEmployee && (
+        <ImprimirTareasDistribucionDialog
+          open={showImprimirTareasDialog}
+          onOpenChange={(open) => {
+            if (!open) {
+              handleOmitirImpresion()
+            }
+          }}
+          gerente={{
+            id: recognizedEmployee.id,
+            nombre: recognizedEmployee.data.nombre,
+            apellido: recognizedEmployee.data.apellido,
+            puesto: recognizedEmployee.data.puesto
+          }}
+          tareas={tareasParaDistribuir}
+          onImprimirCompletado={() => handleImprimirTareasDistribucion(tareasParaDistribuir.map(t => t.id))}
+          onOmitir={handleOmitirImpresion}
         />
       )}
 
