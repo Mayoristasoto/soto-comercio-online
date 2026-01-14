@@ -266,10 +266,11 @@ export default function Tareas() {
 
   const selectAllPending = () => {
     const pendingIds = filteredTareas
-      .filter(t => 
-        (t.estado === 'pendiente' || t.estado === 'en_progreso') &&
-        t.asignado_por === userInfo.id
-      )
+      .filter(t => {
+        const isPending = t.estado === 'pendiente' || t.estado === 'en_progreso';
+        if (userInfo.rol === 'admin_rrhh') return isPending;
+        return isPending && t.asignado_por === userInfo.id;
+      })
       .map(t => t.id)
     setSelectedTasks(pendingIds)
   }
@@ -673,23 +674,23 @@ export default function Tareas() {
           <>
             <TabsContent value="asignadas" className="space-y-4">
               <div className="grid gap-4">
-                {tareas.filter(t => t.asignado_por === userInfo.id).length === 0 ? (
+                {(userInfo.rol === 'admin_rrhh' ? filteredTareas : filteredTareas.filter(t => t.asignado_por === userInfo.id)).length === 0 ? (
                   <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <Users className="h-12 w-12 text-muted-foreground mb-4" />
                       <h3 className="text-lg font-medium mb-2">
-                        {userInfo.rol === 'admin_rrhh' ? 'No has creado tareas' : 'No has delegado tareas'}
+                        {userInfo.rol === 'admin_rrhh' ? 'No hay tareas en el sistema' : 'No has delegado tareas'}
                       </h3>
                       <p className="text-muted-foreground text-center">
                         {userInfo.rol === 'admin_rrhh' 
-                          ? 'Las tareas que crees para el equipo aparecerán aquí'
+                          ? 'Todas las tareas del sistema aparecerán aquí'
                           : 'Las tareas que delegues a empleados de tu sucursal aparecerán aquí'
                         }
                       </p>
                     </CardContent>
                   </Card>
                 ) : (
-                  tareas.filter(t => t.asignado_por === userInfo.id).map((tarea) => (
+                  (userInfo.rol === 'admin_rrhh' ? filteredTareas : filteredTareas.filter(t => t.asignado_por === userInfo.id)).map((tarea) => (
                     <Card key={tarea.id} className={`hover:shadow-md transition-shadow ${selectedTasks.includes(tarea.id) ? 'ring-2 ring-primary' : ''}`}>
                       <CardHeader>
                         <div className="flex items-start justify-between">
@@ -709,6 +710,12 @@ export default function Tareas() {
                                 <div className="flex items-center gap-2 text-sm text-primary">
                                   <User className="h-4 w-4" />
                                   <span>Asignada a: {tarea.empleado_asignado.nombre} {tarea.empleado_asignado.apellido}</span>
+                                </div>
+                              )}
+                              {userInfo.rol === 'admin_rrhh' && tarea.empleado_creador && tarea.asignado_por !== userInfo.id && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Users className="h-3 w-3" />
+                                  <span>Creada por: {tarea.empleado_creador.nombre} {tarea.empleado_creador.apellido}</span>
                                 </div>
                               )}
                             </div>
@@ -763,7 +770,8 @@ export default function Tareas() {
                         {/* Botones de gestión para tareas delegadas */}
                         <div className="flex justify-end mt-4 gap-2">
                           {(tarea.estado === 'pendiente' || tarea.estado === 'en_progreso') && 
-                            userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id && (
+                            (userInfo.rol === 'admin_rrhh' || 
+                             (userInfo.rol === 'gerente_sucursal' && tarea.asignado_por === userInfo.id)) && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
