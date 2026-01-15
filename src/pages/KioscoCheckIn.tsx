@@ -1125,29 +1125,7 @@ export default function KioscoCheckIn() {
         duration: 3000,
       })
 
-      // Reproducir mensajes de audio si es entrada o fin de pausa
-      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
-        try {
-          await reproducirMensajeBienvenida()
-          if (tareas && tareas.length > 0) {
-            setTimeout(() => {
-              reproducirMensajeTareas(tareas.length)
-            }, 2000)
-          }
-        } catch (error) {
-          console.error('Error reproduciendo audio:', error)
-        }
-        
-        // 📋 Mostrar alerta de tareas pendientes si hay tareas
-        if (tareas && tareas.length > 0) {
-          setShowTareasPendientesAlert(true)
-          setShowFacialAuth(false)
-          // resetKiosco se llamará cuando se cierre el alert
-          return
-        }
-      }
-
-      // 🔔 Verificar si la pausa fue excedida y mostrar alerta
+      // 🔔 PRIMERO: Verificar si la pausa fue excedida y mostrar alerta (antes de tareas)
       console.log('🔍 [DEBUG PAUSA] Verificando pausa excedida (flujo facial):', {
         tipoAccion,
         pausaActiva,
@@ -1161,7 +1139,7 @@ export default function KioscoCheckIn() {
         let registradoExitoso = false
         try {
           const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
-            empleado_id: empleadoData.id,
+            empleado_id: empleadoParaFichaje.id,
             tipo_infraccion: 'pausa_excedida',
             fecha_infraccion: new Date().toISOString().split('T')[0],
             fichaje_id: fichajeId,
@@ -1184,7 +1162,6 @@ export default function KioscoCheckIn() {
           minutosPermitidos: pausaActiva.minutosPermitidos,
           registrado: registradoExitoso
         })
-        // Setear registroExitoso para que esté disponible cuando se muestren las tareas
         setRegistroExitoso({
           empleado: empleadoParaFichaje,
           timestamp: new Date()
@@ -1193,6 +1170,28 @@ export default function KioscoCheckIn() {
         setShowFacialAuth(false)
         // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
         return
+      }
+
+      // Reproducir mensajes de audio si es entrada o fin de pausa
+      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+        try {
+          await reproducirMensajeBienvenida()
+          if (tareas && tareas.length > 0) {
+            setTimeout(() => {
+              reproducirMensajeTareas(tareas.length)
+            }, 2000)
+          }
+        } catch (error) {
+          console.error('Error reproduciendo audio:', error)
+        }
+        
+        // 📋 Mostrar alerta de tareas pendientes si hay tareas
+        if (tareas && tareas.length > 0) {
+          setShowTareasPendientesAlert(true)
+          setShowFacialAuth(false)
+          // resetKiosco se llamará cuando se cierre el alert
+          return
+        }
       }
 
       setShowFacialAuth(false)
@@ -1448,29 +1447,7 @@ export default function KioscoCheckIn() {
         duration: 3000,
       })
 
-      // Reproducir mensajes de audio si es entrada o fin de pausa
-      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
-        try {
-          await reproducirMensajeBienvenida()
-          if (tareas && tareas.length > 0) {
-            setTimeout(() => {
-              reproducirMensajeTareas(tareas.length)
-            }, 2000)
-          }
-        } catch (error) {
-          console.error('Error reproduciendo audio:', error)
-        }
-        
-        // 📋 Mostrar alerta de tareas pendientes si hay tareas
-        if (tareas && tareas.length > 0) {
-          setShowTareasPendientesAlert(true)
-          setShowActionSelection(false)
-          // resetKiosco se llamará cuando se cierre el alert
-          return
-        }
-      }
-
-      // 🔔 Verificar si la pausa fue excedida y mostrar alerta
+      // 🔔 PRIMERO: Verificar si la pausa fue excedida y mostrar alerta (antes de tareas)
       console.log('🔍 [DEBUG PAUSA] Verificando pausa excedida (flujo selección):', {
         tipoAccion,
         pausaActiva,
@@ -1507,7 +1484,6 @@ export default function KioscoCheckIn() {
           minutosPermitidos: pausaActiva.minutosPermitidos,
           registrado: registradoExitoso
         })
-        // Setear registroExitoso para que esté disponible cuando se muestren las tareas
         setRegistroExitoso({
           empleado: empleadoParaFichaje,
           timestamp: new Date()
@@ -1516,6 +1492,28 @@ export default function KioscoCheckIn() {
         setShowActionSelection(false)
         // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
         return
+      }
+
+      // Reproducir mensajes de audio si es entrada o fin de pausa
+      if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+        try {
+          await reproducirMensajeBienvenida()
+          if (tareas && tareas.length > 0) {
+            setTimeout(() => {
+              reproducirMensajeTareas(tareas.length)
+            }, 2000)
+          }
+        } catch (error) {
+          console.error('Error reproduciendo audio:', error)
+        }
+        
+        // 📋 Mostrar alerta de tareas pendientes si hay tareas
+        if (tareas && tareas.length > 0) {
+          setShowTareasPendientesAlert(true)
+          setShowActionSelection(false)
+          // resetKiosco se llamará cuando se cierre el alert
+          return
+        }
       }
 
       setShowActionSelection(false)
