@@ -1937,35 +1937,6 @@ export default function KioscoCheckIn() {
                           <p className="text-xs text-gray-500">minutos</p>
                         </div>
                       </div>
-                      {pausaActiva.minutosTranscurridos > pausaActiva.minutosPermitidos && (
-                        <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 mb-2">
-                          <div className="flex items-center justify-center gap-2 mb-2">
-                            <AlertTriangle className="h-5 w-5 text-red-600" />
-                            <p className="text-red-800 text-base font-bold">
-                              Has excedido el tiempo de pausa permitido
-                            </p>
-                          </div>
-                          
-                          <div className="bg-red-200/50 rounded-lg p-3 mt-3">
-                            <div className="flex items-start gap-2">
-                              <FileWarning className="h-5 w-5 text-red-700 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-red-900 text-sm font-semibold mb-1">
-                                  Esto quedará registrado en tu legajo
-                                </p>
-                                <p className="text-red-800 text-xs">
-                                  Esta incidencia puede afectar:
-                                </p>
-                                <ul className="text-red-700 text-xs mt-1 space-y-0.5">
-                                  <li>• Evaluaciones de desempeño</li>
-                                  <li>• Bonificaciones y reconocimientos</li>
-                                  <li>• Participación en sorteos y premios</li>
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                       <p className="text-center text-sm text-gray-600">
                         Pausa iniciada: {pausaActiva.inicio.toLocaleTimeString('es-ES', {
                           hour: '2-digit',
