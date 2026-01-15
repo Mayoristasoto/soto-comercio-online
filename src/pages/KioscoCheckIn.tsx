@@ -429,6 +429,15 @@ export default function KioscoCheckIn() {
       const minutosRestantes = minutosPermitidos - minutosTranscurridos
       const excedida = minutosTranscurridos > minutosPermitidos
       
+      console.log('🔍 [DEBUG PAUSA] verificarPausaActiva resultado:', {
+        empleadoId,
+        inicioPausa: inicioPausa.toISOString(),
+        minutosPermitidos,
+        minutosTranscurridos,
+        minutosRestantes,
+        excedida
+      })
+      
       setPausaActiva({
         inicio: inicioPausa,
         minutosPermitidos,
@@ -1139,7 +1148,13 @@ export default function KioscoCheckIn() {
       }
 
       // 🔔 Verificar si la pausa fue excedida y mostrar alerta
+      console.log('🔍 [DEBUG PAUSA] Verificando pausa excedida (flujo facial):', {
+        tipoAccion,
+        pausaActiva,
+        excedida: pausaActiva?.excedida
+      })
       if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
+        console.log('🔴 [DEBUG PAUSA] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
         const minutosExceso = Math.round(pausaActiva.minutosTranscurridos - pausaActiva.minutosPermitidos)
         
         // Registrar incidencia en empleado_cruces_rojas
@@ -1456,7 +1471,13 @@ export default function KioscoCheckIn() {
       }
 
       // 🔔 Verificar si la pausa fue excedida y mostrar alerta
+      console.log('🔍 [DEBUG PAUSA] Verificando pausa excedida (flujo selección):', {
+        tipoAccion,
+        pausaActiva,
+        excedida: pausaActiva?.excedida
+      })
       if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
+        console.log('🔴 [DEBUG PAUSA] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
         const minutosExceso = Math.round(pausaActiva.minutosTranscurridos - pausaActiva.minutosPermitidos)
         
         // Registrar incidencia en empleado_cruces_rojas
