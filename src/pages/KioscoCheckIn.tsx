@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText, Monitor, ShieldAlert, Key, ScanFace, Smartphone, AlertTriangle, FileWarning } from "lucide-react"
+import { Clock, Users, Wifi, WifiOff, CheckCircle, LogOut, Coffee, Settings, FileText, Monitor, ShieldAlert, Key, ScanFace, Smartphone, AlertTriangle, FileWarning, Timer } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { supabase } from "@/integrations/supabase/client"
+import { getArgentinaStartOfDay, getArgentinaEndOfDay, toArgentinaTime } from "@/lib/dateUtils"
 import FicheroFacialAuth from "@/components/fichero/FicheroFacialAuth"
 import FicheroPinAuth from "@/components/kiosko/FicheroPinAuth"
 import { imprimirTareasDiariasAutomatico, previewTareasDiarias } from "@/utils/printManager"
@@ -30,6 +31,11 @@ interface EmpleadoBasico {
 interface RegistroExitoso {
   empleado: EmpleadoBasico
   timestamp: Date
+  horasTrabajadas?: {
+    horasEfectivas: number
+    minutosPausa: number
+    horasTotales: number
+  } | null
 }
 
 interface TareaPendiente {
@@ -847,6 +853,65 @@ export default function KioscoCheckIn() {
     }
   }
 
+  // Función para calcular horas trabajadas del día
+  const calcularHorasTrabajadasHoy = async (empleadoId: string): Promise<{
+    horasEfectivas: number
+    minutosPausa: number
+    horasTotales: number
+  } | null> => {
+    try {
+      const fechaInicio = getArgentinaStartOfDay(new Date())
+      const fechaFin = getArgentinaEndOfDay(new Date())
+      
+      const { data: fichajes, error } = await supabase
+        .from('fichajes')
+        .select('tipo, timestamp_real')
+        .eq('empleado_id', empleadoId)
+        .gte('timestamp_real', fechaInicio)
+        .lte('timestamp_real', fechaFin)
+        .order('timestamp_real', { ascending: true })
+      
+      if (error || !fichajes || fichajes.length === 0) {
+        return null
+      }
+      
+      let horaEntrada: Date | null = null
+      let horaSalida: Date | null = null
+      let minutosPausa = 0
+      let ultimaPausaInicio: Date | null = null
+      
+      fichajes.forEach(f => {
+        if (f.tipo === 'entrada' && !horaEntrada) {
+          horaEntrada = new Date(f.timestamp_real)
+        } else if (f.tipo === 'salida') {
+          horaSalida = new Date(f.timestamp_real)
+        } else if (f.tipo === 'pausa_inicio') {
+          ultimaPausaInicio = new Date(f.timestamp_real)
+        } else if (f.tipo === 'pausa_fin' && ultimaPausaInicio) {
+          const pausaFin = new Date(f.timestamp_real)
+          minutosPausa += Math.round((pausaFin.getTime() - ultimaPausaInicio.getTime()) / 60000)
+          ultimaPausaInicio = null
+        }
+      })
+      
+      if (!horaEntrada || !horaSalida) {
+        return null
+      }
+      
+      const minutosTotales = Math.round((horaSalida.getTime() - horaEntrada.getTime()) / 60000)
+      const minutosEfectivos = minutosTotales - minutosPausa
+      
+      return {
+        horasEfectivas: minutosEfectivos / 60,
+        minutosPausa,
+        horasTotales: minutosTotales / 60
+      }
+    } catch (error) {
+      console.error('Error calculando horas trabajadas:', error)
+      return null
+    }
+  }
+
   // Handler para cuando gerente imprime tareas para distribución
   const handleImprimirTareasDistribucion = async (tareasIds: string[]) => {
     // Marcar tareas como impresas en la base de datos
@@ -1433,10 +1498,17 @@ export default function KioscoCheckIn() {
         }
       }
 
+      // 🕐 Si es salida, calcular horas trabajadas del día
+      let horasTrabajadas: RegistroExitoso['horasTrabajadas'] = null
+      if (tipoAccion === 'salida') {
+        horasTrabajadas = await calcularHorasTrabajadasHoy(empleadoParaFichaje.id)
+      }
+
       // Mostrar tarjeta de confirmación
       setRegistroExitoso({
         empleado: empleadoParaFichaje,
-        timestamp: new Date()
+        timestamp: new Date(),
+        horasTrabajadas
       })
 
       const accionTexto = getAccionTexto(tipoAccion)
@@ -1860,6 +1932,42 @@ export default function KioscoCheckIn() {
                     })}
                   </div>
                 </div>
+
+                {/* Resumen de Jornada - Solo para salida */}
+                {ultimoTipoFichaje === 'salida' && registroExitoso.horasTrabajadas && (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Timer className="h-6 w-6 text-blue-600" />
+                      <h3 className="text-lg font-bold text-blue-800">Resumen de tu Jornada</h3>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                        <p className="text-xs text-gray-500 mb-1">Horas Trabajadas</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {Math.floor(registroExitoso.horasTrabajadas.horasEfectivas)}h {Math.round((registroExitoso.horasTrabajadas.horasEfectivas % 1) * 60)}m
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                        <p className="text-xs text-gray-500 mb-1">Tiempo Pausa</p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {registroExitoso.horasTrabajadas.minutosPausa > 0 
+                            ? `${Math.floor(registroExitoso.horasTrabajadas.minutosPausa / 60)}h ${registroExitoso.horasTrabajadas.minutosPausa % 60}m`
+                            : '0m'
+                          }
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                        <p className="text-xs text-gray-500 mb-1">Total Jornada</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {Math.floor(registroExitoso.horasTrabajadas.horasTotales)}h {Math.round((registroExitoso.horasTrabajadas.horasTotales % 1) * 60)}m
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-center text-sm text-gray-600 mt-4">
+                      ¡Buen trabajo hoy! 👏
+                    </p>
+                  </div>
+                )}
 
                 {/* Tareas Pendientes */}
                 {tareasPendientes.length > 0 && (
