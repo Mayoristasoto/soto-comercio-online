@@ -16,6 +16,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -36,11 +46,12 @@ import {
   Loader2,
   Key,
   Download,
-  Shuffle
+  Shuffle,
+  RotateCcw
 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { exportarPinsPDF } from "@/utils/pinsExportPDF"
+import { exportarPinsPDF, exportarPinsBlanqueadosPDF } from "@/utils/pinsExportPDF"
 
 interface EmpleadoPin {
   empleado_id: string
@@ -61,6 +72,8 @@ export default function PinManagement() {
   const [busqueda, setBusqueda] = useState('')
   const [procesando, setProcesando] = useState<string | null>(null)
   const [generandoMasivo, setGenerandoMasivo] = useState(false)
+  const [blanqueando, setBlanqueando] = useState(false)
+  const [confirmBlanqueo, setConfirmBlanqueo] = useState(false)
   
   // Modal para configurar PIN
   const [modalOpen, setModalOpen] = useState(false)
@@ -277,6 +290,46 @@ export default function PinManagement() {
     }
   }
 
+  // Blanquear PINs con últimos 4 dígitos del DNI
+  const blanquearPins = async () => {
+    setConfirmBlanqueo(false)
+    setBlanqueando(true)
+    try {
+      const { data, error } = await supabase.rpc('blanquear_pins_con_dni')
+      
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        toast({
+          title: "Sin empleados válidos",
+          description: "No hay empleados con DNI cargado para blanquear PINs",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Exportar a PDF con credenciales
+      const filename = exportarPinsBlanqueadosPDF(data)
+      
+      toast({
+        title: "PINs blanqueados exitosamente",
+        description: `Se blanquearon ${data.length} PINs con los últimos 4 dígitos del DNI. Se descargó ${filename}`
+      })
+
+      // Recargar lista de empleados
+      cargarEmpleados()
+    } catch (err: any) {
+      console.error('Error blanqueando PINs:', err)
+      toast({
+        title: "Error",
+        description: err.message || "No se pudieron blanquear los PINs",
+        variant: "destructive"
+      })
+    } finally {
+      setBlanqueando(false)
+    }
+  }
+
   // Filtrar empleados
   const empleadosFiltrados = empleados.filter(emp => {
     const termino = busqueda.toLowerCase()
@@ -316,9 +369,22 @@ export default function PinManagement() {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={cargarEmpleados} disabled={loading}>
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button 
+                onClick={() => setConfirmBlanqueo(true)} 
+                disabled={blanqueando || loading}
+                variant="outline"
+                className="gap-2"
+              >
+                {blanqueando ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                Blanquear PINs (DNI)
               </Button>
               <Button 
                 onClick={generarPinsMasivo} 
@@ -333,7 +399,7 @@ export default function PinManagement() {
                     <Download className="h-4 w-4" />
                   </>
                 )}
-                Generar PINs y Exportar PDF
+                Generar PINs Aleatorios
               </Button>
             </div>
           </div>
@@ -540,6 +606,34 @@ export default function PinManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de confirmación para blanquear PINs */}
+      <AlertDialog open={confirmBlanqueo} onOpenChange={setConfirmBlanqueo}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              ¿Blanquear todos los PINs?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Esta acción:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Reseteará los PINs de <strong>TODOS</strong> los empleados con DNI cargado</li>
+                <li>Asignará como PIN los <strong>últimos 4 dígitos del DNI</strong></li>
+                <li>Los empleados deberán <strong>cambiar su contraseña</strong> en el próximo login web</li>
+                <li>Se generará un PDF con las credenciales de acceso</li>
+              </ul>
+              <p className="font-medium text-destructive mt-2">Esta acción no se puede deshacer.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={blanquearPins}>
+              Blanquear PINs
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
