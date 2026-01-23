@@ -12,6 +12,16 @@ interface PinGenerado {
   ya_tenia_pin: boolean
 }
 
+interface PinBlanqueado {
+  empleado_id: string
+  nombre: string
+  apellido: string
+  legajo: string | null
+  dni: string
+  pin_asignado: string
+  email: string
+}
+
 export const exportarPinsPDF = (pins: PinGenerado[]): string => {
   const doc = new jsPDF()
   const fechaGeneracion = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
@@ -91,6 +101,100 @@ export const exportarPinsPDF = (pins: PinGenerado[]): string => {
   // Nombre del archivo
   const fechaArchivo = format(new Date(), 'yyyy-MM-dd_HHmm')
   const filename = `PINs_Empleados_${fechaArchivo}.pdf`
+  
+  // Guardar
+  doc.save(filename)
+  
+  return filename
+}
+
+export const exportarPinsBlanqueadosPDF = (pins: PinBlanqueado[]): string => {
+  const doc = new jsPDF()
+  const fechaGeneracion = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
+  
+  // Título
+  doc.setFontSize(18)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Credenciales de Acceso - Sistema SOTO', 105, 20, { align: 'center' })
+  
+  // Subtítulo con fecha
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(100)
+  doc.text(`Generado el ${fechaGeneracion}`, 105, 28, { align: 'center' })
+  
+  // Advertencia de confidencialidad
+  doc.setFontSize(9)
+  doc.setTextColor(200, 0, 0)
+  doc.text('⚠️ DOCUMENTO CONFIDENCIAL - Destruir después de entregar las credenciales', 105, 36, { align: 'center' })
+  
+  // Resetear color
+  doc.setTextColor(0)
+  
+  // Instrucciones
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Instrucciones de primer acceso:', 14, 46)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text('1. Ingresar a la página de login y seleccionar "Acceso con PIN"', 14, 52)
+  doc.text('2. Buscar su nombre e ingresar el PIN (últimos 4 dígitos de su DNI)', 14, 57)
+  doc.text('3. El sistema le pedirá crear una contraseña para acceso web', 14, 62)
+  
+  // Estadísticas
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Total: ${pins.length} empleados con credenciales generadas`, 14, 72)
+  
+  // Tabla de credenciales
+  const tableData = pins.map((pin, index) => [
+    (index + 1).toString(),
+    `${pin.apellido}, ${pin.nombre}`,
+    pin.legajo || 'N/A',
+    pin.email,
+    pin.pin_asignado
+  ])
+  
+  autoTable(doc, {
+    startY: 78,
+    head: [['#', 'Empleado', 'Legajo', 'Email', 'PIN']],
+    body: tableData,
+    styles: {
+      fontSize: 9,
+      cellPadding: 2
+    },
+    headStyles: {
+      fillColor: [59, 130, 246],
+      textColor: 255,
+      fontStyle: 'bold'
+    },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 45 },
+      2: { cellWidth: 20, halign: 'center' },
+      3: { cellWidth: 60 },
+      4: { cellWidth: 20, halign: 'center', fontStyle: 'bold', fontSize: 11 }
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    didDrawPage: (data: any) => {
+      // Pie de página con número de página
+      const pageCount = doc.getNumberOfPages()
+      doc.setFontSize(8)
+      doc.setTextColor(150)
+      doc.text(
+        `Página ${data.pageNumber} de ${pageCount}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      )
+    }
+  })
+  
+  // Nombre del archivo
+  const fechaArchivo = format(new Date(), 'yyyy-MM-dd_HHmm')
+  const filename = `Credenciales_Acceso_${fechaArchivo}.pdf`
   
   // Guardar
   doc.save(filename)

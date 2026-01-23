@@ -7408,6 +7408,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      blanquear_pins_con_dni: {
+        Args: never
+        Returns: {
+          apellido: string
+          dni: string
+          email: string
+          empleado_id: string
+          legajo: string
+          nombre: string
+          pin_asignado: string
+        }[]
+      }
       calcular_antiguedad_anios: {
         Args: { fecha_ingreso: string }
         Returns: number
