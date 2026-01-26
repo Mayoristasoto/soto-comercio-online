@@ -92,20 +92,26 @@ const EditableDateCell = ({
   );
   const [isOpen, setIsOpen] = useState(false);
 
+  // Usar timestamp para comparación estable
+  const fechaTimestamp = fechaActual?.getTime() ?? null;
+
   // Sincronizar cuando cambia la fecha externa
   useEffect(() => {
     setInputValue(fechaActual ? format(fechaActual, "dd/MM/yyyy") : "");
-  }, [fechaActual]);
+  }, [fechaTimestamp]);
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
     
-    // Intentar parsear cuando tiene formato completo
+    // Intentar parsear cuando tiene formato completo (dd/MM/yyyy = 10 chars)
     if (value.length === 10) {
       try {
         const parsed = parse(value, "dd/MM/yyyy", new Date());
         if (!isNaN(parsed.getTime())) {
-          onFechaChange(empleadoId, parsed);
+          // Solo actualizar si la fecha es diferente
+          if (!fechaActual || fechaActual.getTime() !== parsed.getTime()) {
+            onFechaChange(empleadoId, parsed);
+          }
         }
       } catch {
         // Ignorar errores de parseo
