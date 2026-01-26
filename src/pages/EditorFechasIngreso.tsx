@@ -273,17 +273,20 @@ export default function EditorFechasIngreso() {
       if (error) throw error;
 
       // Actualizar estado local
-      setEmpleados(prev => prev.map(e => 
-        e.id === empleado.id 
-          ? { 
-              ...e, 
-              fecha_ingreso: empleado.fecha_ingreso_nueva 
-                ? format(empleado.fecha_ingreso_nueva, "yyyy-MM-dd") 
-                : null,
-              modificado: false 
-            }
-          : e
-      ));
+      setEmpleados(prev => prev.map(e => {
+        if (e.id !== empleado.id) return e;
+        
+        const nuevaFechaStr = empleado.fecha_ingreso_nueva 
+          ? format(empleado.fecha_ingreso_nueva, "yyyy-MM-dd") 
+          : null;
+        
+        return {
+          ...e,
+          fecha_ingreso: nuevaFechaStr,
+          fecha_ingreso_nueva: nuevaFechaStr ? new Date(nuevaFechaStr + "T00:00:00") : null,
+          modificado: false,
+        };
+      }));
 
       toast({
         title: "Guardado",
@@ -325,13 +328,18 @@ export default function EditorFechasIngreso() {
       }
 
       // Actualizar estado local
-      setEmpleados(prev => prev.map(e => ({
-        ...e,
-        fecha_ingreso: e.fecha_ingreso_nueva 
+      setEmpleados(prev => prev.map(e => {
+        const nuevaFechaStr = e.fecha_ingreso_nueva 
           ? format(e.fecha_ingreso_nueva, "yyyy-MM-dd") 
-          : null,
-        modificado: false,
-      })));
+          : null;
+        
+        return {
+          ...e,
+          fecha_ingreso: nuevaFechaStr,
+          fecha_ingreso_nueva: nuevaFechaStr ? new Date(nuevaFechaStr + "T00:00:00") : null,
+          modificado: false,
+        };
+      }));
 
       toast({
         title: "Guardado exitoso",
