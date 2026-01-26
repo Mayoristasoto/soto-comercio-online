@@ -7451,6 +7451,10 @@ export type Database = {
         Args: { p_anio: number; p_empleado_id: string }
         Returns: number
       }
+      calcular_vacaciones_ley_argentina: {
+        Args: { p_anio: number; p_empleado_id: string }
+        Returns: number
+      }
       can_manage_payroll: { Args: never; Returns: boolean }
       check_facial_auth_rate_limit: {
         Args: {
@@ -7813,6 +7817,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      obtener_calculo_vacaciones_todos: {
+        Args: { p_anio: number }
+        Returns: {
+          antiguedad_anios: number
+          antiguedad_meses: number
+          apellido: string
+          dias_en_sistema: number
+          dias_segun_ley: number
+          dias_usados: number
+          empleado_id: string
+          fecha_ingreso: string
+          legajo: string
+          nombre: string
+          sucursal_id: string
+        }[]
+      }
       recalcular_fichajes_tardios_empleado: {
         Args: { p_empleado_id: string; p_fecha_desde?: string }
         Returns: undefined
@@ -7830,6 +7850,17 @@ export type Database = {
         Returns: {
           registros_creados: number
           registros_eliminados: number
+        }[]
+      }
+      recalcular_todos_saldos_vacaciones: {
+        Args: { p_anio: number }
+        Returns: {
+          actualizado: boolean
+          apellido: string
+          dias_anteriores: number
+          dias_nuevos: number
+          empleado_id: string
+          nombre: string
         }[]
       }
       registrar_delegacion_tarea: {
