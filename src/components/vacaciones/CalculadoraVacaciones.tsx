@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { es } from "date-fns/locale";
-import { Loader2, AlertTriangle, RefreshCw, Calculator } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCw, Calculator, Edit } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ interface Sucursal {
 }
 
 export function CalculadoraVacaciones() {
+  const navigate = useNavigate();
   const [empleados, setEmpleados] = useState<EmpleadoVacaciones[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,6 +219,13 @@ export function CalculadoraVacaciones() {
                 filename={`vacaciones_${anioSeleccionado}`}
                 sheetName="Vacaciones"
               />
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/admin/editor-fechas-ingreso")}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar Fechas
+              </Button>
               <Button onClick={() => setConfirmRecalcular(true)} disabled={recalculando}>
                 {recalculando ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

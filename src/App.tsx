@@ -69,6 +69,7 @@ import EmpleadoPerfilPage from "./pages/EmpleadoPerfilPage";
 import DashboardDemo from "./pages/DashboardDemo";
 import KioscoDemo from "./pages/KioscoDemo";
 import InstructivoDelegacionTareas from "./pages/InstructivoDelegacionTareas";
+import EditorFechasIngreso from "./pages/EditorFechasIngreso";
 
 const queryClient = new QueryClient();
 
@@ -177,6 +178,7 @@ const App = () => (
               <Route path="onboarding" element={<AdminOnboarding />} />
               <Route path="aprobar-fotos-faciales" element={<AprobarFotosFaciales />} />
               <Route path="instructivo-screenshots" element={<InstructivoScreenshots />} />
+              <Route path="editor-fechas-ingreso" element={<EditorFechasIngreso />} />
             </Route>
             
             {/* Métricas de Fichaje */}
