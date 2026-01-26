@@ -35,14 +35,21 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
         empleado_legajo: "12345",
         fecha_inicio: "2024-01-15",
         fecha_fin: "2024-01-20",
-        motivo: "Vacaciones anuales",
-        estado: "aprobada"
+        motivo: "Vacaciones anuales 2024",
+        estado: "gozadas"
       },
       {
         empleado_legajo: "67890",
-        fecha_inicio: "2024-02-10",
-        fecha_fin: "2024-02-17",
-        motivo: "Vacaciones familiares",
+        fecha_inicio: "2023-07-01",
+        fecha_fin: "2023-07-14",
+        motivo: "Vacaciones gozadas 2023",
+        estado: "gozadas"
+      },
+      {
+        empleado_legajo: "11111",
+        fecha_inicio: "2024-12-20",
+        fecha_fin: "2024-12-31",
+        motivo: "Vacaciones pendientes",
         estado: "pendiente"
       }
     ];
@@ -233,9 +240,10 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Importar Vacaciones desde Excel</DialogTitle>
+          <DialogTitle>Importar Vacaciones Históricas desde Excel</DialogTitle>
           <DialogDescription>
-            Descarga la plantilla, complétala y súbela para importar las vacaciones de los empleados
+            Descarga la plantilla, complétala con las vacaciones gozadas o pendientes y súbela. 
+            Estados válidos: <strong>gozadas</strong>, aprobada, pendiente, rechazada
           </DialogDescription>
         </DialogHeader>
 
