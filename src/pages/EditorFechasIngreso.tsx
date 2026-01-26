@@ -37,6 +37,13 @@ interface Sucursal {
   nombre: string;
 }
 
+// IMPORTANTE: `YYYY-MM-DD` en JS se parsea como UTC.
+// En Argentina (UTC-3) eso puede mostrarse como el día anterior.
+// Por eso siempre lo convertimos a fecha local explícita.
+function parseFechaIngresoYMD(ymd: string): Date {
+  return new Date(`${ymd}T00:00:00`);
+}
+
 // Calcular días de vacaciones según LCT Argentina
 function calcularDiasLCT(fechaIngreso: Date | null, anioCalculo: number = new Date().getFullYear()): number {
   if (!fechaIngreso) return 0;
@@ -221,7 +228,7 @@ export default function EditorFechasIngreso() {
         apellido: e.apellido,
         legajo: e.legajo,
         fecha_ingreso: e.fecha_ingreso,
-        fecha_ingreso_nueva: e.fecha_ingreso ? new Date(e.fecha_ingreso) : null,
+        fecha_ingreso_nueva: e.fecha_ingreso ? parseFechaIngresoYMD(e.fecha_ingreso) : null,
         sucursal_id: e.sucursal_id,
         sucursal_nombre: e.sucursales?.nombre || null,
         modificado: false,
@@ -244,7 +251,7 @@ export default function EditorFechasIngreso() {
     setEmpleados(prev => prev.map(e => {
       if (e.id !== empleadoId) return e;
       
-      const fechaOriginal = e.fecha_ingreso ? new Date(e.fecha_ingreso) : null;
+      const fechaOriginal = e.fecha_ingreso ? parseFechaIngresoYMD(e.fecha_ingreso) : null;
       const modificado = fecha ? 
         (!fechaOriginal || fechaOriginal.getTime() !== fecha.getTime()) : 
         !!fechaOriginal;
@@ -283,7 +290,7 @@ export default function EditorFechasIngreso() {
         return {
           ...e,
           fecha_ingreso: nuevaFechaStr,
-          fecha_ingreso_nueva: nuevaFechaStr ? new Date(nuevaFechaStr + "T00:00:00") : null,
+          fecha_ingreso_nueva: nuevaFechaStr ? parseFechaIngresoYMD(nuevaFechaStr) : null,
           modificado: false,
         };
       }));
@@ -336,7 +343,7 @@ export default function EditorFechasIngreso() {
         return {
           ...e,
           fecha_ingreso: nuevaFechaStr,
-          fecha_ingreso_nueva: nuevaFechaStr ? new Date(nuevaFechaStr + "T00:00:00") : null,
+          fecha_ingreso_nueva: nuevaFechaStr ? parseFechaIngresoYMD(nuevaFechaStr) : null,
           modificado: false,
         };
       }));
@@ -412,7 +419,12 @@ export default function EditorFechasIngreso() {
             if (fechaStr.includes("/")) {
               fechaNueva = parse(fechaStr, "dd/MM/yyyy", new Date());
             } else if (fechaStr.includes("-")) {
-              fechaNueva = new Date(fechaStr);
+              // Si viene como YYYY-MM-DD, evitar parse UTC
+              if (/^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+                fechaNueva = parseFechaIngresoYMD(fechaStr);
+              } else {
+                fechaNueva = new Date(fechaStr);
+              }
             }
             
             if (!fechaNueva || isNaN(fechaNueva.getTime())) {
