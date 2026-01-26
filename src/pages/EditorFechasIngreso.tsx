@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -6,7 +6,7 @@ import { format, differenceInYears, differenceInMonths, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { 
   Loader2, ArrowLeft, Save, Search, Calendar, AlertTriangle, 
-  CheckCircle2, XCircle 
+  CheckCircle2, XCircle, Upload, Download
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 interface EmpleadoEditable {
   id: string;
@@ -85,6 +86,7 @@ export default function EditorFechasIngreso() {
   const [saving, setSaving] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -252,6 +254,115 @@ export default function EditorFechasIngreso() {
     }
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet);
+
+      let actualizados = 0;
+      let errores: string[] = [];
+
+      setEmpleados(prev => {
+        const nuevosEmpleados = [...prev];
+        
+        jsonData.forEach((row, index) => {
+          // Buscar por legajo (preferido) o por nombre+apellido
+          const legajo = row["Legajo"]?.toString()?.trim();
+          const nombre = row["Nombre"]?.toString()?.trim();
+          const apellido = row["Apellido"]?.toString()?.trim();
+          const fechaStr = row["Fecha Ingreso"]?.toString()?.trim();
+
+          if (!fechaStr || fechaStr === "Sin fecha" || fechaStr === "-") {
+            return; // Ignorar filas sin fecha
+          }
+
+          // Encontrar empleado
+          let empleadoIndex = -1;
+          if (legajo && legajo !== "-") {
+            empleadoIndex = nuevosEmpleados.findIndex(e => e.legajo === legajo);
+          }
+          if (empleadoIndex === -1 && nombre && apellido) {
+            empleadoIndex = nuevosEmpleados.findIndex(
+              e => e.nombre.toLowerCase() === nombre.toLowerCase() && 
+                   e.apellido.toLowerCase() === apellido.toLowerCase()
+            );
+          }
+
+          if (empleadoIndex === -1) {
+            errores.push(`Fila ${index + 2}: No se encontró empleado`);
+            return;
+          }
+
+          // Parsear fecha (formato dd/MM/yyyy)
+          let fechaNueva: Date | null = null;
+          try {
+            // Intentar diferentes formatos
+            if (fechaStr.includes("/")) {
+              fechaNueva = parse(fechaStr, "dd/MM/yyyy", new Date());
+            } else if (fechaStr.includes("-")) {
+              fechaNueva = new Date(fechaStr);
+            }
+            
+            if (!fechaNueva || isNaN(fechaNueva.getTime())) {
+              errores.push(`Fila ${index + 2}: Fecha inválida "${fechaStr}"`);
+              return;
+            }
+          } catch {
+            errores.push(`Fila ${index + 2}: Error parseando fecha "${fechaStr}"`);
+            return;
+          }
+
+          const empleado = nuevosEmpleados[empleadoIndex];
+          const fechaOriginal = empleado.fecha_ingreso ? new Date(empleado.fecha_ingreso) : null;
+          const modificado = fechaNueva ? 
+            (!fechaOriginal || fechaOriginal.getTime() !== fechaNueva.getTime()) : 
+            !!fechaOriginal;
+
+          nuevosEmpleados[empleadoIndex] = {
+            ...empleado,
+            fecha_ingreso_nueva: fechaNueva,
+            modificado,
+          };
+          
+          if (modificado) actualizados++;
+        });
+
+        return nuevosEmpleados;
+      });
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      if (errores.length > 0) {
+        console.warn("Errores de importación:", errores);
+      }
+
+      toast({
+        title: "Importación completada",
+        description: `${actualizados} fecha(s) actualizada(s)${errores.length > 0 ? `. ${errores.length} error(es)` : ""}`,
+        variant: errores.length > 0 ? "default" : "default",
+      });
+    } catch (error: any) {
+      console.error("Error importing file:", error);
+      toast({
+        title: "Error de importación",
+        description: "No se pudo leer el archivo Excel",
+        variant: "destructive",
+      });
+    }
+  };
+
   const empleadosFiltrados = useMemo(() => {
     let resultado = empleados;
 
@@ -369,6 +480,17 @@ export default function EditorFechasIngreso() {
             </div>
 
             <div className="flex gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileImport}
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+              />
+              <Button variant="outline" onClick={handleImportClick}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar
+              </Button>
               <ExportButton
                 data={datosExportar}
                 filename="fechas_ingreso"
