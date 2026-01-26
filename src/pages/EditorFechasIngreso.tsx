@@ -77,6 +77,95 @@ function formatAntiguedad(fechaIngreso: Date | null): string {
   return `${meses}m`;
 }
 
+// Componente para celda de fecha editable con input + calendar picker
+const EditableDateCell = ({ 
+  empleadoId, 
+  fechaActual, 
+  onFechaChange 
+}: { 
+  empleadoId: string; 
+  fechaActual: Date | null; 
+  onFechaChange: (id: string, fecha: Date | undefined) => void;
+}) => {
+  const [inputValue, setInputValue] = useState(
+    fechaActual ? format(fechaActual, "dd/MM/yyyy") : ""
+  );
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Sincronizar cuando cambia la fecha externa
+  useEffect(() => {
+    setInputValue(fechaActual ? format(fechaActual, "dd/MM/yyyy") : "");
+  }, [fechaActual]);
+
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    
+    // Intentar parsear cuando tiene formato completo
+    if (value.length === 10) {
+      try {
+        const parsed = parse(value, "dd/MM/yyyy", new Date());
+        if (!isNaN(parsed.getTime())) {
+          onFechaChange(empleadoId, parsed);
+        }
+      } catch {
+        // Ignorar errores de parseo
+      }
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Al salir del input, intentar parsear
+    if (inputValue.trim() === "") {
+      onFechaChange(empleadoId, undefined);
+      return;
+    }
+    try {
+      const parsed = parse(inputValue, "dd/MM/yyyy", new Date());
+      if (!isNaN(parsed.getTime())) {
+        onFechaChange(empleadoId, parsed);
+      } else {
+        // Revertir al valor original si no es valido
+        setInputValue(fechaActual ? format(fechaActual, "dd/MM/yyyy") : "");
+      }
+    } catch {
+      setInputValue(fechaActual ? format(fechaActual, "dd/MM/yyyy") : "");
+    }
+  };
+
+  const handleCalendarSelect = (date: Date | undefined) => {
+    onFechaChange(empleadoId, date);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        value={inputValue}
+        onChange={(e) => handleInputChange(e.target.value)}
+        onBlur={handleInputBlur}
+        placeholder="dd/mm/aaaa"
+        className="w-[110px] h-9 text-sm"
+      />
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon" className="h-9 w-9">
+            <Calendar className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <CalendarComponent
+            mode="single"
+            selected={fechaActual || undefined}
+            onSelect={handleCalendarSelect}
+            initialFocus
+            className="p-3 pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+};
+
 export default function EditorFechasIngreso() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -554,33 +643,11 @@ export default function EditorFechasIngreso() {
                           {empleado.sucursal_nombre || "-"}
                         </TableCell>
                         <TableCell>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-[160px] justify-start text-left font-normal",
-                                  !empleado.fecha_ingreso_nueva && "text-muted-foreground"
-                                )}
-                              >
-                                <Calendar className="mr-2 h-4 w-4" />
-                                {empleado.fecha_ingreso_nueva ? (
-                                  format(empleado.fecha_ingreso_nueva, "dd/MM/yyyy", { locale: es })
-                                ) : (
-                                  <span>Sin fecha</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <CalendarComponent
-                                mode="single"
-                                selected={empleado.fecha_ingreso_nueva || undefined}
-                                onSelect={(date) => handleFechaChange(empleado.id, date)}
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <EditableDateCell
+                            empleadoId={empleado.id}
+                            fechaActual={empleado.fecha_ingreso_nueva}
+                            onFechaChange={handleFechaChange}
+                          />
                         </TableCell>
                         <TableCell className="text-center">
                           {formatAntiguedad(empleado.fecha_ingreso_nueva)}
