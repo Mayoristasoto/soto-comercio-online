@@ -571,7 +571,7 @@ export default function FicheroFacialAuth({
           .from('fichado_configuracion')
           .select('valor')
           .eq('clave', 'mensaje_audio_checkin')
-          .single()
+          .maybeSingle()
 
         let mensaje = config?.valor || '¡Bienvenido {nombre}! Tu fichaje ha sido registrado correctamente.'
         

@@ -626,7 +626,7 @@ export default function KioscoCheckIn() {
           .from('fichado_configuracion')
           .select('valor')
           .eq('clave', 'kiosko_mostrar_cruces_rojas')
-          .single()
+          .maybeSingle()
         
         const mostrarCrucesRojas = configData?.valor === 'true'
         
@@ -635,7 +635,7 @@ export default function KioscoCheckIn() {
             .from('empleado_cruces_rojas_semana_actual')
             .select('*')
             .eq('empleado_id', empleadoId)
-            .single()
+            .maybeSingle()
           
           if (!crucesError && crucesData && crucesData.total_cruces_rojas > 0) {
             setCrucesRojas(crucesData)
@@ -1180,7 +1180,7 @@ export default function KioscoCheckIn() {
             .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
             .eq('empleado_id', empleadoParaFichaje.id)
             .eq('activo', true)
-            .single()
+            .maybeSingle()
           
           if (turnoData?.turno) {
             const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
@@ -1505,7 +1505,7 @@ export default function KioscoCheckIn() {
             .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
             .eq('empleado_id', empleadoParaFichaje.id)
             .eq('activo', true)
-            .single()
+            .maybeSingle()
           
           if (turnoData?.turno) {
             const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
