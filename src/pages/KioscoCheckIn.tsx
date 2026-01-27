@@ -402,8 +402,10 @@ export default function KioscoCheckIn() {
     minutosPermitidos: number
   } | null> => {
     try {
-      const hoy = new Date()
-      hoy.setHours(0, 0, 0, 0)
+      // Importante: el día debe calcularse en zona horaria Argentina (UTC-3)
+      // para que los filtros por fecha coincidan con cómo se interpretan los fichajes.
+      const ahoraArg = toArgentinaTime(new Date())
+      const startOfDayUtc = getArgentinaStartOfDay(ahoraArg)
       
       // Obtener el último fichaje de pausa_inicio del día
       const { data: pausaInicio, error: pausaError } = await supabase
@@ -411,10 +413,10 @@ export default function KioscoCheckIn() {
         .select('timestamp_real')
         .eq('empleado_id', empleadoId)
         .eq('tipo', 'pausa_inicio')
-        .gte('timestamp_real', hoy.toISOString())
+        .gte('timestamp_real', startOfDayUtc)
         .order('timestamp_real', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       
       if (pausaError || !pausaInicio) {
         console.log('🔍 [PAUSA REAL-TIME] No se encontró pausa_inicio del día')
@@ -427,7 +429,7 @@ export default function KioscoCheckIn() {
         .select('turno:fichado_turnos(duracion_pausa_minutos)')
         .eq('empleado_id', empleadoId)
         .eq('activo', true)
-        .single()
+        .maybeSingle()
       
       const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
       
@@ -461,18 +463,20 @@ export default function KioscoCheckIn() {
   const verificarPausaActiva = async (empleadoId: string) => {
     try {
       // Obtener el último fichaje de pausa_inicio del día de hoy
-      const hoy = new Date()
-      hoy.setHours(0, 0, 0, 0)
+      // Importante: calcular inicio de día en Argentina para evitar falsos negativos
+      // en dispositivos con zona horaria distinta.
+      const ahoraArg = toArgentinaTime(new Date())
+      const startOfDayUtc = getArgentinaStartOfDay(ahoraArg)
       
       const { data: pausaInicio, error: pausaError } = await supabase
         .from('fichajes')
         .select('timestamp_real')
         .eq('empleado_id', empleadoId)
         .eq('tipo', 'pausa_inicio')
-        .gte('timestamp_real', hoy.toISOString())
+        .gte('timestamp_real', startOfDayUtc)
         .order('timestamp_real', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       
       if (pausaError || !pausaInicio) {
         setPausaActiva(null)
@@ -485,7 +489,7 @@ export default function KioscoCheckIn() {
         .select('turno:fichado_turnos(duracion_pausa_minutos)')
         .eq('empleado_id', empleadoId)
         .eq('activo', true)
-        .single()
+        .maybeSingle()
       
       const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
       
