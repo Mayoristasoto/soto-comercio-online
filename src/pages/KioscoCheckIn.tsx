@@ -1193,42 +1193,41 @@ export default function KioscoCheckIn() {
             if (horaActual > horaLimite) {
               const minutosRetraso = Math.round((horaActual.getTime() - horaLimite.getTime()) / 60000)
               
-              // Registrar cruz roja por llegada tarde
-              let registradoExitoso = false
-              try {
-                const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
-                  empleado_id: empleadoParaFichaje.id,
-                  tipo_infraccion: 'llegada_tarde',
-                  fecha_infraccion: horaActual.toISOString().split('T')[0],
-                  fichaje_id: fichajeId,
-                  minutos_diferencia: minutosRetraso,
-                  observaciones: `Llegada tarde en kiosco: ${horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} (programado: ${horaEntradaProgramada.substring(0, 5)}, tolerancia: ${tolerancia} min)`
-                })
-                
-                if (!cruceError) {
-                  registradoExitoso = true
-                  console.log('Cruz roja por llegada tarde registrada correctamente')
-                } else {
-                  console.error('Error registrando cruz roja por llegada tarde:', cruceError)
-                }
-              } catch (err) {
-                console.error('Error al registrar cruz roja por llegada tarde:', err)
-              }
-
+              // PRIMERO: Mostrar alerta (garantizado)
               setLlegadaTardeInfo({
                 horaEntradaProgramada: horaEntradaProgramada.substring(0, 5),
                 horaLlegadaReal: horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
                 minutosRetraso,
                 toleranciaMinutos: tolerancia,
-                registrado: registradoExitoso
+                registrado: false // Se actualizará después
               })
-              // Setear registroExitoso para que esté disponible cuando se muestren las tareas
               setRegistroExitoso({
                 empleado: empleadoParaFichaje,
                 timestamp: new Date()
               })
               setShowLlegadaTardeAlert(true)
               setShowFacialAuth(false)
+              
+              // DESPUÉS: Registrar cruz roja usando RPC SECURITY DEFINER (permite anon)
+              try {
+                const { error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
+                  p_empleado_id: empleadoParaFichaje.id,
+                  p_tipo_infraccion: 'llegada_tarde',
+                  p_fichaje_id: fichajeId,
+                  p_minutos_diferencia: minutosRetraso,
+                  p_observaciones: `Llegada tarde en kiosco: ${horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} (programado: ${horaEntradaProgramada.substring(0, 5)}, tolerancia: ${tolerancia} min)`
+                })
+                
+                if (!cruceError) {
+                  console.log('✅ Cruz roja por llegada tarde registrada correctamente via RPC')
+                  setLlegadaTardeInfo(prev => prev ? {...prev, registrado: true} : null)
+                } else {
+                  console.error('❌ Error registrando cruz roja por llegada tarde:', cruceError)
+                }
+              } catch (err) {
+                console.error('❌ Error al registrar cruz roja por llegada tarde:', err)
+              }
+              
               // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
               return
             }
@@ -1264,32 +1263,11 @@ export default function KioscoCheckIn() {
           console.log('🔴 [PAUSA REAL-TIME] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
           const minutosExceso = Math.round(pausaRealTime.minutosTranscurridos - pausaRealTime.minutosPermitidos)
           
-          // Registrar incidencia en empleado_cruces_rojas
-          let registradoExitoso = false
-          try {
-            const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
-              empleado_id: empleadoParaFichaje.id,
-              tipo_infraccion: 'pausa_excedida',
-              fecha_infraccion: new Date().toISOString().split('T')[0],
-              fichaje_id: fichajeId,
-              minutos_diferencia: minutosExceso,
-              observaciones: `Pausa excedida en kiosco: ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
-            })
-            
-            if (!cruceError) {
-              registradoExitoso = true
-              console.log('✅ [PAUSA REAL-TIME] Cruz roja por pausa excedida registrada correctamente')
-            } else {
-              console.error('❌ [PAUSA REAL-TIME] Error registrando cruz roja:', cruceError)
-            }
-          } catch (err) {
-            console.error('❌ [PAUSA REAL-TIME] Error al registrar cruz roja por pausa excedida:', err)
-          }
-
+          // PRIMERO: Mostrar alerta GARANTIZADO (antes del insert)
           setPausaExcedidaInfo({
             minutosUsados: pausaRealTime.minutosTranscurridos,
             minutosPermitidos: pausaRealTime.minutosPermitidos,
-            registrado: registradoExitoso
+            registrado: false // Se actualizará después
           })
           setRegistroExitoso({
             empleado: empleadoParaFichaje,
@@ -1297,6 +1275,27 @@ export default function KioscoCheckIn() {
           })
           setShowPausaExcedidaAlert(true)
           setShowFacialAuth(false)
+          
+          // DESPUÉS: Registrar cruz roja usando RPC SECURITY DEFINER (permite anon)
+          try {
+            const { error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
+              p_empleado_id: empleadoParaFichaje.id,
+              p_tipo_infraccion: 'pausa_excedida',
+              p_fichaje_id: fichajeId,
+              p_minutos_diferencia: minutosExceso,
+              p_observaciones: `Pausa excedida en kiosco: ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
+            })
+            
+            if (!cruceError) {
+              console.log('✅ [PAUSA REAL-TIME] Cruz roja por pausa excedida registrada via RPC')
+              setPausaExcedidaInfo(prev => prev ? {...prev, registrado: true} : null)
+            } else {
+              console.error('❌ [PAUSA REAL-TIME] Error registrando cruz roja:', cruceError)
+            }
+          } catch (err) {
+            console.error('❌ [PAUSA REAL-TIME] Error al registrar cruz roja por pausa excedida:', err)
+          }
+          
           // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
           return
         } else {
@@ -1519,42 +1518,41 @@ export default function KioscoCheckIn() {
             if (horaActual > horaLimite) {
               const minutosRetraso = Math.round((horaActual.getTime() - horaLimite.getTime()) / 60000)
               
-              // Registrar cruz roja por llegada tarde
-              let registradoExitoso = false
-              try {
-                const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
-                  empleado_id: empleadoParaFichaje.id,
-                  tipo_infraccion: 'llegada_tarde',
-                  fecha_infraccion: horaActual.toISOString().split('T')[0],
-                  fichaje_id: fichajeId,
-                  minutos_diferencia: minutosRetraso,
-                  observaciones: `Llegada tarde en kiosco: ${horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} (programado: ${horaEntradaProgramada.substring(0, 5)}, tolerancia: ${tolerancia} min)`
-                })
-                
-                if (!cruceError) {
-                  registradoExitoso = true
-                  console.log('Cruz roja por llegada tarde registrada correctamente')
-                } else {
-                  console.error('Error registrando cruz roja por llegada tarde:', cruceError)
-                }
-              } catch (err) {
-                console.error('Error al registrar cruz roja por llegada tarde:', err)
-              }
-
+              // PRIMERO: Mostrar alerta (garantizado)
               setLlegadaTardeInfo({
                 horaEntradaProgramada: horaEntradaProgramada.substring(0, 5),
                 horaLlegadaReal: horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
                 minutosRetraso,
                 toleranciaMinutos: tolerancia,
-                registrado: registradoExitoso
+                registrado: false // Se actualizará después
               })
-              // Setear registroExitoso para que esté disponible cuando se muestren las tareas
               setRegistroExitoso({
                 empleado: empleadoParaFichaje,
                 timestamp: new Date()
               })
               setShowLlegadaTardeAlert(true)
               setShowActionSelection(false)
+              
+              // DESPUÉS: Registrar cruz roja usando RPC SECURITY DEFINER (permite anon)
+              try {
+                const { error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
+                  p_empleado_id: empleadoParaFichaje.id,
+                  p_tipo_infraccion: 'llegada_tarde',
+                  p_fichaje_id: fichajeId,
+                  p_minutos_diferencia: minutosRetraso,
+                  p_observaciones: `Llegada tarde en kiosco: ${horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} (programado: ${horaEntradaProgramada.substring(0, 5)}, tolerancia: ${tolerancia} min)`
+                })
+                
+                if (!cruceError) {
+                  console.log('✅ Cruz roja por llegada tarde registrada correctamente via RPC')
+                  setLlegadaTardeInfo(prev => prev ? {...prev, registrado: true} : null)
+                } else {
+                  console.error('❌ Error registrando cruz roja por llegada tarde:', cruceError)
+                }
+              } catch (err) {
+                console.error('❌ Error al registrar cruz roja por llegada tarde:', err)
+              }
+              
               // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
               return
             }
@@ -1598,32 +1596,11 @@ export default function KioscoCheckIn() {
           console.log('🔴 [PAUSA REAL-TIME] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
           const minutosExceso = Math.round(pausaRealTime.minutosTranscurridos - pausaRealTime.minutosPermitidos)
           
-          // Registrar incidencia en empleado_cruces_rojas
-          let registradoExitoso = false
-          try {
-            const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
-              empleado_id: empleadoParaFichaje.id,
-              tipo_infraccion: 'pausa_excedida',
-              fecha_infraccion: new Date().toISOString().split('T')[0],
-              fichaje_id: fichajeId,
-              minutos_diferencia: minutosExceso,
-              observaciones: `Pausa excedida en kiosco: ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
-            })
-            
-            if (!cruceError) {
-              registradoExitoso = true
-              console.log('✅ [PAUSA REAL-TIME] Cruz roja por pausa excedida registrada correctamente')
-            } else {
-              console.error('❌ [PAUSA REAL-TIME] Error registrando cruz roja:', cruceError)
-            }
-          } catch (err) {
-            console.error('❌ [PAUSA REAL-TIME] Error al registrar cruz roja por pausa excedida:', err)
-          }
-
+          // PRIMERO: Mostrar alerta GARANTIZADO (antes del insert)
           setPausaExcedidaInfo({
             minutosUsados: pausaRealTime.minutosTranscurridos,
             minutosPermitidos: pausaRealTime.minutosPermitidos,
-            registrado: registradoExitoso
+            registrado: false // Se actualizará después
           })
           setRegistroExitoso({
             empleado: empleadoParaFichaje,
@@ -1631,6 +1608,27 @@ export default function KioscoCheckIn() {
           })
           setShowPausaExcedidaAlert(true)
           setShowActionSelection(false)
+          
+          // DESPUÉS: Registrar cruz roja usando RPC SECURITY DEFINER (permite anon)
+          try {
+            const { error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
+              p_empleado_id: empleadoParaFichaje.id,
+              p_tipo_infraccion: 'pausa_excedida',
+              p_fichaje_id: fichajeId,
+              p_minutos_diferencia: minutosExceso,
+              p_observaciones: `Pausa excedida en kiosco: ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
+            })
+            
+            if (!cruceError) {
+              console.log('✅ [PAUSA REAL-TIME] Cruz roja por pausa excedida registrada via RPC')
+              setPausaExcedidaInfo(prev => prev ? {...prev, registrado: true} : null)
+            } else {
+              console.error('❌ [PAUSA REAL-TIME] Error registrando cruz roja:', cruceError)
+            }
+          } catch (err) {
+            console.error('❌ [PAUSA REAL-TIME] Error al registrar cruz roja por pausa excedida:', err)
+          }
+          
           // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
           return
         } else {

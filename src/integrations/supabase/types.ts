@@ -7781,6 +7781,16 @@ export type Database = {
         }
         Returns: string
       }
+      kiosk_registrar_cruz_roja: {
+        Args: {
+          p_empleado_id: string
+          p_fichaje_id?: string
+          p_minutos_diferencia?: number
+          p_observaciones?: string
+          p_tipo_infraccion: string
+        }
+        Returns: string
+      }
       kiosk_upload_facial_photo: {
         Args: { p_empleado_id: string; p_photo_url: string }
         Returns: string
