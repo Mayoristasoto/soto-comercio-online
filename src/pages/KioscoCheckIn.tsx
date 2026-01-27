@@ -395,7 +395,69 @@ export default function KioscoCheckIn() {
     }
   }, [])
 
-  // Función para verificar si hay una pausa activa y obtener detalles
+  // Función para calcular pausa excedida en tiempo real (usada al momento de pausa_fin)
+  const calcularPausaExcedidaEnTiempoReal = async (empleadoId: string): Promise<{
+    excedida: boolean
+    minutosTranscurridos: number
+    minutosPermitidos: number
+  } | null> => {
+    try {
+      const hoy = new Date()
+      hoy.setHours(0, 0, 0, 0)
+      
+      // Obtener el último fichaje de pausa_inicio del día
+      const { data: pausaInicio, error: pausaError } = await supabase
+        .from('fichajes')
+        .select('timestamp_real')
+        .eq('empleado_id', empleadoId)
+        .eq('tipo', 'pausa_inicio')
+        .gte('timestamp_real', hoy.toISOString())
+        .order('timestamp_real', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (pausaError || !pausaInicio) {
+        console.log('🔍 [PAUSA REAL-TIME] No se encontró pausa_inicio del día')
+        return null
+      }
+      
+      // Obtener los minutos de pausa desde el turno asignado al empleado
+      const { data: turnoData } = await supabase
+        .from('empleado_turnos')
+        .select('turno:fichado_turnos(duracion_pausa_minutos)')
+        .eq('empleado_id', empleadoId)
+        .eq('activo', true)
+        .single()
+      
+      const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
+      
+      // Calcular tiempo transcurrido en minutos
+      const inicioPausa = new Date(pausaInicio.timestamp_real)
+      const ahora = new Date()
+      const minutosTranscurridos = Math.floor((ahora.getTime() - inicioPausa.getTime()) / 60000)
+      const excedida = minutosTranscurridos > minutosPermitidos
+      
+      console.log('🔍 [PAUSA REAL-TIME] Cálculo en tiempo real:', {
+        empleadoId,
+        inicioPausa: inicioPausa.toISOString(),
+        ahora: ahora.toISOString(),
+        minutosPermitidos,
+        minutosTranscurridos,
+        excedida
+      })
+      
+      return {
+        excedida,
+        minutosTranscurridos,
+        minutosPermitidos
+      }
+    } catch (error) {
+      console.error('Error calculando pausa excedida en tiempo real:', error)
+      return null
+    }
+  }
+
+  // Función para verificar si hay una pausa activa y obtener detalles (usada para UI)
   const verificarPausaActiva = async (empleadoId: string) => {
     try {
       // Obtener el último fichaje de pausa_inicio del día de hoy
@@ -1191,50 +1253,55 @@ export default function KioscoCheckIn() {
       })
 
       // 🔔 PRIMERO: Verificar si la pausa fue excedida y mostrar alerta (antes de tareas)
-      console.log('🔍 [DEBUG PAUSA] Verificando pausa excedida (flujo facial):', {
-        tipoAccion,
-        pausaActiva,
-        excedida: pausaActiva?.excedida
-      })
-      if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
-        console.log('🔴 [DEBUG PAUSA] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
-        const minutosExceso = Math.round(pausaActiva.minutosTranscurridos - pausaActiva.minutosPermitidos)
+      // RECALCULAR EN TIEMPO REAL para evitar problemas de estado asíncrono
+      if (tipoAccion === 'pausa_fin') {
+        console.log('🔍 [PAUSA REAL-TIME] Recalculando pausa en tiempo real (ejecutarAccionDirecta)...')
+        const pausaRealTime = await calcularPausaExcedidaEnTiempoReal(empleadoParaFichaje.id)
         
-        // Registrar incidencia en empleado_cruces_rojas
-        let registradoExitoso = false
-        try {
-          const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
-            empleado_id: empleadoParaFichaje.id,
-            tipo_infraccion: 'pausa_excedida',
-            fecha_infraccion: new Date().toISOString().split('T')[0],
-            fichaje_id: fichajeId,
-            minutos_diferencia: minutosExceso,
-            observaciones: `Pausa excedida en kiosco: ${Math.round(pausaActiva.minutosTranscurridos)} min usados de ${pausaActiva.minutosPermitidos} min permitidos`
-          })
+        console.log('🔍 [PAUSA REAL-TIME] Resultado:', pausaRealTime)
+        
+        if (pausaRealTime?.excedida) {
+          console.log('🔴 [PAUSA REAL-TIME] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
+          const minutosExceso = Math.round(pausaRealTime.minutosTranscurridos - pausaRealTime.minutosPermitidos)
           
-          if (!cruceError) {
-            registradoExitoso = true
-            console.log('Cruz roja por pausa excedida registrada correctamente')
-          } else {
-            console.error('Error registrando cruz roja:', cruceError)
+          // Registrar incidencia en empleado_cruces_rojas
+          let registradoExitoso = false
+          try {
+            const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
+              empleado_id: empleadoParaFichaje.id,
+              tipo_infraccion: 'pausa_excedida',
+              fecha_infraccion: new Date().toISOString().split('T')[0],
+              fichaje_id: fichajeId,
+              minutos_diferencia: minutosExceso,
+              observaciones: `Pausa excedida en kiosco: ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
+            })
+            
+            if (!cruceError) {
+              registradoExitoso = true
+              console.log('✅ [PAUSA REAL-TIME] Cruz roja por pausa excedida registrada correctamente')
+            } else {
+              console.error('❌ [PAUSA REAL-TIME] Error registrando cruz roja:', cruceError)
+            }
+          } catch (err) {
+            console.error('❌ [PAUSA REAL-TIME] Error al registrar cruz roja por pausa excedida:', err)
           }
-        } catch (err) {
-          console.error('Error al registrar cruz roja por pausa excedida:', err)
-        }
 
-        setPausaExcedidaInfo({
-          minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
-          minutosPermitidos: pausaActiva.minutosPermitidos,
-          registrado: registradoExitoso
-        })
-        setRegistroExitoso({
-          empleado: empleadoParaFichaje,
-          timestamp: new Date()
-        })
-        setShowPausaExcedidaAlert(true)
-        setShowFacialAuth(false)
-        // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
-        return
+          setPausaExcedidaInfo({
+            minutosUsados: pausaRealTime.minutosTranscurridos,
+            minutosPermitidos: pausaRealTime.minutosPermitidos,
+            registrado: registradoExitoso
+          })
+          setRegistroExitoso({
+            empleado: empleadoParaFichaje,
+            timestamp: new Date()
+          })
+          setShowPausaExcedidaAlert(true)
+          setShowFacialAuth(false)
+          // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
+          return
+        } else {
+          console.log('✅ [PAUSA REAL-TIME] Pausa dentro del tiempo permitido')
+        }
       }
 
       // Reproducir mensajes de audio si es entrada o fin de pausa
@@ -1520,50 +1587,55 @@ export default function KioscoCheckIn() {
       })
 
       // 🔔 PRIMERO: Verificar si la pausa fue excedida y mostrar alerta (antes de tareas)
-      console.log('🔍 [DEBUG PAUSA] Verificando pausa excedida (flujo selección):', {
-        tipoAccion,
-        pausaActiva,
-        excedida: pausaActiva?.excedida
-      })
-      if (tipoAccion === 'pausa_fin' && pausaActiva?.excedida) {
-        console.log('🔴 [DEBUG PAUSA] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
-        const minutosExceso = Math.round(pausaActiva.minutosTranscurridos - pausaActiva.minutosPermitidos)
+      // RECALCULAR EN TIEMPO REAL para evitar problemas de estado asíncrono
+      if (tipoAccion === 'pausa_fin') {
+        console.log('🔍 [PAUSA REAL-TIME] Recalculando pausa en tiempo real (procesarAccionFichaje)...')
+        const pausaRealTime = await calcularPausaExcedidaEnTiempoReal(empleadoParaFichaje.id)
         
-        // Registrar incidencia en empleado_cruces_rojas
-        let registradoExitoso = false
-        try {
-          const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
-            empleado_id: recognizedEmployee.id,
-            tipo_infraccion: 'pausa_excedida',
-            fecha_infraccion: new Date().toISOString().split('T')[0],
-            fichaje_id: fichajeId,
-            minutos_diferencia: minutosExceso,
-            observaciones: `Pausa excedida en kiosco: ${Math.round(pausaActiva.minutosTranscurridos)} min usados de ${pausaActiva.minutosPermitidos} min permitidos`
-          })
+        console.log('🔍 [PAUSA REAL-TIME] Resultado:', pausaRealTime)
+        
+        if (pausaRealTime?.excedida) {
+          console.log('🔴 [PAUSA REAL-TIME] ¡PAUSA EXCEDIDA DETECTADA! Mostrando alerta...')
+          const minutosExceso = Math.round(pausaRealTime.minutosTranscurridos - pausaRealTime.minutosPermitidos)
           
-          if (!cruceError) {
-            registradoExitoso = true
-            console.log('Cruz roja por pausa excedida registrada correctamente')
-          } else {
-            console.error('Error registrando cruz roja:', cruceError)
+          // Registrar incidencia en empleado_cruces_rojas
+          let registradoExitoso = false
+          try {
+            const { error: cruceError } = await supabase.from('empleado_cruces_rojas').insert({
+              empleado_id: empleadoParaFichaje.id,
+              tipo_infraccion: 'pausa_excedida',
+              fecha_infraccion: new Date().toISOString().split('T')[0],
+              fichaje_id: fichajeId,
+              minutos_diferencia: minutosExceso,
+              observaciones: `Pausa excedida en kiosco: ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
+            })
+            
+            if (!cruceError) {
+              registradoExitoso = true
+              console.log('✅ [PAUSA REAL-TIME] Cruz roja por pausa excedida registrada correctamente')
+            } else {
+              console.error('❌ [PAUSA REAL-TIME] Error registrando cruz roja:', cruceError)
+            }
+          } catch (err) {
+            console.error('❌ [PAUSA REAL-TIME] Error al registrar cruz roja por pausa excedida:', err)
           }
-        } catch (err) {
-          console.error('Error al registrar cruz roja por pausa excedida:', err)
-        }
 
-        setPausaExcedidaInfo({
-          minutosUsados: Math.round(pausaActiva.minutosTranscurridos),
-          minutosPermitidos: pausaActiva.minutosPermitidos,
-          registrado: registradoExitoso
-        })
-        setRegistroExitoso({
-          empleado: empleadoParaFichaje,
-          timestamp: new Date()
-        })
-        setShowPausaExcedidaAlert(true)
-        setShowActionSelection(false)
-        // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
-        return
+          setPausaExcedidaInfo({
+            minutosUsados: pausaRealTime.minutosTranscurridos,
+            minutosPermitidos: pausaRealTime.minutosPermitidos,
+            registrado: registradoExitoso
+          })
+          setRegistroExitoso({
+            empleado: empleadoParaFichaje,
+            timestamp: new Date()
+          })
+          setShowPausaExcedidaAlert(true)
+          setShowActionSelection(false)
+          // El flujo continuará cuando se cierre el alert (mostrará tareas si hay)
+          return
+        } else {
+          console.log('✅ [PAUSA REAL-TIME] Pausa dentro del tiempo permitido')
+        }
       }
 
       // Reproducir mensajes de audio si es entrada o fin de pausa
