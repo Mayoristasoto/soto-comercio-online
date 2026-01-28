@@ -41,10 +41,13 @@ export default function Solicitudes() {
         .select('id, nombre, apellido, rol')
         .eq('user_id', user.id)
         .eq('activo', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-
+      if (!empleado) {
+        console.warn('No employee found for current user');
+        return;
+      }
       setUserInfo(empleado);
     } catch (error: any) {
       console.error('Error fetching user:', error);
