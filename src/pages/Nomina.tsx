@@ -146,7 +146,7 @@ export default function Nomina() {
         .from('empleados')
         .select('rol')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (empleado?.rol !== 'admin_rrhh') {
         toast({

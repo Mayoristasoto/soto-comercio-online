@@ -45,9 +45,13 @@ export default function Vacaciones() {
         .select('id, nombre, apellido, rol, sucursal_id')
         .eq('user_id', user.id)
         .eq('activo', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        console.warn('No employee found for current user');
+        return;
+      }
       setUserInfo(data);
     } catch (error: any) {
       console.error('Error fetching user info:', error);
