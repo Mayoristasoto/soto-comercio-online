@@ -69,10 +69,10 @@ serve(async (req) => {
       )
     }
 
-    // Validar fortaleza de contraseña en servidor
-    if (newPassword.length < 12) {
+    // Validar fortaleza de contraseña en servidor (requisitos relajados)
+    if (newPassword.length < 8) {
       return new Response(
-        JSON.stringify({ error: 'La contraseña debe tener al menos 12 caracteres' }),
+        JSON.stringify({ error: 'La contraseña debe tener al menos 8 caracteres' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -94,13 +94,6 @@ serve(async (req) => {
     if (!/(?=.*\d)/.test(newPassword)) {
       return new Response(
         JSON.stringify({ error: 'La contraseña debe contener al menos un número' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(newPassword)) {
-      return new Response(
-        JSON.stringify({ error: 'La contraseña debe contener al menos un carácter especial' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
