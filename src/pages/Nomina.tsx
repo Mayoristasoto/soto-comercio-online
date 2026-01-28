@@ -37,6 +37,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import EmployeeProfile from "@/components/admin/EmployeeProfile"
 import DocumentManager from "@/components/admin/DocumentManager"
 import PermissionsManager from "@/components/admin/PermissionsManager"
@@ -115,6 +116,11 @@ export default function Nomina() {
   const [faceManagementOpen, setFaceManagementOpen] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+
+  // Activación / desactivación
+  const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false)
+  const [employeeToToggle, setEmployeeToToggle] = useState<Employee | null>(null)
+  const [toggleLoading, setToggleLoading] = useState(false)
 
   useEffect(() => {
     checkAccess()
@@ -325,6 +331,45 @@ export default function Nomina() {
     if (employee) {
       setSelectedEmployee(employee)
       setPasswordChangeOpen(true)
+    }
+  }
+
+  const handleToggleEmployeeActive = (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId)
+    if (!employee) return
+    setEmployeeToToggle(employee)
+    setToggleConfirmOpen(true)
+  }
+
+  const confirmToggleEmployeeActive = async () => {
+    if (!employeeToToggle) return
+    const nextStatus = !employeeToToggle.activo
+
+    try {
+      setToggleLoading(true)
+      const { error } = await supabase
+        .from('empleados')
+        .update({ activo: nextStatus })
+        .eq('id', employeeToToggle.id)
+
+      if (error) throw error
+
+      toast({
+        title: nextStatus ? "Empleado activado" : "Empleado desactivado",
+        description: `${employeeToToggle.nombre} ${employeeToToggle.apellido} fue ${nextStatus ? 'activado' : 'desactivado'} correctamente`,
+      })
+
+      await loadNominaData()
+    } catch (error) {
+      console.error('Error cambiando estado del empleado:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado del empleado",
+        variant: "destructive",
+      })
+    } finally {
+      setToggleLoading(false)
+      setEmployeeToToggle(null)
     }
   }
 
@@ -861,9 +906,16 @@ export default function Nomina() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={employee.activo ? "default" : "secondary"}>
-                            {employee.activo ? 'Activo' : 'Inactivo'}
-                          </Badge>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleEmployeeActive(employee.id)}
+                            className="inline-flex"
+                            aria-label={employee.activo ? 'Desactivar empleado' : 'Activar empleado'}
+                          >
+                            <Badge variant={employee.activo ? "default" : "secondary"} className="cursor-pointer hover:opacity-80">
+                              {employee.activo ? 'Activo' : 'Inactivo'}
+                            </Badge>
+                          </button>
                         </TableCell>
                         <TableCell>
                           <Badge variant={employee.user_id ? "default" : "secondary"} className="flex items-center gap-1 w-fit">
@@ -946,6 +998,18 @@ export default function Nomina() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Confirmación activar/desactivar */}
+        <ConfirmDialog
+          open={toggleConfirmOpen}
+          onOpenChange={setToggleConfirmOpen}
+          title={employeeToToggle?.activo ? "Desactivar empleado" : "Activar empleado"}
+          description={employeeToToggle ? `¿Querés ${employeeToToggle.activo ? 'desactivar' : 'activar'} a ${employeeToToggle.nombre} ${employeeToToggle.apellido}?` : undefined}
+          confirmLabel={employeeToToggle?.activo ? "Desactivar" : "Activar"}
+          onConfirm={confirmToggleEmployeeActive}
+          loading={toggleLoading}
+          variant={employeeToToggle?.activo ? "warning" : "success"}
+        />
 
         <TabsContent value="access-security">
           <div className="space-y-6">
