@@ -440,13 +440,17 @@ export default function EmployeeManagement() {
                 </TableCell>
                 <TableCell>{getRoleBadge(empleado.rol)}</TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={empleado.activo ? "default" : "secondary"}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                  <button
+                    type="button"
                     onClick={() => handleToggleActive(empleado)}
+                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors cursor-pointer hover:opacity-80 ${
+                      empleado.activo 
+                        ? 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80' 
+                        : 'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    }`}
                   >
                     {empleado.activo ? "Activo" : "Inactivo"}
-                  </Badge>
+                  </button>
                 </TableCell>
                 <TableCell>
                   {sucursales.find(s => s.id === empleado.sucursal_id)?.nombre || "Sin asignar"}
