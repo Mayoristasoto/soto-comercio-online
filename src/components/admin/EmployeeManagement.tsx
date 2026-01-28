@@ -16,6 +16,7 @@ import DocumentManager from "./DocumentManager"
 import PermissionsManager from "./PermissionsManager"
 import EmpleadosSucursalAssignment from "./EmpleadosSucursalAssignment"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 interface Empleado {
   id: string
@@ -54,6 +55,8 @@ export default function EmployeeManagement() {
   const [permissionsOpen, setPermissionsOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Empleado | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Empleado | null>(null)
+  const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false)
+  const [employeeToToggle, setEmployeeToToggle] = useState<Empleado | null>(null)
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -186,17 +189,22 @@ export default function EmployeeManagement() {
     setPermissionsOpen(true)
   }
 
-  const handleToggleActive = async (empleado: Empleado) => {
-    const newStatus = !empleado.activo
-    const action = newStatus ? 'reactivar' : 'desactivar'
+  const handleToggleActive = (empleado: Empleado) => {
+    setEmployeeToToggle(empleado)
+    setToggleConfirmOpen(true)
+  }
+
+  const confirmToggleActive = async () => {
+    if (!employeeToToggle) return
     
-    if (!confirm(`¿Estás seguro de que quieres ${action} a ${empleado.nombre} ${empleado.apellido}?`)) return
+    const newStatus = !employeeToToggle.activo
+    const action = newStatus ? 'reactivar' : 'desactivar'
 
     try {
       const { error } = await supabase
         .from('empleados')
         .update({ activo: newStatus })
-        .eq('id', empleado.id)
+        .eq('id', employeeToToggle.id)
       
       if (error) throw error
       
@@ -213,6 +221,8 @@ export default function EmployeeManagement() {
         description: `No se pudo ${action} el empleado`,
         variant: "destructive"
       })
+    } finally {
+      setEmployeeToToggle(null)
     }
   }
 
@@ -528,6 +538,17 @@ export default function EmployeeManagement() {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* Toggle Active Status Confirm Dialog */}
+      <ConfirmDialog
+        open={toggleConfirmOpen}
+        onOpenChange={setToggleConfirmOpen}
+        title={employeeToToggle?.activo ? "Desactivar empleado" : "Reactivar empleado"}
+        description={`¿Estás seguro de que quieres ${employeeToToggle?.activo ? 'desactivar' : 'reactivar'} a ${employeeToToggle?.nombre} ${employeeToToggle?.apellido}?`}
+        confirmLabel={employeeToToggle?.activo ? "Desactivar" : "Reactivar"}
+        onConfirm={confirmToggleActive}
+        variant={employeeToToggle?.activo ? "warning" : "success"}
+      />
     </Card>
   )
 }
