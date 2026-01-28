@@ -70,6 +70,7 @@ import DashboardDemo from "./pages/DashboardDemo";
 import KioscoDemo from "./pages/KioscoDemo";
 import InstructivoDelegacionTareas from "./pages/InstructivoDelegacionTareas";
 import EditorFechasIngreso from "./pages/EditorFechasIngreso";
+import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 
 const queryClient = new QueryClient();
 
@@ -205,6 +206,7 @@ const App = () => (
           <Route path="/print-preview" element={<PrintPreview />} />
           <Route path="/dashboard-demo" element={<DashboardDemo />} />
           <Route path="/kiosco-demo" element={<KioscoDemo />} />
+          <Route path="/test-kiosco-alertas" element={<TestKioskoAlertas />} />
           
           {/* Calificación de empleados (página pública) */}
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />

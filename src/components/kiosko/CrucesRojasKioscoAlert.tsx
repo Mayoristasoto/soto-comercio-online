@@ -24,13 +24,13 @@ interface CrucesRojasAlertProps {
 const getTipoIcon = (tipo: string) => {
   switch (tipo) {
     case 'llegada_tarde':
-      return <Clock className="w-8 h-8" />;
+      return <Clock className="w-full h-full" />;
     case 'salida_temprana':
-      return <XCircle className="w-8 h-8" />;
+      return <XCircle className="w-full h-full" />;
     case 'pausa_excedida':
-      return <Coffee className="w-8 h-8" />;
+      return <Coffee className="w-full h-full" />;
     default:
-      return <AlertTriangle className="w-8 h-8" />;
+      return <AlertTriangle className="w-full h-full" />;
   }
 };
 
@@ -83,78 +83,80 @@ export function CrucesRojasKioscoAlert({
   }, [onDismiss]);
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <Card 
         className={`
-          max-w-4xl w-full p-8 border-4 border-destructive shadow-2xl
+          max-w-lg sm:max-w-2xl md:max-w-4xl w-full p-3 sm:p-5 md:p-8 border-4 border-destructive shadow-2xl my-2
           ${isShaking ? 'animate-shake' : ''}
         `}
       >
         {/* Header con ícono de alerta */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="bg-destructive/20 p-6 rounded-full">
-            <AlertTriangle className="w-20 h-20 text-destructive animate-pulse" />
+        <div className="flex items-center justify-center mb-3 sm:mb-6">
+          <div className="bg-destructive/20 p-3 sm:p-5 md:p-6 rounded-full">
+            <AlertTriangle className="w-10 h-10 sm:w-14 sm:h-14 md:w-20 md:h-20 text-destructive animate-pulse" />
           </div>
         </div>
 
         {/* Título principal */}
-        <Alert className="mb-6 border-destructive bg-destructive/10">
-          <AlertTitle className="text-3xl font-bold text-center text-destructive mb-2">
+        <Alert className="mb-3 sm:mb-6 border-destructive bg-destructive/10">
+          <AlertTitle className="text-base sm:text-xl md:text-3xl font-bold text-center text-destructive mb-1 sm:mb-2">
             ⚠️ ATENCIÓN {empleadoNombre.toUpperCase()} ⚠️
           </AlertTitle>
-          <AlertDescription className="text-xl text-center text-foreground">
+          <AlertDescription className="text-sm sm:text-base md:text-xl text-center text-foreground">
             Tienes <span className="font-bold text-destructive">{totalCruces} cruz{totalCruces > 1 ? 'es' : ''} roja{totalCruces > 1 ? 's' : ''}</span> esta semana
           </AlertDescription>
         </Alert>
 
         {/* Resumen de infracciones */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3 md:gap-4 mb-3 sm:mb-6">
           {llegadasTarde > 0 && (
-            <Card className="p-4 bg-destructive/10 border-destructive/30">
+            <Card className="p-2 sm:p-3 md:p-4 bg-destructive/10 border-destructive/30">
               <div className="flex flex-col items-center text-center">
-                <Clock className="w-12 h-12 text-destructive mb-2" />
-                <div className="text-3xl font-bold text-destructive">{llegadasTarde}</div>
-                <div className="text-sm text-muted-foreground">Llegadas tarde</div>
+                <Clock className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-destructive mb-1 sm:mb-2" />
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-destructive">{llegadasTarde}</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">Llegadas tarde</div>
               </div>
             </Card>
           )}
           
           {salidasTempranas > 0 && (
-            <Card className="p-4 bg-destructive/10 border-destructive/30">
+            <Card className="p-2 sm:p-3 md:p-4 bg-destructive/10 border-destructive/30">
               <div className="flex flex-col items-center text-center">
-                <XCircle className="w-12 h-12 text-destructive mb-2" />
-                <div className="text-3xl font-bold text-destructive">{salidasTempranas}</div>
-                <div className="text-sm text-muted-foreground">Salidas tempranas</div>
+                <XCircle className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-destructive mb-1 sm:mb-2" />
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-destructive">{salidasTempranas}</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">Salidas tempranas</div>
               </div>
             </Card>
           )}
           
           {pausasExcedidas > 0 && (
-            <Card className="p-4 bg-destructive/10 border-destructive/30">
+            <Card className="p-2 sm:p-3 md:p-4 bg-destructive/10 border-destructive/30">
               <div className="flex flex-col items-center text-center">
-                <Coffee className="w-12 h-12 text-destructive mb-2" />
-                <div className="text-3xl font-bold text-destructive">{pausasExcedidas}</div>
-                <div className="text-sm text-muted-foreground">Pausas excedidas</div>
+                <Coffee className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-destructive mb-1 sm:mb-2" />
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-destructive">{pausasExcedidas}</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">Pausas excedidas</div>
               </div>
             </Card>
           )}
         </div>
 
         {/* Detalles de infracciones */}
-        <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-6 max-h-40 sm:max-h-52 md:max-h-64 overflow-y-auto">
           {detalles?.slice(0, 5).map((detalle, index) => (
-            <Card key={index} className="p-4 bg-card border-border">
-              <div className="flex items-center gap-4">
-                <div className="text-destructive">
-                  {getTipoIcon(detalle.tipo)}
+            <Card key={index} className="p-2 sm:p-3 md:p-4 bg-card border-border">
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                <div className="text-destructive shrink-0">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8">
+                    {getTipoIcon(detalle.tipo)}
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <div className="font-semibold">{getTipoTexto(detalle.tipo)}</div>
-                  <div className="text-sm text-muted-foreground">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm sm:text-base font-semibold truncate">{getTipoTexto(detalle.tipo)}</div>
+                  <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">
                     {new Date(detalle.fecha).toLocaleDateString('es-AR')} - {detalle.minutos} minutos
                   </div>
                   {detalle.observaciones && (
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground mt-0.5 sm:mt-1 truncate">
                       {detalle.observaciones}
                     </div>
                   )}
@@ -166,10 +168,10 @@ export function CrucesRojasKioscoAlert({
 
         {/* Mensaje de cierre y countdown */}
         <div className="text-center">
-          <p className="text-lg text-muted-foreground mb-2">
+          <p className="text-xs sm:text-sm md:text-lg text-muted-foreground mb-1 sm:mb-2">
             Por favor, mejora tu puntualidad y cumplimiento de horarios
           </p>
-          <p className="text-2xl font-bold text-destructive">
+          <p className="text-base sm:text-xl md:text-2xl font-bold text-destructive">
             Continuando en {countdown} segundo{countdown !== 1 ? 's' : ''}...
           </p>
         </div>
