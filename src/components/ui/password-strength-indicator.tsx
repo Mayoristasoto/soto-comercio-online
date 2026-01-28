@@ -55,7 +55,7 @@ export function PasswordStrengthIndicator({
           <ul className="space-y-1.5 text-xs">
             <RequirementItem 
               met={validation.requirements.minLength}
-              text="Mínimo 12 caracteres (recomendado 16+)"
+              text="Mínimo 8 caracteres"
             />
             <RequirementItem 
               met={validation.requirements.hasUpperCase}
@@ -70,18 +70,9 @@ export function PasswordStrengthIndicator({
               text="Al menos un número (0-9)"
             />
             <RequirementItem 
-              met={validation.requirements.hasSpecialChar}
-              text="Al menos un carácter especial (!@#$%^&*)"
-            />
-            <RequirementItem 
               met={validation.requirements.noCommonPatterns}
               text="No usar contraseñas comunes"
               isWarning={!validation.requirements.noCommonPatterns}
-            />
-            <RequirementItem 
-              met={validation.requirements.noSequentialChars}
-              text="Evitar secuencias (abc, 123, qwerty)"
-              isWarning={!validation.requirements.noSequentialChars}
             />
           </ul>
         </div>
