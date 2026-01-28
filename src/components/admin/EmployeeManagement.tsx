@@ -440,7 +440,11 @@ export default function EmployeeManagement() {
                 </TableCell>
                 <TableCell>{getRoleBadge(empleado.rol)}</TableCell>
                 <TableCell>
-                  <Badge variant={empleado.activo ? "default" : "secondary"}>
+                  <Badge 
+                    variant={empleado.activo ? "default" : "secondary"}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleToggleActive(empleado)}
+                  >
                     {empleado.activo ? "Activo" : "Inactivo"}
                   </Badge>
                 </TableCell>
