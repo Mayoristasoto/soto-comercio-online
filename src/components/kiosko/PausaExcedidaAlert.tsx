@@ -48,10 +48,10 @@ export function PausaExcedidaAlert({
   }, [onDismiss]);
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
       <Card 
         className={`
-          max-w-lg w-full p-3 sm:p-5 md:p-8 border-4 border-orange-500 shadow-2xl my-2
+          w-[95%] max-w-[500px] sm:max-w-xl md:max-w-2xl p-3 sm:p-5 md:p-6 lg:p-8 border-4 border-orange-500 shadow-2xl my-2
           ${isShaking ? 'animate-shake' : ''}
         `}
       >
