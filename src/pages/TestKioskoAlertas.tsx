@@ -27,20 +27,36 @@ const TestKioskoAlertas = () => {
   const prepararPausaExcedida = async () => {
     setLoading(true);
     try {
-      // 1. Primero limpiar fichajes de hoy para Gonzalo
-      const hoy = new Date();
-      const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0);
+      // 1. Obtener el inicio del día en Argentina (UTC)
+      const now = new Date();
+      // Argentina es UTC-3, así que el día comienza a las 03:00 UTC
+      const argentinaOffset = -3;
+      const nowUtc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+      const nowArg = new Date(nowUtc.getTime() + (argentinaOffset * 60 * 60000));
       
-      // Eliminar fichajes de hoy
-      await supabase
+      // Inicio del día en Argentina, convertido a UTC
+      const startOfDayArg = new Date(nowArg.getFullYear(), nowArg.getMonth(), nowArg.getDate(), 0, 0, 0, 0);
+      const startOfDayUtc = new Date(startOfDayArg.getTime() - (argentinaOffset * 60 * 60000));
+      
+      console.log('🔧 Preparando escenario:', {
+        now: now.toISOString(),
+        startOfDayUtc: startOfDayUtc.toISOString()
+      });
+      
+      // 2. Eliminar fichajes de hoy para Gonzalo
+      const { error: deleteError } = await supabase
         .from('fichajes')
         .delete()
         .eq('empleado_id', GONZALO_ID)
-        .gte('timestamp_real', inicioHoy.toISOString());
+        .gte('timestamp_real', startOfDayUtc.toISOString());
 
-      // 2. Crear entrada hace 2 horas
-      const hace2Horas = new Date(Date.now() - 2 * 60 * 60 * 1000);
-      const { error: errorEntrada } = await supabase
+      if (deleteError) {
+        console.error('Error eliminando fichajes:', deleteError);
+      }
+
+      // 3. Crear entrada hace 2 horas
+      const hace2Horas = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const { error: errorEntrada, data: entradaData } = await supabase
         .from('fichajes')
         .insert({
           empleado_id: GONZALO_ID,
@@ -49,13 +65,15 @@ const TestKioskoAlertas = () => {
           timestamp_aplicado: hace2Horas.toISOString(),
           metodo: 'facial',
           estado: 'valido'
-        });
+        })
+        .select();
 
       if (errorEntrada) throw errorEntrada;
+      console.log('✅ Entrada creada:', entradaData);
 
-      // 3. Crear inicio de pausa hace 10 minutos (excede el 1 minuto permitido)
-      const hace10Minutos = new Date(Date.now() - 10 * 60 * 1000);
-      const { error: errorPausa } = await supabase
+      // 4. Crear inicio de pausa hace 10 minutos (excede el 1 minuto permitido del turno de Gonzalo)
+      const hace10Minutos = new Date(now.getTime() - 10 * 60 * 1000);
+      const { error: errorPausa, data: pausaData } = await supabase
         .from('fichajes')
         .insert({
           empleado_id: GONZALO_ID,
@@ -64,13 +82,25 @@ const TestKioskoAlertas = () => {
           timestamp_aplicado: hace10Minutos.toISOString(),
           metodo: 'facial',
           estado: 'valido'
-        });
+        })
+        .select();
 
       if (errorPausa) throw errorPausa;
+      console.log('✅ Pausa inicio creada:', pausaData);
+
+      // 5. Verificar que los fichajes existen
+      const { data: verificacion } = await supabase
+        .from('fichajes')
+        .select('id, tipo, timestamp_real')
+        .eq('empleado_id', GONZALO_ID)
+        .gte('timestamp_real', startOfDayUtc.toISOString())
+        .order('timestamp_real', { ascending: false });
+
+      console.log('📋 Fichajes de hoy para Gonzalo:', verificacion);
 
       toast({
-        title: "✅ Escenario preparado",
-        description: "Gonzalo tiene una pausa activa de 10 minutos (permitido: 1 min). Ve al kiosco y termina su pausa para ver la alerta.",
+        title: "✅ Escenario preparado correctamente",
+        description: `Gonzalo tiene entrada y pausa_inicio activa (${verificacion?.length || 0} fichajes). Ve a /kiosco y termina su pausa.`,
       });
 
     } catch (error: any) {
