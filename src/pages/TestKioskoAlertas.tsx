@@ -23,84 +23,23 @@ const TestKioskoAlertas = () => {
     { tipo: 'salida_temprana' as const, fecha: new Date(Date.now() - 172800000).toISOString(), minutos: 8, observaciones: '' },
   ];
 
-  // Función para preparar el escenario de pausa excedida
+  // Función para preparar el escenario de pausa excedida usando RPC
   const prepararPausaExcedida = async () => {
     setLoading(true);
     try {
-      // 1. Obtener el inicio del día en Argentina (UTC)
-      const now = new Date();
-      // Argentina es UTC-3, así que el día comienza a las 03:00 UTC
-      const argentinaOffset = -3;
-      const nowUtc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
-      const nowArg = new Date(nowUtc.getTime() + (argentinaOffset * 60 * 60000));
-      
-      // Inicio del día en Argentina, convertido a UTC
-      const startOfDayArg = new Date(nowArg.getFullYear(), nowArg.getMonth(), nowArg.getDate(), 0, 0, 0, 0);
-      const startOfDayUtc = new Date(startOfDayArg.getTime() - (argentinaOffset * 60 * 60000));
-      
-      console.log('🔧 Preparando escenario:', {
-        now: now.toISOString(),
-        startOfDayUtc: startOfDayUtc.toISOString()
+      // Usar RPC SECURITY DEFINER que bypassa RLS
+      const { data, error } = await supabase.rpc('kiosk_preparar_pausa_excedida_test', {
+        p_empleado_id: GONZALO_ID,
+        p_minutos_pausa: 10 // 10 minutos de pausa (el turno permite 1)
       });
-      
-      // 2. Eliminar fichajes de hoy para Gonzalo
-      const { error: deleteError } = await supabase
-        .from('fichajes')
-        .delete()
-        .eq('empleado_id', GONZALO_ID)
-        .gte('timestamp_real', startOfDayUtc.toISOString());
 
-      if (deleteError) {
-        console.error('Error eliminando fichajes:', deleteError);
-      }
+      if (error) throw error;
 
-      // 3. Crear entrada hace 2 horas
-      const hace2Horas = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-      const { error: errorEntrada, data: entradaData } = await supabase
-        .from('fichajes')
-        .insert({
-          empleado_id: GONZALO_ID,
-          tipo: 'entrada',
-          timestamp_real: hace2Horas.toISOString(),
-          timestamp_aplicado: hace2Horas.toISOString(),
-          metodo: 'facial',
-          estado: 'valido'
-        })
-        .select();
-
-      if (errorEntrada) throw errorEntrada;
-      console.log('✅ Entrada creada:', entradaData);
-
-      // 4. Crear inicio de pausa hace 10 minutos (excede el 1 minuto permitido del turno de Gonzalo)
-      const hace10Minutos = new Date(now.getTime() - 10 * 60 * 1000);
-      const { error: errorPausa, data: pausaData } = await supabase
-        .from('fichajes')
-        .insert({
-          empleado_id: GONZALO_ID,
-          tipo: 'pausa_inicio',
-          timestamp_real: hace10Minutos.toISOString(),
-          timestamp_aplicado: hace10Minutos.toISOString(),
-          metodo: 'facial',
-          estado: 'valido'
-        })
-        .select();
-
-      if (errorPausa) throw errorPausa;
-      console.log('✅ Pausa inicio creada:', pausaData);
-
-      // 5. Verificar que los fichajes existen
-      const { data: verificacion } = await supabase
-        .from('fichajes')
-        .select('id, tipo, timestamp_real')
-        .eq('empleado_id', GONZALO_ID)
-        .gte('timestamp_real', startOfDayUtc.toISOString())
-        .order('timestamp_real', { ascending: false });
-
-      console.log('📋 Fichajes de hoy para Gonzalo:', verificacion);
+      console.log('✅ Escenario preparado:', data);
 
       toast({
         title: "✅ Escenario preparado correctamente",
-        description: `Gonzalo tiene entrada y pausa_inicio activa (${verificacion?.length || 0} fichajes). Ve a /kiosco y termina su pausa.`,
+        description: (data as any)?.mensaje || "Gonzalo tiene pausa activa. Ve a /kiosco y termina su pausa.",
       });
 
     } catch (error: any) {
@@ -118,20 +57,17 @@ const TestKioskoAlertas = () => {
   const limpiarFichajes = async () => {
     setLoading(true);
     try {
-      const hoy = new Date();
-      const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0);
-      
-      const { error } = await supabase
-        .from('fichajes')
-        .delete()
-        .eq('empleado_id', GONZALO_ID)
-        .gte('timestamp_real', inicioHoy.toISOString());
+      const { data, error } = await supabase.rpc('kiosk_limpiar_fichajes_hoy', {
+        p_empleado_id: GONZALO_ID
+      });
 
       if (error) throw error;
 
+      console.log('🧹 Fichajes limpiados:', data);
+
       toast({
         title: "🧹 Fichajes limpiados",
-        description: "Se eliminaron los fichajes de hoy de Gonzalo Justiniano",
+        description: (data as any)?.mensaje || "Se eliminaron los fichajes de hoy de Gonzalo Justiniano",
       });
 
     } catch (error: any) {

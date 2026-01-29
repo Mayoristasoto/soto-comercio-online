@@ -7781,6 +7781,14 @@ export type Database = {
         }
         Returns: string
       }
+      kiosk_limpiar_fichajes_hoy: {
+        Args: { p_empleado_id: string }
+        Returns: Json
+      }
+      kiosk_preparar_pausa_excedida_test: {
+        Args: { p_empleado_id: string; p_minutos_pausa?: number }
+        Returns: Json
+      }
       kiosk_registrar_cruz_roja: {
         Args: {
           p_empleado_id: string
