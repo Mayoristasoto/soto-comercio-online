@@ -2098,28 +2098,63 @@ export default function KioscoCheckIn() {
                   
                   {/* Información de Pausa Activa */}
                   {pausaActiva && (
-                    <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 mb-4">
-                      <div className="flex items-center justify-center mb-4">
-                        <Coffee className="h-8 w-8 text-orange-600 mr-2" />
-                        <h3 className="text-xl font-bold text-orange-900">Pausa en Progreso</h3>
+                    <div className={`border-2 rounded-lg p-3 sm:p-4 md:p-6 mb-4 ${
+                      pausaActiva.excedida 
+                        ? 'bg-destructive/10 border-destructive' 
+                        : 'bg-orange-50 border-orange-300'
+                    }`}>
+                      <div className="flex items-center justify-center mb-2 sm:mb-4">
+                        {pausaActiva.excedida ? (
+                          <AlertTriangle className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-destructive mr-2 animate-pulse" />
+                        ) : (
+                          <Coffee className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-orange-600 mr-2" />
+                        )}
+                        <h3 className={`text-base sm:text-lg md:text-xl font-bold ${
+                          pausaActiva.excedida ? 'text-destructive' : 'text-orange-900'
+                        }`}>
+                          {pausaActiva.excedida ? '⚠️ Pausa Excedida' : 'Pausa en Progreso'}
+                        </h3>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="bg-white rounded-lg p-4 text-center">
-                          <p className="text-sm text-gray-600 mb-1">Tiempo Transcurrido</p>
-                          <p className="text-3xl font-bold text-orange-600">
+                      
+                      <div className={`grid gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-4 ${
+                        pausaActiva.excedida ? 'grid-cols-3' : 'grid-cols-2'
+                      }`}>
+                        <div className="bg-white rounded-lg p-2 sm:p-3 md:p-4 text-center">
+                          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mb-0.5 sm:mb-1">Tiempo Transcurrido</p>
+                          <p className={`text-lg sm:text-2xl md:text-3xl font-bold ${
+                            pausaActiva.excedida ? 'text-destructive' : 'text-orange-600'
+                          }`}>
                             {pausaActiva.minutosTranscurridos}
                           </p>
-                          <p className="text-xs text-gray-500">minutos</p>
+                          <p className="text-[9px] sm:text-xs text-muted-foreground">minutos</p>
                         </div>
-                        <div className="bg-white rounded-lg p-4 text-center">
-                          <p className="text-sm text-gray-600 mb-1">Tiempo Restante</p>
-                          <p className="text-3xl font-bold text-green-600">
-                            {pausaActiva.minutosRestantes}
+                        <div className="bg-white rounded-lg p-2 sm:p-3 md:p-4 text-center">
+                          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mb-0.5 sm:mb-1">Permitido</p>
+                          <p className="text-lg sm:text-2xl md:text-3xl font-bold text-muted-foreground">
+                            {pausaActiva.minutosPermitidos}
                           </p>
-                          <p className="text-xs text-gray-500">minutos</p>
+                          <p className="text-[9px] sm:text-xs text-muted-foreground">minutos</p>
                         </div>
+                        {pausaActiva.excedida && (
+                          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-2 sm:p-3 md:p-4 text-center">
+                            <p className="text-[10px] sm:text-xs md:text-sm text-destructive mb-0.5 sm:mb-1">Exceso</p>
+                            <p className="text-lg sm:text-2xl md:text-3xl font-bold text-destructive">
+                              +{pausaActiva.minutosTranscurridos - pausaActiva.minutosPermitidos}
+                            </p>
+                            <p className="text-[9px] sm:text-xs text-destructive">minutos</p>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-center text-sm text-gray-600">
+                      
+                      {pausaActiva.excedida && (
+                        <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-2 sm:p-3 mb-2 sm:mb-3">
+                          <p className="text-[10px] sm:text-xs md:text-sm text-center text-destructive font-medium">
+                            ⚠️ Finalize su pausa inmediatamente. El exceso será registrado en su legajo.
+                          </p>
+                        </div>
+                      )}
+                      
+                      <p className="text-center text-[10px] sm:text-xs md:text-sm text-muted-foreground">
                         Pausa iniciada: {pausaActiva.inicio.toLocaleTimeString('es-ES', {
                           hour: '2-digit',
                           minute: '2-digit'
