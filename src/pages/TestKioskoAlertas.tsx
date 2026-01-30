@@ -6,9 +6,13 @@ import { PausaExcedidaAlert } from '@/components/kiosko/PausaExcedidaAlert';
 import { LlegadaTardeAlert } from '@/components/kiosko/LlegadaTardeAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Coffee, Clock, AlertTriangle, Trash2, Play } from 'lucide-react';
+import { Coffee, Clock, AlertTriangle, Trash2, Play, User } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const GONZALO_ID = '96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4';
+const EMPLEADOS_TEST = [
+  { id: '96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4', nombre: 'Gonzalo Justiniano' },
+  { id: 'b94333ce-87a4-4ae0-9f1e-5ed4a91ea017', nombre: 'Tomas Diaz' },
+];
 
 const TestKioskoAlertas = () => {
   const { toast } = useToast();
@@ -16,6 +20,9 @@ const TestKioskoAlertas = () => {
   const [showPausaExcedida, setShowPausaExcedida] = useState(false);
   const [showLlegadaTarde, setShowLlegadaTarde] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(EMPLEADOS_TEST[0]);
+
+  const empleadoActual = EMPLEADOS_TEST.find(e => e.id === empleadoSeleccionado.id) || EMPLEADOS_TEST[0];
 
   const mockDetallesCruces = [
     { tipo: 'llegada_tarde' as const, fecha: new Date().toISOString(), minutos: 15, observaciones: 'Tráfico intenso' },
@@ -27,10 +34,9 @@ const TestKioskoAlertas = () => {
   const prepararPausaExcedida = async () => {
     setLoading(true);
     try {
-      // Usar RPC SECURITY DEFINER que bypassa RLS
       const { data, error } = await supabase.rpc('kiosk_preparar_pausa_excedida_test', {
-        p_empleado_id: GONZALO_ID,
-        p_minutos_pausa: 10 // 10 minutos de pausa (el turno permite 1)
+        p_empleado_id: empleadoActual.id,
+        p_minutos_pausa: 10
       });
 
       if (error) throw error;
@@ -39,7 +45,7 @@ const TestKioskoAlertas = () => {
 
       toast({
         title: "✅ Escenario preparado correctamente",
-        description: (data as any)?.mensaje || "Gonzalo tiene pausa activa. Ve a /kiosco y termina su pausa.",
+        description: `${empleadoActual.nombre} tiene pausa activa. Ve a /kiosco y termina su pausa.`,
       });
 
     } catch (error: any) {
@@ -58,7 +64,7 @@ const TestKioskoAlertas = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('kiosk_limpiar_fichajes_hoy', {
-        p_empleado_id: GONZALO_ID
+        p_empleado_id: empleadoActual.id
       });
 
       if (error) throw error;
@@ -67,7 +73,7 @@ const TestKioskoAlertas = () => {
 
       toast({
         title: "🧹 Fichajes limpiados",
-        description: (data as any)?.mensaje || "Se eliminaron los fichajes de hoy de Gonzalo Justiniano",
+        description: `Se eliminaron los fichajes de hoy de ${empleadoActual.nombre}`,
       });
 
     } catch (error: any) {
@@ -132,17 +138,43 @@ const TestKioskoAlertas = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-800">
               <Coffee className="h-5 w-5" />
-              Prueba Real: Pausa Excedida - Gonzalo Justiniano
+              Prueba Real: Pausa Excedida
             </CardTitle>
             <CardDescription>
               Prepara el escenario para probar la alerta de pausa excedida en el kiosco real.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Selector de empleado */}
+            <div className="bg-white rounded-lg p-4 space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2 text-orange-800">
+                <User className="h-4 w-4" />
+                Seleccionar empleado:
+              </label>
+              <Select 
+                value={empleadoSeleccionado.id} 
+                onValueChange={(value) => {
+                  const emp = EMPLEADOS_TEST.find(e => e.id === value);
+                  if (emp) setEmpleadoSeleccionado(emp);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar empleado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EMPLEADOS_TEST.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="bg-white rounded-lg p-4 space-y-2 text-sm">
               <p className="font-semibold text-orange-800">Qué hace este botón:</p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Crea una <strong>entrada</strong> de Gonzalo hace 2 horas</li>
+                <li>Crea una <strong>entrada</strong> de {empleadoActual.nombre} hace 2 horas</li>
                 <li>Crea un <strong>inicio de pausa</strong> hace 10 minutos</li>
                 <li>Su turno permite solo <strong>1 minuto</strong> de pausa</li>
                 <li>Cuando termine la pausa en el kiosco, verá la alerta 🔥</li>
@@ -175,7 +207,7 @@ const TestKioskoAlertas = () => {
               <ol className="list-decimal list-inside space-y-1">
                 <li>Haz clic en "Preparar Escenario"</li>
                 <li>Ve a <code className="bg-blue-100 px-1 rounded">/kiosco</code></li>
-                <li>Haz reconocimiento facial con Gonzalo Justiniano</li>
+                <li>Haz reconocimiento facial con {empleadoActual.nombre}</li>
                 <li>Selecciona "Terminar Pausa"</li>
                 <li>¡Verás la alerta de Pausa Excedida! 🚨</li>
               </ol>
