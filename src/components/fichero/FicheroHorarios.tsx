@@ -247,26 +247,68 @@ export default function FicheroHorarios() {
     }
     
     try {
-      // Asignar el turno a cada empleado seleccionado
+      // Asignar el turno a cada empleado seleccionado con lógica UPSERT
       for (const empleadoId of asignacionData.empleado_ids) {
-        // Desactivar asignación anterior si existe
+        // 1. Desactivar asignaciones activas anteriores
         await supabase
           .from('empleado_turnos')
           .update({ activo: false, fecha_fin: new Date().toISOString().split('T')[0] })
           .eq('empleado_id', empleadoId)
           .eq('activo', true);
 
-        // Crear nueva asignación
-        const { error } = await supabase
+        // 2. Verificar si ya existe registro con misma fecha_inicio
+        const { data: existingByDate } = await supabase
           .from('empleado_turnos')
-          .insert([{
-            empleado_id: empleadoId,
-            turno_id: asignacionData.turno_id,
-            fecha_inicio: asignacionData.fecha_inicio,
-            activo: true
-          }]);
+          .select('id')
+          .eq('empleado_id', empleadoId)
+          .eq('fecha_inicio', asignacionData.fecha_inicio)
+          .maybeSingle();
 
-        if (error) throw error;
+        // 3. Verificar si ya existe registro con mismo turno_id
+        const { data: existingByTurno } = await supabase
+          .from('empleado_turnos')
+          .select('id')
+          .eq('empleado_id', empleadoId)
+          .eq('turno_id', asignacionData.turno_id)
+          .maybeSingle();
+
+        // 4. Decidir: UPDATE o INSERT según existencia
+        if (existingByDate) {
+          // Reactivar y actualizar el registro existente por fecha
+          const { error } = await supabase
+            .from('empleado_turnos')
+            .update({
+              turno_id: asignacionData.turno_id,
+              activo: true,
+              fecha_fin: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingByDate.id);
+          if (error) throw error;
+        } else if (existingByTurno) {
+          // Reactivar y actualizar el registro existente por turno
+          const { error } = await supabase
+            .from('empleado_turnos')
+            .update({
+              fecha_inicio: asignacionData.fecha_inicio,
+              activo: true,
+              fecha_fin: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingByTurno.id);
+          if (error) throw error;
+        } else {
+          // Insertar nuevo registro
+          const { error } = await supabase
+            .from('empleado_turnos')
+            .insert([{
+              empleado_id: empleadoId,
+              turno_id: asignacionData.turno_id,
+              fecha_inicio: asignacionData.fecha_inicio,
+              activo: true
+            }]);
+          if (error) throw error;
+        }
       }
       
       toast({
