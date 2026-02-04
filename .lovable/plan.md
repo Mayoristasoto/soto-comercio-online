@@ -1,185 +1,211 @@
 
-# Plan: Solucionar Error de Asignación de Horarios
+
+# Plan: Agregar Logging Detallado para Diagnóstico de Cruces Rojas
 
 ## Problema Identificado
 
-Al intentar asignar horarios a empleados, el sistema muestra "Error: No se pudo asignar el horario" debido a conflictos con restricciones de unicidad en la base de datos.
+Al analizar los datos:
+- **Matias Merino y Carlos Espina** tienen fichajes del 3 y 4 de febrero con `es_puntual: false` correctamente guardado
+- **Sin embargo, NO existen registros en `empleado_cruces_rojas`** para esas fechas
+- El RPC `kiosk_registrar_cruz_roja` existe y funciona (tiene `SECURITY DEFINER = true`)
+- La configuración `late_arrival_alert_enabled` está en `true`
 
-### Causa Raíz
+Esto indica que:
+1. El fichaje sí detecta la llegada tarde (guarda `es_puntual: false`)
+2. Pero el código que llama al RPC para registrar la cruz roja **no se está ejecutando** o **falla silenciosamente**
 
-La tabla `empleado_turnos` tiene **dos constraints UNIQUE** que causan conflictos:
+## Áreas Críticas a Agregar Logging
 
-1. **`empleado_turnos_empleado_id_fecha_inicio_key`**: `UNIQUE (empleado_id, fecha_inicio)`
-   - Impide que un empleado tenga dos registros con la misma fecha de inicio (incluso si uno está inactivo)
-   
-2. **`empleado_turnos_empleado_turno_unique`**: `UNIQUE (empleado_id, turno_id)`
-   - Impide asignar el mismo turno al mismo empleado más de una vez
+### 1. Flujo de Llegada Tarde (líneas 1174-1241 y 1500-1567)
 
-El flujo actual:
-1. Desactiva el turno anterior (UPDATE activo = false)
-2. Intenta insertar nuevo registro
-3. **Falla** porque ya existe un registro (inactivo) con la misma combinación empleado_id + fecha_inicio
+Hay **dos funciones** donde se detecta llegada tarde:
+- `ejecutarAccionDirecta` (reconocimiento facial directo)
+- `procesarAccionFichaje` (selección manual de acción)
 
----
+Puntos a loguear:
+- Entrada al bloque de verificación de llegada tarde
+- Valor de `config.lateArrivalAlertEnabled`
+- Datos del turno obtenido
+- Cálculo de hora límite vs hora actual
+- Resultado de la comparación
+- Llamada al RPC y su resultado
 
-## Solución Propuesta
+### 2. Flujo de Pausa Excedida (líneas 1258-1308 y 1591-1650)
 
-### Opción 1: Modificar la Lógica de Asignación (Recomendada)
+Similar al anterior, en ambas funciones hay bloques de pausa excedida.
 
-En lugar de siempre insertar, usar **UPSERT** (Insert o Update si existe):
+## Cambios Propuestos
 
-1. Si ya existe un registro para ese empleado con la misma fecha_inicio → actualizarlo con el nuevo turno_id
-2. Si ya existe un registro para ese empleado con el mismo turno_id → actualizarlo con la nueva fecha_inicio
-3. Solo insertar si no existe ningún conflicto
+### Archivo: `src/pages/KioscoCheckIn.tsx`
 
-**Cambios en código:**
+#### Sección 1: Logging en `ejecutarAccionDirecta` - Llegada Tarde (líneas ~1174-1241)
 
-```text
-Archivo: src/components/fichero/FicheroHorarios.tsx
-Función: handleSubmitAsignacion (líneas 237-291)
+```typescript
+// 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
+if (tipoAccion === 'entrada' && config.lateArrivalAlertEnabled) {
+  console.log('🔍 [LLEGADA-TARDE] === INICIO VERIFICACIÓN ===')
+  console.log('🔍 [LLEGADA-TARDE] config.lateArrivalAlertEnabled:', config.lateArrivalAlertEnabled)
+  console.log('🔍 [LLEGADA-TARDE] empleadoId:', empleadoParaFichaje.id)
+  console.log('🔍 [LLEGADA-TARDE] fichajeId:', fichajeId)
+  
+  try {
+    const { data: turnoData, error: turnoError } = await supabase
+      .from('empleado_turnos')
+      .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
+      .eq('empleado_id', empleadoParaFichaje.id)
+      .eq('activo', true)
+      .maybeSingle()
+    
+    console.log('🔍 [LLEGADA-TARDE] turnoData:', turnoData)
+    console.log('🔍 [LLEGADA-TARDE] turnoError:', turnoError)
+    
+    if (turnoData?.turno) {
+      const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
+      const horaEntradaProgramada = turno.hora_entrada
+      const tolerancia = turno.tolerancia_entrada_minutos ?? 5
+      
+      const [h, m] = horaEntradaProgramada.split(':').map(Number)
+      const horaLimite = new Date()
+      horaLimite.setHours(h, m + tolerancia, 0, 0)
+      
+      const horaActual = new Date()
+      
+      console.log('🔍 [LLEGADA-TARDE] horaEntradaProgramada:', horaEntradaProgramada)
+      console.log('🔍 [LLEGADA-TARDE] tolerancia:', tolerancia)
+      console.log('🔍 [LLEGADA-TARDE] horaLimite:', horaLimite.toISOString())
+      console.log('🔍 [LLEGADA-TARDE] horaActual:', horaActual.toISOString())
+      console.log('🔍 [LLEGADA-TARDE] ¿Llegó tarde?:', horaActual > horaLimite)
+      
+      if (horaActual > horaLimite) {
+        const minutosRetraso = Math.round((horaActual.getTime() - horaLimite.getTime()) / 60000)
+        console.log('🔍 [LLEGADA-TARDE] minutosRetraso:', minutosRetraso)
+        
+        // ... mostrar alerta ...
+        
+        // DESPUÉS: Registrar cruz roja
+        console.log('🔍 [LLEGADA-TARDE] Llamando RPC kiosk_registrar_cruz_roja...')
+        console.log('🔍 [LLEGADA-TARDE] Parámetros:', {
+          p_empleado_id: empleadoParaFichaje.id,
+          p_tipo_infraccion: 'llegada_tarde',
+          p_fichaje_id: fichajeId,
+          p_minutos_diferencia: minutosRetraso
+        })
+        
+        try {
+          const { data: rpcResult, error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
+            p_empleado_id: empleadoParaFichaje.id,
+            p_tipo_infraccion: 'llegada_tarde',
+            p_fichaje_id: fichajeId,
+            p_minutos_diferencia: minutosRetraso,
+            p_observaciones: `...`
+          })
+          
+          console.log('🔍 [LLEGADA-TARDE] RPC resultado:', rpcResult)
+          console.log('🔍 [LLEGADA-TARDE] RPC error:', cruceError)
+          
+          if (!cruceError) {
+            console.log('✅ [LLEGADA-TARDE] Cruz roja registrada exitosamente')
+          } else {
+            console.error('❌ [LLEGADA-TARDE] Error RPC:', JSON.stringify(cruceError))
+          }
+        } catch (err) {
+          console.error('❌ [LLEGADA-TARDE] Excepción al llamar RPC:', err)
+        }
+      } else {
+        console.log('✅ [LLEGADA-TARDE] Empleado llegó a tiempo')
+      }
+    } else {
+      console.log('⚠️ [LLEGADA-TARDE] No se encontró turno activo para el empleado')
+    }
+  } catch (error) {
+    console.error('❌ [LLEGADA-TARDE] Error en verificación:', error)
+  }
+  console.log('🔍 [LLEGADA-TARDE] === FIN VERIFICACIÓN ===')
+}
 ```
 
-**Nueva lógica:**
+#### Sección 2: Logging en `procesarAccionFichaje` - Llegada Tarde (líneas ~1500-1567)
+
+Mismo patrón de logging aplicado a la segunda función.
+
+#### Sección 3: Logging en Pausa Excedida (líneas ~1258-1308 y ~1591-1650)
+
+Logging similar para el flujo de pausa excedida.
+
+### Archivo: Crear `src/lib/crucesRojasLogger.ts` (Opcional - Centralizado)
+
+Para evitar duplicación de código, crear un logger centralizado:
+
 ```typescript
-for (const empleadoId of asignacionData.empleado_ids) {
-  // 1. Desactivar asignaciones activas anteriores
-  await supabase
-    .from('empleado_turnos')
-    .update({ activo: false, fecha_fin: new Date().toISOString().split('T')[0] })
-    .eq('empleado_id', empleadoId)
-    .eq('activo', true);
-
-  // 2. Verificar si ya existe registro con misma fecha_inicio
-  const { data: existingByDate } = await supabase
-    .from('empleado_turnos')
-    .select('id')
-    .eq('empleado_id', empleadoId)
-    .eq('fecha_inicio', asignacionData.fecha_inicio)
-    .maybeSingle();
-
-  // 3. Verificar si ya existe registro con mismo turno_id
-  const { data: existingByTurno } = await supabase
-    .from('empleado_turnos')
-    .select('id')
-    .eq('empleado_id', empleadoId)
-    .eq('turno_id', asignacionData.turno_id)
-    .maybeSingle();
-
-  // 4. Decidir: UPDATE o INSERT
-  if (existingByDate) {
-    // Reactivar y actualizar el registro existente
-    await supabase
-      .from('empleado_turnos')
-      .update({
-        turno_id: asignacionData.turno_id,
-        activo: true,
-        fecha_fin: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existingByDate.id);
-  } else if (existingByTurno) {
-    // Reactivar y actualizar fecha
-    await supabase
-      .from('empleado_turnos')
-      .update({
-        fecha_inicio: asignacionData.fecha_inicio,
-        activo: true,
-        fecha_fin: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existingByTurno.id);
-  } else {
-    // Insertar nuevo registro
-    await supabase
-      .from('empleado_turnos')
-      .insert([{
-        empleado_id: empleadoId,
-        turno_id: asignacionData.turno_id,
-        fecha_inicio: asignacionData.fecha_inicio,
-        activo: true
-      }]);
+export const logCruzRoja = {
+  inicio: (tipo: 'llegada_tarde' | 'pausa_excedida', empleadoId: string, fichajeId: string) => {
+    console.log(`🔍 [CRUZ-ROJA:${tipo.toUpperCase()}] === INICIO ===`)
+    console.log(`🔍 [CRUZ-ROJA:${tipo.toUpperCase()}] empleadoId: ${empleadoId}`)
+    console.log(`🔍 [CRUZ-ROJA:${tipo.toUpperCase()}] fichajeId: ${fichajeId}`)
+  },
+  
+  turnoData: (data: any, error: any) => {
+    console.log('🔍 [CRUZ-ROJA] turnoData:', JSON.stringify(data))
+    if (error) console.log('🔍 [CRUZ-ROJA] turnoError:', JSON.stringify(error))
+  },
+  
+  calculo: (params: { horaEsperada?: string, tolerancia?: number, horaLimite?: string, horaActual?: string, esTarde?: boolean, minutos?: number }) => {
+    Object.entries(params).forEach(([key, value]) => {
+      console.log(`🔍 [CRUZ-ROJA] ${key}: ${value}`)
+    })
+  },
+  
+  rpcLlamada: (params: Record<string, any>) => {
+    console.log('🔍 [CRUZ-ROJA] Llamando RPC kiosk_registrar_cruz_roja')
+    console.log('🔍 [CRUZ-ROJA] Parámetros:', JSON.stringify(params))
+  },
+  
+  rpcResultado: (data: any, error: any) => {
+    if (error) {
+      console.error('❌ [CRUZ-ROJA] Error RPC:', JSON.stringify(error))
+    } else {
+      console.log('✅ [CRUZ-ROJA] Registrado exitosamente. ID:', data)
+    }
+  },
+  
+  fin: (resultado: 'exito' | 'sin_turno' | 'puntual' | 'error') => {
+    console.log(`🔍 [CRUZ-ROJA] === FIN (${resultado}) ===`)
   }
 }
 ```
 
----
-
-### Opción 2: Modificar Constraints de Base de Datos (Alternativa)
-
-Cambiar los constraints UNIQUE para que solo apliquen a registros activos usando un índice parcial:
-
-```sql
--- Eliminar constraints actuales
-ALTER TABLE empleado_turnos 
-DROP CONSTRAINT IF EXISTS empleado_turnos_empleado_id_fecha_inicio_key;
-
-ALTER TABLE empleado_turnos 
-DROP CONSTRAINT IF EXISTS empleado_turnos_empleado_turno_unique;
-
--- Crear índices únicos parciales (solo registros activos)
-CREATE UNIQUE INDEX empleado_turnos_empleado_fecha_activo_unique 
-ON empleado_turnos (empleado_id, fecha_inicio) 
-WHERE activo = true;
-
-CREATE UNIQUE INDEX empleado_turnos_empleado_turno_activo_unique 
-ON empleado_turnos (empleado_id, turno_id) 
-WHERE activo = true;
-```
-
-Esta opción permite múltiples registros inactivos pero solo uno activo por combinación.
-
----
-
-## Recomendación
-
-**Implementar ambas opciones:**
-1. **Base de datos**: Cambiar a índices parciales para mayor flexibilidad
-2. **Código**: Mejorar lógica para manejar casos de reactivación
-
----
-
 ## Resumen de Cambios
 
-| Componente | Cambio |
-|------------|--------|
-| **Migración SQL** | Reemplazar constraints UNIQUE por índices parciales que solo aplican a registros activos |
-| **FicheroHorarios.tsx** | Modificar `handleSubmitAsignacion` para verificar existencia antes de insertar y usar UPDATE cuando corresponda |
-
----
+| Archivo | Cambio |
+|---------|--------|
+| `src/pages/KioscoCheckIn.tsx` | Agregar ~40 líneas de logging en 4 secciones (2 para llegada tarde, 2 para pausa excedida) |
+| `src/lib/crucesRojasLogger.ts` | (Opcional) Crear logger centralizado para reutilización |
 
 ## Sección Técnica
 
 ### Archivos a modificar:
-- `src/components/fichero/FicheroHorarios.tsx` - Función handleSubmitAsignacion (líneas 237-291)
+- `src/pages/KioscoCheckIn.tsx` (líneas ~1174-1241, ~1258-1308, ~1500-1567, ~1591-1650)
 
-### Nueva migración SQL:
-```sql
--- Eliminar constraints problemáticos
-ALTER TABLE empleado_turnos 
-DROP CONSTRAINT IF EXISTS empleado_turnos_empleado_id_fecha_inicio_key;
+### Formato de logs:
+- Prefijo `🔍 [LLEGADA-TARDE]` para llegadas tarde
+- Prefijo `🔍 [PAUSA-EXCEDIDA]` para pausas excedidas  
+- Prefijo `✅` para éxitos
+- Prefijo `❌` para errores
+- Prefijo `⚠️` para advertencias
 
-ALTER TABLE empleado_turnos 
-DROP CONSTRAINT IF EXISTS empleado_turnos_empleado_turno_unique;
+### Datos a capturar por cada evento:
+1. ID del empleado
+2. ID del fichaje
+3. Estado de configuración (`lateArrivalAlertEnabled`)
+4. Datos del turno (hora entrada, tolerancia)
+5. Cálculo de hora límite vs hora actual
+6. Resultado de comparación
+7. Parámetros enviados al RPC
+8. Respuesta del RPC (data o error)
 
--- Crear índices únicos parciales (solo para registros activos)
-CREATE UNIQUE INDEX IF NOT EXISTS empleado_turnos_empleado_fecha_activo_idx 
-ON empleado_turnos (empleado_id, fecha_inicio) 
-WHERE activo = true;
+### Cómo usar los logs:
+1. Abrir la consola del navegador en el iPad
+2. Realizar un fichaje de entrada (llegada tarde) o pausa_fin (pausa excedida)
+3. Buscar logs con prefijo `[LLEGADA-TARDE]` o `[PAUSA-EXCEDIDA]`
+4. Revisar en qué punto falla el flujo
 
-CREATE UNIQUE INDEX IF NOT EXISTS empleado_turnos_empleado_turno_activo_idx 
-ON empleado_turnos (empleado_id, turno_id) 
-WHERE activo = true;
-```
-
-### Flujo mejorado de asignación:
-```text
-1. Obtener empleados seleccionados
-2. Para cada empleado:
-   a. Desactivar asignación activa actual (si existe)
-   b. Buscar registro existente con misma fecha_inicio
-   c. Buscar registro existente con mismo turno_id
-   d. Si existe registro por fecha → UPDATE con nuevo turno
-   e. Si existe registro por turno → UPDATE con nueva fecha
-   f. Si no existe → INSERT nuevo registro
-3. Mostrar mensaje de éxito
-```
