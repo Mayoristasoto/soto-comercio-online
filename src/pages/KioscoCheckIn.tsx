@@ -402,11 +402,16 @@ export default function KioscoCheckIn() {
     minutosTranscurridos: number
     minutosPermitidos: number
   } | null> => {
+    console.log('🔍 [PAUSA REAL-TIME] === INICIO calcularPausaExcedidaEnTiempoReal ===')
+    console.log('🔍 [PAUSA REAL-TIME] empleadoId:', empleadoId)
+    
     try {
       // Importante: el día debe calcularse en zona horaria Argentina (UTC-3)
       // para que los filtros por fecha coincidan con cómo se interpretan los fichajes.
       const ahoraArg = toArgentinaTime(new Date())
       const startOfDayUtc = getArgentinaStartOfDay(ahoraArg)
+      
+      console.log('🔍 [PAUSA REAL-TIME] Buscando pausa_inicio desde:', startOfDayUtc)
       
       // Obtener el último fichaje de pausa_inicio del día
       const { data: pausaInicio, error: pausaError } = await supabase
@@ -419,35 +424,49 @@ export default function KioscoCheckIn() {
         .limit(1)
         .maybeSingle()
       
-      if (pausaError || !pausaInicio) {
-        console.log('🔍 [PAUSA REAL-TIME] No se encontró pausa_inicio del día')
+      console.log('🔍 [PAUSA REAL-TIME] Resultado búsqueda pausa_inicio:', { pausaInicio, pausaError })
+      
+      if (pausaError) {
+        console.error('❌ [PAUSA REAL-TIME] Error en consulta pausa_inicio:', pausaError)
+        return null
+      }
+      
+      if (!pausaInicio) {
+        console.warn('⚠️ [PAUSA REAL-TIME] No se encontró pausa_inicio del día para empleado:', empleadoId)
+        console.warn('⚠️ [PAUSA REAL-TIME] Esto puede significar:')
+        console.warn('⚠️ [PAUSA REAL-TIME] 1. El empleado no fichó pausa_inicio hoy')
+        console.warn('⚠️ [PAUSA REAL-TIME] 2. Hay un problema de zona horaria en el filtro')
+        console.warn('⚠️ [PAUSA REAL-TIME] startOfDayUtc usado:', startOfDayUtc)
         return null
       }
       
       // Obtener los minutos de pausa desde el turno asignado al empleado
-      const { data: turnoData } = await supabase
+      const { data: turnoData, error: turnoError } = await supabase
         .from('empleado_turnos')
         .select('turno:fichado_turnos(duracion_pausa_minutos)')
         .eq('empleado_id', empleadoId)
         .eq('activo', true)
         .maybeSingle()
       
+      console.log('🔍 [PAUSA REAL-TIME] turnoData:', turnoData, 'turnoError:', turnoError)
+      
       const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
       
-      // Calcular tiempo transcurrido en minutos
-      const inicioPausa = new Date(pausaInicio.timestamp_real)
-      const ahora = new Date()
-      const minutosTranscurridos = Math.floor((ahora.getTime() - inicioPausa.getTime()) / 60000)
+      // Calcular tiempo transcurrido en minutos usando timestamps UTC
+      const inicioPausaUtc = new Date(pausaInicio.timestamp_real)
+      const ahoraUtc = new Date()
+      const diferenciaMs = ahoraUtc.getTime() - inicioPausaUtc.getTime()
+      const minutosTranscurridos = Math.floor(diferenciaMs / 60000)
       const excedida = minutosTranscurridos > minutosPermitidos
       
-      console.log('🔍 [PAUSA REAL-TIME] Cálculo en tiempo real:', {
-        empleadoId,
-        inicioPausa: inicioPausa.toISOString(),
-        ahora: ahora.toISOString(),
-        minutosPermitidos,
-        minutosTranscurridos,
-        excedida
-      })
+      console.log('🔍 [PAUSA REAL-TIME] === CÁLCULO DETALLADO ===')
+      console.log('🔍 [PAUSA REAL-TIME] inicioPausaUtc:', inicioPausaUtc.toISOString())
+      console.log('🔍 [PAUSA REAL-TIME] ahoraUtc:', ahoraUtc.toISOString())
+      console.log('🔍 [PAUSA REAL-TIME] diferenciaMs:', diferenciaMs)
+      console.log('🔍 [PAUSA REAL-TIME] minutosTranscurridos:', minutosTranscurridos)
+      console.log('🔍 [PAUSA REAL-TIME] minutosPermitidos:', minutosPermitidos)
+      console.log('🔍 [PAUSA REAL-TIME] ¿Excedida?:', excedida)
+      console.log('🔍 [PAUSA REAL-TIME] === FIN CÁLCULO ===')
       
       return {
         excedida,
@@ -455,7 +474,10 @@ export default function KioscoCheckIn() {
         minutosPermitidos
       }
     } catch (error) {
-      console.error('Error calculando pausa excedida en tiempo real:', error)
+      console.error('❌ [PAUSA REAL-TIME] Excepción en calcularPausaExcedidaEnTiempoReal:', error)
+      if (error instanceof Error) {
+        console.error('❌ [PAUSA REAL-TIME] Stack:', error.stack)
+      }
       return null
     }
   }
@@ -1351,7 +1373,10 @@ export default function KioscoCheckIn() {
             logCruzRoja.fin('pausa_excedida', 'no_excedida')
           }
         } else {
-          console.log('⚠️ [PAUSA REAL-TIME] No se pudo calcular pausa en tiempo real')
+          console.error('⚠️ [PAUSA REAL-TIME] No se pudo calcular pausa en tiempo real (ejecutarAccionDirecta)')
+          console.error('⚠️ [PAUSA REAL-TIME] empleadoId:', empleadoParaFichaje.id)
+          console.error('⚠️ [PAUSA REAL-TIME] fichajeId:', fichajeId)
+          console.error('⚠️ [PAUSA REAL-TIME] Revisar logs anteriores para más detalles')
           logCruzRoja.fin('pausa_excedida', 'error')
         }
       }
@@ -1732,7 +1757,10 @@ export default function KioscoCheckIn() {
             logCruzRoja.fin('pausa_excedida', 'no_excedida')
           }
         } else {
-          console.log('⚠️ [PAUSA REAL-TIME] No se pudo calcular pausa en tiempo real')
+          console.error('⚠️ [PAUSA REAL-TIME] No se pudo calcular pausa en tiempo real (procesarAccionFichaje)')
+          console.error('⚠️ [PAUSA REAL-TIME] empleadoId:', empleadoParaFichaje.id)
+          console.error('⚠️ [PAUSA REAL-TIME] fichajeId:', fichajeId)
+          console.error('⚠️ [PAUSA REAL-TIME] Revisar logs anteriores para más detalles')
           logCruzRoja.fin('pausa_excedida', 'error')
         }
       }
