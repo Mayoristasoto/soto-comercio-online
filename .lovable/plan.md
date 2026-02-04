@@ -1,211 +1,123 @@
 
 
-# Plan: Agregar Logging Detallado para Diagnóstico de Cruces Rojas
+# Plan: Solucionar Problema de Alerta y Cruz Roja para Pausas Excedidas
 
-## Problema Identificado
+## Problema Detectado
 
-Al analizar los datos:
-- **Matias Merino y Carlos Espina** tienen fichajes del 3 y 4 de febrero con `es_puntual: false` correctamente guardado
-- **Sin embargo, NO existen registros en `empleado_cruces_rojas`** para esas fechas
-- El RPC `kiosk_registrar_cruz_roja` existe y funciona (tiene `SECURITY DEFINER = true`)
-- La configuración `late_arrival_alert_enabled` está en `true`
+Gonzalo Justiniano fichó fin de descanso el 4 de febrero a las 15:09 (hora Argentina) después de 4.5 minutos de pausa, cuando solo tenía 1 minuto permitido. 
 
-Esto indica que:
-1. El fichaje sí detecta la llegada tarde (guarda `es_puntual: false`)
-2. Pero el código que llama al RPC para registrar la cruz roja **no se está ejecutando** o **falla silenciosamente**
+### Lo que funcionó:
+- El fichaje se registró correctamente
+- El trigger de base de datos detectó la pausa excedida y la guardó en `fichajes_pausas_excedidas`
 
-## Áreas Críticas a Agregar Logging
+### Lo que no funcionó:
+- No apareció la alerta visual (PausaExcedidaAlert)
+- No se registró cruz roja en `empleado_cruces_rojas`
 
-### 1. Flujo de Llegada Tarde (líneas 1174-1241 y 1500-1567)
+## Causa Raíz
 
-Hay **dos funciones** donde se detecta llegada tarde:
-- `ejecutarAccionDirecta` (reconocimiento facial directo)
-- `procesarAccionFichaje` (selección manual de acción)
+El sistema tiene **dos mecanismos paralelos** para detectar pausas excedidas:
 
-Puntos a loguear:
-- Entrada al bloque de verificación de llegada tarde
-- Valor de `config.lateArrivalAlertEnabled`
-- Datos del turno obtenido
-- Cálculo de hora límite vs hora actual
-- Resultado de la comparación
-- Llamada al RPC y su resultado
+1. **Trigger de base de datos**: Funciona correctamente, guarda en `fichajes_pausas_excedidas`
+2. **Código del frontend**: Debería mostrar alerta y llamar RPC `kiosk_registrar_cruz_roja`, pero no se ejecutó
 
-### 2. Flujo de Pausa Excedida (líneas 1258-1308 y 1591-1650)
+El problema está en que el código del frontend que muestra la alerta está en `KioscoCheckIn.tsx`, y parece que no se ejecutó correctamente. Las posibles causas son:
 
-Similar al anterior, en ambas funciones hay bloques de pausa excedida.
+- El código con logging que acabamos de aprobar aún no estaba desplegado
+- La función `calcularPausaExcedidaEnTiempoReal` retornó null (problema de zona horaria)
+- Un error silencioso previno la ejecución
 
-## Cambios Propuestos
+## Solución Propuesta
+
+### Parte 1: Agregar Logging Adicional para Diagnóstico Completo
+
+Agregar más puntos de logging para capturar absolutamente todos los escenarios, incluyendo cuando la función retorna null.
+
+### Parte 2: Corregir Posible Problema de Zona Horaria
+
+En la función `calcularPausaExcedidaEnTiempoReal`, el cálculo de tiempo usa:
+- `inicioPausa` del servidor (UTC)
+- `ahora` del dispositivo (zona horaria local)
+
+Esto puede causar cálculos incorrectos si el dispositivo no está en Argentina.
+
+### Parte 3: Sincronizar los Dos Sistemas
+
+Actualmente hay redundancia entre:
+- `fichajes_pausas_excedidas` (trigger de BD)
+- `empleado_cruces_rojas` (RPC del frontend)
+
+Se debe garantizar que ambos sistemas registren la infracción, o unificarlos.
+
+---
+
+## Cambios Técnicos
 
 ### Archivo: `src/pages/KioscoCheckIn.tsx`
 
-#### Sección 1: Logging en `ejecutarAccionDirecta` - Llegada Tarde (líneas ~1174-1241)
+#### Cambio 1: Mejorar logging cuando `calcularPausaExcedidaEnTiempoReal` retorna null
 
 ```typescript
-// 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
-if (tipoAccion === 'entrada' && config.lateArrivalAlertEnabled) {
-  console.log('🔍 [LLEGADA-TARDE] === INICIO VERIFICACIÓN ===')
-  console.log('🔍 [LLEGADA-TARDE] config.lateArrivalAlertEnabled:', config.lateArrivalAlertEnabled)
-  console.log('🔍 [LLEGADA-TARDE] empleadoId:', empleadoParaFichaje.id)
-  console.log('🔍 [LLEGADA-TARDE] fichajeId:', fichajeId)
-  
-  try {
-    const { data: turnoData, error: turnoError } = await supabase
-      .from('empleado_turnos')
-      .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
-      .eq('empleado_id', empleadoParaFichaje.id)
-      .eq('activo', true)
-      .maybeSingle()
-    
-    console.log('🔍 [LLEGADA-TARDE] turnoData:', turnoData)
-    console.log('🔍 [LLEGADA-TARDE] turnoError:', turnoError)
-    
-    if (turnoData?.turno) {
-      const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
-      const horaEntradaProgramada = turno.hora_entrada
-      const tolerancia = turno.tolerancia_entrada_minutos ?? 5
-      
-      const [h, m] = horaEntradaProgramada.split(':').map(Number)
-      const horaLimite = new Date()
-      horaLimite.setHours(h, m + tolerancia, 0, 0)
-      
-      const horaActual = new Date()
-      
-      console.log('🔍 [LLEGADA-TARDE] horaEntradaProgramada:', horaEntradaProgramada)
-      console.log('🔍 [LLEGADA-TARDE] tolerancia:', tolerancia)
-      console.log('🔍 [LLEGADA-TARDE] horaLimite:', horaLimite.toISOString())
-      console.log('🔍 [LLEGADA-TARDE] horaActual:', horaActual.toISOString())
-      console.log('🔍 [LLEGADA-TARDE] ¿Llegó tarde?:', horaActual > horaLimite)
-      
-      if (horaActual > horaLimite) {
-        const minutosRetraso = Math.round((horaActual.getTime() - horaLimite.getTime()) / 60000)
-        console.log('🔍 [LLEGADA-TARDE] minutosRetraso:', minutosRetraso)
-        
-        // ... mostrar alerta ...
-        
-        // DESPUÉS: Registrar cruz roja
-        console.log('🔍 [LLEGADA-TARDE] Llamando RPC kiosk_registrar_cruz_roja...')
-        console.log('🔍 [LLEGADA-TARDE] Parámetros:', {
-          p_empleado_id: empleadoParaFichaje.id,
-          p_tipo_infraccion: 'llegada_tarde',
-          p_fichaje_id: fichajeId,
-          p_minutos_diferencia: minutosRetraso
-        })
-        
-        try {
-          const { data: rpcResult, error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
-            p_empleado_id: empleadoParaFichaje.id,
-            p_tipo_infraccion: 'llegada_tarde',
-            p_fichaje_id: fichajeId,
-            p_minutos_diferencia: minutosRetraso,
-            p_observaciones: `...`
-          })
-          
-          console.log('🔍 [LLEGADA-TARDE] RPC resultado:', rpcResult)
-          console.log('🔍 [LLEGADA-TARDE] RPC error:', cruceError)
-          
-          if (!cruceError) {
-            console.log('✅ [LLEGADA-TARDE] Cruz roja registrada exitosamente')
-          } else {
-            console.error('❌ [LLEGADA-TARDE] Error RPC:', JSON.stringify(cruceError))
-          }
-        } catch (err) {
-          console.error('❌ [LLEGADA-TARDE] Excepción al llamar RPC:', err)
-        }
-      } else {
-        console.log('✅ [LLEGADA-TARDE] Empleado llegó a tiempo')
-      }
-    } else {
-      console.log('⚠️ [LLEGADA-TARDE] No se encontró turno activo para el empleado')
-    }
-  } catch (error) {
-    console.error('❌ [LLEGADA-TARDE] Error en verificación:', error)
-  }
-  console.log('🔍 [LLEGADA-TARDE] === FIN VERIFICACIÓN ===')
+// Línea ~1353-1356
+} else {
+  console.error('⚠️ [PAUSA REAL-TIME] No se pudo calcular pausa en tiempo real')
+  console.error('⚠️ [PAUSA REAL-TIME] empleadoId:', empleadoParaFichaje.id)
+  console.error('⚠️ [PAUSA REAL-TIME] Esto indica que no se encontró pausa_inicio del día')
+  logCruzRoja.fin('pausa_excedida', 'error')
 }
 ```
 
-#### Sección 2: Logging en `procesarAccionFichaje` - Llegada Tarde (líneas ~1500-1567)
-
-Mismo patrón de logging aplicado a la segunda función.
-
-#### Sección 3: Logging en Pausa Excedida (líneas ~1258-1308 y ~1591-1650)
-
-Logging similar para el flujo de pausa excedida.
-
-### Archivo: Crear `src/lib/crucesRojasLogger.ts` (Opcional - Centralizado)
-
-Para evitar duplicación de código, crear un logger centralizado:
+#### Cambio 2: Corregir cálculo de zona horaria
 
 ```typescript
-export const logCruzRoja = {
-  inicio: (tipo: 'llegada_tarde' | 'pausa_excedida', empleadoId: string, fichajeId: string) => {
-    console.log(`🔍 [CRUZ-ROJA:${tipo.toUpperCase()}] === INICIO ===`)
-    console.log(`🔍 [CRUZ-ROJA:${tipo.toUpperCase()}] empleadoId: ${empleadoId}`)
-    console.log(`🔍 [CRUZ-ROJA:${tipo.toUpperCase()}] fichajeId: ${fichajeId}`)
-  },
-  
-  turnoData: (data: any, error: any) => {
-    console.log('🔍 [CRUZ-ROJA] turnoData:', JSON.stringify(data))
-    if (error) console.log('🔍 [CRUZ-ROJA] turnoError:', JSON.stringify(error))
-  },
-  
-  calculo: (params: { horaEsperada?: string, tolerancia?: number, horaLimite?: string, horaActual?: string, esTarde?: boolean, minutos?: number }) => {
-    Object.entries(params).forEach(([key, value]) => {
-      console.log(`🔍 [CRUZ-ROJA] ${key}: ${value}`)
-    })
-  },
-  
-  rpcLlamada: (params: Record<string, any>) => {
-    console.log('🔍 [CRUZ-ROJA] Llamando RPC kiosk_registrar_cruz_roja')
-    console.log('🔍 [CRUZ-ROJA] Parámetros:', JSON.stringify(params))
-  },
-  
-  rpcResultado: (data: any, error: any) => {
-    if (error) {
-      console.error('❌ [CRUZ-ROJA] Error RPC:', JSON.stringify(error))
-    } else {
-      console.log('✅ [CRUZ-ROJA] Registrado exitosamente. ID:', data)
-    }
-  },
-  
-  fin: (resultado: 'exito' | 'sin_turno' | 'puntual' | 'error') => {
-    console.log(`🔍 [CRUZ-ROJA] === FIN (${resultado}) ===`)
-  }
-}
+// Línea ~437-440 en calcularPausaExcedidaEnTiempoReal
+// ANTES (potencialmente problemático):
+const ahora = new Date()
+const minutosTranscurridos = Math.floor((ahora.getTime() - inicioPausa.getTime()) / 60000)
+
+// DESPUÉS (usar hora UTC consistente):
+const ahoraUtc = new Date()
+const inicioPausaUtc = new Date(pausaInicio.timestamp_real)
+const minutosTranscurridos = Math.floor((ahoraUtc.getTime() - inicioPausaUtc.getTime()) / 60000)
+
+console.log('🔍 [PAUSA REAL-TIME] Cálculo detallado:', {
+  empleadoId,
+  inicioPausaUtc: inicioPausaUtc.toISOString(),
+  ahoraUtc: ahoraUtc.toISOString(),
+  diferenciaMs: ahoraUtc.getTime() - inicioPausaUtc.getTime(),
+  minutosTranscurridos,
+  minutosPermitidos,
+  excedida: minutosTranscurridos > minutosPermitidos
+})
 ```
 
-## Resumen de Cambios
+#### Cambio 3: Agregar verificación de que el fichaje fue guardado antes de verificar pausa
+
+El problema podría ser que el fichaje de `pausa_fin` aún no está en la base de datos cuando se ejecuta `calcularPausaExcedidaEnTiempoReal`. Agregar un pequeño delay o verificación.
+
+---
+
+## Verificación Inmediata
+
+Para confirmar que el sistema funcionará correctamente en el próximo fichaje:
+
+1. Realizar un fichaje de prueba de `pausa_inicio` seguido de `pausa_fin` después de esperar más del tiempo permitido
+2. Verificar en la consola del navegador que aparezcan los logs:
+   - `🔍 [CRUZ-ROJA:PAUSA_EXCEDIDA] === INICIO VERIFICACIÓN ===`
+   - `🔍 [CRUZ-ROJA:PAUSA_EXCEDIDA] === CÁLCULO ===`
+   - `🔍 [CRUZ-ROJA:PAUSA_EXCEDIDA] === LLAMANDO RPC ===`
+   - `✅ [CRUZ-ROJA:PAUSA_EXCEDIDA] === FIN VERIFICACIÓN (exito) ===`
+
+3. Verificar que la alerta visual aparezca
+4. Verificar que se cree registro en `empleado_cruces_rojas`
+
+---
+
+## Resumen de Archivos a Modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/KioscoCheckIn.tsx` | Agregar ~40 líneas de logging en 4 secciones (2 para llegada tarde, 2 para pausa excedida) |
-| `src/lib/crucesRojasLogger.ts` | (Opcional) Crear logger centralizado para reutilización |
-
-## Sección Técnica
-
-### Archivos a modificar:
-- `src/pages/KioscoCheckIn.tsx` (líneas ~1174-1241, ~1258-1308, ~1500-1567, ~1591-1650)
-
-### Formato de logs:
-- Prefijo `🔍 [LLEGADA-TARDE]` para llegadas tarde
-- Prefijo `🔍 [PAUSA-EXCEDIDA]` para pausas excedidas  
-- Prefijo `✅` para éxitos
-- Prefijo `❌` para errores
-- Prefijo `⚠️` para advertencias
-
-### Datos a capturar por cada evento:
-1. ID del empleado
-2. ID del fichaje
-3. Estado de configuración (`lateArrivalAlertEnabled`)
-4. Datos del turno (hora entrada, tolerancia)
-5. Cálculo de hora límite vs hora actual
-6. Resultado de comparación
-7. Parámetros enviados al RPC
-8. Respuesta del RPC (data o error)
-
-### Cómo usar los logs:
-1. Abrir la consola del navegador en el iPad
-2. Realizar un fichaje de entrada (llegada tarde) o pausa_fin (pausa excedida)
-3. Buscar logs con prefijo `[LLEGADA-TARDE]` o `[PAUSA-EXCEDIDA]`
-4. Revisar en qué punto falla el flujo
+| `src/pages/KioscoCheckIn.tsx` | Mejorar logging cuando calcularPausaExcedidaEnTiempoReal retorna null |
+| `src/pages/KioscoCheckIn.tsx` | Agregar logging detallado del cálculo de tiempo |
+| `src/lib/crucesRojasLogger.ts` | Agregar función para loguear cuando no hay pausa_inicio |
 
