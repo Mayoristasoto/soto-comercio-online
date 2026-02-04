@@ -114,5 +114,17 @@ export const logCruzRoja = {
    */
   configDeshabilitada: (tipo: TipoInfraccion) => {
     console.log(`ℹ️ [CRUZ-ROJA:${tipo.toUpperCase()}] Verificación omitida - config deshabilitada`)
+  },
+
+  /**
+   * Log cuando calcularPausaExcedidaEnTiempoReal retorna null
+   */
+  sinPausaInicio: (empleadoId: string, startOfDayUtc: string) => {
+    console.error(`⚠️ [CRUZ-ROJA:PAUSA_EXCEDIDA] No se encontró pausa_inicio para empleado: ${empleadoId}`)
+    console.error(`⚠️ [CRUZ-ROJA:PAUSA_EXCEDIDA] startOfDayUtc usado: ${startOfDayUtc}`)
+    console.error(`⚠️ [CRUZ-ROJA:PAUSA_EXCEDIDA] Posibles causas:`)
+    console.error(`⚠️ [CRUZ-ROJA:PAUSA_EXCEDIDA] 1. El empleado no fichó pausa_inicio hoy`)
+    console.error(`⚠️ [CRUZ-ROJA:PAUSA_EXCEDIDA] 2. Problema de zona horaria en el filtro de fecha`)
+    console.error(`⚠️ [CRUZ-ROJA:PAUSA_EXCEDIDA] 3. El fichaje de pausa_inicio aún no se guardó`)
   }
 }
