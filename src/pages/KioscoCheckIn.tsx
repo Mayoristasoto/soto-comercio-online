@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { registrarActividadTarea } from "@/lib/tareasLogService"
 import { logCruzRoja } from "@/lib/crucesRojasLogger"
+import { guardarFotoVerificacion } from "@/lib/verificacionFotosService"
 
 interface EmpleadoBasico {
   id: string
@@ -240,7 +241,10 @@ function UnauthorizedDeviceScreen({
 
 export default function KioscoCheckIn() {
   const { toast } = useToast()
-  const { config } = useFacialConfig()
+  const { config, loading: facialConfigLoading } = useFacialConfig()
+  
+  // Determinar si las alertas están habilitadas (asumir true mientras carga para no perder infracciones)
+  const alertasHabilitadas = facialConfigLoading ? true : config.lateArrivalAlertEnabled
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { reproducirMensajeBienvenida, reproducirMensajeTareas } = useAudioNotifications()
@@ -613,11 +617,12 @@ export default function KioscoCheckIn() {
     }
   }
 
-  const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any, emocion?: string) => {
+  const procesarFichaje = async (confianza: number, empleadoId?: string, empleadoData?: any, emocion?: string, fotoBase64?: string) => {
     // Guardar emoción si fue detectada
     if (emocion) {
       setEmocionDetectada(emocion)
     }
+    // Nota: fotoBase64 se usará cuando se guarde el fichaje y tengamos fichajeId
     
     // Prevenir procesamiento duplicado con debounce de 3 segundos
     const now = Date.now()
@@ -698,18 +703,29 @@ export default function KioscoCheckIn() {
       // Obtener ubicación si está disponible
       let ubicacion = null
       try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000,
-            enableHighAccuracy: false
+        // Verificar primero si el permiso ya fue denegado para evitar spam
+        const permissionStatus = await navigator.permissions?.query?.({ name: 'geolocation' as PermissionName }).catch(() => null)
+        if (permissionStatus?.state === 'denied') {
+          console.info('[GPS] Permiso de ubicación denegado - continuando sin GPS')
+        } else {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 5000,
+              enableHighAccuracy: false
+            })
           })
-        })
-        ubicacion = {
-          latitud: position.coords.latitude,
-          longitud: position.coords.longitude
+          ubicacion = {
+            latitud: position.coords.latitude,
+            longitud: position.coords.longitude
+          }
         }
-      } catch (error) {
-        console.log('No se pudo obtener ubicación:', error)
+      } catch (error: any) {
+        // Tratar "permission denied" (code 1) como info, no como error
+        if (error?.code === 1) {
+          console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
+        } else {
+          console.log('[GPS] No se pudo obtener ubicación:', error?.message || error)
+        }
       }
 
       // Registrar fichaje usando función segura del kiosco
@@ -728,6 +744,29 @@ export default function KioscoCheckIn() {
 
       if (error) {
         throw new Error(error.message || 'Error al registrar fichaje')
+      }
+
+      // 📸 Guardar foto de verificación DESPUÉS del fichaje (ya tenemos fichajeId)
+      if (fotoBase64 && fichajeId && empleadoId) {
+        const deviceToken = localStorage.getItem('kiosk_device_token')
+        guardarFotoVerificacion({
+          empleadoId,
+          fichajeId,
+          fotoBase64,
+          latitud: ubicacion?.latitud,
+          longitud: ubicacion?.longitud,
+          metodoFichaje: 'facial',
+          confianzaFacial: confianza,
+          deviceToken: deviceToken || undefined
+        }).then(res => {
+          if (res.success) {
+            console.log('✅ Foto de verificación guardada con fichajeId:', fichajeId)
+          } else {
+            console.warn('⚠️ No se pudo guardar foto de verificación:', res.error)
+          }
+        }).catch(err => {
+          console.warn('⚠️ Error guardando foto de verificación:', err)
+        })
       }
 
       // Obtener tareas pendientes del empleado usando RPC seguro del kiosco
@@ -1128,18 +1167,27 @@ export default function KioscoCheckIn() {
       // Obtener ubicación si está disponible
       let ubicacion = null
       try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000,
-            enableHighAccuracy: false
+        const permissionStatus = await navigator.permissions?.query?.({ name: 'geolocation' as PermissionName }).catch(() => null)
+        if (permissionStatus?.state === 'denied') {
+          console.info('[GPS] Permiso de ubicación denegado - continuando sin GPS')
+        } else {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 5000,
+              enableHighAccuracy: false
+            })
           })
-        })
-        ubicacion = {
-          latitud: position.coords.latitude,
-          longitud: position.coords.longitude
+          ubicacion = {
+            latitud: position.coords.latitude,
+            longitud: position.coords.longitude
+          }
         }
-      } catch (error) {
-        console.log('No se pudo obtener ubicación:', error)
+      } catch (error: any) {
+        if (error?.code === 1) {
+          console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
+        } else {
+          console.log('[GPS] No se pudo obtener ubicación:', error?.message || error)
+        }
       }
 
       // Registrar fichaje usando función segura del kiosco
@@ -1195,7 +1243,7 @@ export default function KioscoCheckIn() {
       }
         
       // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
-      if (tipoAccion === 'entrada' && config.lateArrivalAlertEnabled) {
+      if (tipoAccion === 'entrada' && alertasHabilitadas) {
         logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, config.lateArrivalAlertEnabled)
         
         try {
@@ -1288,8 +1336,8 @@ export default function KioscoCheckIn() {
           logCruzRoja.excepcion('llegada_tarde', error)
           logCruzRoja.fin('llegada_tarde', 'error')
         }
-      } else if (tipoAccion === 'entrada' && !config.lateArrivalAlertEnabled) {
-        logCruzRoja.configDeshabilitada('llegada_tarde')
+      } else if (tipoAccion === 'entrada' && !alertasHabilitadas) {
+        console.log('ℹ️ [CRUZ-ROJA:LLEGADA_TARDE] Verificación omitida - config deshabilitada (loading:', facialConfigLoading, ', valor:', config.lateArrivalAlertEnabled, ')')
       }
 
       // Mostrar tarjeta de confirmación
@@ -1460,18 +1508,27 @@ export default function KioscoCheckIn() {
       // Obtener ubicación si está disponible
       let ubicacion = null
       try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000,
-            enableHighAccuracy: false
+        const permissionStatus = await navigator.permissions?.query?.({ name: 'geolocation' as PermissionName }).catch(() => null)
+        if (permissionStatus?.state === 'denied') {
+          console.info('[GPS] Permiso de ubicación denegado - continuando sin GPS')
+        } else {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 5000,
+              enableHighAccuracy: false
+            })
           })
-        })
-        ubicacion = {
-          latitud: position.coords.latitude,
-          longitud: position.coords.longitude
+          ubicacion = {
+            latitud: position.coords.latitude,
+            longitud: position.coords.longitude
+          }
         }
-      } catch (error) {
-        console.log('No se pudo obtener ubicación:', error)
+      } catch (error: any) {
+        if (error?.code === 1) {
+          console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
+        } else {
+          console.log('[GPS] No se pudo obtener ubicación:', error?.message || error)
+        }
       }
 
       // Registrar fichaje usando función segura del kiosco
@@ -1571,7 +1628,7 @@ export default function KioscoCheckIn() {
         }
         
         // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
-        if (config.lateArrivalAlertEnabled) {
+        if (alertasHabilitadas) {
           logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, config.lateArrivalAlertEnabled)
           
           try {
@@ -1664,8 +1721,8 @@ export default function KioscoCheckIn() {
             logCruzRoja.excepcion('llegada_tarde', error)
             logCruzRoja.fin('llegada_tarde', 'error')
           }
-        } else {
-          logCruzRoja.configDeshabilitada('llegada_tarde')
+        } else if (!alertasHabilitadas) {
+          console.log('ℹ️ [CRUZ-ROJA:LLEGADA_TARDE] Verificación omitida - config deshabilitada (loading:', facialConfigLoading, ', valor:', config.lateArrivalAlertEnabled, ')')
         }
       }
 
