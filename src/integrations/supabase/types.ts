@@ -7760,6 +7760,10 @@ export type Database = {
           titulo: string
         }[]
       }
+      kiosk_get_turno_empleado: {
+        Args: { p_empleado_id: string }
+        Returns: Json
+      }
       kiosk_guardar_foto_verificacion: {
         Args: {
           p_empleado_id: string
