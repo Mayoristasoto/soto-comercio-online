@@ -1,121 +1,135 @@
 
+## Plan: Mostrar tiempo de pausa transcurrido en el Kiosco
 
-## Diagnóstico
+### Problema identificado
+La información de pausa **ya está implementada** en la UI (líneas 2317-2382 de KioscoCheckIn.tsx), pero **no se muestra** porque la sesión anónima del kiosco no puede leer de la tabla `fichajes` debido a RLS.
 
-**Problema**: El kiosco muestra `late_arrival_alert_enabled: false` aunque en la base de datos está en `true` porque:
-1. El kiosco opera en sesión anónima (sin login)
-2. RLS bloquea lectura de `facial_recognition_config` para rol `anon`
-3. El hook `useFacialConfig` cae al default: `lateArrivalAlertEnabled: false`
+**Evidencia:** La tabla `fichajes` permite `INSERT` para `anon` pero **no tiene política SELECT para `anon`**:
+- `Kiosk can insert fichajes` → INSERT permitido
+- No hay política SELECT para anon → lectura bloqueada
 
-**Evidencia**:
-- BD: `late_arrival_alert_enabled = true`
-- Console kiosco: `loading: false, valor: false`
+### Solución
+Crear un RPC con `SECURITY DEFINER` que permita al kiosco consultar si hay pausa activa:
 
----
+### Cambios a implementar
 
-## Solución
-
-Crear un RPC `kiosk_get_alert_config` con `SECURITY DEFINER` que retorne la configuración de alertas, accesible desde sesión anónima.
-
----
-
-## Cambios a implementar
-
-### A) Nueva migración SQL
+**1. Nueva migración SQL - RPC `kiosk_get_pausa_activa`**
 
 ```sql
-CREATE OR REPLACE FUNCTION public.kiosk_get_alert_config()
+CREATE OR REPLACE FUNCTION public.kiosk_get_pausa_activa(p_empleado_id UUID)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_late_arrival BOOLEAN;
-  v_pause_exceeded BOOLEAN;
+  v_pausa_inicio TIMESTAMPTZ;
+  v_minutos_permitidos INTEGER;
+  v_start_of_day TIMESTAMPTZ;
 BEGIN
-  SELECT 
-    COALESCE(
-      CASE LOWER(value) 
-        WHEN 'true' THEN true 
-        WHEN '1' THEN true 
-        WHEN 'yes' THEN true 
-        ELSE false 
-      END, 
-      false
-    ) INTO v_late_arrival
-  FROM facial_recognition_config 
-  WHERE key = 'late_arrival_alert_enabled';
+  -- Calcular inicio del día en Argentina (UTC-3)
+  v_start_of_day := date_trunc('day', NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires') 
+                    AT TIME ZONE 'America/Argentina/Buenos_Aires';
   
-  SELECT 
-    COALESCE(
-      CASE LOWER(value) 
-        WHEN 'true' THEN true 
-        WHEN '1' THEN true 
-        WHEN 'yes' THEN true 
-        ELSE false 
-      END, 
-      true  -- default true para pausa excedida
-    ) INTO v_pause_exceeded
-  FROM facial_recognition_config 
-  WHERE key = 'pause_exceeded_alert_enabled';
+  -- Buscar último pausa_inicio de hoy que NO tenga pausa_fin posterior
+  SELECT f.timestamp_real INTO v_pausa_inicio
+  FROM fichajes f
+  WHERE f.empleado_id = p_empleado_id
+    AND f.tipo = 'pausa_inicio'
+    AND f.timestamp_real >= v_start_of_day
+    AND NOT EXISTS (
+      SELECT 1 FROM fichajes f2 
+      WHERE f2.empleado_id = p_empleado_id 
+        AND f2.tipo = 'pausa_fin'
+        AND f2.timestamp_real > f.timestamp_real
+    )
+  ORDER BY f.timestamp_real DESC
+  LIMIT 1;
+  
+  IF v_pausa_inicio IS NULL THEN
+    RETURN NULL;
+  END IF;
+  
+  -- Obtener minutos permitidos del turno
+  SELECT COALESCE(ft.minutos_pausa, 30) INTO v_minutos_permitidos
+  FROM empleado_turnos et
+  JOIN fichado_turnos ft ON ft.id = et.turno_id
+  WHERE et.empleado_id = p_empleado_id
+    AND et.activo = true
+    AND et.fecha_inicio <= CURRENT_DATE
+    AND (et.fecha_fin IS NULL OR et.fecha_fin >= CURRENT_DATE)
+  LIMIT 1;
+  
+  v_minutos_permitidos := COALESCE(v_minutos_permitidos, 30);
   
   RETURN json_build_object(
-    'late_arrival_enabled', COALESCE(v_late_arrival, false),
-    'pause_exceeded_enabled', COALESCE(v_pause_exceeded, true)
+    'inicio', v_pausa_inicio,
+    'minutos_permitidos', v_minutos_permitidos
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.kiosk_get_alert_config() TO anon;
-GRANT EXECUTE ON FUNCTION public.kiosk_get_alert_config() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.kiosk_get_pausa_activa(UUID) TO anon;
+GRANT EXECUTE ON FUNCTION public.kiosk_get_pausa_activa(UUID) TO authenticated;
 ```
 
-### B) Actualizar KioscoCheckIn.tsx
+**2. Actualizar `src/pages/KioscoCheckIn.tsx`**
 
-Reemplazar el uso de `useFacialConfig()` por una llamada directa al nuevo RPC para obtener configuración de alertas:
+Modificar la función `verificarPausaActiva` para usar el nuevo RPC:
 
 ```typescript
-// Nuevo estado para config de alertas
-const [alertConfig, setAlertConfig] = useState({ 
-  lateArrivalEnabled: true,   // default true mientras carga
-  pauseExceededEnabled: true 
-});
-const [alertConfigLoading, setAlertConfigLoading] = useState(true);
-
-// Cargar config de alertas via RPC
-useEffect(() => {
-  const cargarAlertConfig = async () => {
-    try {
-      const { data, error } = await supabase.rpc('kiosk_get_alert_config');
-      if (!error && data) {
-        setAlertConfig({
-          lateArrivalEnabled: data.late_arrival_enabled ?? true,
-          pauseExceededEnabled: data.pause_exceeded_enabled ?? true
-        });
-      }
-    } finally {
-      setAlertConfigLoading(false);
+const verificarPausaActiva = async (empleadoId: string) => {
+  try {
+    const { data, error } = await supabase.rpc('kiosk_get_pausa_activa', {
+      p_empleado_id: empleadoId
+    }) as { data: { inicio: string; minutos_permitidos: number } | null; error: any };
+    
+    if (error || !data) {
+      console.log('🔍 [DEBUG PAUSA] No hay pausa activa:', error);
+      setPausaActiva(null);
+      return;
     }
-  };
-  cargarAlertConfig();
-}, []);
+    
+    const inicioPausa = new Date(data.inicio);
+    const minutosPermitidos = data.minutos_permitidos;
+    const ahora = new Date();
+    const minutosTranscurridos = Math.floor((ahora.getTime() - inicioPausa.getTime()) / 60000);
+    const minutosRestantes = minutosPermitidos - minutosTranscurridos;
+    const excedida = minutosTranscurridos > minutosPermitidos;
+    
+    console.log('🔍 [DEBUG PAUSA] verificarPausaActiva resultado:', {
+      empleadoId,
+      inicioPausa: inicioPausa.toISOString(),
+      minutosPermitidos,
+      minutosTranscurridos,
+      minutosRestantes,
+      excedida
+    });
+    
+    setPausaActiva({
+      inicio: inicioPausa,
+      minutosPermitidos,
+      minutosTranscurridos,
+      minutosRestantes,
+      excedida
+    });
+    
+  } catch (error) {
+    console.error('Error verificando pausa activa:', error);
+    setPausaActiva(null);
+  }
+};
 ```
 
-Luego usar `alertConfig.lateArrivalEnabled` en lugar de `facialConfig.lateArrivalAlertEnabled`.
+### Resultado esperado
+- Cuando Gonzalo Justiniano (u otro empleado con pausa activa) haga check-in facial
+- Se mostrará la tarjeta con información de pausa mostrando:
+  - Tiempo transcurrido en minutos
+  - Tiempo permitido
+  - Exceso (si aplica)
+  - Hora de inicio de la pausa
+  - Mensaje de advertencia si está excedida
 
----
-
-## Archivos a modificar
-
-1. **Nueva migración SQL** - crear RPC `kiosk_get_alert_config`
-2. **src/pages/KioscoCheckIn.tsx** - usar el nuevo RPC en lugar de `useFacialConfig` para alertas
-
----
-
-## Resultado esperado
-
-- El kiosco obtendrá correctamente `late_arrival_enabled: true` desde la BD
-- Las alertas de llegada tarde se activarán correctamente
-- Se registrarán las cruces rojas de llegada tarde cuando corresponda
-
+### Archivos a modificar
+1. Nueva migración SQL para crear `kiosk_get_pausa_activa`
+2. `src/pages/KioscoCheckIn.tsx` - actualizar `verificarPausaActiva` para usar RPC
