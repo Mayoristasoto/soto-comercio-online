@@ -8,7 +8,7 @@ import * as faceapi from '@vladmandic/face-api'
 import * as tf from '@tensorflow/tfjs'
 import { supabase } from "@/integrations/supabase/client"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
-import { guardarFotoVerificacion, capturarImagenCanvas } from "@/lib/verificacionFotosService"
+import { capturarImagenCanvas } from "@/lib/verificacionFotosService"
 
 interface FicheroFacialAuthProps {
   empleado: {
@@ -17,7 +17,8 @@ interface FicheroFacialAuthProps {
     apellido: string
   }
   tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin'
-  onFichajeSuccess: (confianza: number, empleadoId?: string, empleadoData?: any, emocion?: string) => void
+  /** Callback con parámetro fotoBase64 opcional para guardar foto después del fichaje (cuando hay fichajeId) */
+  onFichajeSuccess: (confianza: number, empleadoId?: string, empleadoData?: any, emocion?: string, fotoBase64?: string) => void
   loading: boolean
 }
 
@@ -337,46 +338,19 @@ export default function FicheroFacialAuth({
       const resultado = await compararConRostroAlmacenado(faceDescriptor)
       
       if (resultado.confidence > 0.35) {
-        // 📸 Capturar y guardar foto de verificación (async, no bloqueante)
+        // 📸 Capturar foto de verificación para pasarla al callback
+        let fotoBase64ForCallback: string | undefined = undefined
         if (resultado.empleadoId) {
           try {
-            const fotoBase64 = capturarImagenCanvas(video)
-            if (fotoBase64) {
-              // Obtener ubicación actual para la foto
-              let ubicacion: { latitud?: number; longitud?: number } = {}
-              try {
-                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                  navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 })
-                })
-                ubicacion = {
-                  latitud: position.coords.latitude,
-                  longitud: position.coords.longitude
-                }
-              } catch (geoError) {
-                console.log('No se pudo obtener ubicación para foto:', geoError)
-              }
-              
-              // Guardar foto de verificación (no esperar resultado para no bloquear)
-              guardarFotoVerificacion({
-                empleadoId: resultado.empleadoId,
-                fotoBase64,
-                latitud: ubicacion.latitud,
-                longitud: ubicacion.longitud,
-                metodoFichaje: 'facial',
-                confianzaFacial: resultado.confidence
-              }).then(res => {
-                if (!res.success) {
-                  console.warn('No se pudo guardar foto de verificación:', res.error)
-                }
-              })
-            }
+            fotoBase64ForCallback = capturarImagenCanvas(video) || undefined
           } catch (fotoError) {
             console.warn('Error capturando foto de verificación:', fotoError)
           }
         }
         
-        // Pass confidence, employee data, and emotion to the success callback
-        onFichajeSuccess(resultado.confidence, resultado.empleadoId, resultado.empleadoData, emocionDetectada)
+        // Pass confidence, employee data, emotion, and photo to the success callback
+        // La foto se guardará DESPUÉS del fichaje (cuando ya existe fichajeId)
+        onFichajeSuccess(resultado.confidence, resultado.empleadoId, resultado.empleadoData, emocionDetectada, fotoBase64ForCallback)
         
         const employeeName = resultado.empleadoData 
           ? `${resultado.empleadoData.nombre} ${resultado.empleadoData.apellido}`

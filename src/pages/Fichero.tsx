@@ -42,6 +42,7 @@ import { logCruzRoja } from "@/lib/crucesRojasLogger"
 import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { toArgentinaTime, getArgentinaStartOfDay, getArgentinaTimeString } from "@/lib/dateUtils"
 import { format } from "date-fns"
+import { guardarFotoVerificacion } from "@/lib/verificacionFotosService"
 
 interface Empleado {
   id: string
@@ -301,22 +302,47 @@ export default function Fichero() {
 
   const obtenerUbicacion = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCoordenadas({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          })
-        },
-        (error) => {
-          console.error('Error obteniendo ubicación:', error)
-          toast({
-            title: "Ubicación no disponible",
-            description: "No se pudo obtener la ubicación actual",
-            variant: "destructive"
-          })
-        }
-      )
+      // Verificar primero si el permiso ya fue denegado
+      navigator.permissions?.query?.({ name: 'geolocation' as PermissionName })
+        .then(result => {
+          if (result.state === 'denied') {
+            console.info('[GPS] Permiso de ubicación denegado - continuando sin GPS')
+            return
+          }
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setCoordenadas({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              })
+            },
+            (error) => {
+              if (error.code === 1) {
+                console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
+              } else {
+                console.log('[GPS] No se pudo obtener ubicación:', error.message)
+              }
+            }
+          )
+        })
+        .catch(() => {
+          // Fallback si permissions API no disponible
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setCoordenadas({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              })
+            },
+            (error) => {
+              if (error.code === 1) {
+                console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
+              } else {
+                console.log('[GPS] No se pudo obtener ubicación:', error.message)
+              }
+            }
+          )
+        })
     }
   }
 
@@ -399,7 +425,7 @@ export default function Fichero() {
     }
   }
 
-  const procesarFichaje = async (tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin', confianzaFacial: number, empleadoId?: string, empleadoData?: any, emocion?: string) => {
+  const procesarFichaje = async (tipoFichaje: 'entrada' | 'salida' | 'pausa_inicio' | 'pausa_fin', confianzaFacial: number, empleadoId?: string, empleadoData?: any, emocion?: string, fotoBase64?: string) => {
     if (!empleado) {
       toast({
         title: "Error",
@@ -463,6 +489,27 @@ export default function Fichero() {
         })
 
         if (error) throw error
+
+        // 📸 Guardar foto de verificación DESPUÉS del fichaje (ya tenemos fichajeId)
+        if (fotoBase64 && fichajeId) {
+          guardarFotoVerificacion({
+            empleadoId: empleadoId || empleado.id,
+            fichajeId,
+            fotoBase64,
+            latitud: coordenadas?.lat,
+            longitud: coordenadas?.lng,
+            metodoFichaje: 'facial',
+            confianzaFacial
+          }).then(res => {
+            if (res.success) {
+              console.log('✅ Foto de verificación guardada con fichajeId:', fichajeId)
+            } else {
+              console.warn('⚠️ No se pudo guardar foto de verificación:', res.error)
+            }
+          }).catch(err => {
+            console.warn('⚠️ Error guardando foto de verificación:', err)
+          })
+        }
 
         // === VERIFICAR INFRACCIONES DESPUÉS DEL FICHAJE EXITOSO ===
         const empleadoIdReal = empleadoId || empleado.id
