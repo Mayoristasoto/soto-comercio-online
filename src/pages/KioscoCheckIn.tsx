@@ -434,6 +434,16 @@ export default function KioscoCheckIn() {
       
       if (pausaError) {
         console.error('❌ [PAUSA REAL-TIME] Error en consulta pausa_inicio:', pausaError)
+        console.error('❌ [PAUSA REAL-TIME] Error code:', (pausaError as any).code)
+        console.error('❌ [PAUSA REAL-TIME] Error message:', (pausaError as any).message)
+        console.error('❌ [PAUSA REAL-TIME] Error hint:', (pausaError as any).hint)
+        return null
+      }
+      
+      // Extracción segura: si no es array o está vacío, manejar gracefully
+      if (!Array.isArray(pausaData)) {
+        console.error('❌ [PAUSA REAL-TIME] pausaData no es array, tipo:', typeof pausaData)
+        console.error('❌ [PAUSA REAL-TIME] pausaData valor:', JSON.stringify(pausaData))
         return null
       }
       
