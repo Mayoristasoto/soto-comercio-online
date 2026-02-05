@@ -7727,6 +7727,13 @@ export type Database = {
           accion: string
         }[]
       }
+      kiosk_get_pausa_inicio: {
+        Args: { p_desde: string; p_empleado_id: string }
+        Returns: {
+          id: string
+          timestamp_real: string
+        }[]
+      }
       kiosk_get_tareas: {
         Args: { p_empleado_id: string; p_limit?: number }
         Returns: {
