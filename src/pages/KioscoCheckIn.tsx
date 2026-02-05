@@ -536,39 +536,21 @@ export default function KioscoCheckIn() {
   // Función para verificar si hay una pausa activa y obtener detalles (usada para UI)
   const verificarPausaActiva = async (empleadoId: string) => {
     try {
-      // Obtener el último fichaje de pausa_inicio del día de hoy
-      // Importante: calcular inicio de día en Argentina para evitar falsos negativos
-      // en dispositivos con zona horaria distinta.
-      const ahoraArg = toArgentinaTime(new Date())
-      const startOfDayUtc = getArgentinaStartOfDay(ahoraArg)
+      // Usar RPC SECURITY DEFINER para obtener pausa activa (bypassa RLS para kiosco anónimo)
+      const { data, error } = await supabase.rpc('kiosk_get_pausa_activa', {
+        p_empleado_id: empleadoId
+      }) as { data: { inicio: string; minutos_permitidos: number } | null; error: any }
       
-      const { data: pausaInicio, error: pausaError } = await supabase
-        .from('fichajes')
-        .select('timestamp_real')
-        .eq('empleado_id', empleadoId)
-        .eq('tipo', 'pausa_inicio')
-        .gte('timestamp_real', startOfDayUtc)
-        .order('timestamp_real', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      
-      if (pausaError || !pausaInicio) {
+      if (error || !data) {
+        console.log('🔍 [DEBUG PAUSA] No hay pausa activa:', error)
         setPausaActiva(null)
         return
       }
       
-      // Obtener minutos permitidos via RPC (bypassa RLS para kiosco anónimo)
-      const { data: minutosData } = await supabase.rpc('kiosk_get_minutos_pausa', {
-        p_empleado_id: empleadoId
-      })
-      
-      const minutosPermitidos = typeof minutosData === 'number' ? minutosData : 30
-      
-      // Calcular tiempo transcurrido en minutos
-      const inicioPausa = new Date(pausaInicio.timestamp_real)
+      const inicioPausa = new Date(data.inicio)
+      const minutosPermitidos = data.minutos_permitidos
       const ahora = new Date()
       const minutosTranscurridos = Math.floor((ahora.getTime() - inicioPausa.getTime()) / 60000)
-      // Permitir valores negativos para detectar exceso de pausa
       const minutosRestantes = minutosPermitidos - minutosTranscurridos
       const excedida = minutosTranscurridos > minutosPermitidos
       
