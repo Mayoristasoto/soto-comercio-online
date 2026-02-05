@@ -462,16 +462,14 @@ export default function KioscoCheckIn() {
       }
       
       // Obtener los minutos de pausa desde el turno asignado al empleado
-      const { data: turnoData, error: turnoError } = await supabase
-        .from('empleado_turnos')
-        .select('turno:fichado_turnos(duracion_pausa_minutos)')
-        .eq('empleado_id', empleadoId)
-        .eq('activo', true)
-        .maybeSingle()
+      // Obtener minutos permitidos via RPC (bypassa RLS para kiosco anónimo)
+      const { data: minutosData, error: minutosError } = await supabase.rpc('kiosk_get_minutos_pausa', {
+        p_empleado_id: empleadoId
+      })
       
-      console.log('🔍 [PAUSA REAL-TIME] turnoData:', turnoData, 'turnoError:', turnoError)
+      console.log('🔍 [PAUSA REAL-TIME] RPC kiosk_get_minutos_pausa:', minutosData, 'error:', minutosError)
       
-      const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
+      const minutosPermitidos = typeof minutosData === 'number' ? minutosData : 30
       
       // Calcular tiempo transcurrido en minutos usando timestamps UTC
       const inicioPausaUtc = new Date(pausaInicio.timestamp_real)
@@ -527,15 +525,12 @@ export default function KioscoCheckIn() {
         return
       }
       
-      // Obtener los minutos de pausa desde el turno asignado al empleado
-      const { data: turnoData } = await supabase
-        .from('empleado_turnos')
-        .select('turno:fichado_turnos(duracion_pausa_minutos)')
-        .eq('empleado_id', empleadoId)
-        .eq('activo', true)
-        .maybeSingle()
+      // Obtener minutos permitidos via RPC (bypassa RLS para kiosco anónimo)
+      const { data: minutosData } = await supabase.rpc('kiosk_get_minutos_pausa', {
+        p_empleado_id: empleadoId
+      })
       
-      const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
+      const minutosPermitidos = typeof minutosData === 'number' ? minutosData : 30
       
       // Calcular tiempo transcurrido en minutos
       const inicioPausa = new Date(pausaInicio.timestamp_real)
