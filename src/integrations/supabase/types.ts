@@ -7732,6 +7732,7 @@ export type Database = {
         Args: { p_empleado_id: string }
         Returns: number
       }
+      kiosk_get_pausa_activa: { Args: { p_empleado_id: string }; Returns: Json }
       kiosk_get_pausa_inicio: {
         Args: { p_desde: string; p_empleado_id: string }
         Returns: {
