@@ -7727,6 +7727,7 @@ export type Database = {
           accion: string
         }[]
       }
+      kiosk_get_alert_config: { Args: never; Returns: Json }
       kiosk_get_minutos_pausa: {
         Args: { p_empleado_id: string }
         Returns: number

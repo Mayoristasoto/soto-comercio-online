@@ -241,10 +241,17 @@ function UnauthorizedDeviceScreen({
 
 export default function KioscoCheckIn() {
   const { toast } = useToast()
-  const { config, loading: facialConfigLoading } = useFacialConfig()
+  const { config } = useFacialConfig()
+  
+  // Estado para configuración de alertas cargada via RPC (bypassa RLS para sesión anónima)
+  const [alertConfig, setAlertConfig] = useState({ 
+    lateArrivalEnabled: true,   // default true mientras carga para no perder infracciones
+    pauseExceededEnabled: true 
+  })
+  const [alertConfigLoading, setAlertConfigLoading] = useState(true)
   
   // Determinar si las alertas están habilitadas (asumir true mientras carga para no perder infracciones)
-  const alertasHabilitadas = facialConfigLoading ? true : config.lateArrivalAlertEnabled
+  const alertasHabilitadas = alertConfigLoading ? true : alertConfig.lateArrivalEnabled
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { reproducirMensajeBienvenida, reproducirMensajeTareas } = useAudioNotifications()
@@ -376,6 +383,31 @@ export default function KioscoCheckIn() {
     }
     checkPinEnabled()
   }, [searchParams, navigate, toast])
+
+  // Cargar configuración de alertas via RPC (bypassa RLS para sesión anónima)
+  useEffect(() => {
+    const cargarAlertConfig = async () => {
+      try {
+        const { data, error } = await supabase.rpc('kiosk_get_alert_config') as { 
+          data: { late_arrival_enabled?: boolean; pause_exceeded_enabled?: boolean } | null; 
+          error: any 
+        }
+        console.log('🔔 [ALERT-CONFIG] RPC response:', { data, error })
+        if (!error && data) {
+          setAlertConfig({
+            lateArrivalEnabled: data.late_arrival_enabled ?? true,
+            pauseExceededEnabled: data.pause_exceeded_enabled ?? true
+          })
+          console.log('🔔 [ALERT-CONFIG] Cargado:', data)
+        }
+      } catch (err) {
+        console.error('Error loading alert config:', err)
+      } finally {
+        setAlertConfigLoading(false)
+      }
+    }
+    cargarAlertConfig()
+  }, [])
 
   // Actualizar reloj cada segundo
   useEffect(() => {
@@ -1349,7 +1381,7 @@ export default function KioscoCheckIn() {
           logCruzRoja.fin('llegada_tarde', 'error')
         }
       } else if (tipoAccion === 'entrada' && !alertasHabilitadas) {
-        console.log('ℹ️ [CRUZ-ROJA:LLEGADA_TARDE] Verificación omitida - config deshabilitada (loading:', facialConfigLoading, ', valor:', config.lateArrivalAlertEnabled, ')')
+        console.log('ℹ️ [CRUZ-ROJA:LLEGADA_TARDE] Verificación omitida - config deshabilitada (loading:', alertConfigLoading, ', valor:', alertConfig.lateArrivalEnabled, ')')
       }
 
       // Mostrar tarjeta de confirmación
@@ -1734,7 +1766,7 @@ export default function KioscoCheckIn() {
             logCruzRoja.fin('llegada_tarde', 'error')
           }
         } else if (!alertasHabilitadas) {
-          console.log('ℹ️ [CRUZ-ROJA:LLEGADA_TARDE] Verificación omitida - config deshabilitada (loading:', facialConfigLoading, ', valor:', config.lateArrivalAlertEnabled, ')')
+          console.log('ℹ️ [CRUZ-ROJA:LLEGADA_TARDE] Verificación omitida - config deshabilitada (loading:', alertConfigLoading, ', valor:', alertConfig.lateArrivalEnabled, ')')
         }
       }
 
