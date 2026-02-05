@@ -2,25 +2,20 @@
 
 ## Diagnóstico
 
-**Problema confirmado**: El código obtiene `minutosPermitidos: 30` (fallback) en lugar de `1` (valor real) porque:
-
-1. La consulta a `empleado_turnos` se hace desde sesión anónima (kiosco sin login)
-2. RLS bloquea el acceso a `empleado_turnos` para rol `anon`
-3. El resultado es `turnoData = null`, entonces cae al fallback `|| 30`
+**Problema**: El kiosco muestra `late_arrival_alert_enabled: false` aunque en la base de datos está en `true` porque:
+1. El kiosco opera en sesión anónima (sin login)
+2. RLS bloquea lectura de `facial_recognition_config` para rol `anon`
+3. El hook `useFacialConfig` cae al default: `lateArrivalAlertEnabled: false`
 
 **Evidencia**:
-- Query directa a la BD: `duracion_pausa_minutos: 1` para Gonzalo Justiniano
-- En consola del kiosco: `minutosPermitidos: 30`
-- No existe RPC de kiosco para obtener minutos de turno
+- BD: `late_arrival_alert_enabled = true`
+- Console kiosco: `loading: false, valor: false`
 
 ---
 
 ## Solución
 
-Crear un nuevo RPC `kiosk_get_minutos_pausa` con `SECURITY DEFINER` que:
-1. Reciba el `empleado_id`
-2. Retorne los minutos de pausa permitidos desde el turno activo
-3. Si no hay turno, retorne un default (por ejemplo 30)
+Crear un RPC `kiosk_get_alert_config` con `SECURITY DEFINER` que retorne la configuración de alertas, accesible desde sesión anónima.
 
 ---
 
@@ -28,74 +23,99 @@ Crear un nuevo RPC `kiosk_get_minutos_pausa` con `SECURITY DEFINER` que:
 
 ### A) Nueva migración SQL
 
-Crear la función RPC:
-
 ```sql
-CREATE OR REPLACE FUNCTION public.kiosk_get_minutos_pausa(p_empleado_id UUID)
-RETURNS INTEGER
+CREATE OR REPLACE FUNCTION public.kiosk_get_alert_config()
+RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_minutos INTEGER;
+  v_late_arrival BOOLEAN;
+  v_pause_exceeded BOOLEAN;
 BEGIN
-  SELECT ft.duracion_pausa_minutos INTO v_minutos
-  FROM empleado_turnos et
-  JOIN fichado_turnos ft ON ft.id = et.turno_id
-  WHERE et.empleado_id = p_empleado_id
-    AND et.activo = true
-  LIMIT 1;
+  SELECT 
+    COALESCE(
+      CASE LOWER(value) 
+        WHEN 'true' THEN true 
+        WHEN '1' THEN true 
+        WHEN 'yes' THEN true 
+        ELSE false 
+      END, 
+      false
+    ) INTO v_late_arrival
+  FROM facial_recognition_config 
+  WHERE key = 'late_arrival_alert_enabled';
   
-  RETURN COALESCE(v_minutos, 30);
+  SELECT 
+    COALESCE(
+      CASE LOWER(value) 
+        WHEN 'true' THEN true 
+        WHEN '1' THEN true 
+        WHEN 'yes' THEN true 
+        ELSE false 
+      END, 
+      true  -- default true para pausa excedida
+    ) INTO v_pause_exceeded
+  FROM facial_recognition_config 
+  WHERE key = 'pause_exceeded_alert_enabled';
+  
+  RETURN json_build_object(
+    'late_arrival_enabled', COALESCE(v_late_arrival, false),
+    'pause_exceeded_enabled', COALESCE(v_pause_exceeded, true)
+  );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.kiosk_get_minutos_pausa(UUID) TO anon;
-GRANT EXECUTE ON FUNCTION public.kiosk_get_minutos_pausa(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.kiosk_get_alert_config() TO anon;
+GRANT EXECUTE ON FUNCTION public.kiosk_get_alert_config() TO authenticated;
 ```
 
 ### B) Actualizar KioscoCheckIn.tsx
 
-En `calcularPausaExcedidaEnTiempoReal`, reemplazar:
+Reemplazar el uso de `useFacialConfig()` por una llamada directa al nuevo RPC para obtener configuración de alertas:
 
 ```typescript
-// ANTES (líneas 465-474):
-const { data: turnoData, error: turnoError } = await supabase
-  .from('empleado_turnos')
-  .select('turno:fichado_turnos(duracion_pausa_minutos)')
-  .eq('empleado_id', empleadoId)
-  .eq('activo', true)
-  .maybeSingle()
+// Nuevo estado para config de alertas
+const [alertConfig, setAlertConfig] = useState({ 
+  lateArrivalEnabled: true,   // default true mientras carga
+  pauseExceededEnabled: true 
+});
+const [alertConfigLoading, setAlertConfigLoading] = useState(true);
 
-const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
-
-// DESPUÉS:
-const { data: minutosData, error: minutosError } = await supabase.rpc('kiosk_get_minutos_pausa', {
-  p_empleado_id: empleadoId
-})
-
-console.log('🔍 [PAUSA REAL-TIME] RPC kiosk_get_minutos_pausa:', minutosData, 'error:', minutosError)
-
-const minutosPermitidos = typeof minutosData === 'number' ? minutosData : 30
+// Cargar config de alertas via RPC
+useEffect(() => {
+  const cargarAlertConfig = async () => {
+    try {
+      const { data, error } = await supabase.rpc('kiosk_get_alert_config');
+      if (!error && data) {
+        setAlertConfig({
+          lateArrivalEnabled: data.late_arrival_enabled ?? true,
+          pauseExceededEnabled: data.pause_exceeded_enabled ?? true
+        });
+      }
+    } finally {
+      setAlertConfigLoading(false);
+    }
+  };
+  cargarAlertConfig();
+}, []);
 ```
 
-También hay que actualizar `verificarPausaActiva` (líneas ~536-538) que tiene el mismo problema.
+Luego usar `alertConfig.lateArrivalEnabled` en lugar de `facialConfig.lateArrivalAlertEnabled`.
 
 ---
 
 ## Archivos a modificar
 
-1. **Nueva migración SQL** - crear RPC `kiosk_get_minutos_pausa`
-2. **src/pages/KioscoCheckIn.tsx** - usar el nuevo RPC en:
-   - `calcularPausaExcedidaEnTiempoReal` (~línea 465)
-   - `verificarPausaActiva` (~línea 536)
+1. **Nueva migración SQL** - crear RPC `kiosk_get_alert_config`
+2. **src/pages/KioscoCheckIn.tsx** - usar el nuevo RPC en lugar de `useFacialConfig` para alertas
 
 ---
 
 ## Resultado esperado
 
-- El kiosco obtendrá correctamente `minutosPermitidos: 1` para Gonzalo Justiniano
-- Las alertas de "Pausa Excedida" se dispararán correctamente cuando corresponda
-- Se registrarán las cruces rojas de pausa excedida
+- El kiosco obtendrá correctamente `late_arrival_enabled: true` desde la BD
+- Las alertas de llegada tarde se activarán correctamente
+- Se registrarán las cruces rojas de llegada tarde cuando corresponda
 
