@@ -1,73 +1,118 @@
 
+## Qué está pasando (sí se puede solucionar)
 
-## Resumen del Diagnóstico
+El error **no es “misterioso” ni de zona horaria ahora mismo**. En tu red se ve clarísimo:
 
-He verificado exhaustivamente la lógica de alertas y cruces rojas en el kiosco. Encontré lo siguiente:
+- La llamada a `POST /rest/v1/rpc/kiosk_get_pausa_inicio` responde **HTTP 300**
+- Con código **PGRST203**
+- Mensaje: **“Could not choose the best candidate function…”**
+- Te está diciendo que existen **2 funciones con el mismo nombre**:
+  - `kiosk_get_pausa_inicio(uuid, text)`
+  - `kiosk_get_pausa_inicio(uuid, timestamptz)`
 
-### Estado Actual de la Lógica
+PostgREST (la capa REST/RPC de Supabase) **no puede resolver sobrecarga de funciones** (dos firmas para el mismo nombre) y por eso el cliente termina mostrando algo como **“ObjectNo properties”**.
 
-**1. Llegada Tarde (entrada)**
-- Se verifica correctamente cuando `tipoAccion === 'entrada'`
-- Usa `alertasHabilitadas` que considera el estado de carga del config
-- Obtiene el turno del empleado desde `empleado_turnos`
-- Calcula `horaLimite = horaEntrada + tolerancia`
-- Si llega tarde: muestra alerta + registra cruz roja via RPC `kiosk_registrar_cruz_roja`
+Además, la versión `(..., text)` actualmente tiene un bug adicional: usa `f.tipo_accion = 'pausa_inicio'`, pero en tu tabla `fichajes` el campo es **`tipo`** (esto lo confirma `src/integrations/supabase/types.ts`).
 
-**2. Pausa Excedida (pausa_fin)**
-- Se verifica cuando `tipoAccion === 'pausa_fin'`
-- Llama a `calcularPausaExcedidaEnTiempoReal()` que usa el nuevo RPC `kiosk_get_pausa_inicio`
-- Si la pausa excede los minutos permitidos: muestra alerta + registra cruz roja
-
-### El Problema Identificado
-
-El RPC `kiosk_get_pausa_inicio` **funciona correctamente** cuando se ejecuta desde SQL directo, pero el cliente del kiosco recibe un array vacío. Esto causa que `pausaInicio` sea `null` y la verificación de pausa excedida siempre falle.
-
-**Causa probable**: El código genera `startOfDayUtc` de forma correcta, pero hay una inconsistencia entre el formato que espera el RPC y lo que envía el cliente JavaScript. Específicamente, el log muestra `startOfDayUtc: 2026-02-05T03:00:00.000Z` pero cuando se pasa al RPC, PostgreSQL podría no estar parseando correctamente el ISO string como `TIMESTAMPTZ`.
+Conclusión: **sí se puede** y el arreglo es directo: dejar **una sola** función RPC y que consulte la columna correcta.
 
 ---
 
-## Solución Propuesta
+## Objetivo
 
-### 1. Mejorar el RPC para ser más robusto con el parsing de fecha
-
-Modificar la función para aceptar `TEXT` y hacer cast explícito, lo cual es más robusto cuando viene desde JavaScript:
-
-```sql
-CREATE OR REPLACE FUNCTION kiosk_get_pausa_inicio(
-  p_empleado_id UUID,
-  p_desde TEXT  -- Cambiar de TIMESTAMPTZ a TEXT para mejor compatibilidad
-)
-RETURNS TABLE (
-  id UUID,
-  timestamp_real TIMESTAMPTZ
-)
-...
-  WHERE f.timestamp_real >= p_desde::timestamptz  -- Cast explícito
-```
-
-### 2. Agregar logging más detallado para debug
-
-Antes de que `pausaData` sea usado, loguear su valor exacto (tipo y contenido) para identificar si viene como null, array vacío, u otra cosa.
-
-### 3. Agregar fallback para el caso de array vacío
-
-Si el RPC retorna array vacío pero sabemos que debería haber datos, hacer una query alternativa usando el cliente autenticado del kiosco (si hay sesión) o loguear un error más específico.
+1) El RPC `kiosk_get_pausa_inicio` debe ser **único** (sin sobrecarga).  
+2) Debe filtrar por `f.tipo = 'pausa_inicio'` (no `tipo_accion`).  
+3) Debe seguir funcionando en kiosco sin sesión (SECURITY DEFINER + grants).  
+4) El front debe manejar respuestas “raras” con extracción segura para evitar que un formato inesperado rompa el flujo.
 
 ---
 
-## Cambios a Implementar
+## Cambios a implementar
 
-### Archivo: Nueva migración SQL
-- Actualizar `kiosk_get_pausa_inicio` para usar `TEXT` en lugar de `TIMESTAMPTZ`
-- Agregar cast explícito `::timestamptz`
+### A) Base de datos (migración Supabase)
 
-### Archivo: `src/pages/KioscoCheckIn.tsx`
-- Mejorar logging para mostrar el tipo de `pausaData` (`Array.isArray`, `typeof`, `length`)
-- Agregar manejo para cuando el RPC retorna algo inesperado
+Crear una nueva migración SQL que haga:
+
+1. **Eliminar la función vieja** (la que recibe `timestamptz`) para evitar ambigüedad:
+   - `DROP FUNCTION IF EXISTS public.kiosk_get_pausa_inicio(uuid, timestamptz);`
+
+2. **Recrear/ajustar la función única** `public.kiosk_get_pausa_inicio(uuid, text)`:
+   - Mantener `SECURITY DEFINER`
+   - Mantener `SET search_path = public`
+   - Corregir el filtro:
+     - `AND f.tipo = 'pausa_inicio'`
+   - Cast explícito:
+     - `AND f.timestamp_real >= (p_desde::timestamptz)`
+
+3. **Asegurar permisos**:
+   - `GRANT EXECUTE ON FUNCTION public.kiosk_get_pausa_inicio(uuid, text) TO anon;`
+   - `GRANT EXECUTE ... TO authenticated;`
+
+Resultado esperado:
+- La llamada RPC deja de devolver 300/PGRST203 y devuelve 200 con:
+  - `[]` si no hay pausa_inicio hoy
+  - `[ { id, timestamp_real } ]` si existe
 
 ---
 
-## Archivos que se modificarán
-1. Nueva migración SQL para actualizar el RPC
-2. `src/pages/KioscoCheckIn.tsx` - mejorar logging y manejo de respuesta del RPC
+### B) Frontend: robustecer parsing + logging (KioscoCheckIn.tsx)
 
+En `calcularPausaExcedidaEnTiempoReal`:
+
+1. Mantener el logging actual, pero cuando haya error, loguear explícitamente:
+   - `pausaError.code`
+   - `pausaError.message`
+   - `pausaError.hint`
+   Esto ayuda a identificar inmediatamente problemas de PostgREST vs SQL.
+
+2. Implementar extracción segura del primer item:
+   - Caso ideal: `Array.isArray(pausaData) && pausaData.length > 0`
+   - Si no es array (por cualquier motivo), loguear estructura y retornar `null` sin romper el flujo.
+
+Esto no reemplaza el fix de DB, pero evita que un “formato inesperado” deje la UX en un estado inconsistente.
+
+---
+
+## Verificación paso a paso (para que no quede duda)
+
+1) Ir a `/test-kiosko-alertas`  
+2) Seleccionar el empleado `96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4`  
+3) Click en **“Preparar Escenario”** (esto debería crear `pausa_inicio`)  
+4) Ir a `/kiosco`  
+5) Hacer el flujo de “Terminar Pausa” (pausa_fin)
+
+Validaciones en consola/red:
+- Network: `rpc/kiosk_get_pausa_inicio` debe responder **200**
+- En consola:
+  - Debe aparecer `pausaData isArray: true`
+  - `pausaData length: 1` (en el escenario preparado)
+- Si excede: debería disparar alerta + RPC `kiosk_registrar_cruz_roja`
+
+---
+
+## Archivos/recursos involucrados
+
+- DB:
+  - Nueva migración en `supabase/migrations/...sql` para:
+    - Dropear overload `(uuid, timestamptz)`
+    - Corregir función `(uuid, text)` usando `f.tipo`
+- App:
+  - `src/pages/KioscoCheckIn.tsx` (parsing seguro + mejor logging)
+
+---
+
+## Riesgos y cómo los mitigamos
+
+- Riesgo: al dropear la firma `(..., timestamptz)` algo la use.
+  - Mitigación: en el front ya estás enviando `p_desde` como string ISO; el RPC que queda es el correcto.
+
+- Riesgo: el kiosco realmente no tiene `pausa_inicio` guardada.
+  - Mitigación: el test “Preparar Escenario” crea el caso. Si aun así devuelve `[]`, entonces ya no sería un problema de RPC sino de datos/flujo de fichajes (otro diagnóstico).
+
+---
+
+## Resultado esperado
+
+- Se elimina el error **PGRST203 / ObjectNo properties**
+- Vuelve a funcionar el cálculo en tiempo real de pausa excedida
+- Se registran “cruces rojas” de pausa excedida cuando corresponde
