@@ -36,6 +36,12 @@ import { ReporteDiarioAsistencia } from "@/components/fichero/ReporteDiarioAsist
 import BalanceDiarioHoras from "@/components/fichero/BalanceDiarioHoras"
 import { useLocation, useNavigate } from "react-router-dom"
 import { ArrowLeftRight, BarChart3 } from "lucide-react"
+import { PausaExcedidaAlert } from "@/components/kiosko/PausaExcedidaAlert"
+import { LlegadaTardeAlert } from "@/components/kiosko/LlegadaTardeAlert"
+import { logCruzRoja } from "@/lib/crucesRojasLogger"
+import { useFacialConfig } from "@/hooks/useFacialConfig"
+import { toArgentinaTime, getArgentinaStartOfDay, getArgentinaTimeString } from "@/lib/dateUtils"
+import { format } from "date-fns"
 
 interface Empleado {
   id: string
@@ -74,6 +80,154 @@ export default function Fichero() {
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [confirmarTareasHabilitado, setConfirmarTareasHabilitado] = useState(false)
   const location = useLocation()
+  
+  // Estados para alertas de infracciones
+  const [showPausaExcedidaAlert, setShowPausaExcedidaAlert] = useState(false)
+  const [pausaExcedidaInfo, setPausaExcedidaInfo] = useState<{
+    minutosUsados: number
+    minutosPermitidos: number
+    registrado: boolean
+  } | null>(null)
+  const [showLlegadaTardeAlert, setShowLlegadaTardeAlert] = useState(false)
+  const [llegadaTardeInfo, setLlegadaTardeInfo] = useState<{
+    horaEntradaProgramada: string
+    horaLlegadaReal: string
+    minutosRetraso: number
+    toleranciaMinutos: number
+    registrado: boolean
+  } | null>(null)
+  
+  // Hook para configuración facial (alertas habilitadas)
+  const { config: facialConfig } = useFacialConfig()
+
+  // Función para calcular pausa excedida en tiempo real
+  const calcularPausaExcedidaEnTiempoReal = async (empleadoId: string) => {
+    try {
+      console.log('🔍 [FICHERO:PAUSA] Calculando pausa excedida para:', empleadoId)
+      
+      // Obtener inicio del día en Argentina (UTC)
+      const ahora = new Date()
+      const startOfDayUtc = getArgentinaStartOfDay(ahora)
+      console.log('🔍 [FICHERO:PAUSA] Buscando pausa_inicio desde:', startOfDayUtc)
+      
+      // Obtener el último fichaje de pausa_inicio del día
+      const { data: pausaInicio, error: pausaError } = await supabase
+        .from('fichajes')
+        .select('timestamp_real')
+        .eq('empleado_id', empleadoId)
+        .eq('tipo', 'pausa_inicio')
+        .gte('timestamp_real', startOfDayUtc)
+        .order('timestamp_real', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      
+      if (pausaError) {
+        console.error('❌ [FICHERO:PAUSA] Error buscando pausa_inicio:', pausaError)
+        return null
+      }
+      
+      if (!pausaInicio) {
+        console.warn('⚠️ [FICHERO:PAUSA] No se encontró pausa_inicio del día')
+        logCruzRoja.sinPausaInicio(empleadoId, startOfDayUtc)
+        return null
+      }
+      
+      console.log('🔍 [FICHERO:PAUSA] pausa_inicio encontrado:', pausaInicio.timestamp_real)
+      
+      // Obtener minutos permitidos del turno (usando la estructura correcta de la BD)
+      const { data: turnoData, error: turnoError } = await supabase
+        .from('empleado_turnos')
+        .select('turno:fichado_turnos(duracion_pausa_minutos)')
+        .eq('empleado_id', empleadoId)
+        .eq('activo', true)
+        .maybeSingle()
+      
+      const minutosPermitidos = (turnoData?.turno as any)?.duracion_pausa_minutos || 30
+      console.log('🔍 [FICHERO:PAUSA] Minutos permitidos:', minutosPermitidos)
+      
+      // Calcular diferencia en tiempo real (UTC vs UTC)
+      const inicioPausaUtc = new Date(pausaInicio.timestamp_real)
+      const ahoraUtc = new Date()
+      const minutosTranscurridos = Math.floor((ahoraUtc.getTime() - inicioPausaUtc.getTime()) / 60000)
+      
+      console.log('🔍 [FICHERO:PAUSA] Cálculo detallado:', {
+        empleadoId,
+        inicioPausaUtc: inicioPausaUtc.toISOString(),
+        ahoraUtc: ahoraUtc.toISOString(),
+        diferenciaMs: ahoraUtc.getTime() - inicioPausaUtc.getTime(),
+        minutosTranscurridos,
+        minutosPermitidos,
+        excedida: minutosTranscurridos > minutosPermitidos
+      })
+      
+      return {
+        minutosTranscurridos,
+        minutosPermitidos,
+        excedida: minutosTranscurridos > minutosPermitidos
+      }
+    } catch (error) {
+      console.error('❌ [FICHERO:PAUSA] Error calculando pausa:', error)
+      return null
+    }
+  }
+  
+  // Función para verificar llegada tarde
+  const verificarLlegadaTarde = async (empleadoId: string, timestampFichaje: string) => {
+    try {
+      console.log('🔍 [FICHERO:LLEGADA] Verificando llegada tarde para:', empleadoId)
+      
+      // Obtener turno del empleado (usando la estructura correcta de la BD)
+      const { data: turnoData, error: turnoError } = await supabase
+        .from('empleado_turnos')
+        .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
+        .eq('empleado_id', empleadoId)
+        .eq('activo', true)
+        .maybeSingle()
+      
+      if (turnoError || !turnoData?.turno) {
+        console.log('⚠️ [FICHERO:LLEGADA] No hay turno configurado')
+        return null
+      }
+      
+      const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
+      const toleranciaMinutos = turno.tolerancia_entrada_minutos ?? 1
+      const horaEntrada = turno.hora_entrada // formato "HH:mm:ss"
+      
+      // Crear hora límite (hora entrada + tolerancia)
+      const hoy = toArgentinaTime(new Date())
+      const [horas, minutos] = horaEntrada.split(':').map(Number)
+      const horaLimite = new Date(hoy)
+      horaLimite.setHours(horas, minutos + toleranciaMinutos, 0, 0)
+      
+      // Hora de llegada real
+      const horaLlegada = toArgentinaTime(timestampFichaje)
+      
+      const minutosRetraso = Math.floor((horaLlegada.getTime() - horaLimite.getTime()) / 60000)
+      
+      console.log('🔍 [FICHERO:LLEGADA] Cálculo:', {
+        horaEntrada,
+        toleranciaMinutos,
+        horaLimite: format(horaLimite, 'HH:mm'),
+        horaLlegada: format(horaLlegada, 'HH:mm'),
+        minutosRetraso,
+        tarde: minutosRetraso > 0
+      })
+      
+      if (minutosRetraso > 0) {
+        return {
+          horaEntradaProgramada: horaEntrada.substring(0, 5),
+          horaLlegadaReal: format(horaLlegada, 'HH:mm'),
+          minutosRetraso,
+          toleranciaMinutos
+        }
+      }
+      
+      return null
+    } catch (error) {
+      console.error('❌ [FICHERO:LLEGADA] Error:', error)
+      return null
+    }
+  }
 
   useEffect(() => {
     checkAuth()
@@ -303,6 +457,94 @@ export default function Fichero() {
         })
 
         if (error) throw error
+
+        // === VERIFICAR INFRACCIONES DESPUÉS DEL FICHAJE EXITOSO ===
+        const empleadoIdReal = empleadoId || empleado.id
+        
+        // Verificar PAUSA EXCEDIDA si es fin de pausa
+        if (tipoFichaje === 'pausa_fin' && facialConfig?.lateArrivalAlertEnabled) {
+          console.log('🔍 [FICHERO:PAUSA] Iniciando verificación de pausa excedida...')
+          logCruzRoja.inicio('pausa_excedida', empleadoIdReal, fichajeId, true)
+          
+          const pausaRealTime = await calcularPausaExcedidaEnTiempoReal(empleadoIdReal)
+          
+          if (pausaRealTime && pausaRealTime.excedida) {
+            const minutosExceso = Math.round(pausaRealTime.minutosTranscurridos - pausaRealTime.minutosPermitidos)
+            console.log('⚠️ [FICHERO:PAUSA] PAUSA EXCEDIDA DETECTADA! Exceso:', minutosExceso, 'minutos')
+            
+            // Mostrar alerta primero
+            setPausaExcedidaInfo({
+              minutosUsados: pausaRealTime.minutosTranscurridos,
+              minutosPermitidos: pausaRealTime.minutosPermitidos,
+              registrado: false
+            })
+            setShowPausaExcedidaAlert(true)
+            
+            // Registrar cruz roja
+            const { data: cruzRojaData, error: cruzRojaError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
+              p_empleado_id: empleadoIdReal,
+              p_tipo_infraccion: 'pausa_excedida',
+              p_fichaje_id: fichajeId,
+              p_minutos_diferencia: minutosExceso,
+              p_observaciones: `Pausa excedida (fichero móvil): ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
+            })
+            
+            if (cruzRojaError) {
+              console.error('❌ [FICHERO:PAUSA] Error registrando cruz roja:', cruzRojaError)
+              logCruzRoja.fin('pausa_excedida', 'error')
+            } else {
+              console.log('✅ [FICHERO:PAUSA] Cruz roja registrada exitosamente')
+              setPausaExcedidaInfo(prev => prev ? {...prev, registrado: true} : null)
+              logCruzRoja.fin('pausa_excedida', 'exito')
+            }
+          } else {
+            console.log('✅ [FICHERO:PAUSA] Pausa dentro del tiempo permitido o sin datos')
+            logCruzRoja.fin('pausa_excedida', 'no_excedida')
+          }
+        }
+        
+        // Verificar LLEGADA TARDE si es entrada
+        if (tipoFichaje === 'entrada' && facialConfig?.lateArrivalAlertEnabled) {
+          console.log('🔍 [FICHERO:LLEGADA] Iniciando verificación de llegada tarde...')
+          logCruzRoja.inicio('llegada_tarde', empleadoIdReal, fichajeId, true)
+          
+          const llegadaTarde = await verificarLlegadaTarde(empleadoIdReal, new Date().toISOString())
+          
+          if (llegadaTarde) {
+            console.log('⚠️ [FICHERO:LLEGADA] LLEGADA TARDE DETECTADA! Retraso:', llegadaTarde.minutosRetraso, 'minutos')
+            
+            // Mostrar alerta primero
+            setLlegadaTardeInfo({
+              horaEntradaProgramada: llegadaTarde.horaEntradaProgramada,
+              horaLlegadaReal: llegadaTarde.horaLlegadaReal,
+              minutosRetraso: llegadaTarde.minutosRetraso,
+              toleranciaMinutos: llegadaTarde.toleranciaMinutos,
+              registrado: false
+            })
+            setShowLlegadaTardeAlert(true)
+            
+            // Registrar cruz roja
+            const { data: cruzRojaData, error: cruzRojaError } = await supabase.rpc('kiosk_registrar_cruz_roja', {
+              p_empleado_id: empleadoIdReal,
+              p_tipo_infraccion: 'llegada_tarde',
+              p_fichaje_id: fichajeId,
+              p_minutos_diferencia: llegadaTarde.minutosRetraso,
+              p_observaciones: `Llegada tarde (fichero móvil): llegó ${llegadaTarde.horaLlegadaReal}, debía ${llegadaTarde.horaEntradaProgramada} (+${llegadaTarde.toleranciaMinutos} min tolerancia)`
+            })
+            
+            if (cruzRojaError) {
+              console.error('❌ [FICHERO:LLEGADA] Error registrando cruz roja:', cruzRojaError)
+              logCruzRoja.fin('llegada_tarde', 'error')
+            } else {
+              console.log('✅ [FICHERO:LLEGADA] Cruz roja registrada exitosamente')
+              setLlegadaTardeInfo(prev => prev ? {...prev, registrado: true} : null)
+              logCruzRoja.fin('llegada_tarde', 'exito')
+            }
+          } else {
+            console.log('✅ [FICHERO:LLEGADA] Llegada a tiempo o sin turno configurado')
+            logCruzRoja.fin('llegada_tarde', 'puntual')
+          }
+        }
       }
 
       // Actualizar estado
@@ -714,6 +956,35 @@ export default function Fichero() {
             setTimeout(() => {
               window.location.href = '/dashboard'
             }, 2000)
+          }}
+        />
+      )}
+      
+      {/* Alertas de infracciones */}
+      {showPausaExcedidaAlert && pausaExcedidaInfo && empleado && (
+        <PausaExcedidaAlert
+          empleadoNombre={`${empleado.nombre} ${empleado.apellido}`}
+          minutosUsados={pausaExcedidaInfo.minutosUsados}
+          minutosPermitidos={pausaExcedidaInfo.minutosPermitidos}
+          registrado={pausaExcedidaInfo.registrado}
+          onDismiss={() => {
+            setShowPausaExcedidaAlert(false)
+            setPausaExcedidaInfo(null)
+          }}
+        />
+      )}
+      
+      {showLlegadaTardeAlert && llegadaTardeInfo && empleado && (
+        <LlegadaTardeAlert
+          empleadoNombre={`${empleado.nombre} ${empleado.apellido}`}
+          horaEntradaProgramada={llegadaTardeInfo.horaEntradaProgramada}
+          horaLlegadaReal={llegadaTardeInfo.horaLlegadaReal}
+          minutosRetraso={llegadaTardeInfo.minutosRetraso}
+          toleranciaMinutos={llegadaTardeInfo.toleranciaMinutos}
+          registrado={llegadaTardeInfo.registrado}
+          onDismiss={() => {
+            setShowLlegadaTardeAlert(false)
+            setLlegadaTardeInfo(null)
           }}
         />
       )}
