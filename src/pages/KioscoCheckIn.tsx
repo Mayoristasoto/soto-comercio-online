@@ -417,16 +417,14 @@ export default function KioscoCheckIn() {
       
       console.log('🔍 [PAUSA REAL-TIME] Buscando pausa_inicio desde:', startOfDayUtc)
       
-      // Obtener el último fichaje de pausa_inicio del día
-      const { data: pausaInicio, error: pausaError } = await supabase
-        .from('fichajes')
-        .select('timestamp_real')
-        .eq('empleado_id', empleadoId)
-        .eq('tipo', 'pausa_inicio')
-        .gte('timestamp_real', startOfDayUtc)
-        .order('timestamp_real', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      // Usar RPC con SECURITY DEFINER para evitar bloqueo RLS en kiosco sin sesión
+      const { data: pausaData, error: pausaError } = await supabase
+        .rpc('kiosk_get_pausa_inicio', { 
+          p_empleado_id: empleadoId, 
+          p_desde: startOfDayUtc 
+        })
+      
+      const pausaInicio = pausaData && pausaData.length > 0 ? pausaData[0] : null
       
       console.log('🔍 [PAUSA REAL-TIME] Resultado búsqueda pausa_inicio:', { pausaInicio, pausaError })
       
