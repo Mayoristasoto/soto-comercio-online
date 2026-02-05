@@ -1291,20 +1291,16 @@ export default function KioscoCheckIn() {
         logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, alertConfig.lateArrivalEnabled)
         
         try {
-          // Obtener turno asignado del empleado
-          const { data: turnoData, error: turnoError } = await supabase
-            .from('empleado_turnos')
-            .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
-            .eq('empleado_id', empleadoParaFichaje.id)
-            .eq('activo', true)
-            .maybeSingle()
+          // Obtener turno asignado del empleado via RPC (bypass RLS para kiosco anon)
+          const { data: turnoRpc, error: turnoError } = await supabase.rpc('kiosk_get_turno_empleado', {
+            p_empleado_id: empleadoParaFichaje.id
+          }) as { data: { hora_entrada: string; tolerancia_entrada_minutos: number } | null; error: any }
           
-          logCruzRoja.turnoData('llegada_tarde', turnoData, turnoError)
+          logCruzRoja.turnoData('llegada_tarde', turnoRpc, turnoError)
           
-          if (turnoData?.turno) {
-            const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
-            const horaEntradaProgramada = turno.hora_entrada // "08:00:00"
-            const tolerancia = turno.tolerancia_entrada_minutos ?? 5
+          if (turnoRpc) {
+            const horaEntradaProgramada = turnoRpc.hora_entrada // "08:00:00"
+            const tolerancia = turnoRpc.tolerancia_entrada_minutos ?? 5
             
             // Calcular hora límite con tolerancia
             const [h, m] = horaEntradaProgramada.split(':').map(Number)
@@ -1676,20 +1672,16 @@ export default function KioscoCheckIn() {
           logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, alertConfig.lateArrivalEnabled)
           
           try {
-            // Obtener turno asignado del empleado
-            const { data: turnoData, error: turnoError } = await supabase
-              .from('empleado_turnos')
-              .select('turno:fichado_turnos(hora_entrada, tolerancia_entrada_minutos)')
-              .eq('empleado_id', empleadoParaFichaje.id)
-              .eq('activo', true)
-              .maybeSingle()
+            // Obtener turno asignado del empleado via RPC (bypass RLS para kiosco anon)
+            const { data: turnoRpc, error: turnoError } = await supabase.rpc('kiosk_get_turno_empleado', {
+              p_empleado_id: empleadoParaFichaje.id
+            }) as { data: { hora_entrada: string; tolerancia_entrada_minutos: number } | null; error: any }
             
-            logCruzRoja.turnoData('llegada_tarde', turnoData, turnoError)
+            logCruzRoja.turnoData('llegada_tarde', turnoRpc, turnoError)
             
-            if (turnoData?.turno) {
-              const turno = turnoData.turno as { hora_entrada: string; tolerancia_entrada_minutos: number | null }
-              const horaEntradaProgramada = turno.hora_entrada // "08:00:00"
-              const tolerancia = turno.tolerancia_entrada_minutos ?? 5
+            if (turnoRpc) {
+              const horaEntradaProgramada = turnoRpc.hora_entrada // "08:00:00"
+              const tolerancia = turnoRpc.tolerancia_entrada_minutos ?? 5
               
               // Calcular hora límite con tolerancia
               const [h, m] = horaEntradaProgramada.split(':').map(Number)
