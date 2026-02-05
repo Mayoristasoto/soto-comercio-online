@@ -424,14 +424,22 @@ export default function KioscoCheckIn() {
           p_desde: startOfDayUtc 
         })
       
-      const pausaInicio = pausaData && pausaData.length > 0 ? pausaData[0] : null
-      
-      console.log('🔍 [PAUSA REAL-TIME] Resultado búsqueda pausa_inicio:', { pausaInicio, pausaError })
+      // Logging detallado del tipo de respuesta para diagnosticar problemas
+      console.log('🔍 [PAUSA REAL-TIME] === RESPUESTA RPC ===')
+      console.log('🔍 [PAUSA REAL-TIME] pausaData tipo:', typeof pausaData)
+      console.log('🔍 [PAUSA REAL-TIME] pausaData isArray:', Array.isArray(pausaData))
+      console.log('🔍 [PAUSA REAL-TIME] pausaData length:', pausaData?.length ?? 'N/A')
+      console.log('🔍 [PAUSA REAL-TIME] pausaData raw:', JSON.stringify(pausaData))
+      console.log('🔍 [PAUSA REAL-TIME] pausaError:', pausaError)
       
       if (pausaError) {
         console.error('❌ [PAUSA REAL-TIME] Error en consulta pausa_inicio:', pausaError)
         return null
       }
+      
+      const pausaInicio = pausaData && pausaData.length > 0 ? pausaData[0] : null
+      
+      console.log('🔍 [PAUSA REAL-TIME] pausaInicio extraído:', pausaInicio)
       
       if (!pausaInicio) {
         console.warn('⚠️ [PAUSA REAL-TIME] No se encontró pausa_inicio del día para empleado:', empleadoId)
@@ -439,6 +447,7 @@ export default function KioscoCheckIn() {
         console.warn('⚠️ [PAUSA REAL-TIME] 1. El empleado no fichó pausa_inicio hoy')
         console.warn('⚠️ [PAUSA REAL-TIME] 2. Hay un problema de zona horaria en el filtro')
         console.warn('⚠️ [PAUSA REAL-TIME] startOfDayUtc usado:', startOfDayUtc)
+        logCruzRoja.sinPausaInicio(empleadoId, startOfDayUtc)
         return null
       }
       
