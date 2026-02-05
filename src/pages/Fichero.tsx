@@ -112,17 +112,20 @@ export default function Fichero() {
       const ahora = new Date()
       const startOfDayUtc = getArgentinaStartOfDay(ahora)
       console.log('🔍 [FICHERO:PAUSA] Buscando pausa_inicio desde:', startOfDayUtc)
+      console.log('🔍 [FICHERO:PAUSA] Hora actual UTC:', ahora.toISOString())
       
       // Obtener el último fichaje de pausa_inicio del día
       const { data: pausaInicio, error: pausaError } = await supabase
         .from('fichajes')
-        .select('timestamp_real')
+        .select('id, timestamp_real, tipo')
         .eq('empleado_id', empleadoId)
         .eq('tipo', 'pausa_inicio')
         .gte('timestamp_real', startOfDayUtc)
         .order('timestamp_real', { ascending: false })
         .limit(1)
         .maybeSingle()
+      
+      console.log('🔍 [FICHERO:PAUSA] Query result:', { pausaInicio, pausaError })
       
       if (pausaError) {
         console.error('❌ [FICHERO:PAUSA] Error buscando pausa_inicio:', pausaError)
