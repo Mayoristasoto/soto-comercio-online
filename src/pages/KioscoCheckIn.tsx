@@ -1288,7 +1288,7 @@ export default function KioscoCheckIn() {
         
       // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
       if (tipoAccion === 'entrada' && alertasHabilitadas) {
-        logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, config.lateArrivalAlertEnabled)
+        logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, alertConfig.lateArrivalEnabled)
         
         try {
           // Obtener turno asignado del empleado
@@ -1673,7 +1673,7 @@ export default function KioscoCheckIn() {
         
         // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
         if (alertasHabilitadas) {
-          logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, config.lateArrivalAlertEnabled)
+          logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, alertConfig.lateArrivalEnabled)
           
           try {
             // Obtener turno asignado del empleado
