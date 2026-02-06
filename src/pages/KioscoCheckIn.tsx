@@ -239,6 +239,41 @@ function UnauthorizedDeviceScreen({
   )
 }
 
+// Helper: obtener ubicación GPS obligatoria para fichaje
+const obtenerUbicacionObligatoria = async (
+  toastFn: ReturnType<typeof useToast>['toast']
+): Promise<{ latitud: number; longitud: number } | null> => {
+  try {
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 10000,
+        enableHighAccuracy: true
+      })
+    })
+    return {
+      latitud: position.coords.latitude,
+      longitud: position.coords.longitude
+    }
+  } catch (error: any) {
+    if (error?.code === 1) {
+      toastFn({
+        title: "Ubicación GPS requerida",
+        description: "Debe habilitar la ubicación GPS para poder fichar. Verifique los permisos del navegador.",
+        variant: "destructive",
+        duration: 8000,
+      })
+    } else {
+      toastFn({
+        title: "Ubicación GPS requerida",
+        description: "No se pudo obtener la ubicación GPS. Intente de nuevo.",
+        variant: "destructive",
+        duration: 8000,
+      })
+    }
+    return null
+  }
+}
+
 export default function KioscoCheckIn() {
   const { toast } = useToast()
   const { config } = useFacialConfig()
@@ -726,40 +761,19 @@ export default function KioscoCheckIn() {
         apellido: empleadoData.apellido
       } : selectedEmployee
 
-      // Obtener ubicación si está disponible
-      let ubicacion = null
-      try {
-        // Verificar primero si el permiso ya fue denegado para evitar spam
-        const permissionStatus = await navigator.permissions?.query?.({ name: 'geolocation' as PermissionName }).catch(() => null)
-        if (permissionStatus?.state === 'denied') {
-          console.info('[GPS] Permiso de ubicación denegado - continuando sin GPS')
-        } else {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 5000,
-              enableHighAccuracy: false
-            })
-          })
-          ubicacion = {
-            latitud: position.coords.latitude,
-            longitud: position.coords.longitude
-          }
-        }
-      } catch (error: any) {
-        // Tratar "permission denied" (code 1) como info, no como error
-        if (error?.code === 1) {
-          console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
-        } else {
-          console.log('[GPS] No se pudo obtener ubicación:', error?.message || error)
-        }
+      // Obtener ubicación GPS (obligatoria)
+      const ubicacion = await obtenerUbicacionObligatoria(toast)
+      if (!ubicacion) {
+        setLoading(false)
+        return
       }
 
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
         p_confianza: confianza,
-        p_lat: ubicacion?.latitud || null,
-        p_lng: ubicacion?.longitud || null,
+        p_lat: ubicacion.latitud,
+        p_lng: ubicacion.longitud,
         p_datos: {
           dispositivo: 'kiosco',
           timestamp_local: new Date().toISOString(),
@@ -1190,38 +1204,19 @@ export default function KioscoCheckIn() {
         apellido: empleadoData.apellido
       }
 
-      // Obtener ubicación si está disponible
-      let ubicacion = null
-      try {
-        const permissionStatus = await navigator.permissions?.query?.({ name: 'geolocation' as PermissionName }).catch(() => null)
-        if (permissionStatus?.state === 'denied') {
-          console.info('[GPS] Permiso de ubicación denegado - continuando sin GPS')
-        } else {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 5000,
-              enableHighAccuracy: false
-            })
-          })
-          ubicacion = {
-            latitud: position.coords.latitude,
-            longitud: position.coords.longitude
-          }
-        }
-      } catch (error: any) {
-        if (error?.code === 1) {
-          console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
-        } else {
-          console.log('[GPS] No se pudo obtener ubicación:', error?.message || error)
-        }
+      // Obtener ubicación GPS (obligatoria)
+      const ubicacion = await obtenerUbicacionObligatoria(toast)
+      if (!ubicacion) {
+        setLoading(false)
+        return
       }
 
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
         p_confianza: confianza,
-        p_lat: ubicacion?.latitud || null,
-        p_lng: ubicacion?.longitud || null,
+        p_lat: ubicacion.latitud,
+        p_lng: ubicacion.longitud,
         p_datos: {
           dispositivo: 'kiosco',
           tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
@@ -1527,38 +1522,19 @@ export default function KioscoCheckIn() {
         apellido: recognizedEmployee.data.apellido
       }
 
-      // Obtener ubicación si está disponible
-      let ubicacion = null
-      try {
-        const permissionStatus = await navigator.permissions?.query?.({ name: 'geolocation' as PermissionName }).catch(() => null)
-        if (permissionStatus?.state === 'denied') {
-          console.info('[GPS] Permiso de ubicación denegado - continuando sin GPS')
-        } else {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 5000,
-              enableHighAccuracy: false
-            })
-          })
-          ubicacion = {
-            latitud: position.coords.latitude,
-            longitud: position.coords.longitude
-          }
-        }
-      } catch (error: any) {
-        if (error?.code === 1) {
-          console.info('[GPS] Usuario denegó permiso de ubicación - continuando sin GPS')
-        } else {
-          console.log('[GPS] No se pudo obtener ubicación:', error?.message || error)
-        }
+      // Obtener ubicación GPS (obligatoria)
+      const ubicacion = await obtenerUbicacionObligatoria(toast)
+      if (!ubicacion) {
+        setLoading(false)
+        return
       }
 
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
         p_confianza: recognizedEmployee.confidence,
-        p_lat: ubicacion?.latitud || null,
-        p_lng: ubicacion?.longitud || null,
+        p_lat: ubicacion.latitud,
+        p_lng: ubicacion.longitud,
         p_datos: {
           dispositivo: 'kiosco',
           tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
