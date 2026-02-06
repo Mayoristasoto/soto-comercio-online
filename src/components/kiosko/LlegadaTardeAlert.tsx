@@ -138,6 +138,9 @@ export function LlegadaTardeAlert({
                   ✓ Incidencia registrada correctamente
                 </p>
               )}
+              <p className="text-[10px] sm:text-xs text-destructive mt-2 sm:mt-3 font-bold border-t border-destructive/30 pt-2">
+                ⚠️ En caso de repetirse, será apercibido/a.
+              </p>
             </div>
           </div>
         </Card>
