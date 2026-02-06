@@ -1,29 +1,24 @@
 
 
-## Fix: Make "apercibimiento" warning visible in late arrival alert
+## Agregar advertencia de apercibimiento en PausaExcedidaAlert
 
-### Problem
-The warning text was added but is not visible in the UI, likely due to small font size and low contrast against the dark card background.
+### Cambio
+Agregar el mismo bloque de advertencia amarillo que ya existe en `LlegadaTardeAlert` al componente `PausaExcedidaAlert`, ubicado entre la tarjeta de incidencia y el countdown.
 
-### Solution
-Move the warning outside the incidence details section and make it larger/more prominent so it cannot be missed. Place it as a standalone highlighted section between the incidence card and the countdown.
+### Detalle tecnico
 
-### Technical Changes
+**Archivo: `src/components/kiosko/PausaExcedidaAlert.tsx`**
 
-**File: `src/components/kiosko/LlegadaTardeAlert.tsx`**
+Insertar despues del cierre de la Card de incidencia (linea 112) y antes del div del countdown (linea 114), el siguiente bloque:
 
-1. Remove the current small warning text from inside the incidence card (lines 141-143)
-2. Add a new prominent warning section between the incidence `<Card>` and the countdown `<div>`, styled with:
-   - Larger font size (`text-sm sm:text-base md:text-lg`)
-   - Yellow/amber warning background for contrast
-   - Bold text with warning icon
-   - Example:
-   ```
-   <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-6 text-center">
-     <p className="text-sm sm:text-base md:text-lg font-bold text-yellow-400">
-       En caso de repetirse, sera apercibido/a.
-     </p>
-   </div>
-   ```
+```tsx
+{/* Warning de apercibimiento */}
+<div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-6 text-center animate-pulse">
+  <p className="text-sm sm:text-base md:text-lg font-bold text-yellow-400">
+    ⚠️ En caso de repetirse, será apercibido/a.
+  </p>
+</div>
+```
 
-This ensures the warning is clearly visible regardless of screen size or theme.
+Es identico al bloque ya implementado en `LlegadaTardeAlert` para mantener consistencia visual.
+
