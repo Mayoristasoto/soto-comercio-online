@@ -140,6 +140,13 @@ export function PausaExcedidaAlert({
           </div>
         </Card>
 
+        {/* Warning de apercibimiento */}
+        <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-6 text-center animate-pulse">
+          <p className="text-sm sm:text-base md:text-lg font-bold text-yellow-400">
+            ⚠️ En caso de repetirse, será apercibido/a.
+          </p>
+        </div>
+
         {/* Countdown */}
         <div className="text-center">
           <p className="text-sm sm:text-base md:text-xl font-semibold text-orange-600">
