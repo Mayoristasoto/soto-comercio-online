@@ -27,9 +27,10 @@ interface Props {
   userInfo: UserInfo | null
   isAdmin: boolean
   isGerente: boolean
+  onAnotacionCreada?: () => void
 }
 
-export function AnotacionRapida({ userInfo, isAdmin, isGerente }: Props) {
+export function AnotacionRapida({ userInfo, isAdmin, isGerente, onAnotacionCreada }: Props) {
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [empleadoId, setEmpleadoId] = useState("")
   const [texto, setTexto] = useState("")
@@ -86,6 +87,7 @@ export function AnotacionRapida({ userInfo, isAdmin, isGerente }: Props) {
 
       toast({ title: "Anotación guardada ✓" })
       setTexto("")
+      onAnotacionCreada?.()
     } catch (error) {
       console.error('Error guardando anotación:', error)
       toast({ title: "Error al guardar", variant: "destructive" })

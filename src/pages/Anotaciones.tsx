@@ -58,7 +58,7 @@ export default function Anotaciones() {
         </div>
       </div>
 
-      <AnotacionRapida userInfo={userInfo} isAdmin={isAdmin} isGerente={isGerente} />
+      <AnotacionRapida userInfo={userInfo} isAdmin={isAdmin} isGerente={isGerente} onAnotacionCreada={() => setRefreshTrigger(prev => prev + 1)} />
 
       {isGerente && !isAdmin ? (
         // Gerentes solo ven el formulario de nueva anotación
