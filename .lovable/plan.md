@@ -1,26 +1,27 @@
 
 
-## Corregir: Historial no se actualiza despues de Anotacion Rapida
+## Corregir error: "function gen_salt(unknown, integer) does not exist"
 
 ### Problema
-La anotacion rapida guarda correctamente en la base de datos, pero el componente `HistorialAnotaciones` no se refresca automaticamente. El usuario tiene que recargar la pagina manualmente para ver la nueva anotacion.
-
-### Causa
-El componente `AnotacionRapida` no tiene ningun callback para notificar a la pagina padre que se creo una nueva anotacion. El `refreshTrigger` que ya existe en `Anotaciones.tsx` solo se actualiza desde `AnotacionesSyncManager`, no desde `AnotacionRapida`.
+La funcion `blanquear_pins_con_dni` falla porque usa `gen_salt()` y `crypt()` de la extension `pgcrypto`, pero esa extension esta instalada en el schema `extensions`. La funcion tiene `SET search_path = public`, lo que impide encontrar las funciones de pgcrypto.
 
 ### Solucion
+Recrear la funcion `blanquear_pins_con_dni` cambiando el `search_path` para incluir el schema `extensions`:
 
-**Archivo: `src/components/anotaciones/AnotacionRapida.tsx`**
-- Agregar una prop `onAnotacionCreada` (callback opcional)
-- Llamar a este callback despues de guardar exitosamente
+```text
+SET search_path = public, extensions
+```
 
-**Archivo: `src/pages/Anotaciones.tsx`**
-- Pasar `onAnotacionCreada={() => setRefreshTrigger(prev => prev + 1)}` al componente `AnotacionRapida`
-- Esto reutiliza el mecanismo de `refreshTrigger` que ya existe y que `HistorialAnotaciones` ya escucha
+Esto permite que la funcion encuentre `gen_salt()` y `crypt()` sin necesidad de calificarlas con el schema.
 
-### Cambios minimos
-Son solo 3 lineas de cambio en total:
-1. Agregar la prop al interface de `AnotacionRapida`
-2. Llamar `onAnotacionCreada?.()` despues del toast de exito
-3. Pasar el callback en `Anotaciones.tsx`
+### Detalle tecnico
+
+**Migracion SQL:**
+- `CREATE OR REPLACE FUNCTION public.blanquear_pins_con_dni()` con `SET search_path = public, extensions`
+- El resto de la funcion permanece identico
+- Se mantiene el `GRANT EXECUTE` para `authenticated`
+
+### Sobre los otros errores en consola
+- **GeolocationPositionError**: El navegador denego permisos de ubicacion. No bloquea el blanqueo de PINs, es un chequeo de seguridad separado. Se puede ignorar si no se requiere validacion por ubicacion.
+- **Error 406 en ips_permitidas**: Consulta de IPs permitidas que no encuentra registros. Tampoco bloquea la funcionalidad de PINs.
 
