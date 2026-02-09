@@ -7411,13 +7411,13 @@ export type Database = {
       blanquear_pins_con_dni: {
         Args: never
         Returns: {
-          apellido: string
-          dni: string
-          email: string
-          empleado_id: string
-          legajo: string
-          nombre: string
-          pin_asignado: string
+          out_apellido: string
+          out_dni: string
+          out_email: string
+          out_empleado_id: string
+          out_legajo: string
+          out_nombre: string
+          out_pin_asignado: string
         }[]
       }
       calcular_antiguedad_anios: {

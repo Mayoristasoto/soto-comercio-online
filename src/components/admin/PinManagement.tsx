@@ -295,11 +295,11 @@ export default function PinManagement() {
     setConfirmBlanqueo(false)
     setBlanqueando(true)
     try {
-      const { data, error } = await supabase.rpc('blanquear_pins_con_dni')
+      const { data: rawData, error } = await supabase.rpc('blanquear_pins_con_dni')
       
       if (error) throw error
 
-      if (!data || data.length === 0) {
+      if (!rawData || rawData.length === 0) {
         toast({
           title: "Sin empleados válidos",
           description: "No hay empleados con DNI cargado para blanquear PINs",
@@ -307,6 +307,17 @@ export default function PinManagement() {
         })
         return
       }
+
+      // Map out_ prefixed columns to expected names
+      const data = rawData.map((r: any) => ({
+        empleado_id: r.out_empleado_id,
+        nombre: r.out_nombre,
+        apellido: r.out_apellido,
+        legajo: r.out_legajo,
+        dni: r.out_dni,
+        pin_asignado: r.out_pin_asignado,
+        email: r.out_email,
+      }))
 
       // Exportar a PDF con credenciales
       const filename = exportarPinsBlanqueadosPDF(data)
