@@ -6,6 +6,7 @@ import { HistorialAnotaciones } from "@/components/anotaciones/HistorialAnotacio
 import { NuevaAnotacion } from "@/components/anotaciones/NuevaAnotacion"
 import { AnotacionesSyncManager } from "@/components/anotaciones/AnotacionesSyncManager"
 import { FileText, Plus } from "lucide-react"
+import { AnotacionRapida } from "@/components/anotaciones/AnotacionRapida"
 
 interface UserInfo {
   id: string
@@ -56,6 +57,8 @@ export default function Anotaciones() {
           </p>
         </div>
       </div>
+
+      <AnotacionRapida userInfo={userInfo} isAdmin={isAdmin} isGerente={isGerente} />
 
       {isGerente && !isAdmin ? (
         // Gerentes solo ven el formulario de nueva anotación
