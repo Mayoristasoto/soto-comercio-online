@@ -81,14 +81,58 @@ export default function UnifiedAuth() {
       });
 
       if (error) {
-        console.error('❌ [UnifiedAuth.tsx] Error de autenticación:', {
-          message: error.message,
-          status: error.status,
-          name: error.name,
-          fullError: error
-        });
+        console.error('❌ [UnifiedAuth.tsx] Error de autenticación:', error.message);
 
-        // Registrar intento de login fallido
+        // Si falla y el password parece un PIN (4 dígitos), intentar flujo PIN
+        if (error.message === 'Invalid login credentials' && /^\d{4}$/.test(password)) {
+          console.log('🔄 [UnifiedAuth.tsx] Intentando fallback con PIN...');
+          try {
+            const { data: emp } = await supabase
+              .from('empleados')
+              .select('id, rol')
+              .eq('email', email.toLowerCase().trim())
+              .eq('activo', true)
+              .single();
+
+            if (emp && emp.rol !== 'admin_rrhh') {
+              const { data: pinData, error: pinError } = await supabase.functions.invoke('pin-first-login', {
+                body: { empleado_id: emp.id, pin: password }
+              });
+
+              if (!pinError && pinData?.success && pinData?.email_otp) {
+                console.log('✅ [UnifiedAuth.tsx] PIN válido, verificando OTP...');
+                const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+                  email: pinData.email || email,
+                  token: pinData.email_otp,
+                  type: 'email',
+                });
+
+                if (!verifyError && verifyData?.session) {
+                  try {
+                    await supabase.rpc('registrar_intento_login_v2', {
+                      p_email: email,
+                      p_evento: 'login_exitoso',
+                      p_metodo: 'pin_via_email',
+                      p_exitoso: true,
+                      p_user_id: verifyData.user?.id
+                    });
+                  } catch (logErr) { console.warn('Log error:', logErr); }
+
+                  toast({
+                    title: "Bienvenido",
+                    description: "Primer acceso exitoso. Deberás cambiar tu contraseña.",
+                  });
+                  navigate(redirectTo);
+                  return;
+                }
+              }
+            }
+          } catch (pinFallbackErr) {
+            console.error('❌ [UnifiedAuth.tsx] Error en fallback PIN:', pinFallbackErr);
+          }
+        }
+
+        // Registrar intento fallido
         try {
           await supabase.rpc('registrar_intento_login_v2', {
             p_email: email,
@@ -98,7 +142,7 @@ export default function UnifiedAuth() {
             p_mensaje_error: error.message
           });
         } catch (logError) {
-          console.error('Error registrando log de autenticación:', logError);
+          console.error('Error registrando log:', logError);
         }
 
         toast({
@@ -403,7 +447,10 @@ export default function UnifiedAuth() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Primera vez? Usá los 4 últimos dígitos de tu DNI
+                  </p>
                   <Button
                     type="button"
                     variant="link"
