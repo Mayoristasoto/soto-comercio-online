@@ -51,7 +51,8 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { exportarPinsPDF, exportarPinsBlanqueadosPDF } from "@/utils/pinsExportPDF"
+import { exportarPinsPDF, exportarPinsBlanqueadosPDF, exportarCredencialesEmpleadosPDF } from "@/utils/pinsExportPDF"
+import { FileText } from "lucide-react"
 
 interface EmpleadoPin {
   empleado_id: string
@@ -74,6 +75,7 @@ export default function PinManagement() {
   const [generandoMasivo, setGenerandoMasivo] = useState(false)
   const [blanqueando, setBlanqueando] = useState(false)
   const [confirmBlanqueo, setConfirmBlanqueo] = useState(false)
+  const [exportandoCredenciales, setExportandoCredenciales] = useState(false)
   
   // Modal para configurar PIN
   const [modalOpen, setModalOpen] = useState(false)
@@ -341,6 +343,58 @@ export default function PinManagement() {
     }
   }
 
+  // Exportar credenciales (email + últimos 4 del DNI)
+  const exportarCredenciales = async () => {
+    setExportandoCredenciales(true)
+    try {
+      const { data, error } = await supabase
+        .from('empleados')
+        .select('nombre, apellido, legajo, email, dni')
+        .eq('activo', true)
+        .not('dni', 'is', null)
+        .order('apellido')
+
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        toast({
+          title: "Sin empleados",
+          description: "No hay empleados activos con DNI cargado",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Filtrar los que tienen email
+      const empleadosValidos = data.filter(e => e.email && e.dni)
+
+      if (empleadosValidos.length === 0) {
+        toast({
+          title: "Sin datos suficientes",
+          description: "No hay empleados con email y DNI cargados",
+          variant: "destructive"
+        })
+        return
+      }
+
+      const filename = exportarCredencialesEmpleadosPDF(empleadosValidos as any)
+      
+      toast({
+        title: "PDF generado",
+        description: `Se descargó ${filename} con ${empleadosValidos.length} empleados`
+      })
+    } catch (err: any) {
+      console.error('Error exportando credenciales:', err)
+      toast({
+        title: "Error",
+        description: err.message || "No se pudo generar el PDF",
+        variant: "destructive"
+      })
+    } finally {
+      setExportandoCredenciales(false)
+    }
+  }
+
   // Filtrar empleados
   const empleadosFiltrados = empleados.filter(emp => {
     const termino = busqueda.toLowerCase()
@@ -383,6 +437,19 @@ export default function PinManagement() {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={cargarEmpleados} disabled={loading}>
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button 
+                onClick={exportarCredenciales} 
+                disabled={exportandoCredenciales || loading}
+                variant="outline"
+                className="gap-2"
+              >
+                {exportandoCredenciales ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                Exportar Credenciales PDF
               </Button>
               <Button 
                 onClick={() => setConfirmBlanqueo(true)} 

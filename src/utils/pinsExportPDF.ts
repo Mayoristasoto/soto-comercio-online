@@ -108,6 +108,86 @@ export const exportarPinsPDF = (pins: PinGenerado[]): string => {
   return filename
 }
 
+interface EmpleadoCredencial {
+  nombre: string
+  apellido: string
+  legajo: string | null
+  email: string
+  dni: string
+}
+
+export const exportarCredencialesEmpleadosPDF = (empleados: EmpleadoCredencial[]): string => {
+  const doc = new jsPDF()
+  const fechaGeneracion = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
+  
+  doc.setFontSize(18)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Credenciales de Acceso - Sistema SOTO', 105, 20, { align: 'center' })
+  
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(100)
+  doc.text(`Generado el ${fechaGeneracion}`, 105, 28, { align: 'center' })
+  
+  doc.setFontSize(9)
+  doc.setTextColor(200, 0, 0)
+  doc.text('⚠️ DOCUMENTO CONFIDENCIAL - Destruir después de entregar las credenciales', 105, 36, { align: 'center' })
+  
+  doc.setTextColor(0)
+  
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Instrucciones de primer acceso:', 14, 46)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text('1. Ingresar el email en la pantalla de login', 14, 52)
+  doc.text('2. Usar los últimos 4 dígitos del DNI como contraseña', 14, 57)
+  doc.text('3. El sistema pedirá crear una contraseña nueva en el primer ingreso', 14, 62)
+  
+  doc.setFontSize(10)
+  doc.text(`Total: ${empleados.length} empleados`, 14, 72)
+  
+  const tableData = empleados.map((emp, index) => [
+    (index + 1).toString(),
+    `${emp.apellido}, ${emp.nombre}`,
+    emp.legajo || 'N/A',
+    emp.email,
+    emp.dni.slice(-4)
+  ])
+  
+  autoTable(doc, {
+    startY: 78,
+    head: [['#', 'Empleado', 'Legajo', 'Email', 'PIN']],
+    body: tableData,
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 45 },
+      2: { cellWidth: 20, halign: 'center' },
+      3: { cellWidth: 60 },
+      4: { cellWidth: 20, halign: 'center', fontStyle: 'bold', fontSize: 11 }
+    },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    didDrawPage: (data: any) => {
+      const pageCount = doc.getNumberOfPages()
+      doc.setFontSize(8)
+      doc.setTextColor(150)
+      doc.text(
+        `Página ${data.pageNumber} de ${pageCount}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      )
+    }
+  })
+  
+  const fechaArchivo = format(new Date(), 'yyyy-MM-dd_HHmm')
+  const filename = `Credenciales_Empleados_${fechaArchivo}.pdf`
+  doc.save(filename)
+  return filename
+}
+
 export const exportarPinsBlanqueadosPDF = (pins: PinBlanqueado[]): string => {
   const doc = new jsPDF()
   const fechaGeneracion = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
