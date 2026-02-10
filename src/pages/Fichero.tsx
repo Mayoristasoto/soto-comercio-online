@@ -791,7 +791,7 @@ export default function Fichero() {
           {[
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
             { key: 'misfichadas', label: 'Informe', icon: FileText },
-            { key: 'estado-animo', label: 'Estado Ánimo', icon: User },
+            ...(['gerente_sucursal', 'admin_rrhh'].includes(empleado.rol) ? [{ key: 'estado-animo', label: 'Estado Ánimo', icon: User }] : []),
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
