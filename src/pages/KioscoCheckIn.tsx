@@ -239,7 +239,7 @@ function UnauthorizedDeviceScreen({
   )
 }
 
-// Helper: obtener ubicación GPS obligatoria para fichaje
+// Helper: obtener ubicación GPS (opcional - continúa sin GPS si falla)
 const obtenerUbicacionObligatoria = async (
   toastFn: ReturnType<typeof useToast>['toast']
 ): Promise<{ latitud: number; longitud: number } | null> => {
@@ -256,19 +256,9 @@ const obtenerUbicacionObligatoria = async (
     }
   } catch (error: any) {
     if (error?.code === 1) {
-      toastFn({
-        title: "Ubicación GPS requerida",
-        description: "Debe habilitar la ubicación GPS para poder fichar. Verifique los permisos del navegador.",
-        variant: "destructive",
-        duration: 8000,
-      })
+      console.info('[GPS Kiosco] Permiso de ubicación denegado - continuando sin GPS')
     } else {
-      toastFn({
-        title: "Ubicación GPS requerida",
-        description: "No se pudo obtener la ubicación GPS. Intente de nuevo.",
-        variant: "destructive",
-        duration: 8000,
-      })
+      console.log('[GPS Kiosco] No se pudo obtener ubicación:', error?.message)
     }
     return null
   }
@@ -761,12 +751,8 @@ export default function KioscoCheckIn() {
         apellido: empleadoData.apellido
       } : selectedEmployee
 
-      // Obtener ubicación GPS (obligatoria)
+      // Obtener ubicación GPS (opcional)
       const ubicacion = await obtenerUbicacionObligatoria(toast)
-      if (!ubicacion) {
-        setLoading(false)
-        return
-      }
 
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
@@ -1204,12 +1190,8 @@ export default function KioscoCheckIn() {
         apellido: empleadoData.apellido
       }
 
-      // Obtener ubicación GPS (obligatoria)
+      // Obtener ubicación GPS (opcional)
       const ubicacion = await obtenerUbicacionObligatoria(toast)
-      if (!ubicacion) {
-        setLoading(false)
-        return
-      }
 
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
@@ -1522,12 +1504,8 @@ export default function KioscoCheckIn() {
         apellido: recognizedEmployee.data.apellido
       }
 
-      // Obtener ubicación GPS (obligatoria)
+      // Obtener ubicación GPS (opcional)
       const ubicacion = await obtenerUbicacionObligatoria(toast)
-      if (!ubicacion) {
-        setLoading(false)
-        return
-      }
 
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
