@@ -758,8 +758,8 @@ export default function KioscoCheckIn() {
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
         p_confianza: confianza,
-        p_lat: ubicacion.latitud,
-        p_lng: ubicacion.longitud,
+        p_lat: ubicacion?.latitud ?? null,
+        p_lng: ubicacion?.longitud ?? null,
         p_datos: {
           dispositivo: 'kiosco',
           timestamp_local: new Date().toISOString(),
@@ -1197,8 +1197,8 @@ export default function KioscoCheckIn() {
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
         p_confianza: confianza,
-        p_lat: ubicacion.latitud,
-        p_lng: ubicacion.longitud,
+        p_lat: ubicacion?.latitud ?? null,
+        p_lng: ubicacion?.longitud ?? null,
         p_datos: {
           dispositivo: 'kiosco',
           tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
@@ -1511,8 +1511,8 @@ export default function KioscoCheckIn() {
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
         p_confianza: recognizedEmployee.confidence,
-        p_lat: ubicacion.latitud,
-        p_lng: ubicacion.longitud,
+        p_lat: ubicacion?.latitud ?? null,
+        p_lng: ubicacion?.longitud ?? null,
         p_datos: {
           dispositivo: 'kiosco',
           tipo: tipoAccion, // SOLO aquí especificamos el tipo cuando es una acción específica
