@@ -87,44 +87,35 @@ export default function UnifiedAuth() {
         if (error.message === 'Invalid login credentials' && /^\d{4}$/.test(password)) {
           console.log('🔄 [UnifiedAuth.tsx] Intentando fallback con PIN...');
           try {
-            const { data: emp } = await supabase
-              .from('empleados')
-              .select('id, rol')
-              .eq('email', email.toLowerCase().trim())
-              .eq('activo', true)
-              .single();
+            const { data: pinData, error: pinError } = await supabase.functions.invoke('pin-first-login', {
+              body: { email: email.toLowerCase().trim(), pin: password }
+            });
 
-            if (emp && emp.rol !== 'admin_rrhh') {
-              const { data: pinData, error: pinError } = await supabase.functions.invoke('pin-first-login', {
-                body: { empleado_id: emp.id, pin: password }
+            if (!pinError && pinData?.success && pinData?.email_otp) {
+              console.log('✅ [UnifiedAuth.tsx] PIN válido, verificando OTP...');
+              const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+                email: pinData.email || email,
+                token: pinData.email_otp,
+                type: 'email',
               });
 
-              if (!pinError && pinData?.success && pinData?.email_otp) {
-                console.log('✅ [UnifiedAuth.tsx] PIN válido, verificando OTP...');
-                const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-                  email: pinData.email || email,
-                  token: pinData.email_otp,
-                  type: 'email',
-                });
-
-                if (!verifyError && verifyData?.session) {
-                  try {
-                    await supabase.rpc('registrar_intento_login_v2', {
-                      p_email: email,
-                      p_evento: 'login_exitoso',
-                      p_metodo: 'pin_via_email',
-                      p_exitoso: true,
-                      p_user_id: verifyData.user?.id
-                    });
-                  } catch (logErr) { console.warn('Log error:', logErr); }
-
-                  toast({
-                    title: "Bienvenido",
-                    description: "Primer acceso exitoso. Deberás cambiar tu contraseña.",
+              if (!verifyError && verifyData?.session) {
+                try {
+                  await supabase.rpc('registrar_intento_login_v2', {
+                    p_email: email,
+                    p_evento: 'login_exitoso',
+                    p_metodo: 'pin_via_email',
+                    p_exitoso: true,
+                    p_user_id: verifyData.user?.id
                   });
-                  navigate(redirectTo);
-                  return;
-                }
+                } catch (logErr) { console.warn('Log error:', logErr); }
+
+                toast({
+                  title: "Bienvenido",
+                  description: "Primer acceso exitoso. Deberás cambiar tu contraseña.",
+                });
+                navigate(redirectTo);
+                return;
               }
             }
           } catch (pinFallbackErr) {
