@@ -18,6 +18,47 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Info } from "lucide-react";
+
+const validarReglasVacaciones = (inicio: Date, fin: Date): { valid: boolean; message: string } => {
+  // Regla 1: Diciembre bloqueado
+  const startMonth = inicio.getMonth();
+  const endMonth = fin.getMonth();
+  const startYear = inicio.getFullYear();
+  const endYear = fin.getFullYear();
+  
+  for (let y = startYear; y <= endYear; y++) {
+    const mStart = y === startYear ? startMonth : 0;
+    const mEnd = y === endYear ? endMonth : 11;
+    for (let m = mStart; m <= mEnd; m++) {
+      if (m === 11) {
+        return {
+          valid: false,
+          message: "No se pueden solicitar vacaciones en el mes de diciembre."
+        };
+      }
+    }
+  }
+
+  // Regla 2: Receso invernal
+  const anio = inicio.getFullYear();
+  const recesoSemana1Inicio = new Date(anio, 6, 20);
+  const recesoSemana1Fin = new Date(anio, 6, 26);
+  const recesoSemana2Inicio = new Date(anio, 6, 27);
+  const recesoSemana2Fin = new Date(anio, 7, 2);
+
+  const tocaSemana1 = inicio <= recesoSemana1Fin && fin >= recesoSemana1Inicio;
+  const tocaSemana2 = inicio <= recesoSemana2Fin && fin >= recesoSemana2Inicio;
+
+  if (tocaSemana1 && tocaSemana2) {
+    return {
+      valid: false,
+      message: "Solo podés tomar una semana del receso invernal (20/7 al 2/8). Si querés 14 días, combiná una semana previa con la primera semana del receso (20-26 julio), o la segunda semana del receso (27 julio - 2 agosto) con una semana posterior."
+    };
+  }
+
+  return { valid: true, message: '' };
+};
 
 interface SolicitudVacacionesProps {
   open: boolean;
@@ -40,9 +81,15 @@ export function SolicitudVacaciones({
   const [hasConflict, setHasConflict] = useState(false);
   const { toast } = useToast();
 
-  // Validar conflictos cuando cambian las fechas
+  // Validar reglas y conflictos cuando cambian las fechas
   useEffect(() => {
     if (fechaInicio && fechaFin) {
+      const reglas = validarReglasVacaciones(fechaInicio, fechaFin);
+      if (!reglas.valid) {
+        setWarningMessage(`🚫 ${reglas.message}`);
+        setHasConflict(true);
+        return;
+      }
       checkConflicts();
     } else {
       setWarningMessage(null);
@@ -136,6 +183,13 @@ export function SolicitudVacaciones({
       return;
     }
 
+    // Validación de reglas como red de seguridad
+    const reglas = validarReglasVacaciones(fechaInicio, fechaFin);
+    if (!reglas.valid) {
+      toast({ title: "No se puede solicitar", description: reglas.message, variant: "destructive" });
+      return;
+    }
+
     if (hasConflict) {
       toast({
         title: "No se puede solicitar",
@@ -205,6 +259,18 @@ export function SolicitudVacaciones({
             Completa la información para solicitar tus vacaciones
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground">
+          <Info className="h-4 w-4 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-foreground text-sm mb-1">Reglas de vacaciones</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>No se pueden solicitar vacaciones en diciembre.</li>
+              <li>Del receso invernal (20/7 al 2/8) solo se puede tomar 1 semana.</li>
+              <li>Para 14 días: combinar 1 semana fuera del receso + 1 semana del receso.</li>
+            </ul>
+          </div>
+        </div>
 
         {warningMessage && (
           <div className={`p-4 rounded-lg border-2 ${
