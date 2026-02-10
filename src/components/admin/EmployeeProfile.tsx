@@ -20,7 +20,8 @@ import {
   Camera,
   Save,
   FileText,
-  Shield
+  Shield,
+  Mail
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -196,7 +197,9 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         legajo: formData.legajo || null,
         puesto: formData.puesto === "none" ? null : formData.puesto,
         puesto_id: selectedPuesto?.id || null,
-        sucursal_id: formData.sucursal_id || null
+        sucursal_id: formData.sucursal_id || null,
+        email: formData.email,
+        fecha_ingreso: formData.fecha_ingreso
       }
 
       const { error: empleadoError } = await supabase
@@ -472,6 +475,20 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        className="pl-10"
+                        placeholder="email@ejemplo.com"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="puesto">Puesto</Label>
                     <Select 
                       value={formData.puesto && formData.puesto !== 'none' ? formData.puesto : 'none'} 
@@ -565,12 +582,17 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fecha de Ingreso</Label>
-                  <Input
-                    value={new Date(empleado.fecha_ingreso).toLocaleDateString('es-AR')}
-                    disabled
-                    className="bg-muted"
-                  />
+                  <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="fecha_ingreso"
+                      type="date"
+                      value={formData.fecha_ingreso || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
