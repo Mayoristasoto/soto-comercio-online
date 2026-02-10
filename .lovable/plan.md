@@ -1,90 +1,52 @@
 
+# Fix: PIN verification fails due to hash algorithm mismatch
 
-# Fix: Login con PIN falla por restriccion RLS
+## Root Cause
 
-## Problema
+The PIN for `noeliatedesco@mayoristasoto.com` is stored correctly in the database, but verification always fails because two different hashing algorithms are used:
 
-Cuando el empleado intenta loguearse con email + PIN, el fallback falla porque:
+- **PIN creation** (`blanquear_pins_con_dni`): Uses `crypt(pin, gen_salt('bf', 8))` which produces **bcrypt** hashes (e.g., `$2a$08$...`)
+- **PIN verification** (`hash_pin` function called by `kiosk_verificar_pin`): Uses `SHA256` with a fixed salt, producing a hex string
 
-1. `signInWithPassword` falla (correcto, es primer login)
-2. Se intenta buscar al empleado en la tabla `empleados` con `supabase.from('empleados').select(...).eq('email', ...).single()`
-3. Como el usuario **no esta autenticado**, las politicas RLS bloquean la lectura
-4. La query devuelve **406 (Not Acceptable)**
-5. El fallback no encuentra al empleado y muestra "Invalid login credentials"
+These are completely incompatible -- the verification will never match.
 
-## Solucion
+## Fix
 
-En vez de buscar al empleado en el cliente (sin autenticacion), enviar el **email** directamente al edge function `pin-first-login`, que ya usa el service role key y puede consultar la tabla sin restricciones RLS.
+Update the `hash_pin` function to use bcrypt verification instead of SHA256, matching how PINs are stored.
 
-## Cambios
+### Database Migration
 
-### 1. Archivo: `src/pages/UnifiedAuth.tsx` (funcion handleSignIn)
+Replace the `hash_pin` function with one that uses `crypt()` from pgcrypto (bcrypt), and update `kiosk_verificar_pin` to compare using bcrypt's `crypt()` instead of direct hash comparison.
 
-Modificar el bloque de fallback PIN para que en vez de buscar al empleado por email en el cliente, envie el email al edge function:
+```sql
+-- Fix hash_pin to use bcrypt for new PINs
+CREATE OR REPLACE FUNCTION hash_pin(p_pin TEXT) RETURNS TEXT AS $$
+BEGIN
+  RETURN crypt(p_pin, gen_salt('bf', 8));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, extensions;
 
-```typescript
-// ANTES (falla por RLS):
-const { data: emp } = await supabase
-  .from('empleados')
-  .select('id, rol')
-  .eq('email', email.toLowerCase().trim())
-  .eq('activo', true)
-  .single();
-
-if (emp && emp.rol !== 'admin_rrhh') {
-  const { data: pinData } = await supabase.functions.invoke('pin-first-login', {
-    body: { empleado_id: emp.id, pin: password }
-  });
-  ...
-}
-
-// DESPUES (enviar email al edge function):
-const { data: pinData, error: pinError } = await supabase.functions.invoke('pin-first-login', {
-  body: { email: email.toLowerCase().trim(), pin: password }
-});
-
-if (!pinError && pinData?.success && pinData?.email_otp) {
-  // verificar OTP...
-}
+-- Update kiosk_verificar_pin to compare using bcrypt
+-- Change the comparison line from:
+--   IF v_pin_record.pin_hash = v_hash THEN
+-- To:
+--   IF v_pin_record.pin_hash = crypt(p_pin, v_pin_record.pin_hash) THEN
+-- (bcrypt verification: re-hash with the stored hash as salt)
 ```
 
-### 2. Archivo: `supabase/functions/pin-first-login/index.ts`
-
-Modificar el edge function para aceptar `email` como alternativa a `empleado_id`:
-
-- Si recibe `email` (y no `empleado_id`), buscar al empleado por email en la tabla `empleados` usando el admin client
-- Si recibe `empleado_id`, mantener el comportamiento actual
-- Validar que el empleado exista, este activo, y no sea admin_rrhh
-- El resto del flujo (verificacion de PIN, creacion de usuario, OTP) permanece igual
-
-Cambio en las primeras lineas del handler:
-
-```typescript
-const { empleado_id, email, pin } = await req.json()
-
-if (!pin || (!empleado_id && !email)) {
-  return new Response(JSON.stringify({ error: 'Faltan datos requeridos' }), { status: 400 })
-}
-
-let targetEmpleadoId = empleado_id
-
-// Si se recibe email en vez de empleado_id, buscar al empleado
-if (!targetEmpleadoId && email) {
-  const { data: emp, error: empErr } = await supabaseAdmin
-    .from('empleados')
-    .select('id')
-    .eq('email', email.toLowerCase().trim())
-    .eq('activo', true)
-    .single()
-
-  if (empErr || !emp) {
-    return new Response(JSON.stringify({ error: 'Empleado no encontrado' }), { status: 404 })
-  }
-  targetEmpleadoId = emp.id
-}
-
-// Usar targetEmpleadoId en lugar de empleado_id en el resto del codigo
+The key change in `kiosk_verificar_pin` is replacing:
+```
+v_hash := hash_pin(p_pin);
+IF v_pin_record.pin_hash = v_hash THEN
+```
+With:
+```
+IF v_pin_record.pin_hash = crypt(p_pin, v_pin_record.pin_hash) THEN
 ```
 
-Esto elimina la necesidad de consultar `empleados` desde el cliente sin autenticacion.
+This is how bcrypt verification works -- you use the stored hash as the salt to re-hash the input, and if the result matches the stored hash, the PIN is correct.
 
+### No frontend changes needed
+
+The frontend code and edge function are already correct. The issue is purely in the database function.
