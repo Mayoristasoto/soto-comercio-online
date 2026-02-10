@@ -144,6 +144,8 @@ export default function UnifiedLayout() {
           '/reconoce/premios',
           '/rrhh/vacaciones',
           '/vacaciones', // redirect legacy
+          '/rrhh/solicitudes',
+          '/solicitudes', // redirect legacy
           '/operaciones/tareas',
           '/tareas', // redirect legacy
           '/operaciones/fichero',
