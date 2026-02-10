@@ -1,62 +1,65 @@
 
-# Editar Email y Fecha de Ingreso desde el Perfil del Empleado
+# Exportar PDF con Emails y PINs (ultimos 4 del DNI) de todos los empleados
+
+## Resumen
+
+Se agregara una nueva funcion de exportacion que genera un PDF con el listado de todos los empleados activos, mostrando su email y los ultimos 4 digitos de su DNI como PIN de referencia. Esto no modifica ningun PIN existente, solo consulta los datos para generar el documento.
+
+Se agregara un boton en el panel de gestion de PINs (`PinManagement`) para descargar este PDF.
 
 ## Cambios
 
-**Archivo: `src/components/admin/EmployeeProfile.tsx`**
+### 1. Nueva funcion en `src/utils/pinsExportPDF.ts`
 
-### 1. Agregar campo Email editable en la seccion "Laboral"
-En la pestaña "Laboral" (tab "work"), se agregara un campo de email editable con icono de Mail, junto al campo de legajo. Se importara el icono `Mail` de lucide-react.
+Agregar `exportarCredencialesEmpleadosPDF` que:
+- Recibe un array de empleados con nombre, apellido, legajo, email y dni
+- Genera un PDF con tabla: #, Empleado, Legajo, Email, PIN (ultimos 4 del DNI)
+- Incluye instrucciones de primer acceso actualizadas (sin mencionar "pestaña PIN", solo email + PIN como contraseña)
+- Sigue el mismo estilo visual que `exportarPinsBlanqueadosPDF`
 
-### 2. Hacer editable la Fecha de Ingreso
-El campo "Fecha de Ingreso" (lineas 567-574) actualmente esta deshabilitado y muestra la fecha formateada. Se cambiara a un input tipo `date` editable que use `formData.fecha_ingreso` en lugar del valor fijo de `empleado.fecha_ingreso`.
+### 2. Boton en `src/components/admin/PinManagement.tsx`
 
-### 3. Incluir email y fecha_ingreso en la funcion de guardado
-En `handleSave` (linea 193), el objeto `empleadoUpdate` actualmente solo incluye nombre, apellido, legajo, puesto, puesto_id y sucursal_id. Se agregaran los campos `email` y `fecha_ingreso` para que se persistan al guardar.
+Agregar un boton "Exportar Credenciales PDF" que:
+- Consulta todos los empleados activos con DNI y email desde la tabla `empleados`
+- Filtra solo los que tienen DNI cargado (para poder mostrar el PIN)
+- Llama a la nueva funcion de exportacion
+- Muestra toast de exito/error
 
 ## Detalle tecnico
 
-**Import** (linea 12-24): Agregar `Mail` a los iconos importados de lucide-react.
+**Nueva funcion en `pinsExportPDF.ts`:**
 
-**Campo Email** - Se insertara en la seccion Laboral, en un grid junto al legajo:
-```tsx
-<div className="space-y-2">
-  <Label htmlFor="email">Email</Label>
-  <div className="relative">
-    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-    <Input
-      id="email"
-      type="email"
-      value={formData.email || ''}
-      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-      className="pl-10"
-      placeholder="email@ejemplo.com"
-    />
-  </div>
-</div>
+```typescript
+interface EmpleadoCredencial {
+  nombre: string
+  apellido: string
+  legajo: string | null
+  email: string
+  dni: string
+}
+
+export const exportarCredencialesEmpleadosPDF = (empleados: EmpleadoCredencial[]): string => {
+  // PDF con titulo "Credenciales de Acceso - Sistema SOTO"
+  // Instrucciones actualizadas:
+  //   1. Ingresar email en la pantalla de login
+  //   2. Usar los ultimos 4 digitos del DNI como contraseña
+  //   3. El sistema pedira crear una contraseña nueva
+  // Tabla: #, Empleado, Legajo, Email, PIN (ultimos 4 del DNI)
+  // Mismo estilo visual que exportarPinsBlanqueadosPDF
+}
 ```
 
-**Fecha de Ingreso** - Cambiar de disabled a editable:
-```tsx
-<div className="space-y-2">
-  <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
-  <div className="relative">
-    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-    <Input
-      id="fecha_ingreso"
-      type="date"
-      value={formData.fecha_ingreso || ''}
-      onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
-      className="pl-10"
-    />
-  </div>
-</div>
+**Boton en PinManagement.tsx:**
+
+```typescript
+const exportarCredenciales = async () => {
+  // 1. Query: select nombre, apellido, legajo, email, dni 
+  //    from empleados where activo = true and dni is not null
+  // 2. Calcular PIN = ultimos 4 digitos del DNI
+  // 3. Llamar exportarCredencialesEmpleadosPDF(data)
+}
 ```
 
-**handleSave** - Agregar al objeto `empleadoUpdate`:
-```ts
-email: formData.email,
-fecha_ingreso: formData.fecha_ingreso,
-```
+Se ubicara junto a los botones existentes de "Blanquear PINs" y "Generar PINs".
 
-No se requieren cambios en base de datos ya que ambos campos (`email` y `fecha_ingreso`) ya existen en la tabla `empleados`.
+No se requieren cambios en base de datos.
