@@ -1,33 +1,62 @@
 
-
-# Eliminar pestaña PIN del login y mantener PIN solo para kiosco
-
-## Resumen
-
-Se eliminara la pestaña "PIN" de la pantalla de login (`/auth` - `UnifiedAuth.tsx`). El acceso por primera vez seguira funcionando via el fallback automatico: el empleado ingresa su email y los 4 digitos del DNI como contraseña en la pestaña "Email", y el sistema detecta que es un PIN y lo procesa. El componente `PinLoginAuth` y la edge function `pin-first-login` se mantienen ya que el fallback los usa internamente.
+# Editar Email y Fecha de Ingreso desde el Perfil del Empleado
 
 ## Cambios
 
-**Archivo: `src/pages/UnifiedAuth.tsx`**
+**Archivo: `src/components/admin/EmployeeProfile.tsx`**
 
-1. Eliminar la pestaña "PIN" del `TabsList` (linea 362-365): cambiar de `grid-cols-3` a `grid-cols-2` y remover el `TabsTrigger` de PIN.
+### 1. Agregar campo Email editable en la seccion "Laboral"
+En la pestaña "Laboral" (tab "work"), se agregara un campo de email editable con icono de Mail, junto al campo de legajo. Se importara el icono `Mail` de lucide-react.
 
-2. Eliminar el `TabsContent value="pin"` (lineas 462-464) que renderiza `PinLoginAuth`.
+### 2. Hacer editable la Fecha de Ingreso
+El campo "Fecha de Ingreso" (lineas 567-574) actualmente esta deshabilitado y muestra la fecha formateada. Se cambiara a un input tipo `date` editable que use `formData.fecha_ingreso` en lugar del valor fijo de `empleado.fecha_ingreso`.
 
-3. Remover el import de `PinLoginAuth` (linea 12) y el icono `KeyRound` (linea 10) si no se usan en otro lugar.
-
-## Que se mantiene
-
-- El **fallback automatico** en la pestaña Email (lineas 86-124): si el password es de 4 digitos y falla la autenticacion normal, se intenta el flujo PIN via `pin-first-login`. Esto permite el primer acceso sin pestaña dedicada.
-- La **edge function** `pin-first-login` sigue activa para ese fallback.
-- El **PIN en kiosco** no se toca (usa `FicheroPinAuth` y `kiosk_verificar_pin`).
-- El texto indicativo "Primera vez? Usa los 4 ultimos digitos de tu DNI" (linea 443) se mantiene visible.
+### 3. Incluir email y fecha_ingreso en la funcion de guardado
+En `handleSave` (linea 193), el objeto `empleadoUpdate` actualmente solo incluye nombre, apellido, legajo, puesto, puesto_id y sucursal_id. Se agregaran los campos `email` y `fecha_ingreso` para que se persistan al guardar.
 
 ## Detalle tecnico
 
-```
-TabsList: grid-cols-3 --> grid-cols-2
-Tabs:     [Email] [PIN] [Facial]  -->  [Email] [Facial]
+**Import** (linea 12-24): Agregar `Mail` a los iconos importados de lucide-react.
+
+**Campo Email** - Se insertara en la seccion Laboral, en un grid junto al legajo:
+```tsx
+<div className="space-y-2">
+  <Label htmlFor="email">Email</Label>
+  <div className="relative">
+    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+    <Input
+      id="email"
+      type="email"
+      value={formData.email || ''}
+      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+      className="pl-10"
+      placeholder="email@ejemplo.com"
+    />
+  </div>
+</div>
 ```
 
-No se requieren cambios en base de datos ni en edge functions.
+**Fecha de Ingreso** - Cambiar de disabled a editable:
+```tsx
+<div className="space-y-2">
+  <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
+  <div className="relative">
+    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+    <Input
+      id="fecha_ingreso"
+      type="date"
+      value={formData.fecha_ingreso || ''}
+      onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
+      className="pl-10"
+    />
+  </div>
+</div>
+```
+
+**handleSave** - Agregar al objeto `empleadoUpdate`:
+```ts
+email: formData.email,
+fecha_ingreso: formData.fecha_ingreso,
+```
+
+No se requieren cambios en base de datos ya que ambos campos (`email` y `fecha_ingreso`) ya existen en la tabla `empleados`.
