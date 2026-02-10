@@ -1,65 +1,71 @@
 
-# Exportar PDF con Emails y PINs (ultimos 4 del DNI) de todos los empleados
+# Reglas de Vacaciones: Bloqueo Diciembre y Receso Invernal
 
 ## Resumen
 
-Se agregara una nueva funcion de exportacion que genera un PDF con el listado de todos los empleados activos, mostrando su email y los ultimos 4 digitos de su DNI como PIN de referencia. Esto no modifica ningun PIN existente, solo consulta los datos para generar el documento.
+Se agregaran validaciones en el formulario de solicitud de vacaciones (`SolicitudVacaciones.tsx`) para aplicar las siguientes reglas:
 
-Se agregara un boton en el panel de gestion de PINs (`PinManagement`) para descargar este PDF.
+1. **Diciembre bloqueado**: No se pueden solicitar vacaciones que incluyan dias de diciembre.
+2. **Receso invernal (20 julio - 2 agosto)**: El empleado puede tomar como maximo 1 semana del receso. Si quiere 14 dias, debe combinar:
+   - 1 semana previa + primera semana del receso (20-26 julio), o
+   - Segunda semana del receso (27 julio - 2 agosto) + 1 semana posterior.
 
 ## Cambios
 
-### 1. Nueva funcion en `src/utils/pinsExportPDF.ts`
+**Archivo: `src/components/vacaciones/SolicitudVacaciones.tsx`**
 
-Agregar `exportarCredencialesEmpleadosPDF` que:
-- Recibe un array de empleados con nombre, apellido, legajo, email y dni
-- Genera un PDF con tabla: #, Empleado, Legajo, Email, PIN (ultimos 4 del DNI)
-- Incluye instrucciones de primer acceso actualizadas (sin mencionar "pestaña PIN", solo email + PIN como contraseña)
-- Sigue el mismo estilo visual que `exportarPinsBlanqueadosPDF`
+### 1. Nueva funcion de validacion de reglas
 
-### 2. Boton en `src/components/admin/PinManagement.tsx`
+Se creara una funcion `validarReglasVacaciones(fechaInicio, fechaFin)` que retorna `{ valid: boolean, message: string | null }`. Esta funcion se ejecutara dentro del `useEffect` existente (junto a `checkConflicts`) y en `handleSubmit`.
 
-Agregar un boton "Exportar Credenciales PDF" que:
-- Consulta todos los empleados activos con DNI y email desde la tabla `empleados`
-- Filtra solo los que tienen DNI cargado (para poder mostrar el PIN)
-- Llama a la nueva funcion de exportacion
-- Muestra toast de exito/error
+**Regla Diciembre:**
+- Si cualquier dia entre fechaInicio y fechaFin cae en diciembre (mes 11 en JS), se bloquea con mensaje: "No se pueden solicitar vacaciones en el mes de diciembre."
+
+**Regla Receso Invernal:**
+- Se definen las dos semanas del receso para el anio correspondiente:
+  - Semana 1: 20 julio - 26 julio
+  - Semana 2: 27 julio - 2 agosto
+- Se calcula cuantos dias del receso cubre la solicitud y en que semanas cae.
+- Si la solicitud cubre dias de ambas semanas del receso, se bloquea con mensaje explicativo.
+- Si la solicitud dura 14 dias o mas y toca el receso, se valida que solo use una semana del receso y la otra semana sea previa (antes del 20/7) o posterior (despues del 2/8).
+
+### 2. Integrar validacion en el flujo existente
+
+- En el `useEffect` de lineas 44-51: despues de llamar `checkConflicts()`, llamar `validarReglasVacaciones()`. Si la validacion falla, se setea `warningMessage` y `hasConflict = true` para bloquear el envio.
+- En `handleSubmit` (linea 120): agregar una verificacion adicional antes de insertar, como red de seguridad.
+
+### 3. Mostrar informacion de reglas al usuario
+
+Se agregara un bloque informativo debajo del titulo del dialog con las reglas resumidas, para que el empleado sepa las restricciones antes de elegir fechas.
 
 ## Detalle tecnico
 
-**Nueva funcion en `pinsExportPDF.ts`:**
-
 ```typescript
-interface EmpleadoCredencial {
-  nombre: string
-  apellido: string
-  legajo: string | null
-  email: string
-  dni: string
-}
-
-export const exportarCredencialesEmpleadosPDF = (empleados: EmpleadoCredencial[]): string => {
-  // PDF con titulo "Credenciales de Acceso - Sistema SOTO"
-  // Instrucciones actualizadas:
-  //   1. Ingresar email en la pantalla de login
-  //   2. Usar los ultimos 4 digitos del DNI como contraseña
-  //   3. El sistema pedira crear una contraseña nueva
-  // Tabla: #, Empleado, Legajo, Email, PIN (ultimos 4 del DNI)
-  // Mismo estilo visual que exportarPinsBlanqueadosPDF
-}
+const validarReglasVacaciones = (inicio: Date, fin: Date): { valid: boolean; message: string } => {
+  // Regla 1: Diciembre bloqueado
+  // Iterar mes a mes entre inicio y fin, si alguno es diciembre -> bloquear
+  
+  // Regla 2: Receso invernal
+  const anio = inicio.getFullYear();
+  const recesoSemana1Inicio = new Date(anio, 6, 20); // 20 julio
+  const recesoSemana1Fin = new Date(anio, 6, 26);     // 26 julio
+  const recesoSemana2Inicio = new Date(anio, 6, 27);  // 27 julio
+  const recesoSemana2Fin = new Date(anio, 7, 2);      // 2 agosto
+  
+  const tocaSemana1 = inicio <= recesoSemana1Fin && fin >= recesoSemana1Inicio;
+  const tocaSemana2 = inicio <= recesoSemana2Fin && fin >= recesoSemana2Inicio;
+  
+  if (tocaSemana1 && tocaSemana2) {
+    return {
+      valid: false,
+      message: "Solo puedes tomar una semana del receso invernal (20/7-2/8). " +
+        "Si deseas 14 dias, combina una semana previa con la primera semana del receso, " +
+        "o la segunda semana del receso con una semana posterior."
+    };
+  }
+  
+  return { valid: true, message: '' };
+};
 ```
 
-**Boton en PinManagement.tsx:**
-
-```typescript
-const exportarCredenciales = async () => {
-  // 1. Query: select nombre, apellido, legajo, email, dni 
-  //    from empleados where activo = true and dni is not null
-  // 2. Calcular PIN = ultimos 4 digitos del DNI
-  // 3. Llamar exportarCredencialesEmpleadosPDF(data)
-}
-```
-
-Se ubicara junto a los botones existentes de "Blanquear PINs" y "Generar PINs".
-
-No se requieren cambios en base de datos.
+No se requieren cambios en base de datos. Las reglas se aplican exclusivamente en el frontend al momento de crear la solicitud.
