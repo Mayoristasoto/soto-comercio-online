@@ -471,13 +471,14 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
               <div>
                 <Label>Categoría</Label>
                 <Select
-                  value={formData.categoria_id}
-                  onValueChange={(v) => setFormData({ ...formData, categoria_id: v })}
+                  value={formData.categoria_id || "none"}
+                  onValueChange={(v) => setFormData({ ...formData, categoria_id: v === "none" ? "" : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Sin categoría</SelectItem>
                     {categorias.map(cat => (
                       <SelectItem key={cat.id} value={cat.id}>{cat.nombre}</SelectItem>
                     ))}
@@ -500,15 +501,15 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
             <div>
               <Label>Asignar a rol</Label>
               <Select
-                value={formData.asignar_a_rol}
-                onValueChange={(v) => setFormData({ ...formData, asignar_a_rol: v })}
+                value={formData.asignar_a_rol || "any"}
+                onValueChange={(v) => setFormData({ ...formData, asignar_a_rol: v === "any" ? "" : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Cualquier empleado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Cualquier empleado</SelectItem>
-                  <SelectItem value="empleado">Empleados</SelectItem>
+                    <SelectItem value="any">Cualquier empleado</SelectItem>
+                    <SelectItem value="empleado">Empleados</SelectItem>
                   <SelectItem value="gerente_sucursal">Gerentes de sucursal</SelectItem>
                 </SelectContent>
               </Select>
