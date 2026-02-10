@@ -1,102 +1,90 @@
 
-# Plan: Login con Email + PIN como contrasena (primera vez)
 
-## Que se quiere lograr
+# Fix: Login con PIN falla por restriccion RLS
 
-Cuando un empleado ingresa por primera vez en la pestana "Email", puede poner su email y su PIN (4 ultimos digitos del DNI) en el campo de contrasena. El sistema detecta que es un primer login, crea la sesion y fuerza el cambio de contrasena. A partir de ahi, el empleado usa su email y la nueva contrasena que eligio.
+## Problema
 
-## Flujo propuesto
+Cuando el empleado intenta loguearse con email + PIN, el fallback falla porque:
 
-```text
-Empleado ingresa email + PIN (4 digitos) en pestana Email
-         |
-         v
-Intenta signInWithPassword (email + PIN)
-         |
-    ¿Funciono? ──SI──> Login normal (ya tiene contrasena configurada)
-         |
-        NO (Invalid login credentials)
-         |
-         v
-Busca empleado por email en tabla 'empleados'
-         |
-    ¿Existe? ──NO──> Muestra error "Credenciales invalidas"
-         |
-        SI
-         |
-    ¿Es admin_rrhh? ──SI──> Muestra error "Credenciales invalidas"
-         |
-        NO
-         |
-         v
-Llama a edge function 'pin-first-login' con (empleado_id, pin)
-         |
-    ¿PIN valido? ──NO──> Muestra error de PIN
-         |
-        SI
-         |
-         v
-Verifica OTP para crear sesion
-         |
-         v
-Sesion creada + debe_cambiar_password = true
-         |
-         v
-Redirige a dashboard → Se muestra dialogo de cambio de contrasena obligatorio
-```
+1. `signInWithPassword` falla (correcto, es primer login)
+2. Se intenta buscar al empleado en la tabla `empleados` con `supabase.from('empleados').select(...).eq('email', ...).single()`
+3. Como el usuario **no esta autenticado**, las politicas RLS bloquean la lectura
+4. La query devuelve **406 (Not Acceptable)**
+5. El fallback no encuentra al empleado y muestra "Invalid login credentials"
 
-## Cambios a realizar
+## Solucion
 
-### 1. Archivo: `src/pages/UnifiedAuth.tsx`
+En vez de buscar al empleado en el cliente (sin autenticacion), enviar el **email** directamente al edge function `pin-first-login`, que ya usa el service role key y puede consultar la tabla sin restricciones RLS.
 
-Modificar la funcion `handleSignIn` para que, cuando `signInWithPassword` falle con "Invalid login credentials" y la contrasena tenga 4 digitos (parece ser un PIN), intente el flujo de PIN como fallback:
+## Cambios
 
-- Despues del error de `signInWithPassword`, verificar si `password.length === 4` y es numerico
-- Si es asi, buscar al empleado por email en la tabla `empleados`
-- Si existe y no es admin, llamar a `pin-first-login` con el `empleado_id` y el PIN
-- Si el PIN es valido, verificar el OTP para crear la sesion
-- Si falla todo, mostrar el error original de credenciales invalidas
+### 1. Archivo: `src/pages/UnifiedAuth.tsx` (funcion handleSignIn)
 
-### 2. Subtexto informativo (opcional)
-
-Agregar un texto pequeno debajo del campo de contrasena que diga: "Primera vez? Usa los 4 ultimos digitos de tu DNI como contrasena" para guiar al empleado.
-
-## Detalles tecnicos
-
-El cambio es exclusivamente en `src/pages/UnifiedAuth.tsx`, en la funcion `handleSignIn` (lineas 60-146). No se necesitan cambios en el edge function ni en otros componentes, ya que `pin-first-login` ya maneja la creacion del usuario auth, la vinculacion y el flag `debe_cambiar_password`.
-
-La logica agregada seria aproximadamente:
+Modificar el bloque de fallback PIN para que en vez de buscar al empleado por email en el cliente, envie el email al edge function:
 
 ```typescript
-// Dentro del catch de signInWithPassword, si el error es "Invalid login credentials"
-// y el password parece un PIN (4 digitos numericos):
-if (error.message === 'Invalid login credentials' && /^\d{4}$/.test(password)) {
-  // Buscar empleado por email
-  const { data: emp } = await supabase
+// ANTES (falla por RLS):
+const { data: emp } = await supabase
+  .from('empleados')
+  .select('id, rol')
+  .eq('email', email.toLowerCase().trim())
+  .eq('activo', true)
+  .single();
+
+if (emp && emp.rol !== 'admin_rrhh') {
+  const { data: pinData } = await supabase.functions.invoke('pin-first-login', {
+    body: { empleado_id: emp.id, pin: password }
+  });
+  ...
+}
+
+// DESPUES (enviar email al edge function):
+const { data: pinData, error: pinError } = await supabase.functions.invoke('pin-first-login', {
+  body: { email: email.toLowerCase().trim(), pin: password }
+});
+
+if (!pinError && pinData?.success && pinData?.email_otp) {
+  // verificar OTP...
+}
+```
+
+### 2. Archivo: `supabase/functions/pin-first-login/index.ts`
+
+Modificar el edge function para aceptar `email` como alternativa a `empleado_id`:
+
+- Si recibe `email` (y no `empleado_id`), buscar al empleado por email en la tabla `empleados` usando el admin client
+- Si recibe `empleado_id`, mantener el comportamiento actual
+- Validar que el empleado exista, este activo, y no sea admin_rrhh
+- El resto del flujo (verificacion de PIN, creacion de usuario, OTP) permanece igual
+
+Cambio en las primeras lineas del handler:
+
+```typescript
+const { empleado_id, email, pin } = await req.json()
+
+if (!pin || (!empleado_id && !email)) {
+  return new Response(JSON.stringify({ error: 'Faltan datos requeridos' }), { status: 400 })
+}
+
+let targetEmpleadoId = empleado_id
+
+// Si se recibe email en vez de empleado_id, buscar al empleado
+if (!targetEmpleadoId && email) {
+  const { data: emp, error: empErr } = await supabaseAdmin
     .from('empleados')
-    .select('id, rol')
+    .select('id')
     .eq('email', email.toLowerCase().trim())
     .eq('activo', true)
     .single()
 
-  if (emp && emp.rol !== 'admin_rrhh') {
-    // Intentar login con PIN
-    const { data: pinData } = await supabase.functions.invoke('pin-first-login', {
-      body: { empleado_id: emp.id, pin: password }
-    })
-
-    if (pinData?.success) {
-      // Verificar OTP para crear sesion
-      await supabase.auth.verifyOtp({
-        email: pinData.email,
-        token: pinData.email_otp,
-        type: 'email'
-      })
-      // Redirige automaticamente via onAuthStateChange
-      return
-    }
+  if (empErr || !emp) {
+    return new Response(JSON.stringify({ error: 'Empleado no encontrado' }), { status: 404 })
   }
+  targetEmpleadoId = emp.id
 }
+
+// Usar targetEmpleadoId en lugar de empleado_id en el resto del codigo
 ```
 
-No se requieren migraciones de base de datos ni cambios en edge functions.
+Esto elimina la necesidad de consultar `empleados` desde el cliente sin autenticacion.
+
