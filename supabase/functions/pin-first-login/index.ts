@@ -27,21 +27,43 @@ serve(async (req) => {
     // Regular client for DB operations
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-    const { empleado_id, pin } = await req.json()
+    const { empleado_id, email, pin } = await req.json()
 
-    if (!empleado_id || !pin) {
-      console.error('[pin-first-login] Missing empleado_id or pin')
+    if (!pin || (!empleado_id && !email)) {
+      console.error('[pin-first-login] Missing empleado_id/email or pin')
       return new Response(
         JSON.stringify({ error: 'Faltan datos requeridos' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`[pin-first-login] Verificando PIN para empleado: ${empleado_id}`)
+    let targetEmpleadoId = empleado_id
+
+    // Si se recibe email en vez de empleado_id, buscar al empleado con admin client (sin RLS)
+    if (!targetEmpleadoId && email) {
+      console.log(`[pin-first-login] Buscando empleado por email: ${email}`)
+      const { data: empByEmail, error: empByEmailErr } = await supabaseAdmin
+        .from('empleados')
+        .select('id')
+        .eq('email', email.toLowerCase().trim())
+        .eq('activo', true)
+        .single()
+
+      if (empByEmailErr || !empByEmail) {
+        console.error('[pin-first-login] Empleado no encontrado por email:', empByEmailErr)
+        return new Response(
+          JSON.stringify({ error: 'Empleado no encontrado' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      targetEmpleadoId = empByEmail.id
+    }
+
+    console.log(`[pin-first-login] Verificando PIN para empleado: ${targetEmpleadoId}`)
 
     // Verify PIN using existing RPC
     const { data: pinResult, error: pinError } = await supabase.rpc('kiosk_verificar_pin', {
-      p_empleado_id: empleado_id,
+      p_empleado_id: targetEmpleadoId,
       p_pin: pin
     })
 
@@ -71,7 +93,7 @@ serve(async (req) => {
     const { data: empleado, error: empError } = await supabaseAdmin
       .from('empleados')
       .select('id, email, nombre, apellido, user_id, activo, rol')
-      .eq('id', empleado_id)
+      .eq('id', targetEmpleadoId)
       .single()
 
     if (empError || !empleado) {
@@ -135,7 +157,7 @@ serve(async (req) => {
           user_id: userId,
           debe_cambiar_password: true 
         })
-        .eq('id', empleado_id)
+        .eq('id', targetEmpleadoId)
 
       if (linkError) {
         console.error('[pin-first-login] Error vinculando usuario:', linkError)
@@ -153,7 +175,7 @@ serve(async (req) => {
       await supabaseAdmin
         .from('empleados')
         .update({ debe_cambiar_password: true })
-        .eq('id', empleado_id)
+        .eq('id', targetEmpleadoId)
     }
 
     // Generate OTP for automatic login
