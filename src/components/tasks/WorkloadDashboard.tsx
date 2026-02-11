@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
@@ -92,6 +93,24 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
       setTareasEmpleado([])
     } finally {
       setLoadingTareas(false)
+    }
+  }
+
+  const finalizarTarea = async (tareaId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update({ estado: 'completada', fecha_completada: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', tareaId)
+
+      if (error) throw error
+      toast.success('Tarea finalizada')
+      setTareasEmpleado(prev => prev.filter(t => t.id !== tareaId))
+      // Refresh dashboard data
+      loadData()
+    } catch (error) {
+      console.error('Error finalizando tarea:', error)
+      toast.error('Error al finalizar la tarea')
     }
   }
 
@@ -413,6 +432,17 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
                             {format(new Date(tarea.fecha_limite), "dd MMM yyyy", { locale: es })}
                           </span>
                         )}
+                        <div className="ml-auto">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[10px] bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20"
+                            onClick={(e) => { e.stopPropagation(); finalizarTarea(tarea.id); }}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Finalizar
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )
