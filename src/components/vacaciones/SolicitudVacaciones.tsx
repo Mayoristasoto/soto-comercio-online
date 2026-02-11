@@ -20,45 +20,65 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Info } from "lucide-react";
 
+const getReglasActivas = () => {
+  const defaultReglas = {
+    diciembre_bloqueado: true,
+    receso_invernal: true,
+    gerentes_noviembre: true,
+  };
+  try {
+    const saved = localStorage.getItem('vacaciones_reglas_activas');
+    return saved ? { ...defaultReglas, ...JSON.parse(saved) } : defaultReglas;
+  } catch {
+    return defaultReglas;
+  }
+};
+
 const validarReglasVacaciones = (inicio: Date, fin: Date, rol?: string): { valid: boolean; message: string } => {
+  const reglas = getReglasActivas();
+
   // Regla 1: Diciembre bloqueado
-  const startMonth = inicio.getMonth();
-  const endMonth = fin.getMonth();
-  const startYear = inicio.getFullYear();
-  const endYear = fin.getFullYear();
-  
-  for (let y = startYear; y <= endYear; y++) {
-    const mStart = y === startYear ? startMonth : 0;
-    const mEnd = y === endYear ? endMonth : 11;
-    for (let m = mStart; m <= mEnd; m++) {
-      if (m === 11) {
-        return {
-          valid: false,
-          message: "No se pueden solicitar vacaciones en el mes de diciembre."
-        };
+  if (reglas.diciembre_bloqueado) {
+    const startMonth = inicio.getMonth();
+    const endMonth = fin.getMonth();
+    const startYear = inicio.getFullYear();
+    const endYear = fin.getFullYear();
+    
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? startMonth : 0;
+      const mEnd = y === endYear ? endMonth : 11;
+      for (let m = mStart; m <= mEnd; m++) {
+        if (m === 11) {
+          return {
+            valid: false,
+            message: "No se pueden solicitar vacaciones en el mes de diciembre."
+          };
+        }
       }
     }
   }
 
   // Regla 2: Receso invernal
-  const anio = inicio.getFullYear();
-  const recesoSemana1Inicio = new Date(anio, 6, 20);
-  const recesoSemana1Fin = new Date(anio, 6, 26);
-  const recesoSemana2Inicio = new Date(anio, 6, 27);
-  const recesoSemana2Fin = new Date(anio, 7, 2);
+  if (reglas.receso_invernal) {
+    const anio = inicio.getFullYear();
+    const recesoSemana1Inicio = new Date(anio, 6, 20);
+    const recesoSemana1Fin = new Date(anio, 6, 26);
+    const recesoSemana2Inicio = new Date(anio, 6, 27);
+    const recesoSemana2Fin = new Date(anio, 7, 2);
 
-  const tocaSemana1 = inicio <= recesoSemana1Fin && fin >= recesoSemana1Inicio;
-  const tocaSemana2 = inicio <= recesoSemana2Fin && fin >= recesoSemana2Inicio;
+    const tocaSemana1 = inicio <= recesoSemana1Fin && fin >= recesoSemana1Inicio;
+    const tocaSemana2 = inicio <= recesoSemana2Fin && fin >= recesoSemana2Inicio;
 
-  if (tocaSemana1 && tocaSemana2) {
-    return {
-      valid: false,
-      message: "Solo podés tomar una semana del receso invernal (20/7 al 2/8). Si querés 14 días, combiná una semana previa con la primera semana del receso (20-26 julio), o la segunda semana del receso (27 julio - 2 agosto) con una semana posterior."
-    };
+    if (tocaSemana1 && tocaSemana2) {
+      return {
+        valid: false,
+        message: "Solo podés tomar una semana del receso invernal (20/7 al 2/8). Si querés 14 días, combiná una semana previa con la primera semana del receso (20-26 julio), o la segunda semana del receso (27 julio - 2 agosto) con una semana posterior."
+      };
+    }
   }
 
   // Regla 3: Última semana de noviembre bloqueada para gerentes de sucursal
-  if (rol === 'gerente_sucursal') {
+  if (reglas.gerentes_noviembre && rol === 'gerente_sucursal') {
     const anio = inicio.getFullYear();
     const novUltimaSemanaInicio = new Date(anio, 10, 24);
     const novUltimaSemanaFin = new Date(anio, 10, 30);
@@ -273,20 +293,31 @@ export function SolicitudVacaciones({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground">
-          <Info className="h-4 w-4 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium text-foreground text-sm mb-1">Reglas de vacaciones</p>
-            <ul className="list-disc list-inside space-y-0.5">
-              <li>No se pueden solicitar vacaciones en diciembre.</li>
-              <li>Del receso invernal (20/7 al 2/8) solo se puede tomar 1 semana.</li>
-              <li>Para 14 días: combinar 1 semana fuera del receso + 1 semana del receso.</li>
-              {rol === 'gerente_sucursal' && (
-                <li className="text-destructive font-medium">Gerentes: última semana de noviembre (24-30) bloqueada.</li>
-              )}
-            </ul>
-          </div>
-        </div>
+        {(() => {
+          const reglas = getReglasActivas();
+          const activeRules = [
+            reglas.diciembre_bloqueado && "No se pueden solicitar vacaciones en diciembre.",
+            reglas.receso_invernal && "Del receso invernal (20/7 al 2/8) solo se puede tomar 1 semana.",
+            reglas.receso_invernal && "Para 14 días: combinar 1 semana fuera del receso + 1 semana del receso.",
+            reglas.gerentes_noviembre && rol === 'gerente_sucursal' && "Gerentes: última semana de noviembre (24-30) bloqueada.",
+          ].filter(Boolean);
+          if (activeRules.length === 0) return null;
+          return (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium text-foreground text-sm mb-1">Reglas de vacaciones</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {activeRules.map((rule, i) => (
+                    <li key={i} className={String(rule).includes('Gerentes') ? 'text-destructive font-medium' : ''}>
+                      {rule}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          );
+        })()}
 
         {warningMessage && (
           <div className={`p-4 rounded-lg border-2 ${
