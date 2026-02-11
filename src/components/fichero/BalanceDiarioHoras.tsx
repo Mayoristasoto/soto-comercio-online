@@ -132,7 +132,7 @@ export default function BalanceDiarioHoras() {
           const salida = fichajesEmp.find(f => f.tipo === 'salida')
           if (entrada && salida) {
             const diffMs = new Date(salida.timestamp_real).getTime() - new Date(entrada.timestamp_real).getTime()
-            minutosTrabajados = Math.round(diffMs / 60000) - minutosPausa
+            minutosTrabajados = Math.round(diffMs / 60000)
             estado = 'completo'
           }
         } else if (horaEntrada && !horaSalida) {
