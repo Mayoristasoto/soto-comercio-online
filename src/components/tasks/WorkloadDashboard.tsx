@@ -81,7 +81,7 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
       const { data, error } = await supabase
         .from('tareas')
         .select('id, titulo, descripcion, prioridad, estado, fecha_limite, created_at')
-        .or(`asignado_a.eq.${empleado.id},empleados_asignados.cs.{${empleado.id}}`)
+        .eq('asignado_a', empleado.id)
         .in('estado', ['pendiente', 'en_progreso'])
         .order('fecha_limite', { ascending: true, nullsFirst: false })
 
