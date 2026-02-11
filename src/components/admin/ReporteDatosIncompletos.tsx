@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCcw,
-  ExternalLink
+  ExternalLink,
+  FolderOpen
 } from "lucide-react";
 
 interface EmpleadoIncompleto {
@@ -36,6 +37,7 @@ interface EmpleadoIncompleto {
   avatar_url: string | null;
   faltantes: {
     dni: boolean;
+    documentacion: boolean;
     legajo: boolean;
     sucursal: boolean;
     puesto: boolean;
@@ -51,6 +53,7 @@ interface Stats {
   incompletos: number;
   porcentajeCompletitud: number;
   sinDni: number;
+  sinDocumentacion: number;
   sinLegajo: number;
   sinSucursal: number;
   sinPuesto: number;
@@ -67,6 +70,7 @@ export function ReporteDatosIncompletos() {
     incompletos: 0,
     porcentajeCompletitud: 0,
     sinDni: 0,
+    sinDocumentacion: 0,
     sinLegajo: 0,
     sinSucursal: 0,
     sinPuesto: 0,
@@ -104,6 +108,7 @@ export function ReporteDatosIncompletos() {
           legajo,
           sucursal_id,
           puesto,
+          dni,
           horas_jornada_estandar,
           empleados_datos_sensibles (
             dni
@@ -113,10 +118,31 @@ export function ReporteDatosIncompletos() {
 
       if (error) throw error;
 
+      // Fetch all employee documents to check documentation status
+      const { data: docsData } = await supabase
+        .from("empleado_documentos")
+        .select("empleado_id, tipo_documento")
+        .eq("activo", true);
+
+      const docsMap = new Map<string, Set<string>>();
+      (docsData || []).forEach((doc) => {
+        if (!docsMap.has(doc.empleado_id)) {
+          docsMap.set(doc.empleado_id, new Set());
+        }
+        docsMap.get(doc.empleado_id)!.add(doc.tipo_documento);
+      });
+
       const processed: EmpleadoIncompleto[] = (empleadosData || []).map((emp) => {
-        const dni = emp.empleados_datos_sensibles?.[0]?.dni;
+        const dniSensible = emp.empleados_datos_sensibles?.[0]?.dni;
+        const dniDirecto = (emp as any).dni;
+        const tieneDni = (dniDirecto && String(dniDirecto).trim() !== "") || (dniSensible && dniSensible.trim() !== "");
+        
+        const empleadoDocs = docsMap.get(emp.id);
+        const tieneDocumentacion = empleadoDocs && empleadoDocs.size > 0;
+
         const faltantes = {
-          dni: !dni || dni.trim() === "",
+          dni: !tieneDni,
+          documentacion: !tieneDocumentacion,
           legajo: !emp.legajo || emp.legajo.trim() === "",
           sucursal: !emp.sucursal_id,
           puesto: !emp.puesto || emp.puesto.trim() === "",
@@ -153,6 +179,7 @@ export function ReporteDatosIncompletos() {
           ? Math.round((completos.length / activos.length) * 100) 
           : 100,
         sinDni: activos.filter((e) => e.faltantes.dni).length,
+        sinDocumentacion: activos.filter((e) => e.faltantes.documentacion).length,
         sinLegajo: activos.filter((e) => e.faltantes.legajo).length,
         sinSucursal: activos.filter((e) => e.faltantes.sucursal).length,
         sinPuesto: activos.filter((e) => e.faltantes.puesto).length,
@@ -194,6 +221,7 @@ export function ReporteDatosIncompletos() {
       filtered = filtered.filter((e) => {
         switch (filterFaltante) {
           case "dni": return e.faltantes.dni;
+          case "documentacion": return e.faltantes.documentacion;
           case "legajo": return e.faltantes.legajo;
           case "sucursal": return e.faltantes.sucursal;
           case "puesto": return e.faltantes.puesto;
@@ -225,6 +253,7 @@ export function ReporteDatosIncompletos() {
     Rol: formatRole(emp.rol),
     Estado: emp.activo ? "Activo" : "Inactivo",
     "Sin DNI": emp.faltantes.dni ? "Sí" : "No",
+    "Sin Documentación": emp.faltantes.documentacion ? "Sí" : "No",
     "Sin Legajo": emp.faltantes.legajo ? "Sí" : "No",
     "Sin Sucursal": emp.faltantes.sucursal ? "Sí" : "No",
     "Sin Puesto": emp.faltantes.puesto ? "Sí" : "No",
@@ -301,7 +330,7 @@ export function ReporteDatosIncompletos() {
       </div>
 
       {/* Breakdown by Field */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         <Card 
           className={`cursor-pointer transition-all hover:shadow-md ${filterFaltante === "dni" ? "ring-2 ring-primary" : ""}`}
           onClick={() => setFilterFaltante(filterFaltante === "dni" ? "all" : "dni")}
@@ -314,6 +343,17 @@ export function ReporteDatosIncompletos() {
         </Card>
 
         <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${filterFaltante === "documentacion" ? "ring-2 ring-primary" : ""}`}
+          onClick={() => setFilterFaltante(filterFaltante === "documentacion" ? "all" : "documentacion")}
+        >
+          <CardContent className="p-4 text-center">
+            <FolderOpen className="h-6 w-6 mx-auto text-amber-500 mb-2" />
+            <div className="text-xl font-bold">{stats.sinDocumentacion}</div>
+            <p className="text-xs text-muted-foreground">Sin Docs</p>
+          </CardContent>
+        </Card>
+
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${filterFaltante === "legajo" ? "ring-2 ring-primary" : ""}`}
           onClick={() => setFilterFaltante(filterFaltante === "legajo" ? "all" : "legajo")}
         >
@@ -423,6 +463,7 @@ export function ReporteDatosIncompletos() {
                 <SelectItem value="incompletos">Solo incompletos</SelectItem>
                 <SelectItem value="completos">Solo completos</SelectItem>
                 <SelectItem value="dni">Sin DNI</SelectItem>
+                <SelectItem value="documentacion">Sin Documentación</SelectItem>
                 <SelectItem value="legajo">Sin Legajo</SelectItem>
                 <SelectItem value="sucursal">Sin Sucursal</SelectItem>
                 <SelectItem value="puesto">Sin Puesto</SelectItem>
@@ -440,6 +481,7 @@ export function ReporteDatosIncompletos() {
                   <TableHead>Empleado</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead className="text-center">DNI</TableHead>
+                  <TableHead className="text-center">Docs</TableHead>
                   <TableHead className="text-center">Legajo</TableHead>
                   <TableHead className="text-center">Sucursal</TableHead>
                   <TableHead className="text-center">Puesto</TableHead>
@@ -451,7 +493,7 @@ export function ReporteDatosIncompletos() {
               <TableBody>
                 {filteredEmpleados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No se encontraron empleados con los filtros seleccionados
                     </TableCell>
                   </TableRow>
@@ -477,6 +519,13 @@ export function ReporteDatosIncompletos() {
                       </TableCell>
                       <TableCell className="text-center">
                         {emp.faltantes.dni ? (
+                          <XCircle className="h-5 w-5 text-red-500 mx-auto" />
+                        ) : (
+                          <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {emp.faltantes.documentacion ? (
                           <XCircle className="h-5 w-5 text-red-500 mx-auto" />
                         ) : (
                           <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
