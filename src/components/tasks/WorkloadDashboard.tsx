@@ -6,9 +6,13 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Users, AlertTriangle, Clock, CheckCircle, TrendingUp, Filter } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Search, Users, AlertTriangle, Clock, CheckCircle, TrendingUp, Filter, ListTodo, CalendarClock } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 interface EmpleadoCarga {
   id: string
@@ -35,6 +39,9 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
   const [orderBy, setOrderBy] = useState<string>("carga_desc")
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([])
   const [selectedSucursal, setSelectedSucursal] = useState<string>(sucursalFilter || "all")
+  const [selectedEmpleado, setSelectedEmpleado] = useState<EmpleadoCarga | null>(null)
+  const [tareasEmpleado, setTareasEmpleado] = useState<any[]>([])
+  const [loadingTareas, setLoadingTareas] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -67,7 +74,44 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
     }
   }
 
-  const getCargaTotal = (emp: EmpleadoCarga) => 
+  const loadTareasEmpleado = async (empleado: EmpleadoCarga) => {
+    setSelectedEmpleado(empleado)
+    setLoadingTareas(true)
+    try {
+      const { data, error } = await supabase
+        .from('tareas')
+        .select('id, titulo, descripcion, prioridad, estado, fecha_vencimiento, created_at')
+        .or(`empleado_asignado.eq.${empleado.id},empleados_asignados.cs.{${empleado.id}}`)
+        .in('estado', ['pendiente', 'en_progreso'])
+        .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
+
+      if (error) throw error
+      setTareasEmpleado(data || [])
+    } catch (error) {
+      console.error('Error cargando tareas:', error)
+      setTareasEmpleado([])
+    } finally {
+      setLoadingTareas(false)
+    }
+  }
+
+  const getEstadoBadge = (estado: string) => {
+    switch (estado) {
+      case 'pendiente': return { text: 'Pendiente', className: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' }
+      case 'en_progreso': return { text: 'En progreso', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20' }
+      default: return { text: estado, className: '' }
+    }
+  }
+
+  const getPrioridadBadge = (prioridad: string) => {
+    switch (prioridad) {
+      case 'alta': return { text: 'Alta', className: 'bg-red-500/10 text-red-500 border-red-500/20' }
+      case 'media': return { text: 'Media', className: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' }
+      default: return { text: 'Normal', className: 'bg-muted text-muted-foreground' }
+    }
+  }
+
+  const getCargaTotal = (emp: EmpleadoCarga) =>
     emp.tareas_pendientes + emp.tareas_en_progreso
 
   const getCargaLevel = (emp: EmpleadoCarga): 'low' | 'medium' | 'high' | 'overloaded' => {
@@ -247,7 +291,7 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
           const progressValue = Math.min((total / maxCarga) * 100, 100)
 
           return (
-            <Card key={empleado.id} className="overflow-hidden">
+            <Card key={empleado.id} className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all" onClick={() => loadTareasEmpleado(empleado)}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -323,6 +367,61 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
           <p>No se encontraron empleados</p>
         </div>
       )}
+
+      {/* Dialog de tareas del empleado */}
+      <Dialog open={!!selectedEmpleado} onOpenChange={(open) => !open && setSelectedEmpleado(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListTodo className="h-5 w-5" />
+              Tareas de {selectedEmpleado?.nombre} {selectedEmpleado?.apellido}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {loadingTareas ? (
+              <div className="space-y-3 p-2">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+              </div>
+            ) : tareasEmpleado.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CheckCircle className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p>No tiene tareas pendientes</p>
+              </div>
+            ) : (
+              <div className="space-y-3 p-1">
+                {tareasEmpleado.map(tarea => {
+                  const estado = getEstadoBadge(tarea.estado)
+                  const prioridad = getPrioridadBadge(tarea.prioridad)
+                  return (
+                    <div key={tarea.id} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium text-sm">{tarea.titulo}</p>
+                        <Badge variant="outline" className={`text-[10px] shrink-0 ${estado.className}`}>
+                          {estado.text}
+                        </Badge>
+                      </div>
+                      {tarea.descripcion && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{tarea.descripcion}</p>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className={`text-[10px] ${prioridad.className}`}>
+                          {prioridad.text}
+                        </Badge>
+                        {tarea.fecha_vencimiento && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <CalendarClock className="h-3 w-3" />
+                            {format(new Date(tarea.fecha_vencimiento), "dd MMM yyyy", { locale: es })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
