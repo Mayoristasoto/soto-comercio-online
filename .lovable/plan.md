@@ -1,56 +1,49 @@
 
 
-# Pagina de Instructivo Interactivo para Empleados
+# Fix: Mostrar tareas activas del empleado en el WorkloadDashboard
 
-## Resumen
+## Problema
 
-Se creara una nueva pagina dedicada `/instructivo` donde los empleados pueden consultar la guia del sistema de forma interactiva, con capturas de pantalla cargadas desde la base de datos (`instructivo_screenshots`). La pagina sera independiente y accesible desde el menu lateral, reutilizando el contenido existente del componente `EmpleadoInstructivo` pero presentado en un formato de pagina completa con imagenes integradas en cada seccion.
+Al hacer click en un empleado en el dashboard de carga de trabajo, la consulta falla con error 400 porque el codigo usa `fecha_vencimiento` pero la columna real en la tabla `tareas` es `fecha_limite`.
 
-## Cambios
-
-### 1. Nueva pagina `src/pages/Instructivo.tsx`
-
-Pagina contenedora simple que renderiza el componente de instructivo interactivo dentro del layout estandar con titulo y descripcion.
-
-### 2. Modificar `src/components/employee/EmpleadoInstructivo.tsx`
-
-Integrar las capturas de pantalla del storage (`instructivo_screenshots`) dentro de cada seccion del accordion:
-
-- Ya existe la logica de carga de screenshots (`loadScreenshots`) que mapea `seccion -> imagen_url`
-- Se mostrara la imagen correspondiente dentro de cada `AccordionContent`, debajo del texto explicativo
-- Si no hay screenshot para una seccion, no se muestra imagen (comportamiento actual)
-- Las imagenes se mostraran con bordes redondeados, sombra suave y un label "Vista previa" para darle contexto visual
-- Se usara un componente `AspectRatio` para mantener proporciones consistentes
-
-### 3. Agregar ruta en `src/App.tsx`
-
-Agregar la ruta `/instructivo` dentro del bloque de `UnifiedLayout` para que sea accesible con el sidebar y header del sistema:
-
+Error del servidor:
 ```
-<Route path="instructivo" element={<Instructivo />} />
+"column tareas.fecha_vencimiento does not exist"
 ```
 
-## Detalle tecnico
+## Solucion
 
-**Mapeo de secciones a screenshots:**
+### Archivo: `src/components/tasks/WorkloadDashboard.tsx`
 
-El componente ya carga los screenshots de la tabla `instructivo_screenshots` y los guarda en un `Record<string, string>` donde la key es la columna `seccion`. Cada `AccordionItem` tiene un `value` (ej: `"login"`, `"dashboard"`, `"tareas"`). Se usara este value para buscar el screenshot correspondiente:
+Corregir la funcion `loadTareasEmpleado` para usar los nombres de columna correctos:
 
+1. Cambiar `fecha_vencimiento` por `fecha_limite` en el `select`
+2. Cambiar `fecha_vencimiento` por `fecha_limite` en el `order`
+3. Tambien usar `asignado_a` en lugar de `empleado_asignado` en el filtro `or` (segun el schema real de la tabla)
+4. Actualizar todas las referencias a `tarea.fecha_vencimiento` en el JSX del dialog por `tarea.fecha_limite`
+
+### Detalle tecnico
+
+**Query corregida:**
 ```typescript
-// Dentro de cada AccordionContent, al final:
-{screenshots['login'] && (
-  <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
-    <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
-    <img src={screenshots['login']} alt="Screenshot login" className="w-full" />
-  </div>
+const { data, error } = await supabase
+  .from('tareas')
+  .select('id, titulo, descripcion, prioridad, estado, fecha_limite, created_at')
+  .or(`asignado_a.eq.${empleado.id},empleados_asignados.cs.{${empleado.id}}`)
+  .in('estado', ['pendiente', 'en_progreso'])
+  .order('fecha_limite', { ascending: true, nullsFirst: false })
+```
+
+**JSX corregido:**
+```typescript
+{tarea.fecha_limite && (
+  <span>
+    <CalendarClock className="h-3 w-3" />
+    {format(new Date(tarea.fecha_limite), "dd MMM yyyy", { locale: es })}
+  </span>
 )}
 ```
 
-Se aplicara este patron a todas las secciones del accordion: `login`, `dashboard`, `tareas`, `capacitaciones`, `documentos`, `fichaje`, `reconocimientos`, `calificaciones`, `entregas`, `eventos`, `vacaciones`, `navegacion`, `seguridad`, `cerrar-sesion`.
+**Archivo modificado:**
+- `src/components/tasks/WorkloadDashboard.tsx` - corregir nombres de columnas en la query y el render
 
-**Archivos modificados:**
-1. `src/pages/Instructivo.tsx` (nuevo) - pagina contenedora
-2. `src/components/employee/EmpleadoInstructivo.tsx` - agregar imagenes en cada seccion
-3. `src/App.tsx` - agregar ruta `/instructivo`
-
-No se requieren cambios en base de datos. Las imagenes se gestionan desde el panel admin existente (`/admin/instructivo-screenshots`).
