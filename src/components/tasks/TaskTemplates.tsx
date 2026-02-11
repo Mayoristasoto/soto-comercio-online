@@ -417,9 +417,12 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                     <Clock className="h-3 w-3" />
                     {plantilla.dias_limite_default} días
                   </Badge>
-                  {!plantilla.activa && (
-                    <Badge variant="secondary">Inactiva</Badge>
-                  )}
+                  <Badge 
+                    variant={plantilla.activa ? "default" : "secondary"}
+                    className={plantilla.activa ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}
+                  >
+                    {plantilla.activa ? "Activa" : "Inactiva"}
+                  </Badge>
                   {plantilla.asignar_a_rol === 'gerente_sucursal' && (
                     <Badge variant="outline" className="gap-1">
                       <User className="h-3 w-3" />
