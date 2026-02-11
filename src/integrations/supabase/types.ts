@@ -1892,6 +1892,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           debe_cambiar_password: boolean
+          debe_firmar_documentos_iniciales: boolean | null
           dni: string | null
           email: string
           fecha_ingreso: string
@@ -1913,6 +1914,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           debe_cambiar_password?: boolean
+          debe_firmar_documentos_iniciales?: boolean | null
           dni?: string | null
           email: string
           fecha_ingreso?: string
@@ -1934,6 +1936,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           debe_cambiar_password?: boolean
+          debe_firmar_documentos_iniciales?: boolean | null
           dni?: string | null
           email?: string
           fecha_ingreso?: string

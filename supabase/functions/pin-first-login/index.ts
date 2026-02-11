@@ -155,7 +155,8 @@ serve(async (req) => {
         .from('empleados')
         .update({ 
           user_id: userId,
-          debe_cambiar_password: true 
+          debe_cambiar_password: true,
+          debe_firmar_documentos_iniciales: true
         })
         .eq('id', targetEmpleadoId)
 
@@ -174,7 +175,10 @@ serve(async (req) => {
       // User exists, ensure password change is required for first PIN login
       await supabaseAdmin
         .from('empleados')
-        .update({ debe_cambiar_password: true })
+        .update({ 
+          debe_cambiar_password: true,
+          debe_firmar_documentos_iniciales: true
+        })
         .eq('id', targetEmpleadoId)
     }
 
