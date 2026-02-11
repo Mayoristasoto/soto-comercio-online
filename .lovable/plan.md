@@ -1,62 +1,56 @@
 
-# Reglas de Vacaciones visibles para Admin + Bloqueo ultima semana noviembre para Gerentes
+
+# Pagina de Instructivo Interactivo para Empleados
 
 ## Resumen
 
-Se realizaran dos cambios:
-
-1. **Panel de reglas visible para admin** en la pagina de Vacaciones: agregar una Card/seccion en la pestaña de Aprobaciones (o como seccion general visible solo para admin) que muestre todas las reglas de vacaciones vigentes.
-
-2. **Nueva regla: bloqueo ultima semana de noviembre para gerentes de sucursal**: los empleados con rol `gerente_sucursal` no podran solicitar vacaciones en la ultima semana de noviembre (24-30 nov aprox).
+Se creara una nueva pagina dedicada `/instructivo` donde los empleados pueden consultar la guia del sistema de forma interactiva, con capturas de pantalla cargadas desde la base de datos (`instructivo_screenshots`). La pagina sera independiente y accesible desde el menu lateral, reutilizando el contenido existente del componente `EmpleadoInstructivo` pero presentado en un formato de pagina completa con imagenes integradas en cada seccion.
 
 ## Cambios
 
-### 1. `src/components/vacaciones/SolicitudVacaciones.tsx`
+### 1. Nueva pagina `src/pages/Instructivo.tsx`
 
-**Recibir el rol del empleado como prop:**
-- Agregar `rol?: string` a `SolicitudVacacionesProps`
-- Modificar `validarReglasVacaciones` para recibir el rol como tercer parametro
-- Agregar Regla 3: si el rol es `gerente_sucursal` y las fechas tocan la ultima semana de noviembre (24-30 nov), bloquear con mensaje "Los gerentes de sucursal no pueden solicitar vacaciones en la ultima semana de noviembre."
-- Actualizar el bloque informativo de reglas para mostrar la regla de noviembre cuando el rol sea `gerente_sucursal`
+Pagina contenedora simple que renderiza el componente de instructivo interactivo dentro del layout estandar con titulo y descripcion.
 
-**Logica de la nueva regla:**
-```typescript
-// Regla 3: Ultima semana de noviembre bloqueada para gerentes
-if (rol === 'gerente_sucursal') {
-  const anio = inicio.getFullYear();
-  const novUltimaSemanaInicio = new Date(anio, 10, 24); // 24 nov
-  const novUltimaSemanaFin = new Date(anio, 10, 30);    // 30 nov
-  const tocaUltimaSemNov = inicio <= novUltimaSemanaFin && fin >= novUltimaSemanaInicio;
-  if (tocaUltimaSemNov) {
-    return { valid: false, message: "Los gerentes de sucursal no pueden solicitar vacaciones en la ultima semana de noviembre." };
-  }
-}
+### 2. Modificar `src/components/employee/EmpleadoInstructivo.tsx`
+
+Integrar las capturas de pantalla del storage (`instructivo_screenshots`) dentro de cada seccion del accordion:
+
+- Ya existe la logica de carga de screenshots (`loadScreenshots`) que mapea `seccion -> imagen_url`
+- Se mostrara la imagen correspondiente dentro de cada `AccordionContent`, debajo del texto explicativo
+- Si no hay screenshot para una seccion, no se muestra imagen (comportamiento actual)
+- Las imagenes se mostraran con bordes redondeados, sombra suave y un label "Vista previa" para darle contexto visual
+- Se usara un componente `AspectRatio` para mantener proporciones consistentes
+
+### 3. Agregar ruta en `src/App.tsx`
+
+Agregar la ruta `/instructivo` dentro del bloque de `UnifiedLayout` para que sea accesible con el sidebar y header del sistema:
+
 ```
-
-### 2. `src/components/vacaciones/MisVacaciones.tsx`
-
-- Pasar el `rol` del empleado como prop nueva (agregar `rol?: string` a `MisVacacionesProps`)
-- Pasarlo a `SolicitudVacaciones` como prop
-
-### 3. `src/pages/Vacaciones.tsx`
-
-- Pasar `userInfo.rol` a `MisVacaciones` como prop
-- Agregar una nueva seccion/Card visible solo para admin (dentro de la pestaña "aprobaciones" o como seccion independiente arriba de los tabs) que muestre un resumen de todas las reglas de vacaciones vigentes:
-  - Diciembre bloqueado para todos
-  - Receso invernal: solo 1 semana (20/7 - 2/8)
-  - Ultima semana de noviembre bloqueada para gerentes
-  - Regla de combinacion para 14 dias
-
-Se agregara una Card con icono `Info` y titulo "Reglas de Vacaciones Vigentes" visible solo cuando `isAdmin === true`, ubicada entre el header y los tabs.
+<Route path="instructivo" element={<Instructivo />} />
+```
 
 ## Detalle tecnico
 
-**Flujo de props:**
-- `Vacaciones.tsx` pasa `rol={userInfo.rol}` a `MisVacaciones`
-- `MisVacaciones` pasa `rol` a `SolicitudVacaciones`
-- `SolicitudVacaciones` pasa `rol` a `validarReglasVacaciones(inicio, fin, rol)`
+**Mapeo de secciones a screenshots:**
+
+El componente ya carga los screenshots de la tabla `instructivo_screenshots` y los guarda en un `Record<string, string>` donde la key es la columna `seccion`. Cada `AccordionItem` tiene un `value` (ej: `"login"`, `"dashboard"`, `"tareas"`). Se usara este value para buscar el screenshot correspondiente:
+
+```typescript
+// Dentro de cada AccordionContent, al final:
+{screenshots['login'] && (
+  <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+    <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+    <img src={screenshots['login']} alt="Screenshot login" className="w-full" />
+  </div>
+)}
+```
+
+Se aplicara este patron a todas las secciones del accordion: `login`, `dashboard`, `tareas`, `capacitaciones`, `documentos`, `fichaje`, `reconocimientos`, `calificaciones`, `entregas`, `eventos`, `vacaciones`, `navegacion`, `seguridad`, `cerrar-sesion`.
 
 **Archivos modificados:**
-1. `src/components/vacaciones/SolicitudVacaciones.tsx` - nueva regla + prop rol
-2. `src/components/vacaciones/MisVacaciones.tsx` - pasar prop rol
-3. `src/pages/Vacaciones.tsx` - Card de reglas para admin + pasar prop rol
+1. `src/pages/Instructivo.tsx` (nuevo) - pagina contenedora
+2. `src/components/employee/EmpleadoInstructivo.tsx` - agregar imagenes en cada seccion
+3. `src/App.tsx` - agregar ruta `/instructivo`
+
+No se requieren cambios en base de datos. Las imagenes se gestionan desde el panel admin existente (`/admin/instructivo-screenshots`).
