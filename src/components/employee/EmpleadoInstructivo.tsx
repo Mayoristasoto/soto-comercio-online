@@ -409,6 +409,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="text-primary font-medium mt-2">
                 🔒 Guarda tu contraseña en un lugar seguro
               </p>
+              {screenshots['login'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['login']} alt="Screenshot login" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -432,6 +438,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="text-primary font-medium mt-2">
                 💡 Revisa tu dashboard diariamente para estar al día
               </p>
+              {screenshots['dashboard'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['dashboard']} alt="Screenshot dashboard" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -454,6 +466,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="mt-1">
                 Haz clic en cualquier tarea para ver más detalles o marcarla como finalizada.
               </p>
+              {screenshots['tareas'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['tareas']} alt="Screenshot tareas" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -475,6 +493,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="text-primary font-medium mt-2">
                 📚 Completar capacitaciones puede sumar puntos a tu perfil
               </p>
+              {screenshots['capacitaciones'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['capacitaciones']} alt="Screenshot capacitaciones" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -497,6 +521,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="mt-1">
                 Algunos documentos son obligatorios y deben firmarse en un plazo determinado.
               </p>
+              {screenshots['documentos'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['documentos']} alt="Screenshot documentos" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -533,6 +563,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="mt-1">
                 Registra puntualmente para mantener control preciso de asistencia. Si olvidas fichar, contacta a tu supervisor.
               </p>
+              {screenshots['fichaje'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['fichaje']} alt="Screenshot fichaje" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -554,6 +590,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="text-primary font-medium mt-2">
                 🏆 Completa tareas y capacitaciones para ganar más puntos
               </p>
+              {screenshots['reconocimientos'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['reconocimientos']} alt="Screenshot reconocimientos" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -575,6 +617,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="text-primary font-medium mt-2">
                 ⭐ Las calificaciones positivas pueden sumarte puntos y reconocimientos
               </p>
+              {screenshots['calificaciones'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['calificaciones']} alt="Screenshot calificaciones" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -606,6 +654,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="mt-1">
                 Al confirmar, aceptas la responsabilidad sobre los elementos recibidos.
               </p>
+              {screenshots['entregas'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['entregas']} alt="Screenshot entregas" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -624,10 +678,13 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
                 <li>Aniversarios laborales</li>
                 <li>Reuniones y actividades programadas</li>
               </ul>
+              {screenshots['eventos'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['eventos']} alt="Screenshot eventos" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="vacaciones">
             <AccordionTrigger>
               <div className="flex items-center gap-2">
                 <Plane className="h-4 w-4" />
@@ -654,6 +711,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="text-primary font-medium mt-2">
                 🏖️ Revisa tu saldo de días disponibles antes de solicitar
               </p>
+              {screenshots['vacaciones'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['vacaciones']} alt="Screenshot vacaciones" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -675,6 +738,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="text-primary font-medium mt-2">
                 📱 El sistema es responsive y funciona en móviles también
               </p>
+              {screenshots['navegacion'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['navegacion']} alt="Screenshot navegacion" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -711,6 +780,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="mt-1">
                 Si sospechas que tu cuenta fue comprometida, contacta <strong>INMEDIATAMENTE</strong> a RRHH.
               </p>
+              {screenshots['seguridad'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['seguridad']} alt="Screenshot seguridad" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -732,6 +807,12 @@ export const EmpleadoInstructivo = ({ empleadoNombre, empleadoApellido, empleado
               <p className="mt-1">
                 Por tu seguridad, cierra sesión si dejas la computadora desatendida.
               </p>
+              {screenshots['cerrar-sesion'] && (
+                <div className="mt-4 border rounded-lg overflow-hidden shadow-sm">
+                  <p className="text-xs text-muted-foreground px-3 py-1 bg-muted">Vista previa</p>
+                  <img src={screenshots['cerrar-sesion']} alt="Screenshot cerrar sesion" className="w-full" loading="lazy" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
