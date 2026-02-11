@@ -1,89 +1,74 @@
 
 
-# Firma obligatoria de documentos tras primer ingreso
+# Resumen del Dia - Version Premium para Fichero
 
-## Flujo propuesto
+Se va a reemplazar el componente `BalanceDiarioHoras.tsx` con una version significativamente mejorada que incluya un panel de resumen ejecutivo del dia ademas de la tabla detallada.
 
-```text
-Empleado ingresa con PIN (primera vez)
-        |
-        v
-  Cambio de contrasena obligatorio (ForcedPasswordChange - ya existe)
-        |
-        v
-  Firma obligatoria de documentos (NUEVO - ForcedDocumentSigning)
-        |
-        v
-  Dashboard del empleado
-```
+## Mejoras principales
 
-## Que se va a hacer
+### 1. Panel de Resumen Ejecutivo (nuevo, arriba de todo)
 
-### 1. Nuevo componente: `ForcedDocumentSigning.tsx`
+Tarjetas grandes con metricas clave del dia:
+- **Total empleados activos** vs empleados que ficharon (con porcentaje de presentismo)
+- **Jornadas completas** con barra de progreso visual
+- **Sin registrar salida** (alerta naranja)
+- **Horas totales trabajadas** (suma de todo el equipo)
+- **Promedio por empleado** (horas efectivas promedio)
+- **Balance global** del dia: total horas extras o deficit del equipo completo
 
-Un dialog modal (similar al ForcedPasswordChange) que:
-- Bloquea el acceso al dashboard hasta que se firmen todos los documentos obligatorios pendientes
-- Muestra los documentos asignados al empleado que requieren firma (reglamento interno, descripcion de puestos, etc.)
-- Permite ver cada documento (iframe o contenido de texto) y firmarlo con la firma digital existente (SignaturePad)
-- Muestra progreso: "2 de 3 documentos firmados"
-- Solo se cierra cuando todos los documentos pendientes estan firmados
+### 2. Grafico visual de distribucion (nuevo)
 
-El componente reutilizara la logica existente de `DocumentSignature` y `SignaturePad` para la firma.
+Un mini grafico de barras horizontales (usando recharts, ya instalado) mostrando:
+- Distribucion por estado: completo / sin salida / no ficho
+- Top 5 empleados con mas horas extra y top 5 con mas deficit
 
-### 2. Modificar `EmpleadoDashboard.tsx`
+### 3. Tabla mejorada
 
-- Agregar verificacion de documentos obligatorios pendientes de firma despues del cambio de contrasena
-- Consultar `asignaciones_documentos_obligatorios` del empleado y cruzar con `documentos_firmas` para detectar pendientes
-- Si hay documentos sin firmar, mostrar el modal `ForcedDocumentSigning` (solo si ya no debe cambiar contrasena)
-- El flujo queda secuencial: primero password, luego documentos
+- Agregar **avatar** del empleado
+- Agregar columna **Horas efectivas** (trabajadas menos pausa, mas claro)
+- Colores de fondo en filas segun balance: verde suave para horas extra, rojo suave para deficit
+- Ordenamiento clickeable por columna (nombre, sucursal, balance)
+- Filtro rapido por estado (completo, sin salida, no ficho)
+- Indicador visual de **hora entrada programada vs real** (puntualidad)
+- Tooltip en la diferencia mostrando el desglose
 
-### 3. Agregar campo en tabla `empleados` (migracion SQL)
+### 4. Resumen por sucursal (nuevo)
 
-- Nuevo campo `debe_firmar_documentos_iniciales` (boolean, default false)
-- Se marca como `true` cuando el empleado es creado o cuando el admin lo indica
-- Se marca como `false` automaticamente cuando firma todos los documentos obligatorios asignados
-- El `pin-first-login` edge function tambien marcara este campo como `true` junto con `debe_cambiar_password`
-
-### 4. Actualizar edge function `pin-first-login`
-
-- Agregar `debe_firmar_documentos_iniciales: true` en el update del empleado al hacer primer login con PIN
+Seccion colapsable que agrupa los datos por sucursal mostrando:
+- Cantidad de empleados presentes por sucursal
+- Promedio de horas por sucursal
+- Balance total por sucursal
 
 ## Detalle tecnico
 
-### Nuevo componente `ForcedDocumentSigning`
-
-```typescript
-// Props
-interface ForcedDocumentSigningProps {
-  empleadoId: string
-  onAllDocumentsSigned: () => void
-}
-```
-
-- Consulta documentos obligatorios asignados sin firma
-- Muestra lista con estado (pendiente/firmado)
-- Al hacer click en un documento: abre vista previa + boton firmar
-- Usa DocumentSignature internamente para el proceso de firma
-- Cuando todos estan firmados, actualiza `debe_firmar_documentos_iniciales = false` y llama callback
-
-### Migracion SQL
-
-```sql
-ALTER TABLE empleados 
-ADD COLUMN debe_firmar_documentos_iniciales boolean DEFAULT false;
-```
-
-### Archivos modificados/creados
+### Archivos a modificar
 
 | Archivo | Accion |
 |---------|--------|
-| `src/components/employee/ForcedDocumentSigning.tsx` | Crear - modal obligatorio de firma |
-| `src/pages/EmpleadoDashboard.tsx` | Modificar - agregar verificacion y mostrar modal |
-| `supabase/functions/pin-first-login/index.ts` | Modificar - marcar campo en primer login |
-| Migracion SQL | Crear - agregar columna a empleados |
+| `src/components/fichero/BalanceDiarioHoras.tsx` | Reescribir con todas las mejoras |
 
-### Notas
+### Datos utilizados (sin cambios de BD)
 
-- Los documentos que se muestran son los que ya estan asignados al empleado via `asignaciones_documentos_obligatorios` (reglamento interno, descripcion de puestos, etc.)
-- El admin debe asignar estos documentos previamente desde el panel de administracion
-- La firma usa el sistema existente (SignaturePad + documentos_firmas)
+- Tabla `empleados`: id, nombre, apellido, avatar_url, horas_jornada_estandar, sucursal_id, activo
+- Tabla `fichajes`: empleado_id, tipo, timestamp_real
+- Tabla `sucursales`: id, nombre
+- Tabla `empleado_turnos` + `fichado_turnos`: hora_entrada programada (para puntualidad)
+
+### Componentes reutilizados
+
+- `recharts` (BarChart) para grafico de distribucion
+- `ExportButton` para exportacion
+- Avatar de Radix UI
+- Calendar, Popover, Select (ya usados)
+- Accordion de Radix para seccion por sucursal colapsable
+
+### Logica de ordenamiento
+
+Se agrega estado local `sortBy` y `sortDir` para permitir ordenar la tabla por cualquier columna clickeando en el encabezado.
+
+### Filtro por estado
+
+Se agrega un grupo de botones toggle para filtrar rapidamente: "Todos", "Completos", "Sin salida", "No ficharon".
+
+No se requieren cambios en la base de datos ni migraciones SQL.
+
