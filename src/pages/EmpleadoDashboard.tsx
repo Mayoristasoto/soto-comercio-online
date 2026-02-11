@@ -30,6 +30,7 @@ import CalificacionesEmpleado from "@/components/employee/CalificacionesEmpleado
 import { EmpleadoInstructivo } from "@/components/employee/EmpleadoInstructivo"
 import { EmpleadoPermisosDemo } from "@/components/employee/EmpleadoPermisosDemo"
 import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
+import { ForcedDocumentSigning } from "@/components/employee/ForcedDocumentSigning"
 import { OnboardingDashboard } from "@/components/employee/OnboardingDashboard"
 import { OnboardingDashboardEnhanced } from "@/components/employee/OnboardingDashboardEnhanced"
 import { useOnboarding } from "@/hooks/useOnboarding"
@@ -52,6 +53,7 @@ export default function EmpleadoDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeEntregasTab, setActiveEntregasTab] = useState("pendientes")
   const [debeCambiarPassword, setDebeCambiarPassword] = useState(false)
+  const [debeFirmarDocumentos, setDebeFirmarDocumentos] = useState(false)
   const [stats, setStats] = useState({
     tareas: 0,
     capacitaciones: 0,
@@ -73,12 +75,13 @@ export default function EmpleadoDashboard() {
     try {
       const { data, error } = await supabase
         .from('empleados')
-        .select('debe_cambiar_password')
+        .select('debe_cambiar_password, debe_firmar_documentos_iniciales')
         .eq('id', userInfo.id)
         .single()
 
       if (error) throw error
       setDebeCambiarPassword(data?.debe_cambiar_password || false)
+      setDebeFirmarDocumentos((data as any)?.debe_firmar_documentos_iniciales || false)
     } catch (error) {
       console.error('Error checking password change requirement:', error)
     }
@@ -163,6 +166,12 @@ export default function EmpleadoDashboard() {
             onPasswordChanged={() => setDebeCambiarPassword(false)}
           />
         )}
+        {!debeCambiarPassword && debeFirmarDocumentos && (
+          <ForcedDocumentSigning
+            empleadoId={userInfo.id}
+            onAllDocumentsSigned={() => setDebeFirmarDocumentos(false)}
+          />
+        )}
         
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -186,6 +195,12 @@ export default function EmpleadoDashboard() {
           empleadoId={userInfo.id}
           empleadoEmail={userInfo.email}
           onPasswordChanged={() => setDebeCambiarPassword(false)}
+        />
+      )}
+      {!debeCambiarPassword && debeFirmarDocumentos && (
+        <ForcedDocumentSigning
+          empleadoId={userInfo.id}
+          onAllDocumentsSigned={() => setDebeFirmarDocumentos(false)}
         />
       )}
       {/* Header personalizado */}

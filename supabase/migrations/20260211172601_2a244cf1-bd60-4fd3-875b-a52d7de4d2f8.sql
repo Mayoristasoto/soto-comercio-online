@@ -1,0 +1,1 @@
+ALTER TABLE public.empleados ADD COLUMN debe_firmar_documentos_iniciales boolean DEFAULT false;
