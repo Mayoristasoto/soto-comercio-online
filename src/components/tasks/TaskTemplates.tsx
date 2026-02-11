@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { 
   Plus, Edit2, Trash2, Copy, FileText, Clock, 
-  Calendar, Loader2, Search, Play, RefreshCw
+  Calendar, Loader2, Search, Play, RefreshCw, MapPin, User
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -37,6 +37,18 @@ interface Categoria {
   nombre: string
 }
 
+interface Sucursal {
+  id: string
+  nombre: string
+}
+
+interface Gerente {
+  id: string
+  nombre: string
+  apellido: string
+  sucursal_nombre?: string
+}
+
 interface Props {
   onCreateFromTemplate?: (plantilla: Plantilla) => void
 }
@@ -47,6 +59,8 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
   const [generating, setGenerating] = useState(false)
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [gerentes, setGerentes] = useState<Gerente[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [showDialog, setShowDialog] = useState(false)
   const [editingPlantilla, setEditingPlantilla] = useState<Plantilla | null>(null)
@@ -60,7 +74,9 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
     dias_limite_default: 7,
     asignar_a_rol: "",
     frecuencia: "manual",
-    activa: true
+    activa: true,
+    sucursal_id: "",
+    empleados_asignados: [] as string[]
   })
 
   useEffect(() => {
@@ -70,7 +86,7 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [plantillasRes, categoriasRes] = await Promise.all([
+      const [plantillasRes, categoriasRes, sucursalesRes, gerentesRes] = await Promise.all([
         supabase
           .from('tareas_plantillas')
           .select('*')
@@ -79,7 +95,18 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
           .from('tareas_categorias')
           .select('id, nombre')
           .eq('activa', true)
-          .order('nombre')
+          .order('nombre'),
+        supabase
+          .from('sucursales')
+          .select('id, nombre')
+          .eq('activa', true)
+          .order('nombre'),
+        supabase
+          .from('empleados')
+          .select('id, nombre, apellido')
+          .eq('rol', 'gerente_sucursal')
+          .eq('activo', true)
+          .order('apellido')
       ])
 
       if (plantillasRes.error) throw plantillasRes.error
@@ -87,6 +114,8 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
 
       setPlantillas(plantillasRes.data || [])
       setCategorias(categoriasRes.data || [])
+      setSucursales(sucursalesRes.data || [])
+      setGerentes(gerentesRes.data || [])
     } catch (error) {
       console.error('Error cargando plantillas:', error)
       toast.error('Error al cargar plantillas')
@@ -105,7 +134,9 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
       dias_limite_default: 7,
       asignar_a_rol: "",
       frecuencia: "manual",
-      activa: true
+      activa: true,
+      sucursal_id: "",
+      empleados_asignados: []
     })
     setShowDialog(true)
   }
@@ -120,7 +151,9 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
       dias_limite_default: plantilla.dias_limite_default,
       asignar_a_rol: plantilla.asignar_a_rol || "",
       frecuencia: plantilla.frecuencia,
-      activa: plantilla.activa
+      activa: plantilla.activa,
+      sucursal_id: plantilla.sucursal_id || "",
+      empleados_asignados: plantilla.empleados_asignados || []
     })
     setShowDialog(true)
   }
@@ -151,6 +184,8 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
         asignar_a_rol: formData.asignar_a_rol || null,
         frecuencia: formData.frecuencia,
         activa: formData.activa,
+        sucursal_id: formData.sucursal_id || null,
+        empleados_asignados: formData.empleados_asignados.length > 0 ? formData.empleados_asignados : null,
         updated_at: new Date().toISOString()
       }
 
@@ -385,6 +420,22 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                   {!plantilla.activa && (
                     <Badge variant="secondary">Inactiva</Badge>
                   )}
+                  {plantilla.asignar_a_rol === 'gerente_sucursal' && (
+                    <Badge variant="outline" className="gap-1">
+                      <User className="h-3 w-3" />
+                      {plantilla.empleados_asignados?.length
+                        ? gerentes.find(g => g.id === plantilla.empleados_asignados![0])
+                          ? `${gerentes.find(g => g.id === plantilla.empleados_asignados![0])!.apellido}`
+                          : 'Gerente específico'
+                        : 'Todos los gerentes'}
+                    </Badge>
+                  )}
+                  {plantilla.sucursal_id && (
+                    <Badge variant="outline" className="gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {sucursales.find(s => s.id === plantilla.sucursal_id)?.nombre || 'Sucursal'}
+                    </Badge>
+                  )}
                 </div>
                 {plantilla.frecuencia === 'diaria' && plantilla.ultima_generacion && (
                   <p className="text-xs text-muted-foreground mt-2">
@@ -502,7 +553,7 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
               <Label>Asignar a rol</Label>
               <Select
                 value={formData.asignar_a_rol || "any"}
-                onValueChange={(v) => setFormData({ ...formData, asignar_a_rol: v === "any" ? "" : v })}
+                onValueChange={(v) => setFormData({ ...formData, asignar_a_rol: v === "any" ? "" : v, empleados_asignados: [], sucursal_id: "" })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Cualquier empleado" />
@@ -514,6 +565,48 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.asignar_a_rol === "gerente_sucursal" && gerentes.length > 0 && (
+              <div>
+                <Label>Gerente específico</Label>
+                <Select
+                  value={formData.empleados_asignados[0] || "todos"}
+                  onValueChange={(v) => setFormData({ ...formData, empleados_asignados: v === "todos" ? [] : [v] })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los gerentes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los gerentes</SelectItem>
+                    {gerentes.map(g => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.apellido}, {g.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {sucursales.length > 0 && (
+              <div>
+                <Label>Sucursal destino</Label>
+                <Select
+                  value={formData.sucursal_id || "todas"}
+                  onValueChange={(v) => setFormData({ ...formData, sucursal_id: v === "todas" ? "" : v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas las sucursales" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas las sucursales</SelectItem>
+                    {sucursales.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <Label>Plantilla activa</Label>
