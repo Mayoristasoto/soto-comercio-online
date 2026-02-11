@@ -24,7 +24,8 @@ import {
   XCircle,
   RefreshCcw,
   ExternalLink,
-  FolderOpen
+  FolderOpen,
+  UserCircle
 } from "lucide-react";
 
 interface EmpleadoIncompleto {
@@ -38,11 +39,17 @@ interface EmpleadoIncompleto {
   faltantes: {
     dni: boolean;
     documentacion: boolean;
+    datosPersonales: boolean;
     legajo: boolean;
     sucursal: boolean;
     puesto: boolean;
     avatar: boolean;
     jornada: boolean;
+  };
+  datosPersonalesDetalle: {
+    fechaNacimiento: boolean;
+    direccion: boolean;
+    telefono: boolean;
   };
   totalFaltantes: number;
 }
@@ -54,6 +61,7 @@ interface Stats {
   porcentajeCompletitud: number;
   sinDni: number;
   sinDocumentacion: number;
+  sinDatosPersonales: number;
   sinLegajo: number;
   sinSucursal: number;
   sinPuesto: number;
@@ -71,6 +79,7 @@ export function ReporteDatosIncompletos() {
     porcentajeCompletitud: 0,
     sinDni: 0,
     sinDocumentacion: 0,
+    sinDatosPersonales: 0,
     sinLegajo: 0,
     sinSucursal: 0,
     sinPuesto: 0,
@@ -111,7 +120,10 @@ export function ReporteDatosIncompletos() {
           dni,
           horas_jornada_estandar,
           empleados_datos_sensibles (
-            dni
+            dni,
+            fecha_nacimiento,
+            direccion,
+            telefono
           )
         `)
         .order("apellido", { ascending: true });
@@ -133,16 +145,23 @@ export function ReporteDatosIncompletos() {
       });
 
       const processed: EmpleadoIncompleto[] = (empleadosData || []).map((emp) => {
-        const dniSensible = emp.empleados_datos_sensibles?.[0]?.dni;
+        const datosSensibles = emp.empleados_datos_sensibles?.[0];
+        const dniSensible = datosSensibles?.dni;
         const dniDirecto = (emp as any).dni;
         const tieneDni = (dniDirecto && String(dniDirecto).trim() !== "") || (dniSensible && dniSensible.trim() !== "");
         
         const empleadoDocs = docsMap.get(emp.id);
         const tieneDocumentacion = empleadoDocs && empleadoDocs.size > 0;
 
+        const tieneFechaNacimiento = !!(datosSensibles?.fecha_nacimiento && String(datosSensibles.fecha_nacimiento).trim() !== "");
+        const tieneDireccion = !!(datosSensibles?.direccion && String(datosSensibles.direccion).trim() !== "");
+        const tieneTelefono = !!(datosSensibles?.telefono && String(datosSensibles.telefono).trim() !== "");
+        const tieneDatosPersonales = tieneFechaNacimiento && tieneDireccion && tieneTelefono;
+
         const faltantes = {
           dni: !tieneDni,
           documentacion: !tieneDocumentacion,
+          datosPersonales: !tieneDatosPersonales,
           legajo: !emp.legajo || emp.legajo.trim() === "",
           sucursal: !emp.sucursal_id,
           puesto: !emp.puesto || emp.puesto.trim() === "",
@@ -161,6 +180,11 @@ export function ReporteDatosIncompletos() {
           activo: emp.activo,
           avatar_url: emp.avatar_url,
           faltantes,
+          datosPersonalesDetalle: {
+            fechaNacimiento: !tieneFechaNacimiento,
+            direccion: !tieneDireccion,
+            telefono: !tieneTelefono,
+          },
           totalFaltantes
         };
       });
@@ -180,6 +204,7 @@ export function ReporteDatosIncompletos() {
           : 100,
         sinDni: activos.filter((e) => e.faltantes.dni).length,
         sinDocumentacion: activos.filter((e) => e.faltantes.documentacion).length,
+        sinDatosPersonales: activos.filter((e) => e.faltantes.datosPersonales).length,
         sinLegajo: activos.filter((e) => e.faltantes.legajo).length,
         sinSucursal: activos.filter((e) => e.faltantes.sucursal).length,
         sinPuesto: activos.filter((e) => e.faltantes.puesto).length,
@@ -222,6 +247,7 @@ export function ReporteDatosIncompletos() {
         switch (filterFaltante) {
           case "dni": return e.faltantes.dni;
           case "documentacion": return e.faltantes.documentacion;
+          case "datosPersonales": return e.faltantes.datosPersonales;
           case "legajo": return e.faltantes.legajo;
           case "sucursal": return e.faltantes.sucursal;
           case "puesto": return e.faltantes.puesto;
@@ -254,6 +280,10 @@ export function ReporteDatosIncompletos() {
     Estado: emp.activo ? "Activo" : "Inactivo",
     "Sin DNI": emp.faltantes.dni ? "Sí" : "No",
     "Sin Documentación": emp.faltantes.documentacion ? "Sí" : "No",
+    "Sin Datos Personales": emp.faltantes.datosPersonales ? "Sí" : "No",
+    "Sin F.Nacimiento": emp.datosPersonalesDetalle.fechaNacimiento ? "Sí" : "No",
+    "Sin Dirección": emp.datosPersonalesDetalle.direccion ? "Sí" : "No",
+    "Sin Teléfono": emp.datosPersonalesDetalle.telefono ? "Sí" : "No",
     "Sin Legajo": emp.faltantes.legajo ? "Sí" : "No",
     "Sin Sucursal": emp.faltantes.sucursal ? "Sí" : "No",
     "Sin Puesto": emp.faltantes.puesto ? "Sí" : "No",
@@ -330,7 +360,7 @@ export function ReporteDatosIncompletos() {
       </div>
 
       {/* Breakdown by Field */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <Card 
           className={`cursor-pointer transition-all hover:shadow-md ${filterFaltante === "dni" ? "ring-2 ring-primary" : ""}`}
           onClick={() => setFilterFaltante(filterFaltante === "dni" ? "all" : "dni")}
@@ -350,6 +380,17 @@ export function ReporteDatosIncompletos() {
             <FolderOpen className="h-6 w-6 mx-auto text-amber-500 mb-2" />
             <div className="text-xl font-bold">{stats.sinDocumentacion}</div>
             <p className="text-xs text-muted-foreground">Sin Docs</p>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${filterFaltante === "datosPersonales" ? "ring-2 ring-primary" : ""}`}
+          onClick={() => setFilterFaltante(filterFaltante === "datosPersonales" ? "all" : "datosPersonales")}
+        >
+          <CardContent className="p-4 text-center">
+            <UserCircle className="h-6 w-6 mx-auto text-indigo-500 mb-2" />
+            <div className="text-xl font-bold">{stats.sinDatosPersonales}</div>
+            <p className="text-xs text-muted-foreground">Sin Datos Pers.</p>
           </CardContent>
         </Card>
 
@@ -464,6 +505,7 @@ export function ReporteDatosIncompletos() {
                 <SelectItem value="completos">Solo completos</SelectItem>
                 <SelectItem value="dni">Sin DNI</SelectItem>
                 <SelectItem value="documentacion">Sin Documentación</SelectItem>
+                <SelectItem value="datosPersonales">Sin Datos Personales</SelectItem>
                 <SelectItem value="legajo">Sin Legajo</SelectItem>
                 <SelectItem value="sucursal">Sin Sucursal</SelectItem>
                 <SelectItem value="puesto">Sin Puesto</SelectItem>
@@ -482,6 +524,7 @@ export function ReporteDatosIncompletos() {
                   <TableHead>Rol</TableHead>
                   <TableHead className="text-center">DNI</TableHead>
                   <TableHead className="text-center">Docs</TableHead>
+                  <TableHead className="text-center" title="Fecha Nacimiento, Dirección, Teléfono">Datos Pers.</TableHead>
                   <TableHead className="text-center">Legajo</TableHead>
                   <TableHead className="text-center">Sucursal</TableHead>
                   <TableHead className="text-center">Puesto</TableHead>
@@ -493,7 +536,7 @@ export function ReporteDatosIncompletos() {
               <TableBody>
                 {filteredEmpleados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No se encontraron empleados con los filtros seleccionados
                     </TableCell>
                   </TableRow>
@@ -527,6 +570,19 @@ export function ReporteDatosIncompletos() {
                       <TableCell className="text-center">
                         {emp.faltantes.documentacion ? (
                           <XCircle className="h-5 w-5 text-red-500 mx-auto" />
+                        ) : (
+                          <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {emp.faltantes.datosPersonales ? (
+                          <div className="flex flex-col items-center" title={[
+                            emp.datosPersonalesDetalle.fechaNacimiento ? "Sin F.Nacimiento" : "",
+                            emp.datosPersonalesDetalle.direccion ? "Sin Dirección" : "",
+                            emp.datosPersonalesDetalle.telefono ? "Sin Teléfono" : "",
+                          ].filter(Boolean).join(", ")}>
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          </div>
                         ) : (
                           <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
                         )}
