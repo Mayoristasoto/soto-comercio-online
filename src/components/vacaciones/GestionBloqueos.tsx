@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, CalendarIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Plus, Trash2, CalendarIcon, ShieldAlert } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -24,12 +25,27 @@ interface Bloqueo {
 }
 
 export function GestionBloqueos() {
+  const REGLAS_KEY = 'vacaciones_reglas_activas';
+  const defaultReglas = {
+    diciembre_bloqueado: true,
+    receso_invernal: true,
+    gerentes_noviembre: true,
+  };
+
   const [bloqueos, setBloqueos] = useState<Bloqueo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNuevo, setShowNuevo] = useState(false);
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [fechaFin, setFechaFin] = useState<Date>();
   const [motivo, setMotivo] = useState("");
+  const [reglasActivas, setReglasActivas] = useState(() => {
+    try {
+      const saved = localStorage.getItem(REGLAS_KEY);
+      return saved ? { ...defaultReglas, ...JSON.parse(saved) } : defaultReglas;
+    } catch {
+      return defaultReglas;
+    }
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -140,8 +156,70 @@ export function GestionBloqueos() {
     );
   }
 
+  const toggleRegla = (key: keyof typeof defaultReglas) => {
+    const updated = { ...reglasActivas, [key]: !reglasActivas[key] };
+    setReglasActivas(updated);
+    localStorage.setItem(REGLAS_KEY, JSON.stringify(updated));
+    toast({
+      title: updated[key] ? "Regla activada" : "Regla desactivada",
+      description: `La regla ha sido ${updated[key] ? 'activada' : 'desactivada'} correctamente`,
+    });
+  };
+
+  const reglasList = [
+    {
+      key: 'diciembre_bloqueado' as const,
+      titulo: 'Diciembre bloqueado',
+      descripcion: 'Ningún empleado puede solicitar vacaciones en el mes de diciembre.',
+    },
+    {
+      key: 'receso_invernal' as const,
+      titulo: 'Receso invernal (20/7 - 2/8)',
+      descripcion: 'Solo se puede tomar 1 de las 2 semanas del receso. Para 14 días: combinar 1 semana fuera del receso + 1 semana del receso.',
+    },
+    {
+      key: 'gerentes_noviembre' as const,
+      titulo: 'Gerentes de sucursal: noviembre',
+      descripcion: 'Los gerentes de sucursal no pueden solicitar vacaciones en la última semana de noviembre (24-30).',
+    },
+  ];
+
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle className="text-base">Reglas de Vacaciones Vigentes</CardTitle>
+              <CardDescription>Activa o desactiva las reglas de validación para solicitudes de vacaciones</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {reglasList.map((regla) => (
+            <div
+              key={regla.key}
+              className="flex items-center justify-between p-4 border rounded-lg"
+            >
+              <div className="flex-1 mr-4">
+                <p className="font-medium text-sm">{regla.titulo}</p>
+                <p className="text-xs text-muted-foreground">{regla.descripcion}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={reglasActivas[regla.key] ? "default" : "secondary"}>
+                  {reglasActivas[regla.key] ? "Activa" : "Inactiva"}
+                </Badge>
+                <Switch
+                  checked={reglasActivas[regla.key]}
+                  onCheckedChange={() => toggleRegla(regla.key)}
+                />
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">

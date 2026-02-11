@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, Clock, User, FileSpreadsheet, Calculator, Info } from "lucide-react";
+import { Loader2, Calendar, Clock, User, FileSpreadsheet, Calculator } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MisVacaciones } from "@/components/vacaciones/MisVacaciones";
@@ -106,24 +106,6 @@ export default function Vacaciones() {
         )}
       </div>
 
-      {isAdmin && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Info className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Reglas de Vacaciones Vigentes</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li><span className="font-medium text-foreground">Diciembre bloqueado:</span> ningún empleado puede solicitar vacaciones en diciembre.</li>
-              <li><span className="font-medium text-foreground">Receso invernal (20/7 - 2/8):</span> solo se puede tomar 1 de las 2 semanas del receso.</li>
-              <li><span className="font-medium text-foreground">Solicitud de 14 días:</span> combinar 1 semana fuera del receso + 1 semana del receso.</li>
-              <li><span className="font-medium text-foreground">Gerentes de sucursal:</span> última semana de noviembre (24-30) bloqueada.</li>
-            </ul>
-          </CardContent>
-        </Card>
-      )}
 
       <Tabs defaultValue="mis-vacaciones" className="space-y-4">
         <TabsList>
