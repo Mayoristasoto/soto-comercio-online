@@ -80,10 +80,10 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
     try {
       const { data, error } = await supabase
         .from('tareas')
-        .select('id, titulo, descripcion, prioridad, estado, fecha_vencimiento, created_at')
-        .or(`empleado_asignado.eq.${empleado.id},empleados_asignados.cs.{${empleado.id}}`)
+        .select('id, titulo, descripcion, prioridad, estado, fecha_limite, created_at')
+        .or(`asignado_a.eq.${empleado.id},empleados_asignados.cs.{${empleado.id}}`)
         .in('estado', ['pendiente', 'en_progreso'])
-        .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
+        .order('fecha_limite', { ascending: true, nullsFirst: false })
 
       if (error) throw error
       setTareasEmpleado(data || [])
@@ -407,10 +407,10 @@ export function WorkloadDashboard({ sucursalFilter }: Props) {
                         <Badge variant="outline" className={`text-[10px] ${prioridad.className}`}>
                           {prioridad.text}
                         </Badge>
-                        {tarea.fecha_vencimiento && (
+                        {tarea.fecha_limite && (
                           <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                             <CalendarClock className="h-3 w-3" />
-                            {format(new Date(tarea.fecha_vencimiento), "dd MMM yyyy", { locale: es })}
+                            {format(new Date(tarea.fecha_limite), "dd MMM yyyy", { locale: es })}
                           </span>
                         )}
                       </div>
