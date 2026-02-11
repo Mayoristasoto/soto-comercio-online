@@ -11,6 +11,7 @@ import { es } from "date-fns/locale";
 
 interface MisVacacionesProps {
   empleadoId: string;
+  rol?: string;
 }
 
 interface Solicitud {
@@ -32,7 +33,7 @@ interface Saldo {
   dias_pendientes: number;
 }
 
-export function MisVacaciones({ empleadoId }: MisVacacionesProps) {
+export function MisVacaciones({ empleadoId, rol }: MisVacacionesProps) {
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [saldo, setSaldo] = useState<Saldo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,6 +219,7 @@ export function MisVacaciones({ empleadoId }: MisVacacionesProps) {
         open={showNuevaSolicitud}
         onOpenChange={setShowNuevaSolicitud}
         empleadoId={empleadoId}
+        rol={rol}
         onSuccess={() => {
           setShowNuevaSolicitud(false);
           fetchData();

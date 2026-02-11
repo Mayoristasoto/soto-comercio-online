@@ -20,7 +20,7 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Info } from "lucide-react";
 
-const validarReglasVacaciones = (inicio: Date, fin: Date): { valid: boolean; message: string } => {
+const validarReglasVacaciones = (inicio: Date, fin: Date, rol?: string): { valid: boolean; message: string } => {
   // Regla 1: Diciembre bloqueado
   const startMonth = inicio.getMonth();
   const endMonth = fin.getMonth();
@@ -57,6 +57,17 @@ const validarReglasVacaciones = (inicio: Date, fin: Date): { valid: boolean; mes
     };
   }
 
+  // Regla 3: Última semana de noviembre bloqueada para gerentes de sucursal
+  if (rol === 'gerente_sucursal') {
+    const anio = inicio.getFullYear();
+    const novUltimaSemanaInicio = new Date(anio, 10, 24);
+    const novUltimaSemanaFin = new Date(anio, 10, 30);
+    const tocaUltimaSemNov = inicio <= novUltimaSemanaFin && fin >= novUltimaSemanaInicio;
+    if (tocaUltimaSemNov) {
+      return { valid: false, message: "Los gerentes de sucursal no pueden solicitar vacaciones en la última semana de noviembre (24-30 nov)." };
+    }
+  }
+
   return { valid: true, message: '' };
 };
 
@@ -65,6 +76,7 @@ interface SolicitudVacacionesProps {
   onOpenChange: (open: boolean) => void;
   empleadoId: string;
   onSuccess: () => void;
+  rol?: string;
 }
 
 export function SolicitudVacaciones({
@@ -72,6 +84,7 @@ export function SolicitudVacaciones({
   onOpenChange,
   empleadoId,
   onSuccess,
+  rol,
 }: SolicitudVacacionesProps) {
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [fechaFin, setFechaFin] = useState<Date>();
@@ -84,7 +97,7 @@ export function SolicitudVacaciones({
   // Validar reglas y conflictos cuando cambian las fechas
   useEffect(() => {
     if (fechaInicio && fechaFin) {
-      const reglas = validarReglasVacaciones(fechaInicio, fechaFin);
+      const reglas = validarReglasVacaciones(fechaInicio, fechaFin, rol);
       if (!reglas.valid) {
         setWarningMessage(`🚫 ${reglas.message}`);
         setHasConflict(true);
@@ -184,7 +197,7 @@ export function SolicitudVacaciones({
     }
 
     // Validación de reglas como red de seguridad
-    const reglas = validarReglasVacaciones(fechaInicio, fechaFin);
+    const reglas = validarReglasVacaciones(fechaInicio, fechaFin, rol);
     if (!reglas.valid) {
       toast({ title: "No se puede solicitar", description: reglas.message, variant: "destructive" });
       return;
@@ -268,6 +281,9 @@ export function SolicitudVacaciones({
               <li>No se pueden solicitar vacaciones en diciembre.</li>
               <li>Del receso invernal (20/7 al 2/8) solo se puede tomar 1 semana.</li>
               <li>Para 14 días: combinar 1 semana fuera del receso + 1 semana del receso.</li>
+              {rol === 'gerente_sucursal' && (
+                <li className="text-destructive font-medium">Gerentes: última semana de noviembre (24-30) bloqueada.</li>
+              )}
             </ul>
           </div>
         </div>
