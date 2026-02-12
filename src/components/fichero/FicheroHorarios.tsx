@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3 } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Settings } from 'lucide-react';
 import { TimelineView } from './TimelineView';
 import HorariosDragDrop from './HorariosDragDrop';
 import ScheduleImport from './ScheduleImport';
@@ -61,6 +61,103 @@ interface EmpleadoTurno {
   activo: boolean;
   empleado: Empleado;
   turno: Turno;
+}
+
+function JornadaConfigCell({ empleadoId, empleadoNombre, onUpdate }: { empleadoId: string, empleadoNombre: string, onUpdate: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [tipoJornada, setTipoJornada] = useState('diaria');
+  const [horasJornada, setHorasJornada] = useState(8);
+  const [horasSemanales, setHorasSemanales] = useState(36);
+  const [diasLaborales, setDiasLaborales] = useState(6);
+  const { toast } = useToast();
+
+  const loadConfig = async () => {
+    const { data } = await supabase
+      .from('empleados')
+      .select('tipo_jornada, horas_jornada_estandar, horas_semanales_objetivo, dias_laborales_semana')
+      .eq('id', empleadoId)
+      .single();
+    if (data) {
+      setTipoJornada((data as any).tipo_jornada || 'diaria');
+      setHorasJornada(data.horas_jornada_estandar || 8);
+      setHorasSemanales((data as any).horas_semanales_objetivo || 36);
+      setDiasLaborales((data as any).dias_laborales_semana || 6);
+    }
+  };
+
+  const guardar = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('empleados').update({
+        tipo_jornada: tipoJornada,
+        horas_jornada_estandar: horasJornada,
+        horas_semanales_objetivo: tipoJornada === 'semanal' ? horasSemanales : null,
+        dias_laborales_semana: diasLaborales
+      }).eq('id', empleadoId);
+      if (error) throw error;
+      toast({ title: "Jornada actualizada", description: `Configuración guardada para ${empleadoNombre}` });
+      setOpen(false);
+      onUpdate();
+    } catch (e) {
+      toast({ title: "Error", description: "No se pudo guardar", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) loadConfig(); }}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-xs">
+          <Settings className="h-3 w-3 mr-1" />
+          Configurar
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Jornada de {empleadoNombre}</DialogTitle>
+          <DialogDescription>Configurar tipo de jornada y horas</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Tipo de Jornada</Label>
+            <Select value={tipoJornada} onValueChange={setTipoJornada}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="diaria">Diaria (horas fijas por día)</SelectItem>
+                <SelectItem value="semanal">Semanal (objetivo semanal flexible)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {tipoJornada === 'diaria' ? (
+            <div>
+              <Label>Horas por día</Label>
+              <Input type="number" min={1} max={24} step={0.5} value={horasJornada} onChange={e => setHorasJornada(Number(e.target.value))} />
+            </div>
+          ) : (
+            <>
+              <div>
+                <Label>Horas semanales objetivo</Label>
+                <Input type="number" min={1} max={168} step={0.5} value={horasSemanales} onChange={e => setHorasSemanales(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Días laborales por semana</Label>
+                <Input type="number" min={1} max={7} value={diasLaborales} onChange={e => setDiasLaborales(Number(e.target.value))} />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Referencia diaria: {(horasSemanales / diasLaborales).toFixed(1)}h/día
+              </p>
+            </>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button onClick={guardar} disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function FicheroHorarios() {
@@ -1179,6 +1276,7 @@ export default function FicheroHorarios() {
                 <TableHead>Empleado</TableHead>
                 <TableHead>Horario</TableHead>
                 <TableHead>Horario de Trabajo</TableHead>
+                <TableHead>Jornada</TableHead>
                 <TableHead>Fecha Inicio</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Acciones</TableHead>
@@ -1193,6 +1291,9 @@ export default function FicheroHorarios() {
                   <TableCell>{asignacion.turno.nombre}</TableCell>
                   <TableCell>
                     {asignacion.turno.hora_entrada} - {asignacion.turno.hora_salida}
+                  </TableCell>
+                  <TableCell>
+                    <JornadaConfigCell empleadoId={asignacion.empleado_id} empleadoNombre={`${asignacion.empleado.nombre} ${asignacion.empleado.apellido}`} onUpdate={loadData} />
                   </TableCell>
                   <TableCell>{asignacion.fecha_inicio}</TableCell>
                   <TableCell>
