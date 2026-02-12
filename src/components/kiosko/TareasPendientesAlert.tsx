@@ -101,7 +101,7 @@ export function TareasPendientesAlert({
   }
 
   const formatFechaLimite = (fecha: string | null) => {
-    if (!fecha) return 'Sin fecha límite'
+    if (!fecha) return null
     const fechaObj = new Date(fecha)
     const hoy = new Date()
     hoy.setHours(0, 0, 0, 0)
@@ -158,11 +158,18 @@ export function TareasPendientesAlert({
                 className={`border-2 rounded-lg p-3 ${getPriorityColor(tarea.prioridad)}`}
               >
                 <div className="font-semibold text-sm">{tarea.titulo}</div>
-                <div className="flex items-center gap-2 text-xs mt-1 opacity-80">
-                  <Clock className="h-3 w-3" />
-                  <span>{formatFechaLimite(tarea.fecha_limite)}</span>
-                  <span className="ml-auto capitalize font-medium">{tarea.prioridad}</span>
-                </div>
+                {tarea.fecha_limite && (
+                  <div className="flex items-center gap-2 text-xs mt-1 opacity-80">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatFechaLimite(tarea.fecha_limite)}</span>
+                    <span className="ml-auto capitalize font-medium">{tarea.prioridad}</span>
+                  </div>
+                )}
+                {!tarea.fecha_limite && (
+                  <div className="flex items-center gap-2 text-xs mt-1 opacity-80">
+                    <span className="capitalize font-medium">{tarea.prioridad}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
