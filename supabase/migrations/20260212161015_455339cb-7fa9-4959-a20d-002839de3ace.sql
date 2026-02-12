@@ -1,0 +1,1 @@
+UPDATE empleados SET dni = '26769221' WHERE id = '1607f6ba-046c-466d-8b4d-acc18e2acfa4';
