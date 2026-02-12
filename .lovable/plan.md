@@ -1,28 +1,26 @@
 
 
-# Fix: Agregar 'semanal_flexible' al constraint de frecuencia
+# Completar DNI de Julio Navarrete y probar kiosco
 
-## Problema
+## Cambios necesarios
 
-La tabla `tareas_plantillas` tiene un CHECK constraint que solo permite estos valores de frecuencia: `diaria`, `semanal`, `mensual`, `manual`. Al intentar guardar con `semanal_flexible`, la base de datos rechaza el valor con error 400.
+### 1. Actualizar DNI en la tabla `empleados`
+- Ejecutar un UPDATE en la tabla `empleados` para establecer `dni = '26769221'` para Julio Gomez Navarrete (id: `1607f6ba-046c-466d-8b4d-acc18e2acfa4`).
 
-## Solucion
+### 2. Probar check-in en kiosco
+- Navegar a `/kiosco`
+- Ingresar PIN **9221** (ultimos 4 digitos del DNI)
+- Verificar que aparece la alerta de tareas pendientes correctamente, sin mostrar "Fecha limite" para las tareas de frecuencia semanal flexible
 
-Ejecutar una migracion SQL que elimine el constraint actual y lo recree incluyendo el nuevo valor `semanal_flexible`.
+## Detalle tecnico
 
-### Migracion SQL
+| Accion | Detalle |
+|--------|---------|
+| Tabla | `empleados` |
+| Campo | `dni` |
+| Valor | `26769221` |
+| Empleado ID | `1607f6ba-046c-466d-8b4d-acc18e2acfa4` |
+| PIN esperado | `9221` |
 
-```sql
-ALTER TABLE tareas_plantillas DROP CONSTRAINT tareas_plantillas_frecuencia_check;
-ALTER TABLE tareas_plantillas ADD CONSTRAINT tareas_plantillas_frecuencia_check 
-  CHECK (frecuencia = ANY (ARRAY['diaria','semanal','mensual','manual','semanal_flexible']));
-```
-
-### Archivos a modificar
-
-| Archivo | Cambio |
-|---------|--------|
-| Nueva migracion SQL | Actualizar el CHECK constraint para incluir `semanal_flexible` |
-
-No se requieren cambios en el codigo frontend ni en la edge function, ya que el unico problema es la restriccion en la base de datos.
+No se requieren cambios de esquema ni migraciones, solo una actualizacion de datos.
 
