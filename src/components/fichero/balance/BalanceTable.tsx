@@ -133,7 +133,20 @@ export function BalanceTable({ empleados }: Props) {
                         <AvatarFallback className="text-xs">{emp.nombre.charAt(0)}{emp.apellido.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium text-sm">{emp.apellido}, {emp.nombre}</div>
+                        <div className="font-medium text-sm flex items-center gap-1">
+                          {emp.apellido}, {emp.nombre}
+                          {emp.tipo_jornada === 'semanal' && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 ml-1">Semanal</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Jornada semanal flexible</p>
+                                <p>El balance diario es un promedio de referencia</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
                         {getPunctuality(emp)}
                       </div>
                     </div>

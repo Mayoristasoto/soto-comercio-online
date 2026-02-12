@@ -12,6 +12,7 @@ export interface EmpleadoBalanceDia {
   minutos_esperados: number
   diferencia_minutos: number
   estado: 'completo' | 'sin_salida' | 'sin_entrada' | 'solo_pausa' | 'no_ficho'
+  tipo_jornada: 'diaria' | 'semanal'
 }
 
 export interface Sucursal {

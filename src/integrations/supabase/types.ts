@@ -1893,11 +1893,13 @@ export type Database = {
           created_at: string
           debe_cambiar_password: boolean
           debe_firmar_documentos_iniciales: boolean | null
+          dias_laborales_semana: number
           dni: string | null
           email: string
           fecha_ingreso: string
           grupo_id: string | null
           horas_jornada_estandar: number | null
+          horas_semanales_objetivo: number | null
           id: string
           legajo: string | null
           nombre: string
@@ -1905,6 +1907,7 @@ export type Database = {
           puesto_id: string | null
           rol: Database["public"]["Enums"]["user_role"]
           sucursal_id: string | null
+          tipo_jornada: string
           updated_at: string
           user_id: string | null
         }
@@ -1915,11 +1918,13 @@ export type Database = {
           created_at?: string
           debe_cambiar_password?: boolean
           debe_firmar_documentos_iniciales?: boolean | null
+          dias_laborales_semana?: number
           dni?: string | null
           email: string
           fecha_ingreso?: string
           grupo_id?: string | null
           horas_jornada_estandar?: number | null
+          horas_semanales_objetivo?: number | null
           id?: string
           legajo?: string | null
           nombre: string
@@ -1927,6 +1932,7 @@ export type Database = {
           puesto_id?: string | null
           rol?: Database["public"]["Enums"]["user_role"]
           sucursal_id?: string | null
+          tipo_jornada?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -1937,11 +1943,13 @@ export type Database = {
           created_at?: string
           debe_cambiar_password?: boolean
           debe_firmar_documentos_iniciales?: boolean | null
+          dias_laborales_semana?: number
           dni?: string | null
           email?: string
           fecha_ingreso?: string
           grupo_id?: string | null
           horas_jornada_estandar?: number | null
+          horas_semanales_objetivo?: number | null
           id?: string
           legajo?: string | null
           nombre?: string
@@ -1949,6 +1957,7 @@ export type Database = {
           puesto_id?: string | null
           rol?: Database["public"]["Enums"]["user_role"]
           sucursal_id?: string | null
+          tipo_jornada?: string
           updated_at?: string
           user_id?: string | null
         }

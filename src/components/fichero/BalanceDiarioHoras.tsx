@@ -45,7 +45,7 @@ export default function BalanceDiarioHoras() {
 
       const { data: empleadosRaw, error: empError } = await supabase
         .from('empleados')
-        .select('id, nombre, apellido, avatar_url, horas_jornada_estandar, sucursal_id')
+        .select('id, nombre, apellido, avatar_url, horas_jornada_estandar, sucursal_id, tipo_jornada, horas_semanales_objetivo, dias_laborales_semana')
         .eq('activo', true)
         .order('apellido')
 
@@ -141,7 +141,16 @@ export default function BalanceDiarioHoras() {
           estado = 'solo_pausa'
         }
 
-        const minutosEsperados = (emp.horas_jornada_estandar || 8) * 60
+        const tipoJornada = (emp as any).tipo_jornada || 'diaria'
+        const horasSemanalesObjetivo = (emp as any).horas_semanales_objetivo
+        const diasLaboralesSemana = (emp as any).dias_laborales_semana || 6
+
+        let minutosEsperados: number
+        if (tipoJornada === 'semanal' && horasSemanalesObjetivo) {
+          minutosEsperados = (horasSemanalesObjetivo / diasLaboralesSemana) * 60
+        } else {
+          minutosEsperados = (emp.horas_jornada_estandar || 8) * 60
+        }
 
         return {
           empleado_id: emp.id,
@@ -156,7 +165,8 @@ export default function BalanceDiarioHoras() {
           minutos_trabajados: minutosTrabajados,
           minutos_esperados: minutosEsperados,
           diferencia_minutos: minutosTrabajados - minutosEsperados,
-          estado
+          estado,
+          tipo_jornada: tipoJornada as 'diaria' | 'semanal'
         }
       })
 
