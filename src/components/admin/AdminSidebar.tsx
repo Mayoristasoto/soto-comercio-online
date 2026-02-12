@@ -85,6 +85,7 @@ const navigationGroups: NavGroup[] = [
     items: [
       { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
       { title: "Fichero", url: "/fichero", icon: Clock },
+      { title: "Reportes Horarios", url: "/operaciones/fichero/reportes", icon: BarChart3 },
       { title: "Reporte de Incidencias", url: "/admin/ranking-incidencias", icon: BarChart3 },
       { title: "Listado Incidencias", url: "/admin/listado-incidencias", icon: FileText },
       { title: "Evaluaciones", url: "/evaluaciones", icon: FileText },
