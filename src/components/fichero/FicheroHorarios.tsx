@@ -582,8 +582,12 @@ export default function FicheroHorarios() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="drag-drop" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="assignments" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="assignments">
+            <Users className="h-4 w-4 mr-2" />
+            Asignación de Horarios
+          </TabsTrigger>
           <TabsTrigger value="drag-drop">
             <GripVertical className="h-4 w-4 mr-2" />
             Ajuste Visual
@@ -597,6 +601,174 @@ export default function FicheroHorarios() {
             Gestión de Turnos
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="assignments" className="space-y-6">
+      {/* Asignación de Horarios */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Asignación de Horarios
+              </CardTitle>
+              <CardDescription>
+                Asignar horarios específicos a empleados y configurar jornada
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/operaciones/fichero/reportes')}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Ver Reportes
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setImportAssignmentDialogOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Importar Asignaciones
+              </Button>
+              <Dialog open={asignacionDialogOpen} onOpenChange={setAsignacionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Asignar Horario
+                  </Button>
+                </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Asignar Horario a Empleados</DialogTitle>
+                  <DialogDescription>
+                    Selecciona uno o más empleados y el horario a asignar
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmitAsignacion} className="space-y-4">
+                  <div>
+                    <Label htmlFor="empleados">Empleados (mantén Ctrl/Cmd para seleccionar múltiples)</Label>
+                    <div className="border rounded-md p-2 max-h-48 overflow-y-auto space-y-1">
+                      {empleados.map((empleado) => (
+                        <div key={empleado.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`emp-assign-${empleado.id}`}
+                            checked={asignacionData.empleado_ids.includes(empleado.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAsignacionData({
+                                  ...asignacionData,
+                                  empleado_ids: [...asignacionData.empleado_ids, empleado.id]
+                                });
+                              } else {
+                                setAsignacionData({
+                                  ...asignacionData,
+                                  empleado_ids: asignacionData.empleado_ids.filter(id => id !== empleado.id)
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={`emp-assign-${empleado.id}`} className="text-sm cursor-pointer">
+                            {empleado.nombre} {empleado.apellido} - {empleado.email}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {asignacionData.empleado_ids.length} empleado(s) seleccionado(s)
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="turno">Horario</Label>
+                    <Select value={asignacionData.turno_id} onValueChange={(value) => setAsignacionData({...asignacionData, turno_id: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar horario" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {turnos.filter(t => t.activo).map((turno) => (
+                          <SelectItem key={turno.id} value={turno.id}>
+                            {turno.nombre} ({turno.hora_entrada} - {turno.hora_salida})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="fecha_inicio_assign">Fecha de Inicio</Label>
+                    <Input
+                      id="fecha_inicio_assign"
+                      type="date"
+                      value={asignacionData.fecha_inicio}
+                      onChange={(e) => setAsignacionData({...asignacionData, fecha_inicio: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setAsignacionDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">Asignar Horario</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Empleado</TableHead>
+                <TableHead>Horario</TableHead>
+                <TableHead>Horario de Trabajo</TableHead>
+                <TableHead>Jornada</TableHead>
+                <TableHead>Fecha Inicio</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {empleadoTurnos.map((asignacion) => (
+                <TableRow key={asignacion.id}>
+                  <TableCell>
+                    {asignacion.empleado.nombre} {asignacion.empleado.apellido}
+                  </TableCell>
+                  <TableCell>{asignacion.turno.nombre}</TableCell>
+                  <TableCell>
+                    {asignacion.turno.hora_entrada} - {asignacion.turno.hora_salida}
+                  </TableCell>
+                  <TableCell>
+                    <JornadaConfigCell empleadoId={asignacion.empleado_id} empleadoNombre={`${asignacion.empleado.nombre} ${asignacion.empleado.apellido}`} onUpdate={loadData} />
+                  </TableCell>
+                  <TableCell>{asignacion.fecha_inicio}</TableCell>
+                  <TableCell>
+                    <Badge variant={asignacion.activo ? 'default' : 'secondary'}>
+                      {asignacion.activo ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteAsignacion(asignacion.id)}
+                      disabled={!asignacion.activo}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                 </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+        </TabsContent>
 
         <TabsContent value="drag-drop" className="space-y-4">
           <HorariosDragDrop />
@@ -1159,164 +1331,6 @@ export default function FicheroHorarios() {
         </CardContent>
       </Card>
 
-      {/* Asignación de Horarios */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Asignación de Horarios
-              </CardTitle>
-              <CardDescription>
-                Asignar horarios específicos a empleados
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setImportAssignmentDialogOpen(true)}
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Importar Asignaciones
-              </Button>
-              <Dialog open={asignacionDialogOpen} onOpenChange={setAsignacionDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Asignar Horario
-                  </Button>
-                </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Asignar Horario a Empleados</DialogTitle>
-                  <DialogDescription>
-                    Selecciona uno o más empleados y el horario a asignar
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmitAsignacion} className="space-y-4">
-                  <div>
-                    <Label htmlFor="empleados">Empleados (mantén Ctrl/Cmd para seleccionar múltiples)</Label>
-                    <div className="border rounded-md p-2 max-h-48 overflow-y-auto space-y-1">
-                      {empleados.map((empleado) => (
-                        <div key={empleado.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={`emp-${empleado.id}`}
-                            checked={asignacionData.empleado_ids.includes(empleado.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setAsignacionData({
-                                  ...asignacionData,
-                                  empleado_ids: [...asignacionData.empleado_ids, empleado.id]
-                                });
-                              } else {
-                                setAsignacionData({
-                                  ...asignacionData,
-                                  empleado_ids: asignacionData.empleado_ids.filter(id => id !== empleado.id)
-                                });
-                              }
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                          <label htmlFor={`emp-${empleado.id}`} className="text-sm cursor-pointer">
-                            {empleado.nombre} {empleado.apellido} - {empleado.email}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {asignacionData.empleado_ids.length} empleado(s) seleccionado(s)
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="turno">Horario</Label>
-                    <Select value={asignacionData.turno_id} onValueChange={(value) => setAsignacionData({...asignacionData, turno_id: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar horario" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {turnos.filter(t => t.activo).map((turno) => (
-                          <SelectItem key={turno.id} value={turno.id}>
-                            {turno.nombre} ({turno.hora_entrada} - {turno.hora_salida})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="fecha_inicio">Fecha de Inicio</Label>
-                    <Input
-                      id="fecha_inicio"
-                      type="date"
-                      value={asignacionData.fecha_inicio}
-                      onChange={(e) => setAsignacionData({...asignacionData, fecha_inicio: e.target.value})}
-                      required
-                    />
-                  </div>
-
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={() => setAsignacionDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit">Asignar Horario</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Empleado</TableHead>
-                <TableHead>Horario</TableHead>
-                <TableHead>Horario de Trabajo</TableHead>
-                <TableHead>Jornada</TableHead>
-                <TableHead>Fecha Inicio</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {empleadoTurnos.map((asignacion) => (
-                <TableRow key={asignacion.id}>
-                  <TableCell>
-                    {asignacion.empleado.nombre} {asignacion.empleado.apellido}
-                  </TableCell>
-                  <TableCell>{asignacion.turno.nombre}</TableCell>
-                  <TableCell>
-                    {asignacion.turno.hora_entrada} - {asignacion.turno.hora_salida}
-                  </TableCell>
-                  <TableCell>
-                    <JornadaConfigCell empleadoId={asignacion.empleado_id} empleadoNombre={`${asignacion.empleado.nombre} ${asignacion.empleado.apellido}`} onUpdate={loadData} />
-                  </TableCell>
-                  <TableCell>{asignacion.fecha_inicio}</TableCell>
-                  <TableCell>
-                    <Badge variant={asignacion.activo ? 'default' : 'secondary'}>
-                      {asignacion.activo ? 'Activo' : 'Inactivo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteAsignacion(asignacion.id)}
-                      disabled={!asignacion.activo}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
         </TabsContent>
       </Tabs>
 
