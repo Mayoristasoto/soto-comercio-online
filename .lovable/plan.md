@@ -1,33 +1,54 @@
 
 
-# Eliminar (anular) cruces rojas desde el Listado de Incidencias
+# Fix: Error al anular cruces rojas (foreign key constraint)
 
-## Contexto
+## Problema
 
-La tabla `empleado_cruces_rojas` ya tiene los campos `anulada`, `anulada_por` y `motivo_anulacion`, y el listado actual filtra con `.eq("anulada", false)`. Solo falta agregar la accion en la interfaz.
+El campo `anulada_por` en la tabla `empleado_cruces_rojas` tiene una foreign key hacia la tabla `empleados`. El codigo actual guarda `auth.uid()` (el ID de autenticacion), pero ese ID no existe en `empleados` -- ahi se usa un campo `id` propio del empleado, no el `user_id`.
 
-## Cambios en `src/pages/ListadoIncidencias.tsx`
+## Solucion
 
-1. **Agregar boton de eliminar en cada fila** - Un icono de papelera (Trash2) al final de cada fila de la tabla.
+En ambos archivos, antes de hacer el UPDATE, buscar el `id` del empleado correspondiente al usuario autenticado:
 
-2. **Agregar dialogo de confirmacion** - Al hacer clic en el boton, se abre un `ConfirmDialog` (variante destructive) que pide confirmar la anulacion. Opcionalmente se puede ingresar un motivo.
+```sql
+SELECT id FROM empleados WHERE user_id = auth.uid()
+```
 
-3. **Logica de anulacion** - Al confirmar, se ejecuta un UPDATE en `empleado_cruces_rojas` seteando:
-   - `anulada = true`
-   - `anulada_por = usuario actual (auth.uid)`
-   - `motivo_anulacion = texto ingresado`
-   - Luego se recarga la lista.
+Y usar ese `empleado.id` como valor de `anulada_por`.
 
-4. **Columna "Acciones"** en la tabla con el boton.
+## Archivos a modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/components/admin/FichajeMetricasDashboard.tsx` | En `anularCruzRojaDeRegistro`, buscar el empleado_id del usuario actual antes del update |
+| `src/pages/ListadoIncidencias.tsx` | En `handleAnular`, aplicar el mismo fix |
 
 ## Detalle tecnico
 
-| Elemento | Detalle |
-|----------|---------|
-| Componente de confirmacion | `ConfirmDialog` de `@/components/ui/confirm-dialog` (ya existe) |
-| Operacion DB | `UPDATE empleado_cruces_rojas SET anulada=true, anulada_por=uid, motivo_anulacion=motivo WHERE id=...` |
-| Estado nuevo | `incidenciaAEliminar` (id seleccionado), `motivoAnulacion` (texto), `showConfirmDelete` (boolean) |
-| Icono | `Trash2` de lucide-react |
+En ambas funciones, reemplazar:
 
-No se requieren migraciones ni cambios de esquema.
+```typescript
+const { data: { user } } = await supabase.auth.getUser()
+// ...
+anulada_por: user?.id || null,
+```
+
+Por:
+
+```typescript
+const { data: { user } } = await supabase.auth.getUser()
+let empleadoId = null
+if (user) {
+  const { data: emp } = await supabase
+    .from('empleados')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  empleadoId = emp?.id || null
+}
+// ...
+anulada_por: empleadoId,
+```
+
+No se requieren migraciones de base de datos.
 
