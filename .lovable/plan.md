@@ -1,74 +1,71 @@
 
 
-# Resumen del Dia - Version Premium para Fichero
+# Configuracion de Jornada Flexible Semanal
 
-Se va a reemplazar el componente `BalanceDiarioHoras.tsx` con una version significativamente mejorada que incluya un panel de resumen ejecutivo del dia ademas de la tabla detallada.
+## Problema actual
 
-## Mejoras principales
+Hoy el sistema solo permite configurar `horas_jornada_estandar` por empleado como un valor diario (ej: 8 horas/dia). No hay forma de definir un objetivo semanal (ej: 36 horas en 6 dias) ni configurar la duracion de pausa individual por empleado independiente del turno.
 
-### 1. Panel de Resumen Ejecutivo (nuevo, arriba de todo)
+## Solucion propuesta
 
-Tarjetas grandes con metricas clave del dia:
-- **Total empleados activos** vs empleados que ficharon (con porcentaje de presentismo)
-- **Jornadas completas** con barra de progreso visual
-- **Sin registrar salida** (alerta naranja)
-- **Horas totales trabajadas** (suma de todo el equipo)
-- **Promedio por empleado** (horas efectivas promedio)
-- **Balance global** del dia: total horas extras o deficit del equipo completo
+Agregar dos nuevos campos a la tabla `empleados` y actualizar la logica de calculo del balance para soportar jornadas flexibles semanales.
 
-### 2. Grafico visual de distribucion (nuevo)
+### Cambios en base de datos
 
-Un mini grafico de barras horizontales (usando recharts, ya instalado) mostrando:
-- Distribucion por estado: completo / sin salida / no ficho
-- Top 5 empleados con mas horas extra y top 5 con mas deficit
+Agregar 3 columnas a la tabla `empleados`:
 
-### 3. Tabla mejorada
+| Columna | Tipo | Default | Descripcion |
+|---------|------|---------|-------------|
+| `tipo_jornada` | text | `'diaria'` | Valores: `diaria` o `semanal` |
+| `horas_semanales_objetivo` | numeric | `null` | Total de horas semanales objetivo (ej: 36) |
+| `dias_laborales_semana` | integer | `6` | Cantidad de dias laborales en la semana |
 
-- Agregar **avatar** del empleado
-- Agregar columna **Horas efectivas** (trabajadas menos pausa, mas claro)
-- Colores de fondo en filas segun balance: verde suave para horas extra, rojo suave para deficit
-- Ordenamiento clickeable por columna (nombre, sucursal, balance)
-- Filtro rapido por estado (completo, sin salida, no ficho)
-- Indicador visual de **hora entrada programada vs real** (puntualidad)
-- Tooltip en la diferencia mostrando el desglose
+No se agrega campo de pausa individual porque ya existe `duracion_pausa_minutos` en `fichado_turnos`, y el turno de tipo `flexible` ya lo soporta. Para este empleado se crea un turno flexible con pausa de 30 minutos.
 
-### 4. Resumen por sucursal (nuevo)
+### Configuracion del empleado especifico
 
-Seccion colapsable que agrupa los datos por sucursal mostrando:
-- Cantidad de empleados presentes por sucursal
-- Promedio de horas por sucursal
-- Balance total por sucursal
+Con los nuevos campos, se configura asi:
 
-## Detalle tecnico
+- `tipo_jornada`: `'semanal'`
+- `horas_semanales_objetivo`: `36`
+- `dias_laborales_semana`: `6`
+- Se le asigna un turno de tipo `flexible` con `duracion_pausa_minutos: 30`
+
+### Cambios en la interfaz
+
+#### 1. Reporte de Horas Trabajadas (`ReporteHorasTrabajadas.tsx`)
+
+- Detectar empleados con `tipo_jornada = 'semanal'`
+- Para estos, calcular las horas esperadas como `horas_semanales_objetivo` en lugar de `dias * horas_jornada_estandar`
+- Mostrar badge "Jornada Semanal" junto al nombre
+- Mostrar el objetivo semanal en la info del empleado
+
+#### 2. Balance Diario (`BalanceDiarioHoras.tsx`)
+
+- Para empleados con jornada semanal, calcular el balance diario como `horas_semanales_objetivo / dias_laborales_semana` (ej: 36/6 = 6h promedio por dia)
+- Agregar tooltip indicando que el balance real se mide semanalmente
+
+#### 3. Configuracion de Jornada en Admin (`ReporteHorasTrabajadas.tsx`)
+
+- En el dialog donde se configura `horas_jornada_estandar`, agregar selector de tipo de jornada (diaria/semanal)
+- Si es semanal: mostrar campos de horas semanales y dias laborales
+- Si es diaria: mantener el campo actual de horas por dia
 
 ### Archivos a modificar
 
-| Archivo | Accion |
+| Archivo | Cambio |
 |---------|--------|
-| `src/components/fichero/BalanceDiarioHoras.tsx` | Reescribir con todas las mejoras |
+| **Migracion SQL** | Agregar columnas `tipo_jornada`, `horas_semanales_objetivo`, `dias_laborales_semana` a `empleados` |
+| `src/components/fichero/ReporteHorasTrabajadas.tsx` | Actualizar calculo de horas esperadas y dialog de configuracion |
+| `src/components/fichero/BalanceDiarioHoras.tsx` | Usar horas semanales / dias para el balance diario |
+| `src/components/fichero/balance/BalanceTable.tsx` | Mostrar badge de jornada semanal |
+| `src/components/fichero/balance/types.ts` | Agregar campo `tipo_jornada` al tipo |
 
-### Datos utilizados (sin cambios de BD)
+### Flujo de uso
 
-- Tabla `empleados`: id, nombre, apellido, avatar_url, horas_jornada_estandar, sucursal_id, activo
-- Tabla `fichajes`: empleado_id, tipo, timestamp_real
-- Tabla `sucursales`: id, nombre
-- Tabla `empleado_turnos` + `fichado_turnos`: hora_entrada programada (para puntualidad)
-
-### Componentes reutilizados
-
-- `recharts` (BarChart) para grafico de distribucion
-- `ExportButton` para exportacion
-- Avatar de Radix UI
-- Calendar, Popover, Select (ya usados)
-- Accordion de Radix para seccion por sucursal colapsable
-
-### Logica de ordenamiento
-
-Se agrega estado local `sortBy` y `sortDir` para permitir ordenar la tabla por cualquier columna clickeando en el encabezado.
-
-### Filtro por estado
-
-Se agrega un grupo de botones toggle para filtrar rapidamente: "Todos", "Completos", "Sin salida", "No ficharon".
-
-No se requieren cambios en la base de datos ni migraciones SQL.
+1. Ir a **Fichero > Horarios** y crear un turno de tipo "Flexible" con pausa maxima de 30 minutos
+2. Asignar ese turno al empleado
+3. Ir a **Fichero > Reporte Horas** y hacer clic en "Configurar" en el empleado
+4. Cambiar tipo de jornada a "Semanal", poner 36 horas y 6 dias
+5. El balance diario mostrara 6h como referencia diaria y el reporte semanal comparara contra las 36h totales
 
