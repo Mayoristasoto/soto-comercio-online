@@ -147,11 +147,20 @@ const ListadoIncidencias = () => {
     setAnulando(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      let empleadoId: string | null = null;
+      if (user) {
+        const { data: emp } = await supabase
+          .from("empleados")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        empleadoId = emp?.id || null;
+      }
       const { error } = await supabase
         .from("empleado_cruces_rojas")
         .update({
           anulada: true,
-          anulada_por: user?.id || null,
+          anulada_por: empleadoId,
           motivo_anulacion: motivoAnulacion || null,
         })
         .eq("id", incidenciaAEliminar);
