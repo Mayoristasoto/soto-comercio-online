@@ -28,6 +28,9 @@ interface EmpleadoReporte {
   avatar_url: string | null
   sucursal_id: string | null
   horas_jornada_estandar: number
+  tipo_jornada: string
+  horas_semanales_objetivo: number | null
+  dias_laborales_semana: number
   sucursal?: {
     nombre: string
   }
@@ -62,6 +65,9 @@ export default function ReporteHorasTrabajadas() {
   // Modal de configuración
   const [empleadoConfig, setEmpleadoConfig] = useState<EmpleadoReporte | null>(null)
   const [jornadaTemp, setJornadaTemp] = useState<number>(8)
+  const [tipoJornadaTemp, setTipoJornadaTemp] = useState<string>('diaria')
+  const [horasSemanalesTemp, setHorasSemanalesTemp] = useState<number>(36)
+  const [diasLaboralesTemp, setDiasLaboralesTemp] = useState<number>(6)
 
   useEffect(() => {
     cargarDatos()
@@ -89,6 +95,9 @@ export default function ReporteHorasTrabajadas() {
           avatar_url,
           sucursal_id,
           horas_jornada_estandar,
+          tipo_jornada,
+          horas_semanales_objetivo,
+          dias_laborales_semana,
           sucursales (nombre)
         `)
         .eq('activo', true)
@@ -105,6 +114,9 @@ export default function ReporteHorasTrabajadas() {
 
       setEmpleados(empleadosData.map(emp => ({
         ...emp,
+        tipo_jornada: (emp as any).tipo_jornada || 'diaria',
+        horas_semanales_objetivo: (emp as any).horas_semanales_objetivo || null,
+        dias_laborales_semana: (emp as any).dias_laborales_semana || 6,
         sucursal: emp.sucursales ? { nombre: emp.sucursales.nombre } : undefined
       })))
 
@@ -158,7 +170,12 @@ export default function ReporteHorasTrabajadas() {
         })
         
         const diasTrabajados = fichajesPorDia.size
-        const horasEsperadas = diasTrabajados * (emp.horas_jornada_estandar || 8)
+        let horasEsperadas: number
+        if (emp.tipo_jornada === 'semanal' && emp.horas_semanales_objetivo) {
+          horasEsperadas = emp.horas_semanales_objetivo as number
+        } else {
+          horasEsperadas = diasTrabajados * (emp.horas_jornada_estandar || 8)
+        }
         
         horasPorEmpleado.set(emp.id, {
           empleado_id: emp.id,
@@ -187,9 +204,16 @@ export default function ReporteHorasTrabajadas() {
     if (!empleadoConfig) return
 
     try {
+      const updateData: any = {
+        horas_jornada_estandar: jornadaTemp,
+        tipo_jornada: tipoJornadaTemp,
+        horas_semanales_objetivo: tipoJornadaTemp === 'semanal' ? horasSemanalesTemp : null,
+        dias_laborales_semana: diasLaboralesTemp
+      }
+
       const { error } = await supabase
         .from('empleados')
-        .update({ horas_jornada_estandar: jornadaTemp })
+        .update(updateData)
         .eq('id', empleadoConfig.id)
 
       if (error) throw error
@@ -450,13 +474,20 @@ export default function ReporteHorasTrabajadas() {
                       </div>
                       
                       <div className="flex-1">
-                        <p className="font-medium">
+                        <p className="font-medium flex items-center gap-1">
                           {emp.apellido}, {emp.nombre}
+                          {emp.tipo_jornada === 'semanal' && (
+                            <Badge variant="outline" className="text-xs ml-1">Semanal</Badge>
+                          )}
                         </p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <span>{emp.sucursal?.nombre || 'Sin sucursal'}</span>
                           <span>•</span>
-                          <span>Jornada: {emp.horas_jornada_estandar}h</span>
+                          {emp.tipo_jornada === 'semanal' ? (
+                            <span>{emp.horas_semanales_objetivo}h/semana ({emp.dias_laborales_semana} días)</span>
+                          ) : (
+                            <span>Jornada: {emp.horas_jornada_estandar}h</span>
+                          )}
                           {detalle && (
                             <>
                               <span>•</span>
@@ -496,6 +527,9 @@ export default function ReporteHorasTrabajadas() {
                             onClick={() => {
                               setEmpleadoConfig(emp)
                               setJornadaTemp(emp.horas_jornada_estandar || 8)
+                              setTipoJornadaTemp(emp.tipo_jornada || 'diaria')
+                              setHorasSemanalesTemp(emp.horas_semanales_objetivo || 36)
+                              setDiasLaboralesTemp(emp.dias_laborales_semana || 6)
                             }}
                           >
                             <Settings className="h-4 w-4" />
@@ -510,20 +544,71 @@ export default function ReporteHorasTrabajadas() {
                           </DialogHeader>
                           <div className="space-y-4 py-4">
                             <div>
-                              <Label>Horas de Jornada Estándar</Label>
-                              <Select 
-                                value={jornadaTemp.toString()} 
-                                onValueChange={(v) => setJornadaTemp(Number(v))}
-                              >
+                              <Label>Tipo de Jornada</Label>
+                              <Select value={tipoJornadaTemp} onValueChange={setTipoJornadaTemp}>
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="6">6 horas</SelectItem>
-                                  <SelectItem value="8">8 horas</SelectItem>
+                                  <SelectItem value="diaria">Diaria (horas fijas por día)</SelectItem>
+                                  <SelectItem value="semanal">Semanal (objetivo de horas por semana)</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
+
+                            {tipoJornadaTemp === 'diaria' ? (
+                              <div>
+                                <Label>Horas de Jornada Estándar</Label>
+                                <Select 
+                                  value={jornadaTemp.toString()} 
+                                  onValueChange={(v) => setJornadaTemp(Number(v))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="6">6 horas</SelectItem>
+                                    <SelectItem value="8">8 horas</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ) : (
+                              <>
+                                <div>
+                                  <Label>Horas Semanales Objetivo</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={80}
+                                    value={horasSemanalesTemp}
+                                    onChange={(e) => setHorasSemanalesTemp(Number(e.target.value))}
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Total de horas que debe cumplir en la semana
+                                  </p>
+                                </div>
+                                <div>
+                                  <Label>Días Laborales por Semana</Label>
+                                  <Select 
+                                    value={diasLaboralesTemp.toString()} 
+                                    onValueChange={(v) => setDiasLaboralesTemp(Number(v))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="5">5 días</SelectItem>
+                                      <SelectItem value="6">6 días</SelectItem>
+                                      <SelectItem value="7">7 días</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="p-3 bg-muted rounded-lg text-sm">
+                                  <p className="font-medium">Referencia diaria: {(horasSemanalesTemp / diasLaboralesTemp).toFixed(1)}h/día</p>
+                                  <p className="text-muted-foreground">El balance se calculará contra este promedio diario</p>
+                                </div>
+                              </>
+                            )}
                             <Button onClick={actualizarJornadaEmpleado} className="w-full">
                               Guardar Configuración
                             </Button>
