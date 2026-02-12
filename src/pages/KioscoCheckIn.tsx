@@ -1858,19 +1858,205 @@ export default function KioscoCheckIn() {
     setEmocionDetectada(null)
   }
 
-  const handlePinSuccess = (empleadoId: string, empleadoData: any, fichajeId: string, tipoFichaje: string) => {
-    setRegistroExitoso({
-      empleado: { id: empleadoId, ...empleadoData },
-      timestamp: new Date()
-    })
-    
+  const handlePinSuccess = async (empleadoId: string, empleadoData: any, fichajeId: string, tipoFichaje: string) => {
+    const tipoAccion = tipoFichaje as TipoAccion
+    const empleadoParaFichaje = {
+      id: empleadoId,
+      nombre: empleadoData.nombre,
+      apellido: empleadoData.apellido
+    }
+
+    // 1. Setear recognizedEmployee (necesario para que los modales funcionen)
+    setRecognizedEmployee({ id: empleadoId, data: empleadoData, confidence: 1.0 })
+    setShowPinAuth(false)
+    setUltimoTipoFichaje(tipoAccion)
+
+    // 2. Obtener tareas pendientes si es entrada o pausa_fin
+    let tareas: TareaPendiente[] = []
+    if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+      try {
+        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
+          p_empleado_id: empleadoId,
+          p_limit: 5
+        })
+        tareas = (tareasData || []).map((t: any) => ({
+          id: t.id,
+          titulo: t.titulo,
+          prioridad: t.prioridad as TareaPendiente['prioridad'],
+          fecha_limite: t.fecha_limite
+        }))
+      } catch (err) {
+        console.error('[PIN] Error obteniendo tareas:', err)
+      }
+    }
+    setTareasPendientes(tareas)
+
+    // 3. Imprimir tareas automáticamente si corresponde
+    if (tipoAccion === 'entrada' && config.autoPrintTasksEnabled) {
+      try {
+        const empleadoCompleto = {
+          id: empleadoId,
+          nombre: empleadoData.nombre,
+          apellido: empleadoData.apellido,
+          puesto: empleadoData?.puesto || undefined
+        }
+        await imprimirTareasDiariasAutomatico(empleadoCompleto)
+      } catch (error) {
+        console.error('[PIN] Error en impresión automática:', error)
+      }
+    }
+
+    // 4. Verificar llegada tarde (solo entrada + alertas habilitadas)
+    if (tipoAccion === 'entrada' && alertasHabilitadas) {
+      logCruzRoja.inicio('llegada_tarde', empleadoId, fichajeId, alertConfig.lateArrivalEnabled)
+      
+      try {
+        const { data: turnoRpc, error: turnoError } = await supabase.rpc('kiosk_get_turno_empleado', {
+          p_empleado_id: empleadoId
+        }) as { data: { hora_entrada: string; tolerancia_entrada_minutos: number } | null; error: any }
+        
+        logCruzRoja.turnoData('llegada_tarde', turnoRpc, turnoError)
+        
+        if (turnoRpc) {
+          const horaEntradaProgramada = turnoRpc.hora_entrada
+          const tolerancia = turnoRpc.tolerancia_entrada_minutos ?? 5
+          const [h, m] = horaEntradaProgramada.split(':').map(Number)
+          const horaLimite = new Date()
+          horaLimite.setHours(h, m + tolerancia, 0, 0)
+          const horaActual = new Date()
+          const esTarde = horaActual > horaLimite
+          const minutosRetraso = esTarde ? Math.round((horaActual.getTime() - horaLimite.getTime()) / 60000) : 0
+          
+          logCruzRoja.calculoLlegadaTarde({
+            horaEntradaProgramada, tolerancia,
+            horaLimite: horaLimite.toISOString(), horaActual: horaActual.toISOString(),
+            esTarde, minutosRetraso: esTarde ? minutosRetraso : undefined
+          })
+          
+          if (esTarde) {
+            setLlegadaTardeInfo({
+              horaEntradaProgramada: horaEntradaProgramada.substring(0, 5),
+              horaLlegadaReal: horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+              minutosRetraso, toleranciaMinutos: tolerancia, registrado: false
+            })
+            setRegistroExitoso({ empleado: empleadoParaFichaje, timestamp: new Date() })
+            setShowLlegadaTardeAlert(true)
+
+            // Registrar cruz roja
+            const rpcParams = {
+              p_empleado_id: empleadoId,
+              p_tipo_infraccion: 'llegada_tarde',
+              p_fichaje_id: fichajeId,
+              p_minutos_diferencia: minutosRetraso,
+              p_observaciones: `Llegada tarde en kiosco (PIN): ${horaActual.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} (programado: ${horaEntradaProgramada.substring(0, 5)}, tolerancia: ${tolerancia} min)`
+            }
+            logCruzRoja.rpcLlamada('llegada_tarde', rpcParams)
+            try {
+              const { data: rpcResult, error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', rpcParams)
+              logCruzRoja.rpcResultado('llegada_tarde', rpcResult, cruceError)
+              if (!cruceError) {
+                setLlegadaTardeInfo(prev => prev ? {...prev, registrado: true} : null)
+                logCruzRoja.fin('llegada_tarde', 'exito')
+              } else { logCruzRoja.fin('llegada_tarde', 'error') }
+            } catch (err) {
+              logCruzRoja.excepcion('llegada_tarde', err)
+              logCruzRoja.fin('llegada_tarde', 'error')
+            }
+            return // El flujo continuará cuando se cierre la alerta
+          } else {
+            logCruzRoja.fin('llegada_tarde', 'puntual')
+          }
+        } else {
+          logCruzRoja.sinTurno('llegada_tarde', empleadoId)
+          logCruzRoja.fin('llegada_tarde', 'sin_turno')
+        }
+      } catch (error) {
+        logCruzRoja.excepcion('llegada_tarde', error)
+        logCruzRoja.fin('llegada_tarde', 'error')
+      }
+    }
+
+    // 5. Mostrar confirmación
+    setRegistroExitoso({ empleado: empleadoParaFichaje, timestamp: new Date() })
     toast({
       title: "✅ Fichaje exitoso",
-      description: `${empleadoData.nombre} ${empleadoData.apellido} - ${tipoFichaje} registrado`,
+      description: `${empleadoData.nombre} ${empleadoData.apellido} - ${getAccionTexto(tipoAccion)}`,
       duration: 3000,
     })
 
-    setShowPinAuth(false)
+    // 6. Verificar pausa excedida (solo pausa_fin)
+    if (tipoAccion === 'pausa_fin') {
+      logCruzRoja.inicio('pausa_excedida', empleadoId, fichajeId, true)
+      console.log('🔍 [PAUSA REAL-TIME] Recalculando pausa en tiempo real (PIN)...')
+      const pausaRealTime = await calcularPausaExcedidaEnTiempoReal(empleadoId)
+      
+      if (pausaRealTime) {
+        const minutosExceso = Math.round(pausaRealTime.minutosTranscurridos - pausaRealTime.minutosPermitidos)
+        logCruzRoja.calculoPausaExcedida({
+          minutosTranscurridos: pausaRealTime.minutosTranscurridos,
+          minutosPermitidos: pausaRealTime.minutosPermitidos,
+          excedida: pausaRealTime.excedida,
+          minutosExceso: pausaRealTime.excedida ? minutosExceso : undefined
+        })
+        
+        if (pausaRealTime.excedida) {
+          console.log('🔴 [PAUSA REAL-TIME] ¡PAUSA EXCEDIDA DETECTADA (PIN)! Mostrando alerta...')
+          setPausaExcedidaInfo({
+            minutosUsados: pausaRealTime.minutosTranscurridos,
+            minutosPermitidos: pausaRealTime.minutosPermitidos,
+            registrado: false
+          })
+          setRegistroExitoso({ empleado: empleadoParaFichaje, timestamp: new Date() })
+          setShowPausaExcedidaAlert(true)
+
+          // Registrar cruz roja
+          const rpcParams = {
+            p_empleado_id: empleadoId,
+            p_tipo_infraccion: 'pausa_excedida',
+            p_fichaje_id: fichajeId,
+            p_minutos_diferencia: minutosExceso,
+            p_observaciones: `Pausa excedida en kiosco (PIN): ${pausaRealTime.minutosTranscurridos} min usados de ${pausaRealTime.minutosPermitidos} min permitidos`
+          }
+          logCruzRoja.rpcLlamada('pausa_excedida', rpcParams)
+          try {
+            const { data: rpcResult, error: cruceError } = await supabase.rpc('kiosk_registrar_cruz_roja', rpcParams)
+            logCruzRoja.rpcResultado('pausa_excedida', rpcResult, cruceError)
+            if (!cruceError) {
+              setPausaExcedidaInfo(prev => prev ? {...prev, registrado: true} : null)
+              logCruzRoja.fin('pausa_excedida', 'exito')
+            } else { logCruzRoja.fin('pausa_excedida', 'error') }
+          } catch (err) {
+            logCruzRoja.excepcion('pausa_excedida', err)
+            logCruzRoja.fin('pausa_excedida', 'error')
+          }
+          return // El flujo continuará cuando se cierre la alerta
+        } else {
+          logCruzRoja.fin('pausa_excedida', 'no_excedida')
+        }
+      } else {
+        console.error('⚠️ [PAUSA REAL-TIME] No se pudo calcular pausa en tiempo real (PIN)')
+        logCruzRoja.fin('pausa_excedida', 'error')
+      }
+    }
+
+    // 7. Audio + tareas pendientes
+    if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+      try {
+        await reproducirMensajeBienvenida()
+        if (tareas.length > 0) {
+          setTimeout(() => { reproducirMensajeTareas(tareas.length) }, 2000)
+        }
+      } catch (error) {
+        console.error('[PIN] Error reproduciendo audio:', error)
+      }
+
+      if (tareas.length > 0) {
+        setShowTareasPendientesAlert(true)
+        return // resetKiosco se llamará cuando se cierre la alerta
+      }
+    }
+
+    // 8. Sin alertas: resetear
     resetKiosco()
   }
 
@@ -2389,23 +2575,7 @@ export default function KioscoCheckIn() {
           </Card>
         ) : showPinAuth ? (
           <FicheroPinAuth
-            onSuccess={(empleadoId, empleadoData, fichajeId, tipoFichaje) => {
-              setRegistroExitoso({
-                empleado: {
-                  id: empleadoId,
-                  nombre: empleadoData.nombre,
-                  apellido: empleadoData.apellido
-                },
-                timestamp: new Date()
-              })
-              setUltimoTipoFichaje(tipoFichaje as TipoAccion)
-              toast({
-                title: "✅ Fichaje exitoso",
-                description: `${empleadoData.nombre} ${empleadoData.apellido} - ${getAccionTexto(tipoFichaje as TipoAccion)}`,
-                duration: 3000,
-              })
-              resetKiosco()
-            }}
+            onSuccess={handlePinSuccess}
             onCancel={() => {
               setShowPinAuth(false)
             }}
