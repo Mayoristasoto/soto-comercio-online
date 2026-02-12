@@ -19,8 +19,19 @@ import {
   X as XIcon,
   AlertTriangle,
   Filter,
-  Shield
+  Shield,
+  ShieldX
 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { ExportButton } from "@/components/ui/export-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
@@ -126,8 +137,13 @@ export default function FichajeMetricasDashboard() {
   const [empleados, setEmpleados] = useState<any[]>([])
   const [ocultarRegistradas, setOcultarRegistradas] = useState(false)
   
-  // Cruces rojas existentes
-  const [crucesRojasExistentes, setCrucesRojasExistentes] = useState<Set<string>>(new Set())
+  // Cruces rojas existentes - key -> id mapping for deletion
+  const [crucesRojasExistentes, setCrucesRojasExistentes] = useState<Map<string, string>>(new Map())
+  
+  // Dialog para anular cruz roja
+  const [cruzRojaAAnular, setCruzRojaAAnular] = useState<{ key: string; nombre: string } | null>(null)
+  const [motivoAnulacionCR, setMotivoAnulacionCR] = useState("")
+  const [anulandoCR, setAnulandoCR] = useState(false)
 
   useEffect(() => {
     cargarEmpleados()
@@ -181,14 +197,16 @@ export default function FichajeMetricasDashboard() {
     
     const { data, error } = await supabase
       .from('empleado_cruces_rojas')
-      .select('empleado_id, fecha_infraccion, tipo_infraccion')
+      .select('id, empleado_id, fecha_infraccion, tipo_infraccion')
       .gte('fecha_infraccion', fechaInicioStr)
       .lte('fecha_infraccion', fechaFinStr)
       .in('tipo_infraccion', ['llegada_tarde', 'pausa_excedida'])
+      .eq('anulada', false)
     
     if (!error && data) {
-      const keys = new Set(data.map(cr => `${cr.empleado_id}-${cr.tipo_infraccion}-${cr.fecha_infraccion}`))
-      setCrucesRojasExistentes(keys)
+      const map = new Map<string, string>()
+      data.forEach(cr => map.set(`${cr.empleado_id}-${cr.tipo_infraccion}-${cr.fecha_infraccion}`, cr.id))
+      setCrucesRojasExistentes(map)
     }
   }
 
@@ -471,6 +489,45 @@ export default function FichajeMetricasDashboard() {
 
   const tieneCruzRoja = (empleadoId: string, tipo: string, fecha: string) => {
     return crucesRojasExistentes.has(`${empleadoId}-${tipo}-${fecha}`)
+  }
+
+  const anularCruzRojaDeRegistro = async () => {
+    if (!cruzRojaAAnular) return
+    setAnulandoCR(true)
+    try {
+      const cruzRojaId = crucesRojasExistentes.get(cruzRojaAAnular.key)
+      if (!cruzRojaId) throw new Error("No se encontró la cruz roja")
+
+      const { data: { user } } = await supabase.auth.getUser()
+      const { error } = await supabase
+        .from('empleado_cruces_rojas')
+        .update({
+          anulada: true,
+          anulada_por: user?.id || null,
+          motivo_anulacion: motivoAnulacionCR || null,
+        })
+        .eq('id', cruzRojaId)
+
+      if (error) throw error
+
+      toast({
+        title: "Cruz roja anulada",
+        description: `Se anuló la cruz roja de ${cruzRojaAAnular.nombre}`
+      })
+
+      setCruzRojaAAnular(null)
+      setMotivoAnulacionCR("")
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error anulando cruz roja:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo anular la cruz roja",
+        variant: "destructive"
+      })
+    } finally {
+      setAnulandoCR(false)
+    }
   }
 
   // Filtrar incidencias según checkbox
@@ -1192,10 +1249,28 @@ export default function FichajeMetricasDashboard() {
                                   {fichaje.empleado.nombre} {fichaje.empleado.apellido}
                                 </p>
                                 {yaRegistrado && (
-                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                    <Shield className="h-3 w-3 mr-1" />
-                                    En Legajo
-                                  </Badge>
+                                  <>
+                                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                      <Shield className="h-3 w-3 mr-1" />
+                                      En Legajo
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 px-1.5 text-muted-foreground hover:text-destructive"
+                                      title="Anular cruz roja del legajo"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setCruzRojaAAnular({
+                                          key: `${fichaje.empleado_id}-llegada_tarde-${fichaje.fecha_fichaje}`,
+                                          nombre: `${fichaje.empleado.nombre} ${fichaje.empleado.apellido}`
+                                        })
+                                        setMotivoAnulacionCR("")
+                                      }}
+                                    >
+                                      <ShieldX className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </>
                                 )}
                               </div>
                               <div className="text-sm text-muted-foreground mb-1">
@@ -1310,10 +1385,28 @@ export default function FichajeMetricasDashboard() {
                                   {pausa.empleado.nombre} {pausa.empleado.apellido}
                                 </p>
                                 {yaRegistrado && (
-                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                    <Shield className="h-3 w-3 mr-1" />
-                                    En Legajo
-                                  </Badge>
+                                  <>
+                                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                      <Shield className="h-3 w-3 mr-1" />
+                                      En Legajo
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 px-1.5 text-muted-foreground hover:text-destructive"
+                                      title="Anular cruz roja del legajo"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setCruzRojaAAnular({
+                                          key: `${pausa.empleado_id}-pausa_excedida-${pausa.fecha_fichaje}`,
+                                          nombre: `${pausa.empleado.nombre} ${pausa.empleado.apellido}`
+                                        })
+                                        setMotivoAnulacionCR("")
+                                      }}
+                                    >
+                                      <ShieldX className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </>
                                 )}
                               </div>
                               <div className="text-sm text-muted-foreground mb-1">
@@ -1503,6 +1596,40 @@ export default function FichajeMetricasDashboard() {
           )}
         </DialogContent>
       </Dialog>
+      {/* Dialog para anular cruz roja */}
+      <AlertDialog open={cruzRojaAAnular !== null} onOpenChange={(open) => { if (!open) setCruzRojaAAnular(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-start gap-4">
+              <div className="rounded-full p-3 bg-muted text-destructive">
+                <ShieldX className="h-6 w-6" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <AlertDialogTitle>Anular cruz roja</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Se anulará la cruz roja de <strong>{cruzRojaAAnular?.nombre}</strong>. El registro no se eliminará, quedará marcado como anulado.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <Textarea
+            placeholder="Motivo de anulación (opcional)"
+            value={motivoAnulacionCR}
+            onChange={(e) => setMotivoAnulacionCR(e.target.value)}
+            rows={3}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={anulandoCR}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={anularCruzRojaDeRegistro}
+              disabled={anulandoCR}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {anulandoCR ? "Anulando..." : "Anular"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
