@@ -5,13 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, Search, Clock, Coffee, AlertTriangle, Calendar } from "lucide-react";
+import { FileText, Download, Search, Clock, Coffee, AlertTriangle, Calendar, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Incidencia {
   id: string;
@@ -28,6 +39,10 @@ const ListadoIncidencias = () => {
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [incidenciaAEliminar, setIncidenciaAEliminar] = useState<string | null>(null);
+  const [motivoAnulacion, setMotivoAnulacion] = useState("");
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [anulando, setAnulando] = useState(false);
   const [fechaDesde, setFechaDesde] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() - 1);
@@ -126,6 +141,33 @@ const ListadoIncidencias = () => {
     const nombreCompleto = `${inc.empleado_nombre} ${inc.empleado_apellido}`.toLowerCase();
     return nombreCompleto.includes(searchTerm.toLowerCase());
   });
+
+  const handleAnular = async () => {
+    if (!incidenciaAEliminar) return;
+    setAnulando(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("empleado_cruces_rojas")
+        .update({
+          anulada: true,
+          anulada_por: user?.id || null,
+          motivo_anulacion: motivoAnulacion || null,
+        })
+        .eq("id", incidenciaAEliminar);
+      if (error) throw error;
+      toast.success("Incidencia anulada correctamente");
+      setShowConfirmDelete(false);
+      setIncidenciaAEliminar(null);
+      setMotivoAnulacion("");
+      cargarIncidencias();
+    } catch (error) {
+      console.error("Error al anular incidencia:", error);
+      toast.error("Error al anular la incidencia");
+    } finally {
+      setAnulando(false);
+    }
+  };
 
   const exportarPDF = () => {
     const doc = new jsPDF();
@@ -265,6 +307,7 @@ const ListadoIncidencias = () => {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Minutos</TableHead>
                     <TableHead>Observaciones</TableHead>
+                    <TableHead className="w-16">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -288,6 +331,20 @@ const ListadoIncidencias = () => {
                       <TableCell className="max-w-xs truncate">
                         {inc.observaciones || "-"}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setIncidenciaAEliminar(inc.id);
+                            setMotivoAnulacion("");
+                            setShowConfirmDelete(true);
+                          }}
+                          title="Anular incidencia"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -296,6 +353,39 @@ const ListadoIncidencias = () => {
           )}
         </CardContent>
       </Card>
+      <AlertDialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-start gap-4">
+              <div className="rounded-full p-3 bg-muted text-destructive">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <AlertDialogTitle>Anular incidencia</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción marcará la incidencia como anulada. No se eliminará de la base de datos.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <Textarea
+            placeholder="Motivo de anulación (opcional)"
+            value={motivoAnulacion}
+            onChange={(e) => setMotivoAnulacion(e.target.value)}
+            rows={3}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={anulando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAnular}
+              disabled={anulando}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {anulando ? "Anulando..." : "Anular"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
