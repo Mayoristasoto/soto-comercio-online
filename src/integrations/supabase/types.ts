@@ -6393,6 +6393,7 @@ export type Database = {
           fecha_limite: string | null
           fotos_evidencia: string[] | null
           id: string
+          plantilla_id: string | null
           prioridad: Database["public"]["Enums"]["tarea_prioridad"]
           tipo_asignacion: string | null
           titulo: string
@@ -6409,6 +6410,7 @@ export type Database = {
           fecha_limite?: string | null
           fotos_evidencia?: string[] | null
           id?: string
+          plantilla_id?: string | null
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
           tipo_asignacion?: string | null
           titulo: string
@@ -6425,6 +6427,7 @@ export type Database = {
           fecha_limite?: string | null
           fotos_evidencia?: string[] | null
           id?: string
+          plantilla_id?: string | null
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"]
           tipo_asignacion?: string | null
           titulo?: string
@@ -6492,6 +6495,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "tareas_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "tareas_plantillas"
             referencedColumns: ["id"]
           },
         ]
@@ -6834,10 +6844,12 @@ export type Database = {
           hora_generacion: string | null
           id: string
           prioridad: string | null
+          recordatorio_fin_semana: boolean | null
           sucursal_id: string | null
           titulo: string
           ultima_generacion: string | null
           updated_at: string | null
+          veces_por_semana: number | null
         }
         Insert: {
           activa?: boolean | null
@@ -6852,10 +6864,12 @@ export type Database = {
           hora_generacion?: string | null
           id?: string
           prioridad?: string | null
+          recordatorio_fin_semana?: boolean | null
           sucursal_id?: string | null
           titulo: string
           ultima_generacion?: string | null
           updated_at?: string | null
+          veces_por_semana?: number | null
         }
         Update: {
           activa?: boolean | null
@@ -6870,10 +6884,12 @@ export type Database = {
           hora_generacion?: string | null
           id?: string
           prioridad?: string | null
+          recordatorio_fin_semana?: boolean | null
           sucursal_id?: string | null
           titulo?: string
           ultima_generacion?: string | null
           updated_at?: string | null
+          veces_por_semana?: number | null
         }
         Relationships: [
           {

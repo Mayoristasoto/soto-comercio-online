@@ -30,6 +30,8 @@ interface Plantilla {
   ultima_generacion?: string | null
   sucursal_id?: string | null
   empleados_asignados?: string[] | null
+  veces_por_semana?: number | null
+  recordatorio_fin_semana?: boolean
 }
 
 interface Categoria {
@@ -76,7 +78,9 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
     frecuencia: "manual",
     activa: true,
     sucursal_id: "",
-    empleados_asignados: [] as string[]
+    empleados_asignados: [] as string[],
+    veces_por_semana: 3,
+    recordatorio_fin_semana: true
   })
 
   useEffect(() => {
@@ -136,7 +140,9 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
       frecuencia: "manual",
       activa: true,
       sucursal_id: "",
-      empleados_asignados: []
+      empleados_asignados: [],
+      veces_por_semana: 3,
+      recordatorio_fin_semana: true
     })
     setShowDialog(true)
   }
@@ -153,7 +159,9 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
       frecuencia: plantilla.frecuencia,
       activa: plantilla.activa,
       sucursal_id: plantilla.sucursal_id || "",
-      empleados_asignados: plantilla.empleados_asignados || []
+      empleados_asignados: plantilla.empleados_asignados || [],
+      veces_por_semana: plantilla.veces_por_semana || 3,
+      recordatorio_fin_semana: plantilla.recordatorio_fin_semana || false
     })
     setShowDialog(true)
   }
@@ -175,17 +183,21 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
         .eq('user_id', user.id)
         .single()
 
+      const isSemanalFlexible = formData.frecuencia === 'semanal_flexible'
+      
       const payload = {
         titulo: formData.titulo.trim(),
         descripcion: formData.descripcion.trim() || null,
         prioridad: formData.prioridad,
         categoria_id: formData.categoria_id || null,
-        dias_limite_default: formData.dias_limite_default,
+        dias_limite_default: isSemanalFlexible ? 0 : formData.dias_limite_default,
         asignar_a_rol: formData.asignar_a_rol || null,
         frecuencia: formData.frecuencia,
         activa: formData.activa,
         sucursal_id: formData.sucursal_id || null,
         empleados_asignados: formData.empleados_asignados.length > 0 ? formData.empleados_asignados : null,
+        veces_por_semana: isSemanalFlexible ? formData.veces_por_semana : null,
+        recordatorio_fin_semana: isSemanalFlexible ? formData.recordatorio_fin_semana : false,
         updated_at: new Date().toISOString()
       }
 
@@ -250,6 +262,7 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
     switch (frecuencia) {
       case 'diaria': return 'Diaria'
       case 'semanal': return 'Semanal'
+      case 'semanal_flexible': return 'Semanal flexible'
       case 'mensual': return 'Mensual'
       default: return 'Manual'
     }
@@ -292,12 +305,12 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
     }
   }
 
-  const dailyTemplatesCount = plantillas.filter(p => p.frecuencia === 'diaria' && p.activa).length
+  const autoTemplatesCount = plantillas.filter(p => (p.frecuencia === 'diaria' || p.frecuencia === 'semanal_flexible') && p.activa).length
 
   return (
     <div className="space-y-4">
       {/* Daily Tasks Generation Card */}
-      {dailyTemplatesCount > 0 && (
+      {autoTemplatesCount > 0 && (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="py-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -306,9 +319,9 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                   <RefreshCw className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Tareas Diarias Automáticas</h3>
+                  <h3 className="font-medium">Tareas Automáticas</h3>
                   <p className="text-sm text-muted-foreground">
-                    {dailyTemplatesCount} plantilla{dailyTemplatesCount !== 1 ? 's' : ''} diaria{dailyTemplatesCount !== 1 ? 's' : ''} activa{dailyTemplatesCount !== 1 ? 's' : ''}
+                    {autoTemplatesCount} plantilla{autoTemplatesCount !== 1 ? 's' : ''} automática{autoTemplatesCount !== 1 ? 's' : ''} activa{autoTemplatesCount !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
@@ -413,10 +426,17 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                     <Calendar className="h-3 w-3" />
                     {getFrecuenciaLabel(plantilla.frecuencia)}
                   </Badge>
-                  <Badge variant="outline" className="gap-1">
-                    <Clock className="h-3 w-3" />
-                    {plantilla.dias_limite_default} días
-                  </Badge>
+                  {plantilla.frecuencia === 'semanal_flexible' ? (
+                    <Badge variant="outline" className="gap-1">
+                      <Clock className="h-3 w-3" />
+                      {plantilla.veces_por_semana}x/semana
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="gap-1">
+                      <Clock className="h-3 w-3" />
+                      {plantilla.dias_limite_default} días
+                    </Badge>
+                  )}
                   <Badge 
                     variant={plantilla.activa ? "default" : "secondary"}
                     className={plantilla.activa ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}
@@ -440,7 +460,7 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                     </Badge>
                   )}
                 </div>
-                {plantilla.frecuencia === 'diaria' && plantilla.ultima_generacion && (
+                {(plantilla.frecuencia === 'diaria' || plantilla.frecuencia === 'semanal_flexible') && plantilla.ultima_generacion && (
                   <p className="text-xs text-muted-foreground mt-2">
                     Última generación: {new Date(plantilla.ultima_generacion).toLocaleDateString('es-AR')}
                   </p>
@@ -514,6 +534,7 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                   <SelectContent>
                     <SelectItem value="manual">Manual</SelectItem>
                     <SelectItem value="diaria">Diaria</SelectItem>
+                    <SelectItem value="semanal_flexible">Semanal flexible</SelectItem>
                     <SelectItem value="semanal">Semanal</SelectItem>
                     <SelectItem value="mensual">Mensual</SelectItem>
                   </SelectContent>
@@ -540,17 +561,49 @@ export function TaskTemplates({ onCreateFromTemplate }: Props) {
                 </Select>
               </div>
 
-              <div>
-                <Label>Días límite</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={formData.dias_limite_default}
-                  onChange={(e) => setFormData({ ...formData, dias_limite_default: parseInt(e.target.value) || 7 })}
-                />
-              </div>
+              {formData.frecuencia !== 'semanal_flexible' && (
+                <div>
+                  <Label>Días límite</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={formData.dias_limite_default}
+                    onChange={(e) => setFormData({ ...formData, dias_limite_default: parseInt(e.target.value) || 7 })}
+                  />
+                </div>
+              )}
             </div>
+
+            {formData.frecuencia === 'semanal_flexible' && (
+              <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                <div>
+                  <Label>Veces por semana</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={7}
+                    value={formData.veces_por_semana}
+                    onChange={(e) => setFormData({ ...formData, veces_por_semana: Math.min(7, Math.max(1, parseInt(e.target.value) || 1)) })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    La tarea se generará hasta {formData.veces_por_semana} veces por semana, sin fecha límite fija
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Recordatorio fin de semana</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Si no se alcanzó el objetivo, recordar el último día laboral
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.recordatorio_fin_semana}
+                    onCheckedChange={(v) => setFormData({ ...formData, recordatorio_fin_semana: v })}
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <Label>Asignar a rol</Label>
