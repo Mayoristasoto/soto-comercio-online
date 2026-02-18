@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { registrarActividadTarea } from "@/lib/tareasLogService"
 import { logCruzRoja } from "@/lib/crucesRojasLogger"
 import { guardarFotoVerificacion } from "@/lib/verificacionFotosService"
+import { debeOmitirControles } from "@/lib/diasEspecialesService"
 
 interface EmpleadoBasico {
   id: string
@@ -1246,7 +1247,8 @@ export default function KioscoCheckIn() {
       }
         
       // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
-      if (tipoAccion === 'entrada' && alertasHabilitadas) {
+      const omitirControlesDirecta = await debeOmitirControles()
+      if (tipoAccion === 'entrada' && alertasHabilitadas && !omitirControlesDirecta) {
         logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, alertConfig.lateArrivalEnabled)
         
         try {
@@ -1355,7 +1357,7 @@ export default function KioscoCheckIn() {
 
       // 🔔 PRIMERO: Verificar si la pausa fue excedida y mostrar alerta (antes de tareas)
       // RECALCULAR EN TIEMPO REAL para evitar problemas de estado asíncrono
-      if (tipoAccion === 'pausa_fin') {
+      if (tipoAccion === 'pausa_fin' && !omitirControlesDirecta) {
         logCruzRoja.inicio('pausa_excedida', empleadoParaFichaje.id, fichajeId, true)
         
         console.log('🔍 [PAUSA REAL-TIME] Recalculando pausa en tiempo real (ejecutarAccionDirecta)...')
@@ -1604,7 +1606,8 @@ export default function KioscoCheckIn() {
         }
         
         // 🔔 Verificar si llegó tarde y mostrar alerta (solo si está habilitado)
-        if (alertasHabilitadas) {
+        const omitirControlesProcesar = await debeOmitirControles()
+        if (alertasHabilitadas && !omitirControlesProcesar) {
           logCruzRoja.inicio('llegada_tarde', empleadoParaFichaje.id, fichajeId, alertConfig.lateArrivalEnabled)
           
           try {
@@ -1721,7 +1724,8 @@ export default function KioscoCheckIn() {
 
       // 🔔 PRIMERO: Verificar si la pausa fue excedida y mostrar alerta (antes de tareas)
       // RECALCULAR EN TIEMPO REAL para evitar problemas de estado asíncrono
-      if (tipoAccion === 'pausa_fin') {
+      const omitirControlesPausa = await debeOmitirControles()
+      if (tipoAccion === 'pausa_fin' && !omitirControlesPausa) {
         logCruzRoja.inicio('pausa_excedida', empleadoParaFichaje.id, fichajeId, true)
         
         console.log('🔍 [PAUSA REAL-TIME] Recalculando pausa en tiempo real (procesarAccionFichaje)...')
@@ -1907,7 +1911,8 @@ export default function KioscoCheckIn() {
     }
 
     // 4. Verificar llegada tarde (solo entrada + alertas habilitadas)
-    if (tipoAccion === 'entrada' && alertasHabilitadas) {
+    const omitirControlesPin = await debeOmitirControles()
+    if (tipoAccion === 'entrada' && alertasHabilitadas && !omitirControlesPin) {
       logCruzRoja.inicio('llegada_tarde', empleadoId, fichajeId, alertConfig.lateArrivalEnabled)
       
       try {
@@ -1985,7 +1990,7 @@ export default function KioscoCheckIn() {
     })
 
     // 6. Verificar pausa excedida (solo pausa_fin)
-    if (tipoAccion === 'pausa_fin') {
+    if (tipoAccion === 'pausa_fin' && !omitirControlesPin) {
       logCruzRoja.inicio('pausa_excedida', empleadoId, fichajeId, true)
       console.log('🔍 [PAUSA REAL-TIME] Recalculando pausa en tiempo real (PIN)...')
       const pausaRealTime = await calcularPausaExcedidaEnTiempoReal(empleadoId)

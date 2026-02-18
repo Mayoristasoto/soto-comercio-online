@@ -43,6 +43,7 @@ import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { toArgentinaTime, getArgentinaStartOfDay, getArgentinaTimeString } from "@/lib/dateUtils"
 import { format } from "date-fns"
 import { guardarFotoVerificacion } from "@/lib/verificacionFotosService"
+import { debeOmitirControles } from "@/lib/diasEspecialesService"
 
 interface Empleado {
   id: string
@@ -514,8 +515,14 @@ export default function Fichero() {
         // === VERIFICAR INFRACCIONES DESPUÉS DEL FICHAJE EXITOSO ===
         const empleadoIdReal = empleadoId || empleado.id
         
+        // Verificar si es día especial (feriado/domingo) con controles desactivados
+        const omitirControles = await debeOmitirControles()
+        if (omitirControles) {
+          console.log('ℹ️ [FICHERO] Controles omitidos por día especial (feriado/domingo)')
+        }
+        
         // Verificar PAUSA EXCEDIDA si es fin de pausa
-        if (tipoFichaje === 'pausa_fin') {
+        if (tipoFichaje === 'pausa_fin' && !omitirControles) {
           if (!alertasHabilitadas) {
             console.log('ℹ️ [CRUZ-ROJA:PAUSA_EXCEDIDA] Verificación omitida - config deshabilitada (loading:', facialConfigLoading, ', valor:', facialConfig?.lateArrivalAlertEnabled, ')')
           } else {
@@ -561,7 +568,7 @@ export default function Fichero() {
         }
         
         // Verificar LLEGADA TARDE si es entrada
-        if (tipoFichaje === 'entrada') {
+        if (tipoFichaje === 'entrada' && !omitirControles) {
           if (!alertasHabilitadas) {
             console.log('ℹ️ [CRUZ-ROJA:LLEGADA_TARDE] Verificación omitida - config deshabilitada (loading:', facialConfigLoading, ', valor:', facialConfig?.lateArrivalAlertEnabled, ')')
           } else {
