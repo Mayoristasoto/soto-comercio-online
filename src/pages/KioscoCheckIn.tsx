@@ -853,6 +853,11 @@ export default function KioscoCheckIn() {
         console.error('Error reproduciendo audio:', error)
       }
 
+      // Mostrar alerta de tareas pendientes si hay (igual que flujo PIN)
+      if (tareas && tareas.length > 0) {
+        setShowTareasPendientesAlert(true)
+        return
+      }
       resetKiosco()
 
     } catch (error: any) {
