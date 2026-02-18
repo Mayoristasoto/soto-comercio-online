@@ -982,6 +982,42 @@ export type Database = {
           },
         ]
       }
+      config_dias_especiales: {
+        Row: {
+          activo: boolean | null
+          created_at: string | null
+          desactivar_controles: boolean | null
+          hora_entrada_especial: string | null
+          id: string
+          pausa_especial_min: number | null
+          tipo: string
+          tolerancia_especial_min: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          created_at?: string | null
+          desactivar_controles?: boolean | null
+          hora_entrada_especial?: string | null
+          id?: string
+          pausa_especial_min?: number | null
+          tipo: string
+          tolerancia_especial_min?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          created_at?: string | null
+          desactivar_controles?: boolean | null
+          hora_entrada_especial?: string | null
+          id?: string
+          pausa_especial_min?: number | null
+          tipo?: string
+          tolerancia_especial_min?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       configuracion_ia: {
         Row: {
           clave: string
@@ -1261,28 +1297,40 @@ export type Database = {
         Row: {
           activo: boolean
           created_at: string
+          desactivar_controles: boolean | null
           descripcion: string | null
           fecha: string
+          hora_entrada_especial: string | null
           id: string
           nombre: string
+          pausa_especial_min: number | null
+          tolerancia_especial_min: number | null
           updated_at: string
         }
         Insert: {
           activo?: boolean
           created_at?: string
+          desactivar_controles?: boolean | null
           descripcion?: string | null
           fecha: string
+          hora_entrada_especial?: string | null
           id?: string
           nombre: string
+          pausa_especial_min?: number | null
+          tolerancia_especial_min?: number | null
           updated_at?: string
         }
         Update: {
           activo?: boolean
           created_at?: string
+          desactivar_controles?: boolean | null
           descripcion?: string | null
           fecha?: string
+          hora_entrada_especial?: string | null
           id?: string
           nombre?: string
+          pausa_especial_min?: number | null
+          tolerancia_especial_min?: number | null
           updated_at?: string
         }
         Relationships: []
