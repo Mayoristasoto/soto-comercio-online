@@ -1,66 +1,54 @@
 
+# Corregir alertas de tareas en check-in facial
 
-# Sincronizar datos y carga masiva de datos personales
+## Problema encontrado
 
-## Paso 1: Sincronizar DNI existentes
+Julio Gomez Navarrete tiene fichajes completos todos los dias (viernes, sabado, domingo, lunes y hoy) y tiene 2 tareas pendientes ("Control Ofertas") que la funcion RPC devuelve correctamente. Sin embargo, **nunca le aparecio la alerta de tareas pendientes**.
 
-Ejecutar un UPDATE en `empleados_datos_sensibles` para copiar el DNI que ya existe en la tabla `empleados` hacia `empleados_datos_sensibles.dni`, para los registros donde el DNI sensible esta vacio pero el empleado si lo tiene cargado.
+### Causa raiz
 
-Esto se hara con una consulta SQL directa (sin migracion, es un update de datos):
+El flujo de **reconocimiento facial para entrada** tiene un bug: en la linea 856 de `KioscoCheckIn.tsx`, despues de obtener las tareas y guardarlas en el estado, se llama directamente a `resetKiosco()` **sin verificar si hay tareas pendientes**. Esto limpia todo el estado del kiosco antes de que el modal `TareasPendientesAlert` pueda mostrarse.
 
-```sql
-UPDATE empleados_datos_sensibles eds
-SET dni = e.dni
-FROM empleados e
-WHERE eds.empleado_id = e.id
-  AND e.dni IS NOT NULL
-  AND (eds.dni IS NULL OR eds.dni = '')
+En contraste, el flujo de **PIN** (linea 1446-1452) si verifica las tareas y muestra la alerta correctamente antes de resetear.
+
+### Comparacion de flujos
+
+```text
+Flujo PIN (funciona bien):
+  1. Registra fichaje
+  2. Obtiene tareas
+  3. SI hay tareas -> muestra alerta -> return (no resetea)
+  4. SI NO hay tareas -> resetKiosco()
+
+Flujo Facial Entrada (bug):
+  1. Registra fichaje
+  2. Obtiene tareas
+  3. resetKiosco()  <-- siempre resetea, ignora tareas
 ```
 
-Esto sincronizara los ~24 empleados que tienen DNI en `empleados` pero no en `empleados_datos_sensibles`.
+## Solucion
 
-## Paso 2: Crear componente de importacion masiva de datos personales
+### Archivo: `src/pages/KioscoCheckIn.tsx`
 
-Nuevo archivo: `src/components/admin/DatosPersonalesImport.tsx`
+Modificar el flujo de entrada facial (alrededor de linea 843-856) para que, despues de reproducir el audio, verifique si hay tareas pendientes antes de resetear:
 
-Funcionamiento:
+- Si hay tareas pendientes: mostrar `setShowTareasPendientesAlert(true)` y hacer `return` (igual que el flujo PIN)
+- Si no hay tareas: llamar `resetKiosco()` como antes
 
-1. El admin sube un archivo Excel (.xlsx) con columnas:
-   - **Legajo** (obligatorio, para identificar al empleado)
-   - **DNI**
-   - **Fecha Nacimiento** (formato DD/MM/AAAA)
-   - **Direccion**
-   - **Telefono**
-   - **Estado Civil**
-   - **Contacto Emergencia Nombre**
-   - **Contacto Emergencia Telefono**
+El cambio es reemplazar la llamada directa a `resetKiosco()` en la linea 856 por:
 
-2. El sistema muestra una tabla de previsualizacion con los datos leidos, marcando en verde los campos que se van a actualizar y en gris los que ya estan completos.
+```text
+// Mostrar alerta de tareas pendientes si hay
+if (tareas && tareas.length > 0) {
+  setShowTareasPendientesAlert(true)
+  return  // resetKiosco se llama al cerrar la alerta
+}
+resetKiosco()
+```
 
-3. Al confirmar, para cada fila:
-   - Busca el empleado por legajo
-   - Hace un `upsert` en `empleados_datos_sensibles` con los campos provistos
-   - Tambien actualiza `empleados.dni` si viene un DNI nuevo
+### Impacto
 
-4. Incluye boton para descargar plantilla Excel con las columnas esperadas y los legajos/nombres actuales pre-cargados.
-
-## Paso 3: Integrar en la administracion
-
-Agregar un boton "Importar Datos Personales" en la pagina de Nomina (`src/pages/Nomina.tsx`) o en el area de empleados, que abra el dialogo de importacion.
-
-## Patron a seguir
-
-Se reutiliza el mismo patron del componente `EmployeeImport.tsx` existente:
-- Dialogo modal con upload de archivo
-- Lectura con la libreria `xlsx` (ya instalada)
-- Tabla de previsualizacion antes de confirmar
-- Procesamiento fila por fila con feedback de progreso
-
-## Archivos a crear/modificar
-
-| Archivo | Accion |
-|---------|--------|
-| `src/components/admin/DatosPersonalesImport.tsx` | Crear - componente de importacion masiva |
-| `src/pages/Nomina.tsx` | Modificar - agregar boton para abrir el importador |
-
-No se requieren migraciones de esquema.
+- Los empleados que fichan por reconocimiento facial ahora veran las alertas de tareas pendientes al hacer check-in de entrada
+- El comportamiento sera consistente con el flujo de PIN
+- Las actividades se registraran correctamente en `tareas_actividad_log`
+- No hay cambios en base de datos, solo correccion de logica en frontend
