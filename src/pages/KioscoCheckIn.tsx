@@ -2231,6 +2231,7 @@ export default function KioscoCheckIn() {
             navigate(`/autogestion?empleado=${registroExitoso.empleado.id}`)
           }}
           duracionSegundos={10}
+          mostrarBotonAutoGestion={modoAutenticacion === 'facial'}
         />
       )}
 
@@ -2245,11 +2246,11 @@ export default function KioscoCheckIn() {
           empleadoNombre={`${recognizedEmployee.data.nombre} ${recognizedEmployee.data.apellido}`}
           tareasVencenHoy={tareasVencenHoy}
           onDismiss={handleDismissTareasVencenHoy}
-          onVerAutoGestion={() => {
+          onVerAutoGestion={modoAutenticacion === 'facial' ? () => {
             setShowTareasVencenHoyAlert(false)
             setTareasVencenHoy([])
             navigate(`/autogestion?empleado=${recognizedEmployee.id}`)
-          }}
+          } : undefined}
         />
       )}
 
@@ -2557,16 +2558,24 @@ export default function KioscoCheckIn() {
                       </button>
                     )}
                     
-                    {/* Botón Otras Consultas - Siempre visible */}
-                    <button
-                      onClick={() => {
-                        navigate(`/autogestion?empleado=${recognizedEmployee?.id}`)
-                      }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
-                    >
-                      <Settings className="h-6 w-6" />
-                      <span>Otras Consultas</span>
-                    </button>
+                    {/* Botón Otras Consultas - Solo visible con autenticación facial */}
+                    {modoAutenticacion === 'facial' ? (
+                      <button
+                        onClick={() => {
+                          navigate(`/autogestion?empleado=${recognizedEmployee?.id}`)
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 px-6 rounded-lg text-xl transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
+                      >
+                        <Settings className="h-6 w-6" />
+                        <span>Otras Consultas</span>
+                      </button>
+                    ) : (
+                      <div className="text-center py-4 px-4 bg-muted rounded-lg border border-border">
+                        <p className="text-sm text-muted-foreground">
+                          🔒 Para acceder a consultas personales, inicia sesión con reconocimiento facial
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
