@@ -1,72 +1,79 @@
 
-# Restriccion de Autogestion: solo autenticacion facial
+# Agregar "Solicitar Vacaciones" en Autogestión del Kiosco
 
 ## Contexto
 
-El kiosco tiene un estado `modoAutenticacion` que ya distingue entre `'facial'` y `'pin'`. El acceso a la pagina `/autogestion` (tareas, adelantos, saldo) ocurre en 3 puntos dentro de `KioscoCheckIn.tsx` y en ambos componentes de alerta. La solucion es bloquear esos 3 puntos cuando `modoAutenticacion === 'pin'`.
+La página `/autogestion` muestra un menú con tarjetas: Mis Tareas, Solicitar Adelanto y Consultar Saldo. El usuario quiere agregar una cuarta opción "Solicitar Vacaciones" para que los empleados que autenticaron con reconocimiento facial puedan pedirlas desde el kiosco.
 
-## Puntos a modificar
+## Enfoque
 
-### 1. Boton "Otras Consultas" en la pantalla de seleccion de accion
+Se agrega `'vacaciones'` al tipo `vistaActual` en `Autogestion.tsx` y se crea una vista inline (sin modal/Dialog, igual que las otras vistas). La lógica de validación de reglas ya existe en `SolicitudVacaciones.tsx` y se reutiliza directamente en `Autogestion.tsx`.
 
-`src/pages/KioscoCheckIn.tsx` lineas 2560-2569
+## Cambios en un solo archivo
 
-Actualmente siempre visible. Se agrega condicion para que solo se muestre si `modoAutenticacion === 'facial'`.
+Solo se modifica `src/pages/Autogestion.tsx`:
 
-Si el modo es PIN, en su lugar se muestra un mensaje informativo que indica que las consultas de autogestion requieren autenticacion facial.
-
-### 2. TareasPendientesAlert — boton "Ver Todas Mis Tareas"
-
-`src/components/kiosko/TareasPendientesAlert.tsx`
-
-Se agrega la prop opcional `mostrarBotonAutoGestion?: boolean` (default `true`). Cuando sea `false`, el boton "Ver Todas Mis Tareas" se oculta.
-
-En `KioscoCheckIn.tsx` linea 2219-2234, se pasa `mostrarBotonAutoGestion={modoAutenticacion === 'facial'}`.
-
-### 3. TareasVencenHoyAlert — boton "Ver en Autogestion"
-
-`src/components/kiosko/TareasVencenHoyAlert.tsx`
-
-Ya es opcional (`onVerAutoGestion?`): si no se pasa, el boton no se renderiza (linea 126-130 del componente). Solo hay que dejar de pasar la prop cuando el modo es PIN.
-
-En `KioscoCheckIn.tsx` linea 2248-2252, se condiciona: `onVerAutoGestion={modoAutenticacion === 'facial' ? () => { ... } : undefined}`.
-
-## Detalle tecnico
-
-### Archivos a modificar
+### 1. Nuevo estado y tipo de vista
 
 ```text
-src/pages/KioscoCheckIn.tsx          - 3 cambios (boton + 2 props condicionales)
-src/components/kiosko/TareasPendientesAlert.tsx  - 1 cambio (nueva prop opcional)
+vistaActual: 'menu' | 'tareas' | 'adelantos' | 'saldo' | 'vacaciones'
 ```
 
-### Logica central
+Se agregan los estados necesarios:
+- `fechaInicioVac` / `fechaFinVac` (Date | undefined)
+- `motivoVac` (string)
+- `enviandoVacaciones` (boolean)
+- `conflictoVac` / `mensajeConflicto` (para el warning de superposición con compañeros)
+
+### 2. Nueva tarjeta en el menú principal
+
+Debajo de "Consultar Saldo", se agrega:
 
 ```text
-modoAutenticacion === 'facial'  →  acceso a /autogestion habilitado
-modoAutenticacion === 'pin'     →  boton ocultado / mensaje informativo
+[Ícono sol/palmera] Solicitar Vacaciones
+                    Solicitá tus días de vacaciones
 ```
 
-### Cambio en TareasPendientesAlert
+Color: naranja/amarillo para diferenciarlo visualmente.
 
-Se agrega prop `mostrarBotonAutoGestion?: boolean` (default `true`). El boton "Ver Todas Mis Tareas" se envuelve en `{mostrarBotonAutoGestion !== false && (...)}`.
+### 3. Vista de vacaciones (inline)
 
-### Mensaje informativo para PIN
+Estructura igual a la vista de adelantos: encabezado con botón "Volver", y debajo:
 
-Cuando el modo es PIN, en lugar del boton "Otras Consultas" se muestra un texto discreto:
+- Selector de Fecha Inicio (Popover + Calendar)
+- Selector de Fecha Fin (Popover + Calendar)
+- Campo de Motivo (Textarea opcional)
+- Panel de reglas activas (leyendo `localStorage 'vacaciones_reglas_activas'`)
+- Banner de warning/conflicto si hay superposición con compañeros del mismo puesto/sucursal
+- Botón "Solicitar Vacaciones"
 
-> "Para acceder a consultas personales, inicia sesion con reconocimiento facial"
+Al enviar, se llama directamente a `supabase.from('solicitudes_vacaciones').insert(...)` con `empleado_id = empleadoId`.
 
-Esto orienta al empleado sin generar confusion.
+### 4. Post-envío
 
-## Sin cambios en la base de datos
+Muestra toast de éxito y vuelve al menú de autogestión (sin redirigir al kiosco, el empleado puede seguir viendo otras opciones).
 
-No se requieren migraciones ni cambios en el backend. Es una restriccion puramente visual/de navegacion en el frontend.
+## Imports nuevos
+
+- `CalendarIcon`, `Palmtree` (o `Sun`) de lucide-react
+- `Calendar` de `@/components/ui/calendar`
+- `Popover, PopoverContent, PopoverTrigger` de `@/components/ui/popover`
+- `format` de `date-fns`
+- `es` de `date-fns/locale`
+- `cn` de `@/lib/utils`
+
+## Sin cambios en base de datos
+
+La tabla `solicitudes_vacaciones` ya existe y acepta inserciones con `empleado_id`, `fecha_inicio`, `fecha_fin`, `motivo`, `estado`. No se requieren migraciones.
 
 ## Flujo resultante
 
 ```text
-Autenticacion facial  →  ve "Otras Consultas" + botones de autogestion en alertas
-Autenticacion PIN     →  NO ve "Otras Consultas" + alertas sin boton de autogestion
-                         (mensaje informativo reemplaza el boton)
+Menú Autogestión
+  └── Solicitar Vacaciones (nuevo)
+        ├── Seleccionar Fecha Inicio
+        ├── Seleccionar Fecha Fin
+        ├── Motivo (opcional)
+        ├── Validaciones (diciembre, receso invernal, conflictos)
+        └── Enviar → toast OK → volver al menú
 ```
