@@ -21,6 +21,7 @@ interface TareasPendientesAlertProps {
   onDismiss: () => void
   onVerAutoGestion: () => void
   duracionSegundos?: number
+  mostrarBotonAutoGestion?: boolean
 }
 
 export function TareasPendientesAlert({
@@ -31,7 +32,8 @@ export function TareasPendientesAlert({
   tareas,
   onDismiss,
   onVerAutoGestion,
-  duracionSegundos = 8
+  duracionSegundos = 8,
+  mostrarBotonAutoGestion = true
 }: TareasPendientesAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos)
   const [isImprimiendo, setIsImprimiendo] = useState(false)
@@ -182,13 +184,15 @@ export function TareasPendientesAlert({
 
           {/* Buttons */}
           <div className="mt-6 space-y-3">
-            <Button
-              onClick={onVerAutoGestion}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
-            >
-              <ClipboardList className="h-5 w-5 mr-2" />
-              Ver Todas Mis Tareas
-            </Button>
+            {mostrarBotonAutoGestion && (
+              <Button
+                onClick={onVerAutoGestion}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
+              >
+                <ClipboardList className="h-5 w-5 mr-2" />
+                Ver Todas Mis Tareas
+              </Button>
+            )}
             
             <Button
               onClick={handleImprimir}
