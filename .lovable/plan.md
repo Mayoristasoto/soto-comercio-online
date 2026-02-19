@@ -1,67 +1,72 @@
 
+# Restriccion de Autogestion: solo autenticacion facial
 
-# Horarios sabatinos individuales por empleado
+## Contexto
 
-## Problema detectado
+El kiosco tiene un estado `modoAutenticacion` que ya distingue entre `'facial'` y `'pin'`. El acceso a la pagina `/autogestion` (tareas, adelantos, saldo) ocurre en 3 puntos dentro de `KioscoCheckIn.tsx` y en ambos componentes de alerta. La solucion es bloquear esos 3 puntos cuando `modoAutenticacion === 'pin'`.
 
-Dentro de un mismo turno, hay empleados con horarios sabatinos diferentes. Por ejemplo en "Manana Marti", Vera y Lan entran a las 07:30, pero Gomez Navarrete siempre entra a las 08:30. El campo `horarios_por_dia` actual esta en `fichado_turnos` (nivel turno), asi que no permite diferenciar por empleado.
+## Puntos a modificar
 
-## Solucion
+### 1. Boton "Otras Consultas" en la pantalla de seleccion de accion
 
-### Paso 1: Agregar campo individual
+`src/pages/KioscoCheckIn.tsx` lineas 2560-2569
 
-Agregar `horarios_por_dia` (JSONB) a la tabla `empleado_turnos` para permitir excepciones por empleado. La logica sera: si el empleado tiene override en `empleado_turnos.horarios_por_dia`, usarlo; sino, usar el del turno (`fichado_turnos.horarios_por_dia`); sino, usar `hora_entrada/hora_salida` generales.
+Actualmente siempre visible. Se agrega condicion para que solo se muestre si `modoAutenticacion === 'facial'`.
 
-### Paso 2: Cargar los horarios sabatinos del turno (base)
+Si el modo es PIN, en su lugar se muestra un mensaje informativo que indica que las consultas de autogestion requieren autenticacion facial.
 
-Mantener los horarios a nivel turno como estan propuestos:
-- Manana Marti: Sabado 07:30-16:00
-- Turno 3: Sabado 07:30-16:00
-- Tarde Marti: Sabado 08:00-16:30
-- Turno 4: Sabado 07:30-14:30
+### 2. TareasPendientesAlert — boton "Ver Todas Mis Tareas"
 
-### Paso 3: Cargar excepciones individuales
+`src/components/kiosko/TareasPendientesAlert.tsx`
 
-Empleados con horario sabatino distinto al de su turno:
+Se agrega la prop opcional `mostrarBotonAutoGestion?: boolean` (default `true`). Cuando sea `false`, el boton "Ver Todas Mis Tareas" se oculta.
 
-| Empleado | Turno | Sabado individual |
-|----------|-------|-------------------|
-| Del Valle, Analia | Manana Marti | 08:00 - 16:00 |
-| Romero, Jesica | Manana Marti | 08:00 - 16:00 |
-| Gomez Navarrete, Julio | Manana Marti | 08:30 - 16:00 |
-| Conforti, Ricardo | Tarde Marti | 08:30 - 16:30 |
-| Merino, Matias | Tarde Marti | 08:30 - 16:30 |
+En `KioscoCheckIn.tsx` linea 2219-2234, se pasa `mostrarBotonAutoGestion={modoAutenticacion === 'facial'}`.
 
-Los demas empleados usan el horario sabatino del turno (sin override individual).
+### 3. TareasVencenHoyAlert — boton "Ver en Autogestion"
 
-### Paso 4: Actualizar logica de lectura
+`src/components/kiosko/TareasVencenHoyAlert.tsx`
 
-Crear una funcion auxiliar `getHorarioDelDia(turno, empleadoTurno, diaSemana)` que priorice:
-1. `empleado_turnos.horarios_por_dia[dia]` (override individual)
-2. `fichado_turnos.horarios_por_dia[dia]` (override del turno)
-3. `fichado_turnos.hora_entrada / hora_salida` (default)
+Ya es opcional (`onVerAutoGestion?`): si no se pasa, el boton no se renderiza (linea 126-130 del componente). Solo hay que dejar de pasar la prop cuando el modo es PIN.
 
-Actualizar los componentes de reportes y puntualidad para usar esta funcion.
+En `KioscoCheckIn.tsx` linea 2248-2252, se condiciona: `onVerAutoGestion={modoAutenticacion === 'facial' ? () => { ... } : undefined}`.
 
 ## Detalle tecnico
 
-### Migracion SQL
+### Archivos a modificar
 
 ```text
-ALTER TABLE empleado_turnos 
-ADD COLUMN horarios_por_dia JSONB DEFAULT NULL;
+src/pages/KioscoCheckIn.tsx          - 3 cambios (boton + 2 props condicionales)
+src/components/kiosko/TareasPendientesAlert.tsx  - 1 cambio (nueva prop opcional)
 ```
 
-### Updates de datos (via insert tool)
+### Logica central
 
-4 updates a `fichado_turnos` para horarios sabatinos base (los ya propuestos).
-
-5 updates a `empleado_turnos` para excepciones individuales con formato:
 ```text
-{"6": {"hora_entrada": "08:30", "hora_salida": "16:00"}}
+modoAutenticacion === 'facial'  →  acceso a /autogestion habilitado
+modoAutenticacion === 'pin'     →  boton ocultado / mensaje informativo
 ```
 
-### Funcion auxiliar
+### Cambio en TareasPendientesAlert
 
-Se creara `getHorarioDelDia()` en `src/lib/dateUtils.ts` y se usara en los componentes de fichaje, reportes y puntualidad.
+Se agrega prop `mostrarBotonAutoGestion?: boolean` (default `true`). El boton "Ver Todas Mis Tareas" se envuelve en `{mostrarBotonAutoGestion !== false && (...)}`.
 
+### Mensaje informativo para PIN
+
+Cuando el modo es PIN, en lugar del boton "Otras Consultas" se muestra un texto discreto:
+
+> "Para acceder a consultas personales, inicia sesion con reconocimiento facial"
+
+Esto orienta al empleado sin generar confusion.
+
+## Sin cambios en la base de datos
+
+No se requieren migraciones ni cambios en el backend. Es una restriccion puramente visual/de navegacion en el frontend.
+
+## Flujo resultante
+
+```text
+Autenticacion facial  →  ve "Otras Consultas" + botones de autogestion en alertas
+Autenticacion PIN     →  NO ve "Otras Consultas" + alertas sin boton de autogestion
+                         (mensaje informativo reemplaza el boton)
+```
