@@ -17,6 +17,23 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Support set_pin action
+    if (body.action === 'set_pin') {
+      const { empleado_id, pin } = body;
+      if (!empleado_id || !pin) throw new Error('empleado_id and pin are required');
+      const { data: hashData, error: hashError } = await supabase.rpc('hash_pin', { p_pin: pin });
+      if (hashError) throw hashError;
+      const pinHash = hashData;
+      const { data, error } = await supabase.from('empleados_pin').update({
+        pin_hash: pinHash,
+        intentos_fallidos: 0,
+        bloqueado_hasta: null,
+        activo: true
+      }).eq('empleado_id', empleado_id).select();
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, updated: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Support update action
     if (body.action === 'update') {
       const { id, changes } = body;
