@@ -3,10 +3,17 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet, Check } from "lucide-react"
+import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet, Check, CalendarIcon, Sun, Info, Loader2 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
 import { registrarActividadTarea } from "@/lib/tareasLogService"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 interface TareaPendiente {
   id: string
@@ -25,6 +32,37 @@ interface EmpleadoData {
 
 const MONTOS_ADELANTO = [10000, 20000, 50000, 100000]
 
+const getReglasActivas = () => {
+  const defaultReglas = { diciembre_bloqueado: true, receso_invernal: true, gerentes_noviembre: true }
+  try {
+    const saved = localStorage.getItem('vacaciones_reglas_activas')
+    return saved ? { ...defaultReglas, ...JSON.parse(saved) } : defaultReglas
+  } catch { return defaultReglas }
+}
+
+const validarReglasVacaciones = (inicio: Date, fin: Date): { valid: boolean; message: string } => {
+  const reglas = getReglasActivas()
+  if (reglas.diciembre_bloqueado) {
+    const startYear = inicio.getFullYear(), endYear = fin.getFullYear()
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? inicio.getMonth() : 0
+      const mEnd = y === endYear ? fin.getMonth() : 11
+      for (let m = mStart; m <= mEnd; m++) {
+        if (m === 11) return { valid: false, message: "No se pueden solicitar vacaciones en el mes de diciembre." }
+      }
+    }
+  }
+  if (reglas.receso_invernal) {
+    const anio = inicio.getFullYear()
+    const r1i = new Date(anio, 6, 20), r1f = new Date(anio, 6, 26)
+    const r2i = new Date(anio, 6, 27), r2f = new Date(anio, 7, 2)
+    if (inicio <= r1f && fin >= r1i && inicio <= r2f && fin >= r2i) {
+      return { valid: false, message: "Solo podés tomar una semana del receso invernal (20/7 al 2/8)." }
+    }
+  }
+  return { valid: true, message: '' }
+}
+
 export default function Autogestion() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -35,10 +73,18 @@ export default function Autogestion() {
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
   const [loading, setLoading] = useState(true)
   const [solicitandoAdelanto, setSolicitandoAdelanto] = useState(false)
-  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo'>('menu')
+  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo' | 'vacaciones'>('menu')
   const [consultandoSaldo, setConsultandoSaldo] = useState(false)
   const [saldoCuentaCorriente, setSaldoCuentaCorriente] = useState<any>(null)
   const [completandoTarea, setCompletandoTarea] = useState<string | null>(null)
+
+  // Estados para vacaciones
+  const [fechaInicioVac, setFechaInicioVac] = useState<Date | undefined>(undefined)
+  const [fechaFinVac, setFechaFinVac] = useState<Date | undefined>(undefined)
+  const [motivoVac, setMotivoVac] = useState("")
+  const [enviandoVacaciones, setEnviandoVacaciones] = useState(false)
+  const [warningVac, setWarningVac] = useState<string | null>(null)
+  const [conflictoVac, setConflictoVac] = useState(false)
 
   useEffect(() => {
     if (!empleadoId) {
@@ -64,6 +110,61 @@ export default function Autogestion() {
       ).catch(console.error)
     }
   }, [empleadoId])
+
+  // Validar vacaciones cuando cambian las fechas
+  useEffect(() => {
+    if (fechaInicioVac && fechaFinVac) {
+      const reglas = validarReglasVacaciones(fechaInicioVac, fechaFinVac)
+      if (!reglas.valid) { setWarningVac(`🚫 ${reglas.message}`); setConflictoVac(true); return }
+      const checkConflicts = async () => {
+        try {
+          const { data: emp } = await supabase.from('empleados').select('puesto, sucursal_id').eq('id', empleadoId!).single()
+          if (!emp?.puesto || !emp?.sucursal_id) { setWarningVac(null); setConflictoVac(false); return }
+          const { data: solicitudes } = await supabase
+            .from('solicitudes_vacaciones')
+            .select(`id, fecha_inicio, fecha_fin, estado, empleados!solicitudes_vacaciones_empleado_id_fkey(nombre, apellido, puesto, sucursal_id)`)
+            .neq('empleado_id', empleadoId!)
+            .or(`and(fecha_inicio.lte.${fechaFinVac.toISOString().split('T')[0]},fecha_fin.gte.${fechaInicioVac.toISOString().split('T')[0]})`)
+            .in('estado', ['pendiente', 'aprobada'])
+          const conflictos = solicitudes?.filter((s: any) => s.empleados?.puesto === emp.puesto && s.empleados?.sucursal_id === emp.sucursal_id)
+          if (conflictos && conflictos.length > 0) {
+            const aprobadas = conflictos.filter((c: any) => c.estado === 'aprobada')
+            const pendientes = conflictos.filter((c: any) => c.estado === 'pendiente')
+            if (aprobadas.length > 0) {
+              setWarningVac(`⚠️ CONFLICTO: ${aprobadas.map((c: any) => `${c.empleados.nombre} ${c.empleados.apellido}`).join(', ')} ya tiene vacaciones aprobadas en estas fechas.`)
+              setConflictoVac(true)
+            } else if (pendientes.length > 0) {
+              setWarningVac(`ℹ️ AVISO: ${pendientes.map((c: any) => `${c.empleados.nombre} ${c.empleados.apellido}`).join(', ')} tiene una solicitud pendiente para estas fechas.`)
+              setConflictoVac(false)
+            } else { setWarningVac(null); setConflictoVac(false) }
+          } else { setWarningVac(null); setConflictoVac(false) }
+        } catch { setWarningVac(null); setConflictoVac(false) }
+      }
+      checkConflicts()
+    } else { setWarningVac(null); setConflictoVac(false) }
+  }, [fechaInicioVac, fechaFinVac, empleadoId])
+
+  const solicitarVacaciones = async () => {
+    if (!fechaInicioVac || !fechaFinVac) { toast({ title: "Error", description: "Seleccioná las fechas de inicio y fin", variant: "destructive" }); return }
+    if (fechaFinVac < fechaInicioVac) { toast({ title: "Error", description: "La fecha de fin debe ser posterior a la de inicio", variant: "destructive" }); return }
+    const reglas = validarReglasVacaciones(fechaInicioVac, fechaFinVac)
+    if (!reglas.valid) { toast({ title: "No se puede solicitar", description: reglas.message, variant: "destructive" }); return }
+    if (conflictoVac) { toast({ title: "No se puede solicitar", description: "Ya existe una solicitud aprobada para estas fechas en tu puesto y sucursal", variant: "destructive" }); return }
+    setEnviandoVacaciones(true)
+    try {
+      const { data: bloqueos } = await supabase.from('vacaciones_bloqueos').select('*').eq('activo', true)
+        .lte('fecha_inicio', fechaFinVac.toISOString().split('T')[0]).gte('fecha_fin', fechaInicioVac.toISOString().split('T')[0])
+      if (bloqueos && bloqueos.length > 0) { toast({ title: "Periodo bloqueado", description: `Las fechas están bloqueadas: ${bloqueos[0].motivo}`, variant: "destructive" }); return }
+      const { error } = await supabase.from('solicitudes_vacaciones').insert({
+        empleado_id: empleadoId!, fecha_inicio: fechaInicioVac.toISOString().split('T')[0],
+        fecha_fin: fechaFinVac.toISOString().split('T')[0], motivo: motivoVac || null, estado: 'pendiente',
+      })
+      if (error) throw error
+      toast({ title: "✅ Solicitud enviada", description: "Tu solicitud de vacaciones fue enviada correctamente", duration: 4000 })
+      setFechaInicioVac(undefined); setFechaFinVac(undefined); setMotivoVac(""); setVistaActual('menu')
+    } catch { toast({ title: "Error", description: "No se pudo enviar la solicitud", variant: "destructive" })
+    } finally { setEnviandoVacaciones(false) }
+  }
 
   const cargarDatosEmpleado = async () => {
     try {
@@ -412,10 +513,29 @@ export default function Autogestion() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setVistaActual('vacaciones')}
+            >
+              <CardContent className="p-8">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-orange-100 p-4 rounded-full">
+                    <Sun className="h-8 w-8 text-orange-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900">Solicitar Vacaciones</h3>
+                    <p className="text-gray-600 mt-1">
+                      Solicitá tus días de vacaciones
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
-        {/* Vista de Saldo */}
+
         {vistaActual === 'saldo' && (
           <Card>
             <CardHeader>
@@ -582,7 +702,100 @@ export default function Autogestion() {
             </CardContent>
           </Card>
         )}
+
+        {/* Vista de Vacaciones */}
+        {vistaActual === 'vacaciones' && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Sun className="h-6 w-6 text-orange-500" />
+                  <span>Solicitar Vacaciones</span>
+                </CardTitle>
+                <Button variant="outline" onClick={() => setVistaActual('menu')}>
+                  Volver
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-5">
+              {/* Reglas activas */}
+              {(() => {
+                const reglas = getReglasActivas()
+                const activeRules = [
+                  reglas.diciembre_bloqueado && "No se pueden solicitar vacaciones en diciembre.",
+                  reglas.receso_invernal && "Del receso invernal (20/7 al 2/8) solo se puede tomar 1 semana.",
+                ].filter(Boolean)
+                if (activeRules.length === 0) return null
+                return (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-foreground text-sm mb-1">Reglas de vacaciones</p>
+                      <ul className="list-disc list-inside space-y-0.5">
+                        {activeRules.map((rule, i) => <li key={i}>{rule}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Warning / conflicto */}
+              {warningVac && (
+                <div className={`p-4 rounded-lg border-2 ${conflictoVac ? 'bg-destructive/10 border-destructive text-destructive' : 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-900/20 dark:text-amber-100'}`}>
+                  <p className="text-sm font-medium">{warningVac}</p>
+                </div>
+              )}
+
+              {/* Fecha Inicio */}
+              <div className="space-y-2">
+                <Label>Fecha de Inicio</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !fechaInicioVac && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fechaInicioVac ? format(fechaInicioVac, "PPP", { locale: es }) : <span>Seleccioná una fecha</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={fechaInicioVac} onSelect={setFechaInicioVac}
+                      disabled={(date) => date < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Fecha Fin */}
+              <div className="space-y-2">
+                <Label>Fecha de Fin</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !fechaFinVac && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fechaFinVac ? format(fechaFinVac, "PPP", { locale: es }) : <span>Seleccioná una fecha</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={fechaFinVac} onSelect={setFechaFinVac}
+                      disabled={(date) => date < (fechaInicioVac || new Date())} initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Motivo */}
+              <div className="space-y-2">
+                <Label htmlFor="motivoVac">Motivo (opcional)</Label>
+                <Textarea id="motivoVac" placeholder="Describe el motivo de tu solicitud"
+                  value={motivoVac} onChange={(e) => setMotivoVac(e.target.value)} rows={3} />
+              </div>
+
+              {/* Botón enviar */}
+              <Button onClick={solicitarVacaciones} disabled={enviandoVacaciones || !fechaInicioVac || !fechaFinVac || conflictoVac} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                {enviandoVacaciones ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</> : "Solicitar Vacaciones"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
 }
+
