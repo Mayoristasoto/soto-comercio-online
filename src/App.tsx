@@ -72,6 +72,7 @@ import InstructivoDelegacionTareas from "./pages/InstructivoDelegacionTareas";
 import Instructivo from "./pages/Instructivo";
 import EditorFechasIngreso from "./pages/EditorFechasIngreso";
 import TestKioskoAlertas from "./pages/TestKioskoAlertas";
+import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
 
 const queryClient = new QueryClient();
 
@@ -209,6 +210,7 @@ const App = () => (
           <Route path="/dashboard-demo" element={<DashboardDemo />} />
           <Route path="/kiosco-demo" element={<KioscoDemo />} />
           <Route path="/test-kiosco-alertas" element={<TestKioskoAlertas />} />
+          <Route path="/reporte-gerentes-tarde" element={<ReporteLlegadasTardeGerentes />} />
           
           {/* Calificación de empleados (página pública) */}
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />
