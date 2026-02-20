@@ -1,143 +1,116 @@
 
-# Unificar asignación de documentos obligatorios por puesto
+# Reporte de Llegadas Tarde de Gerentes de Sucursal (descargable en XLSX)
 
-## Diagnóstico del estado actual
+## Contexto del problema
 
-Hay dos sistemas paralelos desconectados:
+El usuario quiere un reporte específico de **gerentes de sucursal** con:
+- Detalle de cada llegada tarde día por día
+- Total de minutos tarde por gerente
+- Porcentaje de días con llegada tarde
+- Exportable en XLSX
 
-1. **`documentos_obligatorios` + `asignaciones_documentos_obligatorios`**: para documentos globales (Reglamento Interno). La asignación es manual, empleado por empleado, sin relación con el puesto.
+Los datos ya existen en `empleado_cruces_rojas` con `tipo_infraccion = 'llegada_tarde'`. Ya confirmé con la base de datos real que hay 3 gerentes con incidencias en febrero 2026:
+- **Julio Gomez Navarrete** (José Martí): 5 llegadas, 731 min totales, 25% de los días
+- **Carlos Espina** (José Martí): 6 llegadas, 128 min totales, 30% de los días
+- **Analia Del valle** (Juan B. Justo): 1 llegada, 34 min totales, 5% de los días
 
-2. **`puesto_documentos`**: manuales por puesto cargados en PuestoManagement. Estos NO se asignan automáticamente a los empleados como documentos obligatorios a firmar.
+## Solución
 
-El usuario quiere un flujo unificado donde:
-- El **Reglamento Interno** se asigne a todos los empleados (o a los nuevos) con un solo click
-- Cada **Manual de Puesto** se asigne automáticamente a los empleados de ese puesto
-- Todo se gestione desde un solo lugar
+Se crea una nueva página `src/pages/ReporteLlegadasTardeGerentes.tsx` accesible desde el sidebar/navegación, con toda la funcionalidad de reporte.
 
-## Solución: nuevo componente "Gestión de Documentos Obligatorios"
+## Estructura del Excel descargable
 
-Se crea un componente unificado `GestionDocumentosObligatorios` que reemplaza los dos tabs actuales (`mandatory-docs` y `assignments`) con una experiencia centralizada de 3 secciones en tabs internos:
+El archivo XLSX tendrá **3 hojas**:
 
-### Tab 1 - Documentos (catálogo)
-Lista de todos los documentos en `documentos_obligatorios`, con botón para crear/editar y tipo. Sin cambios aquí.
+**Hoja 1 - "Resumen"**: Una fila por gerente con:
+| Gerente | Sucursal | Días tarde | % Días tarde | Total minutos tarde | Promedio min/día tarde |
 
-### Tab 2 - Reglas de asignación por puesto (NUEVO)
-Una tabla que muestra cada puesto activo y qué documentos obligatorios tiene asignados como regla automática. Se soporta mediante una nueva tabla `documento_puesto_reglas`:
+**Hoja 2 - "Detalle por Día"**: Una fila por cada llegada tarde con:
+| Gerente | Sucursal | Fecha | Día semana | Hora programada | Hora real | Minutos tarde |
 
-```text
-documento_puesto_reglas
-  id          uuid PK
-  documento_id uuid FK → documentos_obligatorios
-  puesto_id    uuid FK → puestos (nullable = aplica a todos)
-  created_at   timestamp
-```
+**Hoja 3 - "Calendario"**: Vista matricial donde cada columna es un día del mes y cada fila es un gerente, con el valor de minutos en la celda (vacío si llegó a tiempo).
 
-Si `puesto_id` es NULL = el documento aplica a **todos** los puestos (Reglamento Interno).
-Si `puesto_id` tiene valor = aplica solo a ese puesto (Manual de Cajero, etc.).
+## Detalle técnico del componente
 
-### Tab 3 - Asignaciones individuales
-El `DocumentAssignments` actual mejorado, que además muestra si la asignación vino de una regla automática.
-
-### Acción clave: "Asignar según reglas"
-Un botón que ejecuta la lógica:
-1. Lee todas las reglas en `documento_puesto_reglas`
-2. Para cada empleado activo, busca qué documentos le corresponden (su puesto + los globales)
-3. Crea los registros en `asignaciones_documentos_obligatorios` que falten (sin duplicar)
-4. También activa el flag `debe_firmar_documentos_iniciales = true` en los empleados afectados
-
-## Cambios en la base de datos
-
-### Migración: nueva tabla `documento_puesto_reglas`
-
-```sql
-CREATE TABLE documento_puesto_reglas (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  documento_id uuid NOT NULL REFERENCES documentos_obligatorios(id) ON DELETE CASCADE,
-  puesto_id uuid REFERENCES puestos(id) ON DELETE CASCADE, -- NULL = todos los puestos
-  created_at timestamp with time zone DEFAULT now()
-);
-
--- Índice único para evitar duplicados
-CREATE UNIQUE INDEX ON documento_puesto_reglas(documento_id, puesto_id) WHERE puesto_id IS NOT NULL;
-CREATE UNIQUE INDEX ON documento_puesto_reglas(documento_id) WHERE puesto_id IS NULL;
-
-ALTER TABLE documento_puesto_reglas ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "admin_rrhh puede gestionar reglas" ON documento_puesto_reglas
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM empleados e WHERE e.user_id = auth.uid() AND e.rol = 'admin_rrhh'
-    )
-  );
-```
-
-## Archivos a crear/modificar
-
-### Nuevo archivo: `src/components/admin/GestionDocumentosObligatorios.tsx`
-
-Componente principal unificado con 3 tabs:
-
-**Tab "Documentos"**: Reusa `MandatoryDocuments` internamente.
-
-**Tab "Reglas por Puesto"** (nueva lógica principal):
-- Una fila por puesto activo + una fila especial "Todos los puestos"
-- Columnas: Puesto | Documentos asignados | Acción agregar
-- Permite con un select agregar/quitar documentos de la regla por puesto
-- Muestra cuántos empleados tiene ese puesto
-- Botón global **"Aplicar reglas a empleados"** que llama a la función de asignación masiva
-
-**Tab "Estado de asignaciones"**: Reusa `DocumentAssignments` internamente.
-
-### Modificación: `src/pages/Nomina.tsx`
-
-Reemplazar los dos tabs `mandatory-docs` y `assignments` por un solo tab `doc-obligatorios` que carga `GestionDocumentosObligatorios`.
-
-## Flujo de trabajo resultante
-
-```text
-Admin entra a Nómina → tab "Doc. Obligatorios"
-  ├── Tab "Documentos": crea/edita documentos (Reglamento, manuales, etc.)
-  ├── Tab "Reglas por Puesto":
-  │     ├── Fila "Todos los puestos" → asigna Reglamento Interno aquí
-  │     ├── Fila "Cajero" → asigna Manual de Cajero aquí
-  │     ├── Fila "Vendedor" → asigna Manual de Vendedor aquí
-  │     └── [Botón] "Aplicar reglas" → genera asignaciones individuales
-  └── Tab "Asignaciones": ve el estado por empleado (firmado/pendiente)
-```
-
-## Detalle técnico: lógica "Aplicar reglas"
-
+### Estados
 ```typescript
-// Pseudocódigo de la función masiva
-const aplicarReglas = async () => {
-  // 1. Obtener todas las reglas
-  const reglas = await supabase.from('documento_puesto_reglas').select('*')
-  
-  // 2. Obtener empleados activos con su puesto_id
-  const empleados = await supabase.from('empleados')
-    .select('id, puesto_id').eq('activo', true)
-  
-  // 3. Para cada empleado, calcular qué documentos le corresponden
-  for (const emp of empleados) {
-    const docsAplicables = reglas.filter(r => 
-      r.puesto_id === null ||        // regla global
-      r.puesto_id === emp.puesto_id  // regla de su puesto
-    )
-    
-    // 4. Insertar asignaciones faltantes
-    for (const regla of docsAplicables) {
-      // upsert ignora duplicados con ON CONFLICT DO NOTHING
-    }
-    
-    // 5. Activar flag de firma obligatoria
-    if (docsAplicables.length > 0) {
-      await supabase.from('empleados')
-        .update({ debe_firmar_documentos_iniciales: true })
-        .eq('id', emp.id)
-    }
-  }
+const [fechaDesde, setFechaDesde] = useState(inicio del mes actual)
+const [fechaHasta, setFechaHasta] = useState(hoy)
+const [gerentes, setGerentes] = useState<GerenteReporte[]>([])
+const [loading, setLoading] = useState(true)
+const [diasHabiles, setDiasHabiles] = useState(20) // configurable
+```
+
+### Interface de datos
+```typescript
+interface LlegadaTarde {
+  fecha: string
+  minutos: number
+  observaciones: string // contiene hora programada y hora real
+}
+
+interface GerenteReporte {
+  id: string
+  nombre: string
+  apellido: string
+  sucursal: string
+  llegadasTarde: LlegadaTarde[]
+  totalMinutos: number
+  cantidadVeces: number
+  porcentaje: number
 }
 ```
 
-## Sin impacto en el flujo del empleado
+### Query a Supabase
+```typescript
+supabase
+  .from('empleado_cruces_rojas')
+  .select(`
+    id, empleado_id, fecha_infraccion, minutos_diferencia, observaciones,
+    empleados!empleado_cruces_rojas_empleado_id_fkey(
+      nombre, apellido, rol, sucursales(nombre)
+    )
+  `)
+  .eq('tipo_infraccion', 'llegada_tarde')
+  .eq('anulada', false)
+  .gte('fecha_infraccion', fechaDesde)
+  .lte('fecha_infraccion', fechaHasta + 'T23:59:59')
+  .eq('empleados.rol', 'gerente_sucursal') // filtro en JS post-query
+```
 
-El componente `ForcedDocumentSigning` que ya existe seguirá funcionando sin cambios: sigue leyendo `asignaciones_documentos_obligatorios` como antes. La nueva tabla de reglas solo cambia cómo se generan esas asignaciones, no cómo se consumen.
+### Extracción de hora real desde observaciones
+El campo `observaciones` tiene formato: `"Llegada tarde en kiosco: 10:37 a. m. (programado: 10:30, tolerancia: 1 min)"`, entonces se parsea con regex para extraer:
+- Hora real: primer match de hora al inicio
+- Hora programada: valor después de "programado:"
+
+### UI del componente
+
+**Cabecera**: título + selector de fechas (desde/hasta) + campo "Días hábiles del período" (editable para el % de cálculo) + botón "Descargar XLSX"
+
+**Tabla de resumen** (cards con métricas):
+- Total gerentes con incidencias
+- Total llegadas tarde
+- Total minutos acumulados
+- Gerente con más incidencias
+
+**Tabla principal** con columnas expandibles:
+| Gerente | Sucursal | Llegadas Tarde | Total Min | % Días Tarde | Días detalle... |
+- Cada fila puede expandirse para ver el detalle día a día
+- Los días con > 60 minutos se marcan en rojo
+- Los días con 1-30 minutos en amarillo
+
+**Función de exportación XLSX** con 3 hojas como se describió arriba, columnas con anchos configurados y header row destacado.
+
+## Archivos a modificar
+
+### 1. Nuevo archivo: `src/pages/ReporteLlegadasTardeGerentes.tsx`
+Componente completo con todas las funcionalidades descritas.
+
+### 2. `src/App.tsx`
+Agregar import y ruta `/reporte-gerentes-tarde` protegida (solo admin_rrhh).
+
+### 3. `src/components/AppSidebar.tsx` (o `UnifiedSidebar.tsx`)
+Agregar enlace al reporte en la sección de Fichero/Reportes para admin_rrhh.
+
+## Sin cambios en base de datos
+Toda la información ya existe en `empleado_cruces_rojas`. No se requieren migraciones.
