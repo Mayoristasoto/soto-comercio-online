@@ -36,10 +36,20 @@ Deno.serve(async (req) => {
 
     // Support update action
     if (body.action === 'update') {
-      const { id, changes } = body;
-      const { data, error } = await supabase.from('tareas').update(changes).eq('id', id).select();
+      const { id, changes, tabla } = body;
+      const targetTable = tabla || 'tareas';
+      const { data, error } = await supabase.from(targetTable).update(changes).eq('id', id).select();
       if (error) throw error;
       return new Response(JSON.stringify({ success: true, updated: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Support generic insert action
+    if (body.action === 'insert') {
+      const { tabla, datos } = body;
+      if (!tabla || !datos) throw new Error('tabla and datos are required');
+      const { data, error } = await supabase.from(tabla).insert(datos).select();
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, inserted: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Default: batch insert
