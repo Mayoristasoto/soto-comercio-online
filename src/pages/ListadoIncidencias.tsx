@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, Search, Clock, Coffee, AlertTriangle, Calendar, Trash2 } from "lucide-react";
+import { FileText, Download, Search, Clock, Coffee, AlertTriangle, Calendar, Trash2, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
@@ -13,6 +13,9 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generarReporteLlegadasTarde } from "@/utils/reporteLlegadasTardePDF";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +46,8 @@ const ListadoIncidencias = () => {
   const [motivoAnulacion, setMotivoAnulacion] = useState("");
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [anulando, setAnulando] = useState(false);
+  const [empleadoReporte, setEmpleadoReporte] = useState<string>("");
+  const [generandoReporte, setGenerandoReporte] = useState(false);
   const [fechaDesde, setFechaDesde] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() - 1);
@@ -137,10 +142,32 @@ const ListadoIncidencias = () => {
     }
   };
 
+  // Unique employees for report dropdown
+  const empleadosUnicos = Array.from(
+    new Map(incidencias.map((inc) => [inc.empleado_id, { id: inc.empleado_id, nombre: inc.empleado_nombre, apellido: inc.empleado_apellido }])).values()
+  ).sort((a, b) => `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`));
+
   const incidenciasFiltradas = incidencias.filter((inc) => {
     const nombreCompleto = `${inc.empleado_nombre} ${inc.empleado_apellido}`.toLowerCase();
     return nombreCompleto.includes(searchTerm.toLowerCase());
   });
+
+  const handleGenerarReporte = async () => {
+    if (!empleadoReporte) {
+      toast.error("Seleccioná un empleado para generar el reporte");
+      return;
+    }
+    setGenerandoReporte(true);
+    try {
+      await generarReporteLlegadasTarde(empleadoReporte, fechaDesde, fechaHasta);
+      toast.success("Reporte PDF generado correctamente");
+    } catch (error: any) {
+      console.error("Error al generar reporte:", error);
+      toast.error(error.message || "Error al generar el reporte");
+    } finally {
+      setGenerandoReporte(false);
+    }
+  };
 
   const handleAnular = async () => {
     if (!incidenciaAEliminar) return;
@@ -262,7 +289,7 @@ const ListadoIncidencias = () => {
             Filtros
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -287,6 +314,31 @@ const ListadoIncidencias = () => {
                 onChange={(e) => setFechaHasta(e.target.value)}
               />
             </div>
+          </div>
+          <div className="flex flex-col md:flex-row gap-3 items-end border-t pt-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-1 block">Reporte de Llegadas Tarde por Empleado</label>
+              <Select value={empleadoReporte} onValueChange={setEmpleadoReporte}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar empleado..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {empleadosUnicos.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.apellido} {emp.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={handleGenerarReporte}
+              disabled={!empleadoReporte || generandoReporte}
+              variant="default"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              {generandoReporte ? "Generando..." : "Generar Reporte PDF"}
+            </Button>
           </div>
         </CardContent>
       </Card>
