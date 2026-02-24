@@ -150,6 +150,72 @@ export type Database = {
           },
         ]
       }
+      asignacion_empleado_sucursal: {
+        Row: {
+          created_at: string | null
+          empleado_id: string
+          fecha_desde: string
+          fecha_hasta: string | null
+          id: string
+          porcentaje_distribucion: number
+          sucursal_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          empleado_id: string
+          fecha_desde: string
+          fecha_hasta?: string | null
+          id?: string
+          porcentaje_distribucion: number
+          sucursal_id: string
+        }
+        Update: {
+          created_at?: string | null
+          empleado_id?: string
+          fecha_desde?: string
+          fecha_hasta?: string | null
+          id?: string
+          porcentaje_distribucion?: number
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asignacion_empleado_sucursal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignacion_empleado_sucursal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignacion_empleado_sucursal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignacion_empleado_sucursal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignacion_empleado_sucursal_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asignaciones_capacitacion: {
         Row: {
           capacitacion_id: string
@@ -925,6 +991,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      centros_costo: {
+        Row: {
+          activo: boolean | null
+          created_at: string | null
+          id: string
+          nombre: string
+          sucursal_id: string | null
+          tipo: Database["public"]["Enums"]["centro_costo_tipo"]
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nombre: string
+          sucursal_id?: string | null
+          tipo?: Database["public"]["Enums"]["centro_costo_tipo"]
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nombre?: string
+          sucursal_id?: string | null
+          tipo?: Database["public"]["Enums"]["centro_costo_tipo"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "centros_costo_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conceptos_liquidacion: {
         Row: {
@@ -1938,12 +2042,15 @@ export type Database = {
           activo: boolean
           apellido: string
           avatar_url: string | null
+          centro_costo_id: string | null
           created_at: string
+          cuil: string | null
           debe_cambiar_password: boolean
           debe_firmar_documentos_iniciales: boolean | null
           dias_laborales_semana: number
           dni: string | null
           email: string
+          fecha_baja: string | null
           fecha_ingreso: string
           grupo_id: string | null
           horas_jornada_estandar: number | null
@@ -1963,12 +2070,15 @@ export type Database = {
           activo?: boolean
           apellido: string
           avatar_url?: string | null
+          centro_costo_id?: string | null
           created_at?: string
+          cuil?: string | null
           debe_cambiar_password?: boolean
           debe_firmar_documentos_iniciales?: boolean | null
           dias_laborales_semana?: number
           dni?: string | null
           email: string
+          fecha_baja?: string | null
           fecha_ingreso?: string
           grupo_id?: string | null
           horas_jornada_estandar?: number | null
@@ -1988,12 +2098,15 @@ export type Database = {
           activo?: boolean
           apellido?: string
           avatar_url?: string | null
+          centro_costo_id?: string | null
           created_at?: string
+          cuil?: string | null
           debe_cambiar_password?: boolean
           debe_firmar_documentos_iniciales?: boolean | null
           dias_laborales_semana?: number
           dni?: string | null
           email?: string
+          fecha_baja?: string | null
           fecha_ingreso?: string
           grupo_id?: string | null
           horas_jornada_estandar?: number | null
@@ -2010,6 +2123,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "empleados_centro_costo_id_fkey"
+            columns: ["centro_costo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_costo"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "empleados_grupo_id_fkey"
             columns: ["grupo_id"]
@@ -5143,6 +5263,65 @@ export type Database = {
           },
         ]
       }
+      periodos_contables: {
+        Row: {
+          cerrado_por: string | null
+          created_at: string | null
+          estado: Database["public"]["Enums"]["periodo_estado"] | null
+          fecha_cierre: string | null
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+        }
+        Insert: {
+          cerrado_por?: string | null
+          created_at?: string | null
+          estado?: Database["public"]["Enums"]["periodo_estado"] | null
+          fecha_cierre?: string | null
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+        }
+        Update: {
+          cerrado_por?: string | null
+          created_at?: string | null
+          estado?: Database["public"]["Enums"]["periodo_estado"] | null
+          fecha_cierre?: string | null
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodos_contables_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "periodos_contables_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "periodos_contables_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "periodos_contables_cerrado_por_fkey"
+            columns: ["cerrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planificacion_semanal: {
         Row: {
           creado_por: string | null
@@ -6401,6 +6580,7 @@ export type Database = {
           activa: boolean
           ciudad: string | null
           created_at: string
+          cuit: string | null
           direccion: string | null
           id: string
           nombre: string
@@ -6411,6 +6591,7 @@ export type Database = {
           activa?: boolean
           ciudad?: string | null
           created_at?: string
+          cuit?: string | null
           direccion?: string | null
           id?: string
           nombre: string
@@ -6421,6 +6602,7 @@ export type Database = {
           activa?: boolean
           ciudad?: string | null
           created_at?: string
+          cuit?: string | null
           direccion?: string | null
           id?: string
           nombre?: string
@@ -8066,6 +8248,12 @@ export type Database = {
         | "otro"
       asignacion_estado: "pendiente" | "entregado"
       beneficiario_tipo: "empleado" | "grupo"
+      centro_costo_tipo:
+        | "operativo"
+        | "ventas"
+        | "administrativo"
+        | "deposito"
+        | "otro"
       concepto_categoria: "haberes" | "descuentos" | "contribuciones"
       concepto_tipo: "remunerativo" | "no_remunerativo" | "deduccion"
       desafio_estado: "borrador" | "activo" | "finalizado"
@@ -8087,6 +8275,7 @@ export type Database = {
         | "pagada"
         | "cerrada"
       movimiento_tipo: "egreso" | "ajuste" | "ingreso"
+      periodo_estado: "abierto" | "cerrado"
       premio_tipo:
         | "fisico"
         | "digital"
@@ -8245,6 +8434,13 @@ export const Constants = {
       ],
       asignacion_estado: ["pendiente", "entregado"],
       beneficiario_tipo: ["empleado", "grupo"],
+      centro_costo_tipo: [
+        "operativo",
+        "ventas",
+        "administrativo",
+        "deposito",
+        "otro",
+      ],
       concepto_categoria: ["haberes", "descuentos", "contribuciones"],
       concepto_tipo: ["remunerativo", "no_remunerativo", "deduccion"],
       desafio_estado: ["borrador", "activo", "finalizado"],
@@ -8268,6 +8464,7 @@ export const Constants = {
         "cerrada",
       ],
       movimiento_tipo: ["egreso", "ajuste", "ingreso"],
+      periodo_estado: ["abierto", "cerrado"],
       premio_tipo: [
         "fisico",
         "digital",
