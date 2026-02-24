@@ -1,26 +1,57 @@
 
-## Plan: Limpiar todas las tareas y empezar desde cero
 
-### Que se va a eliminar
+## Plan: Generar PDF de llegadas tarde de Matias Merino
 
-| Tabla | Registros | Accion |
-|-------|-----------|--------|
-| `tareas` | 26 tareas | Eliminar todas |
-| `tareas_generadas_log` | 14 logs | Eliminar todos |
-| `tareas_plantillas` | 5 plantillas | Resetear `ultima_generacion` a null (mantener las plantillas) |
+### Resumen
+Crear una nueva utilidad PDF (`reporteLlegadasTardePDF.ts`) y un boton en la pagina de incidencias (o una pagina/componente dedicado) que genere un reporte imprimible con todas las llegadas tarde de un empleado especifico, incluyendo las aclaraciones y observaciones del mensaje anterior.
 
-### Plantillas existentes (se mantienen)
-1. **Reposicion exhibidor cigarrillos** - diaria, activa
-2. **Control Ofertas** - semanal_flexible, activa
-3. **Apagado de luces** - diaria, inactiva
-4. **Limpieza de area de trabajo** - semanal, activa
-5. **Control Stock Cigarrillos** - diaria, activa
+### Enfoque
+Crear un archivo `src/utils/reporteLlegadasTardePDF.ts` que genere un PDF profesional con:
 
-### Pasos
-1. Eliminar todos los registros de `tareas_generadas_log` (para que el generador no crea que ya genero tareas)
-2. Eliminar todas las tareas de la tabla `tareas`
-3. Resetear `ultima_generacion` en todas las plantillas a null
-4. La proxima ejecucion del cron (06:00 UTC) generara tareas frescas
+1. **Portada**: Logo SOTO, titulo "Reporte de Llegadas Tarde", nombre del empleado, periodo
+2. **Resumen ejecutivo**: Total de llegadas tarde, promedio de retraso, dias con mayor retraso
+3. **Tabla detallada**: Las 20 llegadas tarde con fecha, hora programada, hora real, minutos de retraso, justificacion
+4. **Observaciones/Aclaraciones**: 
+   - Patron de retrasos menores (1-7 min) vs criticos (30+ min)
+   - Dias criticos destacados: 06/02 (266 min), 05/02 (155 min)
+   - Total de llegadas sin justificar: 20/20
+   - Nota sobre frecuencia constante del patron
+5. **Pie de pagina**: Fecha de generacion, firma del gerente, firma del empleado (espacios en blanco para firmar)
 
-### Nota
-Las plantillas se mantienen intactas para que puedan seguir generando tareas automaticamente. Solo se borran las tareas generadas y sus logs.
+### Archivos a crear
+- `src/utils/reporteLlegadasTardePDF.ts` - Generador del PDF
+
+### Archivos a modificar
+- `src/pages/ListadoIncidencias.tsx` - Agregar boton para generar el PDF filtrado por empleado
+
+### Detalle tecnico
+
+**Datos a consultar via Supabase:**
+```text
+fichajes_tardios -> filtrar por empleado_id de Matias Merino
+Campos: fecha, hora_programada, hora_real, minutos_retraso, justificado
+```
+
+**Estructura del PDF:**
+```text
+Pagina 1: Portada + Resumen
+  - SOTO mayorista
+  - "Reporte de Llegadas Tarde"
+  - Empleado: Matias Esteban Merino
+  - Periodo: 14/01/2026 - 24/02/2026
+  - Resumen: 20 llegadas, 0 justificadas, promedio ~27 min
+
+Pagina 2+: Tabla detallada
+  # | Fecha | Hora Programada | Hora Real | Retraso | Justificado
+  1 | 24/02 | 10:30           | 11:09     | 39 min  | No
+  ...
+
+Pagina final: Observaciones + Firmas
+  - Aclaraciones del reporte
+  - Espacio firma gerente
+  - Espacio firma empleado
+  - "Acuse de recibo" para que el empleado firme
+```
+
+**Generacion:** Se invocara directamente consultando fichajes_tardios y generando el PDF con jsPDF + autoTable, reutilizando PDF_STYLES y COMPANY_INFO existentes.
+
