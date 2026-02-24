@@ -52,6 +52,24 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true, inserted: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Support delete action
+    if (body.action === 'delete') {
+      const { tabla, filtros } = body;
+      if (!tabla) throw new Error('tabla is required');
+      let query = supabase.from(tabla).delete();
+      if (filtros && typeof filtros === 'object') {
+        for (const [key, value] of Object.entries(filtros)) {
+          query = query.eq(key, value);
+        }
+      } else {
+        // Delete all - need at least a filter for safety, use gte on id
+        query = query.gte('id', '00000000-0000-0000-0000-000000000000');
+      }
+      const { data, error } = await query.select();
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, deleted: data?.length || 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Default: batch insert
     const { tareas } = body;
     if (!tareas || !Array.isArray(tareas) || tareas.length === 0) {
