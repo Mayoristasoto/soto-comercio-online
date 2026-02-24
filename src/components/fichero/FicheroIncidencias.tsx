@@ -22,13 +22,15 @@ import {
   Filter,
   X,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Printer
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { isAdminRole } from "@/lib/authSecurity"
 import { Separator } from "@/components/ui/separator"
 import { ExportButton } from "@/components/ui/export-button"
+import { generarReporteLlegadasTarde } from "@/utils/reporteLlegadasTardePDF"
 
 interface FicheroIncidenciasProps {
   empleado: {
@@ -96,6 +98,11 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const [selectedIncidencias, setSelectedIncidencias] = useState<Array<{id: string, tipo: 'tardio' | 'pausa'}>>([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [isRecalculating, setIsRecalculating] = useState(false)
+  const [empleadoReporte, setEmpleadoReporte] = useState('')
+  const [generandoReporte, setGenerandoReporte] = useState(false)
+  const [fechaDesdeReporte, setFechaDesdeReporte] = useState('')
+  const [fechaHastaReporte, setFechaHastaReporte] = useState('')
+  const [empleadosUnicos, setEmpleadosUnicos] = useState<Array<{id: string, nombre: string, apellido: string}>>([])
   const [formData, setFormData] = useState({
     tipo: '' as 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | '',
     descripcion: '',
@@ -108,6 +115,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
     cargarFichajesToday()
     cargarPausasExcedidas()
     cargarUserRole()
+    cargarEmpleadosParaReporte()
   }, [empleado.id])
 
   const cargarUserRole = async () => {
@@ -125,6 +133,49 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
       setUserRole(data?.rol || '')
     } catch (error) {
       console.error('Error cargando rol:', error)
+    }
+  }
+
+  const cargarEmpleadosParaReporte = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('empleados')
+        .select('id, nombre, apellido')
+        .eq('activo', true)
+        .order('apellido')
+
+      if (error) throw error
+      setEmpleadosUnicos(data || [])
+    } catch (error) {
+      console.error('Error cargando empleados para reporte:', error)
+    }
+  }
+
+  const handleGenerarReporte = async () => {
+    if (!empleadoReporte || !fechaDesdeReporte || !fechaHastaReporte) {
+      toast({
+        title: "Datos incompletos",
+        description: "Seleccione empleado y rango de fechas para generar el reporte",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setGenerandoReporte(true)
+    try {
+      await generarReporteLlegadasTarde(empleadoReporte, fechaDesdeReporte, fechaHastaReporte)
+      toast({
+        title: "Reporte generado",
+        description: "El PDF de llegadas tarde se descargó correctamente",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo generar el reporte",
+        variant: "destructive"
+      })
+    } finally {
+      setGenerandoReporte(false)
     }
   }
 
@@ -667,6 +718,65 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
         </Dialog>
         </div>
       </div>
+
+      {/* Generar Reporte PDF de Llegadas Tarde */}
+      {isAdminRole(userRole) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Printer className="h-5 w-5" />
+              Generar Reporte PDF de Llegadas Tarde
+            </CardTitle>
+            <CardDescription>
+              Seleccione un empleado y el rango de fechas para generar un reporte imprimible
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="space-y-1.5 min-w-[200px]">
+                <Label>Empleado</Label>
+                <Select value={empleadoReporte} onValueChange={setEmpleadoReporte}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar empleado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empleadosUnicos.map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.apellido}, {emp.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Desde</Label>
+                <Input
+                  type="date"
+                  value={fechaDesdeReporte}
+                  onChange={e => setFechaDesdeReporte(e.target.value)}
+                  className="w-[160px]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Hasta</Label>
+                <Input
+                  type="date"
+                  value={fechaHastaReporte}
+                  onChange={e => setFechaHastaReporte(e.target.value)}
+                  className="w-[160px]"
+                />
+              </div>
+              <Button
+                onClick={handleGenerarReporte}
+                disabled={generandoReporte || !empleadoReporte || !fechaDesdeReporte || !fechaHastaReporte}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                {generandoReporte ? 'Generando...' : 'Generar Reporte PDF'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Llegadas tardías de hoy */}
       <Card className="border-orange-200 bg-orange-50">
