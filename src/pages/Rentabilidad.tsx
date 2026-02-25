@@ -8,6 +8,9 @@ import ParametrosCargasSociales from "@/components/rentabilidad/ParametrosCargas
 import GastosSucursal from "@/components/rentabilidad/GastosSucursal";
 import FacturacionSucursal from "@/components/rentabilidad/FacturacionSucursal";
 import PartesHoras from "@/components/rentabilidad/PartesHoras";
+import ImportadorF931 from "@/components/rentabilidad/ImportadorF931";
+import DashboardRentabilidad from "@/components/rentabilidad/DashboardRentabilidad";
+import CierrePeriodo from "@/components/rentabilidad/CierrePeriodo";
 
 const tabs = [
   { id: "periodos", label: "Períodos", icon: Calendar },
@@ -72,13 +75,13 @@ export default function Rentabilidad() {
           <PartesHoras />
         </TabsContent>
         <TabsContent value="f931">
-          <ComingSoon label="Importador F931" />
+          <ImportadorF931 />
         </TabsContent>
         <TabsContent value="dashboard">
-          <ComingSoon label="Dashboard de Rentabilidad" />
+          <DashboardRentabilidad />
         </TabsContent>
         <TabsContent value="cierre">
-          <ComingSoon label="Cierre de Período" />
+          <CierrePeriodo />
         </TabsContent>
       </Tabs>
     </div>
