@@ -111,32 +111,28 @@ export default function Autogestion() {
     }
   }, [empleadoId])
 
-  // Validar vacaciones cuando cambian las fechas
+  // Validar vacaciones cuando cambian las fechas (usando RPC para bypass RLS en kiosco)
   useEffect(() => {
     if (fechaInicioVac && fechaFinVac) {
       const reglas = validarReglasVacaciones(fechaInicioVac, fechaFinVac)
       if (!reglas.valid) { setWarningVac(`🚫 ${reglas.message}`); setConflictoVac(true); return }
       const checkConflicts = async () => {
         try {
-          const { data: emp } = await supabase.from('empleados').select('puesto, sucursal_id').eq('id', empleadoId!).single()
-          if (!emp?.puesto || !emp?.sucursal_id) { setWarningVac(null); setConflictoVac(false); return }
-          const { data: solicitudes } = await supabase
-            .from('solicitudes_vacaciones')
-            .select(`id, fecha_inicio, fecha_fin, estado, empleados!solicitudes_vacaciones_empleado_id_fkey(nombre, apellido, puesto, sucursal_id)`)
-            .neq('empleado_id', empleadoId!)
-            .or(`and(fecha_inicio.lte.${fechaFinVac.toISOString().split('T')[0]},fecha_fin.gte.${fechaInicioVac.toISOString().split('T')[0]})`)
-            .in('estado', ['pendiente', 'aprobada'])
-          const conflictos = solicitudes?.filter((s: any) => s.empleados?.puesto === emp.puesto && s.empleados?.sucursal_id === emp.sucursal_id)
-          if (conflictos && conflictos.length > 0) {
-            const aprobadas = conflictos.filter((c: any) => c.estado === 'aprobada')
-            const pendientes = conflictos.filter((c: any) => c.estado === 'pendiente')
-            if (aprobadas.length > 0) {
-              setWarningVac(`⚠️ CONFLICTO: ${aprobadas.map((c: any) => `${c.empleados.nombre} ${c.empleados.apellido}`).join(', ')} ya tiene vacaciones aprobadas en estas fechas.`)
-              setConflictoVac(true)
-            } else if (pendientes.length > 0) {
-              setWarningVac(`ℹ️ AVISO: ${pendientes.map((c: any) => `${c.empleados.nombre} ${c.empleados.apellido}`).join(', ')} tiene una solicitud pendiente para estas fechas.`)
-              setConflictoVac(false)
-            } else { setWarningVac(null); setConflictoVac(false) }
+          const { data, error } = await supabase.rpc('kiosk_check_vacaciones_conflictos', {
+            p_empleado_id: empleadoId!,
+            p_fecha_inicio: fechaInicioVac.toISOString().split('T')[0],
+            p_fecha_fin: fechaFinVac.toISOString().split('T')[0],
+          })
+          if (error) { console.error('Error checking conflicts:', error); setWarningVac(null); setConflictoVac(false); return }
+          const result = data as any
+          if (result.has_conflict) {
+            const nombres = (result.aprobadas as any[]).map((c: any) => c.nombre).join(', ')
+            setWarningVac(`⚠️ CONFLICTO: ${nombres} ya tiene vacaciones aprobadas en estas fechas.`)
+            setConflictoVac(true)
+          } else if (result.has_warning) {
+            const nombres = (result.pendientes as any[]).map((c: any) => c.nombre).join(', ')
+            setWarningVac(`ℹ️ AVISO: ${nombres} tiene una solicitud pendiente para estas fechas.`)
+            setConflictoVac(false)
           } else { setWarningVac(null); setConflictoVac(false) }
         } catch { setWarningVac(null); setConflictoVac(false) }
       }
@@ -152,14 +148,18 @@ export default function Autogestion() {
     if (conflictoVac) { toast({ title: "No se puede solicitar", description: "Ya existe una solicitud aprobada para estas fechas en tu puesto y sucursal", variant: "destructive" }); return }
     setEnviandoVacaciones(true)
     try {
-      const { data: bloqueos } = await supabase.from('vacaciones_bloqueos').select('*').eq('activo', true)
-        .lte('fecha_inicio', fechaFinVac.toISOString().split('T')[0]).gte('fecha_fin', fechaInicioVac.toISOString().split('T')[0])
-      if (bloqueos && bloqueos.length > 0) { toast({ title: "Periodo bloqueado", description: `Las fechas están bloqueadas: ${bloqueos[0].motivo}`, variant: "destructive" }); return }
-      const { error } = await supabase.from('solicitudes_vacaciones').insert({
-        empleado_id: empleadoId!, fecha_inicio: fechaInicioVac.toISOString().split('T')[0],
-        fecha_fin: fechaFinVac.toISOString().split('T')[0], motivo: motivoVac || null, estado: 'pendiente',
+      const { data, error } = await supabase.rpc('kiosk_solicitar_vacaciones', {
+        p_empleado_id: empleadoId!,
+        p_fecha_inicio: fechaInicioVac.toISOString().split('T')[0],
+        p_fecha_fin: fechaFinVac.toISOString().split('T')[0],
+        p_motivo: motivoVac || null,
       })
       if (error) throw error
+      const result = data as any
+      if (!result.success) {
+        toast({ title: "No se puede solicitar", description: result.error, variant: "destructive" })
+        return
+      }
       toast({ title: "✅ Solicitud enviada", description: "Tu solicitud de vacaciones fue enviada correctamente", duration: 4000 })
       setFechaInicioVac(undefined); setFechaFinVac(undefined); setMotivoVac(""); setVistaActual('menu')
     } catch { toast({ title: "Error", description: "No se pudo enviar la solicitud", variant: "destructive" })
