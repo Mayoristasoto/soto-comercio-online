@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Building2, Calendar, DollarSign, FileText, BarChart3, Clock, Receipt, Upload, Lock, TrendingUp } from "lucide-react";
 import PeriodosContables from "@/components/rentabilidad/PeriodosContables";
 import CentrosCosto from "@/components/rentabilidad/CentrosCosto";
+import CargaSueldos from "@/components/rentabilidad/CargaSueldos";
+import ParametrosCargasSociales from "@/components/rentabilidad/ParametrosCargasSociales";
 
 const tabs = [
   { id: "periodos", label: "Períodos", icon: Calendar },
@@ -52,10 +54,10 @@ export default function Rentabilidad() {
           <CentrosCosto />
         </TabsContent>
         <TabsContent value="sueldos">
-          <ComingSoon label="Carga de Sueldos" />
+          <CargaSueldos />
         </TabsContent>
         <TabsContent value="cargas-sociales">
-          <ComingSoon label="Parámetros de Cargas Sociales" />
+          <ParametrosCargasSociales />
         </TabsContent>
         <TabsContent value="gastos">
           <ComingSoon label="Gastos por Sucursal" />
