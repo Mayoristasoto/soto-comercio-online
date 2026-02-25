@@ -8468,6 +8468,14 @@ export type Database = {
           tiene_pin: boolean
         }[]
       }
+      kiosk_check_vacaciones_conflictos: {
+        Args: {
+          p_empleado_id: string
+          p_fecha_fin: string
+          p_fecha_inicio: string
+        }
+        Returns: Json
+      }
       kiosk_es_primer_checkin_del_dia: {
         Args: { p_empleado_id: string }
         Returns: boolean
@@ -8583,6 +8591,15 @@ export type Database = {
           p_tipo_infraccion: string
         }
         Returns: string
+      }
+      kiosk_solicitar_vacaciones: {
+        Args: {
+          p_empleado_id: string
+          p_fecha_fin: string
+          p_fecha_inicio: string
+          p_motivo?: string
+        }
+        Returns: Json
       }
       kiosk_upload_facial_photo: {
         Args: { p_empleado_id: string; p_photo_url: string }
