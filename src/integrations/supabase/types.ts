@@ -992,6 +992,82 @@ export type Database = {
         }
         Relationships: []
       }
+      cargas_sociales_calculadas: {
+        Row: {
+          base_calculo: number
+          created_at: string | null
+          detalle_por_concepto: Json | null
+          empleado_id: string
+          id: string
+          parametro_id: string | null
+          periodo_id: string
+          total_cargas: number
+        }
+        Insert: {
+          base_calculo: number
+          created_at?: string | null
+          detalle_por_concepto?: Json | null
+          empleado_id: string
+          id?: string
+          parametro_id?: string | null
+          periodo_id: string
+          total_cargas: number
+        }
+        Update: {
+          base_calculo?: number
+          created_at?: string | null
+          detalle_por_concepto?: Json | null
+          empleado_id?: string
+          id?: string
+          parametro_id?: string | null
+          periodo_id?: string
+          total_cargas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargas_sociales_calculadas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargas_sociales_calculadas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargas_sociales_calculadas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargas_sociales_calculadas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargas_sociales_calculadas_parametro_id_fkey"
+            columns: ["parametro_id"]
+            isOneToOne: false
+            referencedRelation: "parametros_cargas_sociales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargas_sociales_calculadas_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos_contables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       centros_costo: {
         Row: {
           activo: boolean | null
@@ -3271,6 +3347,60 @@ export type Database = {
           },
         ]
       }
+      facturacion_sucursal: {
+        Row: {
+          canal: string | null
+          cantidad_tickets: number | null
+          created_at: string | null
+          fecha: string
+          id: string
+          iva: number | null
+          monto_neto: number
+          periodo_id: string
+          sucursal_id: string
+          total: number
+        }
+        Insert: {
+          canal?: string | null
+          cantidad_tickets?: number | null
+          created_at?: string | null
+          fecha: string
+          id?: string
+          iva?: number | null
+          monto_neto: number
+          periodo_id: string
+          sucursal_id: string
+          total: number
+        }
+        Update: {
+          canal?: string | null
+          cantidad_tickets?: number | null
+          created_at?: string | null
+          fecha?: string
+          id?: string
+          iva?: number | null
+          monto_neto?: number
+          periodo_id?: string
+          sucursal_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facturacion_sucursal_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos_contables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturacion_sucursal_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feriado_empleados_asignados: {
         Row: {
           asignado_por: string | null
@@ -4061,6 +4191,76 @@ export type Database = {
           },
         ]
       }
+      gastos_sucursal: {
+        Row: {
+          categoria: string
+          centro_costo_id: string | null
+          comprobante_url: string | null
+          created_at: string | null
+          descripcion: string | null
+          fecha: string
+          id: string
+          impuestos: number | null
+          monto_neto: number
+          monto_total: number
+          periodo_id: string
+          proveedor: string | null
+          sucursal_id: string
+        }
+        Insert: {
+          categoria: string
+          centro_costo_id?: string | null
+          comprobante_url?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          fecha: string
+          id?: string
+          impuestos?: number | null
+          monto_neto: number
+          monto_total: number
+          periodo_id: string
+          proveedor?: string | null
+          sucursal_id: string
+        }
+        Update: {
+          categoria?: string
+          centro_costo_id?: string | null
+          comprobante_url?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          fecha?: string
+          id?: string
+          impuestos?: number | null
+          monto_neto?: number
+          monto_total?: number
+          periodo_id?: string
+          proveedor?: string | null
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_sucursal_centro_costo_id_fkey"
+            columns: ["centro_costo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_costo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_sucursal_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos_contables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastos_sucursal_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gondolas: {
         Row: {
           brand: string | null
@@ -4615,6 +4815,84 @@ export type Database = {
           },
         ]
       }
+      importacion_f931: {
+        Row: {
+          archivo_origen: string | null
+          created_at: string | null
+          cuil: string
+          datos_importados: Json
+          diferencias: Json | null
+          empleado_id: string | null
+          errores: string[] | null
+          estado: string | null
+          id: string
+          periodo_id: string
+          validado: boolean | null
+        }
+        Insert: {
+          archivo_origen?: string | null
+          created_at?: string | null
+          cuil: string
+          datos_importados: Json
+          diferencias?: Json | null
+          empleado_id?: string | null
+          errores?: string[] | null
+          estado?: string | null
+          id?: string
+          periodo_id: string
+          validado?: boolean | null
+        }
+        Update: {
+          archivo_origen?: string | null
+          created_at?: string | null
+          cuil?: string
+          datos_importados?: Json
+          diferencias?: Json | null
+          empleado_id?: string | null
+          errores?: string[] | null
+          estado?: string | null
+          id?: string
+          periodo_id?: string
+          validado?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "importacion_f931_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacion_f931_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacion_f931_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacion_f931_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacion_f931_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos_contables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insignias: {
         Row: {
           activa: boolean
@@ -5149,6 +5427,133 @@ export type Database = {
             columns: ["puesto_id"]
             isOneToOne: false
             referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parametros_cargas_sociales: {
+        Row: {
+          alicuota_art: number | null
+          alicuota_jubilacion: number | null
+          alicuota_ley19032: number | null
+          alicuota_obra_social: number | null
+          created_at: string | null
+          descripcion: string | null
+          id: string
+          otras_alicuotas: Json | null
+          tipo_regimen: string
+          tope_base: number | null
+          vigencia_desde: string
+          vigencia_hasta: string | null
+        }
+        Insert: {
+          alicuota_art?: number | null
+          alicuota_jubilacion?: number | null
+          alicuota_ley19032?: number | null
+          alicuota_obra_social?: number | null
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          otras_alicuotas?: Json | null
+          tipo_regimen?: string
+          tope_base?: number | null
+          vigencia_desde: string
+          vigencia_hasta?: string | null
+        }
+        Update: {
+          alicuota_art?: number | null
+          alicuota_jubilacion?: number | null
+          alicuota_ley19032?: number | null
+          alicuota_obra_social?: number | null
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          otras_alicuotas?: Json | null
+          tipo_regimen?: string
+          tope_base?: number | null
+          vigencia_desde?: string
+          vigencia_hasta?: string | null
+        }
+        Relationships: []
+      }
+      partes_horas: {
+        Row: {
+          ausencias: number | null
+          created_at: string | null
+          empleado_id: string
+          fecha: string
+          horas_extra: number | null
+          horas_normales: number | null
+          id: string
+          observaciones: string | null
+          periodo_id: string | null
+          sucursal_id: string
+        }
+        Insert: {
+          ausencias?: number | null
+          created_at?: string | null
+          empleado_id: string
+          fecha: string
+          horas_extra?: number | null
+          horas_normales?: number | null
+          id?: string
+          observaciones?: string | null
+          periodo_id?: string | null
+          sucursal_id: string
+        }
+        Update: {
+          ausencias?: number | null
+          created_at?: string | null
+          empleado_id?: string
+          fecha?: string
+          horas_extra?: number | null
+          horas_normales?: number | null
+          id?: string
+          observaciones?: string | null
+          periodo_id?: string | null
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partes_horas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partes_horas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partes_horas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partes_horas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partes_horas_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos_contables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partes_horas_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
             referencedColumns: ["id"]
           },
         ]
@@ -5755,6 +6160,48 @@ export type Database = {
         }
         Relationships: []
       }
+      prorrateo_gastos: {
+        Row: {
+          created_at: string | null
+          gasto_id: string
+          id: string
+          monto: number
+          porcentaje: number
+          sucursal_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          gasto_id: string
+          id?: string
+          monto: number
+          porcentaje: number
+          sucursal_id: string
+        }
+        Update: {
+          created_at?: string | null
+          gasto_id?: string
+          id?: string
+          monto?: number
+          porcentaje?: number
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prorrateo_gastos_gasto_id_fkey"
+            columns: ["gasto_id"]
+            isOneToOne: false
+            referencedRelation: "gastos_sucursal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prorrateo_gastos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       puesto_documentos: {
         Row: {
           activo: boolean
@@ -6232,6 +6679,69 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      snapshots_periodo: {
+        Row: {
+          costo_operativo_total: number | null
+          created_at: string | null
+          datos_completos: Json | null
+          facturacion_total: number | null
+          id: string
+          margen_operativo: number | null
+          periodo_id: string
+          resultado_operativo: number | null
+          sucursal_id: string
+          total_cargas_sociales: number | null
+          total_costo_laboral: number | null
+          total_gastos: number | null
+          total_sueldos: number | null
+        }
+        Insert: {
+          costo_operativo_total?: number | null
+          created_at?: string | null
+          datos_completos?: Json | null
+          facturacion_total?: number | null
+          id?: string
+          margen_operativo?: number | null
+          periodo_id: string
+          resultado_operativo?: number | null
+          sucursal_id: string
+          total_cargas_sociales?: number | null
+          total_costo_laboral?: number | null
+          total_gastos?: number | null
+          total_sueldos?: number | null
+        }
+        Update: {
+          costo_operativo_total?: number | null
+          created_at?: string | null
+          datos_completos?: Json | null
+          facturacion_total?: number | null
+          id?: string
+          margen_operativo?: number | null
+          periodo_id?: string
+          resultado_operativo?: number | null
+          sucursal_id?: string
+          total_cargas_sociales?: number | null
+          total_costo_laboral?: number | null
+          total_gastos?: number | null
+          total_sueldos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snapshots_periodo_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos_contables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "snapshots_periodo_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       solicitudes: {
         Row: {
