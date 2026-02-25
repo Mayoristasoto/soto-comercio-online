@@ -73,6 +73,7 @@ import Instructivo from "./pages/Instructivo";
 import EditorFechasIngreso from "./pages/EditorFechasIngreso";
 import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
+import Rentabilidad from "./pages/Rentabilidad";
 
 const queryClient = new QueryClient();
 
@@ -185,6 +186,9 @@ const App = () => (
               <Route path="editor-fechas-ingreso" element={<EditorFechasIngreso />} />
             </Route>
             
+            {/* Módulo Finanzas / Rentabilidad */}
+            <Route path="finanzas/rentabilidad" element={<Rentabilidad />} />
+
             {/* Métricas de Fichaje */}
             <Route path="fichaje-metricas" element={<FichajeMetricas />} />
             <Route path="operaciones/fichero/metricas" element={<FichajeMetricas />} />
