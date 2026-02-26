@@ -21,7 +21,7 @@ export function LlegadaTardeAlert({
   minutosRetraso,
   toleranciaMinutos,
   onDismiss,
-  duracionSegundos = 5,
+  duracionSegundos = 2,
   registrado = false
 }: LlegadaTardeAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos);

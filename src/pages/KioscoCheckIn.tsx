@@ -1469,6 +1469,23 @@ export default function KioscoCheckIn() {
           console.error('Error reproduciendo audio:', error)
         }
         
+        // 📰 Fetch novedades before showing tareas
+        if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
+          try {
+            const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+              p_empleado_id: empleadoParaFichaje.id,
+            })
+            if (novedadesData && novedadesData.length > 0) {
+              setNovedadesPendientes(novedadesData)
+              setShowNovedadesAlert(true)
+              setShowFacialAuth(false)
+              return
+            }
+          } catch (err) {
+            console.error('Error fetching novedades:', err)
+          }
+        }
+
         // 📋 Mostrar alerta de tareas pendientes si hay tareas
         if (tareas && tareas.length > 0) {
           setShowTareasPendientesAlert(true)
@@ -2204,7 +2221,7 @@ export default function KioscoCheckIn() {
             setShowCrucesRojasAlert(false)
             setShowActionSelection(true)
           }}
-          duracionSegundos={5}
+          duracionSegundos={2}
         />
       )}
 
@@ -2215,17 +2232,31 @@ export default function KioscoCheckIn() {
           minutosUsados={pausaExcedidaInfo.minutosUsados}
           minutosPermitidos={pausaExcedidaInfo.minutosPermitidos}
           registrado={pausaExcedidaInfo.registrado}
-          onDismiss={() => {
+          onDismiss={async () => {
             setShowPausaExcedidaAlert(false)
             setPausaExcedidaInfo(null)
-            // Si hay tareas pendientes, mostrar el modal en lugar de resetear
+            // Fetch novedades before continuing
+            if (registroExitoso) {
+              try {
+                const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+                  p_empleado_id: registroExitoso.empleado.id,
+                })
+                if (novedadesData && novedadesData.length > 0) {
+                  setNovedadesPendientes(novedadesData)
+                  setShowNovedadesAlert(true)
+                  return
+                }
+              } catch (err) {
+                console.error('Error fetching novedades after pausa:', err)
+              }
+            }
             if (tareasPendientes.length > 0) {
               setShowTareasPendientesAlert(true)
             } else {
               resetKiosco()
             }
           }}
-          duracionSegundos={3}
+          duracionSegundos={2}
         />
       )}
 
@@ -2238,17 +2269,31 @@ export default function KioscoCheckIn() {
           minutosRetraso={llegadaTardeInfo.minutosRetraso}
           toleranciaMinutos={llegadaTardeInfo.toleranciaMinutos}
           registrado={llegadaTardeInfo.registrado}
-          onDismiss={() => {
+          onDismiss={async () => {
             setShowLlegadaTardeAlert(false)
             setLlegadaTardeInfo(null)
-            // Si hay tareas pendientes, mostrar el modal en lugar de resetear
+            // Fetch novedades before continuing
+            if (registroExitoso) {
+              try {
+                const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+                  p_empleado_id: registroExitoso.empleado.id,
+                })
+                if (novedadesData && novedadesData.length > 0) {
+                  setNovedadesPendientes(novedadesData)
+                  setShowNovedadesAlert(true)
+                  return
+                }
+              } catch (err) {
+                console.error('Error fetching novedades after llegada tarde:', err)
+              }
+            }
             if (tareasPendientes.length > 0) {
               setShowTareasPendientesAlert(true)
             } else {
               resetKiosco()
             }
           }}
-          duracionSegundos={5}
+          duracionSegundos={2}
         />
       )}
 
