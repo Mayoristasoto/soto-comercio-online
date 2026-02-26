@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { FileText, Plus, Edit, Trash2, Users, CheckCircle, Upload, Eye, X, Loader2, UserPlus } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Users, CheckCircle, Upload, Eye, X, Loader2, UserPlus, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DocumentoObligatorio {
@@ -48,6 +48,7 @@ export function MandatoryDocuments() {
   const [unassignedMap, setUnassignedMap] = useState<Record<string, { employees: { id: string; nombre: string; apellido: string }[]; loading: boolean }>>({});
   const [showUnassigned, setShowUnassigned] = useState<Record<string, boolean>>({});
   const [assigningEmployee, setAssigningEmployee] = useState<string | null>(null);
+  const [searchUnassigned, setSearchUnassigned] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     titulo: "",
     descripcion: "",
@@ -757,9 +758,25 @@ export function MandatoryDocuments() {
                                 ) : !unassigned || unassigned.employees.length === 0 ? (
                                   <p className="text-xs text-muted-foreground">Todos los empleados ya están asignados</p>
                                 ) : (
-                                  <ScrollArea className="max-h-40">
+                                  <>
+                                  <div className="relative">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                                    <Input
+                                      placeholder="Buscar empleado..."
+                                      className="h-7 text-xs pl-7"
+                                      value={searchUnassigned[doc.id] || ''}
+                                      onChange={e => setSearchUnassigned(prev => ({ ...prev, [doc.id]: e.target.value }))}
+                                    />
+                                  </div>
+                                  <ScrollArea className="max-h-48">
                                     <ul className="space-y-1">
-                                      {unassigned.employees.map(emp => (
+                                      {unassigned.employees
+                                        .filter(emp => {
+                                          const q = (searchUnassigned[doc.id] || '').toLowerCase();
+                                          if (!q) return true;
+                                          return `${emp.nombre} ${emp.apellido}`.toLowerCase().includes(q);
+                                        })
+                                        .map(emp => (
                                         <li key={emp.id} className="flex items-center justify-between text-sm">
                                           <span>{emp.apellido}, {emp.nombre}</span>
                                           <Button
@@ -775,6 +792,7 @@ export function MandatoryDocuments() {
                                       ))}
                                     </ul>
                                   </ScrollArea>
+                                  </>
                                 )}
                               </div>
                             )}
