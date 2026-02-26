@@ -1,27 +1,14 @@
 
 
-## Plan: Replace + button with inline employee assignment
+## Plan: Add search filter to unassigned employees list
 
-The current + button tries to switch tabs via DOM query, which doesn't work. Instead, when clicking +, show a list of unassigned employees directly inside the popover, with checkboxes to assign them.
+### File: `src/components/admin/MandatoryDocuments.tsx`
 
-### Implementation in `src/components/admin/MandatoryDocuments.tsx`
+1. **Add state** `searchUnassigned: Record<string, string>` to track search text per document.
 
-1. **Add new state** for unassigned employees per document:
-   - `unassignedMap: Record<string, { employees: {id, nombre, apellido}[], loading: boolean }>`
+2. **Add search input** (with `Search` icon from lucide) right after the "Agregar empleados" heading (line 754), before the employee list.
 
-2. **Add `loadUnassigned(documentoId)` function**:
-   - Fetch assigned employee IDs from `asignaciones_documentos_obligatorios`
-   - Fetch all active employees from `empleados`
-   - Filter out already-assigned ones
-   - Store in `unassignedMap[documentoId]`
+3. **Filter the unassigned list** by the search term — match against `nombre` and `apellido` (case-insensitive).
 
-3. **Add `assignEmployee(documentoId, empleadoId)` function**:
-   - Insert into `asignaciones_documentos_obligatorios`
-   - Set `debe_firmar_documentos_iniciales = true` on the employee
-   - Refresh stats, assigned list, and unassigned list
-
-4. **Replace the + button behavior**:
-   - On click, toggle a "show unassigned" section within the same popover
-   - Show a scrollable list of unassigned employees with a + button next to each name
-   - After assigning, remove from unassigned list and add to assigned list
+4. **Increase ScrollArea height** from `max-h-40` to `max-h-48` for better usability.
 
