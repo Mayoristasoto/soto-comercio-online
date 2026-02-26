@@ -1,27 +1,26 @@
 
 
-## Problem
+## Problema
 
-The Role Preview shows a **flat list** of all `app_pages` items, while the actual sidebar renders them **hierarchically** (parents with children). This means the admin sees mismatched items -- parent groups like "RRHH", "Operaciones" appear alongside their children as separate flat items, which doesn't reflect the real sidebar experience.
+La **Vista Roles** muestra items y estructura que no coinciden exactamente con lo que el sidebar real muestra para cada rol. El preview no usa la misma lógica de filtrado que `useSidebarLinks`, causando discrepancias visibles.
 
-Additionally, toggling a parent item doesn't automatically affect its children's visibility, creating inconsistencies.
+Diferencias detectadas en los datos:
+- El preview carga TODAS las páginas visibles sin filtrar por rol, lo cual es correcto para mostrar switches, pero la estructura y agrupación puede diferir de lo que realmente se ve
+- Algunos items en la BD tienen roles como `"admin"` (sin `_rrhh`) lo que genera inconsistencias en el filtrado
+- El preview no refleja visualmente cuáles items están activos vs inactivos de forma clara (los items OFF se ven muy similares a los ON)
 
 ## Plan
 
-### Fix RolePreview sidebar to match actual sidebar structure
+**Archivo: `src/components/admin/RolePreview.tsx`**
 
-**File: `src/components/admin/RolePreview.tsx`**
+1. Mejorar la diferenciación visual entre items habilitados y deshabilitados: los deshabilitados se renderizan con texto tachado, opacidad reducida, y el switch claramente en OFF
+2. Agregar un mini-preview del sidebar real al costado: una columna que muestra exactamente lo que el rol seleccionado vería (usando la misma lógica de filtrado que `useSidebarLinks` -- solo items donde `roles_permitidos` contiene el rol)
+3. Al hacer toggle, actualizar ambas vistas en tiempo real (el panel de switches y el mini-preview)
+4. Agregar indicador de cantidad de items visibles vs totales en el encabezado ("8 de 25 items visibles para Gerente")
 
-1. Build hierarchical tree from `app_pages` (same logic as `useSidebarLinks`): group by `parent_id`, attach children to parents, render only root items at top level
-2. Render children indented under their parent with their own switches
-3. When toggling a parent group on/off, also toggle all its children for that role (batch update)
-4. Show the tree with collapsible sections matching the real sidebar visual structure (RRHH > Fichero > sub-items, etc.)
+**No se necesitan cambios de base de datos.**
 
-No database changes needed -- only UI refactor of how items are displayed and toggled.
-
-### Files modified
-
-| File | Change |
-|------|--------|
-| `src/components/admin/RolePreview.tsx` | Refactor sidebar section to render hierarchical tree with indented children, batch toggle for parent groups |
+| Archivo | Cambio |
+|---------|--------|
+| `src/components/admin/RolePreview.tsx` | Agregar mini-preview real del sidebar, mejorar diferenciación visual ON/OFF |
 
