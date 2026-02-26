@@ -55,7 +55,7 @@ export function CrucesRojasKioscoAlert({
   pausasExcedidas,
   detalles,
   onDismiss,
-  duracionSegundos = 5
+  duracionSegundos = 2
 }: CrucesRojasAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos);
   const [isShaking, setIsShaking] = useState(true);
