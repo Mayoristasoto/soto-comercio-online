@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { FileText, Plus, Edit, Trash2, Users, CheckCircle, Upload, Eye, X, Loader2 } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Users, CheckCircle, Upload, Eye, X, Loader2, UserPlus } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DocumentoObligatorio {
   id: string;
@@ -44,6 +45,9 @@ export function MandatoryDocuments() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [employeeDetailsMap, setEmployeeDetailsMap] = useState<Record<string, { names: string[]; loading: boolean }>>({});
+  const [unassignedMap, setUnassignedMap] = useState<Record<string, { employees: { id: string; nombre: string; apellido: string }[]; loading: boolean }>>({});
+  const [showUnassigned, setShowUnassigned] = useState<Record<string, boolean>>({});
+  const [assigningEmployee, setAssigningEmployee] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     titulo: "",
     descripcion: "",
@@ -156,6 +160,64 @@ export function MandatoryDocuments() {
     } catch (error) {
       console.error('Error loading employee details:', error);
       setEmployeeDetailsMap(prev => ({ ...prev, [key]: { names: [], loading: false } }));
+    }
+  };
+
+  const loadUnassigned = async (documentoId: string) => {
+    setUnassignedMap(prev => ({ ...prev, [documentoId]: { employees: [], loading: true } }));
+    try {
+      const { data: asignaciones } = await supabase
+        .from('asignaciones_documentos_obligatorios')
+        .select('empleado_id')
+        .eq('documento_id', documentoId)
+        .eq('activa', true);
+
+      const assignedIds = new Set(asignaciones?.map(a => a.empleado_id) || []);
+
+      const { data: allEmpleados } = await supabase
+        .from('empleados')
+        .select('id, nombre, apellido')
+        .eq('activo', true)
+        .order('apellido');
+
+      const unassigned = (allEmpleados || []).filter(e => !assignedIds.has(e.id));
+      setUnassignedMap(prev => ({ ...prev, [documentoId]: { employees: unassigned, loading: false } }));
+    } catch (error) {
+      console.error('Error loading unassigned:', error);
+      setUnassignedMap(prev => ({ ...prev, [documentoId]: { employees: [], loading: false } }));
+    }
+  };
+
+  const assignEmployee = async (documentoId: string, empleadoId: string) => {
+    setAssigningEmployee(empleadoId);
+    try {
+      const { error } = await supabase
+        .from('asignaciones_documentos_obligatorios')
+        .insert({ documento_id: documentoId, empleado_id: empleadoId });
+
+      if (error) throw error;
+
+      await supabase
+        .from('empleados')
+        .update({ debe_firmar_documentos_iniciales: true })
+        .eq('id', empleadoId);
+
+      setUnassignedMap(prev => ({
+        ...prev,
+        [documentoId]: {
+          ...prev[documentoId],
+          employees: prev[documentoId].employees.filter(e => e.id !== empleadoId)
+        }
+      }));
+
+      loadStats();
+      loadEmployeeDetails(documentoId, 'asignados');
+      toast.success('Empleado asignado correctamente');
+    } catch (error) {
+      console.error('Error assigning employee:', error);
+      toast.error('Error al asignar empleado');
+    } finally {
+      setAssigningEmployee(null);
     }
   };
 
@@ -652,14 +714,14 @@ export function MandatoryDocuments() {
                       </Badge>
                     </TableCell>
                      <TableCell>
-                      {(() => { const details = employeeDetailsMap[`${doc.id}-asignados`]; return (
-                      <Popover onOpenChange={(open) => { if (open) loadEmployeeDetails(doc.id, 'asignados'); }}>
+                      {(() => { const details = employeeDetailsMap[`${doc.id}-asignados`]; const unassigned = unassignedMap[doc.id]; const isShowingUnassigned = showUnassigned[doc.id]; return (
+                      <Popover onOpenChange={(open) => { if (open) { loadEmployeeDetails(doc.id, 'asignados'); } else { setShowUnassigned(prev => ({ ...prev, [doc.id]: false })); } }}>
                         <PopoverTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-auto p-1 font-medium hover:underline">
                             {stat?.total_asignados || 0}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-64">
+                        <PopoverContent className="w-72">
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <h4 className="font-semibold text-sm">Empleados Asignados</h4>
@@ -668,8 +730,9 @@ export function MandatoryDocuments() {
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={() => {
-                                  const tabEl = document.querySelector('[data-value="assignments"]') as HTMLElement;
-                                  if (tabEl) tabEl.click();
+                                  const newVal = !isShowingUnassigned;
+                                  setShowUnassigned(prev => ({ ...prev, [doc.id]: newVal }));
+                                  if (newVal && !unassigned) loadUnassigned(doc.id);
                                 }}
                               >
                                 <Plus className="h-3 w-3" />
@@ -680,11 +743,40 @@ export function MandatoryDocuments() {
                             ) : !details || details.names.length === 0 ? (
                               <p className="text-sm text-muted-foreground">Sin asignaciones</p>
                             ) : (
-                              <ul className="space-y-1 max-h-48 overflow-y-auto">
+                              <ul className="space-y-1 max-h-32 overflow-y-auto">
                                 {details.names.map((name, i) => (
                                   <li key={i} className="text-sm flex items-center gap-1"><Users className="h-3 w-3 text-muted-foreground" />{name}</li>
                                 ))}
                               </ul>
+                            )}
+                            {isShowingUnassigned && (
+                              <div className="border-t pt-2 space-y-2">
+                                <h5 className="font-semibold text-sm flex items-center gap-1"><UserPlus className="h-3 w-3" /> Agregar empleados</h5>
+                                {unassigned?.loading ? (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando...</div>
+                                ) : !unassigned || unassigned.employees.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground">Todos los empleados ya están asignados</p>
+                                ) : (
+                                  <ScrollArea className="max-h-40">
+                                    <ul className="space-y-1">
+                                      {unassigned.employees.map(emp => (
+                                        <li key={emp.id} className="flex items-center justify-between text-sm">
+                                          <span>{emp.apellido}, {emp.nombre}</span>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0"
+                                            disabled={assigningEmployee === emp.id}
+                                            onClick={() => assignEmployee(doc.id, emp.id)}
+                                          >
+                                            {assigningEmployee === emp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                                          </Button>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </ScrollArea>
+                                )}
+                              </div>
                             )}
                           </div>
                         </PopoverContent>
