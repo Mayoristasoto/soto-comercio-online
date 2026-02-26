@@ -2070,6 +2070,22 @@ export default function KioscoCheckIn() {
       }
     }
 
+    // 6.5 Fetch novedades (only on entrada)
+    if (tipoAccion === 'entrada') {
+      try {
+        const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+          p_empleado_id: empleadoId,
+        })
+        if (novedadesData && novedadesData.length > 0) {
+          setNovedadesPendientes(novedadesData)
+          setShowNovedadesAlert(true)
+          return // Flow continues when alert is dismissed
+        }
+      } catch (err) {
+        console.error('[PIN] Error fetching novedades:', err)
+      }
+    }
+
     // 7. Audio + tareas pendientes
     if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
       try {
