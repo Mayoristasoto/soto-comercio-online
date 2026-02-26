@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -25,6 +26,7 @@ import {
   BarChart3,
   Settings,
   Eye,
+  ChevronRight,
 } from "lucide-react"
 
 interface AppPage {
@@ -37,6 +39,10 @@ interface AppPage {
   mostrar_en_sidebar: boolean | null
   parent_id: string | null
   orden: number
+}
+
+interface AppPageNode extends AppPage {
+  children: AppPageNode[]
 }
 
 interface DashboardSectionDef {
@@ -80,12 +86,41 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Settings: <Settings className="h-4 w-4" />,
 }
 
+function buildTree(pages: AppPage[]): AppPageNode[] {
+  const sorted = [...pages].sort((a, b) => a.orden - b.orden)
+  const byParent = new Map<string | null, AppPage[]>()
+  for (const p of sorted) {
+    const key = p.parent_id || null
+    const arr = byParent.get(key) || []
+    arr.push(p)
+    byParent.set(key, arr)
+  }
+
+  const build = (parentId: string | null): AppPageNode[] => {
+    return (byParent.get(parentId) || []).map(p => ({
+      ...p,
+      children: build(p.id),
+    }))
+  }
+
+  return build(null)
+}
+
+function getAllDescendantIds(node: AppPageNode): string[] {
+  const ids: string[] = []
+  for (const child of node.children) {
+    ids.push(child.id)
+    ids.push(...getAllDescendantIds(child))
+  }
+  return ids
+}
+
 export function RolePreview() {
   const [selectedRole, setSelectedRole] = useState<'empleado' | 'gerente_sucursal'>('empleado')
-  const [appPages, setAppPages] = useState<AppPage[]>([])
+  const [allPages, setAllPages] = useState<AppPage[]>([])
   const [dashboardConfig, setDashboardConfig] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
-  const [togglingPage, setTogglingPage] = useState<string | null>(null)
+  const [togglingPages, setTogglingPages] = useState<Set<string>>(new Set())
   const [togglingSection, setTogglingSection] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -94,14 +129,13 @@ export function RolePreview() {
       .from("app_pages")
       .select("*")
       .eq("visible", true)
-      .eq("mostrar_en_sidebar", true)
       .order("orden", { ascending: true })
 
     if (error) {
       console.error("Error loading app_pages:", error)
       return
     }
-    setAppPages(data || [])
+    setAllPages(data || [])
   }, [])
 
   const loadDashboardConfig = useCallback(async () => {
@@ -116,9 +150,7 @@ export function RolePreview() {
     }
 
     const config: Record<string, boolean> = {}
-    // Default all sections to true
     DASHBOARD_SECTIONS.forEach(s => { config[s.key] = true })
-    // Override with DB values
     data?.forEach((row: any) => {
       config[row.seccion_key] = row.habilitado
     })
@@ -134,30 +166,53 @@ export function RolePreview() {
     load()
   }, [loadAppPages, loadDashboardConfig])
 
-  const handleToggleSidebarItem = async (page: AppPage, enabled: boolean) => {
-    setTogglingPage(page.id)
-    const currentRoles = page.roles_permitidos || []
-    let newRoles: string[]
+  const handleToggleSidebarItem = async (page: AppPage, enabled: boolean, childIds: string[] = []) => {
+    const idsToToggle = [page.id, ...childIds]
+    setTogglingPages(prev => new Set([...prev, ...idsToToggle]))
 
-    if (enabled) {
-      newRoles = [...new Set([...currentRoles, selectedRole])]
-    } else {
-      newRoles = currentRoles.filter(r => r !== selectedRole)
-    }
+    // Update each page
+    const updates = idsToToggle.map(async (pageId) => {
+      const target = allPages.find(p => p.id === pageId)
+      if (!target) return
+      const currentRoles = target.roles_permitidos || []
+      const newRoles = enabled
+        ? [...new Set([...currentRoles, selectedRole])]
+        : currentRoles.filter(r => r !== selectedRole)
 
-    const { error } = await supabase
-      .from("app_pages")
-      .update({ roles_permitidos: newRoles, updated_at: new Date().toISOString() })
-      .eq("id", page.id)
+      const { error } = await supabase
+        .from("app_pages")
+        .update({ roles_permitidos: newRoles, updated_at: new Date().toISOString() })
+        .eq("id", pageId)
 
-    if (error) {
-      toast({ title: "Error", description: "No se pudo actualizar el acceso", variant: "destructive" })
-    } else {
-      toast({ title: enabled ? "Acceso habilitado" : "Acceso deshabilitado", description: `${page.nombre} para ${selectedRole}` })
+      if (error) throw error
+      return { pageId, newRoles }
+    })
+
+    try {
+      const results = await Promise.all(updates)
       // Update local state
-      setAppPages(prev => prev.map(p => p.id === page.id ? { ...p, roles_permitidos: newRoles } : p))
+      setAllPages(prev => {
+        const next = [...prev]
+        for (const r of results) {
+          if (!r) continue
+          const idx = next.findIndex(p => p.id === r.pageId)
+          if (idx >= 0) next[idx] = { ...next[idx], roles_permitidos: r.newRoles }
+        }
+        return next
+      })
+      toast({
+        title: enabled ? "Acceso habilitado" : "Acceso deshabilitado",
+        description: `${page.nombre}${childIds.length > 0 ? ` y ${childIds.length} sub-items` : ''} para ${selectedRole}`
+      })
+    } catch {
+      toast({ title: "Error", description: "No se pudo actualizar el acceso", variant: "destructive" })
     }
-    setTogglingPage(null)
+
+    setTogglingPages(prev => {
+      const next = new Set(prev)
+      idsToToggle.forEach(id => next.delete(id))
+      return next
+    })
   }
 
   const handleToggleDashboardSection = async (sectionKey: string, enabled: boolean) => {
@@ -185,9 +240,96 @@ export function RolePreview() {
     return (page.roles_permitidos || []).includes(selectedRole)
   }
 
-  const sidebarEnabled = appPages.filter(p => isPageEnabledForRole(p)).length
-  const sidebarDisabled = appPages.length - sidebarEnabled
+  // Build tree from all pages (including non-sidebar for structure)
+  const sidebarPages = allPages.filter(p => p.mostrar_en_sidebar)
+  const tree = buildTree(sidebarPages)
+
+  const countEnabled = (nodes: AppPageNode[]): number => {
+    let count = 0
+    for (const n of nodes) {
+      if (isPageEnabledForRole(n)) count++
+      count += countEnabled(n.children)
+    }
+    return count
+  }
+
+  const countAll = (nodes: AppPageNode[]): number => {
+    let count = 0
+    for (const n of nodes) {
+      count++
+      count += countAll(n.children)
+    }
+    return count
+  }
+
+  const sidebarEnabled = countEnabled(tree)
+  const sidebarTotal = countAll(tree)
+  const sidebarDisabled = sidebarTotal - sidebarEnabled
   const dashboardEnabled = Object.values(dashboardConfig).filter(Boolean).length
+
+  const renderNode = (node: AppPageNode, depth: number = 0) => {
+    const enabled = isPageEnabledForRole(node)
+    const hasChildren = node.children.length > 0
+    const iconNode = ICON_MAP[node.icon || "FileText"] || <FileText className="h-4 w-4" />
+    const isToggling = togglingPages.has(node.id)
+    const descendantIds = getAllDescendantIds(node)
+
+    if (hasChildren) {
+      return (
+        <Collapsible key={node.id} defaultOpen>
+          <div
+            className={`flex items-center justify-between p-2 rounded-md transition-colors ${
+              enabled
+                ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800'
+                : 'bg-muted/50 border border-border opacity-60'
+            }`}
+            style={{ marginLeft: depth * 16 }}
+          >
+            <CollapsibleTrigger className="flex items-center gap-2 min-w-0 flex-1 text-left">
+              <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+              {iconNode}
+              <span className="text-sm font-medium truncate">{node.nombre}</span>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {node.children.length}
+              </Badge>
+            </CollapsibleTrigger>
+            <Switch
+              checked={enabled}
+              disabled={isToggling}
+              onCheckedChange={(checked) => handleToggleSidebarItem(node, checked, descendantIds)}
+            />
+          </div>
+          <CollapsibleContent>
+            <div className="space-y-1 mt-1">
+              {node.children.map(child => renderNode(child, depth + 1))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )
+    }
+
+    return (
+      <div
+        key={node.id}
+        className={`flex items-center justify-between p-2 rounded-md transition-colors ${
+          enabled
+            ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800'
+            : 'bg-muted/50 border border-border opacity-60'
+        }`}
+        style={{ marginLeft: depth * 16 }}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {iconNode}
+          <span className="text-sm truncate">{node.nombre}</span>
+        </div>
+        <Switch
+          checked={enabled}
+          disabled={isToggling}
+          onCheckedChange={(checked) => handleToggleSidebarItem(node, checked)}
+        />
+      </div>
+    )
+  }
 
   if (loading) {
     return (
@@ -224,7 +366,7 @@ export function RolePreview() {
 
         <TabsContent value={selectedRole} className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Sidebar Preview */}
+            {/* Sidebar Preview - Hierarchical */}
             <Card className="lg:col-span-1">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -232,36 +374,13 @@ export function RolePreview() {
                   Menú Sidebar
                 </CardTitle>
                 <CardDescription>
-                  Toggle para habilitar/deshabilitar accesos
+                  Toggle para habilitar/deshabilitar accesos. Activar un grupo activa todos sus hijos.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px] pr-4">
                   <div className="space-y-2">
-                    {appPages.map((page) => {
-                      const enabled = isPageEnabledForRole(page)
-                      const iconNode = ICON_MAP[page.icon || "FileText"] || <FileText className="h-4 w-4" />
-                      return (
-                        <div 
-                          key={page.id}
-                          className={`flex items-center justify-between p-2 rounded-md transition-colors ${
-                            enabled 
-                              ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
-                              : 'bg-muted/50 border border-border opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {iconNode}
-                            <span className="text-sm truncate">{page.nombre}</span>
-                          </div>
-                          <Switch
-                            checked={enabled}
-                            disabled={togglingPage === page.id}
-                            onCheckedChange={(checked) => handleToggleSidebarItem(page, checked)}
-                          />
-                        </div>
-                      )
-                    })}
+                    {tree.map(node => renderNode(node))}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -323,21 +442,15 @@ export function RolePreview() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/30">
-                  <p className="text-2xl font-bold text-green-600">
-                    {sidebarEnabled}
-                  </p>
+                  <p className="text-2xl font-bold text-green-600">{sidebarEnabled}</p>
                   <p className="text-sm text-muted-foreground">Menús Accesibles</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950/30">
-                  <p className="text-2xl font-bold text-red-600">
-                    {sidebarDisabled}
-                  </p>
+                  <p className="text-2xl font-bold text-red-600">{sidebarDisabled}</p>
                   <p className="text-sm text-muted-foreground">Menús Restringidos</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {dashboardEnabled}
-                  </p>
+                  <p className="text-2xl font-bold text-blue-600">{dashboardEnabled}</p>
                   <p className="text-sm text-muted-foreground">Secciones Dashboard</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30">
