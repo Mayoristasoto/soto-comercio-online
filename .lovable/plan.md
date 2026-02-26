@@ -1,26 +1,28 @@
 
 
-## Resumen — No se requieren cambios
+## Plan: Add employee detail popover on Asignados/Confirmados/Pendientes counts
 
-El sistema ya tiene implementado el flujo completo de firma obligatoria de documentos para empleados nuevos:
+### What changes
+Make the numbers in the "Asignados", "Confirmados", and "Pendientes" columns clickable. Clicking a number opens a Popover showing the list of employee names for that category.
 
-### Flujo del empleado (automático)
-1. Primer login con PIN → se activa `debe_firmar_documentos_iniciales = true`
-2. Modal bloqueante muestra documentos pendientes de firma
-3. El empleado firma cada uno (dibujando firma o usando firma guardada)
-4. Al completar todos, se desbloquea el dashboard
+### Implementation
 
-### Cómo cargar documentos (admin)
-1. Ir a **Nómina** (`/nomina`) desde el sidebar
-2. Pestaña **"Docs Obligatorios"** → crear documentos con título, descripción, contenido y/o URL
-3. Pestaña **"Asignar Documentos"** → asignar documentos a empleados específicos
-4. Los empleados con `debe_firmar_documentos_iniciales = true` verán el modal obligatorio en su próximo login
+**File: `src/components/admin/MandatoryDocuments.tsx`**
 
-### Tablas involucradas
-- `documentos_obligatorios` — catálogo de documentos
-- `asignaciones_documentos_obligatorios` — asignación documento ↔ empleado
-- `documentos_firmas` — registro de firmas
-- `empleados_firmas` — firmas digitales guardadas del empleado
+1. Add new state: `detailPopover` to track which document + category is open, and `employeeDetails` to hold the fetched employee names.
 
-No se necesitan cambios de código ni migraciones. Todo está funcional.
+2. Add a function `loadEmployeeDetails(documentoId, category)` that:
+   - For **asignados**: queries `asignaciones_documentos_obligatorios` joined with `empleados` to get names of assigned employees
+   - For **confirmados**: queries `confirmaciones_lectura` joined with `empleados` to get names of employees who confirmed
+   - For **pendientes**: queries assigned employees minus confirmed ones
+
+3. Replace the plain number cells (lines 610-616) with clickable `Popover` components:
+   - The trigger is the number (styled as a clickable button/badge)
+   - On click, fetch the employee list and display names in the popover content
+   - Show a loading spinner while fetching
+
+4. Add imports: `Popover, PopoverContent, PopoverTrigger` from `@/components/ui/popover`
+
+### No database changes needed
+All data is already available via existing tables (`asignaciones_documentos_obligatorios`, `confirmaciones_lectura`, `empleados`).
 
