@@ -323,6 +323,9 @@ export type Database = {
       }
       asignaciones_especiales: {
         Row: {
+          confirmado_at: string | null
+          confirmado_por: string | null
+          costo_hora_estimado: number | null
           creado_por: string | null
           created_at: string
           empleado_id: string
@@ -335,6 +338,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          confirmado_at?: string | null
+          confirmado_por?: string | null
+          costo_hora_estimado?: number | null
           creado_por?: string | null
           created_at?: string
           empleado_id: string
@@ -347,6 +353,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          confirmado_at?: string | null
+          confirmado_por?: string | null
+          costo_hora_estimado?: number | null
           creado_por?: string | null
           created_at?: string
           empleado_id?: string
@@ -359,6 +368,34 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "asignaciones_especiales_confirmado_por_fkey"
+            columns: ["confirmado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_confirmado_por_fkey"
+            columns: ["confirmado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_confirmado_por_fkey"
+            columns: ["confirmado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_especiales_confirmado_por_fkey"
+            columns: ["confirmado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "asignaciones_especiales_creado_por_fkey"
             columns: ["creado_por"]
