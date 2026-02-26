@@ -1,28 +1,20 @@
 
 
-## Plan: Add employee detail popover on Asignados/Confirmados/Pendientes counts
+## Problem
 
-### What changes
-Make the numbers in the "Asignados", "Confirmados", and "Pendientes" columns clickable. Clicking a number opens a Popover showing the list of employee names for that category.
+Two bugs prevent the popovers from working correctly:
 
-### Implementation
+1. **Badge component lacks `forwardRef`**: The "Pendientes" column uses `Badge` as the `PopoverTrigger` child with `asChild`, but `Badge` is a plain function component that cannot receive refs. This causes the popover to silently fail. Console confirms: "Function components cannot be given refs."
 
-**File: `src/components/admin/MandatoryDocuments.tsx`**
+2. **Shared state across all popovers**: All rows and all three columns (Asignados, Confirmados, Pendientes) share a single `employeeDetails` state. When one popover triggers a fetch, its data can be overwritten or shown in the wrong popover.
 
-1. Add new state: `detailPopover` to track which document + category is open, and `employeeDetails` to hold the fetched employee names.
+## Fix
 
-2. Add a function `loadEmployeeDetails(documentoId, category)` that:
-   - For **asignados**: queries `asignaciones_documentos_obligatorios` joined with `empleados` to get names of assigned employees
-   - For **confirmados**: queries `confirmaciones_lectura` joined with `empleados` to get names of employees who confirmed
-   - For **pendientes**: queries assigned employees minus confirmed ones
+### 1. Update `src/components/ui/badge.tsx`
+- Wrap `Badge` with `React.forwardRef` so it can be used with `asChild` on Radix triggers.
 
-3. Replace the plain number cells (lines 610-616) with clickable `Popover` components:
-   - The trigger is the number (styled as a clickable button/badge)
-   - On click, fetch the employee list and display names in the popover content
-   - Show a loading spinner while fetching
-
-4. Add imports: `Popover, PopoverContent, PopoverTrigger` from `@/components/ui/popover`
-
-### No database changes needed
-All data is already available via existing tables (`asignaciones_documentos_obligatorios`, `confirmaciones_lectura`, `empleados`).
+### 2. Update `src/components/admin/MandatoryDocuments.tsx`
+- Replace shared `employeeDetails` state with a keyed state using `documentoId + category` as key, so each popover tracks its own loading/data independently.
+- Example: `employeeDetailsMap: Record<string, { names: string[], loading: boolean }>` keyed by `${doc.id}-${category}`.
+- Each `PopoverContent` reads from its own key in the map.
 
