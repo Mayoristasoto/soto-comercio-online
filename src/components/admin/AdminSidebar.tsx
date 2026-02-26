@@ -91,6 +91,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Evaluaciones", url: "/evaluaciones", icon: FileText },
       { title: "Solicitudes", url: "/solicitudes", icon: FileText },
       { title: "Anotaciones", url: "/anotaciones", icon: FileText },
+      { title: "Novedades Alert", url: "/operaciones/novedades-alertas", icon: FileText },
     ]
   },
   {

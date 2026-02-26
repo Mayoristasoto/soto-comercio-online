@@ -74,6 +74,7 @@ import EditorFechasIngreso from "./pages/EditorFechasIngreso";
 import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
 import Rentabilidad from "./pages/Rentabilidad";
+import NovedadesAlert from "./pages/NovedadesAlert";
 
 const queryClient = new QueryClient();
 
@@ -144,6 +145,7 @@ const App = () => (
             <Route path="operaciones/tareas/reportes" element={<Tareas />} />
             <Route path="instructivo/delegacion-tareas" element={<InstructivoDelegacionTareas />} />
             <Route path="instructivo" element={<Instructivo />} />
+            <Route path="operaciones/novedades-alertas" element={<NovedadesAlert />} />
             {/* Módulo Reconocimiento */}
             <Route path="reconoce" element={<HomePublico />} />
             <Route path="reconoce/dashboard" element={<Dashboard />} />

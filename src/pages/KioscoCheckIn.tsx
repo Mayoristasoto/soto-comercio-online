@@ -17,6 +17,7 @@ import { LlegadaTardeAlert } from "@/components/kiosko/LlegadaTardeAlert"
 import { TareasPendientesAlert } from "@/components/kiosko/TareasPendientesAlert"
 import { TareasVencenHoyAlert } from "@/components/kiosko/TareasVencenHoyAlert"
 import { ImprimirTareasDistribucionDialog, TareaParaDistribuir } from "@/components/kiosko/ImprimirTareasDistribucionDialog"
+import { NovedadesCheckInAlert } from "@/components/kiosko/NovedadesCheckInAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -336,6 +337,10 @@ export default function KioscoCheckIn() {
   const [showPinAuth, setShowPinAuth] = useState(false)
   const [pinHabilitado, setPinHabilitado] = useState(false)
   
+  // State for novedades alert
+  const [showNovedadesAlert, setShowNovedadesAlert] = useState(false)
+  const [novedadesPendientes, setNovedadesPendientes] = useState<{ id: string; titulo: string; contenido: string; imprimible: boolean }[]>([])
+
   // Device authorization state
   const [deviceStatus, setDeviceStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'no_devices'>('checking')
   const [deviceName, setDeviceName] = useState<string | null>(null)
@@ -853,6 +858,20 @@ export default function KioscoCheckIn() {
         console.error('Error reproduciendo audio:', error)
       }
 
+      // Fetch novedades for this employee
+      try {
+        const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+          p_empleado_id: empleadoParaFichaje.id,
+        })
+        if (novedadesData && novedadesData.length > 0) {
+          setNovedadesPendientes(novedadesData)
+          setShowNovedadesAlert(true)
+          return
+        }
+      } catch (err) {
+        console.error('Error fetching novedades:', err)
+      }
+
       // Mostrar alerta de tareas pendientes si hay (igual que flujo PIN)
       if (tareas && tareas.length > 0) {
         setShowTareasPendientesAlert(true)
@@ -921,6 +940,8 @@ export default function KioscoCheckIn() {
       setTareasVencenHoy([])
       setShowImprimirTareasDialog(false)
       setTareasParaDistribuir([])
+      setShowNovedadesAlert(false)
+      setNovedadesPendientes([])
     }, 3000)
   }
 
@@ -2212,6 +2233,24 @@ export default function KioscoCheckIn() {
             }
           }}
           duracionSegundos={5}
+        />
+      )}
+
+      {/* Alerta de Novedades (Overlay) */}
+      {showNovedadesAlert && novedadesPendientes.length > 0 && registroExitoso && (
+        <NovedadesCheckInAlert
+          empleadoId={registroExitoso.empleado.id}
+          empleadoNombre={`${registroExitoso.empleado.nombre} ${registroExitoso.empleado.apellido}`}
+          novedades={novedadesPendientes}
+          onDismiss={() => {
+            setShowNovedadesAlert(false)
+            // Continue to tareas alert if there are pending tasks
+            if (tareasPendientes.length > 0) {
+              setShowTareasPendientesAlert(true)
+            } else {
+              resetKiosco()
+            }
+          }}
         />
       )}
 
