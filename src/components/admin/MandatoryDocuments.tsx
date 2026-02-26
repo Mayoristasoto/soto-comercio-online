@@ -661,7 +661,20 @@ export function MandatoryDocuments() {
                         </PopoverTrigger>
                         <PopoverContent className="w-64">
                           <div className="space-y-2">
-                            <h4 className="font-semibold text-sm">Empleados Asignados</h4>
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-sm">Empleados Asignados</h4>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  const tabEl = document.querySelector('[data-value="assignments"]') as HTMLElement;
+                                  if (tabEl) tabEl.click();
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
                             {details?.loading ? (
                               <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando...</div>
                             ) : !details || details.names.length === 0 ? (
