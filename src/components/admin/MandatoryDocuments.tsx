@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { FileText, Plus, Edit, Trash2, Users, CheckCircle, Upload, Eye, X } from "lucide-react";
+import { FileText, Plus, Edit, Trash2, Users, CheckCircle, Upload, Eye, X, Loader2 } from "lucide-react";
 
 interface DocumentoObligatorio {
   id: string;
@@ -42,6 +43,7 @@ export function MandatoryDocuments() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [employeeDetails, setEmployeeDetails] = useState<{ names: string[]; loading: boolean }>({ names: [], loading: false });
   const [formData, setFormData] = useState({
     titulo: "",
     descripcion: "",
@@ -112,6 +114,69 @@ export function MandatoryDocuments() {
       console.error('Error loading stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEmployeeDetails = async (documentoId: string, category: 'asignados' | 'confirmados' | 'pendientes') => {
+    setEmployeeDetails({ names: [], loading: true });
+    try {
+      if (category === 'asignados' || category === 'pendientes') {
+        const { data: asignaciones } = await supabase
+          .from('asignaciones_documentos_obligatorios')
+          .select('empleado_id')
+          .eq('documento_id', documentoId)
+          .eq('activa', true);
+
+        const empleadoIds = asignaciones?.map(a => a.empleado_id) || [];
+        
+        if (category === 'asignados') {
+          if (empleadoIds.length === 0) {
+            setEmployeeDetails({ names: [], loading: false });
+            return;
+          }
+          const { data: empleados } = await supabase
+            .from('empleados')
+            .select('nombre, apellido')
+            .in('id', empleadoIds);
+          setEmployeeDetails({ names: empleados?.map(e => `${e.nombre} ${e.apellido}`) || [], loading: false });
+        } else {
+          // pendientes = asignados - confirmados
+          const { data: confirmaciones } = await supabase
+            .from('confirmaciones_lectura')
+            .select('empleado_id')
+            .eq('documento_id', documentoId);
+          const confirmadoIds = new Set(confirmaciones?.map(c => c.empleado_id) || []);
+          const pendienteIds = empleadoIds.filter(id => !confirmadoIds.has(id));
+          if (pendienteIds.length === 0) {
+            setEmployeeDetails({ names: [], loading: false });
+            return;
+          }
+          const { data: empleados } = await supabase
+            .from('empleados')
+            .select('nombre, apellido')
+            .in('id', pendienteIds);
+          setEmployeeDetails({ names: empleados?.map(e => `${e.nombre} ${e.apellido}`) || [], loading: false });
+        }
+      } else {
+        // confirmados
+        const { data: confirmaciones } = await supabase
+          .from('confirmaciones_lectura')
+          .select('empleado_id')
+          .eq('documento_id', documentoId);
+        const empleadoIds = confirmaciones?.map(c => c.empleado_id) || [];
+        if (empleadoIds.length === 0) {
+          setEmployeeDetails({ names: [], loading: false });
+          return;
+        }
+        const { data: empleados } = await supabase
+          .from('empleados')
+          .select('nombre, apellido')
+          .in('id', empleadoIds);
+        setEmployeeDetails({ names: empleados?.map(e => `${e.nombre} ${e.apellido}`) || [], loading: false });
+      }
+    } catch (error) {
+      console.error('Error loading employee details:', error);
+      setEmployeeDetails({ names: [], loading: false });
     }
   };
 
@@ -607,12 +672,80 @@ export function MandatoryDocuments() {
                         {doc.activo ? "Activo" : "Inactivo"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{stat?.total_asignados || 0}</TableCell>
-                    <TableCell>{stat?.total_confirmados || 0}</TableCell>
                     <TableCell>
-                      <Badge variant={stat?.pendientes === 0 ? "default" : "destructive"}>
-                        {stat?.pendientes || 0}
-                      </Badge>
+                      <Popover onOpenChange={(open) => { if (open) loadEmployeeDetails(doc.id, 'asignados'); }}>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-auto p-1 font-medium hover:underline">
+                            {stat?.total_asignados || 0}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">Empleados Asignados</h4>
+                            {employeeDetails.loading ? (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando...</div>
+                            ) : employeeDetails.names.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">Sin asignaciones</p>
+                            ) : (
+                              <ul className="space-y-1 max-h-48 overflow-y-auto">
+                                {employeeDetails.names.map((name, i) => (
+                                  <li key={i} className="text-sm flex items-center gap-1"><Users className="h-3 w-3 text-muted-foreground" />{name}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Popover onOpenChange={(open) => { if (open) loadEmployeeDetails(doc.id, 'confirmados'); }}>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-auto p-1 font-medium hover:underline">
+                            {stat?.total_confirmados || 0}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">Empleados Confirmados</h4>
+                            {employeeDetails.loading ? (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando...</div>
+                            ) : employeeDetails.names.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">Sin confirmaciones</p>
+                            ) : (
+                              <ul className="space-y-1 max-h-48 overflow-y-auto">
+                                {employeeDetails.names.map((name, i) => (
+                                  <li key={i} className="text-sm flex items-center gap-1"><CheckCircle className="h-3 w-3 text-green-500" />{name}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Popover onOpenChange={(open) => { if (open) loadEmployeeDetails(doc.id, 'pendientes'); }}>
+                        <PopoverTrigger asChild>
+                          <Badge variant={stat?.pendientes === 0 ? "default" : "destructive"} className="cursor-pointer hover:opacity-80">
+                            {stat?.pendientes || 0}
+                          </Badge>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">Empleados Pendientes</h4>
+                            {employeeDetails.loading ? (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando...</div>
+                            ) : employeeDetails.names.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">Sin pendientes</p>
+                            ) : (
+                              <ul className="space-y-1 max-h-48 overflow-y-auto">
+                                {employeeDetails.names.map((name, i) => (
+                                  <li key={i} className="text-sm flex items-center gap-1"><X className="h-3 w-3 text-destructive" />{name}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
