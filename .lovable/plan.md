@@ -1,59 +1,27 @@
 
 
-## Plan: Activar/Desactivar Secciones desde Vista Roles
+## Problem
 
-### Que cambia
+The Role Preview shows a **flat list** of all `app_pages` items, while the actual sidebar renders them **hierarchically** (parents with children). This means the admin sees mismatched items -- parent groups like "RRHH", "Operaciones" appear alongside their children as separate flat items, which doesn't reflect the real sidebar experience.
 
-Reemplazar los iconos de candado estaticos por **Switch toggles** interactivos en cada item del sidebar y cada seccion del dashboard. Al hacer toggle, se actualiza la visibilidad real del sistema.
+Additionally, toggling a parent item doesn't automatically affect its children's visibility, creating inconsistencies.
 
-### Implementacion
+## Plan
 
-#### Sidebar items (conectado a `app_pages`)
+### Fix RolePreview sidebar to match actual sidebar structure
 
-1. **Cargar datos reales**: Query `app_pages` al montar el componente
-2. **Renderizar switches**: Cada item del sidebar muestra un `Switch` en vez del icono Lock/Unlock
-3. **Al toggle**: Actualizar `roles_permitidos` en `app_pages` -- agregar o quitar el rol seleccionado del array
-4. **Feedback**: Toast de confirmacion tras cada cambio
+**File: `src/components/admin/RolePreview.tsx`**
 
-#### Dashboard sections (nueva tabla)
+1. Build hierarchical tree from `app_pages` (same logic as `useSidebarLinks`): group by `parent_id`, attach children to parents, render only root items at top level
+2. Render children indented under their parent with their own switches
+3. When toggling a parent group on/off, also toggle all its children for that role (batch update)
+4. Show the tree with collapsible sections matching the real sidebar visual structure (RRHH > Fichero > sub-items, etc.)
 
-1. **Crear tabla `role_dashboard_sections`**: con campos `id`, `rol` (text), `seccion_key` (text), `habilitado` (boolean), `created_at`, `updated_at`
-2. **Cargar config**: Al seleccionar un rol, leer las secciones habilitadas
-3. **Switch toggle**: Al cambiar, upsert en la tabla
-4. **Seed inicial**: Insertar registros por defecto para las secciones actuales (todas habilitadas)
+No database changes needed -- only UI refactor of how items are displayed and toggled.
 
-#### Archivo modificado: `src/components/admin/RolePreview.tsx`
+### Files modified
 
-- Importar `Switch`, `supabase`, `useToast`
-- Estado: `app_pages` cargados, `dashboardConfig` cargado
-- Sidebar: mapear `app_pages` reales, mostrar Switch que modifica `roles_permitidos`
-- Dashboard: mapear secciones hardcodeadas + config de BD, Switch que modifica `role_dashboard_sections`
-- Boton "Guardar cambios" o guardado instantaneo por toggle
-
-#### DB migration
-
-```sql
-CREATE TABLE role_dashboard_sections (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  rol TEXT NOT NULL,
-  seccion_key TEXT NOT NULL,
-  habilitado BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(rol, seccion_key)
-);
-
-ALTER TABLE role_dashboard_sections ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Admin full access" ON role_dashboard_sections
-  FOR ALL TO authenticated
-  USING (true) WITH CHECK (true);
-```
-
-### Archivos
-
-| Archivo | Accion |
-|---------|--------|
-| `src/components/admin/RolePreview.tsx` | Modificado -- switches interactivos, queries a BD |
-| Migration SQL | Nueva tabla `role_dashboard_sections` |
+| File | Change |
+|------|--------|
+| `src/components/admin/RolePreview.tsx` | Refactor sidebar section to render hierarchical tree with indented children, batch toggle for parent groups |
 
