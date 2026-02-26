@@ -1,65 +1,38 @@
 
 
-## Plan: Weekend Check-in Statistics + Manager Staff Confirmation for Sundays/Holidays
+## Plan: Cargar Feriados Argentina 2026
 
-### What We're Building
+### Feriados a cargar (16 en total)
 
-Three features:
+Solo **feriados inamovibles y trasladables**, excluyendo dias no laborables (religiosos, armenios, turisticos):
 
-1. **Weekend Fichaje Statistics Report** -- A new tab in ReportesHorarios showing Saturday/Sunday check-in data with schedule configuration analysis (tolerance, scheduled times, late arrivals pattern)
-2. **Manager Staff Confirmation for Sundays** -- Allow `gerente_sucursal` to confirm/assign rotating staff for upcoming Sundays from their own interface
-3. **Manager Staff Confirmation for Holidays** -- Same for holidays, with data structured to support future finance/cost integration
+| Fecha | Nombre | Tipo |
+|-------|--------|------|
+| 2026-01-01 | Año Nuevo | Inamovible |
+| 2026-02-16 | Carnaval | Inamovible |
+| 2026-02-17 | Carnaval | Inamovible |
+| 2026-03-24 | Dia Nacional de la Memoria por la Verdad y la Justicia | Inamovible |
+| 2026-04-02 | Dia del Veterano y de los Caidos en la Guerra de Malvinas | Inamovible |
+| 2026-04-03 | Viernes Santo | Inamovible |
+| 2026-05-01 | Dia del Trabajador | Inamovible |
+| 2026-05-25 | Dia de la Revolucion de Mayo | Inamovible |
+| 2026-06-15 | Paso a la Inmortalidad del Gral. Guemes | Trasladable (del 17/6) |
+| 2026-06-20 | Paso a la Inmortalidad del Gral. Belgrano | Inamovible |
+| 2026-07-09 | Dia de la Independencia | Inamovible |
+| 2026-08-17 | Paso a la Inmortalidad del Gral. San Martin | Trasladable |
+| 2026-10-12 | Dia del Respeto a la Diversidad Cultural | Trasladable |
+| 2026-11-23 | Dia de la Soberania Nacional | Trasladable (del 20/11) |
+| 2026-12-08 | Inmaculada Concepcion de Maria | Inamovible |
+| 2026-12-25 | Navidad | Inamovible |
 
----
+Fuente: [argentina.gob.ar/jefatura/feriados-nacionales-2026](https://www.argentina.gob.ar/jefatura/feriados-nacionales-2026)
 
-### Technical Details
+### Implementacion
 
-#### Feature 1: Weekend Statistics Report
+Un unico paso: insertar los 16 registros en la tabla `dias_feriados` con `activo = true` y `desactivar_controles = false` (para que el sistema de fichajes siga controlando asistencia en feriados, ya que justamente se asigna staff especial esos dias).
 
-**New component**: `src/components/fichero/ReporteFinesDesemana.tsx`
+Nota: actualmente la tabla solo tiene 1 registro de prueba ("Prueba" del 2025-10-30). Los nuevos registros no lo afectan.
 
-Queries `fichajes` table filtered by Saturday (day 6) and Sunday (day 0) for a date range. Cross-references with `fichado_turnos` (via `empleado_turnos`) to show:
-- Per-employee: scheduled entry time, actual entry time, minutes late, tolerance configured (`tolerancia_entrada_minutos`), pause duration configured vs actual
-- Summary cards: total Saturday fichajes, total Sunday fichajes, average late minutes, employees with 30+ min tolerance (configuration flag)
-- Table highlighting configuration anomalies (e.g., if all employees show exactly 30 min late, it means `tolerancia_entrada_minutos` is likely misconfigured)
-- Also cross-reference `fichajes_tardios` for pre-calculated late data
-- Filter by sucursal, date range
-
-**Modified file**: `src/pages/ReportesHorarios.tsx` -- Add new "Fines de Semana" tab (5th tab)
-
-#### Feature 2 & 3: Manager Staff Confirmation
-
-**New component**: `src/components/fichero/ConfirmacionStaffEspecial.tsx`
-
-A page/component accessible to `gerente_sucursal` that:
-- Shows upcoming Sundays and holidays (from `dias_feriados`)
-- Allows the manager to select employees for their branch, assign entry/exit times
-- Writes to the existing `asignaciones_especiales` table (already has `tipo: 'domingo' | 'feriado'`, `empleado_id`, `sucursal_id`, `hora_entrada`, `hora_salida`)
-- Adds a `confirmado_por` and `confirmado_at` field to track manager confirmation (DB migration)
-- Shows cost estimate preview (hours * employee count) for future finance integration
-
-**DB Migration**: Add columns to `asignaciones_especiales`:
-- `confirmado_por` (UUID, FK to empleados, nullable)
-- `confirmado_at` (timestamptz, nullable)  
-- `costo_hora_estimado` (numeric, nullable) -- for future finance integration
-
-**New page**: `src/pages/ConfirmacionStaffGerente.tsx` -- Manager-facing view filtered to their branch
-- Route: `/operaciones/confirmacion-staff`
-- Accessible to `gerente_sucursal` and `admin_rrhh`
-
-**Modified files**:
-- `src/App.tsx` -- Add route
-- `src/components/admin/AdminSidebar.tsx` or `src/components/UnifiedSidebar.tsx` -- Add menu link under Operaciones
-
-### Files Summary
-
-| File | Action |
-|------|--------|
-| `src/components/fichero/ReporteFinesDesemana.tsx` | New -- weekend statistics component |
-| `src/pages/ReportesHorarios.tsx` | Modified -- add 5th tab |
-| `src/components/fichero/ConfirmacionStaffEspecial.tsx` | New -- manager staff assignment UI |
-| `src/pages/ConfirmacionStaffGerente.tsx` | New -- page wrapper with auth |
-| `src/App.tsx` | Modified -- add route |
-| `src/components/UnifiedSidebar.tsx` | Modified -- add menu link |
-| Migration SQL | Add `confirmado_por`, `confirmado_at`, `costo_hora_estimado` to `asignaciones_especiales` |
+### Archivos modificados
+Ninguno. Solo insercion de datos en la base.
 
