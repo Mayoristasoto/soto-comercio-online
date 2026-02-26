@@ -1,20 +1,27 @@
 
 
-## Problem
+## Plan: Replace + button with inline employee assignment
 
-Two bugs prevent the popovers from working correctly:
+The current + button tries to switch tabs via DOM query, which doesn't work. Instead, when clicking +, show a list of unassigned employees directly inside the popover, with checkboxes to assign them.
 
-1. **Badge component lacks `forwardRef`**: The "Pendientes" column uses `Badge` as the `PopoverTrigger` child with `asChild`, but `Badge` is a plain function component that cannot receive refs. This causes the popover to silently fail. Console confirms: "Function components cannot be given refs."
+### Implementation in `src/components/admin/MandatoryDocuments.tsx`
 
-2. **Shared state across all popovers**: All rows and all three columns (Asignados, Confirmados, Pendientes) share a single `employeeDetails` state. When one popover triggers a fetch, its data can be overwritten or shown in the wrong popover.
+1. **Add new state** for unassigned employees per document:
+   - `unassignedMap: Record<string, { employees: {id, nombre, apellido}[], loading: boolean }>`
 
-## Fix
+2. **Add `loadUnassigned(documentoId)` function**:
+   - Fetch assigned employee IDs from `asignaciones_documentos_obligatorios`
+   - Fetch all active employees from `empleados`
+   - Filter out already-assigned ones
+   - Store in `unassignedMap[documentoId]`
 
-### 1. Update `src/components/ui/badge.tsx`
-- Wrap `Badge` with `React.forwardRef` so it can be used with `asChild` on Radix triggers.
+3. **Add `assignEmployee(documentoId, empleadoId)` function**:
+   - Insert into `asignaciones_documentos_obligatorios`
+   - Set `debe_firmar_documentos_iniciales = true` on the employee
+   - Refresh stats, assigned list, and unassigned list
 
-### 2. Update `src/components/admin/MandatoryDocuments.tsx`
-- Replace shared `employeeDetails` state with a keyed state using `documentoId + category` as key, so each popover tracks its own loading/data independently.
-- Example: `employeeDetailsMap: Record<string, { names: string[], loading: boolean }>` keyed by `${doc.id}-${category}`.
-- Each `PopoverContent` reads from its own key in the map.
+4. **Replace the + button behavior**:
+   - On click, toggle a "show unassigned" section within the same popover
+   - Show a scrollable list of unassigned employees with a + button next to each name
+   - After assigning, remove from unassigned list and add to assigned list
 
