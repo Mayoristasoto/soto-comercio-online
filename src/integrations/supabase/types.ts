@@ -5378,6 +5378,111 @@ export type Database = {
         }
         Relationships: []
       }
+      novedades_alertas: {
+        Row: {
+          activa: boolean
+          asignacion_tipo: string
+          contenido: string
+          created_at: string | null
+          created_by: string | null
+          empleados_asignados: string[] | null
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          imprimible: boolean
+          roles_asignados: string[] | null
+          titulo: string
+        }
+        Insert: {
+          activa?: boolean
+          asignacion_tipo?: string
+          contenido: string
+          created_at?: string | null
+          created_by?: string | null
+          empleados_asignados?: string[] | null
+          fecha_fin: string
+          fecha_inicio?: string
+          id?: string
+          imprimible?: boolean
+          roles_asignados?: string[] | null
+          titulo: string
+        }
+        Update: {
+          activa?: boolean
+          asignacion_tipo?: string
+          contenido?: string
+          created_at?: string | null
+          created_by?: string | null
+          empleados_asignados?: string[] | null
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          imprimible?: boolean
+          roles_asignados?: string[] | null
+          titulo?: string
+        }
+        Relationships: []
+      }
+      novedades_vistas: {
+        Row: {
+          created_at: string | null
+          empleado_id: string | null
+          fecha_vista: string
+          id: string
+          novedad_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          empleado_id?: string | null
+          fecha_vista?: string
+          id?: string
+          novedad_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          empleado_id?: string | null
+          fecha_vista?: string
+          id?: string
+          novedad_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "novedades_vistas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novedades_vistas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novedades_vistas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novedades_vistas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novedades_vistas_novedad_id_fkey"
+            columns: ["novedad_id"]
+            isOneToOne: false
+            referencedRelation: "novedades_alertas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_tareas_puesto: {
         Row: {
           activa: boolean | null
@@ -8508,6 +8613,15 @@ export type Database = {
         Args: { p_empleado_id: string }
         Returns: number
       }
+      kiosk_get_novedades: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          contenido: string
+          id: string
+          imprimible: boolean
+          titulo: string
+        }[]
+      }
       kiosk_get_pausa_activa: { Args: { p_empleado_id: string }; Returns: Json }
       kiosk_get_pausa_inicio: {
         Args: { p_desde: string; p_empleado_id: string }
@@ -8577,6 +8691,10 @@ export type Database = {
       kiosk_limpiar_fichajes_hoy: {
         Args: { p_empleado_id: string }
         Returns: Json
+      }
+      kiosk_marcar_novedad_vista: {
+        Args: { p_empleado_id: string; p_novedad_id: string }
+        Returns: undefined
       }
       kiosk_preparar_pausa_excedida_test: {
         Args: { p_empleado_id: string; p_minutos_pausa?: number }
