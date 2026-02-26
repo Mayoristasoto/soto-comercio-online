@@ -1,0 +1,1 @@
+DELETE FROM fichajes WHERE id = '381e2a98-9a71-496f-9893-ed06723b5142';
