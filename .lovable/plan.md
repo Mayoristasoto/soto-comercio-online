@@ -1,38 +1,59 @@
 
 
-## Plan: Cargar Feriados Argentina 2026
+## Plan: Activar/Desactivar Secciones desde Vista Roles
 
-### Feriados a cargar (16 en total)
+### Que cambia
 
-Solo **feriados inamovibles y trasladables**, excluyendo dias no laborables (religiosos, armenios, turisticos):
-
-| Fecha | Nombre | Tipo |
-|-------|--------|------|
-| 2026-01-01 | Año Nuevo | Inamovible |
-| 2026-02-16 | Carnaval | Inamovible |
-| 2026-02-17 | Carnaval | Inamovible |
-| 2026-03-24 | Dia Nacional de la Memoria por la Verdad y la Justicia | Inamovible |
-| 2026-04-02 | Dia del Veterano y de los Caidos en la Guerra de Malvinas | Inamovible |
-| 2026-04-03 | Viernes Santo | Inamovible |
-| 2026-05-01 | Dia del Trabajador | Inamovible |
-| 2026-05-25 | Dia de la Revolucion de Mayo | Inamovible |
-| 2026-06-15 | Paso a la Inmortalidad del Gral. Guemes | Trasladable (del 17/6) |
-| 2026-06-20 | Paso a la Inmortalidad del Gral. Belgrano | Inamovible |
-| 2026-07-09 | Dia de la Independencia | Inamovible |
-| 2026-08-17 | Paso a la Inmortalidad del Gral. San Martin | Trasladable |
-| 2026-10-12 | Dia del Respeto a la Diversidad Cultural | Trasladable |
-| 2026-11-23 | Dia de la Soberania Nacional | Trasladable (del 20/11) |
-| 2026-12-08 | Inmaculada Concepcion de Maria | Inamovible |
-| 2026-12-25 | Navidad | Inamovible |
-
-Fuente: [argentina.gob.ar/jefatura/feriados-nacionales-2026](https://www.argentina.gob.ar/jefatura/feriados-nacionales-2026)
+Reemplazar los iconos de candado estaticos por **Switch toggles** interactivos en cada item del sidebar y cada seccion del dashboard. Al hacer toggle, se actualiza la visibilidad real del sistema.
 
 ### Implementacion
 
-Un unico paso: insertar los 16 registros en la tabla `dias_feriados` con `activo = true` y `desactivar_controles = false` (para que el sistema de fichajes siga controlando asistencia en feriados, ya que justamente se asigna staff especial esos dias).
+#### Sidebar items (conectado a `app_pages`)
 
-Nota: actualmente la tabla solo tiene 1 registro de prueba ("Prueba" del 2025-10-30). Los nuevos registros no lo afectan.
+1. **Cargar datos reales**: Query `app_pages` al montar el componente
+2. **Renderizar switches**: Cada item del sidebar muestra un `Switch` en vez del icono Lock/Unlock
+3. **Al toggle**: Actualizar `roles_permitidos` en `app_pages` -- agregar o quitar el rol seleccionado del array
+4. **Feedback**: Toast de confirmacion tras cada cambio
 
-### Archivos modificados
-Ninguno. Solo insercion de datos en la base.
+#### Dashboard sections (nueva tabla)
+
+1. **Crear tabla `role_dashboard_sections`**: con campos `id`, `rol` (text), `seccion_key` (text), `habilitado` (boolean), `created_at`, `updated_at`
+2. **Cargar config**: Al seleccionar un rol, leer las secciones habilitadas
+3. **Switch toggle**: Al cambiar, upsert en la tabla
+4. **Seed inicial**: Insertar registros por defecto para las secciones actuales (todas habilitadas)
+
+#### Archivo modificado: `src/components/admin/RolePreview.tsx`
+
+- Importar `Switch`, `supabase`, `useToast`
+- Estado: `app_pages` cargados, `dashboardConfig` cargado
+- Sidebar: mapear `app_pages` reales, mostrar Switch que modifica `roles_permitidos`
+- Dashboard: mapear secciones hardcodeadas + config de BD, Switch que modifica `role_dashboard_sections`
+- Boton "Guardar cambios" o guardado instantaneo por toggle
+
+#### DB migration
+
+```sql
+CREATE TABLE role_dashboard_sections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rol TEXT NOT NULL,
+  seccion_key TEXT NOT NULL,
+  habilitado BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(rol, seccion_key)
+);
+
+ALTER TABLE role_dashboard_sections ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admin full access" ON role_dashboard_sections
+  FOR ALL TO authenticated
+  USING (true) WITH CHECK (true);
+```
+
+### Archivos
+
+| Archivo | Accion |
+|---------|--------|
+| `src/components/admin/RolePreview.tsx` | Modificado -- switches interactivos, queries a BD |
+| Migration SQL | Nueva tabla `role_dashboard_sections` |
 
