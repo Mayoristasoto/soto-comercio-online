@@ -55,6 +55,7 @@ import AdminAuthLogs from "./pages/AdminAuthLogs";
 import SubirFotoFacial from "./pages/SubirFotoFacial";
 import AprobarFotosFaciales from "./pages/AprobarFotosFaciales";
 import ReportesHorarios from "./pages/ReportesHorarios";
+import ConfirmacionStaffGerente from "./pages/ConfirmacionStaffGerente";
 import KioscoFotoFacial from "./pages/KioscoFotoFacial";
 import InformeEjecutivo from "./pages/InformeEjecutivo";
 import PresentacionEjecutiva from "./pages/PresentacionEjecutiva";
@@ -146,6 +147,7 @@ const App = () => (
             <Route path="instructivo/delegacion-tareas" element={<InstructivoDelegacionTareas />} />
             <Route path="instructivo" element={<Instructivo />} />
             <Route path="operaciones/novedades-alertas" element={<NovedadesAlert />} />
+            <Route path="operaciones/confirmacion-staff" element={<ConfirmacionStaffGerente />} />
             {/* Módulo Reconocimiento */}
             <Route path="reconoce" element={<HomePublico />} />
             <Route path="reconoce/dashboard" element={<Dashboard />} />
