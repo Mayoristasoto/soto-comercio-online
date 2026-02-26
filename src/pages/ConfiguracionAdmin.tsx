@@ -9,6 +9,7 @@ import { PagesManager } from "@/components/admin/PagesManager"
 import ConfiguracionModelosIA from "@/components/admin/ConfiguracionModelosIA"
 import { RolePreview } from "@/components/admin/RolePreview"
 import { KioskDeviceManagement } from "@/components/admin/KioskDeviceManagement"
+import { KioskAlertConfig } from "@/components/admin/KioskAlertConfig"
 import PinManagement from "@/components/admin/PinManagement"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
@@ -134,6 +135,9 @@ export default function Configuracion() {
         </TabsContent>
 
         <TabsContent value="kiosk" className="space-y-6">
+          <Card className="p-6">
+            <KioskAlertConfig />
+          </Card>
           <Card className="p-6">
             <KioskDeviceManagement />
           </Card>

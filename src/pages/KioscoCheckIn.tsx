@@ -2221,7 +2221,7 @@ export default function KioscoCheckIn() {
             setShowCrucesRojasAlert(false)
             setShowActionSelection(true)
           }}
-          duracionSegundos={2}
+          duracionSegundos={config.kioskAlertCrucesRojasSeconds}
         />
       )}
 
@@ -2256,7 +2256,7 @@ export default function KioscoCheckIn() {
               resetKiosco()
             }
           }}
-          duracionSegundos={2}
+          duracionSegundos={config.kioskAlertPausaExcedidaSeconds}
         />
       )}
 
@@ -2293,7 +2293,7 @@ export default function KioscoCheckIn() {
               resetKiosco()
             }
           }}
-          duracionSegundos={2}
+          duracionSegundos={config.kioskAlertLlegadaTardeSeconds}
         />
       )}
 
@@ -2312,6 +2312,7 @@ export default function KioscoCheckIn() {
               resetKiosco()
             }
           }}
+          duracionSegundos={config.kioskAlertNovedadesSeconds}
         />
       )}
 
@@ -2330,7 +2331,7 @@ export default function KioscoCheckIn() {
             setShowTareasPendientesAlert(false)
             navigate(`/autogestion?empleado=${registroExitoso.empleado.id}`)
           }}
-          duracionSegundos={10}
+          duracionSegundos={config.kioskAlertTareasSeconds}
           mostrarBotonAutoGestion={modoAutenticacion === 'facial'}
         />
       )}
