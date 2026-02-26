@@ -11,18 +11,45 @@ interface FacialConfig {
   emotionRecognitionEnabled: boolean
   autoPrintTasksEnabled: boolean
   lateArrivalAlertEnabled: boolean
+  // Kiosk alert config
+  kioskAlertLlegadaTardeSeconds: number
+  kioskAlertCrucesRojasSeconds: number
+  kioskAlertPausaExcedidaSeconds: number
+  kioskAlertNovedadesSeconds: number
+  kioskAlertTareasSeconds: number
+  kioskAlertCrucesRojasEnabled: boolean
+  kioskAlertPausaExcedidaEnabled: boolean
+  kioskAlertNovedadesEnabled: boolean
+  kioskAlertTareasEnabled: boolean
+  kioskAlertOrder: string[]
 }
 
 const defaultConfig: FacialConfig = {
-  confidenceThresholdKiosk: 0.60,  // Actualizado: 60% de confianza mínima para kiosko
-  confidenceThresholdSpecific: 0.72, // 72% de confianza para empleado específico
-  confidenceThresholdDemo: 0.30, // 30% para modo demo
+  confidenceThresholdKiosk: 0.60,
+  confidenceThresholdSpecific: 0.72,
+  confidenceThresholdDemo: 0.30,
   maxAttemptsPerMinute: 3,
   livenessTimeoutSeconds: 30,
   faceDescriptorVersion: "1.0",
   emotionRecognitionEnabled: true,
   autoPrintTasksEnabled: false,
-  lateArrivalAlertEnabled: false
+  lateArrivalAlertEnabled: false,
+  kioskAlertLlegadaTardeSeconds: 2,
+  kioskAlertCrucesRojasSeconds: 2,
+  kioskAlertPausaExcedidaSeconds: 2,
+  kioskAlertNovedadesSeconds: 5,
+  kioskAlertTareasSeconds: 10,
+  kioskAlertCrucesRojasEnabled: true,
+  kioskAlertPausaExcedidaEnabled: true,
+  kioskAlertNovedadesEnabled: true,
+  kioskAlertTareasEnabled: true,
+  kioskAlertOrder: ["llegada_tarde","cruces_rojas","pausa_excedida","novedades","tareas_pendientes"],
+}
+
+const parseBool = (raw: any): boolean => {
+  if (typeof raw === 'boolean') return raw
+  const str = String(raw).toLowerCase()
+  return str === 'true' || str === '1' || str === 'yes'
 }
 
 export function useFacialConfig() {
@@ -55,6 +82,12 @@ export function useFacialConfig() {
           return acc
         }, {} as Record<string, string>)
 
+        let alertOrder = defaultConfig.kioskAlertOrder
+        try {
+          const parsed = JSON.parse(configMap.kiosk_alert_order || '[]')
+          if (Array.isArray(parsed) && parsed.length > 0) alertOrder = parsed
+        } catch {}
+
         setConfig({
           confidenceThresholdKiosk: parseFloat(configMap.confidence_threshold_kiosk) || defaultConfig.confidenceThresholdKiosk,
           confidenceThresholdSpecific: parseFloat(configMap.confidence_threshold_specific) || defaultConfig.confidenceThresholdSpecific,
@@ -62,24 +95,19 @@ export function useFacialConfig() {
           maxAttemptsPerMinute: parseInt(configMap.max_attempts_per_minute) || defaultConfig.maxAttemptsPerMinute,
           livenessTimeoutSeconds: parseInt(configMap.liveness_timeout_seconds) || defaultConfig.livenessTimeoutSeconds,
           faceDescriptorVersion: (configMap.face_descriptor_version ?? defaultConfig.faceDescriptorVersion) as string,
-          emotionRecognitionEnabled: (() => {
-            const raw = (configMap as any).emotion_recognition_enabled;
-            if (typeof raw === 'boolean') return raw;
-            const str = String(raw).toLowerCase();
-            return str === 'true' || str === '1' || str === 'yes';
-          })(),
-          autoPrintTasksEnabled: (() => {
-            const raw = configMap.auto_print_tasks_enabled;
-            if (typeof raw === 'boolean') return raw;
-            const str = String(raw).toLowerCase();
-            return str === 'true' || str === '1' || str === 'yes';
-          })(),
-          lateArrivalAlertEnabled: (() => {
-            const raw = configMap.late_arrival_alert_enabled;
-            if (typeof raw === 'boolean') return raw;
-            const str = String(raw).toLowerCase();
-            return str === 'true' || str === '1' || str === 'yes';
-          })()
+          emotionRecognitionEnabled: parseBool(configMap.emotion_recognition_enabled),
+          autoPrintTasksEnabled: parseBool(configMap.auto_print_tasks_enabled),
+          lateArrivalAlertEnabled: parseBool(configMap.late_arrival_alert_enabled),
+          kioskAlertLlegadaTardeSeconds: parseInt(configMap.kiosk_alert_llegada_tarde_seconds) || defaultConfig.kioskAlertLlegadaTardeSeconds,
+          kioskAlertCrucesRojasSeconds: parseInt(configMap.kiosk_alert_cruces_rojas_seconds) || defaultConfig.kioskAlertCrucesRojasSeconds,
+          kioskAlertPausaExcedidaSeconds: parseInt(configMap.kiosk_alert_pausa_excedida_seconds) || defaultConfig.kioskAlertPausaExcedidaSeconds,
+          kioskAlertNovedadesSeconds: parseInt(configMap.kiosk_alert_novedades_seconds) || defaultConfig.kioskAlertNovedadesSeconds,
+          kioskAlertTareasSeconds: parseInt(configMap.kiosk_alert_tareas_seconds) || defaultConfig.kioskAlertTareasSeconds,
+          kioskAlertCrucesRojasEnabled: parseBool(configMap.kiosk_alert_cruces_rojas_enabled ?? 'true'),
+          kioskAlertPausaExcedidaEnabled: parseBool(configMap.kiosk_alert_pausa_excedida_enabled ?? 'true'),
+          kioskAlertNovedadesEnabled: parseBool(configMap.kiosk_alert_novedades_enabled ?? 'true'),
+          kioskAlertTareasEnabled: parseBool(configMap.kiosk_alert_tareas_enabled ?? 'true'),
+          kioskAlertOrder: alertOrder,
         })
       }
     } catch (err) {
@@ -90,19 +118,31 @@ export function useFacialConfig() {
     }
   }
 
+  const dbKeyMap: Record<keyof FacialConfig, string> = {
+    confidenceThresholdKiosk: 'confidence_threshold_kiosk',
+    confidenceThresholdSpecific: 'confidence_threshold_specific',
+    confidenceThresholdDemo: 'confidence_threshold_demo',
+    maxAttemptsPerMinute: 'max_attempts_per_minute',
+    livenessTimeoutSeconds: 'liveness_timeout_seconds',
+    faceDescriptorVersion: 'face_descriptor_version',
+    emotionRecognitionEnabled: 'emotion_recognition_enabled',
+    autoPrintTasksEnabled: 'auto_print_tasks_enabled',
+    lateArrivalAlertEnabled: 'late_arrival_alert_enabled',
+    kioskAlertLlegadaTardeSeconds: 'kiosk_alert_llegada_tarde_seconds',
+    kioskAlertCrucesRojasSeconds: 'kiosk_alert_cruces_rojas_seconds',
+    kioskAlertPausaExcedidaSeconds: 'kiosk_alert_pausa_excedida_seconds',
+    kioskAlertNovedadesSeconds: 'kiosk_alert_novedades_seconds',
+    kioskAlertTareasSeconds: 'kiosk_alert_tareas_seconds',
+    kioskAlertCrucesRojasEnabled: 'kiosk_alert_cruces_rojas_enabled',
+    kioskAlertPausaExcedidaEnabled: 'kiosk_alert_pausa_excedida_enabled',
+    kioskAlertNovedadesEnabled: 'kiosk_alert_novedades_enabled',
+    kioskAlertTareasEnabled: 'kiosk_alert_tareas_enabled',
+    kioskAlertOrder: 'kiosk_alert_order',
+  }
+
   const updateConfig = async (key: keyof FacialConfig, value: string | number) => {
     try {
-      const dbKey = {
-        confidenceThresholdKiosk: 'confidence_threshold_kiosk',
-        confidenceThresholdSpecific: 'confidence_threshold_specific',
-        confidenceThresholdDemo: 'confidence_threshold_demo',
-        maxAttemptsPerMinute: 'max_attempts_per_minute',
-        livenessTimeoutSeconds: 'liveness_timeout_seconds',
-        faceDescriptorVersion: 'face_descriptor_version',
-        emotionRecognitionEnabled: 'emotion_recognition_enabled',
-        autoPrintTasksEnabled: 'auto_print_tasks_enabled',
-        lateArrivalAlertEnabled: 'late_arrival_alert_enabled'
-      }[key]
+      const dbKey = dbKeyMap[key]
 
       const { error: updateError } = await supabase
         .from('facial_recognition_config')
@@ -117,7 +157,6 @@ export function useFacialConfig() {
         throw updateError
       }
 
-      // Actualizar estado local
       setConfig(prev => ({
         ...prev,
         [key]: typeof value === 'string' ? value : value

@@ -25,7 +25,7 @@ export function NovedadesCheckInAlert({
   empleadoNombre,
   novedades,
   onDismiss,
-  duracionSegundos = 15,
+  duracionSegundos = 5,
 }: NovedadesCheckInAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos)
 
