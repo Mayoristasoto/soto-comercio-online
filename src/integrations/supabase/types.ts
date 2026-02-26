@@ -6727,6 +6727,33 @@ export type Database = {
         }
         Relationships: []
       }
+      role_dashboard_sections: {
+        Row: {
+          created_at: string | null
+          habilitado: boolean | null
+          id: string
+          rol: string
+          seccion_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          habilitado?: boolean | null
+          id?: string
+          rol: string
+          seccion_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          habilitado?: boolean | null
+          id?: string
+          rol?: string
+          seccion_key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sidebar_links: {
         Row: {
           created_at: string | null
