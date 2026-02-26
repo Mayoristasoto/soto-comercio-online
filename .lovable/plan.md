@@ -2,20 +2,31 @@
 
 ## Problem
 
-The "Novedades Alert" link was added to the hardcoded `AdminSidebar.tsx`, but the actual sidebar (`UnifiedSidebar`) reads navigation items from the `app_pages` database table. The entry is missing from that table.
+The novedades check (`kiosk_get_novedades`) only exists in `procesarFichaje` (facial recognition flow, line ~861). The `handlePinSuccess` function (PIN flow, line ~1891) skips novedades entirely and goes straight to tareas at step 7 (line ~2074).
+
+The database is correct — the RPC returns the novedad for Gonzalo Justiniano. The bug is purely frontend: the PIN check-in path never calls the novedades RPC.
 
 ## Fix
 
-**Run a migration** to insert a new row into `app_pages` for the Novedades Alert page:
+Add novedades fetch to `handlePinSuccess` in `KioscoCheckIn.tsx`, between step 6 (pausa excedida check, ends ~line 2071) and step 7 (audio + tareas, line ~2073):
 
-- `nombre`: "Novedades Alert"
-- `path`: "/operaciones/novedades-alertas"
-- `icon`: "Bell" (more descriptive than FileText)
-- `mostrar_en_sidebar`: true
-- `visible`: true
-- `roles_permitidos`: admin roles (admin_rrhh, gerente_sucursal, lider_grupo)
-- `parent_id`: the Operaciones group's id
-- `orden`: appropriate position after existing Operaciones children
+```typescript
+// 6.5 Fetch novedades (only on entrada)
+if (tipoAccion === 'entrada') {
+  try {
+    const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+      p_empleado_id: empleadoId,
+    })
+    if (novedadesData && novedadesData.length > 0) {
+      setNovedadesPendientes(novedadesData)
+      setShowNovedadesAlert(true)
+      return // Flow continues when alert is dismissed
+    }
+  } catch (err) {
+    console.error('[PIN] Error fetching novedades:', err)
+  }
+}
+```
 
-This single migration will make the link appear in the sidebar under Operaciones.
+Single file change: `src/pages/KioscoCheckIn.tsx`, insert ~12 lines after line 2071.
 
