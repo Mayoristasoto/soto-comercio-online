@@ -278,17 +278,17 @@ export function RolePreview() {
       return (
         <Collapsible key={node.id} defaultOpen>
           <div
-            className={`flex items-center justify-between p-2 rounded-md transition-colors ${
+            className={`flex items-center justify-between p-2 rounded-md transition-colors border ${
               enabled
-                ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800'
-                : 'bg-muted/50 border border-border opacity-60'
+                ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+                : 'bg-muted/30 border-destructive/30 opacity-50'
             }`}
             style={{ marginLeft: depth * 16 }}
           >
             <CollapsibleTrigger className="flex items-center gap-2 min-w-0 flex-1 text-left">
               <ChevronRight className="h-3 w-3 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
-              {iconNode}
-              <span className="text-sm font-medium truncate">{node.nombre}</span>
+              <span className={enabled ? '' : 'opacity-50'}>{iconNode}</span>
+              <span className={`text-sm font-medium truncate ${!enabled ? 'line-through text-muted-foreground' : ''}`}>{node.nombre}</span>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                 {node.children.length}
               </Badge>
@@ -311,22 +311,53 @@ export function RolePreview() {
     return (
       <div
         key={node.id}
-        className={`flex items-center justify-between p-2 rounded-md transition-colors ${
+        className={`flex items-center justify-between p-2 rounded-md transition-colors border ${
           enabled
-            ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800'
-            : 'bg-muted/50 border border-border opacity-60'
+            ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+            : 'bg-muted/30 border-destructive/30 opacity-50'
         }`}
         style={{ marginLeft: depth * 16 }}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {iconNode}
-          <span className="text-sm truncate">{node.nombre}</span>
+          <span className={enabled ? '' : 'opacity-50'}>{iconNode}</span>
+          <span className={`text-sm truncate ${!enabled ? 'line-through text-muted-foreground' : ''}`}>{node.nombre}</span>
         </div>
         <Switch
           checked={enabled}
           disabled={isToggling}
           onCheckedChange={(checked) => handleToggleSidebarItem(node, checked)}
         />
+      </div>
+    )
+  }
+
+  // Build the "real preview" tree: only items enabled for this role, with sidebar flag
+  const buildRealPreview = (nodes: AppPageNode[]): AppPageNode[] => {
+    return nodes
+      .filter(n => isPageEnabledForRole(n))
+      .map(n => ({
+        ...n,
+        children: buildRealPreview(n.children),
+      }))
+  }
+  const realPreviewTree = buildRealPreview(tree)
+
+  const renderPreviewNode = (node: AppPageNode, depth: number = 0): React.ReactNode => {
+    const iconNode = ICON_MAP[node.icon || "FileText"] || <FileText className="h-4 w-4 text-muted-foreground" />
+    const hasChildren = node.children.length > 0
+
+    return (
+      <div key={node.id}>
+        <div
+          className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm ${
+            hasChildren ? 'font-semibold text-primary bg-primary/5' : 'text-foreground hover:bg-accent/50'
+          }`}
+          style={{ paddingLeft: 8 + depth * 14 }}
+        >
+          {iconNode}
+          <span className="truncate">{node.nombre}</span>
+        </div>
+        {hasChildren && node.children.map(child => renderPreviewNode(child, depth + 1))}
       </div>
     )
   }
@@ -366,19 +397,22 @@ export function RolePreview() {
 
         <TabsContent value={selectedRole} className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Sidebar Preview - Hierarchical */}
+            {/* Sidebar Switches */}
             <Card className="lg:col-span-1">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Target className="h-5 w-5" />
                   Menú Sidebar
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    {sidebarEnabled} / {sidebarTotal}
+                  </Badge>
                 </CardTitle>
                 <CardDescription>
                   Toggle para habilitar/deshabilitar accesos. Activar un grupo activa todos sus hijos.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[400px] pr-4">
+                <ScrollArea className="h-[500px] pr-4">
                   <div className="space-y-2">
                     {tree.map(node => renderNode(node))}
                   </div>
@@ -386,34 +420,66 @@ export function RolePreview() {
               </CardContent>
             </Card>
 
+            {/* Real Sidebar Preview */}
+            <Card className="lg:col-span-1 border-primary/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Vista Real del Rol
+                  <Badge className="ml-auto text-xs bg-primary/10 text-primary border-primary/30">
+                    {realPreviewTree.length} grupos
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  Así se ve el sidebar para <strong>{selectedRole === 'empleado' ? 'Empleado' : 'Gerente'}</strong>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px] pr-2">
+                  {realPreviewTree.length > 0 ? (
+                    <div className="space-y-0.5 border rounded-lg p-2 bg-sidebar">
+                      {realPreviewTree.map(node => renderPreviewNode(node))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                      Sin accesos habilitados
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
             {/* Dashboard Preview */}
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-1">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Dashboard - Secciones Visibles
+                  Dashboard
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    {dashboardEnabled} / {DASHBOARD_SECTIONS.length}
+                  </Badge>
                 </CardTitle>
                 <CardDescription>
                   Toggle para habilitar/deshabilitar secciones del dashboard
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <ScrollArea className="h-[500px] pr-4">
+                  <div className="space-y-2">
                     {DASHBOARD_SECTIONS.map((section) => {
                       const enabled = dashboardConfig[section.key] !== false
                       return (
                         <div 
                           key={section.key}
                           className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                            enabled ? 'bg-card' : 'bg-muted/50 opacity-60'
+                            enabled ? 'bg-card' : 'bg-muted/30 opacity-50'
                           }`}
                         >
                           <div className="p-2 rounded-md bg-muted">
                             {section.icon}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{section.title}</p>
+                            <p className={`font-medium text-sm ${!enabled ? 'line-through text-muted-foreground' : ''}`}>{section.title}</p>
                             <p className="text-xs text-muted-foreground truncate">
                               {section.description}
                             </p>
