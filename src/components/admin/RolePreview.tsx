@@ -1,8 +1,12 @@
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
+import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 import { 
   User, 
   Users, 
@@ -21,79 +25,178 @@ import {
   BarChart3,
   Settings,
   Eye,
-  Lock,
-  Unlock
 } from "lucide-react"
 
-interface SidebarItem {
-  label: string
-  icon: React.ReactNode
-  access: boolean
+interface AppPage {
+  id: string
+  nombre: string
+  path: string
+  icon: string | null
+  roles_permitidos: string[] | null
+  visible: boolean
+  mostrar_en_sidebar: boolean | null
+  parent_id: string | null
+  orden: number
 }
 
-interface DashboardSection {
+interface DashboardSectionDef {
+  key: string
   title: string
   description: string
   icon: React.ReactNode
-  access: boolean
+}
+
+const DASHBOARD_SECTIONS: DashboardSectionDef[] = [
+  { key: "tareas", title: "Mis Tareas Asignadas", description: "Ve y actualiza el estado de tareas pendientes", icon: <CheckCircle2 className="h-5 w-5 text-blue-600" /> },
+  { key: "capacitaciones", title: "Mis Capacitaciones", description: "Accede a materiales de estudio asignados", icon: <BookOpen className="h-5 w-5 text-green-600" /> },
+  { key: "documentos", title: "Mis Documentos", description: "Revisa y confirma lectura de documentos", icon: <FileText className="h-5 w-5 text-purple-600" /> },
+  { key: "logros", title: "Mis Logros", description: "Galería de medallas y reconocimientos", icon: <Award className="h-5 w-5 text-yellow-600" /> },
+  { key: "calificaciones", title: "Calificaciones de Clientes", description: "Visualiza calificaciones recibidas", icon: <Star className="h-5 w-5 text-yellow-500" /> },
+  { key: "entregas", title: "Entregas de Elementos", description: "Confirma recepción de elementos", icon: <Package className="h-5 w-5 text-orange-600" /> },
+  { key: "eventos", title: "Próximos Eventos", description: "Cumpleaños y aniversarios del equipo", icon: <Calendar className="h-5 w-5 text-cyan-600" /> },
+  { key: "empleados_sucursal", title: "Empleados de Mi Sucursal", description: "Gestión del personal a cargo", icon: <Users className="h-5 w-5 text-indigo-600" /> },
+  { key: "fichajes_equipo", title: "Fichajes del Equipo", description: "Control de asistencia de empleados", icon: <Clock className="h-5 w-5 text-teal-600" /> },
+  { key: "cambios_horario", title: "Cambios de Horario", description: "Solicitar cambios para empleados", icon: <Clock className="h-5 w-5 text-amber-600" /> },
+  { key: "aprobar_vacaciones", title: "Aprobar Vacaciones", description: "Gestionar solicitudes de vacaciones", icon: <Calendar className="h-5 w-5 text-green-600" /> },
+  { key: "evaluaciones", title: "Evaluaciones", description: "Realizar evaluaciones de desempeño", icon: <BarChart3 className="h-5 w-5 text-blue-600" /> },
+]
+
+const ICON_MAP: Record<string, React.ReactNode> = {
+  User: <User className="h-4 w-4" />,
+  Users: <Users className="h-4 w-4" />,
+  Shield: <Shield className="h-4 w-4" />,
+  CheckCircle2: <CheckCircle2 className="h-4 w-4" />,
+  BookOpen: <BookOpen className="h-4 w-4" />,
+  FileText: <FileText className="h-4 w-4" />,
+  Trophy: <Trophy className="h-4 w-4" />,
+  Calendar: <Calendar className="h-4 w-4" />,
+  Award: <Award className="h-4 w-4" />,
+  Star: <Star className="h-4 w-4" />,
+  Package: <Package className="h-4 w-4" />,
+  Clock: <Clock className="h-4 w-4" />,
+  Building2: <Building2 className="h-4 w-4" />,
+  Target: <Target className="h-4 w-4" />,
+  BarChart3: <BarChart3 className="h-4 w-4" />,
+  Settings: <Settings className="h-4 w-4" />,
 }
 
 export function RolePreview() {
   const [selectedRole, setSelectedRole] = useState<'empleado' | 'gerente_sucursal'>('empleado')
+  const [appPages, setAppPages] = useState<AppPage[]>([])
+  const [dashboardConfig, setDashboardConfig] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(true)
+  const [togglingPage, setTogglingPage] = useState<string | null>(null)
+  const [togglingSection, setTogglingSection] = useState<string | null>(null)
+  const { toast } = useToast()
 
-  const empleadoSidebar: SidebarItem[] = [
-    { label: "Dashboard Personal", icon: <User className="h-4 w-4" />, access: true },
-    { label: "Mis Tareas", icon: <CheckCircle2 className="h-4 w-4" />, access: true },
-    { label: "Capacitaciones", icon: <BookOpen className="h-4 w-4" />, access: true },
-    { label: "Documentos", icon: <FileText className="h-4 w-4" />, access: true },
-    { label: "Vacaciones", icon: <Calendar className="h-4 w-4" />, access: true },
-    { label: "Mis Insignias", icon: <Award className="h-4 w-4" />, access: true },
-    { label: "Fichero (Solo Historial)", icon: <Clock className="h-4 w-4" />, access: true },
-    { label: "Solicitudes", icon: <FileText className="h-4 w-4" />, access: true },
-    { label: "Autogestión", icon: <User className="h-4 w-4" />, access: true },
-    { label: "Administración", icon: <Shield className="h-4 w-4" />, access: false },
-    { label: "Gestión de Personal", icon: <Users className="h-4 w-4" />, access: false },
-    { label: "Configuración Sistema", icon: <Settings className="h-4 w-4" />, access: false },
-  ]
+  const loadAppPages = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("app_pages")
+      .select("*")
+      .eq("visible", true)
+      .eq("mostrar_en_sidebar", true)
+      .order("orden", { ascending: true })
 
-  const gerenteSidebar: SidebarItem[] = [
-    { label: "Dashboard Personal", icon: <User className="h-4 w-4" />, access: true },
-    { label: "Mis Tareas", icon: <CheckCircle2 className="h-4 w-4" />, access: true },
-    { label: "Capacitaciones", icon: <BookOpen className="h-4 w-4" />, access: true },
-    { label: "Documentos", icon: <FileText className="h-4 w-4" />, access: true },
-    { label: "Vacaciones", icon: <Calendar className="h-4 w-4" />, access: true },
-    { label: "Mis Insignias", icon: <Award className="h-4 w-4" />, access: true },
-    { label: "Fichero (Completo)", icon: <Clock className="h-4 w-4" />, access: true },
-    { label: "Cambios de Horario", icon: <Clock className="h-4 w-4" />, access: true },
-    { label: "Solicitudes (Aprobar)", icon: <FileText className="h-4 w-4" />, access: true },
-    { label: "Vacaciones (Aprobar)", icon: <Calendar className="h-4 w-4" />, access: true },
-    { label: "Empleados Sucursal", icon: <Users className="h-4 w-4" />, access: true },
-    { label: "Evaluaciones", icon: <BarChart3 className="h-4 w-4" />, access: true },
-    { label: "Administración", icon: <Shield className="h-4 w-4" />, access: false },
-    { label: "Configuración Sistema", icon: <Settings className="h-4 w-4" />, access: false },
-  ]
+    if (error) {
+      console.error("Error loading app_pages:", error)
+      return
+    }
+    setAppPages(data || [])
+  }, [])
 
-  const empleadoDashboard: DashboardSection[] = [
-    { title: "Mis Tareas Asignadas", description: "Ve y actualiza el estado de tareas pendientes", icon: <CheckCircle2 className="h-5 w-5 text-blue-600" />, access: true },
-    { title: "Mis Capacitaciones", description: "Accede a materiales de estudio asignados", icon: <BookOpen className="h-5 w-5 text-green-600" />, access: true },
-    { title: "Mis Documentos", description: "Revisa y confirma lectura de documentos", icon: <FileText className="h-5 w-5 text-purple-600" />, access: true },
-    { title: "Mis Logros", description: "Galería de medallas y reconocimientos", icon: <Award className="h-5 w-5 text-yellow-600" />, access: true },
-    { title: "Calificaciones de Clientes", description: "Visualiza calificaciones recibidas", icon: <Star className="h-5 w-5 text-yellow-500" />, access: true },
-    { title: "Entregas de Elementos", description: "Confirma recepción de elementos", icon: <Package className="h-5 w-5 text-orange-600" />, access: true },
-    { title: "Próximos Eventos", description: "Cumpleaños y aniversarios del equipo", icon: <Calendar className="h-5 w-5 text-cyan-600" />, access: true },
-  ]
+  const loadDashboardConfig = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("role_dashboard_sections")
+      .select("*")
+      .eq("rol", selectedRole)
 
-  const gerenteDashboard: DashboardSection[] = [
-    ...empleadoDashboard,
-    { title: "Empleados de Mi Sucursal", description: "Gestión del personal a cargo", icon: <Users className="h-5 w-5 text-indigo-600" />, access: true },
-    { title: "Fichajes del Equipo", description: "Control de asistencia de empleados", icon: <Clock className="h-5 w-5 text-teal-600" />, access: true },
-    { title: "Cambios de Horario", description: "Solicitar cambios para empleados", icon: <Clock className="h-5 w-5 text-amber-600" />, access: true },
-    { title: "Aprobar Vacaciones", description: "Gestionar solicitudes de vacaciones", icon: <Calendar className="h-5 w-5 text-green-600" />, access: true },
-    { title: "Evaluaciones", description: "Realizar evaluaciones de desempeño", icon: <BarChart3 className="h-5 w-5 text-blue-600" />, access: true },
-  ]
+    if (error) {
+      console.error("Error loading dashboard config:", error)
+      return
+    }
 
-  const currentSidebar = selectedRole === 'empleado' ? empleadoSidebar : gerenteSidebar
-  const currentDashboard = selectedRole === 'empleado' ? empleadoDashboard : gerenteDashboard
+    const config: Record<string, boolean> = {}
+    // Default all sections to true
+    DASHBOARD_SECTIONS.forEach(s => { config[s.key] = true })
+    // Override with DB values
+    data?.forEach((row: any) => {
+      config[row.seccion_key] = row.habilitado
+    })
+    setDashboardConfig(config)
+  }, [selectedRole])
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      await Promise.all([loadAppPages(), loadDashboardConfig()])
+      setLoading(false)
+    }
+    load()
+  }, [loadAppPages, loadDashboardConfig])
+
+  const handleToggleSidebarItem = async (page: AppPage, enabled: boolean) => {
+    setTogglingPage(page.id)
+    const currentRoles = page.roles_permitidos || []
+    let newRoles: string[]
+
+    if (enabled) {
+      newRoles = [...new Set([...currentRoles, selectedRole])]
+    } else {
+      newRoles = currentRoles.filter(r => r !== selectedRole)
+    }
+
+    const { error } = await supabase
+      .from("app_pages")
+      .update({ roles_permitidos: newRoles, updated_at: new Date().toISOString() })
+      .eq("id", page.id)
+
+    if (error) {
+      toast({ title: "Error", description: "No se pudo actualizar el acceso", variant: "destructive" })
+    } else {
+      toast({ title: enabled ? "Acceso habilitado" : "Acceso deshabilitado", description: `${page.nombre} para ${selectedRole}` })
+      // Update local state
+      setAppPages(prev => prev.map(p => p.id === page.id ? { ...p, roles_permitidos: newRoles } : p))
+    }
+    setTogglingPage(null)
+  }
+
+  const handleToggleDashboardSection = async (sectionKey: string, enabled: boolean) => {
+    setTogglingSection(sectionKey)
+
+    const { error } = await supabase
+      .from("role_dashboard_sections")
+      .upsert({
+        rol: selectedRole,
+        seccion_key: sectionKey,
+        habilitado: enabled,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "rol,seccion_key" })
+
+    if (error) {
+      toast({ title: "Error", description: "No se pudo actualizar la sección", variant: "destructive" })
+    } else {
+      toast({ title: enabled ? "Sección habilitada" : "Sección deshabilitada", description: `${DASHBOARD_SECTIONS.find(s => s.key === sectionKey)?.title} para ${selectedRole}` })
+      setDashboardConfig(prev => ({ ...prev, [sectionKey]: enabled }))
+    }
+    setTogglingSection(null)
+  }
+
+  const isPageEnabledForRole = (page: AppPage) => {
+    return (page.roles_permitidos || []).includes(selectedRole)
+  }
+
+  const sidebarEnabled = appPages.filter(p => isPageEnabledForRole(p)).length
+  const sidebarDisabled = appPages.length - sidebarEnabled
+  const dashboardEnabled = Object.values(dashboardConfig).filter(Boolean).length
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-[500px] w-full" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -102,7 +205,7 @@ export function RolePreview() {
         <div>
           <h2 className="text-xl font-semibold">Vista Previa de Roles</h2>
           <p className="text-sm text-muted-foreground">
-            Visualiza qué información y accesos tiene cada rol en el sistema
+            Activa o desactiva secciones para cada rol del sistema
           </p>
         </div>
       </div>
@@ -129,32 +232,36 @@ export function RolePreview() {
                   Menú Sidebar
                 </CardTitle>
                 <CardDescription>
-                  Opciones visibles en el menú lateral
+                  Toggle para habilitar/deshabilitar accesos
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px] pr-4">
                   <div className="space-y-2">
-                    {currentSidebar.map((item, index) => (
-                      <div 
-                        key={index}
-                        className={`flex items-center justify-between p-2 rounded-md ${
-                          item.access 
-                            ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
-                            : 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {item.icon}
-                          <span className="text-sm">{item.label}</span>
+                    {appPages.map((page) => {
+                      const enabled = isPageEnabledForRole(page)
+                      const iconNode = ICON_MAP[page.icon || "FileText"] || <FileText className="h-4 w-4" />
+                      return (
+                        <div 
+                          key={page.id}
+                          className={`flex items-center justify-between p-2 rounded-md transition-colors ${
+                            enabled 
+                              ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' 
+                              : 'bg-muted/50 border border-border opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {iconNode}
+                            <span className="text-sm truncate">{page.nombre}</span>
+                          </div>
+                          <Switch
+                            checked={enabled}
+                            disabled={togglingPage === page.id}
+                            onCheckedChange={(checked) => handleToggleSidebarItem(page, checked)}
+                          />
                         </div>
-                        {item.access ? (
-                          <Unlock className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <Lock className="h-4 w-4 text-red-500" />
-                        )}
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -168,31 +275,38 @@ export function RolePreview() {
                   Dashboard - Secciones Visibles
                 </CardTitle>
                 <CardDescription>
-                  Información mostrada en el dashboard del {selectedRole === 'empleado' ? 'empleado' : 'gerente'}
+                  Toggle para habilitar/deshabilitar secciones del dashboard
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px] pr-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {currentDashboard.map((section, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-start gap-3 p-3 rounded-lg border bg-card"
-                      >
-                        <div className="p-2 rounded-md bg-muted">
-                          {section.icon}
+                    {DASHBOARD_SECTIONS.map((section) => {
+                      const enabled = dashboardConfig[section.key] !== false
+                      return (
+                        <div 
+                          key={section.key}
+                          className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                            enabled ? 'bg-card' : 'bg-muted/50 opacity-60'
+                          }`}
+                        >
+                          <div className="p-2 rounded-md bg-muted">
+                            {section.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{section.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {section.description}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={enabled}
+                            disabled={togglingSection === section.key}
+                            onCheckedChange={(checked) => handleToggleDashboardSection(section.key, checked)}
+                          />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{section.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {section.description}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="text-green-600 border-green-300 shrink-0">
-                          Visible
-                        </Badge>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -210,19 +324,19 @@ export function RolePreview() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/30">
                   <p className="text-2xl font-bold text-green-600">
-                    {currentSidebar.filter(i => i.access).length}
+                    {sidebarEnabled}
                   </p>
                   <p className="text-sm text-muted-foreground">Menús Accesibles</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950/30">
                   <p className="text-2xl font-bold text-red-600">
-                    {currentSidebar.filter(i => !i.access).length}
+                    {sidebarDisabled}
                   </p>
                   <p className="text-sm text-muted-foreground">Menús Restringidos</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30">
                   <p className="text-2xl font-bold text-blue-600">
-                    {currentDashboard.length}
+                    {dashboardEnabled}
                   </p>
                   <p className="text-sm text-muted-foreground">Secciones Dashboard</p>
                 </div>
