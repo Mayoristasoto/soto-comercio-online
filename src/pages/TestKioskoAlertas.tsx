@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { CrucesRojasKioscoAlert } from '@/components/kiosko/CrucesRojasKioscoAlert';
 import { PausaExcedidaAlert } from '@/components/kiosko/PausaExcedidaAlert';
 import { LlegadaTardeAlert } from '@/components/kiosko/LlegadaTardeAlert';
+import { NovedadesCheckInAlert } from '@/components/kiosko/NovedadesCheckInAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Coffee, Clock, AlertTriangle, Trash2, Play, User } from 'lucide-react';
+import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const EMPLEADOS_TEST = [
@@ -19,6 +20,7 @@ const TestKioskoAlertas = () => {
   const [showCrucesRojas, setShowCrucesRojas] = useState(false);
   const [showPausaExcedida, setShowPausaExcedida] = useState(false);
   const [showLlegadaTarde, setShowLlegadaTarde] = useState(false);
+  const [showNovedades, setShowNovedades] = useState(false);
   const [loading, setLoading] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(EMPLEADOS_TEST[0]);
 
@@ -126,6 +128,14 @@ const TestKioskoAlertas = () => {
               Mostrar Llegada Tarde Alert
             </Button>
 
+            <Button 
+              onClick={() => setShowNovedades(true)} 
+              variant="outline"
+              className="w-full border-primary text-primary hover:bg-primary/10"
+            >
+              <Bell className="mr-2 h-4 w-4" />
+              Mostrar Novedades Alert
+            </Button>
             <p className="text-sm text-muted-foreground text-center mt-4">
               Las alertas se cierran automáticamente después de unos segundos.<br/>
               Probá en diferentes resoluciones (mobile/tablet/desktop).
@@ -251,6 +261,19 @@ const TestKioskoAlertas = () => {
           onDismiss={() => setShowLlegadaTarde(false)}
           duracionSegundos={10}
           registrado={true}
+        />
+      )}
+
+      {showNovedades && (
+        <NovedadesCheckInAlert
+          empleadoId="test-id"
+          empleadoNombre="Juan Pérez"
+          novedades={[
+            { id: '1', titulo: 'Reunión de equipo', contenido: 'Mañana a las 10:00 hay reunión obligatoria en sala principal.\nNo faltar.', imprimible: true },
+            { id: '2', titulo: 'Nuevo uniforme', contenido: 'A partir del lunes se debe usar el nuevo uniforme corporativo.', imprimible: false },
+          ]}
+          onDismiss={() => setShowNovedades(false)}
+          duracionSegundos={15}
         />
       )}
     </div>
