@@ -1,55 +1,49 @@
 
 
-## Plan: Condicionar alerta de Cruces Rojas en el kiosco
+## Plan: Crear plantilla "Control Stock Cigarrillos" y bloquear fichaje sábado
 
-### Lógica solicitada
+### Paso 1: Insertar plantilla de tarea
 
-La alerta de **Cruces Rojas** en el kiosco actualmente se muestra siempre que haya al menos 1 cruz roja en la semana. Se cambiará a:
+Insertar en `tareas_plantillas` una plantilla semanal flexible para Carlos Espina (ID: `6e1bd507-5956-45cf-97d9-2d07f55c9ccb`):
 
-1. **Mostrar inmediatamente** solo si el empleado tiene **2+ llegadas tarde** O **2+ pausas excedidas** en la semana actual
-2. **Si tiene cruces pero no llega al umbral de 2**, mostrar la alerta **solo los sábados** (día 6) cuando el empleado ficha salida (fin de jornada), para no generar malestar durante la semana
-3. Las alertas individuales de **Llegada Tarde**, **Pausa Excedida** y **Novedades** siguen funcionando normalmente sin cambios
+- **Título**: Control Stock Cigarrillos
+- **Frecuencia**: `semanal_flexible`
+- **Veces por semana**: 3
+- **Recordatorio fin de semana**: true
+- **Categoría**: Operaciones (`414f4d67-5c1d-453a-bec4-cfdf5782b5c1`)
+- **Empleados asignados**: `["6e1bd507-5956-45cf-97d9-2d07f55c9ccb"]`
+- **Sucursal**: José Martí (`9682b6cf-f904-4497-918c-d0c9c061b9ec`)
+- **Prioridad**: alta
 
-### Archivo a modificar
+### Paso 2: Modificar lógica de salida del sábado en KioscoCheckIn.tsx
 
-**`src/pages/KioscoCheckIn.tsx`** — Sección de verificación de cruces rojas (~líneas 707-731)
+Actualmente, al fichar salida se verifica si hay tareas pendientes con fecha límite vencida. Se agregará una verificación adicional:
 
-### Cambio
+**Los sábados**, antes de permitir fichar salida, consultar las tareas `semanal_flexible` del empleado en la semana actual y verificar si cumplió la cantidad mínima de veces (`veces_por_semana`). Si no cumplió:
 
-Reemplazar la condición actual:
-```
-if (crucesData.total_cruces_rojas > 0) → mostrar alerta
-```
+1. Mostrar el dialog `ConfirmarTareasDia` con las tareas incompletas
+2. **Bloquear la salida** — eliminar el botón "Omitir por ahora" cuando hay tareas de tipo semanal_flexible no cumplidas en sábado
+3. El empleado debe marcar las tareas como completadas para poder fichar salida
 
-Por la nueva lógica:
+**Cambios en `ejecutarAccion`** (~línea 1530):
 ```typescript
-const llegadasTarde = crucesData.llegadas_tarde || 0
-const pausasExcedidas = crucesData.pausas_excedidas || 0
-const hoy = new Date()
-const esSabado = hoy.getDay() === 6
-
-// Determinar la acción actual (salida = fin de jornada)
-const esFinJornada = acciones.some(a => a.tipo === 'salida')
-
-const debeAlertarInmediato = llegadasTarde >= 2 || pausasExcedidas >= 2
-const debeAlertarSabado = esSabado && esFinJornada && crucesData.total_cruces_rojas > 0
-
-if (debeAlertarInmediato || debeAlertarSabado) {
-  setCrucesRojas(crucesData)
-  setShowCrucesRojasAlert(true)
-  setShowFacialAuth(false)
-  return
+// Si es sábado y salida, verificar tareas semanal_flexible
+if (tipoAccion === 'salida' && new Date().getDay() === 6) {
+  // Consultar plantillas semanal_flexible asignadas al empleado
+  // Contar tareas completadas esta semana vs veces_por_semana
+  // Si no cumple, mostrar ConfirmarTareasDia con bloqueo
 }
 ```
 
-### Resumen
+**Cambios en `ConfirmarTareasDia`**:
+- Agregar prop `bloquearSalida?: boolean`
+- Cuando `bloquearSalida = true`, ocultar botón "Omitir por ahora" y no permitir cerrar el dialog sin completar las tareas obligatorias
 
-| Condición | Comportamiento |
-|-----------|---------------|
-| 2+ llegadas tarde en la semana | Mostrar alerta inmediatamente (cualquier día) |
-| 2+ pausas excedidas en la semana | Mostrar alerta inmediatamente (cualquier día) |
-| Tiene cruces pero < 2 de cada tipo | Solo mostrar el sábado al fichar salida |
-| Llegada Tarde individual | Sigue mostrándose normalmente |
-| Pausa Excedida individual | Sigue mostrándose normalmente |
-| Novedades | Sigue mostrándose normalmente |
+### Detalle técnico
+
+La consulta del sábado:
+1. Obtener plantillas con `frecuencia = 'semanal_flexible'` asignadas al empleado
+2. Contar tareas `completada` de esas plantillas en la semana (lunes-domingo)
+3. Comparar contra `veces_por_semana`
+4. Si faltan, generar/mostrar las tareas pendientes y bloquear salida
 
