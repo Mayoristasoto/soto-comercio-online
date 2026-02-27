@@ -27,7 +27,8 @@ export function NovedadesCheckInAlert({
   onDismiss,
   duracionSegundos = 5,
 }: NovedadesCheckInAlertProps) {
-  const [countdown, setCountdown] = useState(duracionSegundos)
+  const [confirmed, setConfirmed] = useState(false)
+  const [countdown, setCountdown] = useState(3)
 
   useEffect(() => {
     // Mark all as viewed
@@ -44,7 +45,11 @@ export function NovedadesCheckInAlert({
       }
     }
     markViewed()
+  }, [empleadoId, novedades])
 
+  // After confirmation, auto-dismiss after short countdown
+  useEffect(() => {
+    if (!confirmed) return
     const interval = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -55,9 +60,8 @@ export function NovedadesCheckInAlert({
         return prev - 1
       })
     }, 1000)
-
     return () => clearInterval(interval)
-  }, [onDismiss, empleadoId, novedades])
+  }, [confirmed, onDismiss])
 
   const handlePrint = (novedad: NovedadItem) => {
     const printWindow = window.open('', '_blank', 'width=400,height=600')
@@ -112,13 +116,20 @@ export function NovedadesCheckInAlert({
         </ScrollArea>
 
         {/* Footer */}
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Cerrando en {countdown}s...
-          </p>
-          <Button variant="outline" onClick={onDismiss}>
-            <X className="h-4 w-4 mr-1" /> Cerrar
-          </Button>
+        <div className="mt-4 flex items-center justify-center">
+          {!confirmed ? (
+            <Button
+              size="lg"
+              className="w-full max-w-xs text-lg py-6"
+              onClick={() => setConfirmed(true)}
+            >
+              ✅ Confirmar lectura
+            </Button>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              ✅ Confirmado — cerrando en {countdown}s...
+            </p>
+          )}
         </div>
       </Card>
     </div>
