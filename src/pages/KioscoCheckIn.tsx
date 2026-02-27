@@ -723,10 +723,21 @@ export default function KioscoCheckIn() {
             .maybeSingle()
           
           if (!crucesError && crucesData && crucesData.total_cruces_rojas > 0) {
-            setCrucesRojas(crucesData)
-            setShowCrucesRojasAlert(true)
-            setShowFacialAuth(false)
-            return
+            const llegadasTarde = crucesData.llegadas_tarde || 0
+            const pausasExcedidas = crucesData.pausas_excedidas || 0
+            const hoy = new Date()
+            const esSabado = hoy.getDay() === 6
+            const esFinJornada = acciones.some(a => a.tipo === 'salida')
+
+            const debeAlertarInmediato = llegadasTarde >= 2 || pausasExcedidas >= 2
+            const debeAlertarSabado = esSabado && esFinJornada && crucesData.total_cruces_rojas > 0
+
+            if (debeAlertarInmediato || debeAlertarSabado) {
+              setCrucesRojas(crucesData)
+              setShowCrucesRojasAlert(true)
+              setShowFacialAuth(false)
+              return
+            }
           }
         }
       } catch (error) {
