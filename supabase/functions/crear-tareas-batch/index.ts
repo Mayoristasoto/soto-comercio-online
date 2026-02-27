@@ -34,13 +34,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true, updated: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Support update action
+    // Support update action (single by id or bulk by filters)
     if (body.action === 'update') {
-      const { id, changes, tabla } = body;
+      const { id, changes, tabla, filtros } = body;
       const targetTable = tabla || 'tareas';
-      const { data, error } = await supabase.from(targetTable).update(changes).eq('id', id).select();
+      let query = supabase.from(targetTable).update(changes);
+      if (filtros && typeof filtros === 'object') {
+        for (const [key, value] of Object.entries(filtros)) {
+          query = query.eq(key, value);
+        }
+      } else if (id) {
+        query = query.eq('id', id);
+      }
+      const { data, error } = await query.select();
       if (error) throw error;
-      return new Response(JSON.stringify({ success: true, updated: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: true, updated: data?.length || 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Support generic insert action
