@@ -1,31 +1,37 @@
 
 
-## Plan
+## Plan: Marcar 77 tareas pendientes como vencidas
 
-### 1. Add PDF export button (executive report style)
+Usar el Edge Function `crear-tareas-batch` con acción `update` para cambiar el estado de todas las tareas pendientes a `vencida`.
 
-**File: `src/pages/ReporteLlegadasTardeGerentes.tsx`**
+### Paso 1: Actualizar tareas via Edge Function
 
-- Add a `generarPDFEjecutivo` function using `jsPDF` + `jspdf-autotable` that generates a professional executive report matching the existing PDF style (`pdfStyles.ts`):
-  - Page 1: Header with logo + title, period info, executive summary cards (total late arrivals, total minutes, managers with incidents, worst offender)
-  - Page 2+: Detail table per manager with columns: Gerente, Sucursal, Llegadas Tarde, Total Min, % Días Tarde, Prom Min/Vez
-  - Page 3+: Daily detail table (Fecha, Día, H. Programada, H. Real, Min Tarde) grouped by manager
-  - Footer on all pages with company info and page numbers
-- Add PDF button next to the existing XLSX button (use a dropdown with both options, or two separate buttons)
+Invocar `crear-tareas-batch` con:
+```json
+{
+  "action": "update",
+  "table": "tareas",
+  "data": { "estado": "vencida" },
+  "filters": { "estado": "pendiente" }
+}
+```
 
-### 2. Add delete/annul option per late arrival row
+Esto cambia las 77 tareas de `pendiente` → `vencida`, preservando el historial completo.
 
-**File: `src/pages/ReporteLlegadasTardeGerentes.tsx`**
+### Paso 2: Resetear plantillas para nueva generación
 
-- In the expanded detail rows, add a context/dropdown menu (three-dot icon or right-click) on each `llegadaTarde` row
-- Menu option: "Eliminar llegada tarde" (actually soft-delete: sets `anulada = true` on `empleado_cruces_rojas`)
-- Show a `ConfirmDialog` before executing the annulment
-- After confirming, update the record in Supabase (`anulada: true`, `motivo_anulacion`) and refresh data
-- Import `DropdownMenu` components and `ConfirmDialog`
+Limpiar `ultima_generacion` en `tareas_plantillas` para que el ciclo diario genere tareas frescas:
+```json
+{
+  "action": "update",
+  "table": "tareas_plantillas",
+  "data": { "ultima_generacion": null },
+  "filters": { "activa": true }
+}
+```
 
-### Files modified
-
-| File | Change |
-|------|--------|
-| `src/pages/ReporteLlegadasTardeGerentes.tsx` | Add PDF export function, add dropdown menu per detail row with annul option |
+### Resultado
+- 77 tareas quedan como `vencida` (historial intacto)
+- Plantillas listas para generar nuevas tareas en el próximo ciclo
+- No se necesitan cambios de código
 
