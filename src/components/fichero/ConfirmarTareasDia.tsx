@@ -27,6 +27,8 @@ interface ConfirmarTareasDiaProps {
   onOpenChange: (open: boolean) => void;
   empleadoId: string;
   onConfirm: () => void;
+  bloquearSalida?: boolean;
+  tareasFlexibles?: Task[];
 }
 
 const priorityColors = {
@@ -36,7 +38,7 @@ const priorityColors = {
   urgente: 'bg-red-100 text-red-800 border-red-200'
 };
 
-export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }: ConfirmarTareasDiaProps) => {
+export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, bloquearSalida = false, tareasFlexibles }: ConfirmarTareasDiaProps) => {
   const [tareas, setTareas] = useState<Task[]>([]);
   const [tareasCompletadas, setTareasCompletadas] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -45,9 +47,15 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
 
   useEffect(() => {
     if (open) {
-      loadTareasDelDia();
+      if (tareasFlexibles && tareasFlexibles.length > 0) {
+        // Si vienen tareas flexibles inyectadas, usarlas directamente
+        setTareas(tareasFlexibles);
+        setLoading(false);
+      } else {
+        loadTareasDelDia();
+      }
     }
-  }, [open, empleadoId]);
+  }, [open, empleadoId, tareasFlexibles]);
 
   const loadTareasDelDia = async () => {
     setLoading(true);
@@ -216,15 +224,17 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
   const tareasHoy = tareas.filter(t => getDiasVencimiento(t.fecha_limite) === 0);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={bloquearSalida ? undefined : onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto" onPointerDownOutside={bloquearSalida ? (e) => e.preventDefault() : undefined} onEscapeKeyDown={bloquearSalida ? (e) => e.preventDefault() : undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Clock className="h-5 w-5" />
-            <span>Revisar Tareas Pendientes</span>
+            <span>{bloquearSalida ? '⚠️ Tareas Obligatorias Pendientes' : 'Revisar Tareas Pendientes'}</span>
           </DialogTitle>
           <DialogDescription>
-            Marca las tareas que completaste antes de salir
+            {bloquearSalida 
+              ? 'Debes completar estas tareas antes de poder fichar salida'
+              : 'Marca las tareas que completaste antes de salir'}
           </DialogDescription>
         </DialogHeader>
 
@@ -304,18 +314,20 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm }
         </div>
 
         <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={handleOmitir}
-            disabled={completing}
-          >
-            Omitir por ahora
-          </Button>
+          {!bloquearSalida && (
+            <Button
+              variant="outline"
+              onClick={handleOmitir}
+              disabled={completing}
+            >
+              Omitir por ahora
+            </Button>
+          )}
           <Button
             onClick={handleConfirmar}
-            disabled={completing || loading}
+            disabled={completing || loading || (bloquearSalida && tareasCompletadas.size === 0)}
           >
-            {completing ? "Confirmando..." : "Confirmar y Salir"}
+            {completing ? "Confirmando..." : bloquearSalida ? `Completar y Fichar Salida (${tareasCompletadas.size}/${tareas.length})` : "Confirmar y Salir"}
           </Button>
         </DialogFooter>
       </DialogContent>
