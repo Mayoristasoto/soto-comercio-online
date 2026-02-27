@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client"
 import { format, startOfMonth, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import * as XLSX from "xlsx"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
+import { PDF_STYLES, COMPANY_INFO } from "@/utils/pdfStyles"
 import {
   Clock,
   Download,
@@ -13,6 +16,10 @@ import {
   Timer,
   TrendingUp,
   Calendar,
+  FileText,
+  FileSpreadsheet,
+  MoreHorizontal,
+  Trash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +27,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { toast } from "sonner"
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -49,7 +64,6 @@ const DIAS_SEMANA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Vier
 
 function parsearObservaciones(obs: string): { horaReal: string; horaProgramada: string } {
   if (!obs) return { horaReal: "—", horaProgramada: "—" }
-  // Ej: "Llegada tarde en kiosco: 10:37 a. m. (programado: 10:30, tolerancia: 1 min)"
   const horaRealMatch = obs.match(/:\s*(\d{1,2}:\d{2}(?:\s*[ap]\.\s*m\.)?)/i)
   const programadoMatch = obs.match(/programado:\s*(\d{1,2}:\d{2})/i)
   return {
@@ -64,12 +78,229 @@ function colorMinutos(min: number): string {
   return "bg-muted text-muted-foreground"
 }
 
+// ─── Logo loader ──────────────────────────────────────────────────────────────
+
+const loadLogo = (): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.onload = () => {
+      const canvas = document.createElement("canvas")
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(img, 0, 0)
+        resolve(canvas.toDataURL("image/jpeg"))
+      } else resolve(null)
+    }
+    img.onerror = () => resolve(null)
+    img.src = COMPANY_INFO.logo
+  })
+}
+
+// ─── PDF Ejecutivo ────────────────────────────────────────────────────────────
+
+async function generarPDFEjecutivo(
+  gerentes: GerenteReporte[],
+  diasHabiles: number,
+  fechaDesde: string,
+  fechaHasta: string
+) {
+  const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "mm" })
+  const pageW = doc.internal.pageSize.getWidth()
+  const pageH = doc.internal.pageSize.getHeight()
+  const m = PDF_STYLES.spacing.page
+  const colors = PDF_STYLES.colors
+
+  const totalLlegadas = gerentes.reduce((s, g) => s + g.cantidadVeces, 0)
+  const totalMin = gerentes.reduce((s, g) => s + g.totalMinutos, 0)
+  const peor = gerentes[0]
+  const logo = await loadLogo()
+
+  // ── Page 1: Header ──
+  doc.setFillColor(75, 13, 109)
+  doc.rect(0, 0, pageW, 45, "F")
+
+  if (logo) doc.addImage(logo, "JPEG", m.left, 8, 30, 30)
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(20)
+  doc.setFont("helvetica", "bold")
+  doc.text("REPORTE EJECUTIVO", logo ? m.left + 35 : m.left, 18)
+  doc.setFontSize(13)
+  doc.text("Llegadas Tarde — Gerentes de Sucursal", logo ? m.left + 35 : m.left, 27)
+
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "normal")
+  doc.text(COMPANY_INFO.fullName, logo ? m.left + 35 : m.left, 35)
+  doc.text(
+    `Generado: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: es })}`,
+    logo ? m.left + 35 : m.left,
+    41
+  )
+
+  // Period info
+  let y = 55
+  doc.setFillColor(250, 250, 250)
+  doc.roundedRect(m.left, y, pageW - m.left - m.right, 16, 3, 3, "F")
+  doc.setDrawColor(149, 25, 141)
+  doc.setLineWidth(0.5)
+  doc.roundedRect(m.left, y, pageW - m.left - m.right, 16, 3, 3, "S")
+
+  doc.setTextColor(75, 13, 109)
+  doc.setFontSize(11)
+  doc.setFont("helvetica", "bold")
+  doc.text("Período:", m.left + 5, y + 10)
+  doc.setTextColor(39, 44, 77)
+  doc.setFont("helvetica", "normal")
+  doc.text(
+    `${format(parseISO(fechaDesde), "dd/MM/yyyy")} al ${format(parseISO(fechaHasta), "dd/MM/yyyy")}  ·  ${diasHabiles} días hábiles`,
+    m.left + 35,
+    y + 10
+  )
+
+  // Summary cards
+  y = 82
+  doc.setFillColor(75, 13, 109)
+  doc.rect(m.left, y, pageW - m.left - m.right, 8, "F")
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(11)
+  doc.setFont("helvetica", "bold")
+  doc.text("RESUMEN EJECUTIVO", m.left + 5, y + 6)
+
+  y += 14
+  const summaryData = [
+    ["Gerentes con incidencias", `${gerentes.length}`],
+    ["Total llegadas tarde", `${totalLlegadas}`],
+    ["Total minutos acumulados", `${totalMin.toLocaleString()} min`],
+    ["Mayor infractor", peor ? `${peor.nombre} ${peor.apellido} (${peor.cantidadVeces} veces · ${peor.totalMinutos} min)` : "—"],
+    ["Promedio minutos/vez (global)", totalLlegadas > 0 ? `${Math.round(totalMin / totalLlegadas)} min` : "—"],
+  ]
+
+  autoTable(doc, {
+    body: summaryData,
+    startY: y,
+    theme: "plain",
+    styles: { fontSize: 10, cellPadding: 3 },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 70, textColor: [39, 44, 77] },
+      1: { cellWidth: 80, halign: "center", textColor: [75, 13, 109], fontStyle: "bold" },
+    },
+    margin: { left: m.left + 5, right: m.right },
+  })
+
+  // ── Page 2: Summary Table per Manager ──
+  doc.addPage()
+  doc.setFillColor(75, 13, 109)
+  doc.rect(0, 0, pageW, 18, "F")
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(12)
+  doc.setFont("helvetica", "bold")
+  doc.text("RESUMEN POR GERENTE", m.left, 12)
+
+  const resumenRows = gerentes.map(g => [
+    `${g.nombre} ${g.apellido}`,
+    g.sucursal,
+    `${g.cantidadVeces}`,
+    `${g.totalMinutos}`,
+    `${((g.cantidadVeces / diasHabiles) * 100).toFixed(1)}%`,
+    g.cantidadVeces > 0 ? `${Math.round(g.totalMinutos / g.cantidadVeces)}` : "0",
+  ])
+
+  autoTable(doc, {
+    head: [["Gerente", "Sucursal", "Llegadas", "Total Min", "% Días", "Prom Min"]],
+    body: resumenRows,
+    startY: 25,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [149, 25, 141], textColor: [255, 255, 255], fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [250, 245, 255] },
+    columnStyles: {
+      0: { cellWidth: 45 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 22, halign: "center" },
+      3: { cellWidth: 22, halign: "center", textColor: [224, 68, 3], fontStyle: "bold" },
+      4: { cellWidth: 22, halign: "center" },
+      5: { cellWidth: 22, halign: "center" },
+    },
+    margin: { left: m.left, right: m.right },
+  })
+
+  // ── Page 3+: Daily Detail per Manager ──
+  gerentes.forEach(g => {
+    doc.addPage()
+    doc.setFillColor(75, 13, 109)
+    doc.rect(0, 0, pageW, 18, "F")
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(12)
+    doc.setFont("helvetica", "bold")
+    doc.text(`DETALLE: ${g.nombre} ${g.apellido}`, m.left, 12)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "normal")
+    doc.text(g.sucursal, pageW - m.right - 40, 12)
+
+    const rows = g.llegadasTarde.map(lt => {
+      const fecha = parseISO(lt.fecha.substring(0, 10))
+      return [
+        format(fecha, "dd/MM/yyyy"),
+        DIAS_SEMANA[fecha.getDay()],
+        lt.horaProgramada,
+        lt.horaReal,
+        `${lt.minutos} min`,
+      ]
+    })
+
+    autoTable(doc, {
+      head: [["Fecha", "Día", "H. Programada", "H. Real", "Min Tarde"]],
+      body: rows,
+      startY: 25,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [149, 25, 141], textColor: [255, 255, 255], fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [250, 245, 255] },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 30, halign: "center" },
+        3: { cellWidth: 30, halign: "center" },
+        4: { cellWidth: 25, halign: "center", textColor: [224, 68, 3], fontStyle: "bold" },
+      },
+      margin: { left: m.left, right: m.right },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 4) {
+          const val = parseInt(data.cell.raw as string)
+          if (val >= 30) {
+            data.cell.styles.textColor = [224, 68, 3]
+            data.cell.styles.fontStyle = "bold"
+          }
+        }
+      },
+    })
+  })
+
+  // Footer on all pages
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    doc.setFontSize(7)
+    doc.setFont("helvetica", "normal")
+    doc.setTextColor(150, 150, 150)
+    doc.text(
+      `${COMPANY_INFO.fullName} — Documento confidencial — Página ${i} de ${totalPages}`,
+      pageW / 2,
+      pageH - 8,
+      { align: "center" }
+    )
+  }
+
+  const periodo = `${fechaDesde}_${fechaHasta}`
+  doc.save(`Reporte_Ejecutivo_Llegadas_Tarde_Gerentes_${periodo}.pdf`)
+}
+
 // ─── Exportación XLSX ─────────────────────────────────────────────────────────
 
 function exportarXLSX(gerentes: GerenteReporte[], diasHabiles: number, fechaDesde: string, fechaHasta: string) {
   const wb = XLSX.utils.book_new()
 
-  // ── Hoja 1: Resumen ──
   const resumenHeader = [
     "Gerente", "Sucursal", "Llegadas Tarde", "% Días Tarde", "Total Min Tarde", "Promedio Min/Vez"
   ]
@@ -85,7 +316,6 @@ function exportarXLSX(gerentes: GerenteReporte[], diasHabiles: number, fechaDesd
   wsResumen["!cols"] = [{ wch: 28 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 18 }, { wch: 18 }]
   XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen")
 
-  // ── Hoja 2: Detalle por Día ──
   const detalleHeader = [
     "Gerente", "Sucursal", "Fecha", "Día Semana", "Hora Programada", "Hora Real", "Minutos Tarde"
   ]
@@ -109,8 +339,6 @@ function exportarXLSX(gerentes: GerenteReporte[], diasHabiles: number, fechaDesd
   wsDetalle["!cols"] = [{ wch: 28 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 14 }]
   XLSX.utils.book_append_sheet(wb, wsDetalle, "Detalle por Día")
 
-  // ── Hoja 3: Calendario (vista matricial) ──
-  // Columnas = días entre fechaDesde y fechaHasta
   const start = parseISO(fechaDesde)
   const end = parseISO(fechaHasta)
   const diasDelPeriodo: Date[] = []
@@ -155,6 +383,10 @@ export default function ReporteLlegadasTardeGerentes() {
   const [gerentes, setGerentes] = useState<GerenteReporte[]>([])
   const [loading, setLoading] = useState(true)
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+  
+  // Annul state
+  const [anularId, setAnularId] = useState<string | null>(null)
+  const [anulando, setAnulando] = useState(false)
 
   const toggleExpand = (id: string) => {
     setExpandidos(prev => {
@@ -187,12 +419,10 @@ export default function ReporteLlegadasTardeGerentes() {
 
       if (error) throw error
 
-      // Filtrar solo gerentes de sucursal
       const soloGerentes = (data || []).filter(
         (row: any) => row.empleados?.rol === "gerente_sucursal"
       )
 
-      // Agrupar por empleado
       const mapa: Record<string, GerenteReporte> = {}
       soloGerentes.forEach((row: any) => {
         const emp = row.empleados
@@ -243,6 +473,43 @@ export default function ReporteLlegadasTardeGerentes() {
     cargarDatos()
   }, [cargarDatos])
 
+  // ── Anular llegada tarde ──
+  const handleAnular = async () => {
+    if (!anularId) return
+    setAnulando(true)
+    try {
+      // Get current user's employee ID
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("No autenticado")
+
+      const { data: empData } = await supabase
+        .from("empleados")
+        .select("id")
+        .eq("user_id", user.id)
+        .single()
+
+      const { error } = await supabase
+        .from("empleado_cruces_rojas")
+        .update({
+          anulada: true,
+          motivo_anulacion: "Anulada desde reporte de gerentes",
+          anulada_por: empData?.id || null,
+        })
+        .eq("id", anularId)
+
+      if (error) throw error
+
+      toast.success("Llegada tarde anulada correctamente")
+      setAnularId(null)
+      cargarDatos()
+    } catch (err: any) {
+      console.error("Error anulando:", err)
+      toast.error("Error al anular", { description: err.message })
+    } finally {
+      setAnulando(false)
+    }
+  }
+
   // ── Métricas globales ──
   const totalLlegadas = gerentes.reduce((s, g) => s + g.cantidadVeces, 0)
   const totalMinutos = gerentes.reduce((s, g) => s + g.totalMinutos, 0)
@@ -261,14 +528,24 @@ export default function ReporteLlegadasTardeGerentes() {
             Detalle día a día + totales y porcentajes por gerente
           </p>
         </div>
-        <Button
-          onClick={() => exportarXLSX(gerentes, diasHabiles, fechaDesde, fechaHasta)}
-          disabled={loading || gerentes.length === 0}
-          className="gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Descargar XLSX
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button disabled={loading || gerentes.length === 0} className="gap-2">
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem onClick={() => generarPDFEjecutivo(gerentes, diasHabiles, fechaDesde, fechaHasta)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Exportar PDF Ejecutivo
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportarXLSX(gerentes, diasHabiles, fechaDesde, fechaHasta)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Exportar XLSX
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* ── Filtros ── */}
@@ -415,7 +692,6 @@ export default function ReporteLlegadasTardeGerentes() {
                     const promedio = g.cantidadVeces > 0 ? Math.round(g.totalMinutos / g.cantidadVeces) : 0
                     return (
                       <>
-                        {/* Fila resumen */}
                         <tr
                           key={g.id}
                           onClick={() => toggleExpand(g.id)}
@@ -464,6 +740,7 @@ export default function ReporteLlegadasTardeGerentes() {
                                       <th className="text-center px-3 py-2 font-semibold">H. Real</th>
                                       <th className="text-center px-3 py-2 font-semibold">Min Tarde</th>
                                       <th className="text-left px-3 py-2 font-semibold">Observaciones</th>
+                                      <th className="w-10 px-2 py-2"></th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -486,6 +763,32 @@ export default function ReporteLlegadasTardeGerentes() {
                                           </td>
                                           <td className="px-3 py-2 text-muted-foreground max-w-xs truncate" title={lt.observaciones}>
                                             {lt.observaciones || "—"}
+                                          </td>
+                                          <td className="px-2 py-2">
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-7 w-7"
+                                                  onClick={(e) => e.stopPropagation()}
+                                                >
+                                                  <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                <DropdownMenuItem
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setAnularId(lt.id)
+                                                  }}
+                                                  className="text-destructive focus:text-destructive"
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-2" />
+                                                  Eliminar llegada tarde
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
                                           </td>
                                         </tr>
                                       )
@@ -513,6 +816,19 @@ export default function ReporteLlegadasTardeGerentes() {
         <span className="px-2 py-0.5 rounded bg-chart-4/15 text-chart-4">31–60 min</span>
         <span className="px-2 py-0.5 rounded bg-destructive/15 text-destructive">+60 min</span>
       </div>
+
+      {/* ── Confirm Dialog para anular ── */}
+      <ConfirmDialog
+        open={anularId !== null}
+        onOpenChange={(open) => { if (!open) setAnularId(null) }}
+        title="¿Eliminar esta llegada tarde?"
+        description="Se marcará como anulada y no aparecerá en futuros reportes. Esta acción se registra en auditoría."
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        loading={anulando}
+        onConfirm={handleAnular}
+      />
     </div>
   )
 }
