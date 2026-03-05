@@ -1,49 +1,47 @@
 
 
-## Plan: Crear plantilla "Control Stock Cigarrillos" y bloquear fichaje sábado
+## Plan: PDF Resumen Semanal Rápido de Incidencias
 
-### Paso 1: Insertar plantilla de tarea
+### Objetivo
+Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
 
-Insertar en `tareas_plantillas` una plantilla semanal flexible para Carlos Espina (ID: `6e1bd507-5956-45cf-97d9-2d07f55c9ccb`):
+### Archivo nuevo
+**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
 
-- **Título**: Control Stock Cigarrillos
-- **Frecuencia**: `semanal_flexible`
-- **Veces por semana**: 3
-- **Recordatorio fin de semana**: true
-- **Categoría**: Operaciones (`414f4d67-5c1d-453a-bec4-cfdf5782b5c1`)
-- **Empleados asignados**: `["6e1bd507-5956-45cf-97d9-2d07f55c9ccb"]`
-- **Sucursal**: José Martí (`9682b6cf-f904-4497-918c-d0c9c061b9ec`)
-- **Prioridad**: alta
+1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
+2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
+3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
+4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
 
-### Paso 2: Modificar lógica de salida del sábado en KioscoCheckIn.tsx
+Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
 
-Actualmente, al fichar salida se verifica si hay tareas pendientes con fecha límite vencida. Se agregará una verificación adicional:
+### Archivo modificado
+**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
+- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
+- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
+- Consulta `fichajes` para detectar empleados sin registro
+- Llama a `generarResumenSemanalPDF()` con los datos
 
-**Los sábados**, antes de permitir fichar salida, consultar las tareas `semanal_flexible` del empleado en la semana actual y verificar si cumplió la cantidad mínima de veces (`veces_por_semana`). Si no cumplió:
+### Estructura del PDF
 
-1. Mostrar el dialog `ConfirmarTareasDia` con las tareas incompletas
-2. **Bloquear la salida** — eliminar el botón "Omitir por ahora" cuando hay tareas de tipo semanal_flexible no cumplidas en sábado
-3. El empleado debe marcar las tareas como completadas para poder fichar salida
-
-**Cambios en `ejecutarAccion`** (~línea 1530):
-```typescript
-// Si es sábado y salida, verificar tareas semanal_flexible
-if (tipoAccion === 'salida' && new Date().getDay() === 6) {
-  // Consultar plantillas semanal_flexible asignadas al empleado
-  // Contar tareas completadas esta semana vs veces_por_semana
-  // Si no cumple, mostrar ConfirmarTareasDia con bloqueo
-}
+```text
+┌─────────────────────────────────┐
+│  SOTO mayorista                 │
+│  Resumen Semanal de Incidencias │
+│  Lunes 03/03 - Domingo 09/03   │
+├─────────────────────────────────┤
+│ [12 Lleg.Tarde] [5 Exc.Desc]   │
+│ [3 Sin Fichaje] [20 Total]     │
+├─────────────────────────────────┤
+│ # │ Empleado │ Suc │ LT │ED│Tot│
+│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
+│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
+│ ...                             │
+├─────────────────────────────────┤
+│ Empleados sin fichaje           │
+│ Fecha    │ Empleado │ Sucursal  │
+│ 03/03    │ Ana D.   │ Centro    │
+│ ...                             │
+└─────────────────────────────────┘
 ```
-
-**Cambios en `ConfirmarTareasDia`**:
-- Agregar prop `bloquearSalida?: boolean`
-- Cuando `bloquearSalida = true`, ocultar botón "Omitir por ahora" y no permitir cerrar el dialog sin completar las tareas obligatorias
-
-### Detalle técnico
-
-La consulta del sábado:
-1. Obtener plantillas con `frecuencia = 'semanal_flexible'` asignadas al empleado
-2. Contar tareas `completada` de esas plantillas en la semana (lunes-domingo)
-3. Comparar contra `veces_por_semana`
-4. Si faltan, generar/mostrar las tareas pendientes y bloquear salida
 
