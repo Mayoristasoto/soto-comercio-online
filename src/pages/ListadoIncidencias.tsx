@@ -15,6 +15,7 @@ import * as XLSX from "xlsx";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generarReporteLlegadasTarde } from "@/utils/reporteLlegadasTardePDF";
+import { generarResumenSemanalPDF } from "@/utils/resumenSemanalPDF";
 
 import {
   AlertDialog,
@@ -48,6 +49,7 @@ const ListadoIncidencias = () => {
   const [anulando, setAnulando] = useState(false);
   const [empleadoReporte, setEmpleadoReporte] = useState<string>("");
   const [generandoReporte, setGenerandoReporte] = useState(false);
+  const [generandoResumen, setGenerandoResumen] = useState(false);
   const [fechaDesde, setFechaDesde] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() - 1);
@@ -270,7 +272,25 @@ const ListadoIncidencias = () => {
             Registro detallado de llegadas tarde y excesos de descanso
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            onClick={async () => {
+              setGenerandoResumen(true);
+              try {
+                await generarResumenSemanalPDF(fechaDesde);
+                toast.success("Resumen semanal PDF generado");
+              } catch (e: any) {
+                toast.error(e.message || "Error al generar resumen");
+              } finally {
+                setGenerandoResumen(false);
+              }
+            }}
+            disabled={generandoResumen}
+            variant="default"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            {generandoResumen ? "Generando..." : "Resumen Semanal PDF"}
+          </Button>
           <Button onClick={exportarPDF} variant="outline">
             <FileText className="h-4 w-4 mr-2" />
             Exportar PDF
