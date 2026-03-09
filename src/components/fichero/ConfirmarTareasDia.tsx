@@ -29,6 +29,7 @@ interface ConfirmarTareasDiaProps {
   onConfirm: () => void;
   bloquearSalida?: boolean;
   tareasFlexibles?: Task[];
+  simulacion?: boolean;
 }
 
 const priorityColors = {
