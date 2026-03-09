@@ -18,8 +18,8 @@ const EMPLEADOS_TEST = [
 ];
 
 const EMPLEADOS_SABADO = [
-  { id: '6e1bd507-5956-45cf-97d9-2d07f55c9ccb', nombre: 'Carlos Espina' },
-  { id: '1607f6ba-046c-466d-8b4d-acc18e2acfa4', nombre: 'Julio Gomez Navarrete' },
+  { id: '6e1bd507-5956-45cf-97d9-2d07f55c9ccb', nombre: 'Carlos Espina', plantilla: { id: '048dab8a-c4d4-4afb-b27d-06b67a3bef97', titulo: 'Control Stock Cigarrillos', veces_por_semana: 3 } },
+  { id: '1607f6ba-046c-466d-8b4d-acc18e2acfa4', nombre: 'Julio Gomez Navarrete', plantilla: { id: '6c5ca1e9-96af-417d-b589-b7a79c63ba98', titulo: 'Control Ofertas', veces_por_semana: 3 } },
 ];
 
 const TestKioskoAlertas = () => {
