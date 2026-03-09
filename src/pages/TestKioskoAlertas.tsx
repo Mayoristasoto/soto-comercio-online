@@ -29,6 +29,12 @@ const TestKioskoAlertas = () => {
 
   const empleadoActual = EMPLEADOS_TEST.find(e => e.id === empleadoSeleccionado.id) || EMPLEADOS_TEST[0];
 
+  const tareasFlexiblesMock = [
+    { id: 'flex-a1b2c3d4-e5f6-7890-abcd-ef1234567890-0', titulo: 'Control Stock Cigarrillos', descripcion: 'Verificar stock en góndola y reponer si es necesario', prioridad: 'alta' as const, fecha_limite: new Date().toISOString().split('T')[0], asignado_por: null },
+    { id: 'flex-a1b2c3d4-e5f6-7890-abcd-ef1234567890-1', titulo: 'Limpieza de Góndola Sector 3', descripcion: 'Limpiar y ordenar productos en góndola sector 3', prioridad: 'media' as const, fecha_limite: new Date().toISOString().split('T')[0], asignado_por: null },
+    { id: 'flex-b2c3d4e5-f6a7-8901-bcde-f12345678901-0', titulo: 'Revisión de Precios Bebidas', descripcion: 'Confirmar que los precios exhibidos coincidan con sistema', prioridad: 'alta' as const, fecha_limite: new Date().toISOString().split('T')[0], asignado_por: null },
+  ];
+
   const mockDetallesCruces = [
     { tipo: 'llegada_tarde' as const, fecha: new Date().toISOString(), minutos: 15, observaciones: 'Tráfico intenso' },
     { tipo: 'pausa_excedida' as const, fecha: new Date(Date.now() - 86400000).toISOString(), minutos: 10, observaciones: 'Almuerzo extendido' },
