@@ -7,7 +7,8 @@ import { LlegadaTardeAlert } from '@/components/kiosko/LlegadaTardeAlert';
 import { NovedadesCheckInAlert } from '@/components/kiosko/NovedadesCheckInAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell } from 'lucide-react';
+import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell, CheckCircle2, CalendarX } from 'lucide-react';
+import { ConfirmarTareasDia } from '@/components/fichero/ConfirmarTareasDia';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const EMPLEADOS_TEST = [
