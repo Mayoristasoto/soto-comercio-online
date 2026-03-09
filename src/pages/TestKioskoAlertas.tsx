@@ -135,7 +135,7 @@ const TestKioskoAlertas = () => {
       const { data: plantillas, error: errPlantillas }: { data: any[] | null; error: any } = await supabase
         .from('tareas_plantillas' as any)
         .select('id, titulo, descripcion, prioridad, veces_por_semana')
-        .eq('empleado_id', simEmpleado.id)
+        .contains('empleados_asignados', [simEmpleado.id])
         .eq('frecuencia', 'semanal_flexible')
         .eq('activa', true);
 
