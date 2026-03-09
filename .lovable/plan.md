@@ -1,47 +1,29 @@
 
 
-## Plan: PDF Resumen Semanal Rápido de Incidencias
+## Plan: Corregir confirmación de tareas flexibles en kiosco
 
-### Objetivo
-Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
+### Problema
+Las tareas `semanal_flexible` se generan como objetos virtuales con IDs ficticios (`flex-xxx-0`). Al confirmarlas, `ConfirmarTareasDia` intenta hacer `UPDATE tareas SET estado='completada' WHERE id='flex-xxx-0'` — no existe, falla silenciosamente.
 
-### Archivo nuevo
-**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
+### Solución
 
-1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
-2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
-3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
-4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
+**Modificar `ConfirmarTareasDia.tsx`** — en `handleConfirmar`, detectar si el ID es virtual (empieza con `flex-`) y en ese caso **crear la tarea real** en la tabla `tareas` en vez de intentar actualizarla:
 
-Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
-
-### Archivo modificado
-**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
-- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
-- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
-- Consulta `fichajes` para detectar empleados sin registro
-- Llama a `generarResumenSemanalPDF()` con los datos
-
-### Estructura del PDF
-
-```text
-┌─────────────────────────────────┐
-│  SOTO mayorista                 │
-│  Resumen Semanal de Incidencias │
-│  Lunes 03/03 - Domingo 09/03   │
-├─────────────────────────────────┤
-│ [12 Lleg.Tarde] [5 Exc.Desc]   │
-│ [3 Sin Fichaje] [20 Total]     │
-├─────────────────────────────────┤
-│ # │ Empleado │ Suc │ LT │ED│Tot│
-│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
-│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
-│ ...                             │
-├─────────────────────────────────┤
-│ Empleados sin fichaje           │
-│ Fecha    │ Empleado │ Sucursal  │
-│ 03/03    │ Ana D.   │ Centro    │
-│ ...                             │
-└─────────────────────────────────┘
+```typescript
+if (tareaId.startsWith('flex-')) {
+  // Extraer plantilla_id del ID virtual
+  // INSERT en tareas con estado 'completada' + plantilla_id + fecha_completada
+} else {
+  // UPDATE existente (flujo actual)
+}
 ```
+
+Para cada tarea flexible completada:
+1. Insertar en `tareas` con `estado: 'completada'`, `plantilla_id`, `asignado_a: empleadoId`, `fecha_completada: now()`
+2. Registrar log de auditoría con el nuevo ID real
+
+Para las omitidas en modo bloqueo, no registrar log con ID virtual (no tiene sentido).
+
+### Archivos a modificar
+- `src/components/fichero/ConfirmarTareasDia.tsx` — lógica de `handleConfirmar` para manejar IDs virtuales
 
