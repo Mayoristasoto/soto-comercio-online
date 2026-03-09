@@ -308,6 +308,11 @@ export default function KioscoCheckIn() {
   const [pendingAccionSalida, setPendingAccionSalida] = useState(false)
   const [bloquearSalidaPorTareas, setBloquearSalidaPorTareas] = useState(false)
   const [tareasFlexiblesPendientes, setTareasFlexiblesPendientes] = useState<any[]>([])
+  const [pendingDirectSalida, setPendingDirectSalida] = useState<{
+    empleadoId: string
+    empleadoData: any
+    confianza: number
+  } | null>(null)
   const [showPausaExcedidaAlert, setShowPausaExcedidaAlert] = useState(false)
   const [pausaExcedidaInfo, setPausaExcedidaInfo] = useState<{
     minutosUsados: number
