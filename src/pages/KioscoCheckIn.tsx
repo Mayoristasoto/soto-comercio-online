@@ -1194,13 +1194,6 @@ export default function KioscoCheckIn() {
     }
   }
 
-  // Estado para diferir fichaje de salida desde ejecutarAccionDirecta
-  const [pendingDirectSalida, setPendingDirectSalida] = useState<{
-    empleadoId: string
-    empleadoData: any
-    confianza: number
-  } | null>(null)
-
   // Handler para cuando se confirman las tareas del día antes de salir
   const handleConfirmarTareasYSalir = async () => {
     setShowConfirmarTareas(false)
