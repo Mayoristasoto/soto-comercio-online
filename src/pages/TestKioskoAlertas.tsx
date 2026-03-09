@@ -132,14 +132,31 @@ const TestKioskoAlertas = () => {
       await new Promise(r => setTimeout(r, 300));
 
       // Consultar plantillas semanal_flexible del empleado
+      console.log('🔍 Buscando plantillas para empleado:', simEmpleado.id);
       const { data: plantillas, error: errPlantillas }: { data: any[] | null; error: any } = await supabase
         .from('tareas_plantillas' as any)
-        .select('id, titulo, descripcion, prioridad, veces_por_semana')
-        .contains('empleados_asignados', [simEmpleado.id])
+        .select('id, titulo, descripcion, prioridad, veces_por_semana, empleados_asignados')
         .eq('frecuencia', 'semanal_flexible')
         .eq('activa', true);
 
       if (errPlantillas) throw errPlantillas;
+
+      console.log('📦 Plantillas encontradas:', plantillas);
+
+      // Filtrar por empleado (contains en array puede fallar con el tipo, filtramos en JS)
+      const plantillasEmpleado = (plantillas || []).filter((p: any) => 
+        p.empleados_asignados && Array.isArray(p.empleados_asignados) && p.empleados_asignados.includes(simEmpleado.id)
+      );
+
+      console.log('📦 Plantillas del empleado:', plantillasEmpleado);
+
+      if (plantillasEmpleado.length === 0) {
+        addLog('✅ No tiene plantillas semanal_flexible — Libre para salir', 'ok');
+        setSimLoading(false);
+        return;
+      }
+
+      addLog(`📦 ${plantillasEmpleado.length} plantilla(s) encontrada(s)`, 'info');
 
       if (!plantillas || plantillas.length === 0) {
         addLog('✅ No tiene plantillas semanal_flexible — Libre para salir', 'ok');
