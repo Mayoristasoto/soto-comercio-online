@@ -22,6 +22,8 @@ const TestKioskoAlertas = () => {
   const [showPausaExcedida, setShowPausaExcedida] = useState(false);
   const [showLlegadaTarde, setShowLlegadaTarde] = useState(false);
   const [showNovedades, setShowNovedades] = useState(false);
+  const [showConfirmTareas, setShowConfirmTareas] = useState(false);
+  const [showConfirmTareasSabado, setShowConfirmTareasSabado] = useState(false);
   const [loading, setLoading] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(EMPLEADOS_TEST[0]);
 
