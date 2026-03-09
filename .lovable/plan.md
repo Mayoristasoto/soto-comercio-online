@@ -1,47 +1,31 @@
 
 
-## Plan: PDF Resumen Semanal Rápido de Incidencias
+## Plan: Integrar verificación de tareas en `ejecutarAccionDirecta`
 
-### Objetivo
-Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
+### Problema encontrado
 
-### Archivo nuevo
-**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
+Hay **dos flujos de salida** en el kiosco:
 
-1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
-2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
-3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
-4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
+1. **`ejecutarAccion`** (botones manuales) — tiene la lógica de verificación de tareas flexibles los sábados y tareas pendientes normales. Funciona correctamente.
+2. **`ejecutarAccionDirecta`** (reconocimiento facial automático) — registra el fichaje directamente y resetea el kiosco **sin verificar tareas**. Este es el flujo que usaron los 4 empleados el sábado (todos con método "Facial").
 
-Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
+Por eso nadie fue bloqueado: el flujo facial bypasea completamente la verificación de tareas.
 
-### Archivo modificado
-**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
-- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
-- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
-- Consulta `fichajes` para detectar empleados sin registro
-- Llama a `generarResumenSemanalPDF()` con los datos
+### Solución
 
-### Estructura del PDF
+Modificar `ejecutarAccionDirecta` en `src/pages/KioscoCheckIn.tsx` para que, **antes de registrar el fichaje de salida**, ejecute la misma verificación que `ejecutarAccion`:
 
-```text
-┌─────────────────────────────────┐
-│  SOTO mayorista                 │
-│  Resumen Semanal de Incidencias │
-│  Lunes 03/03 - Domingo 09/03   │
-├─────────────────────────────────┤
-│ [12 Lleg.Tarde] [5 Exc.Desc]   │
-│ [3 Sin Fichaje] [20 Total]     │
-├─────────────────────────────────┤
-│ # │ Empleado │ Suc │ LT │ED│Tot│
-│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
-│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
-│ ...                             │
-├─────────────────────────────────┤
-│ Empleados sin fichaje           │
-│ Fecha    │ Empleado │ Sucursal  │
-│ 03/03    │ Ana D.   │ Centro    │
-│ ...                             │
-└─────────────────────────────────┘
-```
+1. Si es `tipoAccion === 'salida'` y es sábado → verificar plantillas `semanal_flexible` y contar completadas en la semana
+2. Si hay tareas incumplidas → guardar el empleado reconocido en estado, mostrar `ConfirmarTareasDia` con `bloquearSalida=true`, y **no registrar el fichaje** hasta que confirme
+3. Si es salida cualquier día → verificar tareas pendientes normales (con fecha límite vencida/hoy)
+4. Solo después de la confirmación (o si no hay tareas pendientes) → registrar el fichaje real
+
+La lógica de verificación se extraerá a una función compartida `verificarTareasPendientesSalida(empleadoId)` para evitar duplicación entre ambos flujos.
+
+### Archivo a modificar
+- `src/pages/KioscoCheckIn.tsx`
+  - Crear función `verificarTareasPendientesSalida(empleadoId)` con la lógica de sábado + tareas normales
+  - En `ejecutarAccionDirecta`, si es salida: llamar a la verificación **antes** de `kiosk_insert_fichaje`. Si hay tareas pendientes, guardar datos del empleado en estado, mostrar el dialog, y diferir el fichaje
+  - Agregar estado para guardar los datos necesarios para completar el fichaje después de confirmar tareas (empleadoId, empleadoData, confianza)
+  - En `handleConfirmarTareasYSalir`, si hay datos pendientes de acción directa, ejecutar el fichaje real
 
