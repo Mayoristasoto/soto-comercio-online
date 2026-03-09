@@ -364,6 +364,93 @@ const TestKioskoAlertas = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Card Simulación Sábado 14/3 */}
+        <Card className="border-violet-200 bg-violet-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-violet-800">
+              <CalendarX className="h-5 w-5" />
+              Simulación Fichado Salida Sábado 14/3
+            </CardTitle>
+            <CardDescription>
+              Simula el flujo de salida con verificación de tareas semanal_flexible usando datos reales de la DB.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-white rounded-lg p-4 space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2 text-violet-800">
+                <User className="h-4 w-4" />
+                Empleado a simular:
+              </label>
+              <Select
+                value={simEmpleado.id}
+                onValueChange={(value) => {
+                  const emp = EMPLEADOS_SABADO.find(e => e.id === value);
+                  if (emp) setSimEmpleado(emp);
+                  setSimLog([]);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EMPLEADOS_SABADO.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={ejecutarSimulacionSabado}
+              disabled={simLoading}
+              className="w-full bg-violet-600 hover:bg-violet-700"
+            >
+              {simLoading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Simulando...</>
+              ) : (
+                <><Play className="mr-2 h-4 w-4" /> Simular Fichado Salida (Sábado)</>
+              )}
+            </Button>
+
+            {simLog.length > 0 && (
+              <div className="bg-muted rounded-lg p-3 space-y-1.5 font-mono text-xs">
+                {simLog.map((entry, i) => (
+                  <div key={i} className={`flex items-start gap-2 ${
+                    entry.estado === 'error' ? 'text-destructive font-bold' :
+                    entry.estado === 'warn' ? 'text-orange-600 font-semibold' :
+                    entry.estado === 'ok' ? 'text-emerald-600 font-semibold' :
+                    'text-muted-foreground'
+                  }`}>
+                    <span>{entry.paso}</span>
+                  </div>
+                ))}
+                {simBloquear && (
+                  <Badge variant="destructive" className="mt-2">
+                    RESULTADO: BLOQUEADO — No puede fichar salida
+                  </Badge>
+                )}
+                {!simBloquear && simLog.some(l => l.estado === 'ok' && l.paso.includes('Libre')) && (
+                  <Badge variant="outline" className="mt-2 bg-emerald-100 text-emerald-800 border-emerald-200">
+                    RESULTADO: LIBRE — Puede fichar salida
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            <div className="bg-violet-100 border border-violet-200 rounded-lg p-3 text-xs text-violet-800">
+              <p className="font-semibold mb-1">ℹ️ Qué hace esta simulación:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Consulta plantillas <code className="bg-violet-200 px-1 rounded">semanal_flexible</code> reales del empleado</li>
+                <li>Cuenta tareas completadas entre lun 9/3 y sáb 14/3</li>
+                <li>Si hay incumplimiento → abre diálogo con <strong>bloqueo de salida</strong></li>
+                <li>El confirmar del diálogo NO toca la DB (solo toast)</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Alertas */}
@@ -438,6 +525,19 @@ const TestKioskoAlertas = () => {
         onConfirm={() => {
           setShowConfirmTareasSabado(false);
           toast({ title: '✅ Tareas sábado confirmadas (mock)', description: 'Modo bloqueo — todas las tareas fueron marcadas.' });
+        }}
+      />
+
+      {/* Simulación sábado - dialog con datos reales */}
+      <ConfirmarTareasDia
+        open={showSimDialog}
+        onOpenChange={setShowSimDialog}
+        empleadoId={simEmpleado.id}
+        bloquearSalida={simBloquear}
+        tareasFlexibles={simTareasFlexibles}
+        onConfirm={() => {
+          setShowSimDialog(false);
+          toast({ title: '✅ Simulación completada', description: `${simEmpleado.nombre} confirmó tareas (sin tocar DB).` });
         }}
       />
     </div>
