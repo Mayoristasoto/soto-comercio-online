@@ -944,6 +944,7 @@ export default function KioscoCheckIn() {
       setPausaActiva(null)
       setShowConfirmarTareas(false)
       setPendingAccionSalida(false)
+      setPendingDirectSalida(null)
       setBloquearSalidaPorTareas(false)
       setTareasFlexiblesPendientes([])
       setShowPausaExcedidaAlert(false)
