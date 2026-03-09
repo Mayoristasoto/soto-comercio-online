@@ -33,6 +33,14 @@ const TestKioskoAlertas = () => {
   const [loading, setLoading] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(EMPLEADOS_TEST[0]);
 
+  // Simulación sábado 14/3
+  const [simEmpleado, setSimEmpleado] = useState(EMPLEADOS_SABADO[0]);
+  const [simLoading, setSimLoading] = useState(false);
+  const [simLog, setSimLog] = useState<{ paso: string; estado: 'ok' | 'warn' | 'error' | 'info' }[]>([]);
+  const [simTareasFlexibles, setSimTareasFlexibles] = useState<any[]>([]);
+  const [simBloquear, setSimBloquear] = useState(false);
+  const [showSimDialog, setShowSimDialog] = useState(false);
+
   const empleadoActual = EMPLEADOS_TEST.find(e => e.id === empleadoSeleccionado.id) || EMPLEADOS_TEST[0];
 
   const tareasFlexiblesMock = [
