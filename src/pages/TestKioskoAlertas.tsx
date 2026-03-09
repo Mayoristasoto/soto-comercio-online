@@ -308,6 +308,30 @@ const TestKioskoAlertas = () => {
           duracionSegundos={15}
         />
       )}
+
+      {/* Confirmar Tareas - modo normal */}
+      <ConfirmarTareasDia
+        open={showConfirmTareas}
+        onOpenChange={setShowConfirmTareas}
+        empleadoId="test-id"
+        onConfirm={() => {
+          setShowConfirmTareas(false);
+          toast({ title: '✅ Tareas confirmadas (mock)', description: 'Modo normal — el empleado puede omitir.' });
+        }}
+      />
+
+      {/* Confirmar Tareas - modo sábado con bloqueo */}
+      <ConfirmarTareasDia
+        open={showConfirmTareasSabado}
+        onOpenChange={setShowConfirmTareasSabado}
+        empleadoId="test-id"
+        bloquearSalida={true}
+        tareasFlexibles={tareasFlexiblesMock}
+        onConfirm={() => {
+          setShowConfirmTareasSabado(false);
+          toast({ title: '✅ Tareas sábado confirmadas (mock)', description: 'Modo bloqueo — todas las tareas fueron marcadas.' });
+        }}
+      />
     </div>
   );
 };
