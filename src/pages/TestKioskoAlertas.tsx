@@ -113,6 +113,100 @@ const TestKioskoAlertas = () => {
     }
   };
 
+  // Simulación de fichado salida sábado con datos reales
+  const ejecutarSimulacionSabado = async () => {
+    setSimLoading(true);
+    setSimLog([]);
+    setSimTareasFlexibles([]);
+    setSimBloquear(false);
+
+    const addLog = (paso: string, estado: 'ok' | 'warn' | 'error' | 'info') => {
+      setSimLog(prev => [...prev, { paso, estado }]);
+    };
+
+    try {
+      addLog(`🔍 Reconocimiento facial: ${simEmpleado.nombre}`, 'info');
+      await new Promise(r => setTimeout(r, 500));
+
+      addLog('📋 Verificando tareas semanal_flexible...', 'info');
+      await new Promise(r => setTimeout(r, 300));
+
+      // Consultar plantillas semanal_flexible del empleado
+      const { data: plantillas, error: errPlantillas } = await supabase
+        .from('tareas_plantillas')
+        .select('id, titulo, descripcion, prioridad, veces_por_semana')
+        .eq('empleado_id', simEmpleado.id)
+        .eq('frecuencia', 'semanal_flexible')
+        .eq('activa', true);
+
+      if (errPlantillas) throw errPlantillas;
+
+      if (!plantillas || plantillas.length === 0) {
+        addLog('✅ No tiene plantillas semanal_flexible — Libre para salir', 'ok');
+        setSimLoading(false);
+        return;
+      }
+
+      addLog(`📦 ${plantillas.length} plantilla(s) encontrada(s)`, 'info');
+
+      // Calcular lunes de la semana del sábado 14/3 → lunes 9/3
+      const inicioSemana = '2026-03-09T00:00:00';
+      const finSemana = '2026-03-14T23:59:59';
+
+      const tareasIncumplidas: any[] = [];
+
+      for (const p of plantillas) {
+        const { count, error: errCount } = await supabase
+          .from('tareas')
+          .select('*', { count: 'exact', head: true })
+          .eq('plantilla_id', p.id)
+          .eq('asignado_a', simEmpleado.id)
+          .eq('estado', 'completada')
+          .gte('fecha_completada', inicioSemana)
+          .lte('fecha_completada', finSemana);
+
+        if (errCount) throw errCount;
+
+        const completadas = count || 0;
+        const objetivo = p.veces_por_semana || 1;
+
+        addLog(`  → "${p.titulo}": ${completadas}/${objetivo} completadas`, completadas >= objetivo ? 'ok' : 'warn');
+
+        if (completadas < objetivo) {
+          const faltantes = objetivo - completadas;
+          for (let i = 0; i < faltantes; i++) {
+            tareasIncumplidas.push({
+              id: `flex-${p.id}-${i}`,
+              titulo: p.titulo,
+              descripcion: p.descripcion || '',
+              prioridad: (p.prioridad as any) || 'alta',
+              fecha_limite: '2026-03-14',
+              asignado_por: null,
+            });
+          }
+        }
+      }
+
+      await new Promise(r => setTimeout(r, 300));
+
+      if (tareasIncumplidas.length > 0) {
+        addLog(`🚫 ${tareasIncumplidas.length} tarea(s) incumplida(s) — BLOQUEADO`, 'error');
+        setSimTareasFlexibles(tareasIncumplidas);
+        setSimBloquear(true);
+        await new Promise(r => setTimeout(r, 500));
+        setShowSimDialog(true);
+      } else {
+        addLog('✅ Todas las metas semanales cumplidas — Libre para salir', 'ok');
+      }
+
+    } catch (error: any) {
+      console.error('Error simulación:', error);
+      setSimLog(prev => [...prev, { paso: `❌ Error: ${error.message}`, estado: 'error' }]);
+    } finally {
+      setSimLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
