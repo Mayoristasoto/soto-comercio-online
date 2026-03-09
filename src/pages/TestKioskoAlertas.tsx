@@ -132,7 +132,7 @@ const TestKioskoAlertas = () => {
       await new Promise(r => setTimeout(r, 300));
 
       // Consultar plantillas semanal_flexible del empleado
-      const { data: plantillas, error: errPlantillas } = await supabase
+      const { data: plantillas, error: errPlantillas }: { data: any[] | null; error: any } = await supabase
         .from('tareas_plantillas' as any)
         .select('id, titulo, descripcion, prioridad, veces_por_semana')
         .eq('empleado_id', simEmpleado.id)
