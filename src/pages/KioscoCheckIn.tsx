@@ -1208,6 +1208,7 @@ export default function KioscoCheckIn() {
         // Vino del flujo ejecutarAccionDirecta: ejecutar fichaje directo
         const { empleadoId, empleadoData, confianza } = pendingDirectSalida
         setPendingDirectSalida(null)
+        setLastProcessTime(0) // Reset debounce para permitir el fichaje diferido
         await ejecutarAccionDirecta('salida', empleadoId, empleadoData, confianza)
       } else {
         // Vino del flujo ejecutarAccion (botones): usar procesarAccionFichaje
