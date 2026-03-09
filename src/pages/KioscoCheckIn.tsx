@@ -308,6 +308,11 @@ export default function KioscoCheckIn() {
   const [pendingAccionSalida, setPendingAccionSalida] = useState(false)
   const [bloquearSalidaPorTareas, setBloquearSalidaPorTareas] = useState(false)
   const [tareasFlexiblesPendientes, setTareasFlexiblesPendientes] = useState<any[]>([])
+  const [pendingDirectSalida, setPendingDirectSalida] = useState<{
+    empleadoId: string
+    empleadoData: any
+    confianza: number
+  } | null>(null)
   const [showPausaExcedidaAlert, setShowPausaExcedidaAlert] = useState(false)
   const [pausaExcedidaInfo, setPausaExcedidaInfo] = useState<{
     minutosUsados: number
@@ -944,6 +949,7 @@ export default function KioscoCheckIn() {
       setPausaActiva(null)
       setShowConfirmarTareas(false)
       setPendingAccionSalida(false)
+      setPendingDirectSalida(null)
       setBloquearSalidaPorTareas(false)
       setTareasFlexiblesPendientes([])
       setShowPausaExcedidaAlert(false)
@@ -1198,7 +1204,16 @@ export default function KioscoCheckIn() {
     setShowConfirmarTareas(false)
     if (pendingAccionSalida) {
       setPendingAccionSalida(false)
-      await procesarAccionFichaje('salida')
+      if (pendingDirectSalida) {
+        // Vino del flujo ejecutarAccionDirecta: ejecutar fichaje directo
+        const { empleadoId, empleadoData, confianza } = pendingDirectSalida
+        setPendingDirectSalida(null)
+        setLastProcessTime(0) // Reset debounce para permitir el fichaje diferido
+        await ejecutarAccionDirecta('salida', empleadoId, empleadoData, confianza)
+      } else {
+        // Vino del flujo ejecutarAccion (botones): usar procesarAccionFichaje
+        await procesarAccionFichaje('salida')
+      }
     }
   }
   
@@ -1214,6 +1229,91 @@ export default function KioscoCheckIn() {
     setPausaActiva(null)
   }
 
+  // Función compartida para verificar tareas pendientes antes de permitir salida
+  const verificarTareasPendientesSalida = async (empId: string): Promise<{
+    hayPendientes: boolean
+    bloquear: boolean
+    tareasFlexibles: any[]
+  }> => {
+    const hoy = new Date()
+    const hoyStr = hoy.toISOString().split('T')[0]
+    const esSabado = hoy.getDay() === 6
+
+    // 1. Verificar tareas semanal_flexible los sábados
+    if (esSabado) {
+      try {
+        const { data: plantillas } = await supabase
+          .from('tareas_plantillas')
+          .select('id, titulo, descripcion, prioridad, veces_por_semana')
+          .eq('frecuencia', 'semanal_flexible')
+          .eq('activa', true)
+          .contains('empleados_asignados', [empId])
+
+        if (plantillas && plantillas.length > 0) {
+          const inicioSemana = new Date(hoy)
+          const diaSemana = hoy.getDay()
+          const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana
+          inicioSemana.setDate(hoy.getDate() + diffLunes)
+          inicioSemana.setHours(0, 0, 0, 0)
+          const inicioSemanaStr = inicioSemana.toISOString().split('T')[0]
+
+          const tareasIncumplidas: any[] = []
+
+          for (const plantilla of plantillas) {
+            const { count } = await supabase
+              .from('tareas')
+              .select('id', { count: 'exact', head: true })
+              .eq('asignado_a', empId)
+              .eq('plantilla_id', plantilla.id)
+              .eq('estado', 'completada')
+              .gte('fecha_completada', inicioSemanaStr)
+
+            const completadas = count || 0
+            const requeridas = plantilla.veces_por_semana || 3
+            const faltantes = requeridas - completadas
+
+            if (faltantes > 0) {
+              for (let i = 0; i < faltantes; i++) {
+                tareasIncumplidas.push({
+                  id: `flex-${plantilla.id}-${i}`,
+                  titulo: `${plantilla.titulo} (${completadas + i + 1}/${requeridas} semanal)`,
+                  descripcion: plantilla.descripcion || '',
+                  prioridad: plantilla.prioridad || 'alta',
+                  fecha_limite: hoyStr,
+                  asignado_por: null,
+                  empleado_asignador: null,
+                })
+              }
+            }
+          }
+
+          if (tareasIncumplidas.length > 0) {
+            console.log('🚫 [SABADO] Tareas semanal_flexible incumplidas:', tareasIncumplidas.length)
+            return { hayPendientes: true, bloquear: true, tareasFlexibles: tareasIncumplidas }
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando tareas flexibles:', error)
+      }
+    }
+
+    // 2. Verificar tareas pendientes normales con fecha límite vencida
+    const { data: tareasPend } = await supabase
+      .from('tareas')
+      .select('id')
+      .eq('asignado_a', empId)
+      .eq('estado', 'pendiente')
+      .not('fecha_limite', 'is', null)
+      .lte('fecha_limite', hoyStr)
+      .limit(1)
+
+    if (tareasPend && tareasPend.length > 0) {
+      return { hayPendientes: true, bloquear: false, tareasFlexibles: [] }
+    }
+
+    return { hayPendientes: false, bloquear: false, tareasFlexibles: [] }
+  }
+
   // Función para ejecutar una acción directamente (cuando solo hay una opción)
   const ejecutarAccionDirecta = async (tipoAccion: TipoAccion, empleadoId: string, empleadoData: any, confianza: number) => {
     // Prevenir ejecución duplicada con debounce
@@ -1223,6 +1323,26 @@ export default function KioscoCheckIn() {
       return
     }
     setLastProcessTime(now)
+
+    // 🔒 Si es salida, verificar tareas pendientes ANTES de registrar fichaje
+    if (tipoAccion === 'salida') {
+      const resultado = await verificarTareasPendientesSalida(empleadoId)
+      if (resultado.hayPendientes) {
+        // Guardar datos para completar el fichaje después de confirmar tareas
+        setRecognizedEmployee({ id: empleadoId, data: empleadoData, confidence: confianza })
+        setPendingDirectSalida({ empleadoId, empleadoData, confianza })
+        if (resultado.bloquear) {
+          setTareasFlexiblesPendientes(resultado.tareasFlexibles)
+          setBloquearSalidaPorTareas(true)
+        } else {
+          setBloquearSalidaPorTareas(false)
+        }
+        setPendingAccionSalida(true)
+        setShowConfirmarTareas(true)
+        setShowFacialAuth(false)
+        return
+      }
+    }
     
     setLoading(true)
     try {
@@ -1531,90 +1651,17 @@ export default function KioscoCheckIn() {
   const ejecutarAccion = async (tipoAccion: TipoAccion) => {
     if (!recognizedEmployee) return
 
-    // Si es salida, verificar tareas pendientes y tareas semanales flexibles (sábado)
+    // Si es salida, verificar tareas pendientes usando la función compartida
     if (tipoAccion === 'salida') {
-      const hoy = new Date()
-      const hoyStr = hoy.toISOString().split('T')[0]
-      const esSabado = hoy.getDay() === 6
-
-      // Verificar tareas semanal_flexible no cumplidas los sábados
-      if (esSabado && recognizedEmployee) {
-        try {
-          // 1. Obtener plantillas semanal_flexible asignadas al empleado
-          const { data: plantillas } = await supabase
-            .from('tareas_plantillas')
-            .select('id, titulo, descripcion, prioridad, veces_por_semana')
-            .eq('frecuencia', 'semanal_flexible')
-            .eq('activa', true)
-            .contains('empleados_asignados', [recognizedEmployee.id])
-
-          if (plantillas && plantillas.length > 0) {
-            // 2. Calcular inicio de semana (lunes)
-            const inicioSemana = new Date(hoy)
-            const diaSemana = hoy.getDay()
-            const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana
-            inicioSemana.setDate(hoy.getDate() + diffLunes)
-            inicioSemana.setHours(0, 0, 0, 0)
-            const inicioSemanaStr = inicioSemana.toISOString().split('T')[0]
-
-            const tareasIncumplidas: any[] = []
-
-            for (const plantilla of plantillas) {
-              // 3. Contar tareas completadas de esta plantilla en la semana
-              const { count } = await supabase
-                .from('tareas')
-                .select('id', { count: 'exact', head: true })
-                .eq('asignado_a', recognizedEmployee.id)
-                .eq('plantilla_id', plantilla.id)
-                .eq('estado', 'completada')
-                .gte('fecha_completada', inicioSemanaStr)
-
-              const completadas = count || 0
-              const requeridas = plantilla.veces_por_semana || 3
-              const faltantes = requeridas - completadas
-
-              if (faltantes > 0) {
-                // Generar tareas pendientes virtuales para las que faltan
-                for (let i = 0; i < faltantes; i++) {
-                  tareasIncumplidas.push({
-                    id: `flex-${plantilla.id}-${i}`,
-                    titulo: `${plantilla.titulo} (${completadas + i + 1}/${requeridas} semanal)`,
-                    descripcion: plantilla.descripcion || '',
-                    prioridad: plantilla.prioridad || 'alta',
-                    fecha_limite: hoyStr,
-                    asignado_por: null,
-                    empleado_asignador: null,
-                  })
-                }
-              }
-            }
-
-            if (tareasIncumplidas.length > 0) {
-              console.log('🚫 [SABADO] Tareas semanal_flexible incumplidas:', tareasIncumplidas.length)
-              setTareasFlexiblesPendientes(tareasIncumplidas)
-              setBloquearSalidaPorTareas(true)
-              setPendingAccionSalida(true)
-              setShowConfirmarTareas(true)
-              return
-            }
-          }
-        } catch (error) {
-          console.error('Error verificando tareas flexibles:', error)
+      const resultado = await verificarTareasPendientesSalida(recognizedEmployee.id)
+      if (resultado.hayPendientes) {
+        setPendingDirectSalida(null) // Viene del flujo manual, no directo
+        if (resultado.bloquear) {
+          setTareasFlexiblesPendientes(resultado.tareasFlexibles)
+          setBloquearSalidaPorTareas(true)
+        } else {
+          setBloquearSalidaPorTareas(false)
         }
-      }
-
-      // Verificar tareas pendientes normales con fecha límite vencida
-      const { data: tareasPendientes } = await supabase
-        .from('tareas')
-        .select('id')
-        .eq('asignado_a', recognizedEmployee.id)
-        .eq('estado', 'pendiente')
-        .not('fecha_limite', 'is', null)
-        .lte('fecha_limite', hoyStr)
-        .limit(1)
-      
-      if (tareasPendientes && tareasPendientes.length > 0) {
-        setBloquearSalidaPorTareas(false)
         setPendingAccionSalida(true)
         setShowConfirmarTareas(true)
         return
