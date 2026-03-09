@@ -7,13 +7,19 @@ import { LlegadaTardeAlert } from '@/components/kiosko/LlegadaTardeAlert';
 import { NovedadesCheckInAlert } from '@/components/kiosko/NovedadesCheckInAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell, CheckCircle2, CalendarX } from 'lucide-react';
+import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell, CheckCircle2, CalendarX, Loader2 } from 'lucide-react';
 import { ConfirmarTareasDia } from '@/components/fichero/ConfirmarTareasDia';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 const EMPLEADOS_TEST = [
   { id: '96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4', nombre: 'Gonzalo Justiniano' },
   { id: 'b94333ce-87a4-4ae0-9f1e-5ed4a91ea017', nombre: 'Tomas Diaz' },
+];
+
+const EMPLEADOS_SABADO = [
+  { id: '6e1bd507-5956-45cf-97d9-2d07f55c9ccb', nombre: 'Carlos Espina' },
+  { id: '1607f6ba-046c-466d-8b4d-acc18e2acfa4', nombre: 'Julio Gomez Navarrete' },
 ];
 
 const TestKioskoAlertas = () => {
