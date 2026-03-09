@@ -141,7 +141,7 @@ const TestKioskoAlertas = () => {
 
       const tareasIncumplidas: any[] = [];
 
-      for (const p of plantillasEmpleado) {
+      {
         const { count, error: errCount } = await supabase
           .from('tareas')
           .select('*', { count: 'exact', head: true })
@@ -164,8 +164,8 @@ const TestKioskoAlertas = () => {
             tareasIncumplidas.push({
               id: `flex-${p.id}-${i}`,
               titulo: p.titulo,
-              descripcion: p.descripcion || '',
-              prioridad: (p.prioridad as any) || 'alta',
+              descripcion: '',
+              prioridad: 'alta' as const,
               fecha_limite: '2026-03-14',
               asignado_por: null,
             });
