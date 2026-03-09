@@ -18,8 +18,8 @@ const EMPLEADOS_TEST = [
 ];
 
 const EMPLEADOS_SABADO = [
-  { id: '6e1bd507-5956-45cf-97d9-2d07f55c9ccb', nombre: 'Carlos Espina' },
-  { id: '1607f6ba-046c-466d-8b4d-acc18e2acfa4', nombre: 'Julio Gomez Navarrete' },
+  { id: '6e1bd507-5956-45cf-97d9-2d07f55c9ccb', nombre: 'Carlos Espina', plantilla: { id: '048dab8a-c4d4-4afb-b27d-06b67a3bef97', titulo: 'Control Stock Cigarrillos', veces_por_semana: 3 } },
+  { id: '1607f6ba-046c-466d-8b4d-acc18e2acfa4', nombre: 'Julio Gomez Navarrete', plantilla: { id: '6c5ca1e9-96af-417d-b589-b7a79c63ba98', titulo: 'Control Ofertas', veces_por_semana: 3 } },
 ];
 
 const TestKioskoAlertas = () => {
@@ -131,23 +131,9 @@ const TestKioskoAlertas = () => {
       addLog('📋 Verificando tareas semanal_flexible...', 'info');
       await new Promise(r => setTimeout(r, 300));
 
-      // Consultar plantillas semanal_flexible del empleado
-      const { data: plantillas, error: errPlantillas }: { data: any[] | null; error: any } = await supabase
-        .from('tareas_plantillas' as any)
-        .select('id, titulo, descripcion, prioridad, veces_por_semana')
-        .contains('empleados_asignados', [simEmpleado.id])
-        .eq('frecuencia', 'semanal_flexible')
-        .eq('activa', true);
-
-      if (errPlantillas) throw errPlantillas;
-
-      if (!plantillas || plantillas.length === 0) {
-        addLog('✅ No tiene plantillas semanal_flexible — Libre para salir', 'ok');
-        setSimLoading(false);
-        return;
-      }
-
-      addLog(`📦 ${plantillas.length} plantilla(s) encontrada(s)`, 'info');
+      // Usar plantilla hardcodeada (evita problemas de RLS en tareas_plantillas)
+      const p = simEmpleado.plantilla;
+      addLog(`📦 Plantilla: "${p.titulo}" (meta: ${p.veces_por_semana}/semana)`, 'info');
 
       // Calcular lunes de la semana del sábado 14/3 → lunes 9/3
       const inicioSemana = '2026-03-09T00:00:00';
@@ -155,7 +141,7 @@ const TestKioskoAlertas = () => {
 
       const tareasIncumplidas: any[] = [];
 
-      for (const p of plantillas) {
+      {
         const { count, error: errCount } = await supabase
           .from('tareas')
           .select('*', { count: 'exact', head: true })
@@ -178,8 +164,8 @@ const TestKioskoAlertas = () => {
             tareasIncumplidas.push({
               id: `flex-${p.id}-${i}`,
               titulo: p.titulo,
-              descripcion: p.descripcion || '',
-              prioridad: (p.prioridad as any) || 'alta',
+              descripcion: '',
+              prioridad: 'alta' as const,
               fecha_limite: '2026-03-14',
               asignado_por: null,
             });
