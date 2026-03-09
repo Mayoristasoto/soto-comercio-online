@@ -7,7 +7,8 @@ import { LlegadaTardeAlert } from '@/components/kiosko/LlegadaTardeAlert';
 import { NovedadesCheckInAlert } from '@/components/kiosko/NovedadesCheckInAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell } from 'lucide-react';
+import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell, CheckCircle2, CalendarX } from 'lucide-react';
+import { ConfirmarTareasDia } from '@/components/fichero/ConfirmarTareasDia';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const EMPLEADOS_TEST = [
@@ -21,10 +22,18 @@ const TestKioskoAlertas = () => {
   const [showPausaExcedida, setShowPausaExcedida] = useState(false);
   const [showLlegadaTarde, setShowLlegadaTarde] = useState(false);
   const [showNovedades, setShowNovedades] = useState(false);
+  const [showConfirmTareas, setShowConfirmTareas] = useState(false);
+  const [showConfirmTareasSabado, setShowConfirmTareasSabado] = useState(false);
   const [loading, setLoading] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(EMPLEADOS_TEST[0]);
 
   const empleadoActual = EMPLEADOS_TEST.find(e => e.id === empleadoSeleccionado.id) || EMPLEADOS_TEST[0];
+
+  const tareasFlexiblesMock = [
+    { id: 'flex-a1b2c3d4-e5f6-7890-abcd-ef1234567890-0', titulo: 'Control Stock Cigarrillos', descripcion: 'Verificar stock en góndola y reponer si es necesario', prioridad: 'alta' as const, fecha_limite: new Date().toISOString().split('T')[0], asignado_por: null },
+    { id: 'flex-a1b2c3d4-e5f6-7890-abcd-ef1234567890-1', titulo: 'Limpieza de Góndola Sector 3', descripcion: 'Limpiar y ordenar productos en góndola sector 3', prioridad: 'media' as const, fecha_limite: new Date().toISOString().split('T')[0], asignado_por: null },
+    { id: 'flex-b2c3d4e5-f6a7-8901-bcde-f12345678901-0', titulo: 'Revisión de Precios Bebidas', descripcion: 'Confirmar que los precios exhibidos coincidan con sistema', prioridad: 'alta' as const, fecha_limite: new Date().toISOString().split('T')[0], asignado_por: null },
+  ];
 
   const mockDetallesCruces = [
     { tipo: 'llegada_tarde' as const, fecha: new Date().toISOString(), minutos: 15, observaciones: 'Tráfico intenso' },
@@ -136,6 +145,29 @@ const TestKioskoAlertas = () => {
               <Bell className="mr-2 h-4 w-4" />
               Mostrar Novedades Alert
             </Button>
+
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Confirmación de Tareas</p>
+              
+              <Button 
+                onClick={() => setShowConfirmTareas(true)} 
+                variant="outline"
+                className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50 mb-2"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Confirmar Tareas (modo normal)
+              </Button>
+
+              <Button 
+                onClick={() => setShowConfirmTareasSabado(true)} 
+                variant="outline"
+                className="w-full border-violet-500 text-violet-600 hover:bg-violet-50"
+              >
+                <CalendarX className="mr-2 h-4 w-4" />
+                Confirmar Tareas Sábado (bloqueo salida)
+              </Button>
+            </div>
+
             <p className="text-sm text-muted-foreground text-center mt-4">
               Las alertas se cierran automáticamente después de unos segundos.<br/>
               Probá en diferentes resoluciones (mobile/tablet/desktop).
@@ -276,6 +308,30 @@ const TestKioskoAlertas = () => {
           duracionSegundos={15}
         />
       )}
+
+      {/* Confirmar Tareas - modo normal */}
+      <ConfirmarTareasDia
+        open={showConfirmTareas}
+        onOpenChange={setShowConfirmTareas}
+        empleadoId="test-id"
+        onConfirm={() => {
+          setShowConfirmTareas(false);
+          toast({ title: '✅ Tareas confirmadas (mock)', description: 'Modo normal — el empleado puede omitir.' });
+        }}
+      />
+
+      {/* Confirmar Tareas - modo sábado con bloqueo */}
+      <ConfirmarTareasDia
+        open={showConfirmTareasSabado}
+        onOpenChange={setShowConfirmTareasSabado}
+        empleadoId="test-id"
+        bloquearSalida={true}
+        tareasFlexibles={tareasFlexiblesMock}
+        onConfirm={() => {
+          setShowConfirmTareasSabado(false);
+          toast({ title: '✅ Tareas sábado confirmadas (mock)', description: 'Modo bloqueo — todas las tareas fueron marcadas.' });
+        }}
+      />
     </div>
   );
 };
