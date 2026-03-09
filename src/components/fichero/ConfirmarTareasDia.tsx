@@ -115,6 +115,18 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, 
 
     setCompleting(true);
     try {
+      if (simulacion) {
+        // Modo simulación: no tocar la DB
+        toast({
+          title: "✅ Simulación completada",
+          description: `${tareasCompletadas.size} tarea(s) marcadas como completadas (sin guardar en DB)`
+        });
+        onConfirm();
+        onOpenChange(false);
+        setCompleting(false);
+        return;
+      }
+
       // Actualizar las tareas marcadas como completadas y registrar logs
       for (const tareaId of tareasCompletadas) {
         const isVirtual = tareaId.startsWith('flex-');
