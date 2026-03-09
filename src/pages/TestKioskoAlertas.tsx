@@ -145,6 +145,29 @@ const TestKioskoAlertas = () => {
               <Bell className="mr-2 h-4 w-4" />
               Mostrar Novedades Alert
             </Button>
+
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Confirmación de Tareas</p>
+              
+              <Button 
+                onClick={() => setShowConfirmTareas(true)} 
+                variant="outline"
+                className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50 mb-2"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Confirmar Tareas (modo normal)
+              </Button>
+
+              <Button 
+                onClick={() => setShowConfirmTareasSabado(true)} 
+                variant="outline"
+                className="w-full border-violet-500 text-violet-600 hover:bg-violet-50"
+              >
+                <CalendarX className="mr-2 h-4 w-4" />
+                Confirmar Tareas Sábado (bloqueo salida)
+              </Button>
+            </div>
+
             <p className="text-sm text-muted-foreground text-center mt-4">
               Las alertas se cierran automáticamente después de unos segundos.<br/>
               Probá en diferentes resoluciones (mobile/tablet/desktop).
