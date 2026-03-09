@@ -158,21 +158,13 @@ const TestKioskoAlertas = () => {
 
       addLog(`📦 ${plantillasEmpleado.length} plantilla(s) encontrada(s)`, 'info');
 
-      if (!plantillas || plantillas.length === 0) {
-        addLog('✅ No tiene plantillas semanal_flexible — Libre para salir', 'ok');
-        setSimLoading(false);
-        return;
-      }
-
-      addLog(`📦 ${plantillas.length} plantilla(s) encontrada(s)`, 'info');
-
       // Calcular lunes de la semana del sábado 14/3 → lunes 9/3
       const inicioSemana = '2026-03-09T00:00:00';
       const finSemana = '2026-03-14T23:59:59';
 
       const tareasIncumplidas: any[] = [];
 
-      for (const p of plantillas) {
+      for (const p of plantillasEmpleado) {
         const { count, error: errCount } = await supabase
           .from('tareas')
           .select('*', { count: 'exact', head: true })
