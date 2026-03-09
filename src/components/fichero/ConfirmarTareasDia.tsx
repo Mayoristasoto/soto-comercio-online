@@ -116,29 +116,68 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, 
     try {
       // Actualizar las tareas marcadas como completadas y registrar logs
       for (const tareaId of tareasCompletadas) {
-        const { error } = await supabase
-          .from('tareas')
-          .update({
-            estado: 'completada',
-            fecha_completada: new Date().toISOString()
-          })
-          .eq('id', tareaId);
+        const isVirtual = tareaId.startsWith('flex-');
 
-        if (error) throw error;
+        if (isVirtual) {
+          // Extraer plantilla_id del ID virtual: "flex-{plantilla_id}-{index}"
+          const parts = tareaId.split('-');
+          // UUID has 5 parts separated by '-', so plantilla_id = parts[1..5] joined
+          const plantillaId = parts.slice(1, 6).join('-');
+          const tareaVirtual = tareas.find(t => t.id === tareaId);
 
-        // Registrar log de tarea completada
-        await registrarActividadTarea(
-          tareaId,
-          empleadoId,
-          'completada',
-          'kiosco',
-          { confirmado_en_salida: true }
-        );
+          // Crear tarea real en la base de datos con estado completada
+          const { data: nuevaTarea, error } = await supabase
+            .from('tareas')
+            .insert({
+              titulo: tareaVirtual?.titulo || 'Tarea flexible completada',
+              descripcion: tareaVirtual?.descripcion || '',
+              prioridad: tareaVirtual?.prioridad || 'alta',
+              estado: 'completada' as const,
+              fecha_completada: new Date().toISOString(),
+              fecha_limite: tareaVirtual?.fecha_limite,
+              asignado_a: empleadoId,
+              plantilla_id: plantillaId,
+            })
+            .select('id')
+            .single();
+
+          if (error) throw error;
+
+          // Registrar log con el ID real
+          if (nuevaTarea) {
+            await registrarActividadTarea(
+              nuevaTarea.id,
+              empleadoId,
+              'completada',
+              'kiosco',
+              { confirmado_en_salida: true, origen_virtual: tareaId }
+            );
+          }
+        } else {
+          // Flujo normal: UPDATE tarea existente
+          const { error } = await supabase
+            .from('tareas')
+            .update({
+              estado: 'completada',
+              fecha_completada: new Date().toISOString()
+            })
+            .eq('id', tareaId);
+
+          if (error) throw error;
+
+          await registrarActividadTarea(
+            tareaId,
+            empleadoId,
+            'completada',
+            'kiosco',
+            { confirmado_en_salida: true }
+          );
+        }
       }
 
-      // Registrar log de tareas omitidas en la salida
+      // Registrar log de tareas omitidas (solo para tareas reales, no virtuales)
       for (const tarea of tareas) {
-        if (!tareasCompletadas.has(tarea.id)) {
+        if (!tareasCompletadas.has(tarea.id) && !tarea.id.startsWith('flex-')) {
           await registrarActividadTarea(
             tarea.id,
             empleadoId,
@@ -149,14 +188,16 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, 
         }
       }
 
-      // Registrar que se mostró la confirmación de salida
+      // Registrar confirmación de salida mostrada (solo para tareas reales)
       for (const tarea of tareas) {
-        await registrarActividadTarea(
-          tarea.id,
-          empleadoId,
-          'confirmacion_salida_mostrada',
-          'kiosco'
-        );
+        if (!tarea.id.startsWith('flex-')) {
+          await registrarActividadTarea(
+            tarea.id,
+            empleadoId,
+            'confirmacion_salida_mostrada',
+            'kiosco'
+          );
+        }
       }
 
       toast({
