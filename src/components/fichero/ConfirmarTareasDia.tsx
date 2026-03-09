@@ -39,7 +39,7 @@ const priorityColors = {
   urgente: 'bg-red-100 text-red-800 border-red-200'
 };
 
-export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, bloquearSalida = false, tareasFlexibles }: ConfirmarTareasDiaProps) => {
+export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, bloquearSalida = false, tareasFlexibles, simulacion = false }: ConfirmarTareasDiaProps) => {
   const [tareas, setTareas] = useState<Task[]>([]);
   const [tareasCompletadas, setTareasCompletadas] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
