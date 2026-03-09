@@ -29,6 +29,7 @@ interface ConfirmarTareasDiaProps {
   onConfirm: () => void;
   bloquearSalida?: boolean;
   tareasFlexibles?: Task[];
+  simulacion?: boolean;
 }
 
 const priorityColors = {
@@ -38,7 +39,7 @@ const priorityColors = {
   urgente: 'bg-red-100 text-red-800 border-red-200'
 };
 
-export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, bloquearSalida = false, tareasFlexibles }: ConfirmarTareasDiaProps) => {
+export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, bloquearSalida = false, tareasFlexibles, simulacion = false }: ConfirmarTareasDiaProps) => {
   const [tareas, setTareas] = useState<Task[]>([]);
   const [tareasCompletadas, setTareasCompletadas] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -114,6 +115,18 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, 
 
     setCompleting(true);
     try {
+      if (simulacion) {
+        // Modo simulación: no tocar la DB
+        toast({
+          title: "✅ Simulación completada",
+          description: `${tareasCompletadas.size} tarea(s) marcadas como completadas (sin guardar en DB)`
+        });
+        onConfirm();
+        onOpenChange(false);
+        setCompleting(false);
+        return;
+      }
+
       // Actualizar las tareas marcadas como completadas y registrar logs
       for (const tareaId of tareasCompletadas) {
         const isVirtual = tareaId.startsWith('flex-');

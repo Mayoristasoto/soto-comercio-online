@@ -427,16 +427,55 @@ const TestKioskoAlertas = () => {
                     <span>{entry.paso}</span>
                   </div>
                 ))}
-                {simBloquear && (
-                  <Badge variant="destructive" className="mt-2">
-                    RESULTADO: BLOQUEADO — No puede fichar salida
-                  </Badge>
-                )}
-                {!simBloquear && simLog.some(l => l.estado === 'ok' && l.paso.includes('Libre')) && (
-                  <Badge variant="outline" className="mt-2 bg-emerald-100 text-emerald-800 border-emerald-200">
-                    RESULTADO: LIBRE — Puede fichar salida
-                  </Badge>
-                )}
+              </div>
+            )}
+
+            {/* Visual result panel */}
+            {simBloquear && simLog.length > 0 && (
+              <div className="border-2 border-destructive bg-destructive/10 rounded-xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center gap-3">
+                  <div className="bg-destructive rounded-full p-2">
+                    <AlertTriangle className="h-6 w-6 text-destructive-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-destructive text-lg">SALIDA BLOQUEADA</p>
+                    <p className="text-sm text-muted-foreground">{simEmpleado.nombre} no puede registrar salida</p>
+                  </div>
+                </div>
+                <div className="bg-background rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-semibold">Tareas incumplidas esta semana:</p>
+                  {simTareasFlexibles.map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className="text-destructive">✗</span>
+                      <span>{t.titulo}</span>
+                      <Badge variant="outline" className="text-xs ml-auto">{t.prioridad}</Badge>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  Debe completar todas las tareas marcándolas en el diálogo para poder fichar salida.
+                </p>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setShowSimDialog(true)}
+                >
+                  Ver Diálogo de Bloqueo
+                </Button>
+              </div>
+            )}
+
+            {!simBloquear && simLog.some(l => l.estado === 'ok' && l.paso.includes('Libre')) && (
+              <div className="border-2 border-emerald-500 bg-emerald-50 rounded-xl p-5 space-y-2 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center gap-3">
+                  <div className="bg-emerald-500 rounded-full p-2">
+                    <CheckCircle2 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-emerald-700 text-lg">SALIDA PERMITIDA</p>
+                    <p className="text-sm text-muted-foreground">{simEmpleado.nombre} cumplió todas sus metas semanales</p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -535,6 +574,7 @@ const TestKioskoAlertas = () => {
         empleadoId={simEmpleado.id}
         bloquearSalida={simBloquear}
         tareasFlexibles={simTareasFlexibles}
+        simulacion={true}
         onConfirm={() => {
           setShowSimDialog(false);
           toast({ title: '✅ Simulación completada', description: `${simEmpleado.nombre} confirmó tareas (sin tocar DB).` });
