@@ -574,6 +574,7 @@ const TestKioskoAlertas = () => {
         empleadoId={simEmpleado.id}
         bloquearSalida={simBloquear}
         tareasFlexibles={simTareasFlexibles}
+        simulacion={true}
         onConfirm={() => {
           setShowSimDialog(false);
           toast({ title: '✅ Simulación completada', description: `${simEmpleado.nombre} confirmó tareas (sin tocar DB).` });
