@@ -1193,12 +1193,27 @@ export default function KioscoCheckIn() {
     }
   }
 
+  // Estado para diferir fichaje de salida desde ejecutarAccionDirecta
+  const [pendingDirectSalida, setPendingDirectSalida] = useState<{
+    empleadoId: string
+    empleadoData: any
+    confianza: number
+  } | null>(null)
+
   // Handler para cuando se confirman las tareas del día antes de salir
   const handleConfirmarTareasYSalir = async () => {
     setShowConfirmarTareas(false)
     if (pendingAccionSalida) {
       setPendingAccionSalida(false)
-      await procesarAccionFichaje('salida')
+      if (pendingDirectSalida) {
+        // Vino del flujo ejecutarAccionDirecta: ejecutar fichaje directo
+        const { empleadoId, empleadoData, confianza } = pendingDirectSalida
+        setPendingDirectSalida(null)
+        await ejecutarAccionDirecta('salida', empleadoId, empleadoData, confianza)
+      } else {
+        // Vino del flujo ejecutarAccion (botones): usar procesarAccionFichaje
+        await procesarAccionFichaje('salida')
+      }
     }
   }
   
