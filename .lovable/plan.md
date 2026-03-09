@@ -1,27 +1,47 @@
 
 
-## Plan: Simulación realista fichado salida sábado 14/3 con datos reales
+## Plan: PDF Resumen Semanal Rápido de Incidencias
 
-### Contexto
-Carlos Espina y Julio Gomez Navarrete tienen tareas `semanal_flexible` con 0/3 completadas esta semana. El sábado 14 de marzo, si fichan salida, deberían ser bloqueados.
+### Objetivo
+Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
 
-### Cambio en `src/pages/TestKioskoAlertas.tsx`
+### Archivo nuevo
+**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
 
-Agregar una nueva card **"Simulación Fichado Salida Sábado 14/3"** que:
+1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
+2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
+3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
+4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
 
-1. **Selector de empleado** entre Carlos Espina y Julio Gomez Navarrete (con sus IDs reales)
-2. **Botón "Simular Fichado Salida"** que:
-   - Consulta `tareas_plantillas` con `semanal_flexible` para el empleado seleccionado
-   - Cuenta tareas completadas esta semana (lunes 9 - sábado 14)
-   - Muestra un log visual paso a paso: "Reconocimiento facial → Verificando tareas → X incumplidas → Bloqueado"
-   - Si hay incumplimiento → abre `ConfirmarTareasDia` con `bloquearSalida=true` y las tareas generadas dinámicamente desde la DB
-3. **Log visual** con los pasos del flujo y resultado (bloqueo o libre)
-4. El `onConfirm` solo muestra toast, sin tocar DB
+Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
 
-### Empleados reales
-- Carlos Espina: `6e1bd507-5956-45cf-97d9-2d07f55c9ccb` — "Control Stock Cigarrillos" (0/3)
-- Julio Gomez Navarrete: `1607f6ba-046c-466d-8b4d-acc18e2acfa4` — "Control Ofertas" (0/3)
+### Archivo modificado
+**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
+- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
+- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
+- Consulta `fichajes` para detectar empleados sin registro
+- Llama a `generarResumenSemanalPDF()` con los datos
 
-### Lógica de simulación
-Replica la misma lógica de `verificarTareasPendientesSalida` del kiosco pero **forzando `esSabado = true`** para que funcione cualquier día de la semana como test. Consulta directa a la DB para mostrar datos reales.
+### Estructura del PDF
+
+```text
+┌─────────────────────────────────┐
+│  SOTO mayorista                 │
+│  Resumen Semanal de Incidencias │
+│  Lunes 03/03 - Domingo 09/03   │
+├─────────────────────────────────┤
+│ [12 Lleg.Tarde] [5 Exc.Desc]   │
+│ [3 Sin Fichaje] [20 Total]     │
+├─────────────────────────────────┤
+│ # │ Empleado │ Suc │ LT │ED│Tot│
+│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
+│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
+│ ...                             │
+├─────────────────────────────────┤
+│ Empleados sin fichaje           │
+│ Fecha    │ Empleado │ Sucursal  │
+│ 03/03    │ Ana D.   │ Centro    │
+│ ...                             │
+└─────────────────────────────────┘
+```
 

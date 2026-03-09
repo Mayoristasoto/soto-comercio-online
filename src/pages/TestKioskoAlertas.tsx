@@ -7,13 +7,19 @@ import { LlegadaTardeAlert } from '@/components/kiosko/LlegadaTardeAlert';
 import { NovedadesCheckInAlert } from '@/components/kiosko/NovedadesCheckInAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell, CheckCircle2, CalendarX } from 'lucide-react';
+import { Coffee, Clock, AlertTriangle, Trash2, Play, User, Bell, CheckCircle2, CalendarX, Loader2 } from 'lucide-react';
 import { ConfirmarTareasDia } from '@/components/fichero/ConfirmarTareasDia';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 const EMPLEADOS_TEST = [
   { id: '96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4', nombre: 'Gonzalo Justiniano' },
   { id: 'b94333ce-87a4-4ae0-9f1e-5ed4a91ea017', nombre: 'Tomas Diaz' },
+];
+
+const EMPLEADOS_SABADO = [
+  { id: '6e1bd507-5956-45cf-97d9-2d07f55c9ccb', nombre: 'Carlos Espina' },
+  { id: '1607f6ba-046c-466d-8b4d-acc18e2acfa4', nombre: 'Julio Gomez Navarrete' },
 ];
 
 const TestKioskoAlertas = () => {
@@ -26,6 +32,14 @@ const TestKioskoAlertas = () => {
   const [showConfirmTareasSabado, setShowConfirmTareasSabado] = useState(false);
   const [loading, setLoading] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(EMPLEADOS_TEST[0]);
+
+  // Simulación sábado 14/3
+  const [simEmpleado, setSimEmpleado] = useState(EMPLEADOS_SABADO[0]);
+  const [simLoading, setSimLoading] = useState(false);
+  const [simLog, setSimLog] = useState<{ paso: string; estado: 'ok' | 'warn' | 'error' | 'info' }[]>([]);
+  const [simTareasFlexibles, setSimTareasFlexibles] = useState<any[]>([]);
+  const [simBloquear, setSimBloquear] = useState(false);
+  const [showSimDialog, setShowSimDialog] = useState(false);
 
   const empleadoActual = EMPLEADOS_TEST.find(e => e.id === empleadoSeleccionado.id) || EMPLEADOS_TEST[0];
 
@@ -96,6 +110,100 @@ const TestKioskoAlertas = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Simulación de fichado salida sábado con datos reales
+  const ejecutarSimulacionSabado = async () => {
+    setSimLoading(true);
+    setSimLog([]);
+    setSimTareasFlexibles([]);
+    setSimBloquear(false);
+
+    const addLog = (paso: string, estado: 'ok' | 'warn' | 'error' | 'info') => {
+      setSimLog(prev => [...prev, { paso, estado }]);
+    };
+
+    try {
+      addLog(`🔍 Reconocimiento facial: ${simEmpleado.nombre}`, 'info');
+      await new Promise(r => setTimeout(r, 500));
+
+      addLog('📋 Verificando tareas semanal_flexible...', 'info');
+      await new Promise(r => setTimeout(r, 300));
+
+      // Consultar plantillas semanal_flexible del empleado
+      const { data: plantillas, error: errPlantillas }: { data: any[] | null; error: any } = await supabase
+        .from('tareas_plantillas' as any)
+        .select('id, titulo, descripcion, prioridad, veces_por_semana')
+        .eq('empleado_id', simEmpleado.id)
+        .eq('frecuencia', 'semanal_flexible')
+        .eq('activa', true);
+
+      if (errPlantillas) throw errPlantillas;
+
+      if (!plantillas || plantillas.length === 0) {
+        addLog('✅ No tiene plantillas semanal_flexible — Libre para salir', 'ok');
+        setSimLoading(false);
+        return;
+      }
+
+      addLog(`📦 ${plantillas.length} plantilla(s) encontrada(s)`, 'info');
+
+      // Calcular lunes de la semana del sábado 14/3 → lunes 9/3
+      const inicioSemana = '2026-03-09T00:00:00';
+      const finSemana = '2026-03-14T23:59:59';
+
+      const tareasIncumplidas: any[] = [];
+
+      for (const p of plantillas) {
+        const { count, error: errCount } = await supabase
+          .from('tareas')
+          .select('*', { count: 'exact', head: true })
+          .eq('plantilla_id', p.id)
+          .eq('asignado_a', simEmpleado.id)
+          .eq('estado', 'completada')
+          .gte('fecha_completada', inicioSemana)
+          .lte('fecha_completada', finSemana);
+
+        if (errCount) throw errCount;
+
+        const completadas = count || 0;
+        const objetivo = p.veces_por_semana || 1;
+
+        addLog(`  → "${p.titulo}": ${completadas}/${objetivo} completadas`, completadas >= objetivo ? 'ok' : 'warn');
+
+        if (completadas < objetivo) {
+          const faltantes = objetivo - completadas;
+          for (let i = 0; i < faltantes; i++) {
+            tareasIncumplidas.push({
+              id: `flex-${p.id}-${i}`,
+              titulo: p.titulo,
+              descripcion: p.descripcion || '',
+              prioridad: (p.prioridad as any) || 'alta',
+              fecha_limite: '2026-03-14',
+              asignado_por: null,
+            });
+          }
+        }
+      }
+
+      await new Promise(r => setTimeout(r, 300));
+
+      if (tareasIncumplidas.length > 0) {
+        addLog(`🚫 ${tareasIncumplidas.length} tarea(s) incumplida(s) — BLOQUEADO`, 'error');
+        setSimTareasFlexibles(tareasIncumplidas);
+        setSimBloquear(true);
+        await new Promise(r => setTimeout(r, 500));
+        setShowSimDialog(true);
+      } else {
+        addLog('✅ Todas las metas semanales cumplidas — Libre para salir', 'ok');
+      }
+
+    } catch (error: any) {
+      console.error('Error simulación:', error);
+      setSimLog(prev => [...prev, { paso: `❌ Error: ${error.message}`, estado: 'error' }]);
+    } finally {
+      setSimLoading(false);
     }
   };
 
@@ -256,6 +364,93 @@ const TestKioskoAlertas = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Card Simulación Sábado 14/3 */}
+        <Card className="border-violet-200 bg-violet-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-violet-800">
+              <CalendarX className="h-5 w-5" />
+              Simulación Fichado Salida Sábado 14/3
+            </CardTitle>
+            <CardDescription>
+              Simula el flujo de salida con verificación de tareas semanal_flexible usando datos reales de la DB.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-white rounded-lg p-4 space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2 text-violet-800">
+                <User className="h-4 w-4" />
+                Empleado a simular:
+              </label>
+              <Select
+                value={simEmpleado.id}
+                onValueChange={(value) => {
+                  const emp = EMPLEADOS_SABADO.find(e => e.id === value);
+                  if (emp) setSimEmpleado(emp);
+                  setSimLog([]);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EMPLEADOS_SABADO.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={ejecutarSimulacionSabado}
+              disabled={simLoading}
+              className="w-full bg-violet-600 hover:bg-violet-700"
+            >
+              {simLoading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Simulando...</>
+              ) : (
+                <><Play className="mr-2 h-4 w-4" /> Simular Fichado Salida (Sábado)</>
+              )}
+            </Button>
+
+            {simLog.length > 0 && (
+              <div className="bg-muted rounded-lg p-3 space-y-1.5 font-mono text-xs">
+                {simLog.map((entry, i) => (
+                  <div key={i} className={`flex items-start gap-2 ${
+                    entry.estado === 'error' ? 'text-destructive font-bold' :
+                    entry.estado === 'warn' ? 'text-orange-600 font-semibold' :
+                    entry.estado === 'ok' ? 'text-emerald-600 font-semibold' :
+                    'text-muted-foreground'
+                  }`}>
+                    <span>{entry.paso}</span>
+                  </div>
+                ))}
+                {simBloquear && (
+                  <Badge variant="destructive" className="mt-2">
+                    RESULTADO: BLOQUEADO — No puede fichar salida
+                  </Badge>
+                )}
+                {!simBloquear && simLog.some(l => l.estado === 'ok' && l.paso.includes('Libre')) && (
+                  <Badge variant="outline" className="mt-2 bg-emerald-100 text-emerald-800 border-emerald-200">
+                    RESULTADO: LIBRE — Puede fichar salida
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            <div className="bg-violet-100 border border-violet-200 rounded-lg p-3 text-xs text-violet-800">
+              <p className="font-semibold mb-1">ℹ️ Qué hace esta simulación:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Consulta plantillas <code className="bg-violet-200 px-1 rounded">semanal_flexible</code> reales del empleado</li>
+                <li>Cuenta tareas completadas entre lun 9/3 y sáb 14/3</li>
+                <li>Si hay incumplimiento → abre diálogo con <strong>bloqueo de salida</strong></li>
+                <li>El confirmar del diálogo NO toca la DB (solo toast)</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Alertas */}
@@ -330,6 +525,19 @@ const TestKioskoAlertas = () => {
         onConfirm={() => {
           setShowConfirmTareasSabado(false);
           toast({ title: '✅ Tareas sábado confirmadas (mock)', description: 'Modo bloqueo — todas las tareas fueron marcadas.' });
+        }}
+      />
+
+      {/* Simulación sábado - dialog con datos reales */}
+      <ConfirmarTareasDia
+        open={showSimDialog}
+        onOpenChange={setShowSimDialog}
+        empleadoId={simEmpleado.id}
+        bloquearSalida={simBloquear}
+        tareasFlexibles={simTareasFlexibles}
+        onConfirm={() => {
+          setShowSimDialog(false);
+          toast({ title: '✅ Simulación completada', description: `${simEmpleado.nombre} confirmó tareas (sin tocar DB).` });
         }}
       />
     </div>
