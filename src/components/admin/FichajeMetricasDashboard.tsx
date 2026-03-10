@@ -317,8 +317,7 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarPausasExcedidas = async () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const { inicio, fin } = getDateRange()
     const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
     const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
