@@ -127,13 +127,15 @@ export default function FichajeMetricasDashboard() {
   const [selectedPausas, setSelectedPausas] = useState<Set<string>>(new Set())
   
   // Filtros
-  const [tipoFecha, setTipoFecha] = useState<'dia' | 'rango'>('dia')
+  const [tipoFecha, setTipoFecha] = useState<'dia' | 'rango' | 'mes'>('dia')
   const [fechaInicio, setFechaInicio] = useState<Date>(() => {
     const today = new Date()
-    return new Date(today.getFullYear(), today.getMonth(), 1) // Primer día del mes actual
+    return new Date(today.getFullYear(), today.getMonth(), 1)
   })
   const [fechaFin, setFechaFin] = useState<Date>(new Date())
   const [fechaParticular, setFechaParticular] = useState<Date>(new Date())
+  const [mesFiltro, setMesFiltro] = useState<number>(new Date().getMonth())
+  const [anioFiltro, setAnioFiltro] = useState<number>(new Date().getFullYear())
   const [empleadoFiltro, setEmpleadoFiltro] = useState<string>("todos")
   const [empleados, setEmpleados] = useState<any[]>([])
   const [ocultarRegistradas, setOcultarRegistradas] = useState(false)
