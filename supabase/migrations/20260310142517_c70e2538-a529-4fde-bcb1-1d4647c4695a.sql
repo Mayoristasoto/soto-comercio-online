@@ -1,0 +1,1 @@
+UPDATE user_theme_preferences SET theme_mode = 'light', custom_colors = NULL, updated_at = now() WHERE user_id = '2f297b66-1086-471f-83e3-abab3743fc2b';
