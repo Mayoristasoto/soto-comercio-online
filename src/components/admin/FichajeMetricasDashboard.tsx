@@ -1783,6 +1783,48 @@ export default function FichajeMetricasDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog confirmar eliminación masiva de fichajes tardíos */}
+      <AlertDialog open={confirmDeleteFichajes} onOpenChange={setConfirmDeleteFichajes}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar llegadas tarde seleccionadas</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Está seguro que desea eliminar {selectedFichajes.size} registro(s) de llegadas tarde? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={eliminarFichajesSeleccionados}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Eliminar ({selectedFichajes.size})
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog confirmar eliminación masiva de pausas excedidas */}
+      <AlertDialog open={confirmDeletePausas} onOpenChange={setConfirmDeletePausas}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar pausas excedidas seleccionadas</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Está seguro que desea eliminar {selectedPausas.size} registro(s) de pausas excedidas? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={eliminarPausasSeleccionadas}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Eliminar ({selectedPausas.size})
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
