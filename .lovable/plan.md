@@ -1,26 +1,47 @@
 
 
-## Plan: Excel export with separate sheets per employee
+## Plan: PDF Resumen Semanal Rápido de Incidencias
 
-### Problem
-The current export puts all records in a single sheet sorted by employee. The user wants each employee on their own separate sheet (workbook tab) with the employee name as the sheet title.
+### Objetivo
+Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
 
-### Solution
-Replace the `ExportButton` usage with a custom export button that generates a multi-sheet Excel workbook using XLSX directly.
+### Archivo nuevo
+**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
 
-### Changes
+1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
+2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
+3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
+4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
 
-**`src/components/admin/FichajeMetricasDashboard.tsx`**
+Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
 
-1. Replace `ExportButton` with a custom `Button` that calls a new `exportarExcelMultiHoja()` function.
+### Archivo modificado
+**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
+- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
+- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
+- Consulta `fichajes` para detectar empleados sin registro
+- Llama a `generarResumenSemanalPDF()` con los datos
 
-2. New `exportarExcelMultiHoja()` function:
-   - Sheet 1: **"Resumen"** — contains the summary row (metrics totals)
-   - Remaining sheets: one per employee, named with employee name (e.g., "Espina, Carlos"), containing only that employee's incidents with columns: Tipo, Fecha, Detalle 1-4, Justificado, Observaciones, Ya Registrado
-   - Group records by employee name from the existing unified `registros` array
-   - Use `XLSX.utils.book_new()`, create sheets with `XLSX.utils.json_to_sheet()`, append each with `XLSX.utils.book_append_sheet()`
-   - Sheet names truncated to 31 chars (Excel limit)
-   - Save with `XLSX.writeFile()`
+### Estructura del PDF
 
-3. Keep CSV export as single-sheet fallback via existing `ExportButton` (or remove if user prefers Excel-only).
+```text
+┌─────────────────────────────────┐
+│  SOTO mayorista                 │
+│  Resumen Semanal de Incidencias │
+│  Lunes 03/03 - Domingo 09/03   │
+├─────────────────────────────────┤
+│ [12 Lleg.Tarde] [5 Exc.Desc]   │
+│ [3 Sin Fichaje] [20 Total]     │
+├─────────────────────────────────┤
+│ # │ Empleado │ Suc │ LT │ED│Tot│
+│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
+│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
+│ ...                             │
+├─────────────────────────────────┤
+│ Empleados sin fichaje           │
+│ Fecha    │ Empleado │ Sucursal  │
+│ 03/03    │ Ana D.   │ Centro    │
+│ ...                             │
+└─────────────────────────────────┘
+```
 
