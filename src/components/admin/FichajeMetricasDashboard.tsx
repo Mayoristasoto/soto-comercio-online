@@ -398,6 +398,65 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const [confirmDeleteFichajes, setConfirmDeleteFichajes] = useState(false)
+  const [confirmDeletePausas, setConfirmDeletePausas] = useState(false)
+
+  const eliminarFichajesSeleccionados = async () => {
+    try {
+      const ids = [...selectedFichajes]
+      const { error } = await supabase
+        .from('fichajes_tardios')
+        .delete()
+        .in('id', ids)
+
+      if (error) throw error
+
+      toast({
+        title: "Registros eliminados",
+        description: `Se eliminaron ${ids.length} llegadas tarde correctamente`
+      })
+
+      setSelectedFichajes(new Set())
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error eliminando fichajes:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron eliminar los registros",
+        variant: "destructive"
+      })
+    }
+    setConfirmDeleteFichajes(false)
+  }
+
+  const eliminarPausasSeleccionadas = async () => {
+    try {
+      const ids = [...selectedPausas]
+      const { error } = await supabase
+        .from('fichajes_pausas_excedidas')
+        .delete()
+        .in('id', ids)
+
+      if (error) throw error
+
+      toast({
+        title: "Registros eliminados",
+        description: `Se eliminaron ${ids.length} pausas excedidas correctamente`
+      })
+
+      setSelectedPausas(new Set())
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error eliminando pausas:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron eliminar los registros",
+        variant: "destructive"
+      })
+    }
+    setConfirmDeletePausas(false)
+  }
+
   const abrirDialogoIncidencia = (incidencia: IncidenciaReportada) => {
     setSelectedIncidencia(incidencia)
     setComentarioAprobacion("")
