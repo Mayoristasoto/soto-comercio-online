@@ -930,8 +930,11 @@ export default function FichajeMetricasDashboard() {
 
   const exportarExcelMultiHoja = () => {
     try {
+      const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
       const rangoTexto = tipoFecha === 'dia' 
         ? format(fechaParticular, 'dd/MM/yyyy', { locale: es })
+        : tipoFecha === 'mes'
+        ? `${mesesNombres[mesFiltro]} ${anioFiltro}`
         : `${format(fechaInicio, 'dd/MM/yyyy', { locale: es })} - ${format(fechaFin, 'dd/MM/yyyy', { locale: es })}`
       
       const empleadoTexto = empleadoFiltro === 'todos' 
