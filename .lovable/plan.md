@@ -1,47 +1,24 @@
 
 
-## Plan: PDF Resumen Semanal Rápido de Incidencias
+## Plan: Add bulk delete for selected late arrivals and exceeded breaks
 
-### Objetivo
-Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
+### Problem
+Currently, the user can only delete individual records one by one (via the Trash icon on each row). They want to use the same checkbox selection used for "Plasmar" to also bulk-delete multiple selected records.
 
-### Archivo nuevo
-**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
+### Changes
 
-1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
-2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
-3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
-4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
+**`src/components/admin/FichajeMetricasDashboard.tsx`**
 
-Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
+1. **Add two new bulk delete functions**:
+   - `eliminarFichajesTardiosSeleccionados()` — deletes all selected IDs from `fichajes_tardios` using `.in('id', [...selectedFichajes])`
+   - `eliminarPausasExcedidasSeleccionadas()` — deletes all selected IDs from `fichajes_pausas_excedidas` using `.in('id', [...selectedPausas])`
+   - Both show a confirmation dialog before proceeding, clear selection after, and reload data
 
-### Archivo modificado
-**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
-- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
-- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
-- Consulta `fichajes` para detectar empleados sin registro
-- Llama a `generarResumenSemanalPDF()` con los datos
+2. **Add "Eliminar Seleccionados" button** next to the existing "Plasmar como Cruces Rojas" button in both sections (Fichajes Tardíos and Pausas Excedidas):
+   - Red outline/destructive variant with Trash2 icon
+   - Shows count of selected items
+   - Disabled when selection is empty
+   - Uses the `useConfirm` hook for confirmation before deletion
 
-### Estructura del PDF
-
-```text
-┌─────────────────────────────────┐
-│  SOTO mayorista                 │
-│  Resumen Semanal de Incidencias │
-│  Lunes 03/03 - Domingo 09/03   │
-├─────────────────────────────────┤
-│ [12 Lleg.Tarde] [5 Exc.Desc]   │
-│ [3 Sin Fichaje] [20 Total]     │
-├─────────────────────────────────┤
-│ # │ Empleado │ Suc │ LT │ED│Tot│
-│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
-│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
-│ ...                             │
-├─────────────────────────────────┤
-│ Empleados sin fichaje           │
-│ Fecha    │ Empleado │ Sucursal  │
-│ 03/03    │ Ana D.   │ Centro    │
-│ ...                             │
-└─────────────────────────────────┘
-```
+3. **Import `useConfirm`** hook (already exists in the project) for safe confirmation before bulk delete.
 
