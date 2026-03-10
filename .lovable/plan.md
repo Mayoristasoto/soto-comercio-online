@@ -1,47 +1,32 @@
 
 
-## Plan: PDF Resumen Semanal Rápido de Incidencias
+## Plan: Add "Mes Entero" filter + Enhanced Resumen sheet with employee statistics
 
-### Objetivo
-Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
+### Changes
 
-### Archivo nuevo
-**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
+**`src/components/admin/FichajeMetricasDashboard.tsx`**
 
-1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
-2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
-3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
-4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
+#### 1. Add "Mes Entero" filter type
+- Change `tipoFecha` state type from `'dia' | 'rango'` to `'dia' | 'rango' | 'mes'`
+- Add `SelectItem value="mes"` → "Mes Entero"
+- Add a month/year picker UI (two selects: month name + year) that sets `fechaInicio` to 1st day and `fechaFin` to last day of chosen month
+- New state: `mesFiltro` (0-11) and `anioFiltro` (number), defaulting to current month/year
+- When `tipoFecha === 'mes'`, auto-compute `fechaInicio`/`fechaFin` from month+year before querying
 
-Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
+#### 2. Enhanced "Resumen" sheet in Excel export
+Expand the Resumen sheet from simple metrics to include a full employee-level summary table. After the existing period/metric rows, add:
 
-### Archivo modificado
-**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
-- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
-- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
-- Consulta `fichajes` para detectar empleados sin registro
-- Llama a `generarResumenSemanalPDF()` con los datos
+**Section: "ESTADÍSTICAS DESTACADAS"**
+- Empleado con más llegadas tarde (name + count)
+- Empleado con más minutos de exceso de pausa (name + total minutes)
+- Empleado más puntual (most clock-ins with zero late arrivals)
+- Empleado más responsable (fewest total incidents)
 
-### Estructura del PDF
+**Section: "RESUMEN POR EMPLEADO"**
+Table with columns:
+`Empleado | Llegadas Tarde | Min. Retraso Total | Pausas Excedidas | Min. Exceso Total | Tiempo Perdido Total (min)`
 
-```text
-┌─────────────────────────────────┐
-│  SOTO mayorista                 │
-│  Resumen Semanal de Incidencias │
-│  Lunes 03/03 - Domingo 09/03   │
-├─────────────────────────────────┤
-│ [12 Lleg.Tarde] [5 Exc.Desc]   │
-│ [3 Sin Fichaje] [20 Total]     │
-├─────────────────────────────────┤
-│ # │ Empleado │ Suc │ LT │ED│Tot│
-│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
-│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
-│ ...                             │
-├─────────────────────────────────┤
-│ Empleados sin fichaje           │
-│ Fecha    │ Empleado │ Sucursal  │
-│ 03/03    │ Ana D.   │ Centro    │
-│ ...                             │
-└─────────────────────────────────┘
-```
+Calculated from existing `fichajesToday` (sum `minutos_retraso`) and `pausasToday` (sum `minutos_exceso`), grouped by `empleado_id`. "Tiempo Perdido" = sum of both.
+
+### No database changes needed — all data already loaded in state.
 
