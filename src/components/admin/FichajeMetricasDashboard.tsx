@@ -398,6 +398,65 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const [confirmDeleteFichajes, setConfirmDeleteFichajes] = useState(false)
+  const [confirmDeletePausas, setConfirmDeletePausas] = useState(false)
+
+  const eliminarFichajesSeleccionados = async () => {
+    try {
+      const ids = [...selectedFichajes]
+      const { error } = await supabase
+        .from('fichajes_tardios')
+        .delete()
+        .in('id', ids)
+
+      if (error) throw error
+
+      toast({
+        title: "Registros eliminados",
+        description: `Se eliminaron ${ids.length} llegadas tarde correctamente`
+      })
+
+      setSelectedFichajes(new Set())
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error eliminando fichajes:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron eliminar los registros",
+        variant: "destructive"
+      })
+    }
+    setConfirmDeleteFichajes(false)
+  }
+
+  const eliminarPausasSeleccionadas = async () => {
+    try {
+      const ids = [...selectedPausas]
+      const { error } = await supabase
+        .from('fichajes_pausas_excedidas')
+        .delete()
+        .in('id', ids)
+
+      if (error) throw error
+
+      toast({
+        title: "Registros eliminados",
+        description: `Se eliminaron ${ids.length} pausas excedidas correctamente`
+      })
+
+      setSelectedPausas(new Set())
+      await cargarDatos()
+    } catch (error) {
+      console.error('Error eliminando pausas:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron eliminar los registros",
+        variant: "destructive"
+      })
+    }
+    setConfirmDeletePausas(false)
+  }
+
   const abrirDialogoIncidencia = (incidencia: IncidenciaReportada) => {
     setSelectedIncidencia(incidencia)
     setComentarioAprobacion("")
@@ -1290,6 +1349,15 @@ export default function FichajeMetricasDashboard() {
                       <AlertTriangle className="h-4 w-4 mr-2" />
                       Plasmar como Cruces Rojas ({selectedFichajes.size})
                     </Button>
+                    <Button
+                      onClick={() => setConfirmDeleteFichajes(true)}
+                      variant="outline"
+                      className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      disabled={selectedFichajes.size === 0}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar Seleccionados ({selectedFichajes.size})
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1424,6 +1492,15 @@ export default function FichajeMetricasDashboard() {
                       >
                         <AlertTriangle className="h-4 w-4 mr-2" />
                         Plasmar como Cruces Rojas ({selectedPausas.size})
+                      </Button>
+                      <Button
+                        onClick={() => setConfirmDeletePausas(true)}
+                        variant="outline"
+                        className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        disabled={selectedPausas.size === 0}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar Seleccionados ({selectedPausas.size})
                       </Button>
                     </>
                   )}
@@ -1702,6 +1779,48 @@ export default function FichajeMetricasDashboard() {
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               {anulandoCR ? "Anulando..." : "Anular"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog confirmar eliminación masiva de fichajes tardíos */}
+      <AlertDialog open={confirmDeleteFichajes} onOpenChange={setConfirmDeleteFichajes}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar llegadas tarde seleccionadas</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Está seguro que desea eliminar {selectedFichajes.size} registro(s) de llegadas tarde? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={eliminarFichajesSeleccionados}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Eliminar ({selectedFichajes.size})
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog confirmar eliminación masiva de pausas excedidas */}
+      <AlertDialog open={confirmDeletePausas} onOpenChange={setConfirmDeletePausas}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar pausas excedidas seleccionadas</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Está seguro que desea eliminar {selectedPausas.size} registro(s) de pausas excedidas? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={eliminarPausasSeleccionadas}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Eliminar ({selectedPausas.size})
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
