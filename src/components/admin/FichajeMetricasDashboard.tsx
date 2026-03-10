@@ -127,13 +127,15 @@ export default function FichajeMetricasDashboard() {
   const [selectedPausas, setSelectedPausas] = useState<Set<string>>(new Set())
   
   // Filtros
-  const [tipoFecha, setTipoFecha] = useState<'dia' | 'rango'>('dia')
+  const [tipoFecha, setTipoFecha] = useState<'dia' | 'rango' | 'mes'>('dia')
   const [fechaInicio, setFechaInicio] = useState<Date>(() => {
     const today = new Date()
-    return new Date(today.getFullYear(), today.getMonth(), 1) // Primer día del mes actual
+    return new Date(today.getFullYear(), today.getMonth(), 1)
   })
   const [fechaFin, setFechaFin] = useState<Date>(new Date())
   const [fechaParticular, setFechaParticular] = useState<Date>(new Date())
+  const [mesFiltro, setMesFiltro] = useState<number>(new Date().getMonth())
+  const [anioFiltro, setAnioFiltro] = useState<number>(new Date().getFullYear())
   const [empleadoFiltro, setEmpleadoFiltro] = useState<string>("todos")
   const [empleados, setEmpleados] = useState<any[]>([])
   const [ocultarRegistradas, setOcultarRegistradas] = useState(false)
@@ -154,7 +156,7 @@ export default function FichajeMetricasDashboard() {
     if (empleados.length > 0) {
       cargarDatos()
     }
-  }, [fechaInicio, fechaFin, fechaParticular, tipoFecha, empleadoFiltro, empleados])
+  }, [fechaInicio, fechaFin, fechaParticular, tipoFecha, empleadoFiltro, empleados, mesFiltro, anioFiltro])
 
   const cargarEmpleados = async () => {
     const { data, error } = await supabase
@@ -190,9 +192,18 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const getDateRange = () => {
+    if (tipoFecha === 'dia') return { inicio: fechaParticular, fin: fechaParticular }
+    if (tipoFecha === 'mes') {
+      const inicio = new Date(anioFiltro, mesFiltro, 1)
+      const fin = new Date(anioFiltro, mesFiltro + 1, 0)
+      return { inicio, fin }
+    }
+    return { inicio: fechaInicio, fin: fechaFin }
+  }
+
   const cargarCrucesRojasExistentes = async () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const { inicio, fin } = getDateRange()
     const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
     const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
@@ -212,8 +223,7 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarMetricas = async () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const { inicio, fin } = getDateRange()
     const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
     const fechaFinStr = format(fin, 'yyyy-MM-dd')
 
@@ -281,8 +291,7 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarFichajesTardios = async () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const { inicio, fin } = getDateRange()
     const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
     const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
@@ -308,8 +317,7 @@ export default function FichajeMetricasDashboard() {
   }
 
   const cargarPausasExcedidas = async () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const { inicio, fin } = getDateRange()
     const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
     const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
@@ -922,8 +930,11 @@ export default function FichajeMetricasDashboard() {
 
   const exportarExcelMultiHoja = () => {
     try {
+      const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
       const rangoTexto = tipoFecha === 'dia' 
         ? format(fechaParticular, 'dd/MM/yyyy', { locale: es })
+        : tipoFecha === 'mes'
+        ? `${mesesNombres[mesFiltro]} ${anioFiltro}`
         : `${format(fechaInicio, 'dd/MM/yyyy', { locale: es })} - ${format(fechaFin, 'dd/MM/yyyy', { locale: es })}`
       
       const empleadoTexto = empleadoFiltro === 'todos' 
@@ -1008,18 +1019,67 @@ export default function FichajeMetricasDashboard() {
       // Create workbook
       const wb = XLSX.utils.book_new()
 
-      // Sheet 1: Resumen
-      const resumenData = [
-        { 'Métrica': 'Período', 'Valor': rangoTexto },
-        { 'Métrica': 'Filtro Empleado', 'Valor': empleadoTexto },
-        { 'Métrica': 'Total Fichajes', 'Valor': metricas.total_fichajes_hoy },
-        { 'Métrica': 'Empleados Puntuales', 'Valor': metricas.empleados_puntuales_hoy },
-        { 'Métrica': 'Llegadas Tarde', 'Valor': metricas.llegadas_tarde_hoy },
-        { 'Métrica': 'Pausas Excedidas', 'Valor': metricas.pausas_excedidas_hoy },
-        { 'Métrica': 'Incidencias Pendientes', 'Valor': metricas.incidencias_pendientes },
+      // --- Build employee summary stats ---
+      const employeeStats = new Map<string, { nombre: string; llegadasTarde: number; minRetraso: number; pausasExcedidas: number; minExceso: number }>()
+
+      fichajesToday.forEach(f => {
+        const nombre = `${f.empleado.apellido}, ${f.empleado.nombre}`
+        if (!employeeStats.has(f.empleado_id)) {
+          employeeStats.set(f.empleado_id, { nombre, llegadasTarde: 0, minRetraso: 0, pausasExcedidas: 0, minExceso: 0 })
+        }
+        const s = employeeStats.get(f.empleado_id)!
+        s.llegadasTarde++
+        s.minRetraso += f.minutos_retraso
+      })
+
+      pausasToday.forEach(p => {
+        const nombre = `${p.empleado.apellido}, ${p.empleado.nombre}`
+        if (!employeeStats.has(p.empleado_id)) {
+          employeeStats.set(p.empleado_id, { nombre, llegadasTarde: 0, minRetraso: 0, pausasExcedidas: 0, minExceso: 0 })
+        }
+        const s = employeeStats.get(p.empleado_id)!
+        s.pausasExcedidas++
+        s.minExceso += p.minutos_exceso
+      })
+
+      const statsArr = Array.from(employeeStats.values())
+
+      // Highlights
+      const masLlegadasTarde = statsArr.length > 0 ? statsArr.reduce((a, b) => a.llegadasTarde >= b.llegadasTarde ? a : b) : null
+      const masExcesoPausa = statsArr.length > 0 ? statsArr.reduce((a, b) => a.minExceso >= b.minExceso ? a : b) : null
+      const masPuntual = statsArr.length > 0 ? statsArr.reduce((a, b) => a.llegadasTarde <= b.llegadasTarde ? a : b) : null
+      const masResponsable = statsArr.length > 0 ? statsArr.reduce((a, b) => (a.llegadasTarde + a.pausasExcedidas) <= (b.llegadasTarde + b.pausasExcedidas) ? a : b) : null
+
+      // Sheet 1: Resumen with aoa for sections
+      const resumenAoa: (string | number)[][] = [
+        ['MÉTRICAS DE FICHAJE - RESUMEN'],
+        [],
+        ['Período', rangoTexto],
+        ['Filtro Empleado', empleadoTexto],
+        ['Total Fichajes', metricas.total_fichajes_hoy],
+        ['Empleados Puntuales', metricas.empleados_puntuales_hoy],
+        ['Llegadas Tarde', metricas.llegadas_tarde_hoy],
+        ['Pausas Excedidas', metricas.pausas_excedidas_hoy],
+        ['Incidencias Pendientes', metricas.incidencias_pendientes],
+        [],
+        ['ESTADÍSTICAS DESTACADAS'],
+        [],
+        ['Categoría', 'Empleado', 'Detalle'],
+        ['Más llegadas tarde', masLlegadasTarde?.nombre || '-', masLlegadasTarde ? `${masLlegadasTarde.llegadasTarde} veces (${masLlegadasTarde.minRetraso} min total)` : '-'],
+        ['Más exceso de pausa', masExcesoPausa?.nombre || '-', masExcesoPausa ? `${masExcesoPausa.minExceso} min total en ${masExcesoPausa.pausasExcedidas} pausas` : '-'],
+        ['Más puntual', masPuntual?.nombre || '-', masPuntual ? `Solo ${masPuntual.llegadasTarde} llegada(s) tarde` : '-'],
+        ['Más responsable', masResponsable?.nombre || '-', masResponsable ? `${masResponsable.llegadasTarde + masResponsable.pausasExcedidas} incidencia(s) total` : '-'],
+        [],
+        ['RESUMEN POR EMPLEADO'],
+        [],
+        ['Empleado', 'Llegadas Tarde', 'Min. Retraso Total', 'Pausas Excedidas', 'Min. Exceso Total', 'Tiempo Perdido Total (min)'],
+        ...statsArr
+          .sort((a, b) => (b.minRetraso + b.minExceso) - (a.minRetraso + a.minExceso))
+          .map(s => [s.nombre, s.llegadasTarde, s.minRetraso, s.pausasExcedidas, s.minExceso, s.minRetraso + s.minExceso])
       ]
-      const wsResumen = XLSX.utils.json_to_sheet(resumenData)
-      wsResumen['!cols'] = [{ wch: 25 }, { wch: 40 }]
+
+      const wsResumen = XLSX.utils.aoa_to_sheet(resumenAoa)
+      wsResumen['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 25 }]
       XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
 
       // One sheet per employee with sections grouped by incident type
@@ -1062,12 +1122,14 @@ export default function FichajeMetricasDashboard() {
 
       const fechaStr = tipoFecha === 'dia'
         ? format(fechaParticular, 'yyyy-MM-dd')
+        : tipoFecha === 'mes'
+        ? `${anioFiltro}-${String(mesFiltro + 1).padStart(2, '0')}`
         : `${format(fechaInicio, 'yyyy-MM-dd')}_${format(fechaFin, 'yyyy-MM-dd')}`
       XLSX.writeFile(wb, `metricas-fichaje-${fechaStr}.xlsx`)
 
       toast({
         title: 'Exportación exitosa',
-        description: `Se generaron ${sortedEmployees.length} hojas (una por empleado)`,
+        description: `Se generaron ${sortedEmployees.length + 1} hojas (resumen + empleados)`,
       })
     } catch (error) {
       console.error('Error exportando:', error)
@@ -1124,13 +1186,14 @@ export default function FichajeMetricasDashboard() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <label className="text-sm font-medium mb-2 block">Tipo de Filtro</label>
-                <Select value={tipoFecha} onValueChange={(value: 'dia' | 'rango') => setTipoFecha(value)}>
+                <Select value={tipoFecha} onValueChange={(value: 'dia' | 'rango' | 'mes') => setTipoFecha(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="dia">Fecha Particular</SelectItem>
                     <SelectItem value="rango">Rango de Fechas</SelectItem>
+                    <SelectItem value="mes">Mes Entero</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1163,6 +1226,35 @@ export default function FichajeMetricasDashboard() {
                     </PopoverContent>
                   </Popover>
                 </div>
+              ) : tipoFecha === 'mes' ? (
+                <>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block">Mes</label>
+                    <Select value={String(mesFiltro)} onValueChange={(v) => setMesFiltro(Number(v))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((mes, i) => (
+                          <SelectItem key={i} value={String(i)}>{mes}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block">Año</label>
+                    <Select value={String(anioFiltro)} onValueChange={(v) => setAnioFiltro(Number(v))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(y => (
+                          <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               ) : (
                 <>
                   <div className="flex-1">
