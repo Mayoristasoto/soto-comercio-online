@@ -192,9 +192,18 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
+  const getDateRange = () => {
+    if (tipoFecha === 'dia') return { inicio: fechaParticular, fin: fechaParticular }
+    if (tipoFecha === 'mes') {
+      const inicio = new Date(anioFiltro, mesFiltro, 1)
+      const fin = new Date(anioFiltro, mesFiltro + 1, 0)
+      return { inicio, fin }
+    }
+    return { inicio: fechaInicio, fin: fechaFin }
+  }
+
   const cargarCrucesRojasExistentes = async () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
+    const { inicio, fin } = getDateRange()
     const fechaInicioStr = format(inicio, 'yyyy-MM-dd')
     const fechaFinStr = format(fin, 'yyyy-MM-dd')
     
