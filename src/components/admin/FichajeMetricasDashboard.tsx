@@ -1349,6 +1349,15 @@ export default function FichajeMetricasDashboard() {
                       <AlertTriangle className="h-4 w-4 mr-2" />
                       Plasmar como Cruces Rojas ({selectedFichajes.size})
                     </Button>
+                    <Button
+                      onClick={() => setConfirmDeleteFichajes(true)}
+                      variant="outline"
+                      className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      disabled={selectedFichajes.size === 0}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar Seleccionados ({selectedFichajes.size})
+                    </Button>
                   </div>
                 )}
               </div>
