@@ -1132,13 +1132,14 @@ export default function FichajeMetricasDashboard() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <label className="text-sm font-medium mb-2 block">Tipo de Filtro</label>
-                <Select value={tipoFecha} onValueChange={(value: 'dia' | 'rango') => setTipoFecha(value)}>
+                <Select value={tipoFecha} onValueChange={(value: 'dia' | 'rango' | 'mes') => setTipoFecha(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="dia">Fecha Particular</SelectItem>
                     <SelectItem value="rango">Rango de Fechas</SelectItem>
+                    <SelectItem value="mes">Mes Entero</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1171,6 +1172,35 @@ export default function FichajeMetricasDashboard() {
                     </PopoverContent>
                   </Popover>
                 </div>
+              ) : tipoFecha === 'mes' ? (
+                <>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block">Mes</label>
+                    <Select value={String(mesFiltro)} onValueChange={(v) => setMesFiltro(Number(v))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((mes, i) => (
+                          <SelectItem key={i} value={String(i)}>{mes}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block">Año</label>
+                    <Select value={String(anioFiltro)} onValueChange={(v) => setAnioFiltro(Number(v))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(y => (
+                          <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               ) : (
                 <>
                   <div className="flex-1">
