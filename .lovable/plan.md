@@ -1,47 +1,35 @@
 
 
-## Plan: PDF Resumen Semanal Rápido de Incidencias
+## Plan: Add section headers per incident type within each employee sheet
 
-### Objetivo
-Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
+### Problem
+Currently each employee's sheet has a flat list of all incidents. The user wants them grouped with bold section headers like "LLEGADAS TARDE" and "PAUSAS EXCEDIDAS" separating the records within each sheet.
 
-### Archivo nuevo
-**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
+### Change
 
-1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
-2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
-3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
-4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
+**`src/components/admin/FichajeMetricasDashboard.tsx`** — Rewrite the per-employee sheet generation (lines 966-986):
 
-Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
+Instead of using `json_to_sheet` on a flat list, build an array of arrays (AOA) manually:
 
-### Archivo modificado
-**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
-- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
-- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
-- Consulta `fichajes` para detectar empleados sin registro
-- Llama a `generarResumenSemanalPDF()` con los datos
-
-### Estructura del PDF
+1. Group the employee's records by `tipo` (Llegada Tarde, Pausa Excedida, etc.)
+2. For each type group, insert a **title row** with just the type name in uppercase (e.g., `['LLEGADAS TARDE']`) followed by a **header row** (`['Fecha', 'Detalle 1', ...]`), then the data rows
+3. Add a blank row between sections for visual separation
+4. Use `XLSX.utils.aoa_to_sheet()` instead of `json_to_sheet()`
 
 ```text
-┌─────────────────────────────────┐
-│  SOTO mayorista                 │
-│  Resumen Semanal de Incidencias │
-│  Lunes 03/03 - Domingo 09/03   │
-├─────────────────────────────────┤
-│ [12 Lleg.Tarde] [5 Exc.Desc]   │
-│ [3 Sin Fichaje] [20 Total]     │
-├─────────────────────────────────┤
-│ # │ Empleado │ Suc │ LT │ED│Tot│
-│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
-│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
-│ ...                             │
-├─────────────────────────────────┤
-│ Empleados sin fichaje           │
-│ Fecha    │ Empleado │ Sucursal  │
-│ 03/03    │ Ana D.   │ Centro    │
-│ ...                             │
-└─────────────────────────────────┘
+Sheet: "Merino, Matias Esteban"
+┌──────────────────────────────────────┐
+│ LLEGADAS TARDE                       │
+│ Fecha │ Detalle 1 │ Detalle 2 │ ... │
+│ 03/03 │ Prog: 08  │ Real: 08:15│... │
+│                                      │
+│ PAUSAS EXCEDIDAS                     │
+│ Fecha │ Detalle 1 │ Detalle 2 │ ... │
+│ 03/03 │ Inicio: 13│ Fin: 14:10│ ... │
+└──────────────────────────────────────┘
 ```
+
+Column headers used per section: `Fecha | Detalle 1 | Detalle 2 | Detalle 3 | Detalle 4 | Justificado | Observaciones | Ya Registrado`
+
+No other files changed.
 
