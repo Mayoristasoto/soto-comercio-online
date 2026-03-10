@@ -1032,13 +1032,16 @@ export default function FichajeMetricasDashboard() {
                 Seleccione fecha y empleado para ver métricas específicas. <strong>Nota:</strong> Todas las horas mostradas están en zona horaria Argentina (ART = UTC-3)
               </CardDescription>
             </div>
-            <ExportButton
-              data={prepararDatosExportar()}
-              filename={getNombreArchivoExport()}
-              sheetName="Métricas Fichaje"
-              formats={["excel", "csv"]}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportarExcelMultiHoja}
               className="ml-4"
-            />
+              disabled={fichajesToday.length === 0 && pausasToday.length === 0 && incidenciasPendientes.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
