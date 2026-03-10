@@ -861,8 +861,6 @@ export default function FichajeMetricasDashboard() {
   }
 
   const prepararDatosExportar = () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
     const rangoTexto = tipoFecha === 'dia' 
       ? format(fechaParticular, 'dd/MM/yyyy', { locale: es })
       : `${format(fechaInicio, 'dd/MM/yyyy', { locale: es })} - ${format(fechaFin, 'dd/MM/yyyy', { locale: es })}`
@@ -871,77 +869,111 @@ export default function FichajeMetricasDashboard() {
       ? 'Todos' 
       : empleados.find(e => e.id === empleadoFiltro)?.apellido + ', ' + empleados.find(e => e.id === empleadoFiltro)?.nombre
 
-    const datosExport = []
+    const datosExport: Record<string, any>[] = []
 
     // Resumen
     datosExport.push({
       'Tipo': 'RESUMEN',
-      'Período': rangoTexto,
       'Empleado': empleadoTexto,
-      'Total Fichajes': metricas.total_fichajes_hoy,
-      'Empleados Puntuales': metricas.empleados_puntuales_hoy,
-      'Llegadas Tarde': metricas.llegadas_tarde_hoy,
-      'Pausas Excedidas': metricas.pausas_excedidas_hoy,
-      'Incidencias Pendientes': metricas.incidencias_pendientes
+      'Fecha': rangoTexto,
+      'Detalle 1': `Fichajes: ${metricas.total_fichajes_hoy}`,
+      'Detalle 2': `Puntuales: ${metricas.empleados_puntuales_hoy}`,
+      'Detalle 3': `Tarde: ${metricas.llegadas_tarde_hoy}`,
+      'Detalle 4': `Pausas Exc.: ${metricas.pausas_excedidas_hoy}`,
+      'Detalle 5': `Incidencias Pend.: ${metricas.incidencias_pendientes}`
     })
     datosExport.push({}) // Fila vacía
 
-    // Llegadas Tarde
-    if (fichajesToday.length > 0) {
-      datosExport.push({ 'Tipo': 'LLEGADAS TARDE' })
-      fichajesToday.forEach(f => {
-        datosExport.push({
-          'Tipo': 'Llegada Tarde',
-          'Empleado': `${f.empleado.apellido}, ${f.empleado.nombre}`,
-          'Fecha': formatearFechaArgentina(f.fecha_fichaje),
-          'Hora Programada': formatearHora(f.hora_programada),
-          'Hora Real': formatearHora(f.hora_real),
-          'Minutos Retraso': f.minutos_retraso,
-          'Justificado': f.justificado ? 'Sí' : 'No',
-          'Observaciones': f.observaciones || '',
-          'Ya Registrado': tieneCruzRoja(f.empleado_id, 'llegada_tarde', f.fecha_fichaje) ? 'Sí' : 'No'
-        })
-      })
-      datosExport.push({}) // Fila vacía
+    // Unificar todos los registros con estructura común
+    interface RegistroUnificado {
+      empleado: string;
+      fecha: string;
+      fechaSort: string;
+      tipo: string;
+      detalle1: string;
+      detalle2: string;
+      detalle3: string;
+      detalle4: string;
+      justificado: string;
+      observaciones: string;
+      yaRegistrado: string;
     }
 
-    // Pausas Excedidas
-    if (pausasToday.length > 0) {
-      datosExport.push({ 'Tipo': 'PAUSAS EXCEDIDAS' })
-      pausasToday.forEach(p => {
-        datosExport.push({
-          'Tipo': 'Pausa Excedida',
-          'Empleado': `${p.empleado.apellido}, ${p.empleado.nombre}`,
-          'Fecha': formatearFechaArgentina(p.fecha_fichaje),
-          'Hora Inicio': formatearHora(p.hora_inicio_pausa),
-          'Hora Fin': formatearHora(p.hora_fin_pausa),
-          'Duración (min)': p.duracion_minutos,
-          'Permitida (min)': p.duracion_permitida_minutos,
-          'Exceso (min)': p.minutos_exceso,
-          'Justificado': p.justificado ? 'Sí' : 'No',
-          'Observaciones': p.observaciones || '',
-          'Ya Registrado': tieneCruzRoja(p.empleado_id, 'pausa_excedida', p.fecha_fichaje) ? 'Sí' : 'No'
-        })
-      })
-      datosExport.push({}) // Fila vacía
-    }
+    const registros: RegistroUnificado[] = []
 
-    // Incidencias Pendientes
-    if (incidenciasPendientes.length > 0) {
-      datosExport.push({ 'Tipo': 'INCIDENCIAS PENDIENTES' })
-      incidenciasPendientes.forEach(i => {
-        datosExport.push({
-          'Tipo': obtenerTextoTipo(i.tipo),
-          'Empleado': `${i.empleado.apellido}, ${i.empleado.nombre}`,
-          'Fecha Incidencia': formatearFechaArgentina(i.fecha_incidencia),
-          'Hora Propuesta': i.hora_propuesta || '',
-          'Descripción': i.descripcion,
-          'Estado': i.estado,
-          'Comentarios': i.comentarios_aprobador || '',
-          'Fecha Reporte': format(new Date(i.created_at), 'dd/MM/yyyy HH:mm', { locale: es })
-        })
+    // Llegadas tarde
+    fichajesToday.forEach(f => {
+      registros.push({
+        empleado: `${f.empleado.apellido}, ${f.empleado.nombre}`,
+        fecha: formatearFechaArgentina(f.fecha_fichaje),
+        fechaSort: f.fecha_fichaje,
+        tipo: 'Llegada Tarde',
+        detalle1: `Prog: ${formatearHora(f.hora_programada)}`,
+        detalle2: `Real: ${formatearHora(f.hora_real)}`,
+        detalle3: `Retraso: ${f.minutos_retraso} min`,
+        detalle4: '',
+        justificado: f.justificado ? 'Sí' : 'No',
+        observaciones: f.observaciones || '',
+        yaRegistrado: tieneCruzRoja(f.empleado_id, 'llegada_tarde', f.fecha_fichaje) ? 'Sí' : 'No'
       })
-    }
+    })
+
+    // Pausas excedidas
+    pausasToday.forEach(p => {
+      registros.push({
+        empleado: `${p.empleado.apellido}, ${p.empleado.nombre}`,
+        fecha: formatearFechaArgentina(p.fecha_fichaje),
+        fechaSort: p.fecha_fichaje,
+        tipo: 'Pausa Excedida',
+        detalle1: `Inicio: ${formatearHora(p.hora_inicio_pausa)}`,
+        detalle2: `Fin: ${formatearHora(p.hora_fin_pausa)}`,
+        detalle3: `Duración: ${p.duracion_minutos} min (permit: ${p.duracion_permitida_minutos})`,
+        detalle4: `Exceso: ${p.minutos_exceso} min`,
+        justificado: p.justificado ? 'Sí' : 'No',
+        observaciones: p.observaciones || '',
+        yaRegistrado: tieneCruzRoja(p.empleado_id, 'pausa_excedida', p.fecha_fichaje) ? 'Sí' : 'No'
+      })
+    })
+
+    // Incidencias pendientes
+    incidenciasPendientes.forEach(i => {
+      registros.push({
+        empleado: `${i.empleado.apellido}, ${i.empleado.nombre}`,
+        fecha: formatearFechaArgentina(i.fecha_incidencia),
+        fechaSort: i.fecha_incidencia,
+        tipo: obtenerTextoTipo(i.tipo),
+        detalle1: i.descripcion,
+        detalle2: `Estado: ${i.estado}`,
+        detalle3: i.hora_propuesta ? `Hora propuesta: ${i.hora_propuesta}` : '',
+        detalle4: i.comentarios_aprobador || '',
+        justificado: '',
+        observaciones: '',
+        yaRegistrado: ''
+      })
+    })
+
+    // Ordenar por empleado (A-Z), luego por fecha
+    registros.sort((a, b) => {
+      const cmpEmpleado = a.empleado.localeCompare(b.empleado)
+      if (cmpEmpleado !== 0) return cmpEmpleado
+      return a.fechaSort.localeCompare(b.fechaSort)
+    })
+
+    // Convertir a filas de export
+    registros.forEach(r => {
+      datosExport.push({
+        'Empleado': r.empleado,
+        'Tipo': r.tipo,
+        'Fecha': r.fecha,
+        'Detalle 1': r.detalle1,
+        'Detalle 2': r.detalle2,
+        'Detalle 3': r.detalle3,
+        'Detalle 4': r.detalle4,
+        'Justificado': r.justificado,
+        'Observaciones': r.observaciones,
+        'Ya Registrado': r.yaRegistrado
+      })
+    })
 
     return datosExport
   }
