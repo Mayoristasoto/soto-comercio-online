@@ -861,132 +861,147 @@ export default function FichajeMetricasDashboard() {
     }
   }
 
-  const prepararDatosExportar = () => {
-    const rangoTexto = tipoFecha === 'dia' 
-      ? format(fechaParticular, 'dd/MM/yyyy', { locale: es })
-      : `${format(fechaInicio, 'dd/MM/yyyy', { locale: es })} - ${format(fechaFin, 'dd/MM/yyyy', { locale: es })}`
-    
-    const empleadoTexto = empleadoFiltro === 'todos' 
-      ? 'Todos' 
-      : empleados.find(e => e.id === empleadoFiltro)?.apellido + ', ' + empleados.find(e => e.id === empleadoFiltro)?.nombre
+  const exportarExcelMultiHoja = () => {
+    try {
+      const rangoTexto = tipoFecha === 'dia' 
+        ? format(fechaParticular, 'dd/MM/yyyy', { locale: es })
+        : `${format(fechaInicio, 'dd/MM/yyyy', { locale: es })} - ${format(fechaFin, 'dd/MM/yyyy', { locale: es })}`
+      
+      const empleadoTexto = empleadoFiltro === 'todos' 
+        ? 'Todos' 
+        : empleados.find(e => e.id === empleadoFiltro)?.apellido + ', ' + empleados.find(e => e.id === empleadoFiltro)?.nombre
 
-    const datosExport: Record<string, any>[] = []
+      // Build unified records
+      interface RegistroUnificado {
+        empleado: string;
+        fecha: string;
+        fechaSort: string;
+        tipo: string;
+        detalle1: string;
+        detalle2: string;
+        detalle3: string;
+        detalle4: string;
+        justificado: string;
+        observaciones: string;
+        yaRegistrado: string;
+      }
 
-    // Resumen
-    datosExport.push({
-      'Tipo': 'RESUMEN',
-      'Empleado': empleadoTexto,
-      'Fecha': rangoTexto,
-      'Detalle 1': `Fichajes: ${metricas.total_fichajes_hoy}`,
-      'Detalle 2': `Puntuales: ${metricas.empleados_puntuales_hoy}`,
-      'Detalle 3': `Tarde: ${metricas.llegadas_tarde_hoy}`,
-      'Detalle 4': `Pausas Exc.: ${metricas.pausas_excedidas_hoy}`,
-      'Detalle 5': `Incidencias Pend.: ${metricas.incidencias_pendientes}`
-    })
-    datosExport.push({}) // Fila vacía
+      const registros: RegistroUnificado[] = []
 
-    // Unificar todos los registros con estructura común
-    interface RegistroUnificado {
-      empleado: string;
-      fecha: string;
-      fechaSort: string;
-      tipo: string;
-      detalle1: string;
-      detalle2: string;
-      detalle3: string;
-      detalle4: string;
-      justificado: string;
-      observaciones: string;
-      yaRegistrado: string;
+      fichajesToday.forEach(f => {
+        registros.push({
+          empleado: `${f.empleado.apellido}, ${f.empleado.nombre}`,
+          fecha: formatearFechaArgentina(f.fecha_fichaje),
+          fechaSort: f.fecha_fichaje,
+          tipo: 'Llegada Tarde',
+          detalle1: `Prog: ${formatearHora(f.hora_programada)}`,
+          detalle2: `Real: ${formatearHora(f.hora_real)}`,
+          detalle3: `Retraso: ${f.minutos_retraso} min`,
+          detalle4: '',
+          justificado: f.justificado ? 'Sí' : 'No',
+          observaciones: f.observaciones || '',
+          yaRegistrado: tieneCruzRoja(f.empleado_id, 'llegada_tarde', f.fecha_fichaje) ? 'Sí' : 'No'
+        })
+      })
+
+      pausasToday.forEach(p => {
+        registros.push({
+          empleado: `${p.empleado.apellido}, ${p.empleado.nombre}`,
+          fecha: formatearFechaArgentina(p.fecha_fichaje),
+          fechaSort: p.fecha_fichaje,
+          tipo: 'Pausa Excedida',
+          detalle1: `Inicio: ${formatearHora(p.hora_inicio_pausa)}`,
+          detalle2: `Fin: ${formatearHora(p.hora_fin_pausa)}`,
+          detalle3: `Duración: ${p.duracion_minutos} min (permit: ${p.duracion_permitida_minutos})`,
+          detalle4: `Exceso: ${p.minutos_exceso} min`,
+          justificado: p.justificado ? 'Sí' : 'No',
+          observaciones: p.observaciones || '',
+          yaRegistrado: tieneCruzRoja(p.empleado_id, 'pausa_excedida', p.fecha_fichaje) ? 'Sí' : 'No'
+        })
+      })
+
+      incidenciasPendientes.forEach(i => {
+        registros.push({
+          empleado: `${i.empleado.apellido}, ${i.empleado.nombre}`,
+          fecha: formatearFechaArgentina(i.fecha_incidencia),
+          fechaSort: i.fecha_incidencia,
+          tipo: obtenerTextoTipo(i.tipo),
+          detalle1: i.descripcion,
+          detalle2: `Estado: ${i.estado}`,
+          detalle3: i.hora_propuesta ? `Hora propuesta: ${i.hora_propuesta}` : '',
+          detalle4: i.comentarios_aprobador || '',
+          justificado: '',
+          observaciones: '',
+          yaRegistrado: ''
+        })
+      })
+
+      // Group by employee
+      const porEmpleado = new Map<string, RegistroUnificado[]>()
+      registros.forEach(r => {
+        if (!porEmpleado.has(r.empleado)) porEmpleado.set(r.empleado, [])
+        porEmpleado.get(r.empleado)!.push(r)
+      })
+
+      // Sort each group by date
+      porEmpleado.forEach(lista => lista.sort((a, b) => a.fechaSort.localeCompare(b.fechaSort)))
+
+      // Create workbook
+      const wb = XLSX.utils.book_new()
+
+      // Sheet 1: Resumen
+      const resumenData = [
+        { 'Métrica': 'Período', 'Valor': rangoTexto },
+        { 'Métrica': 'Filtro Empleado', 'Valor': empleadoTexto },
+        { 'Métrica': 'Total Fichajes', 'Valor': metricas.total_fichajes_hoy },
+        { 'Métrica': 'Empleados Puntuales', 'Valor': metricas.empleados_puntuales_hoy },
+        { 'Métrica': 'Llegadas Tarde', 'Valor': metricas.llegadas_tarde_hoy },
+        { 'Métrica': 'Pausas Excedidas', 'Valor': metricas.pausas_excedidas_hoy },
+        { 'Métrica': 'Incidencias Pendientes', 'Valor': metricas.incidencias_pendientes },
+      ]
+      const wsResumen = XLSX.utils.json_to_sheet(resumenData)
+      wsResumen['!cols'] = [{ wch: 25 }, { wch: 40 }]
+      XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+
+      // One sheet per employee
+      const sortedEmployees = Array.from(porEmpleado.keys()).sort()
+      sortedEmployees.forEach(nombre => {
+        const lista = porEmpleado.get(nombre)!
+        const sheetData = lista.map(r => ({
+          'Tipo': r.tipo,
+          'Fecha': r.fecha,
+          'Detalle 1': r.detalle1,
+          'Detalle 2': r.detalle2,
+          'Detalle 3': r.detalle3,
+          'Detalle 4': r.detalle4,
+          'Justificado': r.justificado,
+          'Observaciones': r.observaciones,
+          'Ya Registrado': r.yaRegistrado,
+        }))
+        const ws = XLSX.utils.json_to_sheet(sheetData)
+        ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 25 }, { wch: 14 }]
+        // Excel sheet names max 31 chars, no special chars
+        const sheetName = nombre.replace(/[\\/*?[\]:]/g, '').substring(0, 31)
+        XLSX.utils.book_append_sheet(wb, ws, sheetName)
+      })
+
+      const fechaStr = tipoFecha === 'dia'
+        ? format(fechaParticular, 'yyyy-MM-dd')
+        : `${format(fechaInicio, 'yyyy-MM-dd')}_${format(fechaFin, 'yyyy-MM-dd')}`
+      XLSX.writeFile(wb, `metricas-fichaje-${fechaStr}.xlsx`)
+
+      toast({
+        title: 'Exportación exitosa',
+        description: `Se generaron ${sortedEmployees.length} hojas (una por empleado)`,
+      })
+    } catch (error) {
+      console.error('Error exportando:', error)
+      toast({
+        title: 'Error al exportar',
+        description: 'No se pudo generar el archivo Excel',
+        variant: 'destructive',
+      })
     }
-
-    const registros: RegistroUnificado[] = []
-
-    // Llegadas tarde
-    fichajesToday.forEach(f => {
-      registros.push({
-        empleado: `${f.empleado.apellido}, ${f.empleado.nombre}`,
-        fecha: formatearFechaArgentina(f.fecha_fichaje),
-        fechaSort: f.fecha_fichaje,
-        tipo: 'Llegada Tarde',
-        detalle1: `Prog: ${formatearHora(f.hora_programada)}`,
-        detalle2: `Real: ${formatearHora(f.hora_real)}`,
-        detalle3: `Retraso: ${f.minutos_retraso} min`,
-        detalle4: '',
-        justificado: f.justificado ? 'Sí' : 'No',
-        observaciones: f.observaciones || '',
-        yaRegistrado: tieneCruzRoja(f.empleado_id, 'llegada_tarde', f.fecha_fichaje) ? 'Sí' : 'No'
-      })
-    })
-
-    // Pausas excedidas
-    pausasToday.forEach(p => {
-      registros.push({
-        empleado: `${p.empleado.apellido}, ${p.empleado.nombre}`,
-        fecha: formatearFechaArgentina(p.fecha_fichaje),
-        fechaSort: p.fecha_fichaje,
-        tipo: 'Pausa Excedida',
-        detalle1: `Inicio: ${formatearHora(p.hora_inicio_pausa)}`,
-        detalle2: `Fin: ${formatearHora(p.hora_fin_pausa)}`,
-        detalle3: `Duración: ${p.duracion_minutos} min (permit: ${p.duracion_permitida_minutos})`,
-        detalle4: `Exceso: ${p.minutos_exceso} min`,
-        justificado: p.justificado ? 'Sí' : 'No',
-        observaciones: p.observaciones || '',
-        yaRegistrado: tieneCruzRoja(p.empleado_id, 'pausa_excedida', p.fecha_fichaje) ? 'Sí' : 'No'
-      })
-    })
-
-    // Incidencias pendientes
-    incidenciasPendientes.forEach(i => {
-      registros.push({
-        empleado: `${i.empleado.apellido}, ${i.empleado.nombre}`,
-        fecha: formatearFechaArgentina(i.fecha_incidencia),
-        fechaSort: i.fecha_incidencia,
-        tipo: obtenerTextoTipo(i.tipo),
-        detalle1: i.descripcion,
-        detalle2: `Estado: ${i.estado}`,
-        detalle3: i.hora_propuesta ? `Hora propuesta: ${i.hora_propuesta}` : '',
-        detalle4: i.comentarios_aprobador || '',
-        justificado: '',
-        observaciones: '',
-        yaRegistrado: ''
-      })
-    })
-
-    // Ordenar por empleado (A-Z), luego por fecha
-    registros.sort((a, b) => {
-      const cmpEmpleado = a.empleado.localeCompare(b.empleado)
-      if (cmpEmpleado !== 0) return cmpEmpleado
-      return a.fechaSort.localeCompare(b.fechaSort)
-    })
-
-    // Convertir a filas de export
-    registros.forEach(r => {
-      datosExport.push({
-        'Empleado': r.empleado,
-        'Tipo': r.tipo,
-        'Fecha': r.fecha,
-        'Detalle 1': r.detalle1,
-        'Detalle 2': r.detalle2,
-        'Detalle 3': r.detalle3,
-        'Detalle 4': r.detalle4,
-        'Justificado': r.justificado,
-        'Observaciones': r.observaciones,
-        'Ya Registrado': r.yaRegistrado
-      })
-    })
-
-    return datosExport
-  }
-
-  const getNombreArchivoExport = () => {
-    const inicio = tipoFecha === 'dia' ? fechaParticular : fechaInicio
-    const fin = tipoFecha === 'dia' ? fechaParticular : fechaFin
-    const fechaStr = tipoFecha === 'dia'
-      ? format(fechaParticular, 'yyyy-MM-dd')
-      : `${format(fechaInicio, 'yyyy-MM-dd')}_${format(fechaFin, 'yyyy-MM-dd')}`
-    
-    return `metricas-fichaje-${fechaStr}`
   }
 
   if (loading) {
