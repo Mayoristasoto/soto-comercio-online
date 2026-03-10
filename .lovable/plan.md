@@ -1,47 +1,23 @@
 
 
-## Plan: PDF Resumen Semanal Rápido de Incidencias
+## Plan: Reorder Excel export by employee instead of incident type
 
-### Objetivo
-Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
+### Problem
+Currently the export groups data by incident type (LLEGADAS TARDE, then PAUSAS EXCEDIDAS, then INCIDENCIAS). The user wants data grouped by employee name so they can see all incidents per person together.
 
-### Archivo nuevo
-**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
+### Solution
+Modify the `prepararDatosExportar()` function in `FichajeMetricasDashboard.tsx` to:
 
-1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
-2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
-3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
-4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
+1. Keep the RESUMEN row at the top (unchanged)
+2. Combine all records (llegadas tarde, pausas excedidas, incidencias) into a single unified array with a common column structure
+3. Sort by employee name (apellido, nombre) as primary key, then by date as secondary key
+4. Each row keeps the "Tipo" column so the incident type is still visible
 
-Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
+### Unified column structure per row
+`Tipo | Empleado | Fecha | Hora Programada | Hora Real | Minutos Retraso | Hora Inicio | Hora Fin | Duración (min) | Permitida (min) | Exceso (min) | Justificado | Observaciones | Ya Registrado | Estado | Descripción`
 
-### Archivo modificado
-**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
-- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
-- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
-- Consulta `fichajes` para detectar empleados sin registro
-- Llama a `generarResumenSemanalPDF()` con los datos
+Fields not applicable to a given type will be empty strings.
 
-### Estructura del PDF
-
-```text
-┌─────────────────────────────────┐
-│  SOTO mayorista                 │
-│  Resumen Semanal de Incidencias │
-│  Lunes 03/03 - Domingo 09/03   │
-├─────────────────────────────────┤
-│ [12 Lleg.Tarde] [5 Exc.Desc]   │
-│ [3 Sin Fichaje] [20 Total]     │
-├─────────────────────────────────┤
-│ # │ Empleado │ Suc │ LT │ED│Tot│
-│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
-│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
-│ ...                             │
-├─────────────────────────────────┤
-│ Empleados sin fichaje           │
-│ Fecha    │ Empleado │ Sucursal  │
-│ 03/03    │ Ana D.   │ Centro    │
-│ ...                             │
-└─────────────────────────────────┘
-```
+### File change
+- `src/components/admin/FichajeMetricasDashboard.tsx` — rewrite `prepararDatosExportar()` (~lines 863-947)
 
