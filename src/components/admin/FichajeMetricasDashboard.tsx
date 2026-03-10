@@ -1493,6 +1493,15 @@ export default function FichajeMetricasDashboard() {
                         <AlertTriangle className="h-4 w-4 mr-2" />
                         Plasmar como Cruces Rojas ({selectedPausas.size})
                       </Button>
+                      <Button
+                        onClick={() => setConfirmDeletePausas(true)}
+                        variant="outline"
+                        className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        disabled={selectedPausas.size === 0}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar Seleccionados ({selectedPausas.size})
+                      </Button>
                     </>
                   )}
                 </div>
