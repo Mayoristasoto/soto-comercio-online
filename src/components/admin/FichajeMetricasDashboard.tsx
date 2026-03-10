@@ -963,24 +963,40 @@ export default function FichajeMetricasDashboard() {
       wsResumen['!cols'] = [{ wch: 25 }, { wch: 40 }]
       XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
 
-      // One sheet per employee
+      // One sheet per employee with sections grouped by incident type
       const sortedEmployees = Array.from(porEmpleado.keys()).sort()
+      const headers = ['Fecha', 'Detalle 1', 'Detalle 2', 'Detalle 3', 'Detalle 4', 'Justificado', 'Observaciones', 'Ya Registrado']
+      
       sortedEmployees.forEach(nombre => {
         const lista = porEmpleado.get(nombre)!
-        const sheetData = lista.map(r => ({
-          'Tipo': r.tipo,
-          'Fecha': r.fecha,
-          'Detalle 1': r.detalle1,
-          'Detalle 2': r.detalle2,
-          'Detalle 3': r.detalle3,
-          'Detalle 4': r.detalle4,
-          'Justificado': r.justificado,
-          'Observaciones': r.observaciones,
-          'Ya Registrado': r.yaRegistrado,
-        }))
-        const ws = XLSX.utils.json_to_sheet(sheetData)
-        ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 25 }, { wch: 14 }]
-        // Excel sheet names max 31 chars, no special chars
+        // Group by tipo
+        const porTipo = new Map<string, typeof lista>()
+        lista.forEach(r => {
+          if (!porTipo.has(r.tipo)) porTipo.set(r.tipo, [])
+          porTipo.get(r.tipo)!.push(r)
+        })
+
+        const aoa: (string | number | boolean)[][] = []
+        const tipoOrder = ['Llegada Tarde', 'Pausa Excedida', 'Incidencia Pendiente']
+        const tipoTitles: Record<string, string> = {
+          'Llegada Tarde': 'LLEGADAS TARDE',
+          'Pausa Excedida': 'PAUSAS EXCEDIDAS',
+          'Incidencia Pendiente': 'INCIDENCIAS PENDIENTES',
+        }
+
+        tipoOrder.forEach(tipo => {
+          const registros = porTipo.get(tipo)
+          if (!registros || registros.length === 0) return
+          if (aoa.length > 0) aoa.push([]) // blank row separator
+          aoa.push([tipoTitles[tipo] || tipo.toUpperCase()])
+          aoa.push(headers)
+          registros.forEach(r => {
+            aoa.push([r.fecha, r.detalle1, r.detalle2, r.detalle3, r.detalle4, r.justificado, r.observaciones, r.yaRegistrado])
+          })
+        })
+
+        const ws = XLSX.utils.aoa_to_sheet(aoa)
+        ws['!cols'] = [{ wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 25 }, { wch: 14 }]
         const sheetName = nombre.replace(/[\\/*?[\]:]/g, '').substring(0, 31)
         XLSX.utils.book_append_sheet(wb, ws, sheetName)
       })
