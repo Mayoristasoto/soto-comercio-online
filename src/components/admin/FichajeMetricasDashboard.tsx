@@ -156,7 +156,7 @@ export default function FichajeMetricasDashboard() {
     if (empleados.length > 0) {
       cargarDatos()
     }
-  }, [fechaInicio, fechaFin, fechaParticular, tipoFecha, empleadoFiltro, empleados])
+  }, [fechaInicio, fechaFin, fechaParticular, tipoFecha, empleadoFiltro, empleados, mesFiltro, anioFiltro])
 
   const cargarEmpleados = async () => {
     const { data, error } = await supabase
