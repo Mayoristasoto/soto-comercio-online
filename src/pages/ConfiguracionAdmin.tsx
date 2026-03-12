@@ -113,6 +113,10 @@ export default function Configuracion() {
             <Layout className="h-4 w-4" />
             Navegación
           </TabsTrigger>
+          <TabsTrigger value="limpieza" className="gap-2">
+            <Brush className="h-4 w-4" />
+            Limpieza
+          </TabsTrigger>
           <TabsTrigger value="roles" className="gap-2">
             <Eye className="h-4 w-4" />
             Vista Roles
