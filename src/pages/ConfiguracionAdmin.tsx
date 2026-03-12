@@ -168,12 +168,6 @@ export default function Configuracion() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="limpieza" className="space-y-6">
-          <Card className="p-6">
-            <LimpiezaConfig />
-          </Card>
-        </TabsContent>
-
         <TabsContent value="roles" className="space-y-6">
           <Card className="p-6">
             <RolePreview />
