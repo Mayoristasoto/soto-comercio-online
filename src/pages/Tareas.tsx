@@ -481,6 +481,10 @@ export default function Tareas() {
                 <FileText className="h-4 w-4" />
                 <span>Plantillas</span>
               </TabsTrigger>
+              <TabsTrigger value="limpieza" className="flex items-center space-x-2">
+                <Sparkles className="h-4 w-4" />
+                <span>Limpieza</span>
+              </TabsTrigger>
             </>
           )}
           <TabsTrigger value="calendario" className="flex items-center space-x-2">
