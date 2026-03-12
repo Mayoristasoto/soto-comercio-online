@@ -2603,7 +2603,7 @@ export default function KioscoCheckIn() {
           empleadoId={recognizedEmployee.id}
           onConfirm={handleConfirmarTareasYSalir}
           bloquearSalida={bloquearSalidaPorTareas}
-          tareasFlexibles={bloquearSalidaPorTareas ? tareasFlexiblesPendientes : undefined}
+          tareasFlexibles={tareasFlexiblesPendientes.length > 0 ? tareasFlexiblesPendientes : undefined}
         />
       )}
       
