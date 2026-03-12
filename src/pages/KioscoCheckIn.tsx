@@ -969,6 +969,9 @@ export default function KioscoCheckIn() {
       setTareasParaDistribuir([])
       setShowNovedadesAlert(false)
       setNovedadesPendientes([])
+      setShowLimpiezaAlert(false)
+      setLimpiezaZonas([])
+      setLimpiezaAsignaciones([])
     }, 3000)
   }
 
