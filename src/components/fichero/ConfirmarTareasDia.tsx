@@ -129,9 +129,18 @@ export const ConfirmarTareasDia = ({ open, onOpenChange, empleadoId, onConfirm, 
 
       // Actualizar las tareas marcadas como completadas y registrar logs
       for (const tareaId of tareasCompletadas) {
+        const isLimpieza = tareaId.startsWith('limpieza-');
         const isVirtual = tareaId.startsWith('flex-');
 
-        if (isVirtual) {
+        if (isLimpieza) {
+          // Registrar en limpieza_registros via RPC
+          const asignacionId = tareaId.replace('limpieza-', '');
+          await (supabase.rpc as any)('kiosk_registrar_limpieza', {
+            p_asignacion_id: asignacionId,
+            p_empleado_id: empleadoId,
+            p_completada: true
+          });
+        } else if (isVirtual) {
           // Extraer plantilla_id del ID virtual: "flex-{plantilla_id}-{index}"
           const parts = tareaId.split('-');
           // UUID has 5 parts separated by '-', so plantilla_id = parts[1..5] joined
