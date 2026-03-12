@@ -1,46 +1,47 @@
 
 
-## Plan: Importar esquema de limpieza a `limpieza_asignaciones`
+## Plan: PDF Resumen Semanal Rápido de Incidencias
 
-### Acción
+### Objetivo
+Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
 
-Ejecutar un INSERT masivo en `limpieza_asignaciones` con las 16 asignaciones fijas extraídas del cuadro. Los comodines (Marina y Daniel) no se cargan como asignación fija ya que solo cubren ausencias.
+### Archivo nuevo
+**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
 
-### SQL Migration
+1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
+2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
+3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
+4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
 
-```sql
-INSERT INTO public.limpieza_asignaciones (dia_semana, empleado_id, zona, activo) VALUES
--- Lunes (1)
-(1, '56cf495f-41ca-4615-8a57-05d62c429c9c', 'Cocina', true),
-(1, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Baño Mujeres', true),
-(1, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Baño Hombres', true),
--- Martes (2)
-(2, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Cocina', true),
-(2, 'b29bbea0-40a1-4a57-a322-c816ed527bc8', 'Baño Mujeres', true),
-(2, 'b29bbea0-40a1-4a57-a322-c816ed527bc8', 'Baño Hombres', true),
--- Miércoles (3)
-(3, 'b29bbea0-40a1-4a57-a322-c816ed527bc8', 'Cocina', true),
-(3, '7f1fc94b-b452-4eff-a8b5-709398f857c1', 'Baño Mujeres', true),
-(3, '7f1fc94b-b452-4eff-a8b5-709398f857c1', 'Baño Hombres', true),
--- Jueves (4)
-(4, '7f1fc94b-b452-4eff-a8b5-709398f857c1', 'Cocina', true),
-(4, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Baño Mujeres', true),
-(4, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Baño Hombres', true),
--- Viernes (5)
-(5, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Cocina', true),
-(5, '56cf495f-41ca-4615-8a57-05d62c429c9c', 'Baño Mujeres', true),
-(5, '56cf495f-41ca-4615-8a57-05d62c429c9c', 'Baño Hombres', true),
--- Sábado (6)
-(6, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Cocina', true),
-(6, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Baño Mujeres', true),
-(6, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Baño Hombres', true);
+Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
+
+### Archivo modificado
+**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
+- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
+- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
+- Consulta `fichajes` para detectar empleados sin registro
+- Llama a `generarResumenSemanalPDF()` con los datos
+
+### Estructura del PDF
+
+```text
+┌─────────────────────────────────┐
+│  SOTO mayorista                 │
+│  Resumen Semanal de Incidencias │
+│  Lunes 03/03 - Domingo 09/03   │
+├─────────────────────────────────┤
+│ [12 Lleg.Tarde] [5 Exc.Desc]   │
+│ [3 Sin Fichaje] [20 Total]     │
+├─────────────────────────────────┤
+│ # │ Empleado │ Suc │ LT │ED│Tot│
+│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
+│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
+│ ...                             │
+├─────────────────────────────────┤
+│ Empleados sin fichaje           │
+│ Fecha    │ Empleado │ Sucursal  │
+│ 03/03    │ Ana D.   │ Centro    │
+│ ...                             │
+└─────────────────────────────────┘
 ```
-
-### Notas
-- `dia_semana`: 0=Domingo, 1=Lunes ... 6=Sábado (consistente con JS `getDay()`)
-- No se incluye `sucursal_id` por ahora (se puede asignar después desde el panel admin)
-- Los comodines Marina y Daniel no se insertan; se asignarán manualmente cuando corresponda desde la pestaña Limpieza en Tareas
-
-### Archivos
-Solo una migración SQL. Sin cambios de código.
 

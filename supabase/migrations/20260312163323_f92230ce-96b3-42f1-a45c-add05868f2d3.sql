@@ -1,0 +1,20 @@
+
+INSERT INTO public.limpieza_asignaciones (dia_semana, empleado_id, zona, activo) VALUES
+(1, '56cf495f-41ca-4615-8a57-05d62c429c9c', 'Cocina', true),
+(1, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Baño Mujeres', true),
+(1, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Baño Hombres', true),
+(2, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Cocina', true),
+(2, 'b29bbea0-40a1-4a57-a322-c816ed527bc8', 'Baño Mujeres', true),
+(2, 'b29bbea0-40a1-4a57-a322-c816ed527bc8', 'Baño Hombres', true),
+(3, 'b29bbea0-40a1-4a57-a322-c816ed527bc8', 'Cocina', true),
+(3, '7f1fc94b-b452-4eff-a8b5-709398f857c1', 'Baño Mujeres', true),
+(3, '7f1fc94b-b452-4eff-a8b5-709398f857c1', 'Baño Hombres', true),
+(4, '7f1fc94b-b452-4eff-a8b5-709398f857c1', 'Cocina', true),
+(4, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Baño Mujeres', true),
+(4, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Baño Hombres', true),
+(5, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Cocina', true),
+(5, '56cf495f-41ca-4615-8a57-05d62c429c9c', 'Baño Mujeres', true),
+(5, '56cf495f-41ca-4615-8a57-05d62c429c9c', 'Baño Hombres', true),
+(6, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Cocina', true),
+(6, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Baño Mujeres', true),
+(6, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Baño Hombres', true);
