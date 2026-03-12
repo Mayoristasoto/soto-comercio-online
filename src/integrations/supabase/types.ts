@@ -5202,6 +5202,138 @@ export type Database = {
         }
         Relationships: []
       }
+      limpieza_asignaciones: {
+        Row: {
+          activo: boolean | null
+          created_at: string | null
+          dia_semana: number
+          empleado_id: string
+          id: string
+          sucursal_id: string | null
+          zona: string
+        }
+        Insert: {
+          activo?: boolean | null
+          created_at?: string | null
+          dia_semana: number
+          empleado_id: string
+          id?: string
+          sucursal_id?: string | null
+          zona?: string
+        }
+        Update: {
+          activo?: boolean | null
+          created_at?: string | null
+          dia_semana?: number
+          empleado_id?: string
+          id?: string
+          sucursal_id?: string | null
+          zona?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "limpieza_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_asignaciones_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      limpieza_registros: {
+        Row: {
+          asignacion_id: string | null
+          completada: boolean
+          dispositivo: string | null
+          empleado_id: string
+          fecha: string
+          id: string
+          registrado_en: string | null
+        }
+        Insert: {
+          asignacion_id?: string | null
+          completada?: boolean
+          dispositivo?: string | null
+          empleado_id: string
+          fecha?: string
+          id?: string
+          registrado_en?: string | null
+        }
+        Update: {
+          asignacion_id?: string | null
+          completada?: boolean
+          dispositivo?: string | null
+          empleado_id?: string
+          fecha?: string
+          id?: string
+          registrado_en?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "limpieza_registros_asignacion_id_fkey"
+            columns: ["asignacion_id"]
+            isOneToOne: false
+            referencedRelation: "limpieza_asignaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_registros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_registros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_registros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limpieza_registros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       liquidaciones_mensuales: {
         Row: {
           aprobada_por: string | null
@@ -8673,6 +8805,14 @@ export type Database = {
         }[]
       }
       kiosk_get_alert_config: { Args: never; Returns: Json }
+      kiosk_get_limpieza_hoy: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          dia_semana: number
+          id: string
+          zona: string
+        }[]
+      }
       kiosk_get_minutos_pausa: {
         Args: { p_empleado_id: string }
         Returns: number
@@ -8773,6 +8913,14 @@ export type Database = {
           p_tipo_infraccion: string
         }
         Returns: string
+      }
+      kiosk_registrar_limpieza: {
+        Args: {
+          p_asignacion_id: string
+          p_completada: boolean
+          p_empleado_id: string
+        }
+        Returns: undefined
       }
       kiosk_solicitar_vacaciones: {
         Args: {
