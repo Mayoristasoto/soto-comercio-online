@@ -18,6 +18,7 @@ import { BulkDelegateDialog } from "@/components/tasks/BulkDelegateDialog"
 import { WorkloadDashboard } from "@/components/tasks/WorkloadDashboard"
 import { TaskTemplates } from "@/components/tasks/TaskTemplates"
 import { AsignarEmpleadosFeriado } from "@/components/tasks/AsignarEmpleadosFeriado"
+import LimpiezaConfig from "@/components/admin/LimpiezaConfig"
 
 interface UserInfo {
   id: string
