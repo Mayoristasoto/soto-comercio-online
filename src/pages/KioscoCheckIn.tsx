@@ -1708,6 +1708,9 @@ export default function KioscoCheckIn() {
           setTareasFlexiblesPendientes(resultado.tareasFlexibles)
           setBloquearSalidaPorTareas(true)
         } else {
+          if (resultado.tareasFlexibles.length > 0) {
+            setTareasFlexiblesPendientes(resultado.tareasFlexibles)
+          }
           setBloquearSalidaPorTareas(false)
         }
         setPendingAccionSalida(true)
