@@ -1331,8 +1331,29 @@ export default function KioscoCheckIn() {
       .lte('fecha_limite', hoyStr)
       .limit(1)
 
-    if (tareasPend && tareasPend.length > 0) {
-      return { hayPendientes: true, bloquear: false, tareasFlexibles: [] }
+    // 3. Verificar limpieza asignada para hoy
+    let limpiezaTareas: any[] = []
+    try {
+      const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+        p_empleado_id: empId,
+      })
+      if (limpiezaData && limpiezaData.length > 0) {
+        limpiezaTareas = limpiezaData.map((l: any) => ({
+          id: `limpieza-${l.id}`,
+          titulo: `🧹 Limpieza: ${l.zona}`,
+          descripcion: 'Tarea de limpieza asignada para hoy',
+          prioridad: 'media' as const,
+          fecha_limite: hoyStr,
+          asignado_por: null,
+          empleado_asignador: null,
+        }))
+      }
+    } catch (err) {
+      console.error('Error verificando limpieza:', err)
+    }
+
+    if ((tareasPend && tareasPend.length > 0) || limpiezaTareas.length > 0) {
+      return { hayPendientes: true, bloquear: false, tareasFlexibles: limpiezaTareas }
     }
 
     return { hayPendientes: false, bloquear: false, tareasFlexibles: [] }
