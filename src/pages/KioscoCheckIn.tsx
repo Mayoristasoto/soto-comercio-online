@@ -18,6 +18,7 @@ import { TareasPendientesAlert } from "@/components/kiosko/TareasPendientesAlert
 import { TareasVencenHoyAlert } from "@/components/kiosko/TareasVencenHoyAlert"
 import { ImprimirTareasDistribucionDialog, TareaParaDistribuir } from "@/components/kiosko/ImprimirTareasDistribucionDialog"
 import { NovedadesCheckInAlert } from "@/components/kiosko/NovedadesCheckInAlert"
+import { LimpiezaAsignadaAlert } from "@/components/kiosko/LimpiezaAsignadaAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
