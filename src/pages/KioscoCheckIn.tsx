@@ -18,6 +18,7 @@ import { TareasPendientesAlert } from "@/components/kiosko/TareasPendientesAlert
 import { TareasVencenHoyAlert } from "@/components/kiosko/TareasVencenHoyAlert"
 import { ImprimirTareasDistribucionDialog, TareaParaDistribuir } from "@/components/kiosko/ImprimirTareasDistribucionDialog"
 import { NovedadesCheckInAlert } from "@/components/kiosko/NovedadesCheckInAlert"
+import { LimpiezaAsignadaAlert } from "@/components/kiosko/LimpiezaAsignadaAlert"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -347,6 +348,11 @@ export default function KioscoCheckIn() {
   // State for novedades alert
   const [showNovedadesAlert, setShowNovedadesAlert] = useState(false)
   const [novedadesPendientes, setNovedadesPendientes] = useState<{ id: string; titulo: string; contenido: string; imprimible: boolean }[]>([])
+
+  // State for limpieza alert
+  const [showLimpiezaAlert, setShowLimpiezaAlert] = useState(false)
+  const [limpiezaZonas, setLimpiezaZonas] = useState<string[]>([])
+  const [limpiezaAsignaciones, setLimpiezaAsignaciones] = useState<{ id: string; zona: string }[]>([])
 
   // Device authorization state
   const [deviceStatus, setDeviceStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'no_devices'>('checking')
@@ -876,6 +882,21 @@ export default function KioscoCheckIn() {
         console.error('Error reproduciendo audio:', error)
       }
 
+      // Fetch limpieza asignada para hoy
+      try {
+        const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+          p_empleado_id: empleadoParaFichaje.id,
+        })
+        if (limpiezaData && limpiezaData.length > 0) {
+          setLimpiezaZonas(limpiezaData.map((l: any) => l.zona))
+          setLimpiezaAsignaciones(limpiezaData.map((l: any) => ({ id: l.id, zona: l.zona })))
+          setShowLimpiezaAlert(true)
+          return // Flow continues when alert is dismissed
+        }
+      } catch (err) {
+        console.error('Error fetching limpieza:', err)
+      }
+
       // Fetch novedades for this employee
       try {
         const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
@@ -963,6 +984,9 @@ export default function KioscoCheckIn() {
       setTareasParaDistribuir([])
       setShowNovedadesAlert(false)
       setNovedadesPendientes([])
+      setShowLimpiezaAlert(false)
+      setLimpiezaZonas([])
+      setLimpiezaAsignaciones([])
     }, 3000)
   }
 
@@ -1307,8 +1331,29 @@ export default function KioscoCheckIn() {
       .lte('fecha_limite', hoyStr)
       .limit(1)
 
-    if (tareasPend && tareasPend.length > 0) {
-      return { hayPendientes: true, bloquear: false, tareasFlexibles: [] }
+    // 3. Verificar limpieza asignada para hoy
+    let limpiezaTareas: any[] = []
+    try {
+      const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+        p_empleado_id: empId,
+      })
+      if (limpiezaData && limpiezaData.length > 0) {
+        limpiezaTareas = limpiezaData.map((l: any) => ({
+          id: `limpieza-${l.id}`,
+          titulo: `🧹 Limpieza: ${l.zona}`,
+          descripcion: 'Tarea de limpieza asignada para hoy',
+          prioridad: 'media' as const,
+          fecha_limite: hoyStr,
+          asignado_por: null,
+          empleado_asignador: null,
+        }))
+      }
+    } catch (err) {
+      console.error('Error verificando limpieza:', err)
+    }
+
+    if ((tareasPend && tareasPend.length > 0) || limpiezaTareas.length > 0) {
+      return { hayPendientes: true, bloquear: false, tareasFlexibles: limpiezaTareas }
     }
 
     return { hayPendientes: false, bloquear: false, tareasFlexibles: [] }
@@ -1335,6 +1380,9 @@ export default function KioscoCheckIn() {
           setTareasFlexiblesPendientes(resultado.tareasFlexibles)
           setBloquearSalidaPorTareas(true)
         } else {
+          if (resultado.tareasFlexibles.length > 0) {
+            setTareasFlexiblesPendientes(resultado.tareasFlexibles)
+          }
           setBloquearSalidaPorTareas(false)
         }
         setPendingAccionSalida(true)
@@ -1604,6 +1652,24 @@ export default function KioscoCheckIn() {
           console.error('Error reproduciendo audio:', error)
         }
         
+        // 🧹 Fetch limpieza asignada (on entrada)
+        if (tipoAccion === 'entrada') {
+          try {
+            const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+              p_empleado_id: empleadoParaFichaje.id,
+            })
+            if (limpiezaData && limpiezaData.length > 0) {
+              setLimpiezaZonas(limpiezaData.map((l: any) => l.zona))
+              setLimpiezaAsignaciones(limpiezaData.map((l: any) => ({ id: l.id, zona: l.zona })))
+              setShowLimpiezaAlert(true)
+              setShowFacialAuth(false)
+              return
+            }
+          } catch (err) {
+            console.error('Error fetching limpieza:', err)
+          }
+        }
+
         // 📰 Fetch novedades before showing tareas
         if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
           try {
@@ -1660,6 +1726,9 @@ export default function KioscoCheckIn() {
           setTareasFlexiblesPendientes(resultado.tareasFlexibles)
           setBloquearSalidaPorTareas(true)
         } else {
+          if (resultado.tareasFlexibles.length > 0) {
+            setTareasFlexiblesPendientes(resultado.tareasFlexibles)
+          }
           setBloquearSalidaPorTareas(false)
         }
         setPendingAccionSalida(true)
@@ -2220,6 +2289,23 @@ export default function KioscoCheckIn() {
       }
     }
 
+    // 6.4 Fetch limpieza (only on entrada)
+    if (tipoAccion === 'entrada') {
+      try {
+        const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+          p_empleado_id: empleadoId,
+        })
+        if (limpiezaData && limpiezaData.length > 0) {
+          setLimpiezaZonas(limpiezaData.map((l: any) => l.zona))
+          setLimpiezaAsignaciones(limpiezaData.map((l: any) => ({ id: l.id, zona: l.zona })))
+          setShowLimpiezaAlert(true)
+          return
+        }
+      } catch (err) {
+        console.error('[PIN] Error fetching limpieza:', err)
+      }
+    }
+
     // 6.5 Fetch novedades (only on entrada)
     if (tipoAccion === 'entrada') {
       try {
@@ -2430,6 +2516,40 @@ export default function KioscoCheckIn() {
         />
       )}
 
+      {/* Alerta de Limpieza Asignada (Overlay) */}
+      {showLimpiezaAlert && limpiezaZonas.length > 0 && registroExitoso && (
+        <LimpiezaAsignadaAlert
+          empleadoNombre={`${registroExitoso.empleado.nombre} ${registroExitoso.empleado.apellido}`}
+          zonas={limpiezaZonas}
+          onDismiss={() => {
+            setShowLimpiezaAlert(false)
+            // Chain to novedades
+            const fetchNovedades = async () => {
+              try {
+                const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+                  p_empleado_id: registroExitoso.empleado.id,
+                })
+                if (novedadesData && novedadesData.length > 0) {
+                  setNovedadesPendientes(novedadesData)
+                  setShowNovedadesAlert(true)
+                  return
+                }
+              } catch (err) {
+                console.error('Error fetching novedades:', err)
+              }
+              // Continue to tareas or reset
+              if (tareasPendientes.length > 0) {
+                setShowTareasPendientesAlert(true)
+              } else {
+                resetKiosco()
+              }
+            }
+            fetchNovedades()
+          }}
+          duracionSegundos={8}
+        />
+      )}
+
       {/* Alerta de Novedades (Overlay) */}
       {showNovedadesAlert && novedadesPendientes.length > 0 && registroExitoso && (
         <NovedadesCheckInAlert
@@ -2524,7 +2644,7 @@ export default function KioscoCheckIn() {
           empleadoId={recognizedEmployee.id}
           onConfirm={handleConfirmarTareasYSalir}
           bloquearSalida={bloquearSalidaPorTareas}
-          tareasFlexibles={bloquearSalidaPorTareas ? tareasFlexiblesPendientes : undefined}
+          tareasFlexibles={tareasFlexiblesPendientes.length > 0 ? tareasFlexiblesPendientes : undefined}
         />
       )}
       
