@@ -1652,6 +1652,24 @@ export default function KioscoCheckIn() {
           console.error('Error reproduciendo audio:', error)
         }
         
+        // 🧹 Fetch limpieza asignada (on entrada)
+        if (tipoAccion === 'entrada') {
+          try {
+            const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+              p_empleado_id: empleadoParaFichaje.id,
+            })
+            if (limpiezaData && limpiezaData.length > 0) {
+              setLimpiezaZonas(limpiezaData.map((l: any) => l.zona))
+              setLimpiezaAsignaciones(limpiezaData.map((l: any) => ({ id: l.id, zona: l.zona })))
+              setShowLimpiezaAlert(true)
+              setShowFacialAuth(false)
+              return
+            }
+          } catch (err) {
+            console.error('Error fetching limpieza:', err)
+          }
+        }
+
         // 📰 Fetch novedades before showing tareas
         if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
           try {
