@@ -1,8 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor, Key, Brush } from "lucide-react"
+import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor, Key } from "lucide-react"
 import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
-import LimpiezaConfig from "@/components/admin/LimpiezaConfig"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
@@ -80,7 +79,7 @@ export default function Configuracion() {
       </div>
 
       <Tabs defaultValue="fichero" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="fichero" className="gap-2">
             <Settings className="h-4 w-4" />
             Fichero
@@ -112,10 +111,6 @@ export default function Configuracion() {
           <TabsTrigger value="pages" className="gap-2">
             <Layout className="h-4 w-4" />
             Navegación
-          </TabsTrigger>
-          <TabsTrigger value="limpieza" className="gap-2">
-            <Brush className="h-4 w-4" />
-            Limpieza
           </TabsTrigger>
           <TabsTrigger value="roles" className="gap-2">
             <Eye className="h-4 w-4" />
@@ -170,12 +165,6 @@ export default function Configuracion() {
               </p>
             </div>
             <PagesManager />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="limpieza" className="space-y-6">
-          <Card className="p-6">
-            <LimpiezaConfig />
           </Card>
         </TabsContent>
 

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X, BookOpen, Trash2 } from "lucide-react"
+import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X, BookOpen, Trash2, Sparkles } from "lucide-react"
 import { useConfirm } from "@/hooks/useConfirm"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -18,6 +18,7 @@ import { BulkDelegateDialog } from "@/components/tasks/BulkDelegateDialog"
 import { WorkloadDashboard } from "@/components/tasks/WorkloadDashboard"
 import { TaskTemplates } from "@/components/tasks/TaskTemplates"
 import { AsignarEmpleadosFeriado } from "@/components/tasks/AsignarEmpleadosFeriado"
+import LimpiezaConfig from "@/components/admin/LimpiezaConfig"
 
 interface UserInfo {
   id: string
@@ -480,6 +481,10 @@ export default function Tareas() {
                 <FileText className="h-4 w-4" />
                 <span>Plantillas</span>
               </TabsTrigger>
+              <TabsTrigger value="limpieza" className="flex items-center space-x-2">
+                <Sparkles className="h-4 w-4" />
+                <span>Limpieza</span>
+              </TabsTrigger>
             </>
           )}
           <TabsTrigger value="calendario" className="flex items-center space-x-2">
@@ -822,6 +827,14 @@ export default function Tareas() {
                       })
                     }}
                   />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="limpieza" className="space-y-4">
+              <Card>
+                <CardContent className="p-6">
+                  <LimpiezaConfig />
                 </CardContent>
               </Card>
             </TabsContent>
