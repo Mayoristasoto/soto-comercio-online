@@ -349,6 +349,11 @@ export default function KioscoCheckIn() {
   const [showNovedadesAlert, setShowNovedadesAlert] = useState(false)
   const [novedadesPendientes, setNovedadesPendientes] = useState<{ id: string; titulo: string; contenido: string; imprimible: boolean }[]>([])
 
+  // State for limpieza alert
+  const [showLimpiezaAlert, setShowLimpiezaAlert] = useState(false)
+  const [limpiezaZonas, setLimpiezaZonas] = useState<string[]>([])
+  const [limpiezaAsignaciones, setLimpiezaAsignaciones] = useState<{ id: string; zona: string }[]>([])
+
   // Device authorization state
   const [deviceStatus, setDeviceStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'no_devices'>('checking')
   const [deviceName, setDeviceName] = useState<string | null>(null)
