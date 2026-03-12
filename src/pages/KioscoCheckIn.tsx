@@ -882,6 +882,21 @@ export default function KioscoCheckIn() {
         console.error('Error reproduciendo audio:', error)
       }
 
+      // Fetch limpieza asignada para hoy
+      try {
+        const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+          p_empleado_id: empleadoParaFichaje.id,
+        })
+        if (limpiezaData && limpiezaData.length > 0) {
+          setLimpiezaZonas(limpiezaData.map((l: any) => l.zona))
+          setLimpiezaAsignaciones(limpiezaData.map((l: any) => ({ id: l.id, zona: l.zona })))
+          setShowLimpiezaAlert(true)
+          return // Flow continues when alert is dismissed
+        }
+      } catch (err) {
+        console.error('Error fetching limpieza:', err)
+      }
+
       // Fetch novedades for this employee
       try {
         const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
