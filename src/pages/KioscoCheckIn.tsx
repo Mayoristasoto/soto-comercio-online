@@ -2475,6 +2475,40 @@ export default function KioscoCheckIn() {
         />
       )}
 
+      {/* Alerta de Limpieza Asignada (Overlay) */}
+      {showLimpiezaAlert && limpiezaZonas.length > 0 && registroExitoso && (
+        <LimpiezaAsignadaAlert
+          empleadoNombre={`${registroExitoso.empleado.nombre} ${registroExitoso.empleado.apellido}`}
+          zonas={limpiezaZonas}
+          onDismiss={() => {
+            setShowLimpiezaAlert(false)
+            // Chain to novedades
+            const fetchNovedades = async () => {
+              try {
+                const { data: novedadesData } = await (supabase.rpc as any)('kiosk_get_novedades', {
+                  p_empleado_id: registroExitoso.empleado.id,
+                })
+                if (novedadesData && novedadesData.length > 0) {
+                  setNovedadesPendientes(novedadesData)
+                  setShowNovedadesAlert(true)
+                  return
+                }
+              } catch (err) {
+                console.error('Error fetching novedades:', err)
+              }
+              // Continue to tareas or reset
+              if (tareasPendientes.length > 0) {
+                setShowTareasPendientesAlert(true)
+              } else {
+                resetKiosco()
+              }
+            }
+            fetchNovedades()
+          }}
+          duracionSegundos={8}
+        />
+      )}
+
       {/* Alerta de Novedades (Overlay) */}
       {showNovedadesAlert && novedadesPendientes.length > 0 && registroExitoso && (
         <NovedadesCheckInAlert
