@@ -830,6 +830,14 @@ export default function Tareas() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="limpieza" className="space-y-4">
+              <Card>
+                <CardContent className="p-6">
+                  <LimpiezaConfig />
+                </CardContent>
+              </Card>
+            </TabsContent>
           </>
         )}
       </Tabs>
