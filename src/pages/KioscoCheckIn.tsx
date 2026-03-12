@@ -2289,6 +2289,23 @@ export default function KioscoCheckIn() {
       }
     }
 
+    // 6.4 Fetch limpieza (only on entrada)
+    if (tipoAccion === 'entrada') {
+      try {
+        const { data: limpiezaData } = await (supabase.rpc as any)('kiosk_get_limpieza_hoy', {
+          p_empleado_id: empleadoId,
+        })
+        if (limpiezaData && limpiezaData.length > 0) {
+          setLimpiezaZonas(limpiezaData.map((l: any) => l.zona))
+          setLimpiezaAsignaciones(limpiezaData.map((l: any) => ({ id: l.id, zona: l.zona })))
+          setShowLimpiezaAlert(true)
+          return
+        }
+      } catch (err) {
+        console.error('[PIN] Error fetching limpieza:', err)
+      }
+    }
+
     // 6.5 Fetch novedades (only on entrada)
     if (tipoAccion === 'entrada') {
       try {
