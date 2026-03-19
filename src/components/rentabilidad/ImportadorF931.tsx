@@ -8,13 +8,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Upload, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { Upload, CheckCircle2, AlertTriangle, XCircle, FileText, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
+
+interface OcrRow {
+  cuil: string;
+  apellido: string;
+  nombre: string;
+  remuneracion?: number;
+  aportes?: number;
+  contribuciones?: number;
+}
 
 export default function ImportadorF931() {
   const qc = useQueryClient();
   const [periodoId, setPeriodoId] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [ocrRows, setOcrRows] = useState<OcrRow[] | null>(null);
+  const [ocrProcessing, setOcrProcessing] = useState(false);
+  const [ocrFileName, setOcrFileName] = useState("");
 
   const { data: periodos } = useQuery({
     queryKey: ["periodos_contables"],
@@ -46,16 +58,9 @@ export default function ImportadorF931() {
     enabled: !!periodoId,
   });
 
-  const importar = useMutation({
-    mutationFn: async (file: File) => {
-      if (!periodoId) throw new Error("Seleccione un período");
-      const arrayBuffer = await file.arrayBuffer();
-      const wb = XLSX.read(arrayBuffer, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-      if (!rows.length) throw new Error("Archivo vacío");
-
+  // Mutation for inserting rows (shared between Excel and OCR flows)
+  const insertRows = useMutation({
+    mutationFn: async ({ rows, fileName }: { rows: any[]; fileName: string }) => {
       const inserts = rows.map((row) => {
         const cuil = String(row.CUIL || row.cuil || row.Cuil || "").replace(/[-\s]/g, "");
         const emp = empleados?.find((e) => e.cuil?.replace(/[-\s]/g, "") === cuil);
@@ -63,7 +68,6 @@ export default function ImportadorF931() {
         const datos: Record<string, any> = {};
         const errores: string[] = [];
 
-        // Map common F931 columns
         for (const [key, val] of Object.entries(row)) {
           datos[key] = val;
         }
@@ -76,7 +80,7 @@ export default function ImportadorF931() {
           cuil,
           empleado_id: emp?.id || null,
           datos_importados: datos,
-          archivo_origen: file.name,
+          archivo_origen: fileName,
           estado: emp ? "mapeado" : "sin_mapear",
           errores: errores.length ? errores : null,
           validado: false,
@@ -92,13 +96,81 @@ export default function ImportadorF931() {
       qc.invalidateQueries({ queryKey: ["importacion_f931"] });
       toast({ title: "Importación exitosa", description: `${res.total} registros importados, ${res.mapeados} mapeados por CUIL` });
       if (fileRef.current) fileRef.current.value = "";
+      setOcrRows(null);
+      setOcrFileName("");
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) importar.mutate(file);
+    if (!file || !periodoId) return;
+
+    const isPdf = file.name.toLowerCase().endsWith(".pdf");
+
+    if (isPdf) {
+      // OCR flow
+      setOcrProcessing(true);
+      setOcrFileName(file.name);
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const base64 = btoa(
+          new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+        );
+
+        const { data, error } = await supabase.functions.invoke("ocr-f931", {
+          body: { pdf_base64: base64 },
+        });
+
+        if (error) throw new Error(error.message || "Error procesando OCR");
+        if (data?.error) throw new Error(data.error);
+
+        const registros = data?.registros || [];
+        if (!registros.length) {
+          toast({ title: "Sin resultados", description: "No se pudieron extraer registros del PDF. Verificá que sea un F931 legible.", variant: "destructive" });
+          return;
+        }
+
+        setOcrRows(registros);
+        toast({ title: "OCR completado", description: `${registros.length} registros extraídos. Revisá y confirmá la importación.` });
+      } catch (err: any) {
+        toast({ title: "Error OCR", description: err.message, variant: "destructive" });
+        setOcrRows(null);
+      } finally {
+        setOcrProcessing(false);
+      }
+    } else {
+      // Excel/CSV flow (existing)
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const wb = XLSX.read(arrayBuffer, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+        if (!rows.length) {
+          toast({ title: "Error", description: "Archivo vacío", variant: "destructive" });
+          return;
+        }
+
+        insertRows.mutate({ rows, fileName: file.name });
+      } catch (err: any) {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+      }
+    }
+  };
+
+  const handleConfirmOcr = () => {
+    if (!ocrRows || !periodoId) return;
+    // Transform OCR rows to match the expected format
+    const rows = ocrRows.map((r) => ({
+      CUIL: r.cuil,
+      Apellido: r.apellido,
+      Nombre: r.nombre,
+      Remuneracion: r.remuneracion || 0,
+      Aportes: r.aportes || 0,
+      Contribuciones: r.contribuciones || 0,
+    }));
+    insertRows.mutate({ rows, fileName: ocrFileName });
   };
 
   const totalMapeados = registros?.filter((r) => r.estado === "mapeado").length || 0;
@@ -125,17 +197,84 @@ export default function ImportadorF931() {
             </Select>
           </div>
           <div>
-            <Label>Archivo CSV/Excel</Label>
+            <Label>Archivo CSV/Excel/PDF</Label>
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx,.xls,.pdf"
               onChange={handleFile}
-              disabled={!periodoId || importar.isPending}
+              disabled={!periodoId || insertRows.isPending || ocrProcessing}
               className="block text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
             />
           </div>
+          {ocrProcessing && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Procesando OCR...
+            </div>
+          )}
         </div>
+
+        {/* OCR Preview */}
+        {ocrRows && ocrRows.length > 0 && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Vista previa OCR — {ocrRows.length} registros extraídos de "{ocrFileName}"
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-3">
+              <div className="max-h-64 overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>CUIL</TableHead>
+                      <TableHead>Apellido</TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead className="text-right">Remuneración</TableHead>
+                      <TableHead className="text-right">Aportes</TableHead>
+                      <TableHead className="text-right">Contribuciones</TableHead>
+                      <TableHead>Match</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ocrRows.map((r, i) => {
+                      const cleanCuil = r.cuil?.replace(/[-\s]/g, "") || "";
+                      const matched = empleados?.find((e) => e.cuil?.replace(/[-\s]/g, "") === cleanCuil);
+                      return (
+                        <TableRow key={i}>
+                          <TableCell className="font-mono text-xs">{r.cuil}</TableCell>
+                          <TableCell>{r.apellido}</TableCell>
+                          <TableCell>{r.nombre}</TableCell>
+                          <TableCell className="text-right">{r.remuneracion?.toLocaleString("es-AR", { minimumFractionDigits: 2 }) || "-"}</TableCell>
+                          <TableCell className="text-right">{r.aportes?.toLocaleString("es-AR", { minimumFractionDigits: 2 }) || "-"}</TableCell>
+                          <TableCell className="text-right">{r.contribuciones?.toLocaleString("es-AR", { minimumFractionDigits: 2 }) || "-"}</TableCell>
+                          <TableCell>
+                            {matched ? (
+                              <Badge variant="default" className="text-xs">✓ {matched.apellido}</Badge>
+                            ) : (
+                              <Badge variant="destructive" className="text-xs">Sin match</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleConfirmOcr} disabled={insertRows.isPending} size="sm">
+                  {insertRows.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                  Confirmar importación
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setOcrRows(null); setOcrFileName(""); if (fileRef.current) fileRef.current.value = ""; }}>
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {registros && registros.length > 0 && (
           <div className="flex gap-4 text-sm">

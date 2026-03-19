@@ -108,3 +108,6 @@ verify_jwt = false
 
 [functions.crear-tareas-batch]
 verify_jwt = false
+
+[functions.ocr-f931]
+verify_jwt = false
