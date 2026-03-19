@@ -1,47 +1,52 @@
 
 
-## Plan: PDF Resumen Semanal Rápido de Incidencias
+## Plan: OCR para PDFs escaneados en el Importador F931
 
-### Objetivo
-Crear un botón en la página de Listado de Incidencias que genere un PDF de visualización rápida con el resumen de la semana: llegadas tarde, excesos de descanso y empleados que no ficharon.
+### Problema
+El importador actual solo acepta CSV/Excel. El usuario tiene el F931 escaneado como PDF y necesita extraer los datos con OCR.
 
-### Archivo nuevo
-**`src/utils/resumenSemanalPDF.ts`** — Genera un PDF compacto de 1-2 páginas con:
+### Solución
+Crear una edge function que reciba el PDF, lo envíe a **Lovable AI (Gemini)** con capacidad de visión para extraer la tabla de datos del F931 como JSON estructurado, y devuelva los registros parseados al frontend.
 
-1. **Encabezado**: Logo SOTO, título "Resumen Semanal de Incidencias", rango de fechas
-2. **Cards de resumen**: Total llegadas tarde, total excesos descanso, total ausencias/sin fichaje
-3. **Tabla resumen por empleado**: Nombre | Sucursal | Llegadas Tarde | Exceso Descanso | Total — ordenada por total desc
-4. **Sección "Empleados sin fichaje"**: Lista de empleados que no registraron entrada en algún día de la semana (cruzando `fichajes` con `empleados` activos y sus horarios asignados)
-
-Usa `jsPDF` + `autoTable` con los estilos de `pdfStyles.ts` existentes. Consulta `empleado_cruces_rojas` para incidencias y `fichajes` para detectar ausencias.
-
-### Archivo modificado
-**`src/pages/ListadoIncidencias.tsx`** — Agregar un botón "📄 Resumen Semanal PDF" junto a los controles existentes que:
-- Calcula automáticamente lunes-domingo de la semana actual (o la semana del rango seleccionado)
-- Consulta `empleado_cruces_rojas` agrupando por empleado y tipo
-- Consulta `fichajes` para detectar empleados sin registro
-- Llama a `generarResumenSemanalPDF()` con los datos
-
-### Estructura del PDF
+### Arquitectura
 
 ```text
-┌─────────────────────────────────┐
-│  SOTO mayorista                 │
-│  Resumen Semanal de Incidencias │
-│  Lunes 03/03 - Domingo 09/03   │
-├─────────────────────────────────┤
-│ [12 Lleg.Tarde] [5 Exc.Desc]   │
-│ [3 Sin Fichaje] [20 Total]     │
-├─────────────────────────────────┤
-│ # │ Empleado │ Suc │ LT │ED│Tot│
-│ 1 │ Carlos E │ JM  │  4 │ 2│ 6 │
-│ 2 │ Julio G  │ JM  │  3 │ 1│ 4 │
-│ ...                             │
-├─────────────────────────────────┤
-│ Empleados sin fichaje           │
-│ Fecha    │ Empleado │ Sucursal  │
-│ 03/03    │ Ana D.   │ Centro    │
-│ ...                             │
-└─────────────────────────────────┘
+Frontend (PDF) → Edge Function "ocr-f931" → Lovable AI (Gemini Vision)
+                                           → Devuelve JSON con filas
+Frontend ← JSON rows ← Edge Function
+Frontend → Inserta en importacion_f931 (lógica existente)
 ```
+
+### Archivos
+
+**1. Nueva Edge Function: `supabase/functions/ocr-f931/index.ts`**
+- Recibe el PDF como base64 en el body junto con `periodo_id`
+- Envía las páginas del PDF a Gemini 2.5 Pro (multimodal) via Lovable AI Gateway
+- Prompt: "Extraer tabla del F931 argentino. Devolver array JSON con campos: CUIL, Apellido, Nombre, Remuneracion, Aportes, Contribuciones"
+- Usa tool calling para forzar output estructurado
+- Devuelve el array de registros extraídos
+
+**2. Modificar: `src/components/rentabilidad/ImportadorF931.tsx`**
+- Agregar `.pdf` al accept del input de archivo
+- Detectar si el archivo es PDF
+- Si es PDF: convertir a base64, llamar a la edge function `ocr-f931`, recibir las filas JSON y procesarlas con la misma lógica de mapeo por CUIL existente
+- Si es CSV/Excel: mantener el flujo actual sin cambios
+- Mostrar estado "Procesando OCR..." durante la extracción
+- Mostrar preview de los datos extraídos antes de confirmar la importación
+
+**3. Actualizar: `supabase/config.toml`**
+- Agregar entrada para la nueva función con `verify_jwt = false`
+
+### Flujo del usuario
+1. Selecciona período
+2. Sube PDF escaneado del F931
+3. Ve spinner "Procesando OCR..."
+4. Aparece tabla preview con los datos extraídos por OCR
+5. Revisa y confirma → se insertan en `importacion_f931` con el mapeo por CUIL habitual
+
+### Notas
+- Se usa `LOVABLE_API_KEY` que ya está configurada como secret
+- Gemini 2.5 Pro es ideal para este caso por su capacidad multimodal con tablas
+- El PDF se envía como base64 (limite ~20MB)
+- No requiere cambios de schema en la DB
 
