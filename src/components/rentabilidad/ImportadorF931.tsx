@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Upload, CheckCircle2, AlertTriangle, XCircle, FileText, Loader2 } from "lucide-react";
+import { Upload, CheckCircle2, AlertTriangle, XCircle, FileText, Loader2, BarChart3 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface OcrRow {
@@ -20,11 +20,24 @@ interface OcrRow {
   contribuciones?: number;
 }
 
+interface F931Summary {
+  cant_empleados: number;
+  remuneracion_total: number;
+  aportes_ss?: number;
+  contribuciones_ss?: number;
+  aportes_os?: number;
+  contribuciones_os?: number;
+  lrt?: number;
+}
+
+const fmt = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
+
 export default function ImportadorF931() {
   const qc = useQueryClient();
   const [periodoId, setPeriodoId] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrRows, setOcrRows] = useState<OcrRow[] | null>(null);
+  const [ocrSummary, setOcrSummary] = useState<F931Summary | null>(null);
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const [ocrFileName, setOcrFileName] = useState("");
 
@@ -58,23 +71,21 @@ export default function ImportadorF931() {
     enabled: !!periodoId,
   });
 
-  // Mutation for inserting rows (shared between Excel and OCR flows)
+  // Check if current period already has F931 summary data
+  const selectedPeriodo = periodos?.find((p) => p.id === periodoId);
+  const hasF931Data = selectedPeriodo && (selectedPeriodo as any).f931_remuneracion_total != null;
+
+  // Mutation for inserting detail rows
   const insertRows = useMutation({
     mutationFn: async ({ rows, fileName }: { rows: any[]; fileName: string }) => {
       const inserts = rows.map((row) => {
         const cuil = String(row.CUIL || row.cuil || row.Cuil || "").replace(/[-\s]/g, "");
         const emp = empleados?.find((e) => e.cuil?.replace(/[-\s]/g, "") === cuil);
-
         const datos: Record<string, any> = {};
         const errores: string[] = [];
-
-        for (const [key, val] of Object.entries(row)) {
-          datos[key] = val;
-        }
-
+        for (const [key, val] of Object.entries(row)) datos[key] = val;
         if (!cuil) errores.push("CUIL vacío");
         if (!emp) errores.push("Empleado no encontrado");
-
         return {
           periodo_id: periodoId,
           cuil,
@@ -86,21 +97,50 @@ export default function ImportadorF931() {
           validado: false,
         };
       });
-
       const { error } = await supabase.from("importacion_f931").insert(inserts);
       if (error) throw error;
-
       return { total: inserts.length, mapeados: inserts.filter((i) => i.estado === "mapeado").length };
     },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["importacion_f931"] });
       toast({ title: "Importación exitosa", description: `${res.total} registros importados, ${res.mapeados} mapeados por CUIL` });
-      if (fileRef.current) fileRef.current.value = "";
-      setOcrRows(null);
-      setOcrFileName("");
+      resetFileState();
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
+
+  // Mutation for saving F931 summary to periodos_contables
+  const saveSummary = useMutation({
+    mutationFn: async (summary: F931Summary) => {
+      const { error } = await supabase
+        .from("periodos_contables")
+        .update({
+          f931_cant_empleados: summary.cant_empleados,
+          f931_remuneracion_total: summary.remuneracion_total,
+          f931_aportes_ss: summary.aportes_ss || 0,
+          f931_contribuciones_ss: summary.contribuciones_ss || 0,
+          f931_aportes_os: summary.aportes_os || 0,
+          f931_contribuciones_os: summary.contribuciones_os || 0,
+          f931_lrt: summary.lrt || 0,
+          f931_importado_at: new Date().toISOString(),
+        } as any)
+        .eq("id", periodoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["periodos_contables"] });
+      toast({ title: "Totales F931 guardados", description: "Los totales del F931 fueron asociados al período contable para validación cruzada." });
+      resetFileState();
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const resetFileState = () => {
+    setOcrRows(null);
+    setOcrSummary(null);
+    setOcrFileName("");
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,7 +149,6 @@ export default function ImportadorF931() {
     const isPdf = file.name.toLowerCase().endsWith(".pdf");
 
     if (isPdf) {
-      // OCR flow
       setOcrProcessing(true);
       setOcrFileName(file.name);
       try {
@@ -125,33 +164,36 @@ export default function ImportadorF931() {
         if (error) throw new Error(error.message || "Error procesando OCR");
         if (data?.error) throw new Error(data.error);
 
-        const registros = data?.registros || [];
-        if (!registros.length) {
-          toast({ title: "Sin resultados", description: "No se pudieron extraer registros del PDF. Verificá que sea un F931 legible.", variant: "destructive" });
-          return;
+        if (data?.type === "summary") {
+          setOcrSummary(data.summary);
+          setOcrRows(null);
+          toast({ title: "F931 Resumen detectado", description: "Se extrajeron los totales globales. Revisá y confirmá." });
+        } else {
+          const registros = data?.registros || [];
+          if (!registros.length) {
+            toast({ title: "Sin resultados", description: "No se pudieron extraer registros del PDF.", variant: "destructive" });
+            return;
+          }
+          setOcrRows(registros);
+          setOcrSummary(null);
+          toast({ title: "OCR completado", description: `${registros.length} registros extraídos. Revisá y confirmá.` });
         }
-
-        setOcrRows(registros);
-        toast({ title: "OCR completado", description: `${registros.length} registros extraídos. Revisá y confirmá la importación.` });
       } catch (err: any) {
         toast({ title: "Error OCR", description: err.message, variant: "destructive" });
-        setOcrRows(null);
+        resetFileState();
       } finally {
         setOcrProcessing(false);
       }
     } else {
-      // Excel/CSV flow (existing)
       try {
         const arrayBuffer = await file.arrayBuffer();
         const wb = XLSX.read(arrayBuffer, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
         if (!rows.length) {
           toast({ title: "Error", description: "Archivo vacío", variant: "destructive" });
           return;
         }
-
         insertRows.mutate({ rows, fileName: file.name });
       } catch (err: any) {
         toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -161,7 +203,6 @@ export default function ImportadorF931() {
 
   const handleConfirmOcr = () => {
     if (!ocrRows || !periodoId) return;
-    // Transform OCR rows to match the expected format
     const rows = ocrRows.map((r) => ({
       CUIL: r.cuil,
       Apellido: r.apellido,
@@ -171,6 +212,11 @@ export default function ImportadorF931() {
       Contribuciones: r.contribuciones || 0,
     }));
     insertRows.mutate({ rows, fileName: ocrFileName });
+  };
+
+  const handleConfirmSummary = () => {
+    if (!ocrSummary || !periodoId) return;
+    saveSummary.mutate(ocrSummary);
   };
 
   const totalMapeados = registros?.filter((r) => r.estado === "mapeado").length || 0;
@@ -203,7 +249,7 @@ export default function ImportadorF931() {
               type="file"
               accept=".csv,.xlsx,.xls,.pdf"
               onChange={handleFile}
-              disabled={!periodoId || insertRows.isPending || ocrProcessing}
+              disabled={!periodoId || insertRows.isPending || ocrProcessing || saveSummary.isPending}
               className="block text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
             />
           </div>
@@ -215,7 +261,60 @@ export default function ImportadorF931() {
           )}
         </div>
 
-        {/* OCR Preview */}
+        {/* F931 Summary already saved indicator */}
+        {hasF931Data && (
+          <Card className="border-green-500/30 bg-green-50 dark:bg-green-950/20">
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium">Totales F931 importados para este período</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                <div>Empleados: <strong>{(selectedPeriodo as any).f931_cant_empleados}</strong></div>
+                <div>Remuneración: <strong>{fmt(Number((selectedPeriodo as any).f931_remuneracion_total) || 0)}</strong></div>
+                <div>Aportes SS: <strong>{fmt(Number((selectedPeriodo as any).f931_aportes_ss) || 0)}</strong></div>
+                <div>Contrib. SS: <strong>{fmt(Number((selectedPeriodo as any).f931_contribuciones_ss) || 0)}</strong></div>
+                <div>Aportes OS: <strong>{fmt(Number((selectedPeriodo as any).f931_aportes_os) || 0)}</strong></div>
+                <div>Contrib. OS: <strong>{fmt(Number((selectedPeriodo as any).f931_contribuciones_os) || 0)}</strong></div>
+                <div>LRT: <strong>{fmt(Number((selectedPeriodo as any).f931_lrt) || 0)}</strong></div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* OCR Summary Preview */}
+        {ocrSummary && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Vista previa — Totales F931 extraídos de "{ocrFileName}"
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <SummaryItem label="Empleados" value={String(ocrSummary.cant_empleados)} />
+                <SummaryItem label="Remuneración Total" value={fmt(ocrSummary.remuneracion_total)} />
+                <SummaryItem label="Aportes SS" value={fmt(ocrSummary.aportes_ss || 0)} />
+                <SummaryItem label="Contribuciones SS" value={fmt(ocrSummary.contribuciones_ss || 0)} />
+                <SummaryItem label="Aportes OS" value={fmt(ocrSummary.aportes_os || 0)} />
+                <SummaryItem label="Contribuciones OS" value={fmt(ocrSummary.contribuciones_os || 0)} />
+                <SummaryItem label="LRT" value={fmt(ocrSummary.lrt || 0)} />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleConfirmSummary} disabled={saveSummary.isPending} size="sm">
+                  {saveSummary.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                  Guardar en período
+                </Button>
+                <Button variant="outline" size="sm" onClick={resetFileState}>
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* OCR Detail Preview */}
         {ocrRows && ocrRows.length > 0 && (
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader className="py-3 px-4">
@@ -268,7 +367,7 @@ export default function ImportadorF931() {
                   {insertRows.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
                   Confirmar importación
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => { setOcrRows(null); setOcrFileName(""); if (fileRef.current) fileRef.current.value = ""; }}>
+                <Button variant="outline" size="sm" onClick={resetFileState}>
                   Cancelar
                 </Button>
               </div>
@@ -326,5 +425,14 @@ export default function ImportadorF931() {
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border bg-background p-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold">{value}</p>
+    </div>
   );
 }
