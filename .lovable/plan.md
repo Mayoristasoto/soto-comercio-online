@@ -1,52 +1,29 @@
 
 
-## Plan: OCR para PDFs escaneados en el Importador F931
+## Análisis del PDF F931 subido
 
-### Problema
-El importador actual solo acepta CSV/Excel. El usuario tiene el F931 escaneado como PDF y necesita extraer los datos con OCR.
+### Situación
+El PDF subido es la **carátula/resumen** del F931 de febrero 2026 con datos globales:
+- 20 empleados en nómina
+- Suma Rem. 1: $20.687.994,74
+- Aportes SS: $2.586.585,65
+- Contribuciones SS: $3.384.412,39
+- Aportes OS: $624.842,65
+- Contribuciones OS: $1.247.985,30
+- LRT: $1.005.686,65
 
-### Solución
-Crear una edge function que reciba el PDF, lo envíe a **Lovable AI (Gemini)** con capacidad de visión para extraer la tabla de datos del F931 como JSON estructurado, y devuelva los registros parseados al frontend.
+**No contiene el desglose individual por empleado** (CUIL, nombre, remuneración de cada uno). El OCR actual del importador está diseñado para extraer filas individuales por empleado.
 
-### Arquitectura
+### Opciones
 
-```text
-Frontend (PDF) → Edge Function "ocr-f931" → Lovable AI (Gemini Vision)
-                                           → Devuelve JSON con filas
-Frontend ← JSON rows ← Edge Function
-Frontend → Inserta en importacion_f931 (lógica existente)
-```
+**Opción A**: Usar este PDF para importar los **totales como registro de resumen** del período en la tabla `importacion_f931` (un solo registro con los montos globales para validación cruzada).
 
-### Archivos
+**Opción B**: No importar este PDF ya que no tiene detalle individual. Necesitarías exportar desde AFIP el **detalle de la DDJJ** que lista cada CUIL con su remuneración y aportes individuales.
 
-**1. Nueva Edge Function: `supabase/functions/ocr-f931/index.ts`**
-- Recibe el PDF como base64 en el body junto con `periodo_id`
-- Envía las páginas del PDF a Gemini 2.5 Pro (multimodal) via Lovable AI Gateway
-- Prompt: "Extraer tabla del F931 argentino. Devolver array JSON con campos: CUIL, Apellido, Nombre, Remuneracion, Aportes, Contribuciones"
-- Usa tool calling para forzar output estructurado
-- Devuelve el array de registros extraídos
+**Opción C**: Importar estos totales como datos de referencia en una nueva columna/tabla de `periodos_contables` para poder comparar los totales declarados contra los calculados internamente.
 
-**2. Modificar: `src/components/rentabilidad/ImportadorF931.tsx`**
-- Agregar `.pdf` al accept del input de archivo
-- Detectar si el archivo es PDF
-- Si es PDF: convertir a base64, llamar a la edge function `ocr-f931`, recibir las filas JSON y procesarlas con la misma lógica de mapeo por CUIL existente
-- Si es CSV/Excel: mantener el flujo actual sin cambios
-- Mostrar estado "Procesando OCR..." durante la extracción
-- Mostrar preview de los datos extraídos antes de confirmar la importación
+### Recomendación
+La **Opción C** es la más útil: guardar los totales del F931 en el período contable para que el dashboard de rentabilidad pueda mostrar una comparación "Declarado en AFIP vs. Calculado internamente" y detectar diferencias.
 
-**3. Actualizar: `supabase/config.toml`**
-- Agregar entrada para la nueva función con `verify_jwt = false`
-
-### Flujo del usuario
-1. Selecciona período
-2. Sube PDF escaneado del F931
-3. Ve spinner "Procesando OCR..."
-4. Aparece tabla preview con los datos extraídos por OCR
-5. Revisa y confirma → se insertan en `importacion_f931` con el mapeo por CUIL habitual
-
-### Notas
-- Se usa `LOVABLE_API_KEY` que ya está configurada como secret
-- Gemini 2.5 Pro es ideal para este caso por su capacidad multimodal con tablas
-- El PDF se envía como base64 (limite ~20MB)
-- No requiere cambios de schema en la DB
+No se requieren cambios de código si solo querés probar el OCR — pero este PDF no va a generar filas individuales por empleado ya que no las contiene.
 
