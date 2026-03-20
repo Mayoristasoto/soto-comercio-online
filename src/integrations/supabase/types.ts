@@ -5947,6 +5947,14 @@ export type Database = {
           cerrado_por: string | null
           created_at: string | null
           estado: Database["public"]["Enums"]["periodo_estado"] | null
+          f931_aportes_os: number | null
+          f931_aportes_ss: number | null
+          f931_cant_empleados: number | null
+          f931_contribuciones_os: number | null
+          f931_contribuciones_ss: number | null
+          f931_importado_at: string | null
+          f931_lrt: number | null
+          f931_remuneracion_total: number | null
           fecha_cierre: string | null
           fecha_fin: string
           fecha_inicio: string
@@ -5956,6 +5964,14 @@ export type Database = {
           cerrado_por?: string | null
           created_at?: string | null
           estado?: Database["public"]["Enums"]["periodo_estado"] | null
+          f931_aportes_os?: number | null
+          f931_aportes_ss?: number | null
+          f931_cant_empleados?: number | null
+          f931_contribuciones_os?: number | null
+          f931_contribuciones_ss?: number | null
+          f931_importado_at?: string | null
+          f931_lrt?: number | null
+          f931_remuneracion_total?: number | null
           fecha_cierre?: string | null
           fecha_fin: string
           fecha_inicio: string
@@ -5965,6 +5981,14 @@ export type Database = {
           cerrado_por?: string | null
           created_at?: string | null
           estado?: Database["public"]["Enums"]["periodo_estado"] | null
+          f931_aportes_os?: number | null
+          f931_aportes_ss?: number | null
+          f931_cant_empleados?: number | null
+          f931_contribuciones_os?: number | null
+          f931_contribuciones_ss?: number | null
+          f931_importado_at?: string | null
+          f931_lrt?: number | null
+          f931_remuneracion_total?: number | null
           fecha_cierre?: string | null
           fecha_fin?: string
           fecha_inicio?: string
