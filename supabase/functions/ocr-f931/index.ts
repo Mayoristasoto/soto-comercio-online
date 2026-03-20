@@ -36,19 +36,23 @@ serve(async (req) => {
           {
             role: "system",
             content: `Sos un experto en extraer datos del Formulario 931 de AFIP (Argentina). 
-Vas a recibir una imagen/PDF escaneado del F931. 
-Extraé todos los registros de empleados que aparezcan en la tabla.
-Usá la tool "extract_f931_rows" para devolver los datos estructurados.
-Si no podés leer algún campo, dejalo como string vacío.
+Vas a recibir una imagen/PDF escaneado del F931.
+
+HAY DOS TIPOS DE F931:
+1. **Detalle por empleado**: tiene una tabla con filas de empleados (CUIL, nombre, remuneración, aportes). Usá "extract_f931_rows".
+2. **Carátula/Resumen**: tiene los totales globales (cantidad de empleados, suma de remuneraciones, aportes SS, contribuciones SS, aportes OS, contribuciones OS, LRT). NO tiene detalle individual. Usá "extract_f931_summary".
+
+Primero determiná qué tipo de F931 es y usá la tool correspondiente.
+Si no podés leer algún campo, dejalo como 0 o string vacío.
 El CUIL debe ser solo números sin guiones ni espacios (11 dígitos).
-La remuneración, aportes y contribuciones deben ser números decimales.`
+Los montos deben ser números decimales (sin signo $, sin puntos de miles).`
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Extraé todos los registros de empleados de este Formulario 931 de AFIP. Incluí CUIL, apellido, nombre, remuneración, aportes y contribuciones de cada empleado."
+                text: "Analizá este Formulario 931 de AFIP. Si tiene detalle de empleados, extraé cada fila. Si es la carátula/resumen con totales globales, extraé los totales."
               },
               {
                 type: "image_url",
@@ -64,7 +68,7 @@ La remuneración, aportes y contribuciones deben ser números decimales.`
             type: "function",
             function: {
               name: "extract_f931_rows",
-              description: "Devuelve los registros extraídos del F931",
+              description: "Devuelve los registros individuales de empleados extraídos del F931 (detalle)",
               parameters: {
                 type: "object",
                 properties: {
@@ -89,9 +93,29 @@ La remuneración, aportes y contribuciones deben ser números decimales.`
                 additionalProperties: false,
               }
             }
+          },
+          {
+            type: "function",
+            function: {
+              name: "extract_f931_summary",
+              description: "Devuelve los totales globales de la carátula/resumen del F931",
+              parameters: {
+                type: "object",
+                properties: {
+                  cant_empleados: { type: "number", description: "Cantidad total de empleados declarados" },
+                  remuneracion_total: { type: "number", description: "Suma de Remuneración 1 (total)" },
+                  aportes_ss: { type: "number", description: "Total Aportes de Seguridad Social" },
+                  contribuciones_ss: { type: "number", description: "Total Contribuciones de Seguridad Social" },
+                  aportes_os: { type: "number", description: "Total Aportes de Obra Social" },
+                  contribuciones_os: { type: "number", description: "Total Contribuciones de Obra Social" },
+                  lrt: { type: "number", description: "Total LRT (Riesgos del Trabajo)" },
+                },
+                required: ["cant_empleados", "remuneracion_total"],
+                additionalProperties: false,
+              }
+            }
           }
         ],
-        tool_choice: { type: "function", function: { name: "extract_f931_rows" } },
       })
     });
 
@@ -117,13 +141,12 @@ La remuneración, aportes y contribuciones deben ser números decimales.`
     // Extract tool call arguments
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      // Fallback: try to parse content as JSON
       const content = data.choices?.[0]?.message?.content;
       if (content) {
         try {
           const parsed = JSON.parse(content);
           if (parsed.registros) {
-            return new Response(JSON.stringify({ registros: parsed.registros }), {
+            return new Response(JSON.stringify({ type: "detail", registros: parsed.registros }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
           }
@@ -132,11 +155,21 @@ La remuneración, aportes y contribuciones deben ser números decimales.`
       throw new Error('No se pudieron extraer datos del PDF. Verificá que el documento sea un F931 legible.');
     }
 
+    const fnName = toolCall.function.name;
     const args = JSON.parse(toolCall.function.arguments);
-    console.log(`Extraídos ${args.registros?.length || 0} registros del F931`);
 
+    if (fnName === "extract_f931_summary") {
+      console.log('F931 detectado como carátula/resumen:', JSON.stringify(args));
+      return new Response(
+        JSON.stringify({ type: "summary", summary: args }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Default: detail rows
+    console.log(`Extraídos ${args.registros?.length || 0} registros del F931`);
     return new Response(
-      JSON.stringify({ registros: args.registros || [] }),
+      JSON.stringify({ type: "detail", registros: args.registros || [] }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
