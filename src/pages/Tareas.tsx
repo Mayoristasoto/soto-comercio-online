@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useOutletContext, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { CheckSquare, Plus, Calendar, BarChart3, Users, Clock, AlertCircle, User, UserCheck, Camera, History, Filter, FileText, Layers, X, BookOpen, Trash2, Sparkles } from "lucide-react"
 import { useConfirm } from "@/hooks/useConfirm"
 import { supabase } from "@/integrations/supabase/client"
@@ -19,6 +21,68 @@ import { WorkloadDashboard } from "@/components/tasks/WorkloadDashboard"
 import { TaskTemplates } from "@/components/tasks/TaskTemplates"
 import { AsignarEmpleadosFeriado } from "@/components/tasks/AsignarEmpleadosFeriado"
 import LimpiezaConfig from "@/components/admin/LimpiezaConfig"
+
+const LimpiezaToggle = () => {
+  const [activa, setActiva] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    supabase
+      .from('limpieza_asignaciones')
+      .select('id')
+      .eq('activo', true)
+      .limit(1)
+      .then(({ data }) => {
+        setActiva((data?.length ?? 0) > 0)
+        setLoading(false)
+      })
+  }, [])
+
+  const handleToggle = async (checked: boolean) => {
+    setActiva(checked)
+    const { error } = await supabase
+      .from('limpieza_asignaciones')
+      .update({ activo: checked } as any)
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+
+    if (error) {
+      setActiva(!checked)
+      toast({ title: "Error al actualizar", variant: "destructive" })
+      return
+    }
+    toast({
+      title: checked ? "Tareas de limpieza activadas" : "Tareas de limpieza desactivadas",
+      description: checked
+        ? "Se mostrarán alertas de limpieza en el kiosco"
+        : "No se mostrarán alertas de limpieza en el kiosco"
+    })
+  }
+
+  if (loading) return null
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="limpieza-toggle" className="text-sm font-medium">
+              Tareas de limpieza activas
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Cuando está desactivado, no se mostrarán alertas de limpieza en el kiosco
+            </p>
+          </div>
+          <Switch
+            id="limpieza-toggle"
+            checked={activa}
+            onCheckedChange={handleToggle}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 interface UserInfo {
   id: string
@@ -832,6 +896,7 @@ export default function Tareas() {
             </TabsContent>
 
             <TabsContent value="limpieza" className="space-y-4">
+              <LimpiezaToggle />
               <Card>
                 <CardContent className="p-6">
                   <LimpiezaConfig />
