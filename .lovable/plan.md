@@ -1,36 +1,32 @@
 
 
-## Plan: Switch para desactivar tareas de limpieza en Operaciones → Tareas
+## Plan: PDF profesional de horas trabajadas de Agustina Galaz
 
-### Cambio
+### Qué se genera
+Un PDF profesional con branding SOTO (púrpura/magenta/naranja) que incluye:
 
-**`src/pages/Tareas.tsx`**
+1. **Portada con resumen ejecutivo**: Nombre, período (Feb-Mar 2026), jornada asignada (6hs), totales y promedios
+2. **Tabla detallada por día**: Fecha, entrada, salida, minutos trabajados, diferencia vs 360 min, con colores para excesos/déficits
+3. **Resumen final**: Balance global (-405 min), días sin salida registrada, observaciones
 
-Agregar un Switch (toggle) en la pestaña "Limpieza" que controle un flag global `limpieza_activa` en una tabla de configuración. Cuando está desactivado, el kiosco no muestra alertas de limpieza ni las incluye en la confirmación de salida.
+### Datos
+- **Empleada**: Agustina Lucia Galaz (ID: `56cf495f-41ca-4615-8a57-05d62c429c9c`)
+- **Período**: 04/02/2026 – 25/03/2026
+- **Jornada estándar**: 6 horas (360 min)
+- **Fuente**: Query directo a `fichajes` con timezone `America/Argentina/Buenos_Aires`
 
-**Implementación**:
+### Implementación
+Script Python con ReportLab que:
+1. Consulta `fichajes` vía `psql` y exporta a CSV temporal
+2. Procesa los datos calculando minutos trabajados y diferencia vs 360
+3. Genera PDF con estilos de `PDF_STYLES` (colores SOTO: primary `#4b0d6d`, secondary `#95198d`, accent `#e04403`)
+4. QA visual obligatorio convirtiendo a imagen e inspeccionando
 
-1. **Tabla de configuración**: Usar `configuracion_sistema` (si existe) o insertar un registro en una tabla simple. Verificar si ya hay una tabla de config del sistema.
+### Archivo de salida
+`/mnt/documents/horas_trabajadas_Galaz_Agustina_Feb-Mar_2026.pdf`
 
-2. **En `src/pages/Tareas.tsx`**: Dentro del `TabsContent value="limpieza"`, agregar arriba del `LimpiezaConfig` un bloque con:
-   - Switch con label "Tareas de limpieza activas"
-   - Descripción: "Cuando está desactivado, no se mostrarán alertas de limpieza en el kiosco"
-   - Lee/escribe el campo `activo` de todas las asignaciones en `limpieza_asignaciones` (bulk toggle)
-
-3. **Alternativa sin nueva tabla**: El switch simplemente hace `UPDATE limpieza_asignaciones SET activo = true/false` para TODAS las asignaciones de una vez. El RPC `kiosk_get_limpieza_hoy` ya filtra por `activo = true`, así que al desactivarlas todas, el kiosco deja de mostrarlas automáticamente.
-
-### Enfoque elegido: Bulk toggle sobre campo `activo` existente
-
-No requiere nueva tabla ni migración. Solo cambio en `src/pages/Tareas.tsx`:
-
-- Agregar un `Switch` de `@/components/ui/switch` antes del `LimpiezaConfig`
-- Estado inicial: `true` si hay al menos una asignación con `activo = true`
-- Al togglear OFF: `UPDATE limpieza_asignaciones SET activo = false`
-- Al togglear ON: `UPDATE limpieza_asignaciones SET activo = true`
-- Toast de confirmación
-
-### Archivos modificados
-| Archivo | Cambio |
-|---------|--------|
-| `src/pages/Tareas.tsx` | Agregar Switch + lógica toggle bulk |
+### Archivos consultados (sin modificar)
+| Archivo | Uso |
+|---------|-----|
+| `src/utils/pdfStyles.ts` | Colores y tipografías corporativas SOTO |
 
