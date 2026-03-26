@@ -1,32 +1,51 @@
 
 
-## Plan: PDF profesional de horas trabajadas de Agustina Galaz
+## Plan: Reemplazar asignaciones de limpieza
 
-### Qué se genera
-Un PDF profesional con branding SOTO (púrpura/magenta/naranja) que incluye:
+### Operación
+1. **DELETE** todas las filas actuales de `limpieza_asignaciones` (18 registros)
+2. **INSERT** 18 nuevas asignaciones según la tabla de arriba
 
-1. **Portada con resumen ejecutivo**: Nombre, período (Feb-Mar 2026), jornada asignada (6hs), totales y promedios
-2. **Tabla detallada por día**: Fecha, entrada, salida, minutos trabajados, diferencia vs 360 min, con colores para excesos/déficits
-3. **Resumen final**: Balance global (-405 min), días sin salida registrada, observaciones
+### SQL (via insert tool, no migración)
 
-### Datos
-- **Empleada**: Agustina Lucia Galaz (ID: `56cf495f-41ca-4615-8a57-05d62c429c9c`)
-- **Período**: 04/02/2026 – 25/03/2026
-- **Jornada estándar**: 6 horas (360 min)
-- **Fuente**: Query directo a `fichajes` con timezone `America/Argentina/Buenos_Aires`
+```sql
+-- Paso 1: Borrar todo
+DELETE FROM limpieza_asignaciones;
 
-### Implementación
-Script Python con ReportLab que:
-1. Consulta `fichajes` vía `psql` y exporta a CSV temporal
-2. Procesa los datos calculando minutos trabajados y diferencia vs 360
-3. Genera PDF con estilos de `PDF_STYLES` (colores SOTO: primary `#4b0d6d`, secondary `#95198d`, accent `#e04403`)
-4. QA visual obligatorio convirtiendo a imagen e inspeccionando
+-- Paso 2: Insertar nuevas (dia_semana: 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb)
+INSERT INTO limpieza_asignaciones (dia_semana, empleado_id, zona, activo) VALUES
+-- Lunes
+(1, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Cocina', true),
+(1, '39571dd7-94f3-4fa5-84fc-ea6baadc8eec', 'Baño Mujeres', true),
+(1, '9871bc34-120f-42a8-a214-5d34a516d7f6', 'Baño Hombres', true),
+-- Martes
+(2, '9871bc34-120f-42a8-a214-5d34a516d7f6', 'Cocina', true),
+(2, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Baño Hombres', true),
+(2, 'dc830459-0aa7-4bbe-99f2-9f1080a60b3e', 'Baño Mujeres', true),
+-- Miércoles
+(3, '5d23025c-613f-4774-8e63-f5c80a0acaa3', 'Cocina', true),
+(3, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Baño Mujeres', true),
+(3, '54278134-59d7-4ac8-abd1-6bc906e871b3', 'Baño Hombres', true),
+-- Jueves
+(4, 'dc830459-0aa7-4bbe-99f2-9f1080a60b3e', 'Cocina', true),
+(4, '105996f4-9ad6-47b3-9da6-a8a544fb4228', 'Baño Mujeres', true),
+(4, '08f7d06e-c871-4ff1-b0de-681aaea90d33', 'Baño Hombres', true),
+-- Viernes
+(5, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Cocina', true),
+(5, '9871bc34-120f-42a8-a214-5d34a516d7f6', 'Baño Hombres', true),
+(5, 'dc830459-0aa7-4bbe-99f2-9f1080a60b3e', 'Baño Mujeres', true),
+-- Sábado
+(6, '54278134-59d7-4ac8-abd1-6bc906e871b3', 'Cocina', true),
+(6, '0da05020-7cb1-42f5-a8cd-02ffaff0f512', 'Baño Mujeres', true),
+(6, '08f7d06e-c871-4ff1-b0de-681aaea90d33', 'Baño Hombres', true);
+```
 
-### Archivo de salida
-`/mnt/documents/horas_trabajadas_Galaz_Agustina_Feb-Mar_2026.pdf`
+### Notas
+- Solo operaciones de datos (DELETE + INSERT), sin cambios de esquema
+- Se ejecuta via insert tool (no migración)
+- Los comodines Marina y Daniel no se cargan como asignación fija
+- El switch maestro en Tareas seguirá funcionando igual
 
-### Archivos consultados (sin modificar)
-| Archivo | Uso |
-|---------|-----|
-| `src/utils/pdfStyles.ts` | Colores y tipografías corporativas SOTO |
+### Archivos modificados
+Ninguno. Solo datos en BD.
 
