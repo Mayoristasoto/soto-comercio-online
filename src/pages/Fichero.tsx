@@ -1003,6 +1003,10 @@ export default function Fichero() {
         {activeTab === 'balance-diario' && empleado?.rol === 'admin_rrhh' && (
           <BalanceDiarioHoras />
         )}
+
+        {activeTab === 'balance-mensual' && empleado?.rol === 'admin_rrhh' && (
+          <BalanceMensualHoras />
+        )}
         
         {/* Vista de administrador */}
         {empleado.rol === 'admin_rrhh' && activeTab === 'admin' && (
