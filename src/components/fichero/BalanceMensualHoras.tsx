@@ -170,7 +170,9 @@ export default function BalanceMensualHoras() {
           minutos_trabajados: totalMinutosTrabajados,
           minutos_esperados: Math.round(minutosEsperados),
           balance_minutos: Math.round(totalMinutosTrabajados - minutosEsperados),
-          horas_jornada: horasJornada
+          horas_jornada: horasJornada,
+          horas_semanales_objetivo: horasSemanalesObjetivo || null,
+          dias_laborales_semana: diasLaboralesSemana
         }
       })
 
