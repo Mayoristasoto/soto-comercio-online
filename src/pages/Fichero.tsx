@@ -254,7 +254,7 @@ export default function Fichero() {
   // Sincronizar cambios de hash usando React Router
   useEffect(() => {
     const hash = (location.hash || '').replace('#', '')
-    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario'].includes(hash)) {
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario', 'balance-mensual'].includes(hash)) {
       setActiveTab(hash as any)
     }
   }, [location.hash])
