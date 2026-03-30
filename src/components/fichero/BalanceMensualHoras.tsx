@@ -13,6 +13,7 @@ import { es } from "date-fns/locale"
 import { getArgentinaStartOfDay, getArgentinaEndOfDay } from "@/lib/dateUtils"
 import { BarChart3, Search, RefreshCw, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react"
 import { ExportButton } from "@/components/ui/export-button"
+import DetalleDiarioEmpleado from "./DetalleDiarioEmpleado"
 
 interface EmpleadoBalanceMes {
   empleado_id: string
