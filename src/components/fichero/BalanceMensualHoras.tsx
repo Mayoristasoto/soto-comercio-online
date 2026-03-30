@@ -357,7 +357,7 @@ export default function BalanceMensualHoras() {
                         : 'text-muted-foreground'
 
                     return (
-                      <TableRow key={emp.empleado_id}>
+                      <TableRow key={emp.empleado_id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEmpleadoSeleccionado(emp)}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-7 w-7">
