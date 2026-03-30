@@ -49,6 +49,11 @@ export function TarjetaDetailModal({ tarjeta, open, onOpenChange, onEdit, onDele
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">{prioridadLabel[tarjeta.prioridad] || tarjeta.prioridad}</Badge>
               {tarjeta.categoria_nombre && <Badge variant="secondary">{tarjeta.categoria_nombre}</Badge>}
+              {tarjeta.es_obligatoria && (
+                <Badge className="bg-primary/20 text-primary border-primary/30">
+                  <Pin className="h-3 w-3 mr-1" /> Obligatoria — visible en kiosco
+                </Badge>
+              )}
             </div>
 
             {tarjeta.delegado_nombre && (
