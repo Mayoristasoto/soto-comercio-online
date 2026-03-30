@@ -1,0 +1,1 @@
+INSERT INTO public.app_pages (nombre, path, icon, orden, visible, requiere_auth, roles_permitidos, tipo, titulo_pagina, descripcion, mostrar_en_sidebar) VALUES ('Tablero Proyectos', '/tablero-proyectos', 'LayoutDashboard', 18, true, true, '{admin_rrhh}', 'link', 'Tablero de Proyectos', 'Kanban para gestión de ideas y delegación', true);
