@@ -26,6 +26,8 @@ interface EmpleadoBalanceMes {
   minutos_esperados: number
   balance_minutos: number
   horas_jornada: number
+  horas_semanales_objetivo: number | null
+  dias_laborales_semana: number
 }
 
 type SortField = 'nombre' | 'sucursal' | 'dias' | 'trabajadas' | 'esperadas' | 'balance'
@@ -168,7 +170,9 @@ export default function BalanceMensualHoras() {
           minutos_trabajados: totalMinutosTrabajados,
           minutos_esperados: Math.round(minutosEsperados),
           balance_minutos: Math.round(totalMinutosTrabajados - minutosEsperados),
-          horas_jornada: horasJornada
+          horas_jornada: horasJornada,
+          horas_semanales_objetivo: horasSemanalesObjetivo || null,
+          dias_laborales_semana: diasLaboralesSemana
         }
       })
 
@@ -402,8 +406,8 @@ export default function BalanceMensualHoras() {
           nombre={empleadoSeleccionado.nombre}
           apellido={empleadoSeleccionado.apellido}
           horasJornada={empleadoSeleccionado.horas_jornada}
-          horasSemanales={null}
-          diasLaboralesSemana={6}
+          horasSemanales={empleadoSeleccionado.horas_semanales_objetivo}
+          diasLaboralesSemana={empleadoSeleccionado.dias_laborales_semana}
         />
       )}
     </div>
