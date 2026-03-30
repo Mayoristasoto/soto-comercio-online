@@ -37,7 +37,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
       setDescripcion('');
       setPrioridad('media');
       setFechaLimite('');
-      setDelegadoA('');
+      setDelegadoA('none');
     }
   }, [editTarjeta, open]);
 
