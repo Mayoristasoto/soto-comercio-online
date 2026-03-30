@@ -79,7 +79,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados' | 'cambios' | 'reporte-diario' | 'balance-diario'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados' | 'cambios' | 'reporte-diario' | 'balance-diario' | 'balance-mensual'>('fichaje')
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [confirmarTareasHabilitado, setConfirmarTareasHabilitado] = useState(false)
   const location = useLocation()
