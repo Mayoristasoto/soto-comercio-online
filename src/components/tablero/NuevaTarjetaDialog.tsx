@@ -79,7 +79,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
       await supabase.from('tareas').update({
         titulo: titulo.trim(),
         descripcion: descripcion.trim() || null,
-        prioridad,
+        prioridad: prioridad as 'urgente' | 'alta' | 'media' | 'baja',
         fecha_limite: fechaLimite || null,
         asignado_a: delegadoId,
       }).eq('id', existingTareaId);
