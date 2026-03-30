@@ -26,6 +26,8 @@ interface EmpleadoBalanceMes {
   minutos_esperados: number
   balance_minutos: number
   horas_jornada: number
+  horas_semanales_objetivo: number | null
+  dias_laborales_semana: number
 }
 
 type SortField = 'nombre' | 'sucursal' | 'dias' | 'trabajadas' | 'esperadas' | 'balance'
