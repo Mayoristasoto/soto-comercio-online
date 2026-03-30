@@ -21,7 +21,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
   const [descripcion, setDescripcion] = useState('');
   const [prioridad, setPrioridad] = useState('media');
   const [fechaLimite, setFechaLimite] = useState('');
-  const [delegadoA, setDelegadoA] = useState('');
+  const [delegadoA, setDelegadoA] = useState('none');
   const [gerentes, setGerentes] = useState<{ id: string; nombre: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -31,13 +31,13 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
       setDescripcion(editTarjeta.descripcion || '');
       setPrioridad(editTarjeta.prioridad);
       setFechaLimite(editTarjeta.fecha_limite || '');
-      setDelegadoA(editTarjeta.delegado_a || '');
+      setDelegadoA(editTarjeta.delegado_a || 'none');
     } else {
       setTitulo('');
       setDescripcion('');
       setPrioridad('media');
       setFechaLimite('');
-      setDelegadoA('');
+      setDelegadoA('none');
     }
   }, [editTarjeta, open]);
 
@@ -62,7 +62,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
       descripcion: descripcion.trim() || null,
       prioridad,
       fecha_limite: fechaLimite || null,
-      delegado_a: delegadoA || null,
+      delegado_a: delegadoA === 'none' ? null : delegadoA,
     };
 
     if (editTarjeta) {
@@ -127,7 +127,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
             <Select value={delegadoA} onValueChange={setDelegadoA}>
               <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin asignar</SelectItem>
+                <SelectItem value="none">Sin asignar</SelectItem>
                 {gerentes.map(g => (
                   <SelectItem key={g.id} value={g.id}>{g.nombre}</SelectItem>
                 ))}
