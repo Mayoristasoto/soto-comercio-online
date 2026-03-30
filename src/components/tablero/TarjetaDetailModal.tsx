@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Calendar, User } from 'lucide-react';
+import { Pencil, Trash2, Calendar, User, Pin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +49,11 @@ export function TarjetaDetailModal({ tarjeta, open, onOpenChange, onEdit, onDele
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">{prioridadLabel[tarjeta.prioridad] || tarjeta.prioridad}</Badge>
               {tarjeta.categoria_nombre && <Badge variant="secondary">{tarjeta.categoria_nombre}</Badge>}
+              {tarjeta.es_obligatoria && (
+                <Badge className="bg-primary/20 text-primary border-primary/30">
+                  <Pin className="h-3 w-3 mr-1" /> Obligatoria — visible en kiosco
+                </Badge>
+              )}
             </div>
 
             {tarjeta.delegado_nombre && (

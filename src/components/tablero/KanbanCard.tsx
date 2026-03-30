@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, GripVertical } from 'lucide-react';
+import { Calendar, GripVertical, Pin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -20,6 +20,8 @@ export interface TarjetaData {
   orden: number;
   etiquetas: string[];
   created_at: string;
+  es_obligatoria: boolean;
+  tarea_id: string | null;
   updated_at: string;
   // joined
   delegado_nombre?: string;
@@ -80,6 +82,11 @@ export function KanbanCard({ tarjeta, onClick }: KanbanCardProps) {
               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${prio.color}`}>
                 {prio.label}
               </Badge>
+              {tarjeta.es_obligatoria && (
+                <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-primary/30">
+                  <Pin className="h-2.5 w-2.5 mr-0.5" /> Kiosco
+                </Badge>
+              )}
               {tarjeta.categoria_nombre && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                   {tarjeta.categoria_nombre}

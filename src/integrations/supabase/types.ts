@@ -7551,11 +7551,13 @@ export type Database = {
           created_by: string | null
           delegado_a: string | null
           descripcion: string | null
+          es_obligatoria: boolean
           etiquetas: string[] | null
           fecha_limite: string | null
           id: string
           orden: number
           prioridad: Database["public"]["Enums"]["tarea_prioridad"] | null
+          tarea_id: string | null
           titulo: string
           updated_at: string | null
         }
@@ -7566,11 +7568,13 @@ export type Database = {
           created_by?: string | null
           delegado_a?: string | null
           descripcion?: string | null
+          es_obligatoria?: boolean
           etiquetas?: string[] | null
           fecha_limite?: string | null
           id?: string
           orden?: number
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"] | null
+          tarea_id?: string | null
           titulo: string
           updated_at?: string | null
         }
@@ -7581,11 +7585,13 @@ export type Database = {
           created_by?: string | null
           delegado_a?: string | null
           descripcion?: string | null
+          es_obligatoria?: boolean
           etiquetas?: string[] | null
           fecha_limite?: string | null
           id?: string
           orden?: number
           prioridad?: Database["public"]["Enums"]["tarea_prioridad"] | null
+          tarea_id?: string | null
           titulo?: string
           updated_at?: string | null
         }
@@ -7658,6 +7664,13 @@ export type Database = {
             columns: ["delegado_a"]
             isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
             referencedColumns: ["id"]
           },
         ]
