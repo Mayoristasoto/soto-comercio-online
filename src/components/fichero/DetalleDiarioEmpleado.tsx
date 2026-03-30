@@ -51,6 +51,7 @@ export default function DetalleDiarioEmpleado({
   }, [horasJornada, horasSemanales, diasLaboralesSemana])
 
   const objetivoSemanal = horasSemanales || horasJornada * diasLaboralesSemana
+  const horasEfectivasDia = minutosEsperadosDia / 60
 
   useEffect(() => {
     if (!open || !empleadoId) return
