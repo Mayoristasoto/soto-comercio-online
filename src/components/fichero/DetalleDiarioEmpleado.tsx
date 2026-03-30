@@ -170,7 +170,7 @@ export default function DetalleDiarioEmpleado({
                 <TableHead>Entrada</TableHead>
                 <TableHead>Salida</TableHead>
                 <TableHead>Trabajó</TableHead>
-                <TableHead>Dif vs {horasJornada}hs</TableHead>
+                <TableHead>Dif vs {horasEfectivasDia}hs</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
