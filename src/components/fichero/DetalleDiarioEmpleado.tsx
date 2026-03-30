@@ -145,7 +145,7 @@ export default function DetalleDiarioEmpleado({
       open={open}
       onOpenChange={onOpenChange}
       title={`${apellido}, ${nombre} — ${format(new Date(mes + '-01'), 'MMMM yyyy', { locale: es })}`}
-      description={`Jornada: ${horasJornada}hs | Objetivo semanal: ${objetivoSemanal}hs`}
+      description={`Jornada: ${horasEfectivasDia}hs | Objetivo semanal: ${objetivoSemanal}hs`}
       className="max-w-3xl max-h-[85vh]"
     >
       <div className="space-y-3 overflow-y-auto max-h-[65vh]">
