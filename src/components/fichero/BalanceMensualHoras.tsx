@@ -406,8 +406,8 @@ export default function BalanceMensualHoras() {
           nombre={empleadoSeleccionado.nombre}
           apellido={empleadoSeleccionado.apellido}
           horasJornada={empleadoSeleccionado.horas_jornada}
-          horasSemanales={null}
-          diasLaboralesSemana={6}
+          horasSemanales={empleadoSeleccionado.horas_semanales_objetivo}
+          diasLaboralesSemana={empleadoSeleccionado.dias_laborales_semana}
         />
       )}
     </div>
