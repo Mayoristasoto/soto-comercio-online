@@ -393,6 +393,19 @@ export default function BalanceMensualHoras() {
           )}
         </CardContent>
       </Card>
+      {empleadoSeleccionado && (
+        <DetalleDiarioEmpleado
+          open={!!empleadoSeleccionado}
+          onOpenChange={(open) => { if (!open) setEmpleadoSeleccionado(null) }}
+          empleadoId={empleadoSeleccionado.empleado_id}
+          mes={mesSeleccionado}
+          nombre={empleadoSeleccionado.nombre}
+          apellido={empleadoSeleccionado.apellido}
+          horasJornada={empleadoSeleccionado.horas_jornada}
+          horasSemanales={null}
+          diasLaboralesSemana={6}
+        />
+      )}
     </div>
   )
 }
