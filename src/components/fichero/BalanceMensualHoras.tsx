@@ -61,6 +61,7 @@ export default function BalanceMensualHoras() {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortField, setSortField] = useState<SortField>('balance')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState<EmpleadoBalanceMes | null>(null)
 
   const opcionesMeses = useMemo(() => generarOpciones(), [])
 
