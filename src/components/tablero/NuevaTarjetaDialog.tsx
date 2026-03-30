@@ -21,7 +21,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
   const [descripcion, setDescripcion] = useState('');
   const [prioridad, setPrioridad] = useState('media');
   const [fechaLimite, setFechaLimite] = useState('');
-  const [delegadoA, setDelegadoA] = useState('');
+  const [delegadoA, setDelegadoA] = useState('none');
   const [gerentes, setGerentes] = useState<{ id: string; nombre: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
