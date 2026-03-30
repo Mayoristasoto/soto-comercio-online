@@ -7502,6 +7502,47 @@ export type Database = {
           },
         ]
       }
+      tablero_comentarios: {
+        Row: {
+          content: string
+          created_at: string
+          edited: boolean | null
+          id: string
+          tarjeta_id: string
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          edited?: boolean | null
+          id?: string
+          tarjeta_id: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          edited?: boolean | null
+          id?: string
+          tarjeta_id?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablero_comentarios_tarjeta_id_fkey"
+            columns: ["tarjeta_id"]
+            isOneToOne: false
+            referencedRelation: "tablero_tarjetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tablero_tarjetas: {
         Row: {
           categoria_id: string | null
