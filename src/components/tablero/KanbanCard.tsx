@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, GripVertical } from 'lucide-react';
+import { Calendar, GripVertical, Pin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
