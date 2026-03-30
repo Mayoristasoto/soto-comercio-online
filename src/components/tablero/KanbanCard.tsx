@@ -82,6 +82,11 @@ export function KanbanCard({ tarjeta, onClick }: KanbanCardProps) {
               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${prio.color}`}>
                 {prio.label}
               </Badge>
+              {tarjeta.es_obligatoria && (
+                <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-primary/30">
+                  <Pin className="h-2.5 w-2.5 mr-0.5" /> Kiosco
+                </Badge>
+              )}
               {tarjeta.categoria_nombre && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                   {tarjeta.categoria_nombre}
