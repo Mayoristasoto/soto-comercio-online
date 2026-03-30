@@ -34,6 +34,7 @@ import { FeriadosConfig } from "@/components/admin/FeriadosConfig"
 import { ConfirmarTareasDia } from "@/components/fichero/ConfirmarTareasDia"
 import { ReporteDiarioAsistencia } from "@/components/fichero/ReporteDiarioAsistencia"
 import BalanceDiarioHoras from "@/components/fichero/BalanceDiarioHoras"
+import BalanceMensualHoras from "@/components/fichero/BalanceMensualHoras"
 import { useLocation, useNavigate } from "react-router-dom"
 import { ArrowLeftRight, BarChart3 } from "lucide-react"
 import { PausaExcedidaAlert } from "@/components/kiosko/PausaExcedidaAlert"
@@ -78,7 +79,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados' | 'cambios' | 'reporte-diario' | 'balance-diario'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados' | 'cambios' | 'reporte-diario' | 'balance-diario' | 'balance-mensual'>('fichaje')
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [confirmarTareasHabilitado, setConfirmarTareasHabilitado] = useState(false)
   const location = useLocation()
@@ -245,7 +246,7 @@ export default function Fichero() {
     
     // Detectar hash en la URL y activar la pestaña correspondiente
     const hash = window.location.hash.replace('#', '')
-    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario'].includes(hash)) {
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario', 'balance-mensual'].includes(hash)) {
       setActiveTab(hash as any)
     }
   }, [])
@@ -253,7 +254,7 @@ export default function Fichero() {
   // Sincronizar cambios de hash usando React Router
   useEffect(() => {
     const hash = (location.hash || '').replace('#', '')
-    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario'].includes(hash)) {
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario', 'balance-mensual'].includes(hash)) {
       setActiveTab(hash as any)
     }
   }, [location.hash])
@@ -803,6 +804,7 @@ export default function Fichero() {
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'balance-diario', label: 'Balance Diario', icon: BarChart3 }] : []),
+            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'balance-mensual', label: 'Balance Mensual', icon: BarChart3 }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'reporte-diario', label: 'Reporte Diario', icon: AlertTriangle }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
             ...(['gerente_sucursal', 'admin_rrhh'].includes(empleado.rol) ? [{ key: 'cambios', label: 'Cambios Horario', icon: ArrowLeftRight }] : []),
@@ -1000,6 +1002,10 @@ export default function Fichero() {
 
         {activeTab === 'balance-diario' && empleado?.rol === 'admin_rrhh' && (
           <BalanceDiarioHoras />
+        )}
+
+        {activeTab === 'balance-mensual' && empleado?.rol === 'admin_rrhh' && (
+          <BalanceMensualHoras />
         )}
         
         {/* Vista de administrador */}
