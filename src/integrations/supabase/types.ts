@@ -7446,6 +7446,181 @@ export type Database = {
         }
         Relationships: []
       }
+      tablero_columnas: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablero_columnas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_columnas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_columnas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_columnas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablero_tarjetas: {
+        Row: {
+          categoria_id: string | null
+          columna_id: string
+          created_at: string | null
+          created_by: string | null
+          delegado_a: string | null
+          descripcion: string | null
+          etiquetas: string[] | null
+          fecha_limite: string | null
+          id: string
+          orden: number
+          prioridad: Database["public"]["Enums"]["tarea_prioridad"] | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          categoria_id?: string | null
+          columna_id: string
+          created_at?: string | null
+          created_by?: string | null
+          delegado_a?: string | null
+          descripcion?: string | null
+          etiquetas?: string[] | null
+          fecha_limite?: string | null
+          id?: string
+          orden?: number
+          prioridad?: Database["public"]["Enums"]["tarea_prioridad"] | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          categoria_id?: string | null
+          columna_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          delegado_a?: string | null
+          descripcion?: string | null
+          etiquetas?: string[] | null
+          fecha_limite?: string | null
+          id?: string
+          orden?: number
+          prioridad?: Database["public"]["Enums"]["tarea_prioridad"] | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablero_tarjetas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "tareas_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_columna_id_fkey"
+            columns: ["columna_id"]
+            isOneToOne: false
+            referencedRelation: "tablero_columnas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_delegado_a_fkey"
+            columns: ["delegado_a"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_delegado_a_fkey"
+            columns: ["delegado_a"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_delegado_a_fkey"
+            columns: ["delegado_a"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablero_tarjetas_delegado_a_fkey"
+            columns: ["delegado_a"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tareas: {
         Row: {
           asignado_a: string | null

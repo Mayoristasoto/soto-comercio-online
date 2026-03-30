@@ -76,6 +76,7 @@ import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
 import Rentabilidad from "./pages/Rentabilidad";
 import NovedadesAlert from "./pages/NovedadesAlert";
+import TableroProyectos from "./pages/TableroProyectos";
 
 const queryClient = new QueryClient();
 
@@ -192,6 +193,9 @@ const App = () => (
             
             {/* Módulo Finanzas / Rentabilidad */}
             <Route path="finanzas/rentabilidad" element={<Rentabilidad />} />
+            
+            {/* Tablero de Proyectos Kanban */}
+            <Route path="tablero-proyectos" element={<TableroProyectos />} />
 
             {/* Métricas de Fichaje */}
             <Route path="fichaje-metricas" element={<FichajeMetricas />} />
