@@ -62,7 +62,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
       descripcion: descripcion.trim() || null,
       prioridad,
       fecha_limite: fechaLimite || null,
-      delegado_a: delegadoA || null,
+      delegado_a: delegadoA === 'none' ? null : delegadoA,
     };
 
     if (editTarjeta) {
