@@ -1,46 +1,50 @@
 
 
-## Plan: Balance Mensual por Empleado
+## Plan: Detalle diario al hacer click en un empleado del Balance Mensual
 
-### Qué se construye
-Un nuevo componente `BalanceMensualHoras` que muestra una tabla resumen mensual con una fila por empleado, columnas de horas efectivas totales, horas esperadas totales, y balance acumulado del mes. Permite ver de un vistazo quién debe horas y quién tiene horas a favor.
+### Qué falta
+El Balance Mensual muestra totales pero no permite ver el desglose día por día. Necesitás hacer click en "Agustina Galaz" y ver cada día: entrada, salida, hs trabajadas, diferencia vs 6hs, y un acumulado semanal para verificar si llega a las 36hs.
 
-### Diseño de la vista
+### Solución
+Agregar un **modal/drawer de detalle** que se abre al hacer click en cualquier empleado de la tabla del Balance Mensual.
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│ 📊 Balance Mensual de Horas                                │
-│ Acumulado mensual por empleado                              │
-│                                                             │
-│ [Selector Mes/Año]  [Sucursal ▼]  [Buscar...]  [Exportar]  │
-├─────────────────────────────────────────────────────────────┤
-│ Empleado      │ Sucursal │ Días  │ Hs Efectivas │ Esperadas │ Balance     │
-│               │          │ Trab. │              │           │             │
-│ Aragon, Marina│ JB Justo │  22   │  170h 30m    │ 176h 0m   │ -5h 30m 🔴 │
-│ Galaz, Agust. │ JB Justo │  20   │  125h 10m    │ 120h 0m   │ +5h 10m 🟢 │
-│ ...           │          │       │              │           │             │
-└─────────────────────────────────────────────────────────────┘
+┌─ Detalle: Galaz, Agustina Lucía — Marzo 2026 ─────────────┐
+│ Jornada: 6hs | Objetivo semanal: 36hs                      │
+│                                                              │
+│ Fecha       │ Entrada │ Salida │ Trabajó  │ Dif vs 6hs      │
+│ Lun 03/03   │ 09:02   │ 15:10  │ 6h 08m   │ +8m   🟢       │
+│ Mar 04/03   │ 09:15   │ 14:50  │ 5h 35m   │ -25m  🔴       │
+│ ...         │         │        │          │                  │
+│─────────────┼─────────┼────────┼──────────┼─────────────────│
+│ Semana 1    │         │        │ 34h 20m  │ -1h 40m 🔴      │
+│ Semana 2    │         │        │ 37h 10m  │ +1h 10m 🟢      │
+│ ...         │         │        │          │                  │
+│─────────────┼─────────┼────────┼──────────┼─────────────────│
+│ TOTAL MES   │         │        │ 142h 30m │ -5h 30m 🔴      │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### Lógica de datos
-- Consulta `fichajes` del mes seleccionado (día 1 al último día)
-- Para cada empleado, agrupa fichajes por día, calcula minutos trabajados (entrada→salida)
-- Suma total de minutos trabajados en el mes
-- Calcula esperados: `horas_jornada_estandar × días trabajados` (o `horas_semanales_objetivo / dias_laborales_semana × días`)
-- Balance = efectivas - esperadas
-- Colores: verde si balance > 0, rojo si < 0
+### Implementación
+
+**`src/components/fichero/BalanceMensualHoras.tsx`** (modificar):
+- Agregar estado `empleadoSeleccionado` 
+- Al hacer click en una fila de la tabla, abrir el modal con el empleado seleccionado
+- Pasar el mes seleccionado al modal
+
+**`src/components/fichero/DetalleDiarioEmpleado.tsx`** (nuevo):
+- Recibe: `empleadoId`, `mes` (yyyy-MM), `nombre`, `horasJornada`, `horasSemanales`
+- Consulta fichajes del empleado en ese mes
+- Muestra tabla día por día con entrada, salida, minutos trabajados, diferencia
+- Agrega filas de subtotal por semana (Lun→Dom)
+- Fila final con total del mes
+- Colores: verde si positivo, rojo si negativo
+- Botón para exportar el detalle como Excel
 
 ### Archivos
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/components/fichero/BalanceMensualHoras.tsx` | Nuevo componente completo |
-| `src/pages/Fichero.tsx` | Agregar tab "Balance Mensual" junto a "Balance Diario" |
-
-### Detalles técnicos
-- Reutiliza los mismos patrones de `BalanceDiarioHoras` (filtros, export, sucursales)
-- Selector de mes con `<Select>` (últimos 6 meses)
-- Tabla sorteable con las mismas utilidades (`fmtMin`, colores, avatars)
-- ExportButton para Excel
-- Pausas NO se descuentan (regla de negocio existente)
+| `src/components/fichero/DetalleDiarioEmpleado.tsx` | Nuevo — modal con tabla día por día + subtotales semanales |
+| `src/components/fichero/BalanceMensualHoras.tsx` | Agregar click handler en filas + estado para abrir modal |
 
