@@ -51,6 +51,7 @@ export default function DetalleDiarioEmpleado({
   }, [horasJornada, horasSemanales, diasLaboralesSemana])
 
   const objetivoSemanal = horasSemanales || horasJornada * diasLaboralesSemana
+  const horasEfectivasDia = minutosEsperadosDia / 60
 
   useEffect(() => {
     if (!open || !empleadoId) return
@@ -136,7 +137,7 @@ export default function DetalleDiarioEmpleado({
     'Entrada': d.entrada || '-',
     'Salida': d.salida || '-',
     'Trabajó': fmtMin(d.minutosTrabajados),
-    [`Dif vs ${horasJornada}hs`]: `${d.diferenciaMinutos > 0 ? '+' : ''}${fmtMin(d.diferenciaMinutos)}`,
+    [`Dif vs ${horasEfectivasDia}hs`]: `${d.diferenciaMinutos > 0 ? '+' : ''}${fmtMin(d.diferenciaMinutos)}`,
   }))
 
   return (
@@ -144,7 +145,7 @@ export default function DetalleDiarioEmpleado({
       open={open}
       onOpenChange={onOpenChange}
       title={`${apellido}, ${nombre} — ${format(new Date(mes + '-01'), 'MMMM yyyy', { locale: es })}`}
-      description={`Jornada: ${horasJornada}hs | Objetivo semanal: ${objetivoSemanal}hs`}
+      description={`Jornada: ${horasEfectivasDia}hs | Objetivo semanal: ${objetivoSemanal}hs`}
       className="max-w-3xl max-h-[85vh]"
     >
       <div className="space-y-3 overflow-y-auto max-h-[65vh]">
@@ -169,7 +170,7 @@ export default function DetalleDiarioEmpleado({
                 <TableHead>Entrada</TableHead>
                 <TableHead>Salida</TableHead>
                 <TableHead>Trabajó</TableHead>
-                <TableHead>Dif vs {horasJornada}hs</TableHead>
+                <TableHead>Dif vs {horasEfectivasDia}hs</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
