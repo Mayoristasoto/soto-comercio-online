@@ -20,6 +20,8 @@ export interface TarjetaData {
   orden: number;
   etiquetas: string[];
   created_at: string;
+  es_obligatoria: boolean;
+  tarea_id: string | null;
   updated_at: string;
   // joined
   delegado_nombre?: string;
