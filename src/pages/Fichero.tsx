@@ -804,6 +804,7 @@ export default function Fichero() {
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'balance-diario', label: 'Balance Diario', icon: BarChart3 }] : []),
+            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'balance-mensual', label: 'Balance Mensual', icon: BarChart3 }] : []),
             ...(empleado.rol === 'admin_rrhh' ? [{ key: 'reporte-diario', label: 'Reporte Diario', icon: AlertTriangle }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
             ...(['gerente_sucursal', 'admin_rrhh'].includes(empleado.rol) ? [{ key: 'cambios', label: 'Cambios Horario', icon: ArrowLeftRight }] : []),
