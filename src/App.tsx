@@ -193,6 +193,9 @@ const App = () => (
             
             {/* Módulo Finanzas / Rentabilidad */}
             <Route path="finanzas/rentabilidad" element={<Rentabilidad />} />
+            
+            {/* Tablero de Proyectos Kanban */}
+            <Route path="tablero-proyectos" element={<TableroProyectos />} />
 
             {/* Métricas de Fichaje */}
             <Route path="fichaje-metricas" element={<FichajeMetricas />} />
