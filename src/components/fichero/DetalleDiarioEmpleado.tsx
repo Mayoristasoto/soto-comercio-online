@@ -137,7 +137,7 @@ export default function DetalleDiarioEmpleado({
     'Entrada': d.entrada || '-',
     'Salida': d.salida || '-',
     'Trabajó': fmtMin(d.minutosTrabajados),
-    [`Dif vs ${horasJornada}hs`]: `${d.diferenciaMinutos > 0 ? '+' : ''}${fmtMin(d.diferenciaMinutos)}`,
+    [`Dif vs ${horasEfectivasDia}hs`]: `${d.diferenciaMinutos > 0 ? '+' : ''}${fmtMin(d.diferenciaMinutos)}`,
   }))
 
   return (
