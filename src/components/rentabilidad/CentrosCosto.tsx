@@ -147,10 +147,10 @@ export default function CentrosCosto() {
               </div>
               <div>
                 <Label>Sucursal (opcional)</Label>
-                <Select value={form.sucursal_id} onValueChange={(v) => setForm({ ...form, sucursal_id: v })}>
+                <Select value={form.sucursal_id || "none"} onValueChange={(v) => setForm({ ...form, sucursal_id: v === "none" ? "" : v })}>
                   <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
+                    <SelectItem value="none">Sin asignar</SelectItem>
                     {sucursales?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
                     ))}
