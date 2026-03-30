@@ -13,6 +13,7 @@ import { es } from "date-fns/locale"
 import { getArgentinaStartOfDay, getArgentinaEndOfDay } from "@/lib/dateUtils"
 import { BarChart3, Search, RefreshCw, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react"
 import { ExportButton } from "@/components/ui/export-button"
+import DetalleDiarioEmpleado from "./DetalleDiarioEmpleado"
 
 interface EmpleadoBalanceMes {
   empleado_id: string
@@ -60,6 +61,7 @@ export default function BalanceMensualHoras() {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortField, setSortField] = useState<SortField>('balance')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState<EmpleadoBalanceMes | null>(null)
 
   const opcionesMeses = useMemo(() => generarOpciones(), [])
 
@@ -355,7 +357,7 @@ export default function BalanceMensualHoras() {
                         : 'text-muted-foreground'
 
                     return (
-                      <TableRow key={emp.empleado_id}>
+                      <TableRow key={emp.empleado_id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEmpleadoSeleccionado(emp)}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-7 w-7">
@@ -391,6 +393,19 @@ export default function BalanceMensualHoras() {
           )}
         </CardContent>
       </Card>
+      {empleadoSeleccionado && (
+        <DetalleDiarioEmpleado
+          open={!!empleadoSeleccionado}
+          onOpenChange={(open) => { if (!open) setEmpleadoSeleccionado(null) }}
+          empleadoId={empleadoSeleccionado.empleado_id}
+          mes={mesSeleccionado}
+          nombre={empleadoSeleccionado.nombre}
+          apellido={empleadoSeleccionado.apellido}
+          horasJornada={empleadoSeleccionado.horas_jornada}
+          horasSemanales={null}
+          diasLaboralesSemana={6}
+        />
+      )}
     </div>
   )
 }
