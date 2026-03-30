@@ -1,50 +1,105 @@
 
 
-## Plan: Detalle diario al hacer click en un empleado del Balance Mensual
+## Plan: Tablero Kanban de Gestión de Proyectos (estilo Trello)
 
-### Qué falta
-El Balance Mensual muestra totales pero no permite ver el desglose día por día. Necesitás hacer click en "Agustina Galaz" y ver cada día: entrada, salida, hs trabajadas, diferencia vs 6hs, y un acumulado semanal para verificar si llega a las 36hs.
+### Concepto
+Nueva sección "Tablero de Proyectos" accesible para admins, con un board Kanban drag-and-drop donde se pueden crear tarjetas (ideas, tareas estratégicas, proyectos), moverlas entre columnas (etapas), y delegarlas a gerentes de sucursal con seguimiento.
 
-### Solución
-Agregar un **modal/drawer de detalle** que se abre al hacer click en cualquier empleado de la tabla del Balance Mensual.
+### Etapa 1 — Tablero Kanban (Trello-like)
 
 ```text
-┌─ Detalle: Galaz, Agustina Lucía — Marzo 2026 ─────────────┐
-│ Jornada: 6hs | Objetivo semanal: 36hs                      │
-│                                                              │
-│ Fecha       │ Entrada │ Salida │ Trabajó  │ Dif vs 6hs      │
-│ Lun 03/03   │ 09:02   │ 15:10  │ 6h 08m   │ +8m   🟢       │
-│ Mar 04/03   │ 09:15   │ 14:50  │ 5h 35m   │ -25m  🔴       │
-│ ...         │         │        │          │                  │
-│─────────────┼─────────┼────────┼──────────┼─────────────────│
-│ Semana 1    │         │        │ 34h 20m  │ -1h 40m 🔴      │
-│ Semana 2    │         │        │ 37h 10m  │ +1h 10m 🟢      │
-│ ...         │         │        │          │                  │
-│─────────────┼─────────┼────────┼──────────┼─────────────────│
-│ TOTAL MES   │         │        │ 142h 30m │ -5h 30m 🔴      │
-└──────────────────────────────────────────────────────────────┘
+┌─ Tablero de Proyectos ──────────────────────────────────────────────────┐
+│ [+ Nueva Columna]  [Filtros ▼]  [Buscar...]                            │
+│                                                                          │
+│ 💡 Ideas        │ 📋 Por Hacer    │ 🔄 En Progreso  │ ✅ Completado     │
+│ ┌─────────────┐ │ ┌─────────────┐ │ ┌─────────────┐ │ ┌─────────────┐  │
+│ │ Renovar     │ │ │ Actualizar  │ │ │ Capacitación│ │ │ Uniformes   │  │
+│ │ cartelería  │ │ │ precios     │ │ │ atención    │ │ │ nuevos      │  │
+│ │ 🏷 Marketing│ │ │ 🏷 Operac.  │ │ │ al cliente  │ │ │             │  │
+│ │ 👤 Sin asig.│ │ │ 👤 Matías   │ │ │ 👤 Laura    │ │ │ 📅 15/03    │  │
+│ │ ⚡ Media     │ │ │ ⚡ Alta      │ │ │ ⚡ Alta      │ │ │ ✅ Delegada  │  │
+│ └─────────────┘ │ └─────────────┘ │ └─────────────┘ │ └─────────────┘  │
+│ ┌─────────────┐ │                 │                 │                  │
+│ │ Horario     │ │                 │                 │                  │
+│ │ extendido   │ │                 │                 │                  │
+│ │ sábados     │ │                 │                 │                  │
+│ └─────────────┘ │                 │                 │                  │
+│ [+ Tarjeta]     │ [+ Tarjeta]     │ [+ Tarjeta]     │                  │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Implementación
+### Etapa 2 (futuro) — Funciones tipo JIRA
+- Subtareas y checklists dentro de cada tarjeta
+- Etiquetas/labels personalizables
+- Comentarios y actividad por tarjeta
+- Fechas de vencimiento con alertas
+- Adjuntos y archivos
+- Vistas alternativas: lista, timeline/Gantt
+- Sprints y épicas
 
-**`src/components/fichero/BalanceMensualHoras.tsx`** (modificar):
-- Agregar estado `empleadoSeleccionado` 
-- Al hacer click en una fila de la tabla, abrir el modal con el empleado seleccionado
-- Pasar el mes seleccionado al modal
+### Base de datos — Nueva tabla `tablero_tarjetas`
 
-**`src/components/fichero/DetalleDiarioEmpleado.tsx`** (nuevo):
-- Recibe: `empleadoId`, `mes` (yyyy-MM), `nombre`, `horasJornada`, `horasSemanales`
-- Consulta fichajes del empleado en ese mes
-- Muestra tabla día por día con entrada, salida, minutos trabajados, diferencia
-- Agrega filas de subtotal por semana (Lun→Dom)
-- Fila final con total del mes
-- Colores: verde si positivo, rojo si negativo
-- Botón para exportar el detalle como Excel
+```sql
+CREATE TABLE public.tablero_columnas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL,
+  orden INT NOT NULL DEFAULT 0,
+  color TEXT DEFAULT '#6366f1',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  created_by UUID REFERENCES empleados(id)
+);
 
-### Archivos
+CREATE TABLE public.tablero_tarjetas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  columna_id UUID REFERENCES tablero_columnas(id) ON DELETE CASCADE NOT NULL,
+  titulo TEXT NOT NULL,
+  descripcion TEXT,
+  prioridad tarea_prioridad DEFAULT 'media',
+  categoria_id UUID REFERENCES tareas_categorias(id),
+  delegado_a UUID REFERENCES empleados(id),        -- gerente asignado
+  created_by UUID REFERENCES empleados(id),
+  fecha_limite DATE,
+  orden INT NOT NULL DEFAULT 0,
+  etiquetas TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS: solo admin_rrhh puede CRUD completo, gerentes ven las delegadas a ellos
+```
+
+### Archivos nuevos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `src/pages/TableroProyectos.tsx` | Página principal con el board Kanban |
+| `src/components/tablero/KanbanBoard.tsx` | Board con columnas drag-and-drop |
+| `src/components/tablero/KanbanColumn.tsx` | Columna individual con lista de tarjetas |
+| `src/components/tablero/KanbanCard.tsx` | Tarjeta individual (título, prioridad, asignado, categoría) |
+| `src/components/tablero/TarjetaDetailModal.tsx` | Modal de detalle al hacer click en una tarjeta |
+| `src/components/tablero/NuevaTarjetaDialog.tsx` | Dialog para crear/editar tarjeta |
+
+### Archivos modificados
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/components/fichero/DetalleDiarioEmpleado.tsx` | Nuevo — modal con tabla día por día + subtotales semanales |
-| `src/components/fichero/BalanceMensualHoras.tsx` | Agregar click handler en filas + estado para abrir modal |
+| `src/App.tsx` | Agregar ruta `/tablero-proyectos` |
+| Migración BD | Crear tablas `tablero_columnas` y `tablero_tarjetas` + RLS + columnas default |
+| `app_pages` (datos) | INSERT entrada de navegación para sidebar |
+
+### Funcionalidad Etapa 1
+- **Drag & drop** de tarjetas entre columnas (usando `@dnd-kit/core`)
+- **Columnas default**: Ideas → Por Hacer → En Progreso → Completado
+- **Crear tarjeta**: título, descripción, prioridad, categoría, fecha límite
+- **Delegar**: asignar tarjeta a un gerente de sucursal
+- **Filtros**: por prioridad, categoría, delegado
+- **Reordenar** tarjetas dentro de una columna
+- **Columnas personalizables**: agregar/renombrar/eliminar columnas
+- **Colores de prioridad**: urgente=rojo, alta=naranja, media=azul, baja=gris
+
+### Detalles técnicos
+- Drag & drop con `@dnd-kit/core` + `@dnd-kit/sortable` (ya usado en el proyecto para `HorariosDragDrop`)
+- Reutiliza el enum `tarea_prioridad` existente y la tabla `tareas_categorias`
+- Optimistic updates para mover tarjetas (actualizar columna_id + orden)
+- Acceso restringido a `admin_rrhh` via RLS y sidebar roles_permitidos
 
