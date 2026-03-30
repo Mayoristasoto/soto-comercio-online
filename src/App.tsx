@@ -76,6 +76,7 @@ import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
 import Rentabilidad from "./pages/Rentabilidad";
 import NovedadesAlert from "./pages/NovedadesAlert";
+import TableroProyectos from "./pages/TableroProyectos";
 
 const queryClient = new QueryClient();
 

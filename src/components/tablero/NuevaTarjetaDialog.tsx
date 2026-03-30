@@ -46,7 +46,7 @@ export function NuevaTarjetaDialog({ open, onOpenChange, columnaId, editTarjeta,
       .from('empleados')
       .select('id, nombre, apellido')
       .eq('activo', true)
-      .in('rol', ['gerente', 'admin_rrhh'])
+      .in('rol', ['gerente_sucursal', 'admin_rrhh'])
       .order('apellido')
       .then(({ data }) => {
         if (data) setGerentes(data.map(e => ({ id: e.id, nombre: `${e.apellido}, ${e.nombre}` })));
