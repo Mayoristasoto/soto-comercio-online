@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
+import { useFacialConfig } from "@/hooks/useFacialConfig"
 import { 
   Search, 
   Delete, 
@@ -49,6 +50,7 @@ type Step = 'search' | 'pin' | 'action' | 'photo' | 'processing'
 
 export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthProps) {
   const { toast } = useToast()
+  const { config: facialConfig } = useFacialConfig()
   const [step, setStep] = useState<Step>('search')
   const [busqueda, setBusqueda] = useState('')
   const [empleados, setEmpleados] = useState<EmpleadoBusqueda[]>([])
@@ -309,6 +311,16 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
           longitud: position.coords.longitude
         }
       } catch {
+        if (facialConfig.pinGpsRequired) {
+          toast({
+            title: "GPS requerido",
+            description: "Debe activar el GPS para fichar con PIN. Habilite la ubicación en su dispositivo e intente nuevamente.",
+            variant: "destructive"
+          })
+          setStep('photo')
+          setLoading(false)
+          return
+        }
         console.log('No se pudo obtener ubicación')
       }
 
