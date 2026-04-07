@@ -259,61 +259,6 @@ export default function FacialRecognitionConfig() {
           </div>
         </div>
 
-        {/* Configuración del Kiosco */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Configuración del Kiosco</h3>
-          
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="auto-print-tasks">Impresión Automática de Tareas</Label>
-              <p className="text-xs text-muted-foreground">
-                Imprime automáticamente las tareas del día al fichar entrada
-              </p>
-            </div>
-            <Switch
-              id="auto-print-tasks"
-              checked={editedConfig.autoPrintTasksEnabled}
-              onCheckedChange={(checked) => setEditedConfig(prev => ({
-                ...prev,
-                autoPrintTasksEnabled: checked
-              }))}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="late-arrival-alert">Alerta de Llegada Tarde</Label>
-              <p className="text-xs text-muted-foreground">
-                Muestra una alerta cuando el empleado llega después de su hora de entrada
-              </p>
-            </div>
-            <Switch
-              id="late-arrival-alert"
-              checked={editedConfig.lateArrivalAlertEnabled}
-              onCheckedChange={(checked) => setEditedConfig(prev => ({
-                ...prev,
-                lateArrivalAlertEnabled: checked
-              }))}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="pin-gps-required">GPS Obligatorio para PIN</Label>
-              <p className="text-xs text-muted-foreground">
-                Requiere que el GPS esté activado para permitir el check-in con PIN
-              </p>
-            </div>
-            <Switch
-              id="pin-gps-required"
-              checked={editedConfig.pinGpsRequired}
-              onCheckedChange={(checked) => setEditedConfig(prev => ({
-                ...prev,
-                pinGpsRequired: checked
-              }))}
-            />
-          </div>
-        </div>
 
         {/* Información del Sistema */}
         <div className="space-y-4">
