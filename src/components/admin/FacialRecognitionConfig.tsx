@@ -45,7 +45,8 @@ export default function FacialRecognitionConfig() {
         { key: 'faceDescriptorVersion', value: editedConfig.faceDescriptorVersion },
         { key: 'emotionRecognitionEnabled', value: editedConfig.emotionRecognitionEnabled.toString() },
         { key: 'autoPrintTasksEnabled', value: editedConfig.autoPrintTasksEnabled.toString() },
-        { key: 'lateArrivalAlertEnabled', value: editedConfig.lateArrivalAlertEnabled.toString() }
+        { key: 'lateArrivalAlertEnabled', value: editedConfig.lateArrivalAlertEnabled.toString() },
+        { key: 'pinGpsRequired', value: editedConfig.pinGpsRequired.toString() }
       ]
 
       for (const update of updates) {
@@ -292,6 +293,23 @@ export default function FacialRecognitionConfig() {
               onCheckedChange={(checked) => setEditedConfig(prev => ({
                 ...prev,
                 lateArrivalAlertEnabled: checked
+              }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="pin-gps-required">GPS Obligatorio para PIN</Label>
+              <p className="text-xs text-muted-foreground">
+                Requiere que el GPS esté activado para permitir el check-in con PIN
+              </p>
+            </div>
+            <Switch
+              id="pin-gps-required"
+              checked={editedConfig.pinGpsRequired}
+              onCheckedChange={(checked) => setEditedConfig(prev => ({
+                ...prev,
+                pinGpsRequired: checked
               }))}
             />
           </div>

@@ -11,6 +11,7 @@ interface FacialConfig {
   emotionRecognitionEnabled: boolean
   autoPrintTasksEnabled: boolean
   lateArrivalAlertEnabled: boolean
+  pinGpsRequired: boolean
   // Kiosk alert config
   kioskAlertLlegadaTardeSeconds: number
   kioskAlertCrucesRojasSeconds: number
@@ -34,6 +35,7 @@ const defaultConfig: FacialConfig = {
   emotionRecognitionEnabled: true,
   autoPrintTasksEnabled: false,
   lateArrivalAlertEnabled: false,
+  pinGpsRequired: false,
   kioskAlertLlegadaTardeSeconds: 2,
   kioskAlertCrucesRojasSeconds: 2,
   kioskAlertPausaExcedidaSeconds: 2,
@@ -98,6 +100,7 @@ export function useFacialConfig() {
           emotionRecognitionEnabled: parseBool(configMap.emotion_recognition_enabled),
           autoPrintTasksEnabled: parseBool(configMap.auto_print_tasks_enabled),
           lateArrivalAlertEnabled: parseBool(configMap.late_arrival_alert_enabled),
+          pinGpsRequired: parseBool(configMap.pin_gps_required ?? 'false'),
           kioskAlertLlegadaTardeSeconds: parseInt(configMap.kiosk_alert_llegada_tarde_seconds) || defaultConfig.kioskAlertLlegadaTardeSeconds,
           kioskAlertCrucesRojasSeconds: parseInt(configMap.kiosk_alert_cruces_rojas_seconds) || defaultConfig.kioskAlertCrucesRojasSeconds,
           kioskAlertPausaExcedidaSeconds: parseInt(configMap.kiosk_alert_pausa_excedida_seconds) || defaultConfig.kioskAlertPausaExcedidaSeconds,
@@ -128,6 +131,7 @@ export function useFacialConfig() {
     emotionRecognitionEnabled: 'emotion_recognition_enabled',
     autoPrintTasksEnabled: 'auto_print_tasks_enabled',
     lateArrivalAlertEnabled: 'late_arrival_alert_enabled',
+    pinGpsRequired: 'pin_gps_required',
     kioskAlertLlegadaTardeSeconds: 'kiosk_alert_llegada_tarde_seconds',
     kioskAlertCrucesRojasSeconds: 'kiosk_alert_cruces_rojas_seconds',
     kioskAlertPausaExcedidaSeconds: 'kiosk_alert_pausa_excedida_seconds',
