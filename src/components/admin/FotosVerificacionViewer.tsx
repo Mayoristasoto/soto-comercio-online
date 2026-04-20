@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { MapPin, Camera, User, Calendar, RefreshCw, ExternalLink, Search } from "lucide-react"
+import { MapPin, Camera, User, Calendar, RefreshCw, ExternalLink, Search, AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -263,7 +263,7 @@ export default function FotosVerificacionViewer() {
         )}
 
         {/* Grid de fotos */}
-        {loading ? (
+        {!soloSinFoto && (loading ? (
           <div className="flex justify-center py-12">
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
