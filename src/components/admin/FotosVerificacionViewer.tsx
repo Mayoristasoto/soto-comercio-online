@@ -25,17 +25,27 @@ interface FotoVerificacion {
   }
 }
 
+interface FichajeSinFoto {
+  id: string
+  empleado_id: string
+  tipo: string
+  timestamp_real: string
+  empleado?: { nombre: string; apellido: string }
+}
+
 export default function FotosVerificacionViewer() {
   const { toast } = useToast()
   const [fotos, setFotos] = useState<FotoVerificacion[]>([])
+  const [fichajesSinFoto, setFichajesSinFoto] = useState<FichajeSinFoto[]>([])
   const [loading, setLoading] = useState(true)
   const [empleados, setEmpleados] = useState<{ id: string; nombre: string; apellido: string }[]>([])
   const [filtroEmpleado, setFiltroEmpleado] = useState<string>("all")
   const [busqueda, setBusqueda] = useState("")
+  const [soloSinFoto, setSoloSinFoto] = useState(false)
 
   useEffect(() => {
     cargarDatos()
-  }, [filtroEmpleado])
+  }, [filtroEmpleado, soloSinFoto])
 
   const cargarDatos = async () => {
     setLoading(true)
