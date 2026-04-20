@@ -347,7 +347,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
         throw new Error(result.mensaje)
       }
 
-       // Guardar foto en storage
+       // Guardar foto en storage (con reintentos automáticos)
        const photoResult = await guardarFotoVerificacion({
          empleadoId: empleadoSeleccionado.id,
          fichajeId: result.fichaje_id,
@@ -360,20 +360,29 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
        })
 
        if (!photoResult.success) {
-         // Bloqueante: el operador debe confirmar que vio el problema
-         const queuedMsg = photoResult.queued
-           ? '\n\nLa foto se guardó en la cola y se reintentará automáticamente cuando haya conexión.'
-           : ''
+         // La foto NO se pudo subir → revertir el fichaje (no debe quedar registro sin foto)
+         console.error('[Fichaje PIN] Foto no subida, revirtiendo fichaje', result.fichaje_id)
+         try {
+           await (supabase.rpc as any)('kiosk_revertir_fichaje_sin_foto', {
+             p_fichaje_id: result.fichaje_id,
+             p_motivo: photoResult.error || 'foto_no_subida',
+           })
+         } catch (revertErr) {
+           console.error('[Fichaje PIN] Error revirtiendo fichaje:', revertErr)
+         }
+
          window.alert(
-           `⚠️ ATENCIÓN: El fichaje de ${empleadoSeleccionado.nombre} ${empleadoSeleccionado.apellido} se registró correctamente, pero la FOTO DE VERIFICACIÓN no pudo subirse.\n\nMotivo: ${photoResult.error || 'desconocido'}${queuedMsg}\n\nAvise al supervisor si el problema persiste.`
+           `❌ FICHAJE NO REGISTRADO\n\n${empleadoSeleccionado.nombre} ${empleadoSeleccionado.apellido}, tu fichaje NO quedó registrado porque la foto de verificación no se pudo guardar.\n\nMotivo: ${photoResult.error || 'sin conexión'}\n\nPor favor, intentá nuevamente. Si el problema persiste, avisá a tu supervisor.`
          )
          toast({
-           title: 'Foto pendiente',
-           description: photoResult.queued
-             ? 'La foto quedó en cola y se reintentará automáticamente.'
-             : photoResult.error || 'El fichaje se registró, pero la foto quedó pendiente.',
+           title: 'Fichaje no registrado',
+           description: 'La foto no se pudo guardar. El fichaje fue cancelado. Intente nuevamente.',
            variant: 'destructive',
          })
+         setStep('photo')
+         setFotoCapturada(null)
+         setLoading(false)
+         return
        }
 
       // Notificar éxito

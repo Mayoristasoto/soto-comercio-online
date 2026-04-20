@@ -9175,6 +9175,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      kiosk_revertir_fichaje_sin_foto: {
+        Args: { p_fichaje_id: string; p_motivo?: string }
+        Returns: {
+          mensaje: string
+          success: boolean
+        }[]
+      }
       kiosk_solicitar_vacaciones: {
         Args: {
           p_empleado_id: string
