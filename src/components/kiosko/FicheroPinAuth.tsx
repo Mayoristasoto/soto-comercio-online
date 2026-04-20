@@ -360,9 +360,18 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
        })
 
        if (!photoResult.success) {
+         // Bloqueante: el operador debe confirmar que vio el problema
+         const queuedMsg = photoResult.queued
+           ? '\n\nLa foto se guardó en la cola y se reintentará automáticamente cuando haya conexión.'
+           : ''
+         window.alert(
+           `⚠️ ATENCIÓN: El fichaje de ${empleadoSeleccionado.nombre} ${empleadoSeleccionado.apellido} se registró correctamente, pero la FOTO DE VERIFICACIÓN no pudo subirse.\n\nMotivo: ${photoResult.error || 'desconocido'}${queuedMsg}\n\nAvise al supervisor si el problema persiste.`
+         )
          toast({
            title: 'Foto pendiente',
-           description: photoResult.error || 'El fichaje se registró, pero la foto quedó pendiente de carga.',
+           description: photoResult.queued
+             ? 'La foto quedó en cola y se reintentará automáticamente.'
+             : photoResult.error || 'El fichaje se registró, pero la foto quedó pendiente.',
            variant: 'destructive',
          })
        }

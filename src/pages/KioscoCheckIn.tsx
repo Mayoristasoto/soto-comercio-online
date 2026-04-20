@@ -26,6 +26,7 @@ import { registrarActividadTarea } from "@/lib/tareasLogService"
 import { logCruzRoja } from "@/lib/crucesRojasLogger"
 import { guardarFotoVerificacion } from "@/lib/verificacionFotosService"
 import { debeOmitirControles } from "@/lib/diasEspecialesService"
+import PendingPhotosBanner from "@/components/kiosko/PendingPhotosBanner"
 
 interface EmpleadoBasico {
   id: string
@@ -2427,6 +2428,9 @@ export default function KioscoCheckIn() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      {/* Banner de fotos pendientes (cola offline) */}
+      <PendingPhotosBanner />
+
       {/* Alerta de Cruces Rojas (Overlay) */}
       {showCrucesRojasAlert && crucesRojas && (
         <CrucesRojasKioscoAlert

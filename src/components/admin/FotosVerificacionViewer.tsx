@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { MapPin, Camera, User, Calendar, RefreshCw, ExternalLink, Search } from "lucide-react"
+import { MapPin, Camera, User, Calendar, RefreshCw, ExternalLink, Search, AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -25,17 +25,27 @@ interface FotoVerificacion {
   }
 }
 
+interface FichajeSinFoto {
+  id: string
+  empleado_id: string
+  tipo: string
+  timestamp_real: string
+  empleado?: { nombre: string; apellido: string }
+}
+
 export default function FotosVerificacionViewer() {
   const { toast } = useToast()
   const [fotos, setFotos] = useState<FotoVerificacion[]>([])
+  const [fichajesSinFoto, setFichajesSinFoto] = useState<FichajeSinFoto[]>([])
   const [loading, setLoading] = useState(true)
   const [empleados, setEmpleados] = useState<{ id: string; nombre: string; apellido: string }[]>([])
   const [filtroEmpleado, setFiltroEmpleado] = useState<string>("all")
   const [busqueda, setBusqueda] = useState("")
+  const [soloSinFoto, setSoloSinFoto] = useState(false)
 
   useEffect(() => {
     cargarDatos()
-  }, [filtroEmpleado])
+  }, [filtroEmpleado, soloSinFoto])
 
   const cargarDatos = async () => {
     setLoading(true)
@@ -97,6 +107,49 @@ export default function FotosVerificacionViewer() {
       }))
 
       setFotos(fotosConEmpleado)
+
+      // Cargar fichajes SIN foto (últimos 7 días) para auditoría
+      const sieteDiasAtras = new Date()
+      sieteDiasAtras.setDate(sieteDiasAtras.getDate() - 7)
+
+      let sinFotoQuery = (supabase as any)
+        .from('fichajes')
+        .select('id, empleado_id, tipo, timestamp_real')
+        .gte('timestamp_real', sieteDiasAtras.toISOString())
+        .order('timestamp_real', { ascending: false })
+        .limit(200)
+
+      if (filtroEmpleado && filtroEmpleado !== 'all') {
+        sinFotoQuery = sinFotoQuery.eq('empleado_id', filtroEmpleado)
+      }
+
+      const { data: fichajesData } = await sinFotoQuery
+
+      // Obtener IDs de fichajes que SÍ tienen foto
+      const fichajeIds = (fichajesData || []).map((f: any) => f.id)
+      let fichajesConFotoIds: Set<string> = new Set()
+      if (fichajeIds.length > 0) {
+        const { data: conFoto } = await (supabase as any)
+          .from('fichajes_fotos_verificacion')
+          .select('fichaje_id')
+          .in('fichaje_id', fichajeIds)
+        fichajesConFotoIds = new Set((conFoto || []).map((r: any) => r.fichaje_id))
+      }
+
+      const sinFoto: FichajeSinFoto[] = (fichajesData || [])
+        .filter((f: any) => !fichajesConFotoIds.has(f.id))
+        .map((f: any) => {
+          const emp = empData?.find((e) => e.id === f.empleado_id)
+          return {
+            id: f.id,
+            empleado_id: f.empleado_id,
+            tipo: f.tipo,
+            timestamp_real: f.timestamp_real,
+            empleado: emp ? { nombre: emp.nombre, apellido: emp.apellido } : undefined,
+          }
+        })
+
+      setFichajesSinFoto(sinFoto)
     } catch (error) {
       console.error('Error cargando fotos:', error)
       toast({
@@ -157,14 +210,60 @@ export default function FotosVerificacionViewer() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant={soloSinFoto ? "destructive" : "outline"}
+            onClick={() => setSoloSinFoto((v) => !v)}
+          >
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            {soloSinFoto ? `Sin foto (${fichajesSinFoto.length})` : "Solo sin foto"}
+          </Button>
           <Button variant="outline" onClick={cargarDatos} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
         </div>
 
+        {/* Vista: Fichajes SIN foto */}
+        {soloSinFoto && !loading && (
+          <div className="space-y-2">
+            {fichajesSinFoto.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Todos los fichajes recientes tienen foto ✅</p>
+              </div>
+            ) : (
+              fichajesSinFoto
+                .filter((f) => {
+                  if (!busqueda) return true
+                  const n = f.empleado ? `${f.empleado.nombre} ${f.empleado.apellido}`.toLowerCase() : ''
+                  return n.includes(busqueda.toLowerCase())
+                })
+                .map((f) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between p-3 border rounded-lg bg-destructive/5 border-destructive/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Badge variant="destructive">Sin Foto</Badge>
+                      <div>
+                        <p className="font-medium">
+                          {f.empleado
+                            ? `${f.empleado.nombre} ${f.empleado.apellido}`
+                            : 'Empleado desconocido'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {f.tipo} · {format(new Date(f.timestamp_real), "dd MMM yyyy HH:mm", { locale: es })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
+
         {/* Grid de fotos */}
-        {loading ? (
+        {!soloSinFoto && (loading ? (
           <div className="flex justify-center py-12">
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
@@ -229,7 +328,7 @@ export default function FotosVerificacionViewer() {
               </Card>
             ))}
           </div>
-        )}
+        ))}
       </CardContent>
     </Card>
   )
