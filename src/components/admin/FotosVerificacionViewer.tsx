@@ -210,11 +210,57 @@ export default function FotosVerificacionViewer() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant={soloSinFoto ? "destructive" : "outline"}
+            onClick={() => setSoloSinFoto((v) => !v)}
+          >
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            {soloSinFoto ? `Sin foto (${fichajesSinFoto.length})` : "Solo sin foto"}
+          </Button>
           <Button variant="outline" onClick={cargarDatos} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
         </div>
+
+        {/* Vista: Fichajes SIN foto */}
+        {soloSinFoto && !loading && (
+          <div className="space-y-2">
+            {fichajesSinFoto.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Todos los fichajes recientes tienen foto ✅</p>
+              </div>
+            ) : (
+              fichajesSinFoto
+                .filter((f) => {
+                  if (!busqueda) return true
+                  const n = f.empleado ? `${f.empleado.nombre} ${f.empleado.apellido}`.toLowerCase() : ''
+                  return n.includes(busqueda.toLowerCase())
+                })
+                .map((f) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between p-3 border rounded-lg bg-destructive/5 border-destructive/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Badge variant="destructive">Sin Foto</Badge>
+                      <div>
+                        <p className="font-medium">
+                          {f.empleado
+                            ? `${f.empleado.nombre} ${f.empleado.apellido}`
+                            : 'Empleado desconocido'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {f.tipo} · {format(new Date(f.timestamp_real), "dd MMM yyyy HH:mm", { locale: es })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
 
         {/* Grid de fotos */}
         {loading ? (
