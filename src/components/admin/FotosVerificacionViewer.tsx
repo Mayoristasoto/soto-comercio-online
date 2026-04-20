@@ -107,6 +107,49 @@ export default function FotosVerificacionViewer() {
       }))
 
       setFotos(fotosConEmpleado)
+
+      // Cargar fichajes SIN foto (últimos 7 días) para auditoría
+      const sieteDiasAtras = new Date()
+      sieteDiasAtras.setDate(sieteDiasAtras.getDate() - 7)
+
+      let sinFotoQuery = (supabase as any)
+        .from('fichajes')
+        .select('id, empleado_id, tipo, timestamp_real')
+        .gte('timestamp_real', sieteDiasAtras.toISOString())
+        .order('timestamp_real', { ascending: false })
+        .limit(200)
+
+      if (filtroEmpleado && filtroEmpleado !== 'all') {
+        sinFotoQuery = sinFotoQuery.eq('empleado_id', filtroEmpleado)
+      }
+
+      const { data: fichajesData } = await sinFotoQuery
+
+      // Obtener IDs de fichajes que SÍ tienen foto
+      const fichajeIds = (fichajesData || []).map((f: any) => f.id)
+      let fichajesConFotoIds: Set<string> = new Set()
+      if (fichajeIds.length > 0) {
+        const { data: conFoto } = await (supabase as any)
+          .from('fichajes_fotos_verificacion')
+          .select('fichaje_id')
+          .in('fichaje_id', fichajeIds)
+        fichajesConFotoIds = new Set((conFoto || []).map((r: any) => r.fichaje_id))
+      }
+
+      const sinFoto: FichajeSinFoto[] = (fichajesData || [])
+        .filter((f: any) => !fichajesConFotoIds.has(f.id))
+        .map((f: any) => {
+          const emp = empData?.find((e) => e.id === f.empleado_id)
+          return {
+            id: f.id,
+            empleado_id: f.empleado_id,
+            tipo: f.tipo,
+            timestamp_real: f.timestamp_real,
+            empleado: emp ? { nombre: emp.nombre, apellido: emp.apellido } : undefined,
+          }
+        })
+
+      setFichajesSinFoto(sinFoto)
     } catch (error) {
       console.error('Error cargando fotos:', error)
       toast({
