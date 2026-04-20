@@ -328,7 +328,7 @@ export default function FotosVerificacionViewer() {
               </Card>
             ))}
           </div>
-        )}
+        ))}
       </CardContent>
     </Card>
   )
