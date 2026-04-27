@@ -1,66 +1,37 @@
+# Plan: PDF de días sin fichaje – Abril 2026
 
+## Objetivo
+Generar un archivo PDF descargable con el listado de empleados y los días en que no registraron fichaje durante abril 2026 (1 al 27), excluyendo domingos. Solo se incluirán empleados con al menos un fichaje en el período.
 
-## Diagnóstico: foto faltante en check-in PIN de Agustina (08:32)
+## Pasos
 
-### Lo que encontré
-Revisé los fichajes de Agustina del 20/04/2026:
+1. **Consultar la base de datos** (`psql`)
+   - Reutilizar la query ya validada (CTE de días laborables × empleados con fichajes, LEFT JOIN para detectar faltantes).
+   - Agrupar por empleado: nombre, apellido, sucursal principal, cantidad de días faltantes y listado de fechas (formato `dd/mm`).
+   - Ordenar por cantidad de faltas descendente.
 
-| Hora | Tipo | Foto guardada |
-|------|------|---------------|
-| **08:32 Entrada** | PIN | ❌ **NO** |
-| 12:22 Pausa inicio | PIN | ✅ Sí |
-| 12:53 Pausa fin | PIN | ✅ Sí |
-| 14:25 Salida | PIN | ✅ Sí |
+2. **Generar el PDF** con Python + ReportLab
+   - Salida: `/mnt/documents/dias_sin_fichaje_abril_2026.pdf`
+   - Aplicar branding corporativo SOTO (Primary `#4b0d6d`, Secondary `#95198d`, Accent `#e04403`).
+   - Estructura:
+     - Encabezado con logo/título: "Reporte de Días sin Fichaje – Abril 2026"
+     - Subtítulo con período (01/04 – 27/04), criterios (excluye domingos, base: empleados con ≥1 fichaje) y fecha de generación.
+     - Tabla con columnas: **Empleado** | **Sucursal** | **Días faltantes (cantidad)** | **Fechas**.
+     - Fila resaltada en color de alerta (`accent`) para empleados con ≥5 días faltantes.
+     - Pie de página con total de empleados analizados y total de días faltantes.
 
-Solo el **primer fichaje del día** (la entrada) no tiene foto registrada en `fichajes_fotos_verificacion`. Los otros 3 fichajes del mismo día con el mismo método (PIN) sí guardaron foto correctamente.
+3. **QA visual obligatorio**
+   - Convertir el PDF a imagen con `pdftoppm` y revisar cada página.
+   - Verificar: ausencia de texto cortado, columnas alineadas, fechas legibles (wrap correcto si hay muchas), colores consistentes.
+   - Iterar hasta que la inspección no detecte problemas.
 
-### Por qué pasó
-Mirando `FicheroPinAuth.tsx`, el flujo actual es:
-1. Empleado captura foto → se guarda en `fotoCapturada` (estado en memoria)
-2. Click en "Confirmar" → se llama `kiosk_fichaje_pin` (crea el registro en `fichajes`)
-3. Después se llama `guardarFotoVerificacion` (sube foto a Storage vía Edge Function)
+4. **Entrega**
+   - Emitir tag `<lov-artifact>` apuntando al PDF generado para descarga directa.
 
-El problema: **el paso 2 (crear fichaje) y el paso 3 (subir foto) son independientes**. Si el paso 3 falla (red, timeout, error de Edge Function), el fichaje queda registrado **pero sin foto**, y solo se muestra un toast "Foto pendiente" que el operador puede no ver o ignorar.
+## Detalles técnicos
+- Script Python en `/tmp/generar_pdf_faltantes.py` que ejecuta la query vía `psql -t -A -F'|'` y arma la tabla con `Platypus` (`SimpleDocTemplate` + `Table` + `TableStyle`).
+- Manejo de listas largas de fechas: usar `Paragraph` dentro de la celda para permitir wrap automático.
+- Orientación: vertical A4; si la columna "Fechas" desborda, cambiar a horizontal en el ajuste de QA.
 
-Causas más probables del fallo en ese fichaje específico:
-- **Red intermitente** en el momento exacto del primer fichaje del día (el kiosco recién encendido suele tener latencia más alta).
-- **Edge Function `kiosk-upload-verification-photo`** falló o tuvo timeout. Los logs de esa edge function aparecen vacíos lo cual sugiere que ni siquiera llegó la invocación, o el error fue del lado del cliente antes de la llamada.
-- **El operador cerró/refrescó la pantalla** después del fichaje pero antes de que la subida terminara.
-
-Además noté que **el fichaje no tiene GPS** (`latitud: null, longitud: null`) — coincide con la columna "Sin GPS" de tu screenshot. Esto sugiere que el dispositivo tuvo problemas de permisos/red en ese momento (aunque GPS no es obligatorio aún si no activaste el toggle).
-
-### Plan de mejora — Hacer la foto obligatoria y auditable
-
-Para evitar que vuelva a pasar:
-
-#### 1. Reintento automático de subida de foto
-En `verificacionFotosService.ts` agregar reintentos (3 intentos con backoff exponencial: 1s, 3s, 9s) antes de declarar fallo.
-
-#### 2. Marcar fichaje como "foto pendiente" en BD
-Si después de los reintentos la subida sigue fallando, guardar la foto en `localStorage` con la clave `pending_photos` y mostrar un banner persistente en el kiosco: **"⚠️ Hay N fotos pendientes de subir"**. Un proceso en background reintenta cada 30s mientras haya conexión.
-
-#### 3. Indicador visual claro al operador
-Cambiar el toast actual ("Foto pendiente") por un **diálogo modal bloqueante** que obligue al operador a confirmar que vio el error antes de continuar con el siguiente fichaje. Así no pasa desapercibido.
-
-#### 4. Reporte de fichajes sin foto
-Agregar una vista en el panel admin (`FotosVerificacionViewer`) con filtro **"Solo fichajes sin foto"** para que RRHH pueda detectar estos casos y pedir verificación adicional al empleado.
-
-#### 5. (Opcional) Marca en columna "Sin GPS / Sin Foto" del listado
-En la tabla de fichajes que ves en el screenshot, agregar un badge rojo **"Sin Foto"** junto al ícono de cámara cuando no hay foto, para hacerlo evidente visualmente.
-
-### Archivos a modificar
-
-| Archivo | Cambio |
-|---------|--------|
-| `src/lib/verificacionFotosService.ts` | Agregar lógica de reintentos + cola en localStorage |
-| `src/components/kiosko/FicheroPinAuth.tsx` | Mostrar modal bloqueante si la foto no se sube tras reintentos |
-| `src/components/kiosko/PendingPhotosBanner.tsx` | **NUEVO** — Banner que muestra fotos pendientes y reintenta en background |
-| `src/pages/KioscoCheckIn.tsx` | Renderizar el banner de fotos pendientes |
-| `src/components/admin/FotosVerificacionViewer.tsx` | Filtro "Sin foto" + badge rojo |
-
-### Acción inmediata para el fichaje actual
-Como el fichaje ya está registrado sin foto, las opciones son:
-- **A)** Pedirle a Agustina que pase nuevamente por el kiosco a tomarse una foto de verificación (manual, sin generar nuevo fichaje).
-- **B)** Eliminar ese fichaje y pedirle que lo registre nuevamente (más estricto pero asegura el audit trail).
-- **C)** Dejarlo como está y marcar el caso como justificado (si confiás que efectivamente fichó).
-
+## Fuera de alcance
+- No se cruzan vacaciones / licencias aprobadas (puede agregarse en una iteración posterior si se desea distinguir ausencias justificadas).
