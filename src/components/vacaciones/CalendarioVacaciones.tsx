@@ -272,6 +272,9 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
               {dia}
             </div>
           ))}
+          {vacaciones.length > 0 && Array.from({ length: (vacaciones[0].fecha.getDay() + 6) % 7 }).map((_, i) => (
+            <div key={`empty-${i}`} className="min-h-[80px]" />
+          ))}
           {vacaciones.map((dia, idx) => {
             return (
               <div
