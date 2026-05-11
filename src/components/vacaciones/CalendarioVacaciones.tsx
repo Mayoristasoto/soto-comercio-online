@@ -5,7 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Loader2, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Clock, Check, X } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -21,6 +24,9 @@ interface VacacionDia {
     nombre: string;
     apellido: string;
     estado: string;
+    solicitudId: string;
+    fechaInicio: string;
+    fechaFin: string;
   }>;
   bloqueado: boolean;
   motivoBloqueo?: string;
@@ -78,6 +84,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
       let query = supabase
         .from('solicitudes_vacaciones')
         .select(`
+          id,
           fecha_inicio,
           fecha_fin,
           estado,
@@ -139,6 +146,9 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             nombre: s.empleados.nombre,
             apellido: s.empleados.apellido,
             estado: s.estado,
+            solicitudId: s.id,
+            fechaInicio: s.fecha_inicio,
+            fechaFin: s.fecha_fin,
           })) || [];
 
         return {
@@ -166,6 +176,46 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
     const nuevaFecha = new Date(mesSeleccionado);
     nuevaFecha.setMonth(nuevaFecha.getMonth() + direction);
     setMesSeleccionado(nuevaFecha);
+  };
+
+  const puedeAprobar = rol === 'admin_rrhh' || rol === 'gerente_sucursal';
+  const [comentario, setComentario] = useState<Record<string, string>>({});
+  const [accionando, setAccionando] = useState<string | null>(null);
+  const [popoverAbierto, setPopoverAbierto] = useState<string | null>(null);
+
+  const handleDecision = async (solicitudId: string, aprobar: boolean) => {
+    if (!aprobar && !comentario[solicitudId]?.trim()) {
+      toast({ title: "Comentario requerido", description: "Indica el motivo del rechazo", variant: "destructive" });
+      return;
+    }
+    try {
+      setAccionando(solicitudId);
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: emp } = await supabase
+        .from('empleados').select('id').eq('user_id', user?.id).single();
+      if (!emp) throw new Error('No se encontró el empleado');
+
+      const { error } = await supabase
+        .from('solicitudes_vacaciones')
+        .update({
+          estado: (aprobar ? 'aprobada' : 'rechazada') as any,
+          aprobado_por: emp.id,
+          fecha_aprobacion: new Date().toISOString(),
+          comentarios_aprobacion: comentario[solicitudId] || null,
+        })
+        .eq('id', solicitudId);
+      if (error) throw error;
+
+      toast({ title: aprobar ? "Solicitud aprobada" : "Solicitud rechazada" });
+      setPopoverAbierto(null);
+      setComentario((c) => ({ ...c, [solicitudId]: '' }));
+      fetchVacaciones();
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setAccionando(null);
+    }
   };
 
   // Función para asignar color consistente y más visible basado en el ID del empleado
@@ -298,17 +348,66 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 <div className="space-y-1">
                   {dia.empleados.slice(0, 5).map((emp, empIdx) => {
                     const isPending = emp.estado === 'pendiente';
-                    return (
+                    const chip = (
                       <div
-                        key={empIdx}
                         className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${getEmpleadoColor(emp.id)} ${
                           isPending ? 'opacity-60 italic border-dashed' : ''
-                        }`}
-                        title={isPending ? 'Pendiente de aprobación' : 'Aprobada'}
+                        } ${isPending && puedeAprobar ? 'cursor-pointer hover:opacity-100 transition-opacity' : ''}`}
+                        title={isPending ? (puedeAprobar ? 'Click para aprobar/rechazar' : 'Pendiente de aprobación') : 'Aprobada'}
                       >
                         {isPending && <Clock className="h-3 w-3 shrink-0" />}
                         <span className="font-medium truncate">{emp.nombre} {emp.apellido.charAt(0)}.</span>
                       </div>
+                    );
+
+                    if (!isPending || !puedeAprobar) {
+                      return <div key={empIdx}>{chip}</div>;
+                    }
+
+                    const popKey = `${emp.solicitudId}-${empIdx}`;
+                    return (
+                      <Popover
+                        key={empIdx}
+                        open={popoverAbierto === popKey}
+                        onOpenChange={(o) => setPopoverAbierto(o ? popKey : null)}
+                      >
+                        <PopoverTrigger asChild>{chip}</PopoverTrigger>
+                        <PopoverContent className="w-72 space-y-3" align="start">
+                          <div className="space-y-1">
+                            <p className="font-medium text-sm">{emp.nombre} {emp.apellido}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(emp.fechaInicio + 'T00:00:00'), "d 'de' MMM", { locale: es })} – {format(new Date(emp.fechaFin + 'T00:00:00'), "d 'de' MMM yyyy", { locale: es })}
+                            </p>
+                            <Badge variant="outline" className="text-xs">Pendiente</Badge>
+                          </div>
+                          <Textarea
+                            placeholder="Comentario (obligatorio si rechazás)"
+                            value={comentario[emp.solicitudId] || ''}
+                            onChange={(e) => setComentario((c) => ({ ...c, [emp.solicitudId]: e.target.value }))}
+                            rows={2}
+                            className="text-xs"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              disabled={accionando === emp.solicitudId}
+                              onClick={() => handleDecision(emp.solicitudId, true)}
+                            >
+                              <Check className="h-3 w-3 mr-1" /> Aprobar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1"
+                              disabled={accionando === emp.solicitudId}
+                              onClick={() => handleDecision(emp.solicitudId, false)}
+                            >
+                              <X className="h-3 w-3 mr-1" /> Rechazar
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     );
                   })}
                 </div>
