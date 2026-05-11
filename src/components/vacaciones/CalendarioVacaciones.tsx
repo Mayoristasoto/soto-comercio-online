@@ -86,7 +86,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         `)
         .lte('fecha_inicio', fin.toISOString().split('T')[0])
         .gte('fecha_fin', inicio.toISOString().split('T')[0])
-        .in('estado', ['aprobada', 'gozadas']);
+        .in('estado', ['aprobada', 'gozadas', 'pendiente']);
 
       if (rol === 'gerente_sucursal' && sucursalId) {
         query = query.eq('empleados.sucursal_id', sucursalId);
@@ -293,14 +293,21 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                   </Badge>
                 )}
                 <div className="space-y-1">
-                  {dia.empleados.slice(0, 5).map((emp, empIdx) => (
-                    <div 
-                      key={empIdx} 
-                      className={`text-xs px-2 py-1 rounded border ${getEmpleadoColor(emp.id)}`}
-                    >
-                      <span className="font-medium">{emp.nombre} {emp.apellido.charAt(0)}.</span>
-                    </div>
-                  ))}
+                  {dia.empleados.slice(0, 5).map((emp, empIdx) => {
+                    const isPending = emp.estado === 'pendiente';
+                    return (
+                      <div
+                        key={empIdx}
+                        className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${getEmpleadoColor(emp.id)} ${
+                          isPending ? 'opacity-60 italic border-dashed' : ''
+                        }`}
+                        title={isPending ? 'Pendiente de aprobación' : 'Aprobada'}
+                      >
+                        {isPending && <Clock className="h-3 w-3 shrink-0" />}
+                        <span className="font-medium truncate">{emp.nombre} {emp.apellido.charAt(0)}.</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 {dia.empleados.length > 5 && (
                   <div className="text-xs text-muted-foreground mt-1">
