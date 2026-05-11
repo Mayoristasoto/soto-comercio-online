@@ -5,7 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Loader2, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Clock, Check, X } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -21,6 +24,9 @@ interface VacacionDia {
     nombre: string;
     apellido: string;
     estado: string;
+    solicitudId: string;
+    fechaInicio: string;
+    fechaFin: string;
   }>;
   bloqueado: boolean;
   motivoBloqueo?: string;
