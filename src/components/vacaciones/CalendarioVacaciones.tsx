@@ -318,6 +318,22 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             );
           })}
         </div>
+        <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-4 h-4 rounded border bg-muted" />
+            Aprobada
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded border border-dashed bg-muted opacity-60">
+              <Clock className="h-2.5 w-2.5" />
+            </span>
+            Pendiente de aprobación
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-4 h-4 rounded border border-destructive bg-destructive/10" />
+            Día bloqueado
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
