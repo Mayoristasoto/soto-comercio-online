@@ -348,17 +348,66 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 <div className="space-y-1">
                   {dia.empleados.slice(0, 5).map((emp, empIdx) => {
                     const isPending = emp.estado === 'pendiente';
-                    return (
+                    const chip = (
                       <div
-                        key={empIdx}
                         className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${getEmpleadoColor(emp.id)} ${
                           isPending ? 'opacity-60 italic border-dashed' : ''
-                        }`}
-                        title={isPending ? 'Pendiente de aprobación' : 'Aprobada'}
+                        } ${isPending && puedeAprobar ? 'cursor-pointer hover:opacity-100 transition-opacity' : ''}`}
+                        title={isPending ? (puedeAprobar ? 'Click para aprobar/rechazar' : 'Pendiente de aprobación') : 'Aprobada'}
                       >
                         {isPending && <Clock className="h-3 w-3 shrink-0" />}
                         <span className="font-medium truncate">{emp.nombre} {emp.apellido.charAt(0)}.</span>
                       </div>
+                    );
+
+                    if (!isPending || !puedeAprobar) {
+                      return <div key={empIdx}>{chip}</div>;
+                    }
+
+                    const popKey = `${emp.solicitudId}-${empIdx}`;
+                    return (
+                      <Popover
+                        key={empIdx}
+                        open={popoverAbierto === popKey}
+                        onOpenChange={(o) => setPopoverAbierto(o ? popKey : null)}
+                      >
+                        <PopoverTrigger asChild>{chip}</PopoverTrigger>
+                        <PopoverContent className="w-72 space-y-3" align="start">
+                          <div className="space-y-1">
+                            <p className="font-medium text-sm">{emp.nombre} {emp.apellido}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(emp.fechaInicio + 'T00:00:00'), "d 'de' MMM", { locale: es })} – {format(new Date(emp.fechaFin + 'T00:00:00'), "d 'de' MMM yyyy", { locale: es })}
+                            </p>
+                            <Badge variant="outline" className="text-xs">Pendiente</Badge>
+                          </div>
+                          <Textarea
+                            placeholder="Comentario (obligatorio si rechazás)"
+                            value={comentario[emp.solicitudId] || ''}
+                            onChange={(e) => setComentario((c) => ({ ...c, [emp.solicitudId]: e.target.value }))}
+                            rows={2}
+                            className="text-xs"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              disabled={accionando === emp.solicitudId}
+                              onClick={() => handleDecision(emp.solicitudId, true)}
+                            >
+                              <Check className="h-3 w-3 mr-1" /> Aprobar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1"
+                              disabled={accionando === emp.solicitudId}
+                              onClick={() => handleDecision(emp.solicitudId, false)}
+                            >
+                              <X className="h-3 w-3 mr-1" /> Rechazar
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     );
                   })}
                 </div>
