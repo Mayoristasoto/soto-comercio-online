@@ -84,6 +84,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
       let query = supabase
         .from('solicitudes_vacaciones')
         .select(`
+          id,
           fecha_inicio,
           fecha_fin,
           estado,
