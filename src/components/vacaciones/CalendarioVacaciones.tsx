@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -86,7 +86,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         `)
         .lte('fecha_inicio', fin.toISOString().split('T')[0])
         .gte('fecha_fin', inicio.toISOString().split('T')[0])
-        .in('estado', ['aprobada', 'gozadas']);
+        .in('estado', ['aprobada', 'gozadas', 'pendiente']);
 
       if (rol === 'gerente_sucursal' && sucursalId) {
         query = query.eq('empleados.sucursal_id', sucursalId);
@@ -293,14 +293,21 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                   </Badge>
                 )}
                 <div className="space-y-1">
-                  {dia.empleados.slice(0, 5).map((emp, empIdx) => (
-                    <div 
-                      key={empIdx} 
-                      className={`text-xs px-2 py-1 rounded border ${getEmpleadoColor(emp.id)}`}
-                    >
-                      <span className="font-medium">{emp.nombre} {emp.apellido.charAt(0)}.</span>
-                    </div>
-                  ))}
+                  {dia.empleados.slice(0, 5).map((emp, empIdx) => {
+                    const isPending = emp.estado === 'pendiente';
+                    return (
+                      <div
+                        key={empIdx}
+                        className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${getEmpleadoColor(emp.id)} ${
+                          isPending ? 'opacity-60 italic border-dashed' : ''
+                        }`}
+                        title={isPending ? 'Pendiente de aprobación' : 'Aprobada'}
+                      >
+                        {isPending && <Clock className="h-3 w-3 shrink-0" />}
+                        <span className="font-medium truncate">{emp.nombre} {emp.apellido.charAt(0)}.</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 {dia.empleados.length > 5 && (
                   <div className="text-xs text-muted-foreground mt-1">
@@ -310,6 +317,22 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
               </div>
             );
           })}
+        </div>
+        <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-4 h-4 rounded border bg-muted" />
+            Aprobada
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded border border-dashed bg-muted opacity-60">
+              <Clock className="h-2.5 w-2.5" />
+            </span>
+            Pendiente de aprobación
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-4 h-4 rounded border border-destructive bg-destructive/10" />
+            Día bloqueado
+          </div>
         </div>
       </CardContent>
     </Card>
