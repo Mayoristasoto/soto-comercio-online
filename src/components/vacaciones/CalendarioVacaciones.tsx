@@ -181,7 +181,6 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const puedeAprobar = rol === 'admin_rrhh' || rol === 'gerente_sucursal';
   const [comentario, setComentario] = useState<Record<string, string>>({});
   const [accionando, setAccionando] = useState<string | null>(null);
-  const [popoverAbierto, setPopoverAbierto] = useState<string | null>(null);
 
   const handleDecision = async (solicitudId: string, aprobar: boolean) => {
     if (!aprobar && !comentario[solicitudId]?.trim()) {
@@ -207,7 +206,6 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
       if (error) throw error;
 
       toast({ title: aprobar ? "Solicitud aprobada" : "Solicitud rechazada" });
-      setPopoverAbierto(null);
       setComentario((c) => ({ ...c, [solicitudId]: '' }));
       fetchVacaciones();
     } catch (e: any) {
