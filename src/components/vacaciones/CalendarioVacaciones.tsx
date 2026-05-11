@@ -178,6 +178,46 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
     setMesSeleccionado(nuevaFecha);
   };
 
+  const puedeAprobar = rol === 'admin_rrhh' || rol === 'gerente_sucursal';
+  const [comentario, setComentario] = useState<Record<string, string>>({});
+  const [accionando, setAccionando] = useState<string | null>(null);
+  const [popoverAbierto, setPopoverAbierto] = useState<string | null>(null);
+
+  const handleDecision = async (solicitudId: string, aprobar: boolean) => {
+    if (!aprobar && !comentario[solicitudId]?.trim()) {
+      toast({ title: "Comentario requerido", description: "Indica el motivo del rechazo", variant: "destructive" });
+      return;
+    }
+    try {
+      setAccionando(solicitudId);
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: emp } = await supabase
+        .from('empleados').select('id').eq('user_id', user?.id).single();
+      if (!emp) throw new Error('No se encontró el empleado');
+
+      const { error } = await supabase
+        .from('solicitudes_vacaciones')
+        .update({
+          estado: (aprobar ? 'aprobada' : 'rechazada') as any,
+          aprobado_por: emp.id,
+          fecha_aprobacion: new Date().toISOString(),
+          comentarios_aprobacion: comentario[solicitudId] || null,
+        })
+        .eq('id', solicitudId);
+      if (error) throw error;
+
+      toast({ title: aprobar ? "Solicitud aprobada" : "Solicitud rechazada" });
+      setPopoverAbierto(null);
+      setComentario((c) => ({ ...c, [solicitudId]: '' }));
+      fetchVacaciones();
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setAccionando(null);
+    }
+  };
+
   // Función para asignar color consistente y más visible basado en el ID del empleado
   const getEmpleadoColor = (empleadoId: string) => {
     const coloresFondo = [
