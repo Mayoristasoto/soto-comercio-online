@@ -146,6 +146,9 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             nombre: s.empleados.nombre,
             apellido: s.empleados.apellido,
             estado: s.estado,
+            solicitudId: s.id,
+            fechaInicio: s.fecha_inicio,
+            fechaFin: s.fecha_fin,
           })) || [];
 
         return {
