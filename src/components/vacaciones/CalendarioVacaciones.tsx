@@ -362,15 +362,14 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                       return <div key={empIdx}>{chip}</div>;
                     }
 
-                    const popKey = `${emp.solicitudId}-${empIdx}`;
                     return (
-                      <Popover
-                        key={empIdx}
-                        open={popoverAbierto === popKey}
-                        onOpenChange={(o) => setPopoverAbierto(o ? popKey : null)}
-                      >
+                      <Popover key={empIdx}>
                         <PopoverTrigger asChild>{chip}</PopoverTrigger>
-                        <PopoverContent className="w-72 space-y-3" align="start">
+                        <PopoverContent
+                          className="w-72 space-y-3"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
                           <div className="space-y-1">
                             <p className="font-medium text-sm">{emp.nombre} {emp.apellido}</p>
                             <p className="text-xs text-muted-foreground">
