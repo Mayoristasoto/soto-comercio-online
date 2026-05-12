@@ -76,6 +76,13 @@ export const VIRTUAL_CALENDARS = [
     icono: "AlarmClock",
     descripcion: "Fechas límite de tareas",
   },
+  {
+    id: "virtual:tablero",
+    nombre: "Tablero de proyectos",
+    color: "#95198d",
+    icono: "Kanban",
+    descripcion: "Deadlines de tarjetas/ideas del tablero de proyectos",
+  },
 ] as const;
 
 export async function fetchCalendariosVisibles(): Promise<Calendario[]> {
