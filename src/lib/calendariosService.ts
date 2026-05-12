@@ -365,5 +365,37 @@ export async function fetchEventosRango(
     }
   }
 
+  // Tablero de proyectos (tarjetas con fecha_limite)
+  if (capasVirtuales.tablero) {
+    const { data, error } = await supabase
+      .from("tablero_tarjetas")
+      .select("id, titulo, fecha_limite, prioridad, delegado_a, empleados:delegado_a(nombre, apellido), tablero_columnas:columna_id(nombre)")
+      .gte("fecha_limite", desdeDate)
+      .lte("fecha_limite", hastaDate);
+    if (!error) {
+      for (const t of data ?? []) {
+        if (!t.fecha_limite) continue;
+        const d = new Date(t.fecha_limite + "T00:00:00");
+        const emp: any = t.empleados;
+        const col: any = t.tablero_columnas;
+        out.push({
+          id: `tablero-${t.id}`,
+          calendario_id: "virtual:tablero",
+          calendario_nombre: "Tablero",
+          color: "#95198d",
+          titulo: `📌 ${t.titulo}${emp ? ` · ${emp.nombre}` : ""}`,
+          descripcion: col?.nombre ? `Columna: ${col.nombre}` : null,
+          fecha_inicio: d,
+          fecha_fin: d,
+          todo_el_dia: true,
+          tipo: "tarea",
+          source: "virtual",
+          virtualKey: "virtual:tablero",
+          raw: t,
+        });
+      }
+    }
+  }
+
   return out.sort((a, b) => a.fecha_inicio.getTime() - b.fecha_inicio.getTime());
 }
