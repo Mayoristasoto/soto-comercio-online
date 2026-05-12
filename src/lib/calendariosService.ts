@@ -70,6 +70,13 @@ export const VIRTUAL_CALENDARS = [
     descripcion: "Vacaciones aprobadas del personal",
   },
   {
+    id: "virtual:vacaciones_pendientes",
+    nombre: "Vacaciones pendientes",
+    color: "#f59e0b",
+    icono: "Hourglass",
+    descripcion: "Solicitudes de vacaciones pendientes de aprobación",
+  },
+  {
     id: "virtual:deadlines",
     nombre: "Deadlines de tareas",
     color: "#e04403",
