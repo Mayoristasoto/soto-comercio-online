@@ -1,40 +1,57 @@
 ## Objetivo
-Cargar 9 solicitudes de vacaciones 2026 como **pendientes** y hacerlas visibles en el calendario con color único por empleado y un indicador claro de que aún no están aprobadas.
 
-## Solicitudes a cargar (estado: pendiente, año 2026)
+Agregar una nueva sección dentro de **Nómina** para generar el reporte de **Horas Extras** (mismo formato del PDF v5/abril) directamente desde la app, con filtros por período, empleados y sucursal.
 
-| Empleado | Período | Observación |
-|---|---|---|
-| Laura Lorena Lan | 11–17 May | — |
-| Joseph Daniel Chumpitaz | 15–28 Jun | — |
-| Joseph Daniel Chumpitaz | 20–26 Jul | "Daniel" |
-| Julio Cesar Gomez Navarrete | 27 Jul – 02 Ago | — |
-| Joseph Daniel Chumpitaz | 17–23 Ago | "Daniel" |
-| Jonathan Jesus Vera | 7–20 Sep | — |
-| Jesica Anahí Romero | 21 Sep – 4 Oct | — |
-| Julio Cesar Gomez Navarrete | 9–15 Nov | Posibilidad de pasarla a enero |
-| Laura Lorena Lan | 7–13 Dic | — |
+## Ubicación
 
-Insert en `solicitudes_vacaciones` con `estado='pendiente'`, `motivo` con la observación cuando exista.
+- Nuevo tab "Horas Extras" dentro de `src/pages/Nomina.tsx` (junto a Empleados, Documentos, etc.).
+- Nuevo componente: `src/components/admin/payroll/ReporteHorasExtras.tsx`.
 
-## Cambios en el calendario (`CalendarioVacaciones.tsx`)
+## UI del componente
 
-1. Incluir también `'pendiente'` en el `.in('estado', [...])` del query (hoy solo trae `aprobada` y `gozadas`).
-2. Renderizado por empleado/día:
-   - **Aprobada/gozada**: pinta con el color del empleado (como hoy, opacidad full).
-   - **Pendiente**: mismo color del empleado pero con `opacity-50` + clase `italic`, y badge pequeño "Pendiente" (variant `outline`, ícono `Clock`) al lado del nombre.
-3. Leyenda al pie del calendario explicando "Pendiente de aprobación" vs "Aprobada".
+Filtros (en una Card):
+- **Período**: dos date pickers (Desde / Hasta) con presets rápidos: "Mes actual", "Mes pasado", "Últimos 30 días", "Personalizado".
+- **Sucursal**: Select con opción "Todas" + lista desde `sucursales`.
+- **Empleados**: multi-select con buscador (popover + checkboxes) + opción "Todos". Lista cargada de `empleados` activos, filtrable por sucursal seleccionada.
+- Botones: **Vista previa** (tabla en pantalla) y **Descargar PDF**.
 
-## Aprobación una a una
-La pestaña **Aprobaciones** ya existe (`AprobacionVacaciones.tsx`) y lista solicitudes con `estado='pendiente'` con botones Aprobar/Rechazar individuales. Se reutiliza tal cual — al cargarse las 9 solicitudes aparecerán automáticamente para que el admin/gerente las apruebe de a una.
+Resultados:
+- Tabla con columnas: Fecha, Empleado, Sucursal, Entrada, Salida, Base, Hs extra. Domingos resaltados (`#fde7d3` / `#e04403`).
+- Resumen por empleado: Hs extra hábil, Hs extra DOMINGO, Total trabajado DOMINGO.
+- Totales generales al pie.
 
-## Detalles técnicos
+## Lógica de cálculo (idéntica a v5/abril)
 
-- Insertar las 9 filas vía herramienta de inserción de datos (no migración) en `solicitudes_vacaciones` con `empleado_id`, `fecha_inicio`, `fecha_fin`, `estado='pendiente'`, `motivo`.
-- IDs de empleados:
-  - Laura Lan: `dc830459-0aa7-4bbe-99f2-9f1080a60b3e`
-  - Joseph Chumpitaz: `54278134-59d7-4ac8-abd1-6bc906e871b3`
-  - Julio Gomez Navarrete: `1607f6ba-046c-466d-8b4d-acc18e2acfa4`
-  - Jonathan Vera: `5d23025c-613f-4774-8e63-f5c80a0acaa3`
-  - Jesica Romero: `0da05020-7cb1-42f5-a8cd-02ffaff0f512`
-- En el calendario, cambio mínimo localizado al `.in(...)` y al bloque que renderiza cada chip de empleado dentro de `dia.empleados.map(...)`.
+- Query a `fichajes` con `fecha BETWEEN desde AND hasta`, join `empleados` + `sucursales`.
+- Aplicar filtros de empleados/sucursal en el query.
+- Para cada jornada con `hora_entrada` y `hora_salida`:
+  - `horas_brutas = salida − entrada`
+  - Si `dow = 0` (domingo): base 4h, extra = `max(0, brutas − 4)`
+  - Si día hábil: base 8h, extra = `max(0, brutas − 8)`
+- Solo incluir jornadas con extra > 0 en el detalle; los totales por empleado suman todo.
+
+## Generación PDF
+
+- Cliente con **jsPDF + jspdf-autotable** (ya usado en otros reportes del proyecto, ej. `reporteLlegadasTardePDF.ts`).
+- Nuevo archivo `src/utils/reporteHorasExtrasPDF.ts` que reproduce el layout del v5: encabezado con logo/colores corporativos (Primary `#4b0d6d`, Accent `#e04403`), tabla de detalle con filas de domingo resaltadas, sección de resumen por empleado, totales finales.
+- Nombre archivo: `reporte_horas_extras_{YYYY-MM-DD}_{YYYY-MM-DD}.pdf`.
+
+## Permisos
+
+- Solo visible para `admin_rrhh` (mismo guard que el resto de Nómina, ya implementado en `checkAccess`).
+
+## Consideraciones técnicas
+
+- Fechas en zona Argentina vía `src/lib/dateUtils.ts` (regla del proyecto).
+- Date picker con `pointer-events-auto` en Calendar (regla shadcn).
+- No crear tablas nuevas: usa `fichajes`, `empleados`, `sucursales` existentes.
+- No requiere edge function — todo en cliente con queries Supabase y jsPDF.
+
+## Archivos
+
+Nuevos:
+- `src/components/admin/payroll/ReporteHorasExtras.tsx`
+- `src/utils/reporteHorasExtrasPDF.ts`
+
+Modificados:
+- `src/pages/Nomina.tsx` — agregar tab y trigger.
