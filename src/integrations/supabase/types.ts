@@ -688,6 +688,153 @@ export type Database = {
         }
         Relationships: []
       }
+      calendario_compartidos: {
+        Row: {
+          calendario_id: string
+          created_at: string
+          empleado_id: string
+          id: string
+          permiso: string
+        }
+        Insert: {
+          calendario_id: string
+          created_at?: string
+          empleado_id: string
+          id?: string
+          permiso?: string
+        }
+        Update: {
+          calendario_id?: string
+          created_at?: string
+          empleado_id?: string
+          id?: string
+          permiso?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendario_compartidos_calendario_id_fkey"
+            columns: ["calendario_id"]
+            isOneToOne: false
+            referencedRelation: "calendarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_compartidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_compartidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_compartidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_compartidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendario_eventos: {
+        Row: {
+          calendario_id: string
+          color: string | null
+          creado_por: string | null
+          created_at: string
+          descripcion: string | null
+          estado: string
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          tipo: string
+          titulo: string
+          todo_el_dia: boolean
+          ubicacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          calendario_id: string
+          color?: string | null
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          fecha_fin: string
+          fecha_inicio: string
+          id?: string
+          tipo?: string
+          titulo: string
+          todo_el_dia?: boolean
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          calendario_id?: string
+          color?: string | null
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          tipo?: string
+          titulo?: string
+          todo_el_dia?: boolean
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendario_eventos_calendario_id_fkey"
+            columns: ["calendario_id"]
+            isOneToOne: false
+            referencedRelation: "calendarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_eventos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_eventos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_eventos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_eventos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendario_notas: {
         Row: {
           activo: boolean
@@ -747,6 +894,133 @@ export type Database = {
           {
             foreignKeyName: "calendario_notas_creado_por_fkey"
             columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendario_preferencias_usuario: {
+        Row: {
+          calendario_id: string
+          created_at: string
+          empleado_id: string
+          id: string
+          orden: number
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          calendario_id: string
+          created_at?: string
+          empleado_id: string
+          id?: string
+          orden?: number
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          calendario_id?: string
+          created_at?: string
+          empleado_id?: string
+          id?: string
+          orden?: number
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendario_preferencias_usuario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_preferencias_usuario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_preferencias_usuario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_preferencias_usuario_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendarios: {
+        Row: {
+          activo: boolean
+          color: string
+          created_at: string
+          descripcion: string | null
+          es_publico: boolean
+          icono: string | null
+          id: string
+          nombre: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          color?: string
+          created_at?: string
+          descripcion?: string | null
+          es_publico?: boolean
+          icono?: string | null
+          id?: string
+          nombre: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          color?: string
+          created_at?: string
+          descripcion?: string | null
+          es_publico?: boolean
+          icono?: string | null
+          id?: string
+          nombre?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendarios_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendarios_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendarios_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendarios_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
             referencedColumns: ["id"]
@@ -8777,7 +9051,9 @@ export type Database = {
         Args: { p_anio: number; p_empleado_id: string }
         Returns: number
       }
+      can_edit_calendario: { Args: { _cal: string }; Returns: boolean }
       can_manage_payroll: { Args: never; Returns: boolean }
+      can_view_calendario: { Args: { _cal: string }; Returns: boolean }
       check_facial_auth_rate_limit: {
         Args: {
           p_block_minutes?: number
@@ -8793,6 +9069,7 @@ export type Database = {
       }
       cleanup_old_rate_limits: { Args: never; Returns: number }
       crear_tareas_feriados: { Args: never; Returns: undefined }
+      current_empleado_id: { Args: never; Returns: string }
       current_user_is_admin: { Args: never; Returns: boolean }
       current_user_role: {
         Args: never
@@ -8817,6 +9094,14 @@ export type Database = {
           nombre: string
           pin_generado: string
           ya_tenia_pin: boolean
+        }[]
+      }
+      get_cumpleanos_rango: {
+        Args: { _desde: string; _hasta: string }
+        Returns: {
+          empleado_id: string
+          fecha_cumple: string
+          nombre: string
         }[]
       }
       get_current_date_argentina: { Args: never; Returns: string }
