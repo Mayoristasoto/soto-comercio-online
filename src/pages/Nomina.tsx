@@ -673,6 +673,10 @@ export default function Nomina() {
               <AlertTriangle className="h-4 w-4 mr-2" />
               Datos Incompletos
             </TabsTrigger>
+            <TabsTrigger value="horas-extras" className="whitespace-nowrap">
+              <FileText className="h-4 w-4 mr-2" />
+              Horas Extras
+            </TabsTrigger>
           </TabsList>
         </div>
 
