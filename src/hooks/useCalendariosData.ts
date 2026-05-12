@@ -67,6 +67,7 @@ export function useCalendariosData(rangoDesde: Date, rangoHasta: Date) {
           cumpleanos: activos.has("virtual:cumpleanos"),
           vacaciones: activos.has("virtual:vacaciones"),
           deadlines: activos.has("virtual:deadlines"),
+          tablero: activos.has("virtual:tablero"),
         },
         calMap
       );
