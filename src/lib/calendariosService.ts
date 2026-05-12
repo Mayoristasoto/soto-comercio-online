@@ -248,7 +248,7 @@ export async function fetchEventosRango(
   desde: Date,
   hasta: Date,
   calendariosActivos: string[],
-  capasVirtuales: { cumpleanos: boolean; vacaciones: boolean; deadlines: boolean; tablero: boolean },
+  capasVirtuales: { cumpleanos: boolean; vacaciones: boolean; vacaciones_pendientes: boolean; deadlines: boolean; tablero: boolean },
   calendariosMap: Record<string, Calendario>
 ): Promise<EventoUnificado[]> {
   const out: EventoUnificado[] = [];
