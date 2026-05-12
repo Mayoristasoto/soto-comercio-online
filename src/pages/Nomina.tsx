@@ -1215,6 +1215,10 @@ export default function Nomina() {
         <TabsContent value="datos-incompletos">
           <ReporteDatosIncompletos />
         </TabsContent>
+
+        <TabsContent value="horas-extras">
+          <ReporteHorasExtras />
+        </TabsContent>
       </Tabs>
 
       {/* Modals */}
