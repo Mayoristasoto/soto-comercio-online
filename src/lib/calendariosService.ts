@@ -70,6 +70,13 @@ export const VIRTUAL_CALENDARS = [
     descripcion: "Vacaciones aprobadas del personal",
   },
   {
+    id: "virtual:vacaciones_pendientes",
+    nombre: "Vacaciones pendientes",
+    color: "#f59e0b",
+    icono: "Hourglass",
+    descripcion: "Solicitudes de vacaciones pendientes de aprobación",
+  },
+  {
     id: "virtual:deadlines",
     nombre: "Deadlines de tareas",
     color: "#e04403",
@@ -241,7 +248,7 @@ export async function fetchEventosRango(
   desde: Date,
   hasta: Date,
   calendariosActivos: string[],
-  capasVirtuales: { cumpleanos: boolean; vacaciones: boolean; deadlines: boolean; tablero: boolean },
+  capasVirtuales: { cumpleanos: boolean; vacaciones: boolean; vacaciones_pendientes: boolean; deadlines: boolean; tablero: boolean },
   calendariosMap: Record<string, Calendario>
 ): Promise<EventoUnificado[]> {
   const out: EventoUnificado[] = [];
@@ -330,6 +337,35 @@ export async function fetchEventosRango(
           tipo: "vacacion",
           source: "virtual",
           virtualKey: "virtual:vacaciones",
+        });
+      }
+    }
+  }
+
+  // Vacaciones pendientes
+  if (capasVirtuales.vacaciones_pendientes) {
+    const { data, error } = await supabase
+      .from("solicitudes_vacaciones")
+      .select("id, fecha_inicio, fecha_fin, empleado_id, empleados:empleado_id(nombre, apellido)")
+      .eq("estado", "pendiente")
+      .lte("fecha_inicio", hastaDate)
+      .gte("fecha_fin", desdeDate);
+    if (!error) {
+      for (const v of data ?? []) {
+        const emp: any = v.empleados;
+        out.push({
+          id: `vacp-${v.id}`,
+          calendario_id: "virtual:vacaciones_pendientes",
+          calendario_nombre: "Vacaciones pendientes",
+          color: "#f59e0b",
+          titulo: `⏳ ${emp?.nombre ?? ""} ${emp?.apellido ?? ""}`.trim(),
+          fecha_inicio: new Date(v.fecha_inicio + "T00:00:00"),
+          fecha_fin: new Date(v.fecha_fin + "T23:59:59"),
+          todo_el_dia: true,
+          tipo: "vacacion",
+          estado: "pendiente",
+          source: "virtual",
+          virtualKey: "virtual:vacaciones_pendientes",
         });
       }
     }
