@@ -128,7 +128,7 @@ export default function Nomina() {
     
     // Detectar hash en URL para activar tab
     const hash = window.location.hash.replace('#', '')
-    if (hash && ['overview', 'employees', 'access-security', 'positions', 'documents', 'permissions', 'mandatory-docs', 'assignments', 'employee-view', 'entregas', 'organigrama', 'datos-incompletos'].includes(hash)) {
+    if (hash && ['overview', 'employees', 'access-security', 'positions', 'documents', 'permissions', 'mandatory-docs', 'assignments', 'employee-view', 'entregas', 'organigrama', 'datos-incompletos', 'horas-extras'].includes(hash)) {
       setActiveTab(hash)
     }
   }, [])
