@@ -1,0 +1,1 @@
+UPDATE public.solicitudes_vacaciones SET fecha_inicio='2026-05-25', fecha_fin='2026-06-07', updated_at=now() WHERE id='a74be47a-d490-439b-972b-119c6ef653c0';
