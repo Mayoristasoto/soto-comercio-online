@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as supabaseTyped } from "@/integrations/supabase/client";
+const supabase = supabaseTyped as any;
 import {
   Calendario,
   EventoUnificado,

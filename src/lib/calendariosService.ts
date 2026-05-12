@@ -1,4 +1,6 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as supabaseTyped } from "@/integrations/supabase/client";
+// Tablas nuevas (calendarios, calendario_*) aún no incluidas en types.ts generado
+const supabase = supabaseTyped as any;
 
 export type Permiso = "view" | "edit";
 export type EventoTipo = "evento" | "deadline" | "recordatorio" | "reunion";
