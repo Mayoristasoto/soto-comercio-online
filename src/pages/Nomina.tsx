@@ -54,6 +54,7 @@ import MultipleFaceManagement from "@/components/admin/MultipleFaceManagement"
 import { EntregaElementos } from "@/components/admin/EntregaElementos"
 import { CrucesRojasDemo } from "@/components/admin/CrucesRojasDemo"
 import { ReporteDatosIncompletos } from "@/components/admin/ReporteDatosIncompletos"
+import ReporteHorasExtras from "@/components/admin/payroll/ReporteHorasExtras"
 
 interface Employee {
   id: string
