@@ -54,6 +54,7 @@ import MultipleFaceManagement from "@/components/admin/MultipleFaceManagement"
 import { EntregaElementos } from "@/components/admin/EntregaElementos"
 import { CrucesRojasDemo } from "@/components/admin/CrucesRojasDemo"
 import { ReporteDatosIncompletos } from "@/components/admin/ReporteDatosIncompletos"
+import ReporteHorasExtras from "@/components/admin/payroll/ReporteHorasExtras"
 
 interface Employee {
   id: string
@@ -127,7 +128,7 @@ export default function Nomina() {
     
     // Detectar hash en URL para activar tab
     const hash = window.location.hash.replace('#', '')
-    if (hash && ['overview', 'employees', 'access-security', 'positions', 'documents', 'permissions', 'mandatory-docs', 'assignments', 'employee-view', 'entregas', 'organigrama', 'datos-incompletos'].includes(hash)) {
+    if (hash && ['overview', 'employees', 'access-security', 'positions', 'documents', 'permissions', 'mandatory-docs', 'assignments', 'employee-view', 'entregas', 'organigrama', 'datos-incompletos', 'horas-extras'].includes(hash)) {
       setActiveTab(hash)
     }
   }, [])
@@ -673,6 +674,10 @@ export default function Nomina() {
               <AlertTriangle className="h-4 w-4 mr-2" />
               Datos Incompletos
             </TabsTrigger>
+            <TabsTrigger value="horas-extras" className="whitespace-nowrap">
+              <FileText className="h-4 w-4 mr-2" />
+              Horas Extras
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -1210,6 +1215,10 @@ export default function Nomina() {
 
         <TabsContent value="datos-incompletos">
           <ReporteDatosIncompletos />
+        </TabsContent>
+
+        <TabsContent value="horas-extras">
+          <ReporteHorasExtras />
         </TabsContent>
       </Tabs>
 
