@@ -97,29 +97,76 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
 
   const handleAprobar = async (solicitudId: string) => {
     try {
-      const { data: empleado } = await supabase
+      const { data: empleadoAprob } = await supabase
         .from('empleados')
-        .select('id')
+        .select('id, nombre, apellido')
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
-      if (!empleado) throw new Error('No se encontró el empleado');
+      if (!empleadoAprob) throw new Error('No se encontró el empleado');
+
+      const fechaAprob = new Date().toISOString();
+      const comentarios_aprobacion = comentarios[solicitudId] || null;
 
       const { error } = await supabase
         .from('solicitudes_vacaciones')
         .update({
           estado: 'aprobada' as const,
-          aprobado_por: empleado.id,
-          fecha_aprobacion: new Date().toISOString(),
-          comentarios_aprobacion: comentarios[solicitudId] || null,
+          aprobado_por: empleadoAprob.id,
+          fecha_aprobacion: fechaAprob,
+          comentarios_aprobacion,
         })
         .eq('id', solicitudId);
 
       if (error) throw error;
 
+      // Buscar datos completos para el comprobante
+      const sol = solicitudes.find((s) => s.id === solicitudId);
+      const { data: solFull } = await supabase
+        .from('solicitudes_vacaciones')
+        .select(`
+          id, fecha_inicio, fecha_fin, motivo,
+          empleado:empleado_id (
+            id, nombre, apellido, email, fecha_ingreso,
+            puesto:puesto_id(nombre),
+            sucursal:sucursal_id(nombre),
+            datos:empleados_datos_sensibles(dni)
+          )
+        `)
+        .eq('id', solicitudId)
+        .maybeSingle();
+
+      if (solFull?.empleado) {
+        const emp: any = solFull.empleado;
+        try {
+          generarComprobanteVacacionesPDF({
+            empleado: {
+              nombre: emp.nombre,
+              apellido: emp.apellido,
+              email: emp.email,
+              dni: emp.datos?.[0]?.dni ?? null,
+              puesto: emp.puesto?.nombre ?? null,
+              sucursal: emp.sucursal?.nombre ?? null,
+              fecha_ingreso: emp.fecha_ingreso ?? null,
+            },
+            solicitud: {
+              id: solFull.id,
+              fecha_inicio: solFull.fecha_inicio,
+              fecha_fin: solFull.fecha_fin,
+              motivo: solFull.motivo ?? sol?.motivo ?? null,
+              comentarios_aprobacion,
+            },
+            aprobador: { nombre: empleadoAprob.nombre, apellido: empleadoAprob.apellido },
+            fecha_aprobacion: fechaAprob,
+          });
+        } catch (pdfErr) {
+          console.warn('Error generando comprobante', pdfErr);
+        }
+      }
+
       toast({
         title: "Solicitud aprobada",
-        description: "La solicitud ha sido aprobada exitosamente",
+        description: "Se generó el comprobante para que el empleado lo firme",
       });
 
       fetchSolicitudes();
