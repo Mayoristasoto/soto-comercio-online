@@ -98,7 +98,6 @@ export function EventoDialog({
         color: null,
         tipo: tipo as any,
         estado: estado as any,
-        recurrencia: null,
       };
       if (isEdit && evento) {
         await updateEvento(evento.id, payload);
