@@ -5,8 +5,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Calendario, createCalendario, updateCalendario } from "@/lib/calendariosService";
+import { Separator } from "@/components/ui/separator";
+import {
+  Calendario,
+  createCalendario,
+  updateCalendario,
+  listEmpleadosAfectados,
+  setEmpleadosAfectados,
+  getNotifConfig,
+  upsertNotifConfig,
+} from "@/lib/calendariosService";
 import { useToast } from "@/hooks/use-toast";
+import { EmpleadosAfectadosPicker } from "./EmpleadosAfectadosPicker";
 
 const COLORS = [
   "#4b0d6d", "#95198d", "#e04403", "#10b981", "#3b82f6",
@@ -26,14 +36,38 @@ export function CalendarioDialog({ open, onOpenChange, calendario, onSaved }: Pr
   const [descripcion, setDescripcion] = useState("");
   const [color, setColor] = useState(COLORS[0]);
   const [esPublico, setEsPublico] = useState(false);
+  const [afectados, setAfectados] = useState<string[]>([]);
+  const [notifInApp, setNotifInApp] = useState(true);
+  const [notificarRrhh, setNotificarRrhh] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      setNombre(calendario?.nombre ?? "");
-      setDescripcion(calendario?.descripcion ?? "");
-      setColor(calendario?.color ?? COLORS[0]);
-      setEsPublico(calendario?.es_publico ?? false);
+    if (!open) return;
+    setNombre(calendario?.nombre ?? "");
+    setDescripcion(calendario?.descripcion ?? "");
+    setColor(calendario?.color ?? COLORS[0]);
+    setEsPublico(calendario?.es_publico ?? false);
+
+    if (calendario?.id) {
+      (async () => {
+        try {
+          const [emps, cfg] = await Promise.all([
+            listEmpleadosAfectados(calendario.id),
+            getNotifConfig("calendario", calendario.id),
+          ]);
+          setAfectados(emps.map((e) => e.empleado_id));
+          setNotifInApp(cfg.notif_in_app);
+          setNotificarRrhh(cfg.notificar_rrhh);
+        } catch {
+          setAfectados([]);
+          setNotifInApp(true);
+          setNotificarRrhh(false);
+        }
+      })();
+    } else {
+      setAfectados([]);
+      setNotifInApp(true);
+      setNotificarRrhh(false);
     }
   }, [open, calendario]);
 
@@ -41,10 +75,22 @@ export function CalendarioDialog({ open, onOpenChange, calendario, onSaved }: Pr
     if (!nombre.trim()) return;
     setSaving(true);
     try {
+      let calId = calendario?.id;
       if (calendario) {
         await updateCalendario(calendario.id, { nombre, descripcion, color, es_publico: esPublico });
       } else {
-        await createCalendario({ nombre, descripcion, color, es_publico: esPublico });
+        const created = await createCalendario({ nombre, descripcion, color, es_publico: esPublico });
+        calId = (created as any)?.id;
+      }
+      if (calId) {
+        await Promise.all([
+          setEmpleadosAfectados(calId, afectados),
+          upsertNotifConfig("calendario", calId, {
+            notif_in_app: notifInApp,
+            notif_kiosco: false,
+            notificar_rrhh: notificarRrhh,
+          }),
+        ]);
       }
       toast({ title: calendario ? "Calendario actualizado" : "Calendario creado" });
       onSaved();
@@ -58,7 +104,7 @@ export function CalendarioDialog({ open, onOpenChange, calendario, onSaved }: Pr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{calendario ? "Editar calendario" : "Nuevo calendario"}</DialogTitle>
         </DialogHeader>
@@ -95,6 +141,36 @@ export function CalendarioDialog({ open, onOpenChange, calendario, onSaved }: Pr
               <p className="text-xs text-muted-foreground">Visible para todos los empleados</p>
             </div>
             <Switch checked={esPublico} onCheckedChange={setEsPublico} />
+          </div>
+
+          <Separator />
+
+          <div>
+            <Label>Empleados afectados (@arrobar)</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Recibirán notificación de cada nuevo evento cargado en este calendario.
+            </p>
+            <EmpleadosAfectadosPicker value={afectados} onChange={setAfectados} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Enviar notificaciones en la app</Label>
+              <p className="text-xs text-muted-foreground">
+                Activá/desactivá las notificaciones a los empleados afectados.
+              </p>
+            </div>
+            <Switch checked={notifInApp} onCheckedChange={setNotifInApp} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Notificar a RRHH</Label>
+              <p className="text-xs text-muted-foreground">
+                Avisa a admin RRHH cada novedad cargada en este calendario.
+              </p>
+            </div>
+            <Switch checked={notificarRrhh} onCheckedChange={setNotificarRrhh} />
           </div>
         </div>
         <DialogFooter>
