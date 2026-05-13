@@ -748,6 +748,123 @@ export type Database = {
           },
         ]
       }
+      calendario_empleados_afectados: {
+        Row: {
+          calendario_id: string
+          created_at: string
+          empleado_id: string
+          id: string
+        }
+        Insert: {
+          calendario_id: string
+          created_at?: string
+          empleado_id: string
+          id?: string
+        }
+        Update: {
+          calendario_id?: string
+          created_at?: string
+          empleado_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendario_empleados_afectados_calendario_id_fkey"
+            columns: ["calendario_id"]
+            isOneToOne: false
+            referencedRelation: "calendarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_empleados_afectados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_empleados_afectados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_empleados_afectados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_empleados_afectados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendario_evento_empleados: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          evento_id: string
+          id: string
+          notificado_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          evento_id: string
+          id?: string
+          notificado_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          evento_id?: string
+          id?: string
+          notificado_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendario_evento_empleados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_evento_empleados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_evento_empleados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_evento_empleados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendario_evento_empleados_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "calendario_eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendario_eventos: {
         Row: {
           calendario_id: string
@@ -759,6 +876,7 @@ export type Database = {
           fecha_fin: string
           fecha_inicio: string
           id: string
+          notificar_kiosco: boolean
           tipo: string
           titulo: string
           todo_el_dia: boolean
@@ -775,6 +893,7 @@ export type Database = {
           fecha_fin: string
           fecha_inicio: string
           id?: string
+          notificar_kiosco?: boolean
           tipo?: string
           titulo: string
           todo_el_dia?: boolean
@@ -791,6 +910,7 @@ export type Database = {
           fecha_fin?: string
           fecha_inicio?: string
           id?: string
+          notificar_kiosco?: boolean
           tipo?: string
           titulo?: string
           todo_el_dia?: boolean
@@ -900,6 +1020,39 @@ export type Database = {
           },
         ]
       }
+      calendario_notificaciones_config: {
+        Row: {
+          created_at: string
+          id: string
+          notif_in_app: boolean
+          notif_kiosco: boolean
+          notificar_rrhh: boolean
+          scope: string
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notif_in_app?: boolean
+          notif_kiosco?: boolean
+          notificar_rrhh?: boolean
+          scope: string
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notif_in_app?: boolean
+          notif_kiosco?: boolean
+          notificar_rrhh?: boolean
+          scope?: string
+          target_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       calendario_preferencias_usuario: {
         Row: {
           calendario_id: string
@@ -970,6 +1123,8 @@ export type Database = {
           id: string
           nombre: string
           owner_id: string
+          sucursal_id: string | null
+          tipo_sistema: string
           updated_at: string
         }
         Insert: {
@@ -982,6 +1137,8 @@ export type Database = {
           id?: string
           nombre: string
           owner_id: string
+          sucursal_id?: string | null
+          tipo_sistema?: string
           updated_at?: string
         }
         Update: {
@@ -994,6 +1151,8 @@ export type Database = {
           id?: string
           nombre?: string
           owner_id?: string
+          sucursal_id?: string | null
+          tipo_sistema?: string
           updated_at?: string
         }
         Relationships: [
@@ -9052,6 +9211,10 @@ export type Database = {
         Returns: number
       }
       can_edit_calendario: { Args: { _cal: string }; Returns: boolean }
+      can_manage_calendario_afectados: {
+        Args: { _calendario_id: string }
+        Returns: boolean
+      }
       can_manage_payroll: { Args: never; Returns: boolean }
       can_view_calendario: { Args: { _cal: string }; Returns: boolean }
       check_facial_auth_rate_limit: {
@@ -9287,8 +9450,13 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_manager: { Args: never; Returns: boolean }
+      is_admin_rrhh: { Args: never; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       is_authenticated_user: { Args: never; Returns: boolean }
+      is_gerente_de_sucursal: {
+        Args: { _sucursal_id: string }
+        Returns: boolean
+      }
       is_gerente_sucursal: {
         Args: { sucursal_uuid?: string }
         Returns: boolean
@@ -9510,6 +9678,10 @@ export type Database = {
           p_user_agent?: string
           p_user_id: string
         }
+        Returns: undefined
+      }
+      notificar_evento_calendario_a_empleado: {
+        Args: { _empleado_id: string; _evento_id: string }
         Returns: undefined
       }
       obtener_calculo_vacaciones_todos: {

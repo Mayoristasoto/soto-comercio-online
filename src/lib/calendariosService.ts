@@ -435,3 +435,81 @@ export async function fetchEventosRango(
 
   return out.sort((a, b) => a.fecha_inicio.getTime() - b.fecha_inicio.getTime());
 }
+
+// ============================================================
+// Empleados afectados / configuración de notificaciones
+// ============================================================
+export interface EmpleadoAfectado {
+  id: string;
+  empleado_id: string;
+  empleado?: { id: string; nombre: string; apellido: string; avatar_url: string | null };
+}
+
+export async function listEmpleadosAfectados(calendarioId: string): Promise<EmpleadoAfectado[]> {
+  const { data, error } = await supabase
+    .from("calendario_empleados_afectados")
+    .select("id, empleado_id, empleado:empleados(id, nombre, apellido, avatar_url)")
+    .eq("calendario_id", calendarioId);
+  if (error) throw error;
+  return (data ?? []) as EmpleadoAfectado[];
+}
+
+export async function setEmpleadosAfectados(calendarioId: string, empleadoIds: string[]) {
+  const { data: existentes, error: e1 } = await supabase
+    .from("calendario_empleados_afectados")
+    .select("id, empleado_id")
+    .eq("calendario_id", calendarioId);
+  if (e1) throw e1;
+  const setActual = new Set((existentes ?? []).map((r: any) => r.empleado_id));
+  const setNuevo = new Set(empleadoIds);
+  const aAgregar = empleadoIds.filter((id) => !setActual.has(id));
+  const aQuitar = (existentes ?? []).filter((r: any) => !setNuevo.has(r.empleado_id));
+  if (aAgregar.length) {
+    const { error } = await supabase
+      .from("calendario_empleados_afectados")
+      .insert(aAgregar.map((empleado_id) => ({ calendario_id: calendarioId, empleado_id })));
+    if (error) throw error;
+  }
+  if (aQuitar.length) {
+    const { error } = await supabase
+      .from("calendario_empleados_afectados")
+      .delete()
+      .in("id", aQuitar.map((r: any) => r.id));
+    if (error) throw error;
+  }
+}
+
+export interface NotifConfig {
+  notif_in_app: boolean;
+  notif_kiosco: boolean;
+  notificar_rrhh: boolean;
+}
+
+export async function getNotifConfig(scope: "calendario" | "evento", targetId: string): Promise<NotifConfig> {
+  const { data, error } = await supabase
+    .from("calendario_notificaciones_config")
+    .select("notif_in_app, notif_kiosco, notificar_rrhh")
+    .eq("scope", scope)
+    .eq("target_id", targetId)
+    .maybeSingle();
+  if (error) throw error;
+  return {
+    notif_in_app: data?.notif_in_app ?? true,
+    notif_kiosco: data?.notif_kiosco ?? false,
+    notificar_rrhh: data?.notificar_rrhh ?? false,
+  };
+}
+
+export async function upsertNotifConfig(
+  scope: "calendario" | "evento",
+  targetId: string,
+  cfg: NotifConfig
+) {
+  const { error } = await supabase
+    .from("calendario_notificaciones_config")
+    .upsert(
+      { scope, target_id: targetId, ...cfg },
+      { onConflict: "scope,target_id" }
+    );
+  if (error) throw error;
+}
