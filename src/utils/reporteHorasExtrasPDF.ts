@@ -115,7 +115,8 @@ export function calcularJornadas(
     const baseHs = esDomingo ? config.baseDomingoHs : config.baseHabilHs;
     const extraHsBruto = Math.max(0, brutasHs - baseHs);
     const extraMin = extraHsBruto * 60;
-    const extraHs = extraMin >= config.toleranciaMin ? extraHsBruto : 0;
+    const extraConTolerancia = extraMin >= config.toleranciaMin ? extraHsBruto : 0;
+    const extraHs = aplicarRedondeo(extraConTolerancia, config);
 
     const emp = entrada.empleado;
     const empleadoNombre = emp ? `${emp.apellido}, ${emp.nombre}` : "—";
