@@ -10,17 +10,34 @@ export interface FichajeRow {
   empleado?: { nombre: string; apellido: string; sucursal_id: string | null } | null;
 }
 
+export interface ConfigHorasExtras {
+  valorHoraHabil: number;
+  valorHoraDomingo: number;
+  toleranciaMin: number;
+  baseHabilHs: number;
+  baseDomingoHs: number;
+}
+
+export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
+  valorHoraHabil: 0,
+  valorHoraDomingo: 0,
+  toleranciaMin: 30,
+  baseHabilHs: 8,
+  baseDomingoHs: 4,
+};
+
 export interface JornadaCalculada {
-  fecha: string; // yyyy-MM-dd argentina
+  fecha: string;
   empleadoId: string;
   empleadoNombre: string;
   sucursalNombre: string;
-  entrada: string; // HH:mm
-  salida: string; // HH:mm
+  entrada: string;
+  salida: string;
   esDomingo: boolean;
   baseHs: number;
   brutasHs: number;
-  extraHs: number;
+  extraHs: number; // ya con tolerancia aplicada
+  extraHsBruto: number; // sin tolerancia (informativo)
 }
 
 export interface ResumenEmpleado {
@@ -28,6 +45,9 @@ export interface ResumenEmpleado {
   hsExtraHabil: number;
   hsExtraDomingo: number;
   totalDomingo: number;
+  montoHabil: number;
+  montoDomingo: number;
+  montoTotal: number;
 }
 
 const loadLogo = (): Promise<string | null> =>
@@ -50,9 +70,9 @@ const loadLogo = (): Promise<string | null> =>
 
 export function calcularJornadas(
   fichajes: FichajeRow[],
-  sucursales: Map<string, string>
+  sucursales: Map<string, string>,
+  config: ConfigHorasExtras = DEFAULT_CONFIG_HE
 ): JornadaCalculada[] {
-  // group by empleado + fecha argentina
   const groups = new Map<string, FichajeRow[]>();
   for (const f of fichajes) {
     if (f.tipo !== "entrada" && f.tipo !== "salida") continue;
@@ -74,12 +94,13 @@ export function calcularJornadas(
     if (ms <= 0) continue;
     const brutasHs = ms / (1000 * 60 * 60);
 
-    // Day of week in Argentina
     const arg = toArgentinaTime(entrada.timestamp_real);
-    const dow = arg.getUTCDay(); // since toArgentinaTime returns UTC-shifted
+    const dow = arg.getUTCDay();
     const esDomingo = dow === 0;
-    const baseHs = esDomingo ? 4 : 8;
-    const extraHs = Math.max(0, brutasHs - baseHs);
+    const baseHs = esDomingo ? config.baseDomingoHs : config.baseHabilHs;
+    const extraHsBruto = Math.max(0, brutasHs - baseHs);
+    const extraMin = extraHsBruto * 60;
+    const extraHs = extraMin >= config.toleranciaMin ? extraHsBruto : 0;
 
     const emp = entrada.empleado;
     const empleadoNombre = emp ? `${emp.apellido}, ${emp.nombre}` : "—";
@@ -96,6 +117,7 @@ export function calcularJornadas(
       baseHs,
       brutasHs,
       extraHs,
+      extraHsBruto,
     });
   }
 
@@ -103,7 +125,10 @@ export function calcularJornadas(
   return jornadas;
 }
 
-export function calcularResumen(jornadas: JornadaCalculada[]): ResumenEmpleado[] {
+export function calcularResumen(
+  jornadas: JornadaCalculada[],
+  config: ConfigHorasExtras = DEFAULT_CONFIG_HE
+): ResumenEmpleado[] {
   const map = new Map<string, ResumenEmpleado>();
   for (const j of jornadas) {
     if (!map.has(j.empleadoId)) {
@@ -112,6 +137,9 @@ export function calcularResumen(jornadas: JornadaCalculada[]): ResumenEmpleado[]
         hsExtraHabil: 0,
         hsExtraDomingo: 0,
         totalDomingo: 0,
+        montoHabil: 0,
+        montoDomingo: 0,
+        montoTotal: 0,
       });
     }
     const r = map.get(j.empleadoId)!;
@@ -122,6 +150,11 @@ export function calcularResumen(jornadas: JornadaCalculada[]): ResumenEmpleado[]
       r.hsExtraHabil += j.extraHs;
     }
   }
+  for (const r of map.values()) {
+    r.montoHabil = r.hsExtraHabil * config.valorHoraHabil;
+    r.montoDomingo = r.hsExtraDomingo * config.valorHoraDomingo;
+    r.montoTotal = r.montoHabil + r.montoDomingo;
+  }
   return Array.from(map.values()).sort((a, b) => a.empleadoNombre.localeCompare(b.empleadoNombre));
 }
 
@@ -131,6 +164,9 @@ const fmtHs = (h: number) => {
   const mm = totalMin % 60;
   return `${hh}h ${mm.toString().padStart(2, "0")}m`;
 };
+
+const fmtMoney = (n: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 2 }).format(n || 0);
 
 const fmtFecha = (yyyymmdd: string) => {
   const [y, m, d] = yyyymmdd.split("-");
@@ -144,88 +180,140 @@ export async function generarReporteHorasExtrasPDF(opts: {
   fechaHasta: string;
   sucursalLabel: string;
   empleadosLabel: string;
+  config: ConfigHorasExtras;
 }) {
-  const { fichajes, sucursales, fechaDesde, fechaHasta, sucursalLabel, empleadosLabel } = opts;
+  const { fichajes, sucursales, fechaDesde, fechaHasta, sucursalLabel, empleadosLabel, config } = opts;
 
-  const jornadas = calcularJornadas(fichajes, sucursales);
+  const jornadas = calcularJornadas(fichajes, sucursales, config);
   const detalle = jornadas.filter((j) => j.extraHs > 0);
-  const resumen = calcularResumen(jornadas);
+  const resumen = calcularResumen(jornadas, config);
 
   const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "mm" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 14;
 
-  // Header band
+  // Header
   doc.setFillColor(PDF_STYLES.colors.primary);
-  doc.rect(0, 0, pageW, 28, "F");
+  doc.rect(0, 0, pageW, 30, "F");
   const logo = await loadLogo();
   if (logo) {
     try { doc.addImage(logo, "JPEG", margin, 6, 16, 16); } catch {}
   }
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
-  doc.text("Reporte de Horas Extras", margin + 20, 13);
-  doc.setFontSize(10);
+  doc.text("Liquidación de Horas Extras", margin + 20, 12);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(`Período: ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`, margin + 20, 19);
-  doc.text(`Sucursal: ${sucursalLabel}    Empleados: ${empleadosLabel}`, margin + 20, 24);
+  doc.text(`Período: ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`, margin + 20, 18);
+  doc.text(`Sucursal: ${sucursalLabel}    Empleados: ${empleadosLabel}`, margin + 20, 23);
+  doc.text(
+    `Hábil: ${fmtMoney(config.valorHoraHabil)}/h · Domingo: ${fmtMoney(config.valorHoraDomingo)}/h · Tolerancia: ${config.toleranciaMin} min`,
+    margin + 20,
+    28
+  );
 
   doc.setTextColor(PDF_STYLES.colors.text);
 
-  let y = 36;
+  let y = 38;
 
-  // Detail table
+  // Resumen primero (lo más importante para tesorería)
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Resumen por empleado", margin, y);
+  y += 3;
+
   autoTable(doc, {
     startY: y,
-    head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Hs extra"]],
-    body: detalle.map((j) => [
-      fmtFecha(j.fecha),
-      j.empleadoNombre,
-      j.sucursalNombre,
-      j.entrada,
-      j.salida,
-      `${j.baseHs}h`,
-      fmtHs(j.extraHs),
+    head: [["Empleado", "Hs hábil", "$ hábil", "Hs domingo", "$ domingo", "TOTAL $"]],
+    body: resumen.map((r) => [
+      r.empleadoNombre,
+      fmtHs(r.hsExtraHabil),
+      fmtMoney(r.montoHabil),
+      fmtHs(r.hsExtraDomingo),
+      fmtMoney(r.montoDomingo),
+      fmtMoney(r.montoTotal),
     ]),
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    headStyles: { fillColor: [75, 13, 109], textColor: 255, fontStyle: "bold" },
-    didParseCell: (data) => {
-      if (data.section === "body" && detalle[data.row.index]?.esDomingo) {
-        data.cell.styles.fillColor = [253, 231, 211];
-        data.cell.styles.textColor = [224, 68, 3];
-      }
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [149, 25, 141], textColor: 255, fontStyle: "bold" },
+    columnStyles: {
+      2: { halign: "right" },
+      4: { halign: "right" },
+      5: { halign: "right", fontStyle: "bold" },
     },
     margin: { left: margin, right: margin },
   });
 
-  y = (doc as any).lastAutoTable.finalY + 8;
+  const totalHabilHs = resumen.reduce((a, b) => a + b.hsExtraHabil, 0);
+  const totalDomHs = resumen.reduce((a, b) => a + b.hsExtraDomingo, 0);
+  const totalHabil$ = resumen.reduce((a, b) => a + b.montoHabil, 0);
+  const totalDom$ = resumen.reduce((a, b) => a + b.montoDomingo, 0);
+  const granTotal = totalHabil$ + totalDom$;
 
-  // Summary
-  if (y > 250) { doc.addPage(); y = 20; }
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Resumen por empleado", margin, y);
-  y += 4;
+  y = (doc as any).lastAutoTable.finalY + 5;
 
-  autoTable(doc, {
-    startY: y,
-    head: [["Empleado", "Hs extra hábil", "Hs extra DOMINGO", "Total trabajado DOMINGO"]],
-    body: resumen.map((r) => [r.empleadoNombre, fmtHs(r.hsExtraHabil), fmtHs(r.hsExtraDomingo), fmtHs(r.totalDomingo)]),
-    styles: { fontSize: 9, cellPadding: 2 },
-    headStyles: { fillColor: [149, 25, 141], textColor: 255 },
-    margin: { left: margin, right: margin },
-  });
-
-  // Totals
-  const totalHabil = resumen.reduce((a, b) => a + b.hsExtraHabil, 0);
-  const totalDom = resumen.reduce((a, b) => a + b.hsExtraDomingo, 0);
-  y = (doc as any).lastAutoTable.finalY + 6;
+  // Caja de TOTAL A PAGAR
+  doc.setFillColor(75, 13, 109);
+  doc.rect(margin, y, pageW - margin * 2, 14, "F");
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(PDF_STYLES.colors.primary);
-  doc.text(`Totales — Hábil: ${fmtHs(totalHabil)}    Domingo: ${fmtHs(totalDom)}`, margin, y);
+  doc.text(
+    `Totales — Hs hábil: ${fmtHs(totalHabilHs)}   Hs domingo: ${fmtHs(totalDomHs)}`,
+    margin + 3,
+    y + 5.5
+  );
+  doc.setFontSize(13);
+  doc.text(`TOTAL A PAGAR: ${fmtMoney(granTotal)}`, pageW - margin - 3, y + 10, { align: "right" });
 
-  const fileName = `reporte_horas_extras_${fechaDesde}_${fechaHasta}.pdf`;
+  y += 20;
+  doc.setTextColor(PDF_STYLES.colors.text);
+
+  // Detalle
+  if (detalle.length > 0) {
+    if (y > 240) { doc.addPage(); y = 20; }
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Detalle de jornadas con extras", margin, y);
+    y += 3;
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Hs extra"]],
+      body: detalle.map((j) => [
+        fmtFecha(j.fecha),
+        j.empleadoNombre,
+        j.sucursalNombre,
+        j.entrada,
+        j.salida,
+        `${j.baseHs}h`,
+        fmtHs(j.extraHs),
+      ]),
+      styles: { fontSize: 8, cellPadding: 1.5 },
+      headStyles: { fillColor: [75, 13, 109], textColor: 255, fontStyle: "bold" },
+      didParseCell: (data) => {
+        if (data.section === "body" && detalle[data.row.index]?.esDomingo) {
+          data.cell.styles.fillColor = [253, 231, 211];
+          data.cell.styles.textColor = [224, 68, 3];
+        }
+      },
+      margin: { left: margin, right: margin },
+    });
+    y = (doc as any).lastAutoTable.finalY + 10;
+  }
+
+  // Firmas
+  if (y > 250) { doc.addPage(); y = 30; }
+  y = Math.max(y, 250);
+  doc.setDrawColor(150);
+  doc.line(margin + 10, y, margin + 70, y);
+  doc.line(pageW - margin - 70, y, pageW - margin - 10, y);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text("Firma RRHH", margin + 40, y + 4, { align: "center" });
+  doc.text("Firma Tesorería", pageW - margin - 40, y + 4, { align: "center" });
+
+  const fileName = `liquidacion_horas_extras_${fechaDesde}_${fechaHasta}.pdf`;
   doc.save(fileName);
 }

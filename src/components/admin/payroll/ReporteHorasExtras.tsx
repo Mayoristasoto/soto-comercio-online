@@ -10,12 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, FileSearch, Users, Loader2 } from "lucide-react";
+import { Download, FileSearch, Users, Loader2, Settings2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   calcularJornadas,
   calcularResumen,
   generarReporteHorasExtrasPDF,
+  DEFAULT_CONFIG_HE,
+  type ConfigHorasExtras,
   type FichajeRow,
   type JornadaCalculada,
   type ResumenEmpleado,
@@ -24,11 +26,25 @@ import {
 type Sucursal = { id: string; nombre: string };
 type Empleado = { id: string; nombre: string; apellido: string; sucursal_id: string | null; activo: boolean };
 
+const CONFIG_KEY = "config_horas_extras_v1";
+
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const firstOfMonthISO = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 };
+const startOfWeek = (d: Date) => {
+  const x = new Date(d);
+  const day = x.getDay(); // 0=Dom
+  const diff = day === 0 ? -6 : 1 - day; // a lunes
+  x.setDate(x.getDate() + diff);
+  return x;
+};
+const isoOf = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+const fmtMoney = (n: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 2 }).format(n || 0);
 
 export default function ReporteHorasExtras() {
   const { toast } = useToast();
@@ -43,6 +59,18 @@ export default function ReporteHorasExtras() {
   const [jornadas, setJornadas] = useState<JornadaCalculada[]>([]);
   const [resumen, setResumen] = useState<ResumenEmpleado[]>([]);
   const [lastFichajes, setLastFichajes] = useState<FichajeRow[] | null>(null);
+
+  const [config, setConfig] = useState<ConfigHorasExtras>(() => {
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY);
+      if (raw) return { ...DEFAULT_CONFIG_HE, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_CONFIG_HE;
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch {}
+  }, [config]);
 
   useEffect(() => {
     (async () => {
@@ -67,7 +95,7 @@ export default function ReporteHorasExtras() {
     return list;
   }, [empleados, sucursalId, searchEmp]);
 
-  const setPreset = (preset: "mes" | "anterior" | "30d") => {
+  const setPreset = (preset: "mes" | "anterior" | "30d" | "semana" | "semana_pasada") => {
     const now = new Date();
     if (preset === "mes") {
       setFechaDesde(firstOfMonthISO());
@@ -75,13 +103,26 @@ export default function ReporteHorasExtras() {
     } else if (preset === "anterior") {
       const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const last = new Date(now.getFullYear(), now.getMonth(), 0);
-      setFechaDesde(d.toISOString().slice(0, 10));
-      setFechaHasta(last.toISOString().slice(0, 10));
-    } else {
+      setFechaDesde(isoOf(d));
+      setFechaHasta(isoOf(last));
+    } else if (preset === "30d") {
       const d = new Date(now);
       d.setDate(d.getDate() - 30);
-      setFechaDesde(d.toISOString().slice(0, 10));
+      setFechaDesde(isoOf(d));
       setFechaHasta(todayISO());
+    } else if (preset === "semana") {
+      const inicio = startOfWeek(now);
+      const fin = new Date(inicio);
+      fin.setDate(inicio.getDate() + 6);
+      setFechaDesde(isoOf(inicio));
+      setFechaHasta(isoOf(fin));
+    } else if (preset === "semana_pasada") {
+      const inicio = startOfWeek(now);
+      inicio.setDate(inicio.getDate() - 7);
+      const fin = new Date(inicio);
+      fin.setDate(inicio.getDate() + 6);
+      setFechaDesde(isoOf(inicio));
+      setFechaHasta(isoOf(fin));
     }
   };
 
@@ -100,7 +141,6 @@ export default function ReporteHorasExtras() {
   };
 
   const fetchData = async (): Promise<FichajeRow[]> => {
-    // Determine target empleados
     let empleadoIds: string[] = [];
     if (selectedEmpleados.size > 0) empleadoIds = Array.from(selectedEmpleados);
     else if (sucursalId !== "all") empleadoIds = empleados.filter((e) => e.sucursal_id === sucursalId).map((e) => e.id);
@@ -111,7 +151,6 @@ export default function ReporteHorasExtras() {
     const desdeISO = `${fechaDesde}T00:00:00-03:00`;
     const hastaISO = `${fechaHasta}T23:59:59-03:00`;
 
-    // Chunk to avoid URL limits
     const chunkSize = 200;
     const all: FichajeRow[] = [];
     for (let i = 0; i < empleadoIds.length; i += chunkSize) {
@@ -135,9 +174,9 @@ export default function ReporteHorasExtras() {
     try {
       const fichajes = await fetchData();
       setLastFichajes(fichajes);
-      const j = calcularJornadas(fichajes, sucursalMap);
+      const j = calcularJornadas(fichajes, sucursalMap, config);
       setJornadas(j);
-      setResumen(calcularResumen(j));
+      setResumen(calcularResumen(j, config));
       if (j.length === 0) toast({ title: "Sin datos", description: "No se encontraron fichajes en el período." });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -165,8 +204,9 @@ export default function ReporteHorasExtras() {
         fechaHasta,
         sucursalLabel,
         empleadosLabel,
+        config,
       });
-      toast({ title: "PDF generado", description: "El reporte se descargó correctamente." });
+      toast({ title: "PDF generado", description: "El informe se descargó correctamente." });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -180,14 +220,60 @@ export default function ReporteHorasExtras() {
   };
 
   const detalle = jornadas.filter((j) => j.extraHs > 0);
+  const totalHabilHs = resumen.reduce((a, b) => a + b.hsExtraHabil, 0);
+  const totalDomHs = resumen.reduce((a, b) => a + b.hsExtraDomingo, 0);
+  const granTotal = resumen.reduce((a, b) => a + b.montoTotal, 0);
+
+  const updateConfig = (k: keyof ConfigHorasExtras, v: number) =>
+    setConfig((prev) => ({ ...prev, [k]: isNaN(v) ? 0 : v }));
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Reporte de Horas Extras</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="h-5 w-5" /> Parámetros de cálculo
+          </CardTitle>
           <CardDescription>
-            Calcula horas extras (base 8h hábil / 4h domingo) y exporta PDF para el período, sucursal y empleados elegidos.
+            Valores en pesos por hora extra y tolerancia mínima por jornada (si las extras del día son menores a la tolerancia, no se computan).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="space-y-2">
+              <Label>$ hora hábil</Label>
+              <Input type="number" min={0} step="0.01" value={config.valorHoraHabil}
+                onChange={(e) => updateConfig("valorHoraHabil", parseFloat(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>$ hora domingo</Label>
+              <Input type="number" min={0} step="0.01" value={config.valorHoraDomingo}
+                onChange={(e) => updateConfig("valorHoraDomingo", parseFloat(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tolerancia (min)</Label>
+              <Input type="number" min={0} step="1" value={config.toleranciaMin}
+                onChange={(e) => updateConfig("toleranciaMin", parseInt(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Base hábil (h)</Label>
+              <Input type="number" min={1} step="0.5" value={config.baseHabilHs}
+                onChange={(e) => updateConfig("baseHabilHs", parseFloat(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Base domingo (h)</Label>
+              <Input type="number" min={1} step="0.5" value={config.baseDomingoHs}
+                onChange={(e) => updateConfig("baseDomingoHs", parseFloat(e.target.value))} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Liquidación de Horas Extras</CardTitle>
+          <CardDescription>
+            Selecciona período, sucursal y empleados. El sistema calcula las horas extras y el monto a pagar.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -252,17 +338,19 @@ export default function ReporteHorasExtras() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setPreset("semana")}>Esta semana</Button>
+            <Button size="sm" variant="secondary" onClick={() => setPreset("semana_pasada")}>Semana pasada</Button>
             <Button size="sm" variant="secondary" onClick={() => setPreset("mes")}>Mes actual</Button>
             <Button size="sm" variant="secondary" onClick={() => setPreset("anterior")}>Mes pasado</Button>
             <Button size="sm" variant="secondary" onClick={() => setPreset("30d")}>Últimos 30 días</Button>
             <div className="flex-1" />
             <Button onClick={onPreview} disabled={loading} variant="outline">
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSearch className="h-4 w-4 mr-2" />}
-              Vista previa
+              Calcular
             </Button>
             <Button onClick={onPDF} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-              Descargar PDF
+              Informe Tesorería (PDF)
             </Button>
           </div>
         </CardContent>
@@ -270,6 +358,31 @@ export default function ReporteHorasExtras() {
 
       {jornadas.length > 0 && (
         <>
+          <Card className="border-primary">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total a pagar</p>
+                  <p className="text-3xl font-bold text-primary">{fmtMoney(granTotal)}</p>
+                </div>
+                <div className="flex gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Hs hábil</p>
+                    <p className="font-semibold">{fmtHs(totalHabilHs)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Hs domingo</p>
+                    <p className="font-semibold">{fmtHs(totalDomHs)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Empleados</p>
+                    <p className="font-semibold">{resumen.length}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Resumen por empleado</CardTitle>
@@ -279,9 +392,11 @@ export default function ReporteHorasExtras() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Empleado</TableHead>
-                    <TableHead>Hs extra hábil</TableHead>
-                    <TableHead>Hs extra DOMINGO</TableHead>
-                    <TableHead>Total trabajado DOMINGO</TableHead>
+                    <TableHead>Hs hábil</TableHead>
+                    <TableHead className="text-right">$ hábil</TableHead>
+                    <TableHead>Hs domingo</TableHead>
+                    <TableHead className="text-right">$ domingo</TableHead>
+                    <TableHead className="text-right">TOTAL $</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -289,10 +404,20 @@ export default function ReporteHorasExtras() {
                     <TableRow key={i}>
                       <TableCell className="font-medium">{r.empleadoNombre}</TableCell>
                       <TableCell>{fmtHs(r.hsExtraHabil)}</TableCell>
+                      <TableCell className="text-right">{fmtMoney(r.montoHabil)}</TableCell>
                       <TableCell>{fmtHs(r.hsExtraDomingo)}</TableCell>
-                      <TableCell>{fmtHs(r.totalDomingo)}</TableCell>
+                      <TableCell className="text-right">{fmtMoney(r.montoDomingo)}</TableCell>
+                      <TableCell className="text-right font-bold">{fmtMoney(r.montoTotal)}</TableCell>
                     </TableRow>
                   ))}
+                  <TableRow className="bg-muted font-bold">
+                    <TableCell>TOTAL</TableCell>
+                    <TableCell>{fmtHs(totalHabilHs)}</TableCell>
+                    <TableCell className="text-right">{fmtMoney(resumen.reduce((a, b) => a + b.montoHabil, 0))}</TableCell>
+                    <TableCell>{fmtHs(totalDomHs)}</TableCell>
+                    <TableCell className="text-right">{fmtMoney(resumen.reduce((a, b) => a + b.montoDomingo, 0))}</TableCell>
+                    <TableCell className="text-right text-primary">{fmtMoney(granTotal)}</TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </CardContent>
