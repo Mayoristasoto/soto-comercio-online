@@ -657,6 +657,10 @@ export default function Nomina() {
         <div className="overflow-x-auto">
           <TabsList className="inline-flex w-full min-w-max md:grid md:grid-cols-12 md:w-full">
             <TabsTrigger value="overview" className="whitespace-nowrap">Resumen</TabsTrigger>
+            <TabsTrigger value="horas-extras" className="whitespace-nowrap text-primary font-semibold">
+              <FileText className="h-4 w-4 mr-2" />
+              Horas Extras
+            </TabsTrigger>
             <TabsTrigger value="employees" className="whitespace-nowrap">Empleados</TabsTrigger>
             <TabsTrigger value="access-security" className="whitespace-nowrap">Acceso y Seguridad</TabsTrigger>
             <TabsTrigger value="positions" className="whitespace-nowrap">Puestos</TabsTrigger>
