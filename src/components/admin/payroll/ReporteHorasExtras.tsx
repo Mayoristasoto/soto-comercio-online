@@ -26,7 +26,7 @@ import {
 type Sucursal = { id: string; nombre: string };
 type Empleado = { id: string; nombre: string; apellido: string; sucursal_id: string | null; activo: boolean };
 
-const CONFIG_KEY = "config_horas_extras_v1";
+const CONFIG_KEY = "config_horas_extras_v2";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const firstOfMonthISO = () => {
@@ -235,7 +235,7 @@ export default function ReporteHorasExtras() {
             <Settings2 className="h-5 w-5" /> Parámetros de cálculo
           </CardTitle>
           <CardDescription>
-            Valores en pesos por hora extra y tolerancia mínima por jornada (si las extras del día son menores a la tolerancia, no se computan).
+            Regla global aplicada a todos los empleados: menos de 25 minutos extra no se computan; entre 25 y 47 minutos se pagan como 0,5 h; desde 48 minutos se paga 1 h. Se aplica sobre la fracción de cada hora extra.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -265,17 +265,14 @@ export default function ReporteHorasExtras() {
               <Input type="number" min={1} step="0.5" value={config.baseDomingoHs}
                 onChange={(e) => updateConfig("baseDomingoHs", parseFloat(e.target.value))} />
             </div>
-            <div className="space-y-2">
-              <Label>Redondeo (min)</Label>
-              <Input type="number" min={0} step="1" value={config.redondeoMin}
-                onChange={(e) => updateConfig("redondeoMin", parseInt(e.target.value))} />
-              <p className="text-[11px] text-muted-foreground">Bloque al que se redondea (60 = horas). 0 = sin redondeo.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Umbral redondeo (min)</Label>
-              <Input type="number" min={0} step="1" value={config.redondeoUmbralMin}
-                onChange={(e) => updateConfig("redondeoUmbralMin", parseInt(e.target.value))} />
-              <p className="text-[11px] text-muted-foreground">Si los minutos sobrantes son ≥ este valor, sube al bloque siguiente (ej: 50 → 50 min cuentan como 1 h).</p>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Redondeo de fracciones</Label>
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                <p>• 0 a 24 min sobrantes → no se computan</p>
+                <p>• 25 a 47 min sobrantes → 0,5 h</p>
+                <p>• 48 a 59 min sobrantes → 1 h</p>
+                <p className="pt-1 italic">Regla global, igual para todos los empleados.</p>
+              </div>
             </div>
           </div>
         </CardContent>
