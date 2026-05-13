@@ -1,60 +1,36 @@
-## Objetivo
+## Plan
 
-Extender la sección **Reporte de Horas Extras** (ya existe en `Nómina`) para que calcule el **monto a pagar** por empleado con valores configurables y tolerancia, y genere un informe para Tesorería.
+Cambiar el cálculo global de horas extras para que todos los empleados usen la misma regla:
 
-## Qué ya existe (se reutiliza)
+- Menos de 25 minutos extra: no se computa.
+- Desde 25 hasta 47 minutos extra: se computa como 0,5 horas.
+- Desde 48 minutos extra: se computa como 1 hora.
+- La misma lógica se repite por cada hora: por ejemplo 1h25m cuenta 1,5h y 1h48m cuenta 2h.
 
-- Página: `Nómina → tab "Horas Extras"` (`src/components/admin/payroll/ReporteHorasExtras.tsx`).
-- Selección de período (desde/hasta + presets mes actual / mes pasado / últimos 30 días).
-- Selección por sucursal y empleados (multi-select).
-- Cálculo de jornadas y resumen (hábil vs domingo) y PDF (`src/utils/reporteHorasExtrasPDF.ts`).
+## Cambios propuestos
 
-## Qué se agrega
+1. Ajustar la configuración por defecto del reporte de horas extras:
+   - `toleranciaMin = 25`
+   - `redondeoMin = 30`
+   - `redondeoUmbralMin = 25`
 
-### 1. Panel de configuración (persistente)
-Nueva tarjeta "Parámetros de cálculo" con:
-- **Valor hora extra hábil** ($/h)
-- **Valor hora extra domingo** ($/h) — (también aplicable a feriados, ver pregunta abajo)
-- **Tolerancia (minutos)** — si las horas extras de la jornada son menores a este umbral, no se computan (evita sumar minutos sueltos).
-- **Base hábil (h)** y **Base domingo (h)** — ya están fijas en 8/4, las hago editables por si cambia.
+2. Reemplazar la lógica actual de redondeo para que no dependa de un único bloque de 60 minutos.
+   - Se calcularán los minutos extra reales.
+   - Se tomarán las horas completas.
+   - El resto de minutos se redondeará así:
+     - `0 a 24` minutos: baja a 0.
+     - `25 a 47` minutos: sube a 30.
+     - `48 a 59` minutos: sube a 60.
 
-Persistencia: tabla nueva `config_horas_extras` (singleton por organización) con RLS para admin/RRHH; carga al abrir y guarda al editar. Fallback inicial a `localStorage`.
+3. Simplificar los textos de la UI en “Parámetros de cálculo” para que reflejen claramente esta regla global, evitando que parezca que hay que configurarlo empleado por empleado.
 
-### 2. Presets de período
-Agregar **"Esta semana"** y **"Semana pasada"** (lunes a domingo, hora Argentina) a los presets actuales.
+4. Mantener el filtro de empleados/sucursal solo como filtro de reporte, no como configuración individual.
 
-### 3. Cálculo monetario
-En `calcularJornadas` / `calcularResumen`:
-- Aplicar tolerancia: `if (extraMin < tolerancia) extraHs = 0`.
-- Resumen por empleado agrega: `montoHabil`, `montoDomingo`, `montoTotal`.
-- Totales generales: total hs / total $ del período.
+## Archivos involucrados
 
-### 4. UI de resultados
-- Nueva columna **Monto $** en la tabla "Resumen por empleado" (hábil, domingo, total).
-- Fila de **Totales** al pie con horas y monto a pagar.
-- Badge destacado con el **TOTAL A PAGAR** arriba del resumen.
+- `src/utils/reporteHorasExtrasPDF.ts`
+- `src/components/admin/payroll/ReporteHorasExtras.tsx`
 
-### 5. Informe para Tesorería (PDF)
-Extender `reporteHorasExtrasPDF.ts`:
-- Encabezado con período, sucursal, parámetros usados (valores y tolerancia).
-- Tabla de detalle (ya existe).
-- Tabla resumen con columnas: Empleado | Hs hábil | $ hábil | Hs domingo | $ domingo | **Total $**.
-- Pie con **TOTAL GENERAL A PAGAR**, espacio para firma de RRHH y Tesorería.
-- Nombre archivo: `liquidacion_horas_extras_{desde}_{hasta}.pdf`.
+## Resultado esperado
 
-### 6. Exportación complementaria
-Botón **"Exportar Excel"** (CSV) con el resumen por empleado para que Tesorería pueda importarlo.
-
-## Detalles técnicos
-
-- Migración SQL: tabla `config_horas_extras` (id, valor_hora_habil, valor_hora_domingo, tolerancia_minutos, base_habil_horas, base_domingo_horas, updated_at, updated_by) + RLS (lectura admin/rrhh, escritura admin).
-- Tolerancia se aplica **por jornada** (no por período acumulado).
-- Cálculo de domingo sigue usando `toArgentinaTime` (consistente con la memoria de TZ Argentina).
-- Colores corporativos del PDF ya están en `pdfStyles` (Primary `#4b0d6d`, etc.).
-
-## Preguntas a confirmar antes de implementar
-
-1. **Feriados**: ¿se pagan como domingo, como hábil, o querés un tercer valor configurable?
-2. **Tolerancia**: ¿descarta toda la jornada si está bajo el umbral (mi propuesta), o redondea hacia abajo en bloques (ej: bloques de 30 min)?
-3. **Configuración global vs por sucursal**: ¿un solo set de valores para toda la empresa, o distinto por sucursal?
-4. **Excel/CSV**: ¿lo agrego o alcanza con PDF?
+El cálculo y el PDF van a mostrar las horas extra redondeadas globalmente de la forma pedida: 25+ minutos = 0,5h y 48+ minutos = 1h, para cualquier empleado incluido en el reporte.

@@ -23,22 +23,29 @@ export interface ConfigHorasExtras {
 export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
   valorHoraHabil: 0,
   valorHoraDomingo: 0,
-  toleranciaMin: 30,
+  toleranciaMin: 25,
   baseHabilHs: 8,
   baseDomingoHs: 4,
-  redondeoMin: 60,
-  redondeoUmbralMin: 50,
+  redondeoMin: 30,
+  redondeoUmbralMin: 25,
 };
 
-function aplicarRedondeo(extraHs: number, config: ConfigHorasExtras): number {
-  if (extraHs <= 0 || !config.redondeoMin || config.redondeoMin <= 0) return extraHs;
-  const step = config.redondeoMin;
-  const umbral = Math.min(Math.max(config.redondeoUmbralMin ?? 0, 0), step);
-  const totalMin = extraHs * 60;
-  const bloques = Math.floor(totalMin / step);
-  const resto = totalMin - bloques * step;
-  const finalMin = umbral > 0 && resto >= umbral ? (bloques + 1) * step : bloques * step;
-  return finalMin / 60;
+/**
+ * Redondeo global de horas extra (regla fija para todos los empleados):
+ *   - 0 a 24 minutos sobrantes  → 0
+ *   - 25 a 47 minutos sobrantes → 30 minutos (0,5 h)
+ *   - 48 a 59 minutos sobrantes → 60 minutos (1 h)
+ * Se aplica sobre la fracción dentro de cada hora completa.
+ */
+function aplicarRedondeo(extraHs: number, _config: ConfigHorasExtras): number {
+  if (extraHs <= 0) return 0;
+  const totalMin = Math.round(extraHs * 60);
+  const horas = Math.floor(totalMin / 60);
+  const resto = totalMin - horas * 60;
+  let addMin = 0;
+  if (resto >= 48) addMin = 60;
+  else if (resto >= 25) addMin = 30;
+  return (horas * 60 + addMin) / 60;
 }
 
 export interface JornadaCalculada {
