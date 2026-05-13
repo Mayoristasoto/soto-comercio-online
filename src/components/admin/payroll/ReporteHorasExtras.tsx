@@ -239,7 +239,7 @@ export default function ReporteHorasExtras() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>$ hora hábil</Label>
               <Input type="number" min={0} step="0.01" value={config.valorHoraHabil}
@@ -264,6 +264,18 @@ export default function ReporteHorasExtras() {
               <Label>Base domingo (h)</Label>
               <Input type="number" min={1} step="0.5" value={config.baseDomingoHs}
                 onChange={(e) => updateConfig("baseDomingoHs", parseFloat(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Redondeo (min)</Label>
+              <Input type="number" min={0} step="1" value={config.redondeoMin}
+                onChange={(e) => updateConfig("redondeoMin", parseInt(e.target.value))} />
+              <p className="text-[11px] text-muted-foreground">Bloque al que se redondea (60 = horas). 0 = sin redondeo.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Umbral redondeo (min)</Label>
+              <Input type="number" min={0} step="1" value={config.redondeoUmbralMin}
+                onChange={(e) => updateConfig("redondeoUmbralMin", parseInt(e.target.value))} />
+              <p className="text-[11px] text-muted-foreground">Si los minutos sobrantes son ≥ este valor, sube al bloque siguiente (ej: 50 → 50 min cuentan como 1 h).</p>
             </div>
           </div>
         </CardContent>

@@ -16,6 +16,8 @@ export interface ConfigHorasExtras {
   toleranciaMin: number;
   baseHabilHs: number;
   baseDomingoHs: number;
+  redondeoMin: number;        // tamaño del bloque de redondeo en minutos (0 = sin redondeo)
+  redondeoUmbralMin: number;  // minutos sobrantes a partir de los cuales se redondea hacia arriba
 }
 
 export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
@@ -24,7 +26,20 @@ export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
   toleranciaMin: 30,
   baseHabilHs: 8,
   baseDomingoHs: 4,
+  redondeoMin: 60,
+  redondeoUmbralMin: 50,
 };
+
+function aplicarRedondeo(extraHs: number, config: ConfigHorasExtras): number {
+  if (extraHs <= 0 || !config.redondeoMin || config.redondeoMin <= 0) return extraHs;
+  const step = config.redondeoMin;
+  const umbral = Math.min(Math.max(config.redondeoUmbralMin ?? 0, 0), step);
+  const totalMin = extraHs * 60;
+  const bloques = Math.floor(totalMin / step);
+  const resto = totalMin - bloques * step;
+  const finalMin = umbral > 0 && resto >= umbral ? (bloques + 1) * step : bloques * step;
+  return finalMin / 60;
+}
 
 export interface JornadaCalculada {
   fecha: string;
@@ -100,7 +115,8 @@ export function calcularJornadas(
     const baseHs = esDomingo ? config.baseDomingoHs : config.baseHabilHs;
     const extraHsBruto = Math.max(0, brutasHs - baseHs);
     const extraMin = extraHsBruto * 60;
-    const extraHs = extraMin >= config.toleranciaMin ? extraHsBruto : 0;
+    const extraConTolerancia = extraMin >= config.toleranciaMin ? extraHsBruto : 0;
+    const extraHs = aplicarRedondeo(extraConTolerancia, config);
 
     const emp = entrada.empleado;
     const empleadoNombre = emp ? `${emp.apellido}, ${emp.nombre}` : "—";
@@ -207,8 +223,11 @@ export async function generarReporteHorasExtrasPDF(opts: {
   doc.setFont("helvetica", "normal");
   doc.text(`Período: ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`, margin + 20, 18);
   doc.text(`Sucursal: ${sucursalLabel}    Empleados: ${empleadosLabel}`, margin + 20, 23);
+  const redondeoTxt = config.redondeoMin > 0
+    ? ` · Redondeo: ${config.redondeoMin}min (umbral ${config.redondeoUmbralMin}min)`
+    : "";
   doc.text(
-    `Hábil: ${fmtMoney(config.valorHoraHabil)}/h · Domingo: ${fmtMoney(config.valorHoraDomingo)}/h · Tolerancia: ${config.toleranciaMin} min`,
+    `Hábil: ${fmtMoney(config.valorHoraHabil)}/h · Domingo: ${fmtMoney(config.valorHoraDomingo)}/h · Tolerancia: ${config.toleranciaMin}min${redondeoTxt}`,
     margin + 20,
     28
   );
