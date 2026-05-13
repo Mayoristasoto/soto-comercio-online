@@ -9453,6 +9453,10 @@ export type Database = {
       is_admin_rrhh: { Args: never; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       is_authenticated_user: { Args: never; Returns: boolean }
+      is_calendario_compartido_con_actual: {
+        Args: { _calendario_id: string }
+        Returns: boolean
+      }
       is_gerente_de_sucursal: {
         Args: { _sucursal_id: string }
         Returns: boolean
@@ -9462,6 +9466,10 @@ export type Database = {
         Returns: boolean
       }
       is_manager_of_branch: { Args: { branch_id: string }; Returns: boolean }
+      is_owner_calendario: {
+        Args: { _calendario_id: string }
+        Returns: boolean
+      }
       is_valid_rating_token: { Args: { token_value: string }; Returns: boolean }
       kiosk_buscar_empleado: {
         Args: { p_termino: string }
