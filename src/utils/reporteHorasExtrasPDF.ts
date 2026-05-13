@@ -223,8 +223,11 @@ export async function generarReporteHorasExtrasPDF(opts: {
   doc.setFont("helvetica", "normal");
   doc.text(`Período: ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`, margin + 20, 18);
   doc.text(`Sucursal: ${sucursalLabel}    Empleados: ${empleadosLabel}`, margin + 20, 23);
+  const redondeoTxt = config.redondeoMin > 0
+    ? ` · Redondeo: ${config.redondeoMin}min (umbral ${config.redondeoUmbralMin}min)`
+    : "";
   doc.text(
-    `Hábil: ${fmtMoney(config.valorHoraHabil)}/h · Domingo: ${fmtMoney(config.valorHoraDomingo)}/h · Tolerancia: ${config.toleranciaMin} min`,
+    `Hábil: ${fmtMoney(config.valorHoraHabil)}/h · Domingo: ${fmtMoney(config.valorHoraDomingo)}/h · Tolerancia: ${config.toleranciaMin}min${redondeoTxt}`,
     margin + 20,
     28
   );
