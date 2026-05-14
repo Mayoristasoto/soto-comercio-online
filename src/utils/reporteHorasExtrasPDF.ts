@@ -23,11 +23,11 @@ export interface ConfigHorasExtras {
 export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
   valorHoraHabil: 0,
   valorHoraDomingo: 0,
-  toleranciaMin: 25,
+  toleranciaMin: 20,
   baseHabilHs: 8,
   baseDomingoHs: 4,
   redondeoMin: 30,
-  redondeoUmbralMin: 25,
+  redondeoUmbralMin: 20,
 };
 
 /**
