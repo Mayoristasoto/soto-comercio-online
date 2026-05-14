@@ -114,7 +114,18 @@ export function calcularJornadas(
     if (entradas.length === 0 || salidas.length === 0) continue;
     const entrada = entradas[0];
     const salida = salidas[salidas.length - 1];
-    const ms = new Date(salida.timestamp_real).getTime() - new Date(entrada.timestamp_real).getTime();
+    const entradaRealMs = new Date(entrada.timestamp_real).getTime();
+    const salidaMs = new Date(salida.timestamp_real).getTime();
+
+    // Construir hora de entrada de referencia para esa fecha en zona Argentina (UTC-3).
+    // `fecha` ya viene en YYYY-MM-DD calculado en horario Argentina.
+    const [hhRef, mmRef] = (config.horaEntradaRef || "09:00").split(":").map((n) => parseInt(n, 10) || 0);
+    const refHHMM = `${String(hhRef).padStart(2, "0")}:${String(mmRef).padStart(2, "0")}`;
+    const entradaRefMs = new Date(`${fecha}T${refHHMM}:00-03:00`).getTime();
+
+    // Recortar: si fichó antes de la referencia, contar desde la referencia.
+    const entradaEfectivaMs = Math.max(entradaRealMs, entradaRefMs);
+    const ms = salidaMs - entradaEfectivaMs;
     if (ms <= 0) continue;
     const brutasHs = ms / (1000 * 60 * 60);
 
