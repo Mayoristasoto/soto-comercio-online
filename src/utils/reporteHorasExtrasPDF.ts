@@ -18,6 +18,7 @@ export interface ConfigHorasExtras {
   baseDomingoHs: number;
   redondeoMin: number;        // tamaño del bloque de redondeo en minutos (0 = sin redondeo)
   redondeoUmbralMin: number;  // minutos sobrantes a partir de los cuales se redondea hacia arriba
+  horaEntradaRef: string;     // "HH:MM" — minutos fichados antes de esta hora no se computan
 }
 
 export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
@@ -28,6 +29,7 @@ export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
   baseDomingoHs: 4,
   redondeoMin: 30,
   redondeoUmbralMin: 20,
+  horaEntradaRef: "09:00",
 };
 
 /**
