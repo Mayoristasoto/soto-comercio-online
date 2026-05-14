@@ -1,36 +1,38 @@
-## Plan
+## Objetivo
 
-Cambiar el cálculo global de horas extras para que todos los empleados usen la misma regla:
+Que los minutos fichados antes del horario de entrada pactado **no se computen** como tiempo trabajado en el reporte de horas extras. Solo se cuenta desde la hora de entrada en adelante.
 
-- Menos de 25 minutos extra: no se computa.
-- Desde 25 hasta 47 minutos extra: se computa como 0,5 horas.
-- Desde 48 minutos extra: se computa como 1 hora.
-- La misma lógica se repite por cada hora: por ejemplo 1h25m cuenta 1,5h y 1h48m cuenta 2h.
+Ejemplo: si un empleado ficha entrada 08:42 y salida 17:10, se calcula como si hubiera entrado 09:00 → 8h 10min, no 8h 28min.
 
-## Cambios propuestos
+## Regla acordada
 
-1. Ajustar la configuración por defecto del reporte de horas extras:
-   - `toleranciaMin = 25`
-   - `redondeoMin = 30`
-   - `redondeoUmbralMin = 25`
+- **Hora de entrada de referencia**: 09:00 para todos los días (incluyendo domingos).
+- **Domingos**: jornada base 4h (09:00 → 13:00).
+- **Demás días**: jornada base 8h.
+- **Salida**: NO se recorta. Se toma la salida real fichada (las horas extra se cuentan después de la jornada pactada).
+- Si el empleado ficha entrada **después** de las 09:00, se usa esa entrada real (no se le "regala" tiempo).
 
-2. Reemplazar la lógica actual de redondeo para que no dependa de un único bloque de 60 minutos.
-   - Se calcularán los minutos extra reales.
-   - Se tomarán las horas completas.
-   - El resto de minutos se redondeará así:
-     - `0 a 24` minutos: baja a 0.
-     - `25 a 47` minutos: sube a 30.
-     - `48 a 59` minutos: sube a 60.
+## Cambios
 
-3. Simplificar los textos de la UI en “Parámetros de cálculo” para que reflejen claramente esta regla global, evitando que parezca que hay que configurarlo empleado por empleado.
+### 1. `src/utils/reporteHorasExtrasPDF.ts`
 
-4. Mantener el filtro de empleados/sucursal solo como filtro de reporte, no como configuración individual.
+Agregar a `ConfigHorasExtras` un campo nuevo:
+- `horaEntradaRef: string` (formato `"HH:MM"`, default `"09:00"`)
 
-## Archivos involucrados
+En `calcularJornadas()`, antes de calcular `brutasHs`:
+- Construir el timestamp de entrada de referencia para esa fecha en zona Argentina (ej: `2026-04-26T09:00:00-03:00`).
+- Tomar `entradaEfectiva = max(entradaReal, entradaReferencia)`.
+- Calcular `brutasHs = (salidaReal - entradaEfectiva) / 3600000`, con piso en 0.
+- El resto de la lógica (base, tolerancia, redondeo) queda igual.
 
-- `src/utils/reporteHorasExtrasPDF.ts`
-- `src/components/admin/payroll/ReporteHorasExtras.tsx`
+### 2. `src/components/admin/payroll/ReporteHorasExtras.tsx`
+
+- Subir versión de localStorage a `config_horas_extras_v3` para que tomen el nuevo default.
+- Agregar input "Hora entrada de referencia" en Parámetros de cálculo (default 09:00) — opcional, por si en el futuro se quiere ajustar.
+- Actualizar la `CardDescription` aclarando: *"Los minutos trabajados antes de la hora de entrada de referencia (09:00) no se computan."*
 
 ## Resultado esperado
 
-El cálculo y el PDF van a mostrar las horas extra redondeadas globalmente de la forma pedida: 25+ minutos = 0,5h y 48+ minutos = 1h, para cualquier empleado incluido en el reporte.
+- Domingo 09:00 → 13:28 → base 4h + 28min extra → con redondeo: 0,5h extra.
+- Si ficha 08:40 → 13:28 → se considera 09:00 → 13:28 → mismo resultado (0,5h).
+- Día hábil 08:30 → 17:45 → se considera 09:00 → 17:45 → 8h 45min → 1h extra (≥45 min).
