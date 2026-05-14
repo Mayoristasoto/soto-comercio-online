@@ -235,7 +235,7 @@ export default function ReporteHorasExtras() {
             <Settings2 className="h-5 w-5" /> Parámetros de cálculo
           </CardTitle>
           <CardDescription>
-            Regla global aplicada a todos los empleados: menos de 25 minutos extra no se computan; entre 25 y 47 minutos se pagan como 0,5 h; desde 48 minutos se paga 1 h. Se aplica sobre la fracción de cada hora extra.
+            Regla global aplicada a todos los empleados: menos de 20 minutos extra no se computan; entre 20 y 44 minutos se pagan como 0,5 h; desde 45 minutos se paga 1 h. Se aplica sobre la fracción de cada hora extra.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -268,9 +268,9 @@ export default function ReporteHorasExtras() {
             <div className="space-y-2 md:col-span-2">
               <Label>Redondeo de fracciones</Label>
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                <p>• 0 a 24 min sobrantes → no se computan</p>
-                <p>• 25 a 47 min sobrantes → 0,5 h</p>
-                <p>• 48 a 59 min sobrantes → 1 h</p>
+                <p>• 0 a 19 min sobrantes → no se computan</p>
+                <p>• 20 a 44 min sobrantes → 0,5 h</p>
+                <p>• 45 a 59 min sobrantes → 1 h</p>
                 <p className="pt-1 italic">Regla global, igual para todos los empleados.</p>
               </div>
             </div>

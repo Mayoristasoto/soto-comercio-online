@@ -23,18 +23,18 @@ export interface ConfigHorasExtras {
 export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
   valorHoraHabil: 0,
   valorHoraDomingo: 0,
-  toleranciaMin: 25,
+  toleranciaMin: 20,
   baseHabilHs: 8,
   baseDomingoHs: 4,
   redondeoMin: 30,
-  redondeoUmbralMin: 25,
+  redondeoUmbralMin: 20,
 };
 
 /**
  * Redondeo global de horas extra (regla fija para todos los empleados):
- *   - 0 a 24 minutos sobrantes  → 0
- *   - 25 a 47 minutos sobrantes → 30 minutos (0,5 h)
- *   - 48 a 59 minutos sobrantes → 60 minutos (1 h)
+ *   - 0 a 19 minutos sobrantes  → 0
+ *   - 20 a 44 minutos sobrantes → 30 minutos (0,5 h)
+ *   - 45 a 59 minutos sobrantes → 60 minutos (1 h)
  * Se aplica sobre la fracción dentro de cada hora completa.
  */
 function aplicarRedondeo(extraHs: number, _config: ConfigHorasExtras): number {
@@ -43,8 +43,8 @@ function aplicarRedondeo(extraHs: number, _config: ConfigHorasExtras): number {
   const horas = Math.floor(totalMin / 60);
   const resto = totalMin - horas * 60;
   let addMin = 0;
-  if (resto >= 48) addMin = 60;
-  else if (resto >= 25) addMin = 30;
+  if (resto >= 45) addMin = 60;
+  else if (resto >= 20) addMin = 30;
   return (horas * 60 + addMin) / 60;
 }
 
