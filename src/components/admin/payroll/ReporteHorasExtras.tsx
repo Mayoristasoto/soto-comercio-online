@@ -238,7 +238,7 @@ export default function ReporteHorasExtras() {
             <Settings2 className="h-5 w-5" /> Parámetros de cálculo
           </CardTitle>
           <CardDescription>
-            Regla global aplicada a todos los empleados: menos de 20 minutos extra no se computan; entre 20 y 44 minutos se pagan como 0,5 h; desde 45 minutos se paga 1 h. Se aplica sobre la fracción de cada hora extra.
+            Regla global aplicada a todos los empleados: los minutos fichados antes de la hora de entrada de referencia (por defecto 09:00) no se computan. Sobre el excedente, menos de 20 min no se paga; entre 20 y 44 min se paga 0,5 h; desde 45 min se paga 1 h.
           </CardDescription>
         </CardHeader>
         <CardContent>
