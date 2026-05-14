@@ -227,6 +227,9 @@ export default function ReporteHorasExtras() {
   const updateConfig = (k: keyof ConfigHorasExtras, v: number) =>
     setConfig((prev) => ({ ...prev, [k]: isNaN(v) ? 0 : v }));
 
+  const updateConfigStr = (k: keyof ConfigHorasExtras, v: string) =>
+    setConfig((prev) => ({ ...prev, [k]: v }));
+
   return (
     <div className="space-y-6">
       <Card>
