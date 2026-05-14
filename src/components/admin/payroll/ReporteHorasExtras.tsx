@@ -268,6 +268,11 @@ export default function ReporteHorasExtras() {
               <Input type="number" min={1} step="0.5" value={config.baseDomingoHs}
                 onChange={(e) => updateConfig("baseDomingoHs", parseFloat(e.target.value))} />
             </div>
+            <div className="space-y-2">
+              <Label>Hora entrada referencia</Label>
+              <Input type="time" value={config.horaEntradaRef || "09:00"}
+                onChange={(e) => updateConfigStr("horaEntradaRef", e.target.value || "09:00")} />
+            </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Redondeo de fracciones</Label>
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
