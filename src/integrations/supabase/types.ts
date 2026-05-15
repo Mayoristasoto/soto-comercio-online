@@ -5767,6 +5767,131 @@ export type Database = {
           },
         ]
       }
+      liquidaciones_horas_extras: {
+        Row: {
+          cantidad_empleados: number
+          cantidad_jornadas: number
+          config_snapshot: Json
+          created_at: string
+          created_by: string | null
+          empleados_label: string
+          estado: string
+          fecha_desde: string
+          fecha_hasta: string
+          id: string
+          observaciones: string | null
+          sucursal_id: string | null
+          sucursal_label: string
+          total_hs_domingo: number
+          total_hs_habil: number
+          total_monto: number
+        }
+        Insert: {
+          cantidad_empleados?: number
+          cantidad_jornadas?: number
+          config_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          empleados_label?: string
+          estado?: string
+          fecha_desde: string
+          fecha_hasta: string
+          id?: string
+          observaciones?: string | null
+          sucursal_id?: string | null
+          sucursal_label?: string
+          total_hs_domingo?: number
+          total_hs_habil?: number
+          total_monto?: number
+        }
+        Update: {
+          cantidad_empleados?: number
+          cantidad_jornadas?: number
+          config_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          empleados_label?: string
+          estado?: string
+          fecha_desde?: string
+          fecha_hasta?: string
+          id?: string
+          observaciones?: string | null
+          sucursal_id?: string | null
+          sucursal_label?: string
+          total_hs_domingo?: number
+          total_hs_habil?: number
+          total_monto?: number
+        }
+        Relationships: []
+      }
+      liquidaciones_horas_extras_items: {
+        Row: {
+          base_hs: number
+          created_at: string
+          empleado_id: string
+          empleado_nombre: string
+          entrada: string | null
+          es_domingo: boolean
+          exceso_real_min: number
+          extra_hs: number
+          fecha: string
+          id: string
+          liquidacion_id: string
+          monto: number
+          redondeo_label: string | null
+          salida: string | null
+          sucursal_id: string | null
+          sucursal_nombre: string | null
+          valor_hora: number
+        }
+        Insert: {
+          base_hs?: number
+          created_at?: string
+          empleado_id: string
+          empleado_nombre: string
+          entrada?: string | null
+          es_domingo?: boolean
+          exceso_real_min?: number
+          extra_hs?: number
+          fecha: string
+          id?: string
+          liquidacion_id: string
+          monto?: number
+          redondeo_label?: string | null
+          salida?: string | null
+          sucursal_id?: string | null
+          sucursal_nombre?: string | null
+          valor_hora?: number
+        }
+        Update: {
+          base_hs?: number
+          created_at?: string
+          empleado_id?: string
+          empleado_nombre?: string
+          entrada?: string | null
+          es_domingo?: boolean
+          exceso_real_min?: number
+          extra_hs?: number
+          fecha?: string
+          id?: string
+          liquidacion_id?: string
+          monto?: number
+          redondeo_label?: string | null
+          salida?: string | null
+          sucursal_id?: string | null
+          sucursal_nombre?: string | null
+          valor_hora?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liquidaciones_horas_extras_items_liquidacion_id_fkey"
+            columns: ["liquidacion_id"]
+            isOneToOne: false
+            referencedRelation: "liquidaciones_horas_extras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       liquidaciones_mensuales: {
         Row: {
           aprobada_por: string | null
