@@ -138,7 +138,7 @@ export function calcularJornadas(
     const refHHMM = `${String(hhRef).padStart(2, "0")}:${String(mmRef).padStart(2, "0")}`;
     const entradaRefMs = new Date(`${fecha}T${refHHMM}:00-03:00`).getTime();
 
-    // Recortar: si fichó antes de la referencia, contar desde la referencia (solo informativo de brutas).
+    // Recortar: si fichó antes de la referencia, contar desde la referencia.
     const entradaEfectivaMs = Math.max(entradaRealMs, entradaRefMs);
     const ms = salidaMs - entradaEfectivaMs;
     if (ms <= 0) continue;
@@ -148,14 +148,9 @@ export function calcularJornadas(
     const dow = arg.getUTCDay();
     const esDomingo = dow === 0;
     const baseHs = esDomingo ? config.baseDomingoHs : config.baseHabilHs;
-
-    // El exceso se mide ÚNICAMENTE contra la salida esperada = entrada de referencia + jornada base.
-    // Los minutos previos a la entrada nunca generan ni aumentan horas extra.
-    const salidaEsperadaMs = entradaRefMs + baseHs * 60 * 60 * 1000;
-    const excesoMs = salidaMs - salidaEsperadaMs;
-    const extraHsBruto = Math.max(0, excesoMs / (1000 * 60 * 60));
+    const extraHsBruto = Math.max(0, brutasHs - baseHs);
     const extraMin = extraHsBruto * 60;
-    const excesoRealMin = Math.max(0, Math.round(extraMin));
+    const excesoRealMin = Math.round(extraMin);
     const extraConTolerancia = extraMin >= config.toleranciaMin ? extraHsBruto : 0;
     const extraHs = aplicarRedondeo(extraConTolerancia, config);
     const redondeoLabel = excesoRealMin > 0
