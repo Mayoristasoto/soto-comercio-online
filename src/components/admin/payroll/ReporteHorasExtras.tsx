@@ -443,8 +443,11 @@ export default function ReporteHorasExtras() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Detalle de jornadas con extras <Badge variant="secondary" className="ml-2">{detalle.length}</Badge>
+                Detalle de jornadas <Badge variant="secondary" className="ml-2">{detalle.length}</Badge>
               </CardTitle>
+              <CardDescription>
+                Se muestran todas las jornadas con exceso real {`>`} 0, incluso si el redondeo dejó el pagado en 0. La columna "Detalle" indica la conversión aplicada.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[480px]">
@@ -457,7 +460,9 @@ export default function ReporteHorasExtras() {
                       <TableHead>Entrada</TableHead>
                       <TableHead>Salida</TableHead>
                       <TableHead>Base</TableHead>
-                      <TableHead>Hs extra</TableHead>
+                      <TableHead>Exceso real</TableHead>
+                      <TableHead>Pagado</TableHead>
+                      <TableHead>Detalle</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -472,7 +477,9 @@ export default function ReporteHorasExtras() {
                         <TableCell>{j.entrada}</TableCell>
                         <TableCell>{j.salida}</TableCell>
                         <TableCell>{j.baseHs}h</TableCell>
+                        <TableCell>{j.excesoRealMin} min</TableCell>
                         <TableCell className="font-medium">{fmtHs(j.extraHs)}</TableCell>
+                        <TableCell className="text-xs">{j.redondeoLabel}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
