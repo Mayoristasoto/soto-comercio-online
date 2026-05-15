@@ -238,7 +238,7 @@ export default function ReporteHorasExtras() {
             <Settings2 className="h-5 w-5" /> Parámetros de cálculo
           </CardTitle>
           <CardDescription>
-            Regla global aplicada a todos los empleados: los minutos fichados antes de la hora de entrada de referencia (por defecto 09:00) no se computan. Sobre el excedente, menos de 20 min no se paga; entre 20 y 44 min se paga 0,5 h; desde 45 min se paga 1 h.
+            Regla global aplicada a todos los empleados: los minutos fichados antes de la hora de entrada de referencia (por defecto 09:00) no se computan. Sobre el excedente de la jornada base: 0 a 18 min no se paga; 19 a 44 min se paga 0,5 h; desde 45 min se paga 1 h.
           </CardDescription>
         </CardHeader>
         <CardContent>
