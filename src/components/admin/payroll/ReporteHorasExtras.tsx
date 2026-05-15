@@ -26,7 +26,7 @@ import {
 type Sucursal = { id: string; nombre: string };
 type Empleado = { id: string; nombre: string; apellido: string; sucursal_id: string | null; activo: boolean };
 
-const CONFIG_KEY = "config_horas_extras_v3";
+const CONFIG_KEY = "config_horas_extras_v4";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const firstOfMonthISO = () => {
