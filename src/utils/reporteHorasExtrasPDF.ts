@@ -242,7 +242,7 @@ export async function generarReporteHorasExtrasPDF(opts: {
   const { fichajes, sucursales, fechaDesde, fechaHasta, sucursalLabel, empleadosLabel, config } = opts;
 
   const jornadas = calcularJornadas(fichajes, sucursales, config);
-  const detalle = jornadas.filter((j) => j.extraHs > 0);
+  const detalle = jornadas.filter((j) => j.excesoRealMin > 0);
   const resumen = calcularResumen(jornadas, config);
 
   const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "mm" });
