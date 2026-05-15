@@ -276,8 +276,8 @@ export default function ReporteHorasExtras() {
             <div className="space-y-2 md:col-span-2">
               <Label>Redondeo de fracciones</Label>
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                <p>• 0 a 19 min sobrantes → no se computan</p>
-                <p>• 20 a 44 min sobrantes → 0,5 h</p>
+                <p>• 0 a 18 min sobrantes → no se computan</p>
+                <p>• 19 a 44 min sobrantes → 0,5 h</p>
                 <p>• 45 a 59 min sobrantes → 1 h</p>
                 <p className="pt-1 italic">Regla global, igual para todos los empleados.</p>
               </div>
