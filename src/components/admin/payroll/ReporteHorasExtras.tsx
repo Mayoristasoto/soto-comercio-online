@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, FileSearch, Users, Loader2, Settings2 } from "lucide-react";
+import { Download, FileSearch, Users, Loader2, Settings2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   calcularJornadas,
@@ -20,7 +20,6 @@ import {
   type ConfigHorasExtras,
   type FichajeRow,
   type JornadaCalculada,
-  type ResumenEmpleado,
 } from "@/utils/reporteHorasExtrasPDF";
 
 type Sucursal = { id: string; nombre: string };
@@ -35,8 +34,8 @@ const firstOfMonthISO = () => {
 };
 const startOfWeek = (d: Date) => {
   const x = new Date(d);
-  const day = x.getDay(); // 0=Dom
-  const diff = day === 0 ? -6 : 1 - day; // a lunes
+  const day = x.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   x.setDate(x.getDate() + diff);
   return x;
 };
@@ -45,6 +44,10 @@ const isoOf = (d: Date) =>
 
 const fmtMoney = (n: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 2 }).format(n || 0);
+
+const keyOf = (j: JornadaCalculada) => `${j.empleadoId}|${j.fecha}`;
+
+type FiltroTipo = "todos" | "habil" | "domingo";
 
 export default function ReporteHorasExtras() {
   const { toast } = useToast();
@@ -56,9 +59,16 @@ export default function ReporteHorasExtras() {
   const [selectedEmpleados, setSelectedEmpleados] = useState<Set<string>>(new Set());
   const [searchEmp, setSearchEmp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [jornadas, setJornadas] = useState<JornadaCalculada[]>([]);
-  const [resumen, setResumen] = useState<ResumenEmpleado[]>([]);
-  const [lastFichajes, setLastFichajes] = useState<FichajeRow[] | null>(null);
+  const [aprobadas, setAprobadas] = useState<Set<string>>(new Set());
+
+  // Filtros locales sobre la tabla detalle
+  const [filtroTexto, setFiltroTexto] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
+  const [soloPagados, setSoloPagados] = useState(false);
+  const [minMin, setMinMin] = useState<string>("");
+  const [maxMin, setMaxMin] = useState<string>("");
 
   const [config, setConfig] = useState<ConfigHorasExtras>(() => {
     try {
@@ -97,44 +107,32 @@ export default function ReporteHorasExtras() {
 
   const setPreset = (preset: "mes" | "anterior" | "30d" | "semana" | "semana_pasada") => {
     const now = new Date();
-    if (preset === "mes") {
-      setFechaDesde(firstOfMonthISO());
-      setFechaHasta(todayISO());
-    } else if (preset === "anterior") {
+    if (preset === "mes") { setFechaDesde(firstOfMonthISO()); setFechaHasta(todayISO()); }
+    else if (preset === "anterior") {
       const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const last = new Date(now.getFullYear(), now.getMonth(), 0);
-      setFechaDesde(isoOf(d));
-      setFechaHasta(isoOf(last));
+      setFechaDesde(isoOf(d)); setFechaHasta(isoOf(last));
     } else if (preset === "30d") {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 30);
-      setFechaDesde(isoOf(d));
-      setFechaHasta(todayISO());
+      const d = new Date(now); d.setDate(d.getDate() - 30);
+      setFechaDesde(isoOf(d)); setFechaHasta(todayISO());
     } else if (preset === "semana") {
       const inicio = startOfWeek(now);
-      const fin = new Date(inicio);
-      fin.setDate(inicio.getDate() + 6);
-      setFechaDesde(isoOf(inicio));
-      setFechaHasta(isoOf(fin));
+      const fin = new Date(inicio); fin.setDate(inicio.getDate() + 6);
+      setFechaDesde(isoOf(inicio)); setFechaHasta(isoOf(fin));
     } else if (preset === "semana_pasada") {
-      const inicio = startOfWeek(now);
-      inicio.setDate(inicio.getDate() - 7);
-      const fin = new Date(inicio);
-      fin.setDate(inicio.getDate() + 6);
-      setFechaDesde(isoOf(inicio));
-      setFechaHasta(isoOf(fin));
+      const inicio = startOfWeek(now); inicio.setDate(inicio.getDate() - 7);
+      const fin = new Date(inicio); fin.setDate(inicio.getDate() + 6);
+      setFechaDesde(isoOf(inicio)); setFechaHasta(isoOf(fin));
     }
   };
 
   const toggleEmpleado = (id: string) => {
     setSelectedEmpleados((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
-
   const seleccionarTodos = (val: boolean) => {
     if (val) setSelectedEmpleados(new Set(empleadosFiltrados.map((e) => e.id)));
     else setSelectedEmpleados(new Set());
@@ -173,11 +171,13 @@ export default function ReporteHorasExtras() {
     setLoading(true);
     try {
       const fichajes = await fetchData();
-      setLastFichajes(fichajes);
       const j = calcularJornadas(fichajes, sucursalMap, config);
-      setJornadas(j);
-      setResumen(calcularResumen(j, config));
-      if (j.length === 0) toast({ title: "Sin datos", description: "No se encontraron fichajes en el período." });
+      // Solo mostramos jornadas con algún exceso real (las que tienen sentido revisar)
+      const conExceso = j.filter((x) => x.excesoRealMin > 0 || x.extraHs > 0);
+      setJornadas(conExceso);
+      // Por defecto, todas aprobadas
+      setAprobadas(new Set(conExceso.map(keyOf)));
+      if (conExceso.length === 0) toast({ title: "Sin datos", description: "No se encontraron jornadas con exceso en el período." });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -185,32 +185,157 @@ export default function ReporteHorasExtras() {
     }
   };
 
-  const onPDF = async () => {
-    setLoading(true);
-    try {
-      const fichajes = lastFichajes ?? (await fetchData());
-      if (!lastFichajes) setLastFichajes(fichajes);
-      if (fichajes.length === 0) {
-        toast({ title: "Sin datos", description: "No hay fichajes para exportar." });
-        return;
+  // Jornadas filtradas por filtros locales
+  const jornadasFiltradas = useMemo(() => {
+    const minN = minMin === "" ? -Infinity : parseInt(minMin, 10);
+    const maxN = maxMin === "" ? Infinity : parseInt(maxMin, 10);
+    const q = filtroTexto.toLowerCase().trim();
+    return jornadas.filter((j) => {
+      if (filtroTipo === "habil" && j.esDomingo) return false;
+      if (filtroTipo === "domingo" && !j.esDomingo) return false;
+      if (soloPagados && j.extraHs <= 0) return false;
+      if (j.excesoRealMin < minN || j.excesoRealMin > maxN) return false;
+      if (q && !`${j.empleadoNombre} ${j.sucursalNombre}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [jornadas, filtroTipo, soloPagados, minMin, maxMin, filtroTexto]);
+
+  // Subset aprobado (sin filtros — los filtros son solo visuales)
+  const aprobadasJornadas = useMemo(
+    () => jornadas.filter((j) => aprobadas.has(keyOf(j))),
+    [jornadas, aprobadas]
+  );
+  const resumen = useMemo(() => calcularResumen(aprobadasJornadas, config), [aprobadasJornadas, config]);
+  const totalHabilHs = resumen.reduce((a, b) => a + b.hsExtraHabil, 0);
+  const totalDomHs = resumen.reduce((a, b) => a + b.hsExtraDomingo, 0);
+  const granTotal = resumen.reduce((a, b) => a + b.montoTotal, 0);
+
+  // Agrupar por empleado para checkbox maestro por empleado
+  const porEmpleado = useMemo(() => {
+    const m = new Map<string, { nombre: string; jornadas: JornadaCalculada[] }>();
+    for (const j of jornadas) {
+      if (!m.has(j.empleadoId)) m.set(j.empleadoId, { nombre: j.empleadoNombre, jornadas: [] });
+      m.get(j.empleadoId)!.jornadas.push(j);
+    }
+    return Array.from(m.entries()).sort((a, b) => a[1].nombre.localeCompare(b[1].nombre));
+  }, [jornadas]);
+
+  const toggleJornada = (k: string) => {
+    setAprobadas((prev) => {
+      const n = new Set(prev);
+      if (n.has(k)) n.delete(k); else n.add(k);
+      return n;
+    });
+  };
+  const toggleEmpleadoAprobacion = (empId: string, val: boolean) => {
+    setAprobadas((prev) => {
+      const n = new Set(prev);
+      const list = jornadas.filter((j) => j.empleadoId === empId);
+      for (const j of list) {
+        const k = keyOf(j);
+        if (val) n.add(k); else n.delete(k);
       }
+      return n;
+    });
+  };
+  const empleadoEstado = (empId: string): "all" | "none" | "some" => {
+    const list = jornadas.filter((j) => j.empleadoId === empId);
+    const sel = list.filter((j) => aprobadas.has(keyOf(j))).length;
+    if (sel === 0) return "none";
+    if (sel === list.length) return "all";
+    return "some";
+  };
+  const toggleVisiblesFiltradas = (val: boolean) => {
+    setAprobadas((prev) => {
+      const n = new Set(prev);
+      for (const j of jornadasFiltradas) {
+        const k = keyOf(j);
+        if (val) n.add(k); else n.delete(k);
+      }
+      return n;
+    });
+  };
+  const aprobarTodas = () => setAprobadas(new Set(jornadas.map(keyOf)));
+  const limpiarTodas = () => setAprobadas(new Set());
+
+  const onAprobarYGenerar = async () => {
+    if (aprobadasJornadas.length === 0) {
+      toast({ title: "Sin selección", description: "Tildá al menos una jornada para aprobar.", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
       const sucursalLabel = sucursalId === "all" ? "Todas" : sucursales.find((s) => s.id === sucursalId)?.nombre || "—";
-      const empleadosLabel =
-        selectedEmpleados.size === 0 ? "Todos" : `${selectedEmpleados.size} seleccionado(s)`;
+      const empleadosLabel = selectedEmpleados.size === 0 ? "Todos" : `${selectedEmpleados.size} seleccionado(s)`;
+
+      // Persistir cabecera + items
+      const { data: userData } = await supabase.auth.getUser();
+      const cabecera = {
+        created_by: userData.user?.id ?? null,
+        fecha_desde: fechaDesde,
+        fecha_hasta: fechaHasta,
+        sucursal_id: sucursalId === "all" ? null : sucursalId,
+        sucursal_label: sucursalLabel,
+        empleados_label: empleadosLabel,
+        estado: "aprobado_rrhh",
+        config_snapshot: config as any,
+        total_hs_habil: totalHabilHs,
+        total_hs_domingo: totalDomHs,
+        total_monto: granTotal,
+        cantidad_jornadas: aprobadasJornadas.length,
+        cantidad_empleados: resumen.length,
+      };
+      const { data: liq, error: errLiq } = await supabase
+        .from("liquidaciones_horas_extras")
+        .insert(cabecera)
+        .select("id")
+        .single();
+      if (errLiq) throw errLiq;
+
+      const items = aprobadasJornadas.map((j) => ({
+        liquidacion_id: liq.id,
+        empleado_id: j.empleadoId,
+        empleado_nombre: j.empleadoNombre,
+        sucursal_id: sucursalId === "all" ? null : sucursalId,
+        sucursal_nombre: j.sucursalNombre,
+        fecha: j.fecha,
+        es_domingo: j.esDomingo,
+        entrada: j.entrada,
+        salida: j.salida,
+        base_hs: j.baseHs,
+        exceso_real_min: j.excesoRealMin,
+        extra_hs: j.extraHs,
+        redondeo_label: j.redondeoLabel,
+        valor_hora: j.esDomingo ? config.valorHoraDomingo : config.valorHoraHabil,
+        monto: j.extraHs * (j.esDomingo ? config.valorHoraDomingo : config.valorHoraHabil),
+      }));
+      // chunked insert
+      for (let i = 0; i < items.length; i += 500) {
+        const chunk = items.slice(i, i + 500);
+        const { error: errIt } = await supabase.from("liquidaciones_horas_extras_items").insert(chunk);
+        if (errIt) throw errIt;
+      }
+
+      // PDF con subset aprobado
       await generarReporteHorasExtrasPDF({
-        fichajes,
+        jornadasAprobadas: aprobadasJornadas,
         sucursales: sucursalMap,
         fechaDesde,
         fechaHasta,
         sucursalLabel,
         empleadosLabel,
         config,
+        estadoLabel: "Aprobado por RRHH — pendiente revisión gerencial",
       });
-      toast({ title: "PDF generado", description: "El informe se descargó correctamente." });
+
+      toast({
+        title: "Liquidación aprobada",
+        description: `${aprobadasJornadas.length} jornadas registradas. PDF de Tesorería descargado.`,
+      });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -219,16 +344,15 @@ export default function ReporteHorasExtras() {
     return `${Math.floor(totalMin / 60)}h ${(totalMin % 60).toString().padStart(2, "0")}m`;
   };
 
-  const detalle = jornadas.filter((j) => j.excesoRealMin > 0);
-  const totalHabilHs = resumen.reduce((a, b) => a + b.hsExtraHabil, 0);
-  const totalDomHs = resumen.reduce((a, b) => a + b.hsExtraDomingo, 0);
-  const granTotal = resumen.reduce((a, b) => a + b.montoTotal, 0);
-
   const updateConfig = (k: keyof ConfigHorasExtras, v: number) =>
     setConfig((prev) => ({ ...prev, [k]: isNaN(v) ? 0 : v }));
-
   const updateConfigStr = (k: keyof ConfigHorasExtras, v: string) =>
     setConfig((prev) => ({ ...prev, [k]: v }));
+
+  const totalAprobadas = aprobadasJornadas.length;
+  const totalJornadas = jornadas.length;
+  const visiblesAprobadas = jornadasFiltradas.filter((j) => aprobadas.has(keyOf(j))).length;
+  const todasVisiblesAprobadas = jornadasFiltradas.length > 0 && visiblesAprobadas === jornadasFiltradas.length;
 
   return (
     <div className="space-y-6">
@@ -238,7 +362,7 @@ export default function ReporteHorasExtras() {
             <Settings2 className="h-5 w-5" /> Parámetros de cálculo
           </CardTitle>
           <CardDescription>
-            Regla global aplicada a todos los empleados: los minutos fichados antes de la hora de entrada de referencia (por defecto 09:00) no se computan. Sobre el excedente de la jornada base: 0 a 18 min no se paga; 19 a 44 min se paga 0,5 h; desde 45 min se paga 1 h.
+            Regla global: minutos antes de la hora de entrada de referencia (por defecto 09:00) no se computan. Sobre el excedente: 0–18 min no se paga; 19–44 min = 0,5 h; 45–59 min = 1 h.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -273,15 +397,6 @@ export default function ReporteHorasExtras() {
               <Input type="time" value={config.horaEntradaRef || "09:00"}
                 onChange={(e) => updateConfigStr("horaEntradaRef", e.target.value || "09:00")} />
             </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Redondeo de fracciones</Label>
-              <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                <p>• 0 a 18 min sobrantes → no se computan</p>
-                <p>• 19 a 44 min sobrantes → 0,5 h</p>
-                <p>• 45 a 59 min sobrantes → 1 h</p>
-                <p className="pt-1 italic">Regla global, igual para todos los empleados.</p>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -290,7 +405,7 @@ export default function ReporteHorasExtras() {
         <CardHeader>
           <CardTitle>Liquidación de Horas Extras</CardTitle>
           <CardDescription>
-            Selecciona período, sucursal y empleados. El sistema calcula las horas extras y el monto a pagar.
+            1) Calculá el período. 2) Revisá y tildá las jornadas a aprobar. 3) Generá el Informe de Tesorería con lo aprobado.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -365,10 +480,6 @@ export default function ReporteHorasExtras() {
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSearch className="h-4 w-4 mr-2" />}
               Calcular
             </Button>
-            <Button onClick={onPDF} disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-              Informe Tesorería (PDF)
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -379,8 +490,11 @@ export default function ReporteHorasExtras() {
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total a pagar</p>
+                  <p className="text-sm text-muted-foreground">Total a pagar (aprobado)</p>
                   <p className="text-3xl font-bold text-primary">{fmtMoney(granTotal)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {totalAprobadas} de {totalJornadas} jornadas tildadas · {resumen.length} empleado(s)
+                  </p>
                 </div>
                 <div className="flex gap-4 text-sm">
                   <div>
@@ -391,23 +505,25 @@ export default function ReporteHorasExtras() {
                     <p className="text-muted-foreground">Hs domingo</p>
                     <p className="font-semibold">{fmtHs(totalDomHs)}</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Empleados</p>
-                    <p className="font-semibold">{resumen.length}</p>
-                  </div>
                 </div>
+                <Button onClick={onAprobarYGenerar} disabled={saving || totalAprobadas === 0} size="lg">
+                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                  Aprobar y generar Tesorería
+                </Button>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Resumen por empleado</CardTitle>
+              <CardTitle className="text-base">Resumen por empleado (solo aprobados)</CardTitle>
+              <CardDescription>Tildá/destildá empleados completos o jornadas individuales en la tabla de abajo.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px]"></TableHead>
                     <TableHead>Empleado</TableHead>
                     <TableHead>Hs hábil</TableHead>
                     <TableHead className="text-right">$ hábil</TableHead>
@@ -417,17 +533,28 @@ export default function ReporteHorasExtras() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {resumen.map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{r.empleadoNombre}</TableCell>
-                      <TableCell>{fmtHs(r.hsExtraHabil)}</TableCell>
-                      <TableCell className="text-right">{fmtMoney(r.montoHabil)}</TableCell>
-                      <TableCell>{fmtHs(r.hsExtraDomingo)}</TableCell>
-                      <TableCell className="text-right">{fmtMoney(r.montoDomingo)}</TableCell>
-                      <TableCell className="text-right font-bold">{fmtMoney(r.montoTotal)}</TableCell>
-                    </TableRow>
-                  ))}
+                  {porEmpleado.map(([empId, info]) => {
+                    const r = resumen.find((x) => x.empleadoNombre === info.nombre);
+                    const estado = empleadoEstado(empId);
+                    return (
+                      <TableRow key={empId}>
+                        <TableCell>
+                          <Checkbox
+                            checked={estado === "all" ? true : estado === "some" ? "indeterminate" : false}
+                            onCheckedChange={(v) => toggleEmpleadoAprobacion(empId, v === true)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{info.nombre}</TableCell>
+                        <TableCell>{fmtHs(r?.hsExtraHabil || 0)}</TableCell>
+                        <TableCell className="text-right">{fmtMoney(r?.montoHabil || 0)}</TableCell>
+                        <TableCell>{fmtHs(r?.hsExtraDomingo || 0)}</TableCell>
+                        <TableCell className="text-right">{fmtMoney(r?.montoDomingo || 0)}</TableCell>
+                        <TableCell className="text-right font-bold">{fmtMoney(r?.montoTotal || 0)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                   <TableRow className="bg-muted font-bold">
+                    <TableCell></TableCell>
                     <TableCell>TOTAL</TableCell>
                     <TableCell>{fmtHs(totalHabilHs)}</TableCell>
                     <TableCell className="text-right">{fmtMoney(resumen.reduce((a, b) => a + b.montoHabil, 0))}</TableCell>
@@ -443,17 +570,61 @@ export default function ReporteHorasExtras() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Detalle de jornadas <Badge variant="secondary" className="ml-2">{detalle.length}</Badge>
+                Aprobación de jornadas
+                <Badge variant="secondary" className="ml-2">{jornadasFiltradas.length} visibles</Badge>
+                <Badge variant="default" className="ml-2">{totalAprobadas} aprobadas</Badge>
               </CardTitle>
               <CardDescription>
-                Se muestran todas las jornadas con exceso real {`>`} 0, incluso si el redondeo dejó el pagado en 0. La columna "Detalle" indica la conversión aplicada.
+                Tildá las jornadas a incluir en el Informe de Tesorería. Los filtros son visuales: no afectan lo aprobado fuera del filtro actual.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              {/* Filtros locales */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                <Input
+                  placeholder="Buscar empleado/sucursal..."
+                  value={filtroTexto}
+                  onChange={(e) => setFiltroTexto(e.target.value)}
+                  className="md:col-span-2"
+                />
+                <Select value={filtroTipo} onValueChange={(v) => setFiltroTipo(v as FiltroTipo)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="habil">Solo hábiles</SelectItem>
+                    <SelectItem value="domingo">Solo domingos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Input type="number" min={0} placeholder="Min min." value={minMin} onChange={(e) => setMinMin(e.target.value)} />
+                  <Input type="number" min={0} placeholder="Máx min." value={maxMin} onChange={(e) => setMaxMin(e.target.value)} />
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox checked={soloPagados} onCheckedChange={(v) => setSoloPagados(v === true)} />
+                  Solo pagados {">"} 0
+                </label>
+              </div>
+
+              {/* Acciones masivas */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <Button size="sm" variant="outline" onClick={() => toggleVisiblesFiltradas(true)}>Tildar visibles</Button>
+                <Button size="sm" variant="outline" onClick={() => toggleVisiblesFiltradas(false)}>Destildar visibles</Button>
+                <div className="w-px h-5 bg-border mx-1" />
+                <Button size="sm" variant="ghost" onClick={aprobarTodas}>Aprobar todas</Button>
+                <Button size="sm" variant="ghost" onClick={limpiarTodas}>Limpiar todas</Button>
+              </div>
+
               <ScrollArea className="h-[480px]">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[40px]">
+                        <Checkbox
+                          checked={todasVisiblesAprobadas}
+                          onCheckedChange={(v) => toggleVisiblesFiltradas(v === true)}
+                          aria-label="Tildar visibles"
+                        />
+                      </TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead>Empleado</TableHead>
                       <TableHead>Sucursal</TableHead>
@@ -466,22 +637,36 @@ export default function ReporteHorasExtras() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detalle.map((j, i) => (
-                      <TableRow
-                        key={i}
-                        className={j.esDomingo ? "bg-orange-50 text-orange-900 hover:bg-orange-100" : ""}
-                      >
-                        <TableCell className="whitespace-nowrap">{j.fecha.split("-").reverse().join("/")}</TableCell>
-                        <TableCell>{j.empleadoNombre}</TableCell>
-                        <TableCell>{j.sucursalNombre}</TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums">{j.entrada}</TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums">{j.salida}</TableCell>
-                        <TableCell className="whitespace-nowrap">{j.baseHs}h</TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums">{j.excesoRealMin} min</TableCell>
-                        <TableCell className="whitespace-nowrap font-medium tabular-nums">{fmtHs(j.extraHs)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{j.redondeoLabel}</TableCell>
+                    {jornadasFiltradas.map((j) => {
+                      const k = keyOf(j);
+                      const checked = aprobadas.has(k);
+                      return (
+                        <TableRow
+                          key={k}
+                          className={`${j.esDomingo ? "bg-orange-50 hover:bg-orange-100" : ""} ${!checked ? "opacity-50" : ""}`}
+                        >
+                          <TableCell>
+                            <Checkbox checked={checked} onCheckedChange={() => toggleJornada(k)} />
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">{j.fecha.split("-").reverse().join("/")}</TableCell>
+                          <TableCell>{j.empleadoNombre}</TableCell>
+                          <TableCell>{j.sucursalNombre}</TableCell>
+                          <TableCell className="whitespace-nowrap tabular-nums">{j.entrada}</TableCell>
+                          <TableCell className="whitespace-nowrap tabular-nums">{j.salida}</TableCell>
+                          <TableCell className="whitespace-nowrap">{j.baseHs}h</TableCell>
+                          <TableCell className="whitespace-nowrap tabular-nums">{j.excesoRealMin} min</TableCell>
+                          <TableCell className="whitespace-nowrap font-medium tabular-nums">{fmtHs(j.extraHs)}</TableCell>
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{j.redondeoLabel}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {jornadasFiltradas.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
+                          Sin jornadas que coincidan con los filtros.
+                        </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </ScrollArea>

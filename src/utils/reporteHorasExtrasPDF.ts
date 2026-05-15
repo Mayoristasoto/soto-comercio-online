@@ -231,18 +231,22 @@ const fmtFecha = (yyyymmdd: string) => {
 };
 
 export async function generarReporteHorasExtrasPDF(opts: {
-  fichajes: FichajeRow[];
+  fichajes?: FichajeRow[];
+  jornadasAprobadas?: JornadaCalculada[]; // si viene, se usa en vez de recalcular
   sucursales: Map<string, string>;
   fechaDesde: string;
   fechaHasta: string;
   sucursalLabel: string;
   empleadosLabel: string;
   config: ConfigHorasExtras;
+  estadoLabel?: string; // ej "Aprobado por RRHH"
 }) {
-  const { fichajes, sucursales, fechaDesde, fechaHasta, sucursalLabel, empleadosLabel, config } = opts;
+  const { fichajes, jornadasAprobadas, sucursales, fechaDesde, fechaHasta, sucursalLabel, empleadosLabel, config, estadoLabel } = opts;
 
-  const jornadas = calcularJornadas(fichajes, sucursales, config);
-  const detalle = jornadas.filter((j) => j.excesoRealMin > 0);
+  const jornadas = jornadasAprobadas
+    ? jornadasAprobadas
+    : calcularJornadas(fichajes || [], sucursales, config);
+  const detalle = jornadas.filter((j) => j.extraHs > 0 || j.excesoRealMin > 0);
   const resumen = calcularResumen(jornadas, config);
 
   const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "mm" });
@@ -392,6 +396,12 @@ export async function generarReporteHorasExtrasPDF(opts: {
   doc.setTextColor(100);
   doc.text("Firma RRHH", margin + 40, y + 4, { align: "center" });
   doc.text("Firma Tesorería", pageW - margin - 40, y + 4, { align: "center" });
+
+  if (estadoLabel) {
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(estadoLabel, pageW / 2, y + 10, { align: "center" });
+  }
 
   const fileName = `liquidacion_horas_extras_${fechaDesde}_${fechaHasta}.pdf`;
   doc.save(fileName);
