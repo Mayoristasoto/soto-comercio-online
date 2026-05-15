@@ -397,6 +397,12 @@ export async function generarReporteHorasExtrasPDF(opts: {
   doc.text("Firma RRHH", margin + 40, y + 4, { align: "center" });
   doc.text("Firma Tesorería", pageW - margin - 40, y + 4, { align: "center" });
 
+  if (estadoLabel) {
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(estadoLabel, pageW / 2, y + 10, { align: "center" });
+  }
+
   const fileName = `liquidacion_horas_extras_${fechaDesde}_${fechaHasta}.pdf`;
   doc.save(fileName);
 }
