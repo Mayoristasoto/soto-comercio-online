@@ -339,7 +339,7 @@ export async function generarReporteHorasExtrasPDF(opts: {
 
     autoTable(doc, {
       startY: y,
-      head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Hs extra"]],
+      head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Exceso real", "Pagado", "Detalle"]],
       body: detalle.map((j) => [
         fmtFecha(j.fecha),
         j.empleadoNombre,
@@ -347,7 +347,9 @@ export async function generarReporteHorasExtrasPDF(opts: {
         j.entrada,
         j.salida,
         `${j.baseHs}h`,
+        fmtMinShort(j.excesoRealMin),
         fmtHs(j.extraHs),
+        j.redondeoLabel,
       ]),
       styles: { fontSize: 8, cellPadding: 1.5 },
       headStyles: { fillColor: [75, 13, 109], textColor: 255, fontStyle: "bold" },
