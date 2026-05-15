@@ -339,24 +339,41 @@ export async function generarReporteHorasExtrasPDF(opts: {
 
     autoTable(doc, {
       startY: y,
-      head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Exceso real", "Pagado", "Detalle"]],
-      body: detalle.map((j) => [
-        fmtFecha(j.fecha),
-        j.empleadoNombre,
-        j.sucursalNombre,
-        j.entrada,
-        j.salida,
-        `${j.baseHs}h`,
-        fmtMinShort(j.excesoRealMin),
-        fmtHs(j.extraHs),
-        j.redondeoLabel,
-      ]),
-      styles: { fontSize: 8, cellPadding: 1.5 },
-      headStyles: { fillColor: [75, 13, 109], textColor: 255, fontStyle: "bold" },
+      head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Exceso", "Pagado", "Detalle"]],
+      body: detalle.map((j) => {
+        const labelAscii = j.excesoRealMin > 0
+          ? `${fmtMinShort(j.excesoRealMin)} -> ${fmtHsShort(j.extraHs)}`
+          : "-";
+        return [
+          fmtFecha(j.fecha),
+          j.empleadoNombre,
+          j.sucursalNombre,
+          j.entrada,
+          j.salida,
+          `${j.baseHs}h`,
+          fmtMinShort(j.excesoRealMin),
+          fmtHs(j.extraHs),
+          labelAscii,
+        ];
+      }),
+      styles: { fontSize: 8, cellPadding: 1.8, overflow: "linebreak", valign: "middle" },
+      headStyles: { fillColor: [75, 13, 109], textColor: 255, fontStyle: "bold", halign: "left" },
+      alternateRowStyles: { fillColor: [248, 246, 250] },
+      columnStyles: {
+        0: { cellWidth: 18 },
+        1: { cellWidth: 38 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 14 },
+        4: { cellWidth: 14 },
+        5: { cellWidth: 10 },
+        6: { cellWidth: 16, halign: "right" },
+        7: { cellWidth: 16, halign: "right", fontStyle: "bold" },
+        8: { cellWidth: 30 },
+      },
       didParseCell: (data) => {
         if (data.section === "body" && detalle[data.row.index]?.esDomingo) {
-          data.cell.styles.fillColor = [253, 231, 211];
-          data.cell.styles.textColor = [224, 68, 3];
+          data.cell.styles.fillColor = [255, 237, 224];
+          data.cell.styles.textColor = [180, 60, 10];
         }
       },
       margin: { left: margin, right: margin },

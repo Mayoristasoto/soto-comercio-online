@@ -469,17 +469,17 @@ export default function ReporteHorasExtras() {
                     {detalle.map((j, i) => (
                       <TableRow
                         key={i}
-                        className={j.esDomingo ? "bg-[hsl(20_90%_94%)] text-[hsl(18_98%_45%)]" : ""}
+                        className={j.esDomingo ? "bg-orange-50 text-orange-900 hover:bg-orange-100" : ""}
                       >
-                        <TableCell>{j.fecha.split("-").reverse().join("/")}</TableCell>
+                        <TableCell className="whitespace-nowrap">{j.fecha.split("-").reverse().join("/")}</TableCell>
                         <TableCell>{j.empleadoNombre}</TableCell>
                         <TableCell>{j.sucursalNombre}</TableCell>
-                        <TableCell>{j.entrada}</TableCell>
-                        <TableCell>{j.salida}</TableCell>
-                        <TableCell>{j.baseHs}h</TableCell>
-                        <TableCell>{j.excesoRealMin} min</TableCell>
-                        <TableCell className="font-medium">{fmtHs(j.extraHs)}</TableCell>
-                        <TableCell className="text-xs">{j.redondeoLabel}</TableCell>
+                        <TableCell className="whitespace-nowrap tabular-nums">{j.entrada}</TableCell>
+                        <TableCell className="whitespace-nowrap tabular-nums">{j.salida}</TableCell>
+                        <TableCell className="whitespace-nowrap">{j.baseHs}h</TableCell>
+                        <TableCell className="whitespace-nowrap tabular-nums">{j.excesoRealMin} min</TableCell>
+                        <TableCell className="whitespace-nowrap font-medium tabular-nums">{fmtHs(j.extraHs)}</TableCell>
+                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{j.redondeoLabel}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
