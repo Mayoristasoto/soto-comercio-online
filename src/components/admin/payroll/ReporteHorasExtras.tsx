@@ -219,7 +219,7 @@ export default function ReporteHorasExtras() {
     return `${Math.floor(totalMin / 60)}h ${(totalMin % 60).toString().padStart(2, "0")}m`;
   };
 
-  const detalle = jornadas.filter((j) => j.extraHs > 0);
+  const detalle = jornadas.filter((j) => j.excesoRealMin > 0);
   const totalHabilHs = resumen.reduce((a, b) => a + b.hsExtraHabil, 0);
   const totalDomHs = resumen.reduce((a, b) => a + b.hsExtraDomingo, 0);
   const granTotal = resumen.reduce((a, b) => a + b.montoTotal, 0);
