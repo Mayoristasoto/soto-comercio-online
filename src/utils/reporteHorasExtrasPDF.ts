@@ -73,8 +73,10 @@ export interface JornadaCalculada {
   esDomingo: boolean;
   baseHs: number;
   brutasHs: number;
-  extraHs: number; // ya con tolerancia aplicada
+  extraHs: number; // ya con tolerancia y redondeo aplicados
   extraHsBruto: number; // sin tolerancia (informativo)
+  excesoRealMin: number; // minutos crudos de exceso (post clamp 09:00, pre redondeo)
+  redondeoLabel: string; // ej: "19 min → 30 min", "12 min → 0", "50 min → 1h"
 }
 
 export interface ResumenEmpleado {
