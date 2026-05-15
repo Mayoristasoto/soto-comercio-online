@@ -26,7 +26,7 @@ import {
 type Sucursal = { id: string; nombre: string };
 type Empleado = { id: string; nombre: string; apellido: string; sucursal_id: string | null; activo: boolean };
 
-const CONFIG_KEY = "config_horas_extras_v3";
+const CONFIG_KEY = "config_horas_extras_v4";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const firstOfMonthISO = () => {
@@ -219,7 +219,7 @@ export default function ReporteHorasExtras() {
     return `${Math.floor(totalMin / 60)}h ${(totalMin % 60).toString().padStart(2, "0")}m`;
   };
 
-  const detalle = jornadas.filter((j) => j.extraHs > 0);
+  const detalle = jornadas.filter((j) => j.excesoRealMin > 0);
   const totalHabilHs = resumen.reduce((a, b) => a + b.hsExtraHabil, 0);
   const totalDomHs = resumen.reduce((a, b) => a + b.hsExtraDomingo, 0);
   const granTotal = resumen.reduce((a, b) => a + b.montoTotal, 0);
@@ -238,7 +238,7 @@ export default function ReporteHorasExtras() {
             <Settings2 className="h-5 w-5" /> Parámetros de cálculo
           </CardTitle>
           <CardDescription>
-            Regla global aplicada a todos los empleados: los minutos fichados antes de la hora de entrada de referencia (por defecto 09:00) no se computan. Sobre el excedente, menos de 20 min no se paga; entre 20 y 44 min se paga 0,5 h; desde 45 min se paga 1 h.
+            Regla global aplicada a todos los empleados: los minutos fichados antes de la hora de entrada de referencia (por defecto 09:00) no se computan. Sobre el excedente de la jornada base: 0 a 18 min no se paga; 19 a 44 min se paga 0,5 h; desde 45 min se paga 1 h.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -276,8 +276,8 @@ export default function ReporteHorasExtras() {
             <div className="space-y-2 md:col-span-2">
               <Label>Redondeo de fracciones</Label>
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                <p>• 0 a 19 min sobrantes → no se computan</p>
-                <p>• 20 a 44 min sobrantes → 0,5 h</p>
+                <p>• 0 a 18 min sobrantes → no se computan</p>
+                <p>• 19 a 44 min sobrantes → 0,5 h</p>
                 <p>• 45 a 59 min sobrantes → 1 h</p>
                 <p className="pt-1 italic">Regla global, igual para todos los empleados.</p>
               </div>
@@ -443,8 +443,11 @@ export default function ReporteHorasExtras() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Detalle de jornadas con extras <Badge variant="secondary" className="ml-2">{detalle.length}</Badge>
+                Detalle de jornadas <Badge variant="secondary" className="ml-2">{detalle.length}</Badge>
               </CardTitle>
+              <CardDescription>
+                Se muestran todas las jornadas con exceso real {`>`} 0, incluso si el redondeo dejó el pagado en 0. La columna "Detalle" indica la conversión aplicada.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[480px]">
@@ -457,7 +460,9 @@ export default function ReporteHorasExtras() {
                       <TableHead>Entrada</TableHead>
                       <TableHead>Salida</TableHead>
                       <TableHead>Base</TableHead>
-                      <TableHead>Hs extra</TableHead>
+                      <TableHead>Exceso real</TableHead>
+                      <TableHead>Pagado</TableHead>
+                      <TableHead>Detalle</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -472,7 +477,9 @@ export default function ReporteHorasExtras() {
                         <TableCell>{j.entrada}</TableCell>
                         <TableCell>{j.salida}</TableCell>
                         <TableCell>{j.baseHs}h</TableCell>
+                        <TableCell>{j.excesoRealMin} min</TableCell>
                         <TableCell className="font-medium">{fmtHs(j.extraHs)}</TableCell>
+                        <TableCell className="text-xs">{j.redondeoLabel}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -24,18 +24,18 @@ export interface ConfigHorasExtras {
 export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
   valorHoraHabil: 0,
   valorHoraDomingo: 0,
-  toleranciaMin: 20,
+  toleranciaMin: 19,
   baseHabilHs: 8,
   baseDomingoHs: 4,
   redondeoMin: 30,
-  redondeoUmbralMin: 20,
+  redondeoUmbralMin: 19,
   horaEntradaRef: "09:00",
 };
 
 /**
  * Redondeo global de horas extra (regla fija para todos los empleados):
- *   - 0 a 19 minutos sobrantes  → 0
- *   - 20 a 44 minutos sobrantes → 30 minutos (0,5 h)
+ *   - 0 a 18 minutos sobrantes  → 0
+ *   - 19 a 44 minutos sobrantes → 30 minutos (0,5 h)
  *   - 45 a 59 minutos sobrantes → 60 minutos (1 h)
  * Se aplica sobre la fracción dentro de cada hora completa.
  */
@@ -46,8 +46,21 @@ function aplicarRedondeo(extraHs: number, _config: ConfigHorasExtras): number {
   const resto = totalMin - horas * 60;
   let addMin = 0;
   if (resto >= 45) addMin = 60;
-  else if (resto >= 20) addMin = 30;
+  else if (resto >= 19) addMin = 30;
   return (horas * 60 + addMin) / 60;
+}
+
+/** Formato corto de minutos: "50 min", "1h 05m", "0" */
+function fmtMinShort(min: number): string {
+  if (min <= 0) return "0";
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
+function fmtHsShort(h: number): string {
+  return fmtMinShort(Math.round(h * 60));
 }
 
 export interface JornadaCalculada {
@@ -60,8 +73,10 @@ export interface JornadaCalculada {
   esDomingo: boolean;
   baseHs: number;
   brutasHs: number;
-  extraHs: number; // ya con tolerancia aplicada
+  extraHs: number; // ya con tolerancia y redondeo aplicados
   extraHsBruto: number; // sin tolerancia (informativo)
+  excesoRealMin: number; // minutos crudos de exceso (post clamp 09:00, pre redondeo)
+  redondeoLabel: string; // ej: "19 min → 30 min", "12 min → 0", "50 min → 1h"
 }
 
 export interface ResumenEmpleado {
@@ -135,8 +150,12 @@ export function calcularJornadas(
     const baseHs = esDomingo ? config.baseDomingoHs : config.baseHabilHs;
     const extraHsBruto = Math.max(0, brutasHs - baseHs);
     const extraMin = extraHsBruto * 60;
+    const excesoRealMin = Math.round(extraMin);
     const extraConTolerancia = extraMin >= config.toleranciaMin ? extraHsBruto : 0;
     const extraHs = aplicarRedondeo(extraConTolerancia, config);
+    const redondeoLabel = excesoRealMin > 0
+      ? `${fmtMinShort(excesoRealMin)} → ${fmtHsShort(extraHs)}`
+      : "—";
 
     const emp = entrada.empleado;
     const empleadoNombre = emp ? `${emp.apellido}, ${emp.nombre}` : "—";
@@ -154,6 +173,8 @@ export function calcularJornadas(
       brutasHs,
       extraHs,
       extraHsBruto,
+      excesoRealMin,
+      redondeoLabel,
     });
   }
 
@@ -221,7 +242,7 @@ export async function generarReporteHorasExtrasPDF(opts: {
   const { fichajes, sucursales, fechaDesde, fechaHasta, sucursalLabel, empleadosLabel, config } = opts;
 
   const jornadas = calcularJornadas(fichajes, sucursales, config);
-  const detalle = jornadas.filter((j) => j.extraHs > 0);
+  const detalle = jornadas.filter((j) => j.excesoRealMin > 0);
   const resumen = calcularResumen(jornadas, config);
 
   const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "mm" });
@@ -318,7 +339,7 @@ export async function generarReporteHorasExtrasPDF(opts: {
 
     autoTable(doc, {
       startY: y,
-      head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Hs extra"]],
+      head: [["Fecha", "Empleado", "Sucursal", "Entrada", "Salida", "Base", "Exceso real", "Pagado", "Detalle"]],
       body: detalle.map((j) => [
         fmtFecha(j.fecha),
         j.empleadoNombre,
@@ -326,7 +347,9 @@ export async function generarReporteHorasExtrasPDF(opts: {
         j.entrada,
         j.salida,
         `${j.baseHs}h`,
+        fmtMinShort(j.excesoRealMin),
         fmtHs(j.extraHs),
+        j.redondeoLabel,
       ]),
       styles: { fontSize: 8, cellPadding: 1.5 },
       headStyles: { fillColor: [75, 13, 109], textColor: 255, fontStyle: "bold" },
