@@ -269,36 +269,38 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
       const newEvents: CalendarEvent[] = []
 
       // Cumpleaños del mes
-      const cumpleanosQuery: any = supabase
-        .from('empleados_datos_sensibles')
-        .select('fecha_nacimiento, empleado_id, empleados!inner(nombre, apellido, activo)')
-        .not('fecha_nacimiento', 'is', null)
-        .eq('empleados.activo', true)
-      
-      const { data: cumpleanos } = await cumpleanosQuery
+      if (layerPrefs.cumpleanos) {
+        const cumpleanosQuery: any = supabase
+          .from('empleados_datos_sensibles')
+          .select('fecha_nacimiento, empleado_id, empleados!inner(nombre, apellido, activo)')
+          .not('fecha_nacimiento', 'is', null)
+          .eq('empleados.activo', true)
 
-      if (cumpleanos) {
-        cumpleanos.forEach((emp: any) => {
-          if (emp.fecha_nacimiento) {
-            // Parse fecha como YYYY-MM-DD para evitar problemas de zona horaria
-            const [year, month, day] = emp.fecha_nacimiento.split('-').map(Number)
-            const thisYearBirthday = new Date(
-              selectedDate.getFullYear(),
-              month - 1, // month es 0-indexed
-              day
-            )
-            
-            if (thisYearBirthday >= monthStart && thisYearBirthday <= monthEnd) {
-              newEvents.push({
-                date: thisYearBirthday,
-                type: 'cumpleaños',
-                title: `Cumpleaños de ${emp.empleados?.nombre || ''} ${emp.empleados?.apellido || ''}`,
-                empleadoId: emp.empleado_id // Agregar el ID para poder guardar/cargar la imagen
-              })
+        const { data: cumpleanos } = await cumpleanosQuery
+
+        if (cumpleanos) {
+          cumpleanos.forEach((emp: any) => {
+            if (emp.fecha_nacimiento) {
+              const [year, month, day] = emp.fecha_nacimiento.split('-').map(Number)
+              const thisYearBirthday = new Date(
+                selectedDate.getFullYear(),
+                month - 1,
+                day
+              )
+
+              if (thisYearBirthday >= monthStart && thisYearBirthday <= monthEnd) {
+                newEvents.push({
+                  date: thisYearBirthday,
+                  type: 'cumpleaños',
+                  title: `Cumpleaños de ${emp.empleados?.nombre || ''} ${emp.empleados?.apellido || ''}`,
+                  empleadoId: emp.empleado_id
+                })
+              }
             }
-          }
-        })
+          })
+        }
       }
+
 
       // Aniversarios del mes
       const aniversariosQuery: any = supabase
