@@ -9,31 +9,81 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { format, isSameDay, startOfMonth, endOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-import { 
-  Calendar as CalendarIcon, 
-  Cake, 
-  Gift, 
-  ClipboardCheck, 
+import {
+  Calendar as CalendarIcon,
+  Cake,
+  Gift,
+  ClipboardCheck,
   Plane,
   Clock,
   AlertCircle,
   Plus,
   StickyNote,
-  CalendarClock
+  CalendarClock,
+  Settings2,
 } from "lucide-react"
+import {
+  Calendario,
+  VIRTUAL_CALENDARS,
+  fetchCalendariosVisibles,
+  fetchEventosRango,
+  getPreferencias,
+  setPreferencia,
+} from "@/lib/calendariosService"
 
+type LayerKey =
+  | 'cumpleanos'
+  | 'aniversarios'
+  | 'tareas'
+  | 'vacaciones'
+  | 'ausencias'
+  | 'notas'
+  | 'horarios_excepcionales'
+
+const DEFAULT_LAYER_PREFS: Record<LayerKey, boolean> = {
+  cumpleanos: true,
+  aniversarios: true,
+  tareas: true,
+  vacaciones: true,
+  ausencias: true,
+  notas: true,
+  horarios_excepcionales: true,
+}
+
+const NATIVE_LAYERS: Array<{ key: LayerKey; label: string; color: string }> = [
+  { key: 'cumpleanos', label: 'Cumpleaños', color: '#ec4899' },
+  { key: 'aniversarios', label: 'Aniversarios', color: '#3b82f6' },
+  { key: 'tareas', label: 'Tareas', color: '#f97316' },
+  { key: 'vacaciones', label: 'Vacaciones', color: '#10b981' },
+  { key: 'ausencias', label: 'Ausencias médicas', color: '#ef4444' },
+  { key: 'notas', label: 'Notas', color: '#eab308' },
+  { key: 'horarios_excepcionales', label: 'Horarios excepcionales', color: '#a855f7' },
+]
+
+// Capas virtuales del módulo /calendarios que duplican capas nativas
+const VIRTUAL_DUPLICATES: Record<string, LayerKey> = {
+  'virtual:cumpleanos': 'cumpleanos',
+  'virtual:vacaciones': 'vacaciones',
+  'virtual:deadlines': 'tareas',
+}
 
 interface CalendarEvent {
   date: Date
-  type: 'cumpleaños' | 'aniversario' | 'tarea' | 'vacaciones' | 'fichaje' | 'ausencia' | 'nota' | 'horario_excepcional'
+  type: 'cumpleaños' | 'aniversario' | 'tarea' | 'vacaciones' | 'fichaje' | 'ausencia' | 'nota' | 'horario_excepcional' | 'externo'
   title: string
   count?: number
   empleadoId?: string // ID del empleado para eventos de cumpleaños
+  externalColor?: string
+  externalSource?: string
 }
 
 interface CalendarNote {
