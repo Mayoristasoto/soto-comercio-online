@@ -574,9 +574,21 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
         {eventTypes.has('horario_excepcional') && (
           <div className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Horario Especial" />
         )}
+        {dayEvents
+          .filter((e) => e.type === 'externo' && e.externalColor)
+          .slice(0, 3)
+          .map((e, i) => (
+            <div
+              key={`ext-${i}`}
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: e.externalColor }}
+              title={e.externalSource}
+            />
+          ))}
       </div>
     )
   }
+
 
   const getEventIcon = (type: CalendarEvent['type']) => {
     switch (type) {
