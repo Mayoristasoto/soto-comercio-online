@@ -1,96 +1,56 @@
 ## Objetivo
 
-Convertir el flujo actual de "Calcular → PDF" en un flujo con etapa de **aprobación previa**:
+En el calendario del Dashboard (`EventCalendar`) permitir a `admin_rrhh` (y por extensión cualquier usuario logueado) elegir qué capas se ven mediante checkboxes, incluyendo **las categorías nativas actuales** y **los calendarios reales + virtuales** del sistema `/calendarios`. La selección se guarda por usuario en la base de datos.
 
-1. Calcular jornadas (igual que hoy).
-2. Revisar en pantalla con checkboxes (por jornada y por empleado) + filtros adicionales sobre la tabla.
-3. Generar el **Informe de Tesorería (PDF)** únicamente con lo aprobado.
-4. Al exportar, registrar en BD una **liquidación de horas extras aprobada** (cabecera + ítems) para historial y para servir de base al futuro paso de aprobación por gerentes.
+## Alcance funcional
 
----
+1. Panel lateral de visibilidad dentro del card del EventCalendar, agrupado en dos secciones:
+   - **Capas del dashboard** (toggles existentes): Cumpleaños, Aniversarios, Tareas, Vacaciones aprobadas, Ausencias médicas, Notas, Horarios excepcionales.
+   - **Mis calendarios** (de `/calendarios`):
+     - Calendarios reales visibles para el usuario (`fetchCalendariosVisibles`).
+     - Capas virtuales (`VIRTUAL_CALENDARS`: cumpleaños, vacaciones aprobadas/pendientes, deadlines, tablero) — marcadas como "ya incluidas" si el usuario activó la equivalente del dashboard, para evitar duplicados visuales.
+2. Cada toggle muestra el color de la capa (chip) + nombre + ícono.
+3. Botón "Mostrar todo / Ocultar todo" por sección.
+4. Los puntos de colores en los días del calendario y la lista de eventos del día reflejan únicamente las capas activas.
+5. Persistencia por usuario:
+   - Capas dashboard: nueva tabla `dashboard_calendar_prefs` (1 fila por usuario, JSON con flags por capa).
+   - Calendarios reales/virtuales de `/calendarios`: reutilizar la tabla existente `calendarios_preferencias` (misma usada por `CalendarioSidebar`), para que la elección sea consistente entre el dashboard y la página `/calendarios`.
+6. Al primer ingreso: todas las capas dashboard ON; calendarios reales/virtuales toman el default del servicio (visible por defecto).
 
-## 1. Cambios en BD (migración)
+## Cambios técnicos
 
-Dos tablas nuevas (con RLS, solo `admin`/`rrhh` por ahora):
+### Base de datos (migration)
 
-**`liquidaciones_horas_extras`** (cabecera del lote)
-- `id`, `created_at`, `created_by`
-- `fecha_desde`, `fecha_hasta` (date)
-- `sucursal_id` (nullable, "all" = null), `sucursal_label`
-- `estado` text — `aprobado_rrhh` (default). Preparado para `pendiente_gerente`, `aprobado_gerente`, `liquidado`.
-- `config_snapshot` jsonb (valores de hora hábil/domingo, tolerancia, redondeo del momento)
-- `total_hs_habil`, `total_hs_domingo`, `total_monto` numeric
-- `cantidad_jornadas`, `cantidad_empleados` int
-- `observaciones` text
+Tabla `dashboard_calendar_prefs`:
+- `id uuid PK default gen_random_uuid()`
+- `user_id uuid NOT NULL UNIQUE` (referencia lógica a `auth.users`)
+- `prefs jsonb NOT NULL default '{}'::jsonb` — claves: `cumpleanos`, `aniversarios`, `tareas`, `vacaciones`, `ausencias`, `notas`, `horarios_excepcionales`, además `external_calendars` (array de `calendario_id` reales del módulo `/calendarios` que el usuario quiere ver mezclados en el dashboard).
+- `created_at`, `updated_at` con trigger `update_updated_at_column` ya existente.
+- RLS habilitada:
+  - SELECT/INSERT/UPDATE/DELETE: solo cuando `auth.uid() = user_id`.
+- Índice único en `user_id`.
 
-**`liquidaciones_horas_extras_items`** (jornadas aprobadas)
-- `id`, `liquidacion_id` (FK cascade)
-- `empleado_id`, `empleado_nombre` (denormalizado)
-- `sucursal_id`, `sucursal_nombre`
-- `fecha` date, `es_domingo` bool
-- `entrada`, `salida` text
-- `base_hs` numeric
-- `exceso_real_min` int
-- `extra_hs` numeric
-- `redondeo_label` text
-- `valor_hora` numeric, `monto` numeric
+No se modifica `calendarios_preferencias` (ya existe y la reutilizamos para visibilidad de calendarios reales/virtuales).
 
-RLS: SELECT/INSERT para roles `admin` y `rrhh` usando `has_role(auth.uid(), ...)`. UPDATE solo cambia `estado`/`observaciones` (para futuro flujo gerentes).
+### Frontend
 
----
+`src/components/dashboard/EventCalendar.tsx`:
+- Nuevo estado `layerPrefs` (objeto con flags por capa dashboard) y `externalCalendars` (Set de IDs de calendarios reales + virtuales).
+- Al montar: cargar `dashboard_calendar_prefs` por `auth.uid()`. Si no existe, insertar fila con defaults.
+- Cargar listado de calendarios reales (`fetchCalendariosVisibles`) y virtuales (`VIRTUAL_CALENDARS`) para renderizar el panel.
+- Envolver cada bloque de `loadEvents` con un `if (layerPrefs.X)` para no consultar/no pushear esa capa.
+- Para calendarios reales activos, llamar `fetchEventosRango` filtrando por los IDs activos y mapear a `CalendarEvent` (nuevo tipo `'externo'` con color del calendario) — usar el `color` del calendario para el dot y para la fila de detalle.
+- Para virtuales activos desde `/calendarios`, evitar duplicar con los nativos: si el usuario ya tiene la capa nativa equivalente ON (ej. `cumpleanos`), no agregar también la virtual.
+- UI: Sheet/Popover con `Checkbox` por capa, accesible con un botón "Capas" en el header del card. Mobile-friendly.
+- Persistir cambios con debounce (300 ms): `upsert` sobre `dashboard_calendar_prefs` y `setPreferencia()` para calendarios reales/virtuales.
+- Todos los colores usan tokens del design system salvo los hex propios de cada calendario (vienen de la BD).
 
-## 2. Cambios en `ReporteHorasExtras.tsx`
+### Sin cambios en lógica de negocio
 
-### Estado nuevo
-- `aprobadas: Set<string>` — clave por jornada (`empleadoId|fecha`). Por defecto **todas tildadas** tras `Calcular`.
-- Filtros locales sobre la tabla detalle:
-  - Buscador de texto (empleado/sucursal).
-  - Toggle: Todos / Solo hábiles / Solo domingos.
-  - Toggle: "Solo con pagado > 0".
-  - Rango de minutos de exceso (min/max numéricos).
+No se altera cómo se generan tareas, vacaciones, ausencias ni horarios. Solo se filtra qué se muestra y se agregan eventos extra desde el servicio de calendarios.
 
-### UI tabla detalle
-- Columna nueva al inicio: checkbox por fila.
-- Header con checkbox maestro "Aprobar todas (visibles)".
-- Por cada empleado, **fila resumen plegable** con su propio checkbox que tilda/destilda todas sus jornadas del período.
-- Contador en el card: "X de Y jornadas aprobadas — $ZZZ a pagar".
-- Tarjeta KPI superior recalcula totales en vivo según `aprobadas`.
+## Notas
 
-### Botones
-- "Calcular" (igual).
-- **"Aprobar y generar Tesorería"** reemplaza al actual "Informe Tesorería (PDF)":
-  1. Filtra `jornadas` por `aprobadas`.
-  2. Recalcula resumen por empleado con ese subset.
-  3. Llama `generarReporteHorasExtrasPDF` con el subset (no con `fichajes` crudos).
-  4. Inserta cabecera + items en las nuevas tablas vía supabase client.
-  5. Toast con id de liquidación + opción "Ver en historial".
-
-### Tabla resumen por empleado
-- Recalculada en vivo desde el subset aprobado.
-- Checkbox por fila que togglea todas sus jornadas.
-
----
-
-## 3. Cambios en `reporteHorasExtrasPDF.ts`
-
-- Aceptar opcionalmente un set de jornadas pre-calculadas (en vez de recalcular desde `fichajes`), para que el PDF refleje exactamente lo aprobado.
-- Mantener firma actual como fallback.
-- Footer del PDF: leyenda "Aprobado por RRHH — pendiente de revisión gerencial" cuando aplique.
-
----
-
-## 4. Fuera de alcance (próximo paso)
-
-- Vista/historial de liquidaciones guardadas.
-- Flujo de aprobación por gerentes (ya queda la tabla preparada con `estado`).
-- Notificaciones a gerentes.
-
----
-
-## Archivos a tocar
-
-- `supabase/migrations/...` (nueva, 2 tablas + RLS)
-- `src/components/admin/payroll/ReporteHorasExtras.tsx` (UI aprobación + filtros + persistencia)
-- `src/utils/reporteHorasExtrasPDF.ts` (aceptar subset aprobado)
-
-¿Avanzo con la migración?
+- La capa "Vacaciones aprobadas" nativa del dashboard y la capa virtual `virtual:vacaciones` de `/calendarios` muestran el mismo dataset. La UI marca explícitamente los virtuales que dupliquen capas nativas activas para que el usuario entienda por qué no aparecen dos veces.
+- El toggle no esconde el calendario; solo afecta puntos y lista de eventos. Crear notas/horarios excepcionales sigue disponible siempre.
+- Aunque la pregunta original era para `admin_rrhh`, el componente lo usan también otros roles (Dashboard, EmpleadoDashboard); la persistencia es por `user_id` y funciona para todos sin gatear por rol.
