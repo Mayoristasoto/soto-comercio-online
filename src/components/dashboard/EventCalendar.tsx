@@ -1115,15 +1115,23 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
                       key={idx}
                       className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                     >
-                      {getEventIcon(event.type)}
+                      {event.type === 'externo' ? (
+                        <span
+                          className="w-3 h-3 rounded-full mt-1 shrink-0"
+                          style={{ backgroundColor: event.externalColor }}
+                        />
+                      ) : (
+                        getEventIcon(event.type)
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">{event.title}</p>
                         <Badge variant="secondary" className="text-xs mt-1">
-                          {event.type}
+                          {event.type === 'externo' ? event.externalSource ?? 'Calendario' : event.type}
                         </Badge>
                       </div>
                     </div>
                   ))}
+
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center py-8">
