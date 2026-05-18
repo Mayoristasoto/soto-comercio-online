@@ -887,16 +887,136 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-primary" />
             <CardTitle>Calendario de Eventos</CardTitle>
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Settings2 className="h-4 w-4" />
+                Capas
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <ScrollArea className="max-h-[420px]">
+                <div className="p-4 space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold">Capas del dashboard</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          const allOn = NATIVE_LAYERS.every((l) => layerPrefs[l.key])
+                          const next = NATIVE_LAYERS.reduce(
+                            (acc, l) => ({ ...acc, [l.key]: !allOn }),
+                            {} as Record<LayerKey, boolean>
+                          )
+                          setLayerPrefs(next)
+                          persistLayerPrefs(next)
+                        }}
+                      >
+                        {NATIVE_LAYERS.every((l) => layerPrefs[l.key]) ? 'Ocultar todo' : 'Mostrar todo'}
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {NATIVE_LAYERS.map((layer) => (
+                        <label
+                          key={layer.key}
+                          className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                        >
+                          <Checkbox
+                            checked={layerPrefs[layer.key]}
+                            onCheckedChange={(v) => toggleLayer(layer.key, !!v)}
+                          />
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: layer.color }}
+                          />
+                          <span className="text-sm">{layer.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Mis calendarios</h4>
+                    {realCalendarios.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No tenés calendarios. Creá uno en /calendarios.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {realCalendarios.map((cal) => (
+                          <label
+                            key={cal.id}
+                            className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                          >
+                            <Checkbox
+                              checked={activeExternal.has(cal.id)}
+                              onCheckedChange={(v) => toggleExternal(cal.id, !!v)}
+                            />
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: cal.color }}
+                            />
+                            <span className="text-sm truncate">{cal.nombre}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Capas virtuales</h4>
+                    <div className="space-y-2">
+                      {VIRTUAL_CALENDARS.map((v) => {
+                        const duplicate = VIRTUAL_DUPLICATES[v.id]
+                        const isDuplicated = duplicate && layerPrefs[duplicate]
+                        return (
+                          <label
+                            key={v.id}
+                            className={cn(
+                              "flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded",
+                              isDuplicated && "opacity-60"
+                            )}
+                          >
+                            <Checkbox
+                              checked={activeExternal.has(v.id)}
+                              onCheckedChange={(val) => toggleExternal(v.id, !!val)}
+                            />
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: v.color }}
+                            />
+                            <span className="text-sm flex-1 truncate">{v.nombre}</span>
+                            {isDuplicated && (
+                              <Badge variant="outline" className="text-[10px] h-4">
+                                ya incluida
+                              </Badge>
+                            )}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
         </div>
         <CardDescription>
           Eventos importantes del mes
         </CardDescription>
       </CardHeader>
+
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
           {/* Columna izquierda: Calendario */}
