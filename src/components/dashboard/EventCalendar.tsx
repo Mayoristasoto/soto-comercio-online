@@ -125,14 +125,22 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   const [activeTab, setActiveTab] = useState<'nota' | 'horario'>('nota')
   const [birthdayImage, setBirthdayImage] = useState<string | null>(null)
   const [generatingImage, setGeneratingImage] = useState(false)
-  
+
+  // Capas / visibilidad
+  const [layerPrefs, setLayerPrefs] = useState<Record<LayerKey, boolean>>(DEFAULT_LAYER_PREFS)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentEmpleadoId, setCurrentEmpleadoId] = useState<string | null>(null)
+  const [realCalendarios, setRealCalendarios] = useState<Calendario[]>([])
+  const [activeExternal, setActiveExternal] = useState<Set<string>>(new Set())
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+
   // Form states
   const [notaForm, setNotaForm] = useState({
     titulo: '',
     descripcion: '',
     tipo: 'general' as 'general' | 'recordatorio' | 'importante'
   })
-  
+
   const [horarioForm, setHorarioForm] = useState({
     empleado_id: '',
     hora_entrada: '',
@@ -140,10 +148,16 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
     motivo: ''
   })
 
+  // Carga inicial de preferencias y calendarios externos
   useEffect(() => {
-    loadEvents()
+    loadPrefsAndCalendarios()
     loadEmpleados()
-  }, [selectedDate, empleadoId])
+  }, [])
+
+  useEffect(() => {
+    if (prefsLoaded) loadEvents()
+  }, [selectedDate, empleadoId, layerPrefs, activeExternal, prefsLoaded])
+
 
 
   const loadEmpleados = async () => {
