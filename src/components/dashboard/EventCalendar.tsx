@@ -9,31 +9,81 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { format, isSameDay, startOfMonth, endOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-import { 
-  Calendar as CalendarIcon, 
-  Cake, 
-  Gift, 
-  ClipboardCheck, 
+import {
+  Calendar as CalendarIcon,
+  Cake,
+  Gift,
+  ClipboardCheck,
   Plane,
   Clock,
   AlertCircle,
   Plus,
   StickyNote,
-  CalendarClock
+  CalendarClock,
+  Settings2,
 } from "lucide-react"
+import {
+  Calendario,
+  VIRTUAL_CALENDARS,
+  fetchCalendariosVisibles,
+  fetchEventosRango,
+  getPreferencias,
+  setPreferencia,
+} from "@/lib/calendariosService"
 
+type LayerKey =
+  | 'cumpleanos'
+  | 'aniversarios'
+  | 'tareas'
+  | 'vacaciones'
+  | 'ausencias'
+  | 'notas'
+  | 'horarios_excepcionales'
+
+const DEFAULT_LAYER_PREFS: Record<LayerKey, boolean> = {
+  cumpleanos: true,
+  aniversarios: true,
+  tareas: true,
+  vacaciones: true,
+  ausencias: true,
+  notas: true,
+  horarios_excepcionales: true,
+}
+
+const NATIVE_LAYERS: Array<{ key: LayerKey; label: string; color: string }> = [
+  { key: 'cumpleanos', label: 'Cumpleaños', color: '#ec4899' },
+  { key: 'aniversarios', label: 'Aniversarios', color: '#3b82f6' },
+  { key: 'tareas', label: 'Tareas', color: '#f97316' },
+  { key: 'vacaciones', label: 'Vacaciones', color: '#10b981' },
+  { key: 'ausencias', label: 'Ausencias médicas', color: '#ef4444' },
+  { key: 'notas', label: 'Notas', color: '#eab308' },
+  { key: 'horarios_excepcionales', label: 'Horarios excepcionales', color: '#a855f7' },
+]
+
+// Capas virtuales del módulo /calendarios que duplican capas nativas
+const VIRTUAL_DUPLICATES: Record<string, LayerKey> = {
+  'virtual:cumpleanos': 'cumpleanos',
+  'virtual:vacaciones': 'vacaciones',
+  'virtual:deadlines': 'tareas',
+}
 
 interface CalendarEvent {
   date: Date
-  type: 'cumpleaños' | 'aniversario' | 'tarea' | 'vacaciones' | 'fichaje' | 'ausencia' | 'nota' | 'horario_excepcional'
+  type: 'cumpleaños' | 'aniversario' | 'tarea' | 'vacaciones' | 'fichaje' | 'ausencia' | 'nota' | 'horario_excepcional' | 'externo'
   title: string
   count?: number
   empleadoId?: string // ID del empleado para eventos de cumpleaños
+  externalColor?: string
+  externalSource?: string
 }
 
 interface CalendarNote {
@@ -75,14 +125,22 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   const [activeTab, setActiveTab] = useState<'nota' | 'horario'>('nota')
   const [birthdayImage, setBirthdayImage] = useState<string | null>(null)
   const [generatingImage, setGeneratingImage] = useState(false)
-  
+
+  // Capas / visibilidad
+  const [layerPrefs, setLayerPrefs] = useState<Record<LayerKey, boolean>>(DEFAULT_LAYER_PREFS)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentEmpleadoId, setCurrentEmpleadoId] = useState<string | null>(null)
+  const [realCalendarios, setRealCalendarios] = useState<Calendario[]>([])
+  const [activeExternal, setActiveExternal] = useState<Set<string>>(new Set())
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+
   // Form states
   const [notaForm, setNotaForm] = useState({
     titulo: '',
     descripcion: '',
     tipo: 'general' as 'general' | 'recordatorio' | 'importante'
   })
-  
+
   const [horarioForm, setHorarioForm] = useState({
     empleado_id: '',
     hora_entrada: '',
@@ -90,11 +148,107 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
     motivo: ''
   })
 
+  // Carga inicial de preferencias y calendarios externos
   useEffect(() => {
-    loadEvents()
+    loadPrefsAndCalendarios()
     loadEmpleados()
-  }, [selectedDate, empleadoId])
+  }, [])
 
+  useEffect(() => {
+    if (prefsLoaded) loadEvents()
+  }, [selectedDate, empleadoId, layerPrefs, activeExternal, prefsLoaded])
+
+
+  const loadPrefsAndCalendarios = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setPrefsLoaded(true)
+        return
+      }
+      setCurrentUserId(user.id)
+
+      // Empleado actual para preferencias de /calendarios
+      const { data: emp } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('activo', true)
+        .maybeSingle()
+      if (emp) setCurrentEmpleadoId(emp.id)
+
+      // Preferencias dashboard
+      const { data: prefRow } = await (supabase as any)
+        .from('dashboard_calendar_prefs')
+        .select('prefs')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (prefRow?.prefs) {
+        setLayerPrefs({ ...DEFAULT_LAYER_PREFS, ...prefRow.prefs })
+      } else {
+        // Insert default row
+        await (supabase as any)
+          .from('dashboard_calendar_prefs')
+          .insert({ user_id: user.id, prefs: DEFAULT_LAYER_PREFS })
+      }
+
+      // Calendarios reales visibles
+      try {
+        const cals = await fetchCalendariosVisibles()
+        setRealCalendarios(cals)
+
+        if (emp) {
+          const calPrefs = await getPreferencias(emp.id)
+          const visMap = new Map(calPrefs.map((p: any) => [p.calendario_id, p.visible]))
+          const next = new Set<string>()
+          for (const c of cals) {
+            // Default: NO visible en dashboard hasta que el usuario lo active explícitamente
+            if (visMap.get(c.id) === true) next.add(c.id)
+          }
+          for (const v of VIRTUAL_CALENDARS) {
+            if (visMap.get(v.id) === true) next.add(v.id)
+          }
+          setActiveExternal(next)
+        }
+      } catch (e) {
+        console.warn('No se pudieron cargar calendarios externos', e)
+      }
+    } catch (e) {
+      console.error('Error cargando preferencias del calendario', e)
+    } finally {
+      setPrefsLoaded(true)
+    }
+  }
+
+  const persistLayerPrefs = async (next: Record<LayerKey, boolean>) => {
+    if (!currentUserId) return
+    await (supabase as any)
+      .from('dashboard_calendar_prefs')
+      .upsert({ user_id: currentUserId, prefs: next }, { onConflict: 'user_id' })
+  }
+
+  const toggleLayer = (key: LayerKey, value: boolean) => {
+    const next = { ...layerPrefs, [key]: value }
+    setLayerPrefs(next)
+    persistLayerPrefs(next)
+  }
+
+  const toggleExternal = async (id: string, visible: boolean) => {
+    setActiveExternal((prev) => {
+      const next = new Set(prev)
+      if (visible) next.add(id)
+      else next.delete(id)
+      return next
+    })
+    if (currentEmpleadoId) {
+      try {
+        await setPreferencia(currentEmpleadoId, id, visible)
+      } catch (e) {
+        console.warn('No se pudo persistir preferencia de calendario', e)
+      }
+    }
+  }
 
   const loadEmpleados = async () => {
     const { data } = await supabase
@@ -102,9 +256,10 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
       .select('id, nombre, apellido')
       .eq('activo', true)
       .order('apellido')
-    
+
     if (data) setEmpleados(data)
   }
+
 
   const loadEvents = async () => {
     setLoading(true)
@@ -114,196 +269,271 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
       const newEvents: CalendarEvent[] = []
 
       // Cumpleaños del mes
-      const cumpleanosQuery: any = supabase
-        .from('empleados_datos_sensibles')
-        .select('fecha_nacimiento, empleado_id, empleados!inner(nombre, apellido, activo)')
-        .not('fecha_nacimiento', 'is', null)
-        .eq('empleados.activo', true)
-      
-      const { data: cumpleanos } = await cumpleanosQuery
+      if (layerPrefs.cumpleanos) {
+        const cumpleanosQuery: any = supabase
+          .from('empleados_datos_sensibles')
+          .select('fecha_nacimiento, empleado_id, empleados!inner(nombre, apellido, activo)')
+          .not('fecha_nacimiento', 'is', null)
+          .eq('empleados.activo', true)
 
-      if (cumpleanos) {
-        cumpleanos.forEach((emp: any) => {
-          if (emp.fecha_nacimiento) {
-            // Parse fecha como YYYY-MM-DD para evitar problemas de zona horaria
-            const [year, month, day] = emp.fecha_nacimiento.split('-').map(Number)
-            const thisYearBirthday = new Date(
-              selectedDate.getFullYear(),
-              month - 1, // month es 0-indexed
-              day
-            )
-            
-            if (thisYearBirthday >= monthStart && thisYearBirthday <= monthEnd) {
-              newEvents.push({
-                date: thisYearBirthday,
-                type: 'cumpleaños',
-                title: `Cumpleaños de ${emp.empleados?.nombre || ''} ${emp.empleados?.apellido || ''}`,
-                empleadoId: emp.empleado_id // Agregar el ID para poder guardar/cargar la imagen
-              })
+        const { data: cumpleanos } = await cumpleanosQuery
+
+        if (cumpleanos) {
+          cumpleanos.forEach((emp: any) => {
+            if (emp.fecha_nacimiento) {
+              const [year, month, day] = emp.fecha_nacimiento.split('-').map(Number)
+              const thisYearBirthday = new Date(
+                selectedDate.getFullYear(),
+                month - 1,
+                day
+              )
+
+              if (thisYearBirthday >= monthStart && thisYearBirthday <= monthEnd) {
+                newEvents.push({
+                  date: thisYearBirthday,
+                  type: 'cumpleaños',
+                  title: `Cumpleaños de ${emp.empleados?.nombre || ''} ${emp.empleados?.apellido || ''}`,
+                  empleadoId: emp.empleado_id
+                })
+              }
             }
-          }
-        })
+          })
+        }
       }
 
+
       // Aniversarios del mes
-      const aniversariosQuery: any = supabase
-        .from('empleados')
-        .select('fecha_ingreso, nombre, apellido')
-        .not('fecha_ingreso', 'is', null)
-        .eq('activo', true)
+      if (layerPrefs.aniversarios) {
+        const aniversariosQuery: any = supabase
+          .from('empleados')
+          .select('fecha_ingreso, nombre, apellido')
+          .not('fecha_ingreso', 'is', null)
+          .eq('activo', true)
 
-      const { data: aniversarios } = await aniversariosQuery
+        const { data: aniversarios } = await aniversariosQuery
 
-      if (aniversarios) {
-        aniversarios.forEach((emp) => {
-          // Parse fecha como YYYY-MM-DD para evitar problemas de zona horaria
-          const [year, month, day] = emp.fecha_ingreso.split('-').map(Number)
-          const thisYearAnniversary = new Date(
-            selectedDate.getFullYear(),
-            month - 1, // month es 0-indexed
-            day
-          )
-          
-          if (thisYearAnniversary >= monthStart && thisYearAnniversary <= monthEnd) {
-            const years = selectedDate.getFullYear() - year
-            if (years > 0) {
-              newEvents.push({
-                date: thisYearAnniversary,
-                type: 'aniversario',
-                title: `${years} años de ${emp.nombre} ${emp.apellido}`
-              })
+        if (aniversarios) {
+          aniversarios.forEach((emp) => {
+            const [year, month, day] = emp.fecha_ingreso.split('-').map(Number)
+            const thisYearAnniversary = new Date(
+              selectedDate.getFullYear(),
+              month - 1,
+              day
+            )
+
+            if (thisYearAnniversary >= monthStart && thisYearAnniversary <= monthEnd) {
+              const years = selectedDate.getFullYear() - year
+              if (years > 0) {
+                newEvents.push({
+                  date: thisYearAnniversary,
+                  type: 'aniversario',
+                  title: `${years} años de ${emp.nombre} ${emp.apellido}`
+                })
+              }
             }
-          }
-        })
+          })
+        }
       }
 
       const startISO = monthStart.toISOString()
       const endISO = monthEnd.toISOString()
-      
-      // @ts-ignore
-      const tareasRes: any = await supabase
-        .from('tareas')
-        .select('fecha_limite, titulo')
-        .gte('fecha_limite', startISO)
-        .lte('fecha_limite', endISO)
-        .eq('completada', false)
 
-      if (tareasRes.data) {
-        const tareasAgrupadas = new Map<string, number>()
-        tareasRes.data.forEach((tarea: any) => {
-          const fecha = new Date(tarea.fecha_limite).toDateString()
-          tareasAgrupadas.set(fecha, (tareasAgrupadas.get(fecha) || 0) + 1)
-        })
+      // Tareas pendientes
+      if (layerPrefs.tareas) {
+        // @ts-ignore
+        const tareasRes: any = await supabase
+          .from('tareas')
+          .select('fecha_limite, titulo')
+          .gte('fecha_limite', startISO)
+          .lte('fecha_limite', endISO)
+          .eq('completada', false)
 
-        tareasAgrupadas.forEach((count, fecha) => {
-          newEvents.push({
-            date: new Date(fecha),
-            type: 'tarea',
-            title: `${count} tarea${count > 1 ? 's' : ''} pendiente${count > 1 ? 's' : ''}`,
-            count
+        if (tareasRes.data) {
+          const tareasAgrupadas = new Map<string, number>()
+          tareasRes.data.forEach((tarea: any) => {
+            const fecha = new Date(tarea.fecha_limite).toDateString()
+            tareasAgrupadas.set(fecha, (tareasAgrupadas.get(fecha) || 0) + 1)
           })
-        })
+
+          tareasAgrupadas.forEach((count, fecha) => {
+            newEvents.push({
+              date: new Date(fecha),
+              type: 'tarea',
+              title: `${count} tarea${count > 1 ? 's' : ''} pendiente${count > 1 ? 's' : ''}`,
+              count
+            })
+          })
+        }
       }
 
       // Vacaciones aprobadas
-      const vacacionesQuery: any = supabase
-        .from('solicitudes_vacaciones')
-        .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
-        .eq('estado', 'aprobada')
-        .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
-        .gte('fecha_fin', monthStart.toISOString().split('T')[0])
-      
-      const { data: vacaciones } = await vacacionesQuery
+      if (layerPrefs.vacaciones) {
+        const vacacionesQuery: any = supabase
+          .from('solicitudes_vacaciones')
+          .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
+          .eq('estado', 'aprobada')
+          .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
+          .gte('fecha_fin', monthStart.toISOString().split('T')[0])
 
-      if (vacaciones) {
-        vacaciones.forEach((vac: any) => {
-          const inicio = new Date(vac.fecha_inicio)
-          const fin = new Date(vac.fecha_fin)
-          
-          let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
-          const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+        const { data: vacaciones } = await vacacionesQuery
 
-          while (currentDate <= endDate) {
-            newEvents.push({
-              date: new Date(currentDate),
-              type: 'vacaciones',
-              title: `Vacaciones - ${vac.empleados?.nombre} ${vac.empleados?.apellido}`
-            })
-            currentDate.setDate(currentDate.getDate() + 1)
-          }
-        })
+        if (vacaciones) {
+          vacaciones.forEach((vac: any) => {
+            const inicio = new Date(vac.fecha_inicio)
+            const fin = new Date(vac.fecha_fin)
+
+            let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
+            const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+
+            while (currentDate <= endDate) {
+              newEvents.push({
+                date: new Date(currentDate),
+                type: 'vacaciones',
+                title: `Vacaciones - ${vac.empleados?.nombre} ${vac.empleados?.apellido}`
+              })
+              currentDate.setDate(currentDate.getDate() + 1)
+            }
+          })
+        }
       }
 
       // Ausencias médicas
-      const ausenciasQuery: any = supabase
-        .from('ausencias_medicas')
-        .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
-        .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
-        .gte('fecha_fin', monthStart.toISOString().split('T')[0])
-      
-      const { data: ausencias } = await ausenciasQuery
+      if (layerPrefs.ausencias) {
+        const ausenciasQuery: any = supabase
+          .from('ausencias_medicas')
+          .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
+          .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
+          .gte('fecha_fin', monthStart.toISOString().split('T')[0])
 
-      if (ausencias) {
-        ausencias.forEach((aus: any) => {
-          const inicio = new Date(aus.fecha_inicio)
-          const fin = new Date(aus.fecha_fin)
-          
-          let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
-          const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+        const { data: ausencias } = await ausenciasQuery
 
-          while (currentDate <= endDate) {
-            newEvents.push({
-              date: new Date(currentDate),
-              type: 'ausencia',
-              title: `Ausencia médica - ${aus.empleados?.nombre} ${aus.empleados?.apellido}`
-            })
-            currentDate.setDate(currentDate.getDate() + 1)
-          }
-        })
+        if (ausencias) {
+          ausencias.forEach((aus: any) => {
+            const inicio = new Date(aus.fecha_inicio)
+            const fin = new Date(aus.fecha_fin)
+
+            let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
+            const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+
+            while (currentDate <= endDate) {
+              newEvents.push({
+                date: new Date(currentDate),
+                type: 'ausencia',
+                title: `Ausencia médica - ${aus.empleados?.nombre} ${aus.empleados?.apellido}`
+              })
+              currentDate.setDate(currentDate.getDate() + 1)
+            }
+          })
+        }
       }
 
       // Notas del calendario
-      const notasQuery: any = supabase
-        .from('calendario_notas')
-        .select('*')
-        .gte('fecha', monthStart.toISOString().split('T')[0])
-        .lte('fecha', monthEnd.toISOString().split('T')[0])
-        .eq('activo', true)
-      
-      const { data: notasData } = await notasQuery
-      
-      if (notasData) {
-        setNotes(notasData)
-        notasData.forEach((nota: CalendarNote) => {
-          newEvents.push({
-            date: new Date(nota.fecha),
-            type: 'nota',
-            title: nota.titulo
+      if (layerPrefs.notas) {
+        const notasQuery: any = supabase
+          .from('calendario_notas')
+          .select('*')
+          .gte('fecha', monthStart.toISOString().split('T')[0])
+          .lte('fecha', monthEnd.toISOString().split('T')[0])
+          .eq('activo', true)
+
+        const { data: notasData } = await notasQuery
+
+        if (notasData) {
+          setNotes(notasData)
+          notasData.forEach((nota: CalendarNote) => {
+            newEvents.push({
+              date: new Date(nota.fecha),
+              type: 'nota',
+              title: nota.titulo
+            })
           })
-        })
+        }
       }
 
       // Horarios excepcionales
-      const horariosQuery: any = supabase
-        .from('horarios_excepcionales')
-        .select('*, empleados!inner(nombre, apellido)')
-        .gte('fecha', monthStart.toISOString().split('T')[0])
-        .lte('fecha', monthEnd.toISOString().split('T')[0])
-      
-      const { data: horariosData } = await horariosQuery
-      
-      if (horariosData) {
-        setHorariosExcepcionales(horariosData)
-        horariosData.forEach((horario: HorarioExcepcional) => {
-          newEvents.push({
-            date: new Date(horario.fecha),
-            type: 'horario_excepcional',
-            title: `Horario especial - ${horario.empleado?.nombre} ${horario.empleado?.apellido}`
+      if (layerPrefs.horarios_excepcionales) {
+        const horariosQuery: any = supabase
+          .from('horarios_excepcionales')
+          .select('*, empleados!inner(nombre, apellido)')
+          .gte('fecha', monthStart.toISOString().split('T')[0])
+          .lte('fecha', monthEnd.toISOString().split('T')[0])
+
+        const { data: horariosData } = await horariosQuery
+
+        if (horariosData) {
+          setHorariosExcepcionales(horariosData)
+          horariosData.forEach((horario: HorarioExcepcional) => {
+            newEvents.push({
+              date: new Date(horario.fecha),
+              type: 'horario_excepcional',
+              title: `Horario especial - ${horario.empleado?.nombre} ${horario.empleado?.apellido}`
+            })
           })
-        })
+        }
+      }
+
+      // ============ Calendarios externos (módulo /calendarios) ============
+      const activeRealIds = realCalendarios
+        .filter((c) => activeExternal.has(c.id))
+        .map((c) => c.id)
+      const calMap = Object.fromEntries(realCalendarios.map((c) => [c.id, c]))
+
+      const virtualFlags = {
+        cumpleanos:
+          activeExternal.has('virtual:cumpleanos') && !layerPrefs.cumpleanos,
+        vacaciones:
+          activeExternal.has('virtual:vacaciones') && !layerPrefs.vacaciones,
+        vacaciones_pendientes: activeExternal.has('virtual:vacaciones_pendientes'),
+        deadlines:
+          activeExternal.has('virtual:deadlines') && !layerPrefs.tareas,
+        tablero: activeExternal.has('virtual:tablero'),
+      }
+
+      const anyExternal =
+        activeRealIds.length > 0 || Object.values(virtualFlags).some(Boolean)
+
+      if (anyExternal) {
+        try {
+          const externos = await fetchEventosRango(
+            monthStart,
+            monthEnd,
+            activeRealIds,
+            virtualFlags,
+            calMap as any
+          )
+          for (const ev of externos) {
+            // Expandir multi-día
+            const startDay = new Date(
+              ev.fecha_inicio.getFullYear(),
+              ev.fecha_inicio.getMonth(),
+              ev.fecha_inicio.getDate()
+            )
+            const endDay = new Date(
+              ev.fecha_fin.getFullYear(),
+              ev.fecha_fin.getMonth(),
+              ev.fecha_fin.getDate()
+            )
+            const cur = new Date(startDay)
+            while (cur <= endDay) {
+              if (cur >= monthStart && cur <= monthEnd) {
+                newEvents.push({
+                  date: new Date(cur),
+                  type: 'externo',
+                  title: ev.titulo,
+                  externalColor: ev.color,
+                  externalSource: ev.calendario_nombre,
+                })
+              }
+              cur.setDate(cur.getDate() + 1)
+            }
+          }
+        } catch (e) {
+          console.warn('Error cargando eventos externos', e)
+        }
       }
 
       setEvents(newEvents)
+
     } catch (error) {
       console.error('Error cargando eventos del calendario:', error)
     } finally {
@@ -344,9 +574,21 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
         {eventTypes.has('horario_excepcional') && (
           <div className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Horario Especial" />
         )}
+        {dayEvents
+          .filter((e) => e.type === 'externo' && e.externalColor)
+          .slice(0, 3)
+          .map((e, i) => (
+            <div
+              key={`ext-${i}`}
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: e.externalColor }}
+              title={e.externalSource}
+            />
+          ))}
       </div>
     )
   }
+
 
   const getEventIcon = (type: CalendarEvent['type']) => {
     switch (type) {
@@ -645,16 +887,136 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-primary" />
             <CardTitle>Calendario de Eventos</CardTitle>
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Settings2 className="h-4 w-4" />
+                Capas
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <ScrollArea className="max-h-[420px]">
+                <div className="p-4 space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold">Capas del dashboard</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          const allOn = NATIVE_LAYERS.every((l) => layerPrefs[l.key])
+                          const next = NATIVE_LAYERS.reduce(
+                            (acc, l) => ({ ...acc, [l.key]: !allOn }),
+                            {} as Record<LayerKey, boolean>
+                          )
+                          setLayerPrefs(next)
+                          persistLayerPrefs(next)
+                        }}
+                      >
+                        {NATIVE_LAYERS.every((l) => layerPrefs[l.key]) ? 'Ocultar todo' : 'Mostrar todo'}
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {NATIVE_LAYERS.map((layer) => (
+                        <label
+                          key={layer.key}
+                          className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                        >
+                          <Checkbox
+                            checked={layerPrefs[layer.key]}
+                            onCheckedChange={(v) => toggleLayer(layer.key, !!v)}
+                          />
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: layer.color }}
+                          />
+                          <span className="text-sm">{layer.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Mis calendarios</h4>
+                    {realCalendarios.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No tenés calendarios. Creá uno en /calendarios.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {realCalendarios.map((cal) => (
+                          <label
+                            key={cal.id}
+                            className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                          >
+                            <Checkbox
+                              checked={activeExternal.has(cal.id)}
+                              onCheckedChange={(v) => toggleExternal(cal.id, !!v)}
+                            />
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: cal.color }}
+                            />
+                            <span className="text-sm truncate">{cal.nombre}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Capas virtuales</h4>
+                    <div className="space-y-2">
+                      {VIRTUAL_CALENDARS.map((v) => {
+                        const duplicate = VIRTUAL_DUPLICATES[v.id]
+                        const isDuplicated = duplicate && layerPrefs[duplicate]
+                        return (
+                          <label
+                            key={v.id}
+                            className={cn(
+                              "flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded",
+                              isDuplicated && "opacity-60"
+                            )}
+                          >
+                            <Checkbox
+                              checked={activeExternal.has(v.id)}
+                              onCheckedChange={(val) => toggleExternal(v.id, !!val)}
+                            />
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: v.color }}
+                            />
+                            <span className="text-sm flex-1 truncate">{v.nombre}</span>
+                            {isDuplicated && (
+                              <Badge variant="outline" className="text-[10px] h-4">
+                                ya incluida
+                              </Badge>
+                            )}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
         </div>
         <CardDescription>
           Eventos importantes del mes
         </CardDescription>
       </CardHeader>
+
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
           {/* Columna izquierda: Calendario */}
@@ -753,15 +1115,23 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
                       key={idx}
                       className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                     >
-                      {getEventIcon(event.type)}
+                      {event.type === 'externo' ? (
+                        <span
+                          className="w-3 h-3 rounded-full mt-1 shrink-0"
+                          style={{ backgroundColor: event.externalColor }}
+                        />
+                      ) : (
+                        getEventIcon(event.type)
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">{event.title}</p>
                         <Badge variant="secondary" className="text-xs mt-1">
-                          {event.type}
+                          {event.type === 'externo' ? event.externalSource ?? 'Calendario' : event.type}
                         </Badge>
                       </div>
                     </div>
                   ))}
+
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center py-8">
