@@ -159,6 +159,96 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
   }, [selectedDate, empleadoId, layerPrefs, activeExternal, prefsLoaded])
 
 
+  const loadPrefsAndCalendarios = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setPrefsLoaded(true)
+        return
+      }
+      setCurrentUserId(user.id)
+
+      // Empleado actual para preferencias de /calendarios
+      const { data: emp } = await supabase
+        .from('empleados')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('activo', true)
+        .maybeSingle()
+      if (emp) setCurrentEmpleadoId(emp.id)
+
+      // Preferencias dashboard
+      const { data: prefRow } = await (supabase as any)
+        .from('dashboard_calendar_prefs')
+        .select('prefs')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (prefRow?.prefs) {
+        setLayerPrefs({ ...DEFAULT_LAYER_PREFS, ...prefRow.prefs })
+      } else {
+        // Insert default row
+        await (supabase as any)
+          .from('dashboard_calendar_prefs')
+          .insert({ user_id: user.id, prefs: DEFAULT_LAYER_PREFS })
+      }
+
+      // Calendarios reales visibles
+      try {
+        const cals = await fetchCalendariosVisibles()
+        setRealCalendarios(cals)
+
+        if (emp) {
+          const calPrefs = await getPreferencias(emp.id)
+          const visMap = new Map(calPrefs.map((p: any) => [p.calendario_id, p.visible]))
+          const next = new Set<string>()
+          for (const c of cals) {
+            // Default: NO visible en dashboard hasta que el usuario lo active explícitamente
+            if (visMap.get(c.id) === true) next.add(c.id)
+          }
+          for (const v of VIRTUAL_CALENDARS) {
+            if (visMap.get(v.id) === true) next.add(v.id)
+          }
+          setActiveExternal(next)
+        }
+      } catch (e) {
+        console.warn('No se pudieron cargar calendarios externos', e)
+      }
+    } catch (e) {
+      console.error('Error cargando preferencias del calendario', e)
+    } finally {
+      setPrefsLoaded(true)
+    }
+  }
+
+  const persistLayerPrefs = async (next: Record<LayerKey, boolean>) => {
+    if (!currentUserId) return
+    await (supabase as any)
+      .from('dashboard_calendar_prefs')
+      .upsert({ user_id: currentUserId, prefs: next }, { onConflict: 'user_id' })
+  }
+
+  const toggleLayer = (key: LayerKey, value: boolean) => {
+    const next = { ...layerPrefs, [key]: value }
+    setLayerPrefs(next)
+    persistLayerPrefs(next)
+  }
+
+  const toggleExternal = async (id: string, visible: boolean) => {
+    setActiveExternal((prev) => {
+      const next = new Set(prev)
+      if (visible) next.add(id)
+      else next.delete(id)
+      return next
+    })
+    if (currentEmpleadoId) {
+      try {
+        await setPreferencia(currentEmpleadoId, id, visible)
+      } catch (e) {
+        console.warn('No se pudo persistir preferencia de calendario', e)
+      }
+    }
+  }
 
   const loadEmpleados = async () => {
     const { data } = await supabase
@@ -166,9 +256,10 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
       .select('id, nombre, apellido')
       .eq('activo', true)
       .order('apellido')
-    
+
     if (data) setEmpleados(data)
   }
+
 
   const loadEvents = async () => {
     setLoading(true)
