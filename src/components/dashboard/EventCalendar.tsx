@@ -303,164 +303,237 @@ export default function EventCalendar({ empleadoId, showAllEvents = false }: Eve
 
 
       // Aniversarios del mes
-      const aniversariosQuery: any = supabase
-        .from('empleados')
-        .select('fecha_ingreso, nombre, apellido')
-        .not('fecha_ingreso', 'is', null)
-        .eq('activo', true)
+      if (layerPrefs.aniversarios) {
+        const aniversariosQuery: any = supabase
+          .from('empleados')
+          .select('fecha_ingreso, nombre, apellido')
+          .not('fecha_ingreso', 'is', null)
+          .eq('activo', true)
 
-      const { data: aniversarios } = await aniversariosQuery
+        const { data: aniversarios } = await aniversariosQuery
 
-      if (aniversarios) {
-        aniversarios.forEach((emp) => {
-          // Parse fecha como YYYY-MM-DD para evitar problemas de zona horaria
-          const [year, month, day] = emp.fecha_ingreso.split('-').map(Number)
-          const thisYearAnniversary = new Date(
-            selectedDate.getFullYear(),
-            month - 1, // month es 0-indexed
-            day
-          )
-          
-          if (thisYearAnniversary >= monthStart && thisYearAnniversary <= monthEnd) {
-            const years = selectedDate.getFullYear() - year
-            if (years > 0) {
-              newEvents.push({
-                date: thisYearAnniversary,
-                type: 'aniversario',
-                title: `${years} años de ${emp.nombre} ${emp.apellido}`
-              })
+        if (aniversarios) {
+          aniversarios.forEach((emp) => {
+            const [year, month, day] = emp.fecha_ingreso.split('-').map(Number)
+            const thisYearAnniversary = new Date(
+              selectedDate.getFullYear(),
+              month - 1,
+              day
+            )
+
+            if (thisYearAnniversary >= monthStart && thisYearAnniversary <= monthEnd) {
+              const years = selectedDate.getFullYear() - year
+              if (years > 0) {
+                newEvents.push({
+                  date: thisYearAnniversary,
+                  type: 'aniversario',
+                  title: `${years} años de ${emp.nombre} ${emp.apellido}`
+                })
+              }
             }
-          }
-        })
+          })
+        }
       }
 
       const startISO = monthStart.toISOString()
       const endISO = monthEnd.toISOString()
-      
-      // @ts-ignore
-      const tareasRes: any = await supabase
-        .from('tareas')
-        .select('fecha_limite, titulo')
-        .gte('fecha_limite', startISO)
-        .lte('fecha_limite', endISO)
-        .eq('completada', false)
 
-      if (tareasRes.data) {
-        const tareasAgrupadas = new Map<string, number>()
-        tareasRes.data.forEach((tarea: any) => {
-          const fecha = new Date(tarea.fecha_limite).toDateString()
-          tareasAgrupadas.set(fecha, (tareasAgrupadas.get(fecha) || 0) + 1)
-        })
+      // Tareas pendientes
+      if (layerPrefs.tareas) {
+        // @ts-ignore
+        const tareasRes: any = await supabase
+          .from('tareas')
+          .select('fecha_limite, titulo')
+          .gte('fecha_limite', startISO)
+          .lte('fecha_limite', endISO)
+          .eq('completada', false)
 
-        tareasAgrupadas.forEach((count, fecha) => {
-          newEvents.push({
-            date: new Date(fecha),
-            type: 'tarea',
-            title: `${count} tarea${count > 1 ? 's' : ''} pendiente${count > 1 ? 's' : ''}`,
-            count
+        if (tareasRes.data) {
+          const tareasAgrupadas = new Map<string, number>()
+          tareasRes.data.forEach((tarea: any) => {
+            const fecha = new Date(tarea.fecha_limite).toDateString()
+            tareasAgrupadas.set(fecha, (tareasAgrupadas.get(fecha) || 0) + 1)
           })
-        })
+
+          tareasAgrupadas.forEach((count, fecha) => {
+            newEvents.push({
+              date: new Date(fecha),
+              type: 'tarea',
+              title: `${count} tarea${count > 1 ? 's' : ''} pendiente${count > 1 ? 's' : ''}`,
+              count
+            })
+          })
+        }
       }
 
       // Vacaciones aprobadas
-      const vacacionesQuery: any = supabase
-        .from('solicitudes_vacaciones')
-        .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
-        .eq('estado', 'aprobada')
-        .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
-        .gte('fecha_fin', monthStart.toISOString().split('T')[0])
-      
-      const { data: vacaciones } = await vacacionesQuery
+      if (layerPrefs.vacaciones) {
+        const vacacionesQuery: any = supabase
+          .from('solicitudes_vacaciones')
+          .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
+          .eq('estado', 'aprobada')
+          .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
+          .gte('fecha_fin', monthStart.toISOString().split('T')[0])
 
-      if (vacaciones) {
-        vacaciones.forEach((vac: any) => {
-          const inicio = new Date(vac.fecha_inicio)
-          const fin = new Date(vac.fecha_fin)
-          
-          let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
-          const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+        const { data: vacaciones } = await vacacionesQuery
 
-          while (currentDate <= endDate) {
-            newEvents.push({
-              date: new Date(currentDate),
-              type: 'vacaciones',
-              title: `Vacaciones - ${vac.empleados?.nombre} ${vac.empleados?.apellido}`
-            })
-            currentDate.setDate(currentDate.getDate() + 1)
-          }
-        })
+        if (vacaciones) {
+          vacaciones.forEach((vac: any) => {
+            const inicio = new Date(vac.fecha_inicio)
+            const fin = new Date(vac.fecha_fin)
+
+            let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
+            const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+
+            while (currentDate <= endDate) {
+              newEvents.push({
+                date: new Date(currentDate),
+                type: 'vacaciones',
+                title: `Vacaciones - ${vac.empleados?.nombre} ${vac.empleados?.apellido}`
+              })
+              currentDate.setDate(currentDate.getDate() + 1)
+            }
+          })
+        }
       }
 
       // Ausencias médicas
-      const ausenciasQuery: any = supabase
-        .from('ausencias_medicas')
-        .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
-        .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
-        .gte('fecha_fin', monthStart.toISOString().split('T')[0])
-      
-      const { data: ausencias } = await ausenciasQuery
+      if (layerPrefs.ausencias) {
+        const ausenciasQuery: any = supabase
+          .from('ausencias_medicas')
+          .select('fecha_inicio, fecha_fin, empleado_id, empleados!inner(nombre, apellido)')
+          .lte('fecha_inicio', monthEnd.toISOString().split('T')[0])
+          .gte('fecha_fin', monthStart.toISOString().split('T')[0])
 
-      if (ausencias) {
-        ausencias.forEach((aus: any) => {
-          const inicio = new Date(aus.fecha_inicio)
-          const fin = new Date(aus.fecha_fin)
-          
-          let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
-          const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+        const { data: ausencias } = await ausenciasQuery
 
-          while (currentDate <= endDate) {
-            newEvents.push({
-              date: new Date(currentDate),
-              type: 'ausencia',
-              title: `Ausencia médica - ${aus.empleados?.nombre} ${aus.empleados?.apellido}`
-            })
-            currentDate.setDate(currentDate.getDate() + 1)
-          }
-        })
+        if (ausencias) {
+          ausencias.forEach((aus: any) => {
+            const inicio = new Date(aus.fecha_inicio)
+            const fin = new Date(aus.fecha_fin)
+
+            let currentDate = new Date(Math.max(inicio.getTime(), monthStart.getTime()))
+            const endDate = new Date(Math.min(fin.getTime(), monthEnd.getTime()))
+
+            while (currentDate <= endDate) {
+              newEvents.push({
+                date: new Date(currentDate),
+                type: 'ausencia',
+                title: `Ausencia médica - ${aus.empleados?.nombre} ${aus.empleados?.apellido}`
+              })
+              currentDate.setDate(currentDate.getDate() + 1)
+            }
+          })
+        }
       }
 
       // Notas del calendario
-      const notasQuery: any = supabase
-        .from('calendario_notas')
-        .select('*')
-        .gte('fecha', monthStart.toISOString().split('T')[0])
-        .lte('fecha', monthEnd.toISOString().split('T')[0])
-        .eq('activo', true)
-      
-      const { data: notasData } = await notasQuery
-      
-      if (notasData) {
-        setNotes(notasData)
-        notasData.forEach((nota: CalendarNote) => {
-          newEvents.push({
-            date: new Date(nota.fecha),
-            type: 'nota',
-            title: nota.titulo
+      if (layerPrefs.notas) {
+        const notasQuery: any = supabase
+          .from('calendario_notas')
+          .select('*')
+          .gte('fecha', monthStart.toISOString().split('T')[0])
+          .lte('fecha', monthEnd.toISOString().split('T')[0])
+          .eq('activo', true)
+
+        const { data: notasData } = await notasQuery
+
+        if (notasData) {
+          setNotes(notasData)
+          notasData.forEach((nota: CalendarNote) => {
+            newEvents.push({
+              date: new Date(nota.fecha),
+              type: 'nota',
+              title: nota.titulo
+            })
           })
-        })
+        }
       }
 
       // Horarios excepcionales
-      const horariosQuery: any = supabase
-        .from('horarios_excepcionales')
-        .select('*, empleados!inner(nombre, apellido)')
-        .gte('fecha', monthStart.toISOString().split('T')[0])
-        .lte('fecha', monthEnd.toISOString().split('T')[0])
-      
-      const { data: horariosData } = await horariosQuery
-      
-      if (horariosData) {
-        setHorariosExcepcionales(horariosData)
-        horariosData.forEach((horario: HorarioExcepcional) => {
-          newEvents.push({
-            date: new Date(horario.fecha),
-            type: 'horario_excepcional',
-            title: `Horario especial - ${horario.empleado?.nombre} ${horario.empleado?.apellido}`
+      if (layerPrefs.horarios_excepcionales) {
+        const horariosQuery: any = supabase
+          .from('horarios_excepcionales')
+          .select('*, empleados!inner(nombre, apellido)')
+          .gte('fecha', monthStart.toISOString().split('T')[0])
+          .lte('fecha', monthEnd.toISOString().split('T')[0])
+
+        const { data: horariosData } = await horariosQuery
+
+        if (horariosData) {
+          setHorariosExcepcionales(horariosData)
+          horariosData.forEach((horario: HorarioExcepcional) => {
+            newEvents.push({
+              date: new Date(horario.fecha),
+              type: 'horario_excepcional',
+              title: `Horario especial - ${horario.empleado?.nombre} ${horario.empleado?.apellido}`
+            })
           })
-        })
+        }
+      }
+
+      // ============ Calendarios externos (módulo /calendarios) ============
+      const activeRealIds = realCalendarios
+        .filter((c) => activeExternal.has(c.id))
+        .map((c) => c.id)
+      const calMap = Object.fromEntries(realCalendarios.map((c) => [c.id, c]))
+
+      const virtualFlags = {
+        cumpleanos:
+          activeExternal.has('virtual:cumpleanos') && !layerPrefs.cumpleanos,
+        vacaciones:
+          activeExternal.has('virtual:vacaciones') && !layerPrefs.vacaciones,
+        vacaciones_pendientes: activeExternal.has('virtual:vacaciones_pendientes'),
+        deadlines:
+          activeExternal.has('virtual:deadlines') && !layerPrefs.tareas,
+        tablero: activeExternal.has('virtual:tablero'),
+      }
+
+      const anyExternal =
+        activeRealIds.length > 0 || Object.values(virtualFlags).some(Boolean)
+
+      if (anyExternal) {
+        try {
+          const externos = await fetchEventosRango(
+            monthStart,
+            monthEnd,
+            activeRealIds,
+            virtualFlags,
+            calMap as any
+          )
+          for (const ev of externos) {
+            // Expandir multi-día
+            const startDay = new Date(
+              ev.fecha_inicio.getFullYear(),
+              ev.fecha_inicio.getMonth(),
+              ev.fecha_inicio.getDate()
+            )
+            const endDay = new Date(
+              ev.fecha_fin.getFullYear(),
+              ev.fecha_fin.getMonth(),
+              ev.fecha_fin.getDate()
+            )
+            const cur = new Date(startDay)
+            while (cur <= endDay) {
+              if (cur >= monthStart && cur <= monthEnd) {
+                newEvents.push({
+                  date: new Date(cur),
+                  type: 'externo',
+                  title: ev.titulo,
+                  externalColor: ev.color,
+                  externalSource: ev.calendario_nombre,
+                })
+              }
+              cur.setDate(cur.getDate() + 1)
+            }
+          }
+        } catch (e) {
+          console.warn('Error cargando eventos externos', e)
+        }
       }
 
       setEvents(newEvents)
+
     } catch (error) {
       console.error('Error cargando eventos del calendario:', error)
     } finally {
