@@ -247,8 +247,11 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const [comentario, setComentario] = useState<Record<string, string>>({});
   const [accionando, setAccionando] = useState<string | null>(null);
 
-  const handleDecision = async (solicitudId: string, aprobar: boolean) => {
-    if (!aprobar && !comentario[solicitudId]?.trim()) {
+  const handleCambioEstado = async (
+    solicitudId: string,
+    nuevoEstado: 'pendiente' | 'aprobada' | 'rechazada'
+  ) => {
+    if (nuevoEstado === 'rechazada' && !comentario[solicitudId]?.trim()) {
       toast({ title: "Comentario requerido", description: "Indica el motivo del rechazo", variant: "destructive" });
       return;
     }
@@ -259,18 +262,31 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         .from('empleados').select('id').eq('user_id', user?.id).single();
       if (!emp) throw new Error('No se encontró el empleado');
 
+      const updatePayload: any = nuevoEstado === 'pendiente'
+        ? {
+            estado: 'pendiente',
+            aprobado_por: null,
+            fecha_aprobacion: null,
+            comentarios_aprobacion: null,
+          }
+        : {
+            estado: nuevoEstado,
+            aprobado_por: emp.id,
+            fecha_aprobacion: new Date().toISOString(),
+            comentarios_aprobacion: comentario[solicitudId] || null,
+          };
+
       const { error } = await supabase
         .from('solicitudes_vacaciones')
-        .update({
-          estado: (aprobar ? 'aprobada' : 'rechazada') as any,
-          aprobado_por: emp.id,
-          fecha_aprobacion: new Date().toISOString(),
-          comentarios_aprobacion: comentario[solicitudId] || null,
-        })
+        .update(updatePayload)
         .eq('id', solicitudId);
       if (error) throw error;
 
-      toast({ title: aprobar ? "Solicitud aprobada" : "Solicitud rechazada" });
+      const msg =
+        nuevoEstado === 'aprobada' ? 'Solicitud aprobada' :
+        nuevoEstado === 'rechazada' ? 'Solicitud rechazada' :
+        'Solicitud marcada como pendiente';
+      toast({ title: msg });
       setComentario((c) => ({ ...c, [solicitudId]: '' }));
       fetchVacaciones();
     } catch (e: any) {
