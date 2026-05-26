@@ -243,6 +243,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   };
 
   const puedeAprobar = rol === 'admin_rrhh' || rol === 'gerente_sucursal';
+  const puedeReasignar = rol === 'admin_rrhh';
   const [comentario, setComentario] = useState<Record<string, string>>({});
   const [accionando, setAccionando] = useState<string | null>(null);
 
