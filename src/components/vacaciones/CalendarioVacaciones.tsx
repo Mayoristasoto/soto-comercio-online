@@ -247,8 +247,11 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const [comentario, setComentario] = useState<Record<string, string>>({});
   const [accionando, setAccionando] = useState<string | null>(null);
 
-  const handleDecision = async (solicitudId: string, aprobar: boolean) => {
-    if (!aprobar && !comentario[solicitudId]?.trim()) {
+  const handleCambioEstado = async (
+    solicitudId: string,
+    nuevoEstado: 'pendiente' | 'aprobada' | 'rechazada'
+  ) => {
+    if (nuevoEstado === 'rechazada' && !comentario[solicitudId]?.trim()) {
       toast({ title: "Comentario requerido", description: "Indica el motivo del rechazo", variant: "destructive" });
       return;
     }
@@ -259,18 +262,31 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         .from('empleados').select('id').eq('user_id', user?.id).single();
       if (!emp) throw new Error('No se encontró el empleado');
 
+      const updatePayload: any = nuevoEstado === 'pendiente'
+        ? {
+            estado: 'pendiente',
+            aprobado_por: null,
+            fecha_aprobacion: null,
+            comentarios_aprobacion: null,
+          }
+        : {
+            estado: nuevoEstado,
+            aprobado_por: emp.id,
+            fecha_aprobacion: new Date().toISOString(),
+            comentarios_aprobacion: comentario[solicitudId] || null,
+          };
+
       const { error } = await supabase
         .from('solicitudes_vacaciones')
-        .update({
-          estado: (aprobar ? 'aprobada' : 'rechazada') as any,
-          aprobado_por: emp.id,
-          fecha_aprobacion: new Date().toISOString(),
-          comentarios_aprobacion: comentario[solicitudId] || null,
-        })
+        .update(updatePayload)
         .eq('id', solicitudId);
       if (error) throw error;
 
-      toast({ title: aprobar ? "Solicitud aprobada" : "Solicitud rechazada" });
+      const msg =
+        nuevoEstado === 'aprobada' ? 'Solicitud aprobada' :
+        nuevoEstado === 'rechazada' ? 'Solicitud rechazada' :
+        'Solicitud marcada como pendiente';
+      toast({ title: msg });
       setComentario((c) => ({ ...c, [solicitudId]: '' }));
       fetchVacaciones();
     } catch (e: any) {
@@ -411,19 +427,28 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 <div className="space-y-1">
                   {dia.empleados.slice(0, 5).map((emp, empIdx) => {
                     const isPending = emp.estado === 'pendiente';
+                    const canOpenPopover = (isPending && puedeAprobar) || puedeReasignar;
+                    const estadoLabel =
+                      emp.estado === 'pendiente' ? 'Pendiente' :
+                      emp.estado === 'aprobada' ? 'Aprobada' :
+                      emp.estado === 'gozadas' ? 'Gozada' : emp.estado;
                     const chip = (
                       <div
                         className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${getEmpleadoColor(emp.id)} ${
                           isPending ? 'opacity-60 italic border-dashed' : ''
-                        } ${isPending && puedeAprobar ? 'cursor-pointer hover:opacity-100 transition-opacity' : ''}`}
-                        title={isPending ? (puedeAprobar ? 'Click para aprobar/rechazar' : 'Pendiente de aprobación') : 'Aprobada'}
+                        } ${canOpenPopover ? 'cursor-pointer hover:opacity-100 transition-opacity' : ''}`}
+                        title={
+                          canOpenPopover
+                            ? (isPending ? 'Click para aprobar/rechazar' : 'Click para gestionar')
+                            : estadoLabel
+                        }
                       >
                         {isPending && <Clock className="h-3 w-3 shrink-0" />}
                         <span className="font-medium truncate">{emp.nombre} {emp.apellido.charAt(0)}.</span>
                       </div>
                     );
 
-                    if (!isPending || !puedeAprobar) {
+                    if (!canOpenPopover) {
                       return <div key={empIdx}>{chip}</div>;
                     }
 
@@ -440,7 +465,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(emp.fechaInicio + 'T00:00:00'), "d 'de' MMM", { locale: es })} – {format(new Date(emp.fechaFin + 'T00:00:00'), "d 'de' MMM yyyy", { locale: es })}
                             </p>
-                            <Badge variant="outline" className="text-xs">Pendiente</Badge>
+                            <Badge variant="outline" className="text-xs">{estadoLabel}</Badge>
                           </div>
 
                           {puedeReasignar && (
@@ -504,31 +529,45 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                             </div>
                           )}
 
-                          <Textarea
-                            placeholder="Comentario (obligatorio si rechazás)"
-                            value={comentario[emp.solicitudId] || ''}
-                            onChange={(e) => setComentario((c) => ({ ...c, [emp.solicitudId]: e.target.value }))}
-                            rows={2}
-                            className="text-xs"
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              className="flex-1"
-                              disabled={accionando === emp.solicitudId}
-                              onClick={() => handleDecision(emp.solicitudId, true)}
-                            >
-                              <Check className="h-3 w-3 mr-1" /> Aprobar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1"
-                              disabled={accionando === emp.solicitudId}
-                              onClick={() => handleDecision(emp.solicitudId, false)}
-                            >
-                              <X className="h-3 w-3 mr-1" /> Rechazar
-                            </Button>
+                          <div className="space-y-2 pt-1 border-t">
+                            <Label className="text-xs">Cambiar estado</Label>
+                            <Textarea
+                              placeholder="Comentario (obligatorio si rechazás)"
+                              value={comentario[emp.solicitudId] || ''}
+                              onChange={(e) => setComentario((c) => ({ ...c, [emp.solicitudId]: e.target.value }))}
+                              rows={2}
+                              className="text-xs"
+                            />
+                            <div className="flex gap-2">
+                              {puedeReasignar && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1"
+                                  disabled={accionando === emp.solicitudId || emp.estado === 'pendiente'}
+                                  onClick={() => handleCambioEstado(emp.solicitudId, 'pendiente')}
+                                >
+                                  <Clock className="h-3 w-3 mr-1" /> Pendiente
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                disabled={accionando === emp.solicitudId || emp.estado === 'aprobada'}
+                                onClick={() => handleCambioEstado(emp.solicitudId, 'aprobada')}
+                              >
+                                <Check className="h-3 w-3 mr-1" /> Aprobar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="flex-1"
+                                disabled={accionando === emp.solicitudId}
+                                onClick={() => handleCambioEstado(emp.solicitudId, 'rechazada')}
+                              >
+                                <X className="h-3 w-3 mr-1" /> Rechazar
+                              </Button>
+                            </div>
                           </div>
                         </PopoverContent>
                       </Popover>
