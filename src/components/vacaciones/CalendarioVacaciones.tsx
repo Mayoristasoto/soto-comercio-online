@@ -79,7 +79,65 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
     }
   };
 
+  const fetchEmpleadosLista = async () => {
+    try {
+      const { data } = await supabase
+        .from('empleados')
+        .select('id, nombre, apellido, dni')
+        .eq('activo', true)
+        .order('apellido', { ascending: true });
+      setEmpleadosLista((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching empleados list:', error);
+    }
+  };
+
+  const handleReasignar = async (solicitudId: string, fechaInicio: string, fechaFin: string) => {
+    const nuevoId = nuevoEmpleadoId[solicitudId];
+    if (!nuevoId) {
+      toast({ title: "Seleccioná un empleado", variant: "destructive" });
+      return;
+    }
+    try {
+      setReasignando(solicitudId);
+      const { data: conflictos, error: conflictoError } = await supabase
+        .from('solicitudes_vacaciones')
+        .select('id')
+        .eq('empleado_id', nuevoId)
+        .in('estado', ['aprobada', 'pendiente', 'gozadas'] as any)
+        .lte('fecha_inicio', fechaFin)
+        .gte('fecha_fin', fechaInicio)
+        .neq('id', solicitudId);
+      if (conflictoError) throw conflictoError;
+      if (conflictos && conflictos.length > 0) {
+        toast({
+          title: "Conflicto de fechas",
+          description: "El empleado seleccionado ya tiene una solicitud que se solapa con estas fechas.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('solicitudes_vacaciones')
+        .update({ empleado_id: nuevoId })
+        .eq('id', solicitudId);
+      if (error) throw error;
+
+      toast({ title: "Solicitud reasignada correctamente" });
+      setNuevoEmpleadoId((s) => ({ ...s, [solicitudId]: '' }));
+      setEmpleadoPickerOpen((s) => ({ ...s, [solicitudId]: false }));
+      fetchVacaciones();
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error al reasignar", description: e.message, variant: "destructive" });
+    } finally {
+      setReasignando(null);
+    }
+  };
+
   const fetchVacaciones = async () => {
+
     try {
       setLoading(true);
       const inicio = startOfMonth(mesSeleccionado);
