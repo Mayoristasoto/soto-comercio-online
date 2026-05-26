@@ -431,7 +431,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                       <Popover key={empIdx}>
                         <PopoverTrigger asChild>{chip}</PopoverTrigger>
                         <PopoverContent
-                          className="w-72 space-y-3"
+                          className="w-80 space-y-3"
                           align="start"
                           onOpenAutoFocus={(e) => e.preventDefault()}
                         >
@@ -442,6 +442,68 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                             </p>
                             <Badge variant="outline" className="text-xs">Pendiente</Badge>
                           </div>
+
+                          {puedeReasignar && (
+                            <div className="space-y-2 pt-1 border-t">
+                              <Label className="text-xs flex items-center gap-1">
+                                <UserCog className="h-3 w-3" /> Reasignar a otro empleado
+                              </Label>
+                              <Popover
+                                open={empleadoPickerOpen[emp.solicitudId] || false}
+                                onOpenChange={(o) => setEmpleadoPickerOpen((s) => ({ ...s, [emp.solicitudId]: o }))}
+                              >
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-between text-xs font-normal"
+                                  >
+                                    {(() => {
+                                      const sel = empleadosLista.find((e) => e.id === nuevoEmpleadoId[emp.solicitudId]);
+                                      return sel ? `${sel.apellido}, ${sel.nombre}` : "Buscar empleado...";
+                                    })()}
+                                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-72 p-0" align="start">
+                                  <Command>
+                                    <CommandInput placeholder="Nombre, apellido o DNI..." className="h-9" />
+                                    <CommandList>
+                                      <CommandEmpty>Sin resultados</CommandEmpty>
+                                      <CommandGroup>
+                                        {empleadosLista
+                                          .filter((e) => e.id !== emp.id)
+                                          .map((e) => (
+                                            <CommandItem
+                                              key={e.id}
+                                              value={`${e.apellido} ${e.nombre} ${e.dni ?? ''}`}
+                                              onSelect={() => {
+                                                setNuevoEmpleadoId((s) => ({ ...s, [emp.solicitudId]: e.id }));
+                                                setEmpleadoPickerOpen((s) => ({ ...s, [emp.solicitudId]: false }));
+                                              }}
+                                            >
+                                              <span className="truncate">{e.apellido}, {e.nombre}</span>
+                                              {e.dni && <span className="ml-auto text-xs text-muted-foreground">{e.dni}</span>}
+                                            </CommandItem>
+                                          ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="w-full"
+                                disabled={reasignando === emp.solicitudId || !nuevoEmpleadoId[emp.solicitudId]}
+                                onClick={() => handleReasignar(emp.solicitudId, emp.fechaInicio, emp.fechaFin)}
+                              >
+                                <UserCog className="h-3 w-3 mr-1" />
+                                {reasignando === emp.solicitudId ? 'Reasignando...' : 'Reasignar empleado'}
+                              </Button>
+                            </div>
+                          )}
+
                           <Textarea
                             placeholder="Comentario (obligatorio si rechazás)"
                             value={comentario[emp.solicitudId] || ''}
