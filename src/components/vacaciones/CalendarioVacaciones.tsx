@@ -427,19 +427,28 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 <div className="space-y-1">
                   {dia.empleados.slice(0, 5).map((emp, empIdx) => {
                     const isPending = emp.estado === 'pendiente';
+                    const canOpenPopover = (isPending && puedeAprobar) || puedeReasignar;
+                    const estadoLabel =
+                      emp.estado === 'pendiente' ? 'Pendiente' :
+                      emp.estado === 'aprobada' ? 'Aprobada' :
+                      emp.estado === 'gozadas' ? 'Gozada' : emp.estado;
                     const chip = (
                       <div
                         className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${getEmpleadoColor(emp.id)} ${
                           isPending ? 'opacity-60 italic border-dashed' : ''
-                        } ${isPending && puedeAprobar ? 'cursor-pointer hover:opacity-100 transition-opacity' : ''}`}
-                        title={isPending ? (puedeAprobar ? 'Click para aprobar/rechazar' : 'Pendiente de aprobación') : 'Aprobada'}
+                        } ${canOpenPopover ? 'cursor-pointer hover:opacity-100 transition-opacity' : ''}`}
+                        title={
+                          canOpenPopover
+                            ? (isPending ? 'Click para aprobar/rechazar' : 'Click para gestionar')
+                            : estadoLabel
+                        }
                       >
                         {isPending && <Clock className="h-3 w-3 shrink-0" />}
                         <span className="font-medium truncate">{emp.nombre} {emp.apellido.charAt(0)}.</span>
                       </div>
                     );
 
-                    if (!isPending || !puedeAprobar) {
+                    if (!canOpenPopover) {
                       return <div key={empIdx}>{chip}</div>;
                     }
 
@@ -456,7 +465,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(emp.fechaInicio + 'T00:00:00'), "d 'de' MMM", { locale: es })} – {format(new Date(emp.fechaFin + 'T00:00:00'), "d 'de' MMM yyyy", { locale: es })}
                             </p>
-                            <Badge variant="outline" className="text-xs">Pendiente</Badge>
+                            <Badge variant="outline" className="text-xs">{estadoLabel}</Badge>
                           </div>
 
                           {puedeReasignar && (
