@@ -39,12 +39,17 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const [vacaciones, setVacaciones] = useState<VacacionDia[]>([]);
   const [sucursales, setSucursales] = useState<any[]>([]);
   const [puestos, setPuestos] = useState<string[]>([]);
+  const [empleadosLista, setEmpleadosLista] = useState<Array<{ id: string; nombre: string; apellido: string; dni: string | null }>>([]);
   const [filtroSucursal, setFiltroSucursal] = useState<string>("todas");
   const [filtroPuesto, setFiltroPuesto] = useState<string>("todos");
+  const [nuevoEmpleadoId, setNuevoEmpleadoId] = useState<Record<string, string>>({});
+  const [reasignando, setReasignando] = useState<string | null>(null);
+  const [empleadoPickerOpen, setEmpleadoPickerOpen] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSucursalesYPuestos();
+    fetchEmpleadosLista();
   }, []);
 
   useEffect(() => {
