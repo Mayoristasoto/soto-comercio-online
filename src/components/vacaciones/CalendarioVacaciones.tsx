@@ -529,31 +529,45 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                             </div>
                           )}
 
-                          <Textarea
-                            placeholder="Comentario (obligatorio si rechazás)"
-                            value={comentario[emp.solicitudId] || ''}
-                            onChange={(e) => setComentario((c) => ({ ...c, [emp.solicitudId]: e.target.value }))}
-                            rows={2}
-                            className="text-xs"
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              className="flex-1"
-                              disabled={accionando === emp.solicitudId}
-                              onClick={() => handleDecision(emp.solicitudId, true)}
-                            >
-                              <Check className="h-3 w-3 mr-1" /> Aprobar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1"
-                              disabled={accionando === emp.solicitudId}
-                              onClick={() => handleDecision(emp.solicitudId, false)}
-                            >
-                              <X className="h-3 w-3 mr-1" /> Rechazar
-                            </Button>
+                          <div className="space-y-2 pt-1 border-t">
+                            <Label className="text-xs">Cambiar estado</Label>
+                            <Textarea
+                              placeholder="Comentario (obligatorio si rechazás)"
+                              value={comentario[emp.solicitudId] || ''}
+                              onChange={(e) => setComentario((c) => ({ ...c, [emp.solicitudId]: e.target.value }))}
+                              rows={2}
+                              className="text-xs"
+                            />
+                            <div className="flex gap-2">
+                              {puedeReasignar && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1"
+                                  disabled={accionando === emp.solicitudId || emp.estado === 'pendiente'}
+                                  onClick={() => handleCambioEstado(emp.solicitudId, 'pendiente')}
+                                >
+                                  <Clock className="h-3 w-3 mr-1" /> Pendiente
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                disabled={accionando === emp.solicitudId || emp.estado === 'aprobada'}
+                                onClick={() => handleCambioEstado(emp.solicitudId, 'aprobada')}
+                              >
+                                <Check className="h-3 w-3 mr-1" /> Aprobar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="flex-1"
+                                disabled={accionando === emp.solicitudId}
+                                onClick={() => handleCambioEstado(emp.solicitudId, 'rechazada')}
+                              >
+                                <X className="h-3 w-3 mr-1" /> Rechazar
+                              </Button>
+                            </div>
                           </div>
                         </PopoverContent>
                       </Popover>
