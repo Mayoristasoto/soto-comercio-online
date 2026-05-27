@@ -69,6 +69,7 @@ const SAMPLE = {
   item: "Zapatos de seguridad",
   tipo_elemento: "calzado",
   observaciones: "Talle 42",
+  detalle: "Marca Grafa - Talle 42 - Negro",
 };
 
 export function renderPlantilla(
