@@ -167,7 +167,7 @@ export default function EntregasEmpleados() {
           supabase
             .from("entregas_empleado")
             .select(
-              "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
+              "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, detalle, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
             ),
           supabase.from("sucursales").select("id, nombre").eq("activa", true).order("nombre"),
           supabase
