@@ -1,0 +1,1 @@
+UPDATE public.app_pages SET path = '/rrhh/entregas' WHERE id = '46a53268-5b8f-4d1e-bde1-26115bece315';
