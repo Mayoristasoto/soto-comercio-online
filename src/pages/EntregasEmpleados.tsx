@@ -131,6 +131,11 @@ export default function EntregasEmpleados() {
     registroId: string;
   } | null>(null);
   const [selPlantillaId, setSelPlantillaId] = useState<string>("");
+  const [detalleInput, setDetalleInput] = useState<string>("");
+  const [detallePrompt, setDetallePrompt] = useState<{
+    empleado: Empleado;
+    item: Item;
+  } | null>(null);
 
   useEffect(() => {
     cargar();
