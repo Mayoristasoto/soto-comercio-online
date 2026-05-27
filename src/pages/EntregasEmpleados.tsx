@@ -1,0 +1,654 @@
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Check,
+  Clock,
+  Loader2,
+  Minus,
+  Package,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import { format } from "date-fns";
+
+type Estado = "pendiente" | "entregado" | "no_aplica";
+
+interface Item {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  orden: number;
+  activo: boolean;
+}
+
+interface Empleado {
+  id: string;
+  nombre: string;
+  apellido: string;
+  puesto: string | null;
+  sucursal_id: string | null;
+  sucursales?: { nombre: string } | null;
+}
+
+interface Registro {
+  id: string;
+  empleado_id: string;
+  item_id: string;
+  estado: Estado;
+  fecha_entrega: string | null;
+  registrado_por: string | null;
+  observaciones: string | null;
+  registrado?: { nombre: string; apellido: string } | null;
+}
+
+const SIGUIENTE: Record<Estado, Estado> = {
+  pendiente: "entregado",
+  entregado: "no_aplica",
+  no_aplica: "pendiente",
+};
+
+export default function EntregasEmpleados() {
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Item[]>([]);
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [registros, setRegistros] = useState<Registro[]>([]);
+  const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
+  const [puestos, setPuestos] = useState<string[]>([]);
+  const [currentEmpId, setCurrentEmpId] = useState<string | null>(null);
+
+  // filtros
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroSucursal, setFiltroSucursal] = useState("todas");
+  const [filtroPuesto, setFiltroPuesto] = useState("todos");
+  const [filtroEstado, setFiltroEstado] = useState<"todos" | "faltantes" | "completos">(
+    "todos"
+  );
+
+  // gestion items
+  const [gestionOpen, setGestionOpen] = useState(false);
+
+  useEffect(() => {
+    cargar();
+  }, []);
+
+  const cargar = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: emp } = await supabase
+        .from("empleados")
+        .select("id")
+        .eq("user_id", user?.id ?? "")
+        .maybeSingle();
+      setCurrentEmpId(emp?.id ?? null);
+
+      const [itemsRes, empleadosRes, registrosRes, sucursalesRes] = await Promise.all([
+        supabase
+          .from("entregas_items")
+          .select("*")
+          .eq("activo", true)
+          .order("orden", { ascending: true }),
+        supabase
+          .from("empleados")
+          .select("id, nombre, apellido, puesto, sucursal_id, sucursales(nombre)")
+          .eq("activo", true)
+          .order("apellido", { ascending: true }),
+        supabase
+          .from("entregas_empleado")
+          .select(
+            "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
+          ),
+        supabase.from("sucursales").select("id, nombre").eq("activa", true).order("nombre"),
+      ]);
+
+      if (itemsRes.error) throw itemsRes.error;
+      if (empleadosRes.error) throw empleadosRes.error;
+      if (registrosRes.error) throw registrosRes.error;
+      if (sucursalesRes.error) throw sucursalesRes.error;
+
+      setItems((itemsRes.data ?? []) as any);
+      setEmpleados((empleadosRes.data ?? []) as any);
+      setRegistros((registrosRes.data ?? []) as any);
+      setSucursales((sucursalesRes.data ?? []) as any);
+
+      const ps = Array.from(
+        new Set((empleadosRes.data ?? []).map((e: any) => e.puesto).filter(Boolean))
+      );
+      setPuestos(ps as string[]);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Error al cargar datos", { description: e.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // map (emp,item) -> registro
+  const mapa = useMemo(() => {
+    const m = new Map<string, Registro>();
+    for (const r of registros) m.set(`${r.empleado_id}:${r.item_id}`, r);
+    return m;
+  }, [registros]);
+
+  const empleadosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    return empleados.filter((e) => {
+      if (filtroSucursal !== "todas" && e.sucursal_id !== filtroSucursal) return false;
+      if (filtroPuesto !== "todos" && e.puesto !== filtroPuesto) return false;
+      if (q) {
+        const full = `${e.nombre} ${e.apellido}`.toLowerCase();
+        if (!full.includes(q)) return false;
+      }
+      if (filtroEstado !== "todos") {
+        const estados = items.map(
+          (it) => mapa.get(`${e.id}:${it.id}`)?.estado ?? "pendiente"
+        );
+        const tieneFaltantes = estados.some((s) => s === "pendiente");
+        if (filtroEstado === "faltantes" && !tieneFaltantes) return false;
+        if (filtroEstado === "completos" && tieneFaltantes) return false;
+      }
+      return true;
+    });
+  }, [empleados, busqueda, filtroSucursal, filtroPuesto, filtroEstado, mapa, items]);
+
+  const resumen = useMemo(() => {
+    let completos = 0;
+    let faltantes = 0;
+    for (const e of empleadosFiltrados) {
+      const tieneFaltantes = items.some(
+        (it) => (mapa.get(`${e.id}:${it.id}`)?.estado ?? "pendiente") === "pendiente"
+      );
+      if (tieneFaltantes) faltantes++;
+      else completos++;
+    }
+    return { total: empleadosFiltrados.length, completos, faltantes };
+  }, [empleadosFiltrados, items, mapa]);
+
+  const cambiarEstado = async (empleado: Empleado, item: Item) => {
+    const key = `${empleado.id}:${item.id}`;
+    const actual = mapa.get(key);
+    const estadoActual: Estado = actual?.estado ?? "pendiente";
+    const nuevo = SIGUIENTE[estadoActual];
+
+    // optimistic
+    const prev = registros;
+    const placeholder: Registro = {
+      id: actual?.id ?? `tmp-${key}`,
+      empleado_id: empleado.id,
+      item_id: item.id,
+      estado: nuevo,
+      fecha_entrega: nuevo === "entregado" ? new Date().toISOString() : null,
+      registrado_por: currentEmpId,
+      observaciones: actual?.observaciones ?? null,
+      registrado: null,
+    };
+    setRegistros((r) => {
+      const idx = r.findIndex((x) => x.empleado_id === empleado.id && x.item_id === item.id);
+      if (idx === -1) return [...r, placeholder];
+      const copy = [...r];
+      copy[idx] = { ...copy[idx], ...placeholder };
+      return copy;
+    });
+
+    try {
+      const payload: any = {
+        empleado_id: empleado.id,
+        item_id: item.id,
+        estado: nuevo,
+        registrado_por: currentEmpId,
+        fecha_entrega: nuevo === "entregado" ? new Date().toISOString() : null,
+      };
+      const { data, error } = await supabase
+        .from("entregas_empleado")
+        .upsert(payload, { onConflict: "empleado_id,item_id" })
+        .select(
+          "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
+        )
+        .single();
+      if (error) throw error;
+      setRegistros((r) => {
+        const idx = r.findIndex(
+          (x) => x.empleado_id === empleado.id && x.item_id === item.id
+        );
+        if (idx === -1) return [...r, data as any];
+        const copy = [...r];
+        copy[idx] = data as any;
+        return copy;
+      });
+    } catch (e: any) {
+      console.error(e);
+      setRegistros(prev);
+      toast.error("No se pudo guardar", { description: e.message });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <Package className="h-7 w-7" /> Entregas a Empleados
+            </h1>
+            <p className="text-muted-foreground">
+              Visualizá y registrá la entrega de uniformes e insumos por empleado.
+            </p>
+          </div>
+          <Button onClick={() => setGestionOpen(true)} variant="outline">
+            <Pencil className="h-4 w-4 mr-2" /> Gestionar items
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Buscar</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Nombre o apellido"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Sucursal</Label>
+                <Select value={filtroSucursal} onValueChange={setFiltroSucursal}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas las sucursales</SelectItem>
+                    {sucursales.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Puesto</Label>
+                <Select value={filtroPuesto} onValueChange={setFiltroPuesto}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los puestos</SelectItem>
+                    {puestos.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Estado</Label>
+                <Select value={filtroEstado} onValueChange={(v: any) => setFiltroEstado(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="faltantes">Con faltantes</SelectItem>
+                    <SelectItem value="completos">Completos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="text-left px-3 py-2 sticky left-0 bg-muted/50 z-10 min-w-[240px] border-r">
+                      Empleado
+                    </th>
+                    {items.map((it) => (
+                      <th key={it.id} className="px-2 py-2 text-center min-w-[90px]">
+                        {it.nombre}
+                      </th>
+                    ))}
+                    {items.length === 0 && (
+                      <th className="px-3 py-2 text-muted-foreground">
+                        Sin items configurados
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {empleadosFiltrados.map((emp) => (
+                    <tr key={emp.id} className="border-t hover:bg-muted/30">
+                      <td className="px-3 py-2 sticky left-0 bg-background z-10 border-r">
+                        <div className="font-medium">
+                          {emp.apellido}, {emp.nombre}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {emp.sucursales?.nombre ?? "Sin sucursal"}
+                          {emp.puesto ? ` · ${emp.puesto}` : ""}
+                        </div>
+                      </td>
+                      {items.map((it) => {
+                        const reg = mapa.get(`${emp.id}:${it.id}`);
+                        const estado: Estado = reg?.estado ?? "pendiente";
+                        return (
+                          <td key={it.id} className="px-1 py-1 text-center">
+                            <CeldaEstado
+                              estado={estado}
+                              registro={reg}
+                              onClick={() => cambiarEstado(emp, it)}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  {empleadosFiltrados.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={items.length + 1}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        No hay empleados con los filtros actuales
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground items-center">
+              <Leyenda />
+              <div className="ml-auto flex gap-3">
+                <Badge variant="outline">{resumen.total} empleados</Badge>
+                <Badge variant="destructive">{resumen.faltantes} con faltantes</Badge>
+                <Badge className="bg-emerald-600 hover:bg-emerald-600">
+                  {resumen.completos} completos
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <GestionItemsDialog
+          open={gestionOpen}
+          onOpenChange={setGestionOpen}
+          items={items}
+          onChanged={cargar}
+        />
+      </div>
+    </TooltipProvider>
+  );
+}
+
+function CeldaEstado({
+  estado,
+  registro,
+  onClick,
+}: {
+  estado: Estado;
+  registro?: Registro;
+  onClick: () => void;
+}) {
+  const cfg = {
+    entregado: {
+      icon: <Check className="h-4 w-4" />,
+      cls: "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600",
+      label: "Entregado",
+    },
+    pendiente: {
+      icon: <X className="h-4 w-4" />,
+      cls: "bg-red-500 hover:bg-red-600 text-white border-red-600",
+      label: "No entregado",
+    },
+    no_aplica: {
+      icon: <Minus className="h-4 w-4" />,
+      cls: "bg-muted hover:bg-muted text-muted-foreground border-border",
+      label: "No aplica",
+    },
+  }[estado];
+
+  const tooltip = (() => {
+    const partes: string[] = [cfg.label];
+    if (registro?.fecha_entrega && estado === "entregado") {
+      partes.push(`el ${format(new Date(registro.fecha_entrega), "dd/MM/yyyy")}`);
+    }
+    if (registro?.registrado) {
+      partes.push(`por ${registro.registrado.nombre} ${registro.registrado.apellido}`);
+    }
+    return partes.join(" ");
+  })();
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          className={`inline-flex items-center justify-center h-8 w-8 rounded border transition-colors ${cfg.cls}`}
+          aria-label={tooltip}
+        >
+          {cfg.icon}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <span className="text-xs">{tooltip}. Click para cambiar.</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function Leyenda() {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <span className="flex items-center gap-1.5">
+        <span className="inline-flex h-5 w-5 rounded border bg-emerald-500 text-white items-center justify-center">
+          <Check className="h-3 w-3" />
+        </span>
+        Entregado
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="inline-flex h-5 w-5 rounded border bg-red-500 text-white items-center justify-center">
+          <X className="h-3 w-3" />
+        </span>
+        No entregado
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="inline-flex h-5 w-5 rounded border bg-muted text-muted-foreground items-center justify-center">
+          <Minus className="h-3 w-3" />
+        </span>
+        No aplica
+      </span>
+    </div>
+  );
+}
+
+function GestionItemsDialog({
+  open,
+  onOpenChange,
+  items,
+  onChanged,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  items: Item[];
+  onChanged: () => void;
+}) {
+  const [nombre, setNombre] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const crear = async () => {
+    if (!nombre.trim()) {
+      toast.error("Ingresá un nombre");
+      return;
+    }
+    setSaving(true);
+    try {
+      const maxOrden = items.reduce((m, i) => Math.max(m, i.orden), 0);
+      const { error } = await supabase.from("entregas_items").insert({
+        nombre: nombre.trim(),
+        descripcion: descripcion.trim() || null,
+        orden: maxOrden + 1,
+      });
+      if (error) throw error;
+      setNombre("");
+      setDescripcion("");
+      toast.success("Item creado");
+      onChanged();
+    } catch (e: any) {
+      toast.error("Error", { description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renombrar = async (it: Item, nuevoNombre: string) => {
+    if (!nuevoNombre.trim() || nuevoNombre === it.nombre) return;
+    const { error } = await supabase
+      .from("entregas_items")
+      .update({ nombre: nuevoNombre.trim() })
+      .eq("id", it.id);
+    if (error) toast.error("Error", { description: error.message });
+    else {
+      toast.success("Item actualizado");
+      onChanged();
+    }
+  };
+
+  const eliminar = async (it: Item) => {
+    if (!confirm(`¿Eliminar "${it.nombre}"? Se borrarán también sus registros.`)) return;
+    const { error } = await supabase.from("entregas_items").delete().eq("id", it.id);
+    if (error) toast.error("Error", { description: error.message });
+    else {
+      toast.success("Item eliminado");
+      onChanged();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Gestionar items</DialogTitle>
+          <DialogDescription>
+            Agregá, renombrá o eliminá items del catálogo de entregas.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+          {items.map((it) => (
+            <ItemEditable key={it.id} item={it} onRename={renombrar} onDelete={eliminar} />
+          ))}
+          {items.length === 0 && (
+            <p className="text-sm text-muted-foreground">Sin items todavía.</p>
+          )}
+        </div>
+
+        <div className="border-t pt-3 space-y-2">
+          <Label className="text-xs">Nuevo item</Label>
+          <Input
+            placeholder="Nombre (ej: Casco)"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+          <Input
+            placeholder="Descripción (opcional)"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cerrar
+          </Button>
+          <Button onClick={crear} disabled={saving}>
+            <Plus className="h-4 w-4 mr-1" /> Agregar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ItemEditable({
+  item,
+  onRename,
+  onDelete,
+}: {
+  item: Item;
+  onRename: (it: Item, nuevo: string) => void;
+  onDelete: (it: Item) => void;
+}) {
+  const [valor, setValor] = useState(item.nombre);
+  useEffect(() => setValor(item.nombre), [item.nombre]);
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+        onBlur={() => onRename(item, valor)}
+        className="h-8"
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-destructive"
+        onClick={() => onDelete(item)}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
