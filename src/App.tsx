@@ -78,6 +78,7 @@ import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
 import Rentabilidad from "./pages/Rentabilidad";
 import NovedadesAlert from "./pages/NovedadesAlert";
 import TableroProyectos from "./pages/TableroProyectos";
+import EntregasEmpleados from "./pages/EntregasEmpleados";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,7 @@ const App = () => (
             <Route path="rrhh/subir-foto-facial" element={<SubirFotoFacial />} />
             <Route path="rrhh/informe-ejecutivo" element={<InformeEjecutivo />} />
             <Route path="rrhh/presentacion-ejecutiva" element={<PresentacionEjecutiva />} />
+            <Route path="rrhh/entregas" element={<EntregasEmpleados />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />

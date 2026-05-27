@@ -3404,6 +3404,136 @@ export type Database = {
           },
         ]
       }
+      entregas_empleado: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          estado: string
+          fecha_entrega: string | null
+          id: string
+          item_id: string
+          observaciones: string | null
+          registrado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          fecha_entrega?: string | null
+          id?: string
+          item_id: string
+          observaciones?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          fecha_entrega?: string | null
+          id?: string
+          item_id?: string
+          observaciones?: string | null
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "entregas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_empleado_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entregas_items: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evaluaciones_capacitacion: {
         Row: {
           activa: boolean
