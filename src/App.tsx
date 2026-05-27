@@ -131,6 +131,7 @@ const App = () => (
             <Route path="rrhh/subir-foto-facial" element={<SubirFotoFacial />} />
             <Route path="rrhh/informe-ejecutivo" element={<InformeEjecutivo />} />
             <Route path="rrhh/presentacion-ejecutiva" element={<PresentacionEjecutiva />} />
+            <Route path="rrhh/entregas" element={<EntregasEmpleados />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
