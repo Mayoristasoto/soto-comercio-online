@@ -3406,6 +3406,8 @@ export type Database = {
       }
       entregas_empleado: {
         Row: {
+          comprobante_impreso: boolean
+          comprobante_impreso_at: string | null
           created_at: string
           empleado_id: string
           estado: string
@@ -3417,6 +3419,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          comprobante_impreso?: boolean
+          comprobante_impreso_at?: string | null
           created_at?: string
           empleado_id: string
           estado?: string
@@ -3428,6 +3432,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          comprobante_impreso?: boolean
+          comprobante_impreso_at?: string | null
           created_at?: string
           empleado_id?: string
           estado?: string
@@ -3512,6 +3518,7 @@ export type Database = {
           id: string
           nombre: string
           orden: number
+          plantilla_id: string | null
           updated_at: string
         }
         Insert: {
@@ -3521,6 +3528,7 @@ export type Database = {
           id?: string
           nombre: string
           orden?: number
+          plantilla_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -3530,9 +3538,18 @@ export type Database = {
           id?: string
           nombre?: string
           orden?: number
+          plantilla_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "entregas_items_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "plantillas_elementos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       evaluaciones_capacitacion: {
         Row: {
