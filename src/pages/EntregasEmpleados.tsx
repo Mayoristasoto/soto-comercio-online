@@ -94,6 +94,7 @@ interface Registro {
   fecha_entrega: string | null;
   registrado_por: string | null;
   observaciones: string | null;
+  detalle: string | null;
   registrado?: { nombre: string; apellido: string } | null;
 }
 
@@ -130,6 +131,11 @@ export default function EntregasEmpleados() {
     registroId: string;
   } | null>(null);
   const [selPlantillaId, setSelPlantillaId] = useState<string>("");
+  const [detalleInput, setDetalleInput] = useState<string>("");
+  const [detallePrompt, setDetallePrompt] = useState<{
+    empleado: Empleado;
+    item: Item;
+  } | null>(null);
 
   useEffect(() => {
     cargar();
@@ -161,7 +167,7 @@ export default function EntregasEmpleados() {
           supabase
             .from("entregas_empleado")
             .select(
-              "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
+              "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, detalle, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
             ),
           supabase.from("sucursales").select("id, nombre").eq("activa", true).order("nombre"),
           supabase
@@ -241,7 +247,24 @@ export default function EntregasEmpleados() {
     const estadoActual: Estado = actual?.estado ?? "pendiente";
     const nuevo = SIGUIENTE[estadoActual];
 
-    // optimistic
+    // Si pasa a "entregado", pedir detalle primero
+    if (nuevo === "entregado") {
+      setDetalleInput(actual?.detalle ?? "");
+      setDetallePrompt({ empleado, item });
+      return;
+    }
+
+    await persistirEstado(empleado, item, nuevo, actual?.detalle ?? null);
+  };
+
+  const persistirEstado = async (
+    empleado: Empleado,
+    item: Item,
+    nuevo: Estado,
+    detalle: string | null
+  ) => {
+    const key = `${empleado.id}:${item.id}`;
+    const actual = mapa.get(key);
     const prev = registros;
     const placeholder: Registro = {
       id: actual?.id ?? `tmp-${key}`,
@@ -251,6 +274,7 @@ export default function EntregasEmpleados() {
       fecha_entrega: nuevo === "entregado" ? new Date().toISOString() : null,
       registrado_por: currentEmpId,
       observaciones: actual?.observaciones ?? null,
+      detalle: nuevo === "entregado" ? detalle : null,
       registrado: null,
     };
     setRegistros((r) => {
@@ -268,12 +292,13 @@ export default function EntregasEmpleados() {
         estado: nuevo,
         registrado_por: currentEmpId,
         fecha_entrega: nuevo === "entregado" ? new Date().toISOString() : null,
+        detalle: nuevo === "entregado" ? detalle : null,
       };
       const { data, error } = await supabase
         .from("entregas_empleado")
         .upsert(payload, { onConflict: "empleado_id,item_id" })
         .select(
-          "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
+          "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, detalle, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
         )
         .single();
       if (error) throw error;
@@ -287,7 +312,6 @@ export default function EntregasEmpleados() {
         return copy;
       });
 
-      // Si pasó a "entregado", ofrecer imprimir comprobante
       if (nuevo === "entregado" && data) {
         setSelPlantillaId(item.plantilla_id ?? plantillas[0]?.id ?? "");
         setPrintPrompt({ empleado, item, registroId: (data as any).id });
@@ -297,6 +321,13 @@ export default function EntregasEmpleados() {
       setRegistros(prev);
       toast.error("No se pudo guardar", { description: e.message });
     }
+  };
+
+  const confirmarDetalle = async () => {
+    if (!detallePrompt) return;
+    const { empleado, item } = detallePrompt;
+    setDetallePrompt(null);
+    await persistirEstado(empleado, item, "entregado", detalleInput.trim() || null);
   };
 
   const imprimirComprobante = async () => {
@@ -315,6 +346,7 @@ export default function EntregasEmpleados() {
       item: item.nombre,
       tipo_elemento: plantilla.tipo_elemento,
       observaciones: reg?.observaciones ?? "",
+      detalle: reg?.detalle ?? "",
     });
     const w = window.open("", "_blank");
     if (w) {
@@ -562,6 +594,48 @@ export default function EntregasEmpleados() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog
+          open={!!detallePrompt}
+          onOpenChange={(v) => !v && setDetallePrompt(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Detalle del elemento entregado</DialogTitle>
+              <DialogDescription>
+                {detallePrompt && (
+                  <>
+                    Ingresá detalles del <strong>{detallePrompt.item.nombre}</strong> entregado a{" "}
+                    <strong>
+                      {detallePrompt.empleado.apellido}, {detallePrompt.empleado.nombre}
+                    </strong>{" "}
+                    (marca, talle, color, número de serie, etc.).
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Detalle (opcional)</Label>
+              <Input
+                placeholder="Ej: Marca Grafa, talle L, color azul"
+                value={detalleInput}
+                onChange={(e) => setDetalleInput(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmarDetalle();
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetallePrompt(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarDetalle}>
+                <Check className="h-4 w-4 mr-1" /> Confirmar entrega
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
@@ -618,7 +692,13 @@ function CeldaEstado({
         </button>
       </TooltipTrigger>
       <TooltipContent>
-        <span className="text-xs">{tooltip}. Click para cambiar.</span>
+        <div className="text-xs space-y-0.5">
+          <div>{tooltip}.</div>
+          {registro?.detalle && estado === "entregado" && (
+            <div className="font-medium">Detalle: {registro.detalle}</div>
+          )}
+          <div className="text-muted-foreground">Click para cambiar.</div>
+        </div>
       </TooltipContent>
     </Tooltip>
   );

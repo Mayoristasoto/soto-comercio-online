@@ -43,6 +43,7 @@ const DEFAULT_TEMPLATE = `<div style="padding:40px;font-family:Arial,sans-serif;
   <div style="margin:24px 0;padding:16px;background:#f5f3ee;border-radius:8px;">
     <h3 style="margin:0 0 8px 0;color:#95198d;">Elemento entregado</h3>
     <p><strong>Item:</strong> {{item}}</p>
+    <p><strong>Detalle:</strong> {{detalle}}</p>
     <p><strong>Observaciones:</strong> {{observaciones}}</p>
   </div>
 
@@ -68,6 +69,7 @@ const SAMPLE = {
   item: "Zapatos de seguridad",
   tipo_elemento: "calzado",
   observaciones: "Talle 42",
+  detalle: "Marca Grafa - Talle 42 - Negro",
 };
 
 export function renderPlantilla(
@@ -192,7 +194,7 @@ export default function PlantillasEntregaDialog({ open, onOpenChange, onChanged 
           <DialogDescription>
             Personalizá el HTML del comprobante. Variables disponibles:{" "}
             <code className="text-xs">
-              {"{{empleado_nombre}} {{legajo}} {{fecha}} {{item}} {{tipo_elemento}} {{observaciones}}"}
+              {"{{empleado_nombre}} {{legajo}} {{fecha}} {{item}} {{detalle}} {{tipo_elemento}} {{observaciones}}"}
             </code>
           </DialogDescription>
         </DialogHeader>
