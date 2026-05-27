@@ -194,7 +194,7 @@ export default function PlantillasEntregaDialog({ open, onOpenChange, onChanged 
           <DialogDescription>
             Personalizá el HTML del comprobante. Variables disponibles:{" "}
             <code className="text-xs">
-              {"{{empleado_nombre}} {{legajo}} {{fecha}} {{item}} {{tipo_elemento}} {{observaciones}}"}
+              {"{{empleado_nombre}} {{legajo}} {{fecha}} {{item}} {{detalle}} {{tipo_elemento}} {{observaciones}}"}
             </code>
           </DialogDescription>
         </DialogHeader>
