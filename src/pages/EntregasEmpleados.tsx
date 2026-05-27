@@ -94,6 +94,7 @@ interface Registro {
   fecha_entrega: string | null;
   registrado_por: string | null;
   observaciones: string | null;
+  detalle: string | null;
   registrado?: { nombre: string; apellido: string } | null;
 }
 

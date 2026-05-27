@@ -3409,6 +3409,7 @@ export type Database = {
           comprobante_impreso: boolean
           comprobante_impreso_at: string | null
           created_at: string
+          detalle: string | null
           empleado_id: string
           estado: string
           fecha_entrega: string | null
@@ -3422,6 +3423,7 @@ export type Database = {
           comprobante_impreso?: boolean
           comprobante_impreso_at?: string | null
           created_at?: string
+          detalle?: string | null
           empleado_id: string
           estado?: string
           fecha_entrega?: string | null
@@ -3435,6 +3437,7 @@ export type Database = {
           comprobante_impreso?: boolean
           comprobante_impreso_at?: string | null
           created_at?: string
+          detalle?: string | null
           empleado_id?: string
           estado?: string
           fecha_entrega?: string | null

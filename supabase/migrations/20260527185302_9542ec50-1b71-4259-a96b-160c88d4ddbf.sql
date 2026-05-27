@@ -1,0 +1,1 @@
+ALTER TABLE public.entregas_empleado ADD COLUMN IF NOT EXISTS detalle text;
