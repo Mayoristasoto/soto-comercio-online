@@ -78,6 +78,7 @@ import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
 import Rentabilidad from "./pages/Rentabilidad";
 import NovedadesAlert from "./pages/NovedadesAlert";
 import TableroProyectos from "./pages/TableroProyectos";
+import EntregasEmpleados from "./pages/EntregasEmpleados";
 
 const queryClient = new QueryClient();
 
