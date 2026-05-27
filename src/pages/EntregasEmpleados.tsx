@@ -594,6 +594,48 @@ export default function EntregasEmpleados() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog
+          open={!!detallePrompt}
+          onOpenChange={(v) => !v && setDetallePrompt(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Detalle del elemento entregado</DialogTitle>
+              <DialogDescription>
+                {detallePrompt && (
+                  <>
+                    Ingresá detalles del <strong>{detallePrompt.item.nombre}</strong> entregado a{" "}
+                    <strong>
+                      {detallePrompt.empleado.apellido}, {detallePrompt.empleado.nombre}
+                    </strong>{" "}
+                    (marca, talle, color, número de serie, etc.).
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Detalle (opcional)</Label>
+              <Input
+                placeholder="Ej: Marca Grafa, talle L, color azul"
+                value={detalleInput}
+                onChange={(e) => setDetalleInput(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmarDetalle();
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetallePrompt(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarDetalle}>
+                <Check className="h-4 w-4 mr-1" /> Confirmar entrega
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
