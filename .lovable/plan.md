@@ -1,49 +1,76 @@
 ## Objetivo
-Permitir que **admin_rrhh** cambie el estado de cualquier solicitud de vacaciones desde el calendario (no solo las pendientes): pasar a **pendiente**, **rechazada** o **aprobada**, sea cual sea su estado actual.
+Nuevo módulo **Entregas a Empleados** en `/rrhh/entregas` (solo admin_rrhh): matriz empleados × items donde se ve de un vistazo qué se entregó a cada uno, qué falta y qué no aplica. Click sobre la celda cicla el estado.
 
-## Comportamiento actual
-- El popover solo se abre para solicitudes en estado `pendiente`.
-- Las solicitudes `aprobada` o `gozadas` solo se muestran como chip de color, sin interacción.
-
-## Cambios en `src/components/vacaciones/CalendarioVacaciones.tsx`
-
-1. **Abrir popover para todos los estados** cuando `rol === 'admin_rrhh'` (no solo pendientes). Gerentes siguen viendo el popover solo en pendientes (comportamiento actual).
-2. **Mostrar el estado actual** en el header del popover con su Badge correspondiente.
-3. **Agregar una sección "Cambiar estado"** (solo para admin_rrhh) con tres botones:
-   - **Marcar pendiente** (vuelve a `pendiente`, limpia `aprobado_por`, `fecha_aprobacion`, `comentarios_aprobacion`).
-   - **Aprobar** (estado `aprobada`, registra aprobador y fecha; deshabilitado si ya está aprobada).
-   - **Rechazar** (estado `rechazada`, requiere comentario; deshabilitado si ya está rechazada).
-4. La sección de **reasignar empleado** queda disponible siempre para admin_rrhh (hoy solo en pendientes); aplica la misma validación de solapamiento.
-5. Tras cualquier cambio, refrescar el calendario y mostrar toast.
-
-## UI del Popover (admin_rrhh, cualquier estado)
+## Boceto (UI)
 
 ```text
-┌─────────────────────────────────┐
-│ Juan Pérez                       │
-│ 12 jul – 20 jul 2026             │
-│ [Aprobada]                       │
-│                                  │
-│ Reasignar a otro empleado:       │
-│ [ Combobox buscable ▾ ]          │
-│ [ Reasignar empleado ]           │
-│ ───────────────────────────────  │
-│ Cambiar estado:                  │
-│ Comentario (obligatorio rechazo) │
-│ [ Pendiente ] [ Aprobar ] [ Rech ]│
-└─────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Entregas a Empleados                                [+ Gestionar items] │
+│ Visualizá y registrá la entrega de uniformes/insumos por empleado.       │
+│                                                                          │
+│ [🔎 Buscar nombre/DNI] [Sucursal ▾] [Puesto ▾] [Estado: faltan items ▾] │
+│                                                                          │
+│ ┌──────────────────┬──────┬───────┬──────┬───────┬────────┬───────────┐ │
+│ │ Empleado         │ Faja │ Zapat │ Gorra│ Casco │ Uniforme│ Casillero│ │
+│ ├──────────────────┼──────┼───────┼──────┼───────┼────────┼───────────┤ │
+│ │ Pérez, Juan      │  ✔   │  ✔    │  ✘   │  ◐    │  ✔     │  —        │ │
+│ │ Sucursal Centro  │ verde│ verde │ rojo │ámbar  │ verde  │ gris      │ │
+│ ├──────────────────┼──────┼───────┼──────┼───────┼────────┼───────────┤ │
+│ │ Gómez, Ana       │  ✔   │  ✘    │  ✔   │  ✔    │  ◐     │  ✔        │ │
+│ ├──────────────────┼──────┼───────┼──────┼───────┼────────┼───────────┤ │
+│ │ López, Carlos    │  ◐   │  ◐    │  ◐   │  ◐    │  ◐     │  ◐        │ │
+│ └──────────────────┴──────┴───────┴──────┴───────┴────────┴───────────┘ │
+│                                                                          │
+│ Leyenda: ✔ Entregado  ◐ Pendiente  ✘ No entregado  — No aplica          │
+│ Resumen: 24 empleados · 18 con faltantes · 6 completos                  │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-Los chips de solicitudes no-pendientes mantienen su color sólido; al hacer click admin_rrhh ve el popover.
+- **Click en celda** → cicla `pendiente → entregado → no_aplica → pendiente`. Cambio inmediato (optimistic update) + toast.
+- **Hover en celda** → tooltip "Entregado el 12/05/2026 por Juan Pérez".
+- **Header empleado** sticky a la izquierda; columnas de items con scroll horizontal si hay muchas.
+- **Botón "Gestionar items"** abre dialog para crear/editar/eliminar/reordenar items del catálogo.
+- **Footer**: resumen rápido (cuántos completos, cuántos con faltantes).
+- **Export CSV** opcional desde el header (para llevar a compras).
 
-## Base de datos
-Sin migraciones. `solicitudes_vacaciones` ya permite UPDATE de `estado`, `aprobado_por`, `fecha_aprobacion`, `comentarios_aprobacion` para admin_rrhh.
+## Base de datos (migración)
 
-## Detalles técnicos
-- Generalizar `handleDecision` a `handleCambioEstado(solicitudId, nuevoEstado)`:
-  - `pendiente`: `{ estado: 'pendiente', aprobado_por: null, fecha_aprobacion: null, comentarios_aprobacion: null }`.
-  - `aprobada`: igual al flujo actual de aprobación.
-  - `rechazada`: igual al flujo actual de rechazo (requiere comentario).
-- Condición de apertura del popover: `(isPending && puedeAprobar) || puedeReasignar`.
-- Deshabilitar el botón del estado actual para evitar updates no-op.
-- Si el estado pasa a uno fuera de `aprobada/gozadas/pendiente` (ej. `rechazada`), el chip desaparecerá tras `fetchVacaciones` (la query ya filtra esos tres estados).
+```text
+entregas_items
+  id, nombre, descripcion, orden, activo, created_at, updated_at
+  -- catálogo administrable (Faja, Zapatos, etc.)
+
+entregas_empleado
+  id, empleado_id (FK empleados), item_id (FK entregas_items),
+  estado ('pendiente'|'entregado'|'no_aplica'),
+  fecha_entrega (timestamptz, null si no entregado),
+  registrado_por (FK empleados, null),
+  observaciones (text, null),
+  UNIQUE(empleado_id, item_id)
+```
+
+- RLS: SELECT/INSERT/UPDATE/DELETE para admin_rrhh; SELECT para gerente_sucursal restringido a su sucursal (vista de solo lectura).
+- Trigger `update_updated_at_column` ya existe en el proyecto.
+- Seed inicial sugerido (editable): Faja, Zapatos, Uniforme, Gorra, Casillero.
+
+## Cambios en código
+
+1. **Migración**: crear `entregas_items` y `entregas_empleado` con GRANTs y RLS.
+2. **Ruta**: agregar `/rrhh/entregas` en `src/App.tsx`, accesible solo a admin_rrhh.
+3. **Sidebar**: registrar entrada en `app_pages` para que aparezca en el menú RRHH (icono `Package`).
+4. **Página** `src/pages/EntregasEmpleados.tsx`: layout con filtros + matriz.
+5. **Componentes** en `src/components/entregas/`:
+   - `MatrizEntregas.tsx` — tabla con celdas clicables (sticky col empleado).
+   - `CeldaEntrega.tsx` — render del estado + tooltip + handler click (optimistic).
+   - `FiltrosEntregas.tsx` — búsqueda, sucursal, puesto, estado (faltantes / completos / todos).
+   - `GestionItemsDialog.tsx` — CRUD del catálogo (nombre, orden, activo).
+6. **Lógica de carga**: una sola query trae empleados activos + items + registros existentes; merge en cliente para mostrar celdas faltantes como "pendiente" virtual hasta el primer click (que inserta la fila).
+
+## Permisos
+- Edición: solo `admin_rrhh`.
+- Lectura: `admin_rrhh` (todos) y `gerente_sucursal` (su sucursal). Empleados no acceden.
+
+## Fuera de alcance (para próxima iteración)
+- Tallas/cantidades por item.
+- Historial completo de entregas/devoluciones de un mismo item.
+- Notificaciones al empleado.
