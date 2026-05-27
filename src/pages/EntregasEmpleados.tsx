@@ -45,8 +45,25 @@ import {
   Search,
   Trash2,
   X,
+  Printer,
+  FileText,
 } from "lucide-react";
 import { format } from "date-fns";
+import DOMPurify from "dompurify";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import PlantillasEntregaDialog, {
+  renderPlantilla,
+  type Plantilla,
+} from "@/components/admin/PlantillasEntregaDialog";
 
 type Estado = "pendiente" | "entregado" | "no_aplica";
 
@@ -56,6 +73,7 @@ interface Item {
   descripcion: string | null;
   orden: number;
   activo: boolean;
+  plantilla_id: string | null;
 }
 
 interface Empleado {
@@ -64,6 +82,7 @@ interface Empleado {
   apellido: string;
   puesto: string | null;
   sucursal_id: string | null;
+  legajo?: string | null;
   sucursales?: { nombre: string } | null;
 }
 
@@ -103,6 +122,14 @@ export default function EntregasEmpleados() {
 
   // gestion items
   const [gestionOpen, setGestionOpen] = useState(false);
+  const [plantillasOpen, setPlantillasOpen] = useState(false);
+  const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
+  const [printPrompt, setPrintPrompt] = useState<{
+    empleado: Empleado;
+    item: Item;
+    registroId: string;
+  } | null>(null);
+  const [selPlantillaId, setSelPlantillaId] = useState<string>("");
 
   useEffect(() => {
     cargar();
@@ -119,24 +146,30 @@ export default function EntregasEmpleados() {
         .maybeSingle();
       setCurrentEmpId(emp?.id ?? null);
 
-      const [itemsRes, empleadosRes, registrosRes, sucursalesRes] = await Promise.all([
-        supabase
-          .from("entregas_items")
-          .select("*")
-          .eq("activo", true)
-          .order("orden", { ascending: true }),
-        supabase
-          .from("empleados")
-          .select("id, nombre, apellido, puesto, sucursal_id, sucursales(nombre)")
-          .eq("activo", true)
-          .order("apellido", { ascending: true }),
-        supabase
-          .from("entregas_empleado")
-          .select(
-            "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
-          ),
-        supabase.from("sucursales").select("id, nombre").eq("activa", true).order("nombre"),
-      ]);
+      const [itemsRes, empleadosRes, registrosRes, sucursalesRes, plantillasRes] =
+        await Promise.all([
+          supabase
+            .from("entregas_items")
+            .select("*")
+            .eq("activo", true)
+            .order("orden", { ascending: true }),
+          supabase
+            .from("empleados")
+            .select("id, nombre, apellido, puesto, sucursal_id, legajo, sucursales(nombre)")
+            .eq("activo", true)
+            .order("apellido", { ascending: true }),
+          supabase
+            .from("entregas_empleado")
+            .select(
+              "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
+            ),
+          supabase.from("sucursales").select("id, nombre").eq("activa", true).order("nombre"),
+          supabase
+            .from("plantillas_elementos")
+            .select("id, nombre, tipo_elemento, template_html, activo")
+            .eq("activo", true)
+            .order("nombre"),
+        ]);
 
       if (itemsRes.error) throw itemsRes.error;
       if (empleadosRes.error) throw empleadosRes.error;
@@ -147,6 +180,7 @@ export default function EntregasEmpleados() {
       setEmpleados((empleadosRes.data ?? []) as any);
       setRegistros((registrosRes.data ?? []) as any);
       setSucursales((sucursalesRes.data ?? []) as any);
+      setPlantillas((plantillasRes.data ?? []) as any);
 
       const ps = Array.from(
         new Set((empleadosRes.data ?? []).map((e: any) => e.puesto).filter(Boolean))
@@ -252,11 +286,50 @@ export default function EntregasEmpleados() {
         copy[idx] = data as any;
         return copy;
       });
+
+      // Si pasó a "entregado", ofrecer imprimir comprobante
+      if (nuevo === "entregado" && data) {
+        setSelPlantillaId(item.plantilla_id ?? plantillas[0]?.id ?? "");
+        setPrintPrompt({ empleado, item, registroId: (data as any).id });
+      }
     } catch (e: any) {
       console.error(e);
       setRegistros(prev);
       toast.error("No se pudo guardar", { description: e.message });
     }
+  };
+
+  const imprimirComprobante = async () => {
+    if (!printPrompt) return;
+    const plantilla = plantillas.find((p) => p.id === selPlantillaId);
+    if (!plantilla) {
+      toast.error("Seleccioná una plantilla");
+      return;
+    }
+    const { empleado, item, registroId } = printPrompt;
+    const reg = mapa.get(`${empleado.id}:${item.id}`);
+    const html = renderPlantilla(plantilla.template_html ?? "", {
+      empleado_nombre: `${empleado.nombre} ${empleado.apellido}`,
+      legajo: empleado.legajo ?? "",
+      fecha: new Date().toLocaleDateString("es-AR"),
+      item: item.nombre,
+      tipo_elemento: plantilla.tipo_elemento,
+      observaciones: reg?.observaciones ?? "",
+    });
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.write(
+        `<html><head><title>Comprobante</title><style>@media print{@page{margin:20mm}body{margin:0}}</style></head><body>${html}</body></html>`
+      );
+      w.document.close();
+      w.focus();
+      w.print();
+    }
+    await supabase
+      .from("entregas_empleado")
+      .update({ comprobante_impreso: true, comprobante_impreso_at: new Date().toISOString() })
+      .eq("id", registroId);
+    setPrintPrompt(null);
   };
 
   if (loading) {
@@ -279,9 +352,14 @@ export default function EntregasEmpleados() {
               Visualizá y registrá la entrega de uniformes e insumos por empleado.
             </p>
           </div>
-          <Button onClick={() => setGestionOpen(true)} variant="outline">
-            <Pencil className="h-4 w-4 mr-2" /> Gestionar items
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setPlantillasOpen(true)} variant="outline">
+              <FileText className="h-4 w-4 mr-2" /> Plantillas
+            </Button>
+            <Button onClick={() => setGestionOpen(true)} variant="outline">
+              <Pencil className="h-4 w-4 mr-2" /> Gestionar items
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -424,8 +502,66 @@ export default function EntregasEmpleados() {
           open={gestionOpen}
           onOpenChange={setGestionOpen}
           items={items}
+          plantillas={plantillas}
           onChanged={cargar}
         />
+
+        <PlantillasEntregaDialog
+          open={plantillasOpen}
+          onOpenChange={setPlantillasOpen}
+          onChanged={cargar}
+        />
+
+        <AlertDialog
+          open={!!printPrompt}
+          onOpenChange={(v) => !v && setPrintPrompt(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Imprimir comprobante de entrega?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {printPrompt && (
+                  <>
+                    Item <strong>{printPrompt.item.nombre}</strong> marcado como entregado a{" "}
+                    <strong>
+                      {printPrompt.empleado.apellido}, {printPrompt.empleado.nombre}
+                    </strong>
+                    .
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Plantilla</Label>
+              <Select value={selPlantillaId} onValueChange={setSelPlantillaId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar plantilla" />
+                </SelectTrigger>
+                <SelectContent>
+                  {plantillas.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {plantillas.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No hay plantillas. Creá una desde "Plantillas".
+                </p>
+              )}
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Solo registrar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={imprimirComprobante}
+                disabled={!selPlantillaId}
+              >
+                <Printer className="h-4 w-4 mr-1" /> Imprimir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   );
@@ -517,11 +653,13 @@ function GestionItemsDialog({
   open,
   onOpenChange,
   items,
+  plantillas,
   onChanged,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   items: Item[];
+  plantillas: Plantilla[];
   onChanged: () => void;
 }) {
   const [nombre, setNombre] = useState("");
@@ -566,6 +704,19 @@ function GestionItemsDialog({
     }
   };
 
+  const cambiarPlantilla = async (it: Item, plantillaId: string) => {
+    const nuevo = plantillaId === "none" ? null : plantillaId;
+    const { error } = await supabase
+      .from("entregas_items")
+      .update({ plantilla_id: nuevo })
+      .eq("id", it.id);
+    if (error) toast.error("Error", { description: error.message });
+    else {
+      toast.success("Plantilla por defecto actualizada");
+      onChanged();
+    }
+  };
+
   const eliminar = async (it: Item) => {
     if (!confirm(`¿Eliminar "${it.nombre}"? Se borrarán también sus registros.`)) return;
     const { error } = await supabase.from("entregas_items").delete().eq("id", it.id);
@@ -578,17 +729,24 @@ function GestionItemsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Gestionar items</DialogTitle>
           <DialogDescription>
-            Agregá, renombrá o eliminá items del catálogo de entregas.
+            Agregá, renombrá o eliminá items. Asigná una plantilla por defecto para imprimir.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+        <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
           {items.map((it) => (
-            <ItemEditable key={it.id} item={it} onRename={renombrar} onDelete={eliminar} />
+            <ItemEditable
+              key={it.id}
+              item={it}
+              plantillas={plantillas}
+              onRename={renombrar}
+              onDelete={eliminar}
+              onPlantilla={cambiarPlantilla}
+            />
           ))}
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground">Sin items todavía.</p>
@@ -624,12 +782,16 @@ function GestionItemsDialog({
 
 function ItemEditable({
   item,
+  plantillas,
   onRename,
   onDelete,
+  onPlantilla,
 }: {
   item: Item;
+  plantillas: Plantilla[];
   onRename: (it: Item, nuevo: string) => void;
   onDelete: (it: Item) => void;
+  onPlantilla: (it: Item, plantillaId: string) => void;
 }) {
   const [valor, setValor] = useState(item.nombre);
   useEffect(() => setValor(item.nombre), [item.nombre]);
@@ -639,8 +801,24 @@ function ItemEditable({
         value={valor}
         onChange={(e) => setValor(e.target.value)}
         onBlur={() => onRename(item, valor)}
-        className="h-8"
+        className="h-8 flex-1"
       />
+      <Select
+        value={item.plantilla_id ?? "none"}
+        onValueChange={(v) => onPlantilla(item, v)}
+      >
+        <SelectTrigger className="h-8 w-44">
+          <SelectValue placeholder="Plantilla" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Sin plantilla</SelectItem>
+          {plantillas.map((p) => (
+            <SelectItem key={p.id} value={p.id}>
+              {p.nombre}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Button
         variant="ghost"
         size="icon"
