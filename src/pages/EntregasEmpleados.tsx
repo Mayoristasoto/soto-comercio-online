@@ -247,7 +247,24 @@ export default function EntregasEmpleados() {
     const estadoActual: Estado = actual?.estado ?? "pendiente";
     const nuevo = SIGUIENTE[estadoActual];
 
-    // optimistic
+    // Si pasa a "entregado", pedir detalle primero
+    if (nuevo === "entregado") {
+      setDetalleInput(actual?.detalle ?? "");
+      setDetallePrompt({ empleado, item });
+      return;
+    }
+
+    await persistirEstado(empleado, item, nuevo, actual?.detalle ?? null);
+  };
+
+  const persistirEstado = async (
+    empleado: Empleado,
+    item: Item,
+    nuevo: Estado,
+    detalle: string | null
+  ) => {
+    const key = `${empleado.id}:${item.id}`;
+    const actual = mapa.get(key);
     const prev = registros;
     const placeholder: Registro = {
       id: actual?.id ?? `tmp-${key}`,
@@ -257,6 +274,7 @@ export default function EntregasEmpleados() {
       fecha_entrega: nuevo === "entregado" ? new Date().toISOString() : null,
       registrado_por: currentEmpId,
       observaciones: actual?.observaciones ?? null,
+      detalle: nuevo === "entregado" ? detalle : null,
       registrado: null,
     };
     setRegistros((r) => {
@@ -274,12 +292,13 @@ export default function EntregasEmpleados() {
         estado: nuevo,
         registrado_por: currentEmpId,
         fecha_entrega: nuevo === "entregado" ? new Date().toISOString() : null,
+        detalle: nuevo === "entregado" ? detalle : null,
       };
       const { data, error } = await supabase
         .from("entregas_empleado")
         .upsert(payload, { onConflict: "empleado_id,item_id" })
         .select(
-          "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
+          "id, empleado_id, item_id, estado, fecha_entrega, registrado_por, observaciones, detalle, registrado:empleados!entregas_empleado_registrado_por_fkey(nombre, apellido)"
         )
         .single();
       if (error) throw error;
@@ -293,7 +312,6 @@ export default function EntregasEmpleados() {
         return copy;
       });
 
-      // Si pasó a "entregado", ofrecer imprimir comprobante
       if (nuevo === "entregado" && data) {
         setSelPlantillaId(item.plantilla_id ?? plantillas[0]?.id ?? "");
         setPrintPrompt({ empleado, item, registroId: (data as any).id });
@@ -303,6 +321,13 @@ export default function EntregasEmpleados() {
       setRegistros(prev);
       toast.error("No se pudo guardar", { description: e.message });
     }
+  };
+
+  const confirmarDetalle = async () => {
+    if (!detallePrompt) return;
+    const { empleado, item } = detallePrompt;
+    setDetallePrompt(null);
+    await persistirEstado(empleado, item, "entregado", detalleInput.trim() || null);
   };
 
   const imprimirComprobante = async () => {
