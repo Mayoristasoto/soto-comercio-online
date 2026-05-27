@@ -692,7 +692,13 @@ function CeldaEstado({
         </button>
       </TooltipTrigger>
       <TooltipContent>
-        <span className="text-xs">{tooltip}. Click para cambiar.</span>
+        <div className="text-xs space-y-0.5">
+          <div>{tooltip}.</div>
+          {registro?.detalle && estado === "entregado" && (
+            <div className="font-medium">Detalle: {registro.detalle}</div>
+          )}
+          <div className="text-muted-foreground">Click para cambiar.</div>
+        </div>
       </TooltipContent>
     </Tooltip>
   );
