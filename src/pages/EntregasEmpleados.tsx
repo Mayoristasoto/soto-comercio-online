@@ -346,6 +346,7 @@ export default function EntregasEmpleados() {
       item: item.nombre,
       tipo_elemento: plantilla.tipo_elemento,
       observaciones: reg?.observaciones ?? "",
+      detalle: reg?.detalle ?? "",
     });
     const w = window.open("", "_blank");
     if (w) {
