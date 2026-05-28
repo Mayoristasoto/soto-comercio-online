@@ -1,64 +1,45 @@
-## Análisis: horario real de Jonathan Jesús Vera
+## Plan: ajustar horario de Jonathan Vera (solo martes y jueves)
 
-Turno actual asignado: **"Mañana Marti" 07:30–15:30, Lun a Sáb**.
+### Contexto confirmado por el usuario
+- Carga semanal: **48 hs** (no tocar).
+- **Domingos:** son rotativos como horas extras, los arma el gerente sucursal cada viernes → **no se cargan en el turno fijo**.
+- **Sábado** queda como está (07:30–15:30, igual al resto de días).
+- Único cambio real: **martes y jueves pasan a 10:30–18:30** (sigue siendo 8 hs, así se mantienen las 48 hs semanales Lun-Sáb).
 
-Analicé los fichajes de las últimas ~6 semanas (13/abr → 28/may) y el patrón real es muy estable, pero **no coincide con el turno asignado en 3 días**, y además trabaja domingo.
+### Horario resultante
 
-### Patrón real por día de la semana
+| Día | Horario |
+|---|---|
+| Lunes | 07:30 – 15:30 |
+| Martes | **10:30 – 18:30** ← cambio |
+| Miércoles | 07:30 – 15:30 |
+| Jueves | **10:30 – 18:30** ← cambio |
+| Viernes | 07:30 – 15:30 |
+| Sábado | 07:30 – 15:30 |
+| Domingo | — (rotativo, se carga aparte como hora extra) |
 
-| Día | Entrada real (prom.) | Salida real (prom.) | Coincide con turno actual |
-|---|---|---|---|
-| Lunes | 07:25 | 15:35 *(salvo 25/05 que salió 14:28)* | ✅ Sí |
-| Martes | **10:25** | **18:32** | ❌ No |
-| Miércoles | 07:23 | 15:37 | ✅ Sí |
-| Jueves | **10:24** | **18:34** *(21/05 hizo turno partido 07:24-12:35 / 15:24-?)* | ❌ No |
-| Viernes | 07:27 | 15:45 | ✅ Sí |
-| Sábado | **08:27** | **16:40** | ❌ Entra 1h más tarde y sale 1h más tarde |
-| Domingo | **08:52** | **13:13** | ❌ No tiene turno asignado pero trabaja |
+Total: 48 hs.
 
-### Estimación recomendada de horario ajustado
+### Implementación (Opción A — `horarios_por_dia`)
 
-Manteniendo carga horaria semanal de ~8 hs los días largos y media jornada el domingo:
+Como el turno "Mañana Marti" lo comparten varios empleados, **no se edita el turno**: se setea el override solo en el registro `empleado_turnos` de Jonathan, usando el JSONB `horarios_por_dia` para pisar martes (2) y jueves (4):
 
-```text
-Lunes      07:30 – 15:30   (8 hs)
-Martes     10:30 – 18:30   (8 hs)
-Miércoles  07:30 – 15:30   (8 hs)
-Jueves     10:30 – 18:30   (8 hs)
-Viernes    07:30 – 15:30   (8 hs)
-Sábado     08:30 – 16:30   (8 hs)
-Domingo    09:00 – 13:00   (4 hs)  ← media jornada
-Total: 52 hs semanales
+```json
+{
+  "2": {"hora_entrada": "10:30", "hora_salida": "18:30"},
+  "4": {"hora_entrada": "10:30", "hora_salida": "18:30"}
+}
 ```
 
-> Si la idea es **no superar 48 hs (LCT)**, una alternativa es dejar sábado 08:30–14:30 (6 hs) y domingo 09:00–13:00 (4 hs) ⇒ 50 hs, o quitarle un día de descanso compensatorio en semana.
+Lunes, miércoles, viernes y sábado siguen tomando los valores del turno base (07:30–15:30). `dias_semana` queda como está (sin domingo).
 
-### Cómo aplicar el cambio en el sistema
+### Pasos
+1. Buscar el `empleado_turnos.id` activo de Jonathan (`empleado_id = 5d23025c-613f-4774-8e63-f5c80a0acaa3`) para el turno "Mañana Marti".
+2. `UPDATE empleado_turnos SET horarios_por_dia = '<jsonb de arriba>' WHERE id = ...` (vía herramienta de inserción de datos, no migración).
+3. Validar en la UI del fichero/horarios que martes y jueves figuren 10:30–18:30 y el resto sin cambios.
+4. (Opcional) Confirmar con un fichaje de prueba que `LlegadaTardeAlert` y la tolerancia de 1 min usen el nuevo horario en martes/jueves.
 
-El turno actual `"Mañana Marti"` usa un único `hora_entrada / hora_salida` para todos los días marcados en `dias_semana`, por eso no puede representar tres bandas horarias distintas (07:30, 10:30 y fin de semana). Hay dos formas de reflejarlo:
-
-1. **Opción A — usar `horarios_por_dia` (JSONB) del mismo turno** *(recomendada, ya soportada por el schema)*
-   Editar el turno y cargar:
-   ```json
-   {
-     "1": {"entrada":"07:30","salida":"15:30"},
-     "2": {"entrada":"10:30","salida":"18:30"},
-     "3": {"entrada":"07:30","salida":"15:30"},
-     "4": {"entrada":"10:30","salida":"18:30"},
-     "5": {"entrada":"07:30","salida":"15:30"},
-     "6": {"entrada":"08:30","salida":"16:30"},
-     "0": {"entrada":"09:00","salida":"13:00"}
-   }
-   ```
-   Y agregar `0` (domingo) a `dias_semana`.
-
-2. **Opción B — crear turnos individuales por día** usando overrides día-específicos (memoria *Day-Specific Overrides*) en `empleado_turnos`. Más granular pero más registros para mantener.
-
-### Observaciones / dudas antes de tocar nada
-
-- **Domingo:** ¿debe quedar formalizado como día laborable o es una excepción que conviene registrar como "horario excepcional"?
-- **Carga semanal objetivo:** ¿52 hs reales está OK, o querés que ajuste a 48 hs?
-- **Sábado:** ¿confirma que el horario "oficial" pasa a 08:30–16:30, o quería volver al 07:30?
-- **Jueves 21/05** hizo turno partido (mañana + tarde). ¿Fue excepción puntual o se repite?
-
-Respondé estas 4 dudas y armo el plan definitivo (Opción A vs B) y los pasos exactos para dejarlo aplicado.
+### Notas
+- No requiere migración de schema: la columna `horarios_por_dia` ya existe y `ExportarHorarios.tsx` ya la respeta.
+- No se toca el turno compartido, así que ningún otro empleado se ve afectado.
+- Domingos: cuando el gerente arme la lista del viernes, se siguen cargando por el flujo actual de horas extras / turnos puntuales (fuera del alcance de este ajuste).
