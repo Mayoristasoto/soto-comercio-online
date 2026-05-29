@@ -66,6 +66,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Entrega de Elementos", url: "/admin#entregas", icon: Package },
       { title: "Ausencias Médicas", url: "/admin#ausencias-medicas", icon: FileText },
       { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
+      { title: "Novedades Liquidación", url: "/rrhh/novedades-liquidacion", icon: FileText },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
     ]
   },
