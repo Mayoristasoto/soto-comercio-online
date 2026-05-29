@@ -9715,6 +9715,33 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_novedades_liquidacion: {
+        Args: {
+          p_desde: string
+          p_empleados?: string[]
+          p_hasta: string
+          p_sucursales?: string[]
+        }
+        Returns: {
+          detalle: string
+          dia_semana: number
+          empleado_apellido: string
+          empleado_id: string
+          empleado_legajo: string
+          empleado_nombre: string
+          estado: string
+          fecha: string
+          feriado_nombre: string
+          hora_entrada_esperada: string
+          hora_salida_esperada: string
+          horas_esperadas: number
+          horas_trabajadas: number
+          justificacion_id: string
+          sucursal_id: string
+          sucursal_nombre: string
+          turno_nombre: string
+        }[]
+      }
       get_presupuesto_resumen: {
         Args: never
         Returns: {
