@@ -5941,6 +5941,33 @@ export type Database = {
           },
         ]
       }
+      liquidacion_listas_empleados: {
+        Row: {
+          created_at: string
+          created_by: string
+          empleado_ids: string[]
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          empleado_ids?: string[]
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          empleado_ids?: string[]
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       liquidaciones_horas_extras: {
         Row: {
           cantidad_empleados: number
@@ -9699,6 +9726,27 @@ export type Database = {
         }[]
       }
       get_facial_config: { Args: { config_key: string }; Returns: string }
+      get_feriados_trabajados: {
+        Args: {
+          p_desde: string
+          p_empleados?: string[]
+          p_hasta: string
+          p_sucursales?: string[]
+        }
+        Returns: {
+          empleado_apellido: string
+          empleado_id: string
+          empleado_legajo: string
+          empleado_nombre: string
+          fecha: string
+          feriado_nombre: string
+          hora_entrada: string
+          hora_salida: string
+          horas_trabajadas: number
+          sucursal_id: string
+          sucursal_nombre: string
+        }[]
+      }
       get_kiosk_config_value: { Args: { p_clave: string }; Returns: string }
       get_manager_employee_view: {
         Args: never
