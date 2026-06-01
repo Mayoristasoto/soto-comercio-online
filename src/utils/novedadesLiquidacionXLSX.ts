@@ -1,8 +1,9 @@
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import type { ResumenEmpleado } from "@/pages/NovedadesLiquidacion";
+import type { FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
 
-export function exportNovedadesXLSX(resumen: ResumenEmpleado[], desde: string, hasta: string) {
+export function exportNovedadesXLSX(resumen: ResumenEmpleado[], desde: string, hasta: string, feriados: FeriadoTrabajadoRow[] = []) {
   const wb = XLSX.utils.book_new();
 
   // Hoja 1: Resumen
