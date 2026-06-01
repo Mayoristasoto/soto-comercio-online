@@ -1,51 +1,78 @@
-# Plan: Listas de empleados + Feriados trabajados en Novedades Liquidación
+## Informe gerencial de llegadas tarde y ausencias (6 meses)
 
-## 1. Base de datos
+Nueva página **`/rrhh/informe-asistencia-gerencial`** con flujo en 3 pasos: filtrar → revisar/anotar → generar PDF.
 
-### Tabla `liquidacion_listas_empleados` (nueva)
-- `nombre` (texto)
-- `created_by` (uuid, auth.uid del admin)
-- `empleado_ids` (uuid[])
-- RLS: cada usuario solo ve/edita/borra las suyas (`created_by = auth.uid()`).
-- GRANTs a `authenticated` y `service_role`.
+---
 
-### Tabla `dias_feriados` (ya existe)
-- Precargar feriados nacionales **inamovibles + trasladables ya calculados** de Argentina 2024-2027 vía migración SQL (no incluir "días no laborables").
-- Campos usados: `fecha`, `nombre`, `tipo='nacional'`.
+### 1. Filtros (panel superior)
 
-## 2. UI en `/rrhh/novedades-liquidacion`
+- Rango de fechas (default: últimos 6 meses).
+- Selector de **alcance**:
+  - Todos los empleados activos
+  - Por sucursal/es (multi-select)
+  - Listas guardadas (reutiliza `liquidacion_listas_empleados`)
+- Tipo de evento (checkboxes): Llegadas tarde / Ausencias / Ambas.
+- Botón **"Cargar datos"** que dispara la consulta.
 
-### Bloque "Listas guardadas"
-- Select con mis listas + botones: **Cargar**, **Guardar como…**, **Eliminar**.
-- Al cargar: setea el filtro multi-select de empleados.
-- Modal "Guardar como…": pide nombre, persiste los IDs actualmente seleccionados.
+### 2. Tabla revisable
 
-### Filtro "Excluir empleados sin fichajes"
-- Checkbox. Si está activo, después de traer datos se ocultan los empleados con 0 fichajes en el rango Desde-Hasta.
+Una fila por evento (llegada tarde o ausencia), columnas:
 
-### Nueva sección/tab "Feriados trabajados"
-- Tabla: Empleado · Legajo · Sucursal · Fecha · Feriado · Hora entrada · Hora salida · Horas trabajadas.
-- Se calcula cruzando `fichajes` con `dias_feriados` dentro del rango.
-- Se incluye en exportes **PDF** y **XLSX** como sección/hoja adicional.
+`Empleado · Sucursal · Fecha · Tipo · Detalle (min retraso / día ausente) · Categoría · Observación · Acciones`
 
-## 3. Backend
+- **Categoría**: select con opciones definidas en una nueva pantalla de configuración (ver punto 4). Categorías iniciales precargadas:
+  - Sin justificar
+  - Cambio de turno no actualizado
+  - Turno médico
+  - Trámite personal autorizado
+  - Falla técnica de fichaje
+  - Justificada (otro)
+- **Observación**: texto libre (ej.: "presentó certificado", "cambió turno con Pérez").
+- Cada cambio se guarda automáticamente (debounced).
+- Filtros rápidos sobre la tabla cargada: por estado (anotado / pendiente), por categoría, por empleado, por sucursal.
+- Contador en vivo: pendientes de revisar / total.
 
-### RPC `get_feriados_trabajados(p_desde, p_hasta, p_sucursal_id, p_empleado_ids)`
-- Devuelve filas de fichajes (entrada+salida pareados) cuya fecha coincide con un feriado nacional.
-- Calcula horas trabajadas (último out − primer in del día).
+### 3. Generación del informe PDF
 
-### Sin cambios en `get_novedades_liquidacion`
-- El filtro "sin fichajes" y las listas se aplican en el frontend para no romper la RPC.
+Botón **"Generar informe"** produce un PDF con:
 
-## 4. Archivos a tocar
+- **Portada**: rango, alcance, fecha de emisión, totales generales (empleados involucrados, llegadas tarde totales, ausencias totales, minutos acumulados, % justificadas).
+- **Resumen ejecutivo**: ranking de empleados con más eventos no justificados; desglose por categoría con conteo y porcentaje; gráfico simple por sucursal.
+- **Anexo completo**: tabla por empleado con todos los eventos, mostrando categoría y observación. Filas sin justificar resaltadas en `#e04403`; justificadas en gris claro.
+- Paleta corporativa (Primary `#4b0d6d`, Secondary `#95198d`, Accent `#e04403`), encabezado/pie con logo y paginación, en línea con `reporteLlegadasTardePDF.ts`.
+- Export adicional XLSX con la misma data tabulada (opcional, mismo botón con dropdown).
 
-- `supabase/migrations/*` — crear tabla listas + insertar feriados AR 2024-2027 + RPC feriados trabajados.
-- `src/pages/NovedadesLiquidacion.tsx` — UI listas, checkbox exclusión, tab feriados.
-- `src/components/novedades/ListasEmpleadosManager.tsx` (nuevo) — guardar/cargar/borrar listas.
-- `src/components/novedades/FeriadosTrabajadosTable.tsx` (nuevo).
-- `src/utils/novedadesLiquidacionPDF.ts` y `…XLSX.ts` — agregar sección/hoja "Feriados trabajados".
+### 4. Configuración de categorías (persistente)
 
-## 5. Fuera de alcance
-- No se calcula recargo del 100% (Art. 166 LCT) — solo informa horas.
-- No se sincronizan feriados vía API externa; se precargan por SQL.
-- Las listas son privadas por usuario, no compartidas.
+Pantalla pequeña en **Configuración → Asistencia → Categorías de justificación** donde el admin puede agregar, renombrar, activar/desactivar y reordenar categorías. Color opcional por categoría para el PDF.
+
+### 5. Persistencia de anotaciones
+
+Las justificaciones quedan guardadas a nivel evento (no por informe): si en 3 meses se regenera el reporte, las anotaciones previas aparecen ya cargadas. Si una llegada tarde queda anulada por el módulo de incidencias existente, no se muestra.
+
+---
+
+### Detalles técnicos
+
+**Migraciones nuevas:**
+
+1. `categorias_justificacion_asistencia` — `id`, `nombre`, `color`, `orden`, `activa`, `es_justificada` (bool, true para todo menos "Sin justificar"). RLS: lectura `authenticated`, escritura admin/rrhh. Seed con las 6 categorías iniciales.
+2. `justificaciones_asistencia` — `id`, `tipo_evento` (`'llegada_tarde'` | `'ausencia'`), `evento_ref_id` (uuid del fichaje tardío o ausencia), `empleado_id`, `fecha_evento` (date), `categoria_id`, `observacion`, `creado_por` (auth.uid), `created_at`, `updated_at`. Índice único `(tipo_evento, evento_ref_id)` para upsert. RLS: `authenticated` puede SELECT/INSERT/UPDATE/DELETE; auditoría via `creado_por`.
+3. RPC `get_eventos_asistencia(p_desde, p_hasta, p_sucursales uuid[], p_empleados uuid[], p_tipos text[])` SECURITY DEFINER: cruza `fichajes_tardios` (no anulados) + ausencias derivadas de `asistencia_diaria` / lógica existente del módulo, hace LEFT JOIN con `justificaciones_asistencia` y devuelve todo en un solo set. Aplica `debeOmitirControles` (feriados/domingos) si corresponde.
+
+**Frontend nuevo:**
+
+- `src/pages/InformeAsistenciaGerencial.tsx` — orquestador (filtros + tabla + acciones de exportación).
+- `src/components/informe-asistencia/FiltrosInforme.tsx` — reutiliza `ListasEmpleadosManager` y selector de sucursales existente.
+- `src/components/informe-asistencia/TablaEventosRevisables.tsx` — tabla virtualizada (>500 filas), edición inline de categoría/observación con upsert a `justificaciones_asistencia`.
+- `src/components/informe-asistencia/CategoriaSelect.tsx`.
+- `src/pages/ConfiguracionCategoriasJustificacion.tsx` — CRUD de categorías.
+- `src/utils/informeAsistenciaGerencialPDF.ts` — generador estilo `reporteLlegadasTardePDF.ts`, paleta corporativa.
+- `src/utils/informeAsistenciaGerencialXLSX.ts` — opcional, dos hojas (Resumen, Detalle).
+
+**Ruta y sidebar:** agregar entrada en `app_pages` ("Informe gerencial de asistencia", sección RRHH, permiso admin/rrhh).
+
+**Fuera de alcance:**
+- No se modifica la lógica que detecta llegadas tarde o ausencias (solo se consume).
+- No se notifica automáticamente al empleado.
+- Las categorías no afectan liquidación de sueldos.
