@@ -143,7 +143,29 @@ export default function NovedadesLiquidacion() {
           <CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5" /> Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div>
+              <Label>Mes</Label>
+              <Select
+                value={`${new Date(desde + "T00:00:00").getFullYear()}-${String(new Date(desde + "T00:00:00").getMonth() + 1).padStart(2, "0")}`}
+                onValueChange={(v) => {
+                  const [y, m] = v.split("-").map(Number);
+                  const first = new Date(y, m - 1, 1);
+                  const last = new Date(y, m, 0);
+                  setDesde(format(first, "yyyy-MM-dd"));
+                  setHasta(format(last, "yyyy-MM-dd"));
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-80">
+                  {Array.from({ length: 24 }).map((_, i) => {
+                    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                    return <SelectItem key={val} value={val}>{format(d, "MMMM yyyy", { locale: es })}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label>Desde</Label>
               <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
