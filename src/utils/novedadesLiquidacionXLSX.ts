@@ -1,8 +1,9 @@
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import type { ResumenEmpleado } from "@/pages/NovedadesLiquidacion";
+import type { FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
 
-export function exportNovedadesXLSX(resumen: ResumenEmpleado[], desde: string, hasta: string) {
+export function exportNovedadesXLSX(resumen: ResumenEmpleado[], desde: string, hasta: string, feriados: FeriadoTrabajadoRow[] = []) {
   const wb = XLSX.utils.book_new();
 
   // Hoja 1: Resumen
@@ -63,6 +64,19 @@ export function exportNovedadesXLSX(resumen: ResumenEmpleado[], desde: string, h
       "Horas esperadas": Number(Number(r.horas_esperadas).toFixed(2)),
     })));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(noFichRows), "No Fichadas");
+
+  // Hoja 5: Feriados trabajados
+  const ferRows = feriados.map(f => ({
+    Fecha: f.fecha,
+    Feriado: f.feriado_nombre,
+    Legajo: f.empleado_legajo || "",
+    Empleado: `${f.empleado_apellido}, ${f.empleado_nombre}`,
+    Sucursal: f.sucursal_nombre || "",
+    "Hora entrada": f.hora_entrada?.slice(0, 5) || "",
+    "Hora salida": f.hora_salida?.slice(0, 5) || "",
+    "Horas trabajadas": Number(Number(f.horas_trabajadas).toFixed(2)),
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ferRows), "Feriados Trabajados");
 
   XLSX.writeFile(wb, `novedades-liquidacion-${desde}-a-${hasta}.xlsx`);
 }

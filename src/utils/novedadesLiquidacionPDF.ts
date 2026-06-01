@@ -3,8 +3,9 @@ import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { PDF_STYLES, COMPANY_INFO } from "./pdfStyles";
 import type { ResumenEmpleado } from "@/pages/NovedadesLiquidacion";
+import type { FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
 
-export function exportNovedadesPDF(resumen: ResumenEmpleado[], desde: string, hasta: string) {
+export function exportNovedadesPDF(resumen: ResumenEmpleado[], desde: string, hasta: string, feriados: FeriadoTrabajadoRow[] = []) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const w = doc.internal.pageSize.getWidth();
 
@@ -58,6 +59,30 @@ export function exportNovedadesPDF(resumen: ResumenEmpleado[], desde: string, ha
         e.sucursal || "—", r.turno_nombre || "—", Number(r.horas_esperadas).toFixed(1),
       ]),
       headStyles: { fillColor: PDF_STYLES.colors.danger, textColor: "#ffffff", fontSize: 9 },
+      bodyStyles: { fontSize: 8 },
+    });
+  }
+
+  // Feriados trabajados
+  if (feriados.length) {
+    const y = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_STYLES.colors.primary);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Feriados trabajados (${feriados.length})`, 14, y);
+    autoTable(doc, {
+      startY: y + 3,
+      head: [["Fecha", "Feriado", "Empleado", "Sucursal", "Entrada", "Salida", "Hs"]],
+      body: feriados.map(f => [
+        format(new Date(f.fecha + "T00:00:00"), "dd/MM/yyyy"),
+        f.feriado_nombre,
+        `${f.empleado_apellido}, ${f.empleado_nombre}` + (f.empleado_legajo ? ` (#${f.empleado_legajo})` : ""),
+        f.sucursal_nombre || "—",
+        f.hora_entrada?.slice(0, 5) || "—",
+        f.hora_salida?.slice(0, 5) || "—",
+        Number(f.horas_trabajadas).toFixed(2),
+      ]),
+      headStyles: { fillColor: PDF_STYLES.colors.primary, textColor: "#ffffff", fontSize: 9 },
       bodyStyles: { fontSize: 8 },
     });
   }
