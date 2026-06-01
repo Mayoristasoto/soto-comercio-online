@@ -1,22 +1,51 @@
-# Corrección RPC `get_novedades_liquidacion`
+# Plan: Listas de empleados + Feriados trabajados en Novedades Liquidación
 
-## Problema
-La función falla con `42702: column reference "empleado_id" is ambiguous`. Postgres no distingue entre la variable PL/pgSQL del loop y la columna `empleado_id` de alguna tabla en los `WHERE` internos (típicamente en `fichajes`, `solicitudes_vacaciones`, `ausencias_medicas`, `solicitudes_generales` o `feriado_empleados_asignados`).
+## 1. Base de datos
 
-## Solución
-Crear una nueva migración que reemplace (`CREATE OR REPLACE FUNCTION`) la RPC con dos cambios mínimos:
+### Tabla `liquidacion_listas_empleados` (nueva)
+- `nombre` (texto)
+- `created_by` (uuid, auth.uid del admin)
+- `empleado_ids` (uuid[])
+- RLS: cada usuario solo ve/edita/borra las suyas (`created_by = auth.uid()`).
+- GRANTs a `authenticated` y `service_role`.
 
-1. **Renombrar las variables PL/pgSQL** del loop para que no choquen con nombres de columnas:
-   - `empleado_id` → `v_emp_id`
-   - `fecha`/`v_d` → `v_fecha` (si aplica)
-   - Cualquier otra variable que colisione (`sucursal_id`, `turno_id`, etc.) → prefijo `v_`.
+### Tabla `dias_feriados` (ya existe)
+- Precargar feriados nacionales **inamovibles + trasladables ya calculados** de Argentina 2024-2027 vía migración SQL (no incluir "días no laborables").
+- Campos usados: `fecha`, `nombre`, `tipo='nacional'`.
 
-2. **Calificar todas las referencias** dentro de subqueries usando el alias de la tabla (ej. `f.empleado_id = v_emp_id`, `sv.empleado_id = v_emp_id`, `am.empleado_id = v_emp_id`, `sg.empleado_id = v_emp_id`).
+## 2. UI en `/rrhh/novedades-liquidacion`
 
-3. Mantener intacta la firma de retorno (mismas columnas y tipos) para no romper el frontend ni `types.ts`.
+### Bloque "Listas guardadas"
+- Select con mis listas + botones: **Cargar**, **Guardar como…**, **Eliminar**.
+- Al cargar: setea el filtro multi-select de empleados.
+- Modal "Guardar como…": pide nombre, persiste los IDs actualmente seleccionados.
 
-No se tocan tablas, políticas RLS, ni código del frontend. Sólo se redefine la función.
+### Filtro "Excluir empleados sin fichajes"
+- Checkbox. Si está activo, después de traer datos se ocultan los empleados con 0 fichajes en el rango Desde-Hasta.
 
-## Verificación
-- Recargar `/rrhh/novedades-liquidacion` y confirmar que el listado carga sin el error 400.
-- Probar con filtro de sucursal y rango de fechas del mes actual.
+### Nueva sección/tab "Feriados trabajados"
+- Tabla: Empleado · Legajo · Sucursal · Fecha · Feriado · Hora entrada · Hora salida · Horas trabajadas.
+- Se calcula cruzando `fichajes` con `dias_feriados` dentro del rango.
+- Se incluye en exportes **PDF** y **XLSX** como sección/hoja adicional.
+
+## 3. Backend
+
+### RPC `get_feriados_trabajados(p_desde, p_hasta, p_sucursal_id, p_empleado_ids)`
+- Devuelve filas de fichajes (entrada+salida pareados) cuya fecha coincide con un feriado nacional.
+- Calcula horas trabajadas (último out − primer in del día).
+
+### Sin cambios en `get_novedades_liquidacion`
+- El filtro "sin fichajes" y las listas se aplican en el frontend para no romper la RPC.
+
+## 4. Archivos a tocar
+
+- `supabase/migrations/*` — crear tabla listas + insertar feriados AR 2024-2027 + RPC feriados trabajados.
+- `src/pages/NovedadesLiquidacion.tsx` — UI listas, checkbox exclusión, tab feriados.
+- `src/components/novedades/ListasEmpleadosManager.tsx` (nuevo) — guardar/cargar/borrar listas.
+- `src/components/novedades/FeriadosTrabajadosTable.tsx` (nuevo).
+- `src/utils/novedadesLiquidacionPDF.ts` y `…XLSX.ts` — agregar sección/hoja "Feriados trabajados".
+
+## 5. Fuera de alcance
+- No se calcula recargo del 100% (Art. 166 LCT) — solo informa horas.
+- No se sincronizan feriados vía API externa; se precargan por SQL.
+- Las listas son privadas por usuario, no compartidas.
