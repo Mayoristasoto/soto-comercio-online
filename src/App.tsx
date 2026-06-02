@@ -79,6 +79,7 @@ import Rentabilidad from "./pages/Rentabilidad";
 import NovedadesAlert from "./pages/NovedadesAlert";
 import TableroProyectos from "./pages/TableroProyectos";
 import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
+import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
 
 const queryClient = new QueryClient();
