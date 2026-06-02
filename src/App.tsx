@@ -72,6 +72,7 @@ import DashboardDemo from "./pages/DashboardDemo";
 import KioscoDemo from "./pages/KioscoDemo";
 import InstructivoDelegacionTareas from "./pages/InstructivoDelegacionTareas";
 import Instructivo from "./pages/Instructivo";
+import InstructivoGerente from "./pages/InstructivoGerente";
 import EditorFechasIngreso from "./pages/EditorFechasIngreso";
 import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
@@ -155,6 +156,7 @@ const App = () => (
             <Route path="operaciones/tareas/reportes" element={<Tareas />} />
             <Route path="instructivo/delegacion-tareas" element={<InstructivoDelegacionTareas />} />
             <Route path="instructivo" element={<Instructivo />} />
+            <Route path="instructivo/gerente" element={<InstructivoGerente />} />
             <Route path="operaciones/novedades-alertas" element={<NovedadesAlert />} />
             <Route path="operaciones/confirmacion-staff" element={<ConfirmacionStaffGerente />} />
             {/* Módulo Reconocimiento */}
