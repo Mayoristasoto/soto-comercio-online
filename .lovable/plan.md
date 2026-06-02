@@ -1,78 +1,62 @@
-## Informe gerencial de llegadas tarde y ausencias (6 meses)
+## Manual de Capacitación Editable para Gerentes de Sucursal
 
-Nueva página **`/rrhh/informe-asistencia-gerencial`** con flujo en 3 pasos: filtrar → revisar/anotar → generar PDF.
+Crear una sección donde admin_rrhh pueda **editar el contenido del instructivo** y **descargarlo como PDF** para capacitar a los gerentes de sucursal sobre acceso al sistema y aprobación de vacaciones.
 
----
+### Objetivo
+Tener un manual vivo que se pueda modificar conforme cambien procedimientos, sin tocar código, y exportar a PDF corporativo cuando se necesite imprimir o enviar.
 
-### 1. Filtros (panel superior)
+### Componentes a crear
 
-- Rango de fechas (default: últimos 6 meses).
-- Selector de **alcance**:
-  - Todos los empleados activos
-  - Por sucursal/es (multi-select)
-  - Listas guardadas (reutiliza `liquidacion_listas_empleados`)
-- Tipo de evento (checkboxes): Llegadas tarde / Ausencias / Ambas.
-- Botón **"Cargar datos"** que dispara la consulta.
+**1. Tabla en base de datos: `instructivos_editables`**
+- `id`, `slug` (ej: "gerente-vacaciones"), `titulo`, `descripcion`
+- `secciones` (jsonb) — array de `{ id, titulo, contenido_html, orden }`
+- `actualizado_por`, `actualizado_en`, `version`
+- RLS: lectura para roles `gerente_sucursal` y `admin_rrhh`; escritura solo `admin_rrhh`
+- GRANTs estándar + seed inicial con el contenido del manual ya redactado (acceso al sistema, dashboard gerente, flujo de aprobación 1ra instancia, reglas de negocio, FAQs, buenas prácticas)
 
-### 2. Tabla revisable
+**2. Página `src/pages/InstructivoGerente.tsx` → ruta `/instructivo/gerente`**
+- Vista en accordion con las secciones cargadas desde la BD
+- Botón **"Descargar PDF"** (visible a gerentes y admin)
+- Botón **"Editar manual"** (solo `admin_rrhh`) que abre modo edición
 
-Una fila por evento (llegada tarde o ausencia), columnas:
+**3. Modo edición inline (mismo componente)**
+- Editor por sección con `Textarea` enriquecido (markdown simple: negritas, listas, encabezados — usando `react-markdown` para preview)
+- Acciones: agregar sección, eliminar, reordenar (flechas arriba/abajo), editar título y contenido
+- Guardado por sección o "Guardar todo" → upsert en `instructivos_editables`
+- Indicador de "última modificación: {usuario} - {fecha}"
 
-`Empleado · Sucursal · Fecha · Tipo · Detalle (min retraso / día ausente) · Categoría · Observación · Acciones`
+**4. Generador PDF `src/utils/instructivoGerentePDF.ts`**
+- `jsPDF` + `autoTable`, paleta corporativa (#4b0d6d, #95198d, #e04403)
+- Portada con título, fecha, versión
+- Índice automático de secciones
+- Render markdown → texto formateado en PDF (encabezados, listas con bullets, negritas)
+- Pie de página con paginación y "Mayorista Soto - RRHH"
 
-- **Categoría**: select con opciones definidas en una nueva pantalla de configuración (ver punto 4). Categorías iniciales precargadas:
-  - Sin justificar
-  - Cambio de turno no actualizado
-  - Turno médico
-  - Trámite personal autorizado
-  - Falla técnica de fichaje
-  - Justificada (otro)
-- **Observación**: texto libre (ej.: "presentó certificado", "cambió turno con Pérez").
-- Cada cambio se guarda automáticamente (debounced).
-- Filtros rápidos sobre la tabla cargada: por estado (anotado / pendiente), por categoría, por empleado, por sucursal.
-- Contador en vivo: pendientes de revisar / total.
-
-### 3. Generación del informe PDF
-
-Botón **"Generar informe"** produce un PDF con:
-
-- **Portada**: rango, alcance, fecha de emisión, totales generales (empleados involucrados, llegadas tarde totales, ausencias totales, minutos acumulados, % justificadas).
-- **Resumen ejecutivo**: ranking de empleados con más eventos no justificados; desglose por categoría con conteo y porcentaje; gráfico simple por sucursal.
-- **Anexo completo**: tabla por empleado con todos los eventos, mostrando categoría y observación. Filas sin justificar resaltadas en `#e04403`; justificadas en gris claro.
-- Paleta corporativa (Primary `#4b0d6d`, Secondary `#95198d`, Accent `#e04403`), encabezado/pie con logo y paginación, en línea con `reporteLlegadasTardePDF.ts`.
-- Export adicional XLSX con la misma data tabulada (opcional, mismo botón con dropdown).
-
-### 4. Configuración de categorías (persistente)
-
-Pantalla pequeña en **Configuración → Asistencia → Categorías de justificación** donde el admin puede agregar, renombrar, activar/desactivar y reordenar categorías. Color opcional por categoría para el PDF.
-
-### 5. Persistencia de anotaciones
-
-Las justificaciones quedan guardadas a nivel evento (no por informe): si en 3 meses se regenera el reporte, las anotaciones previas aparecen ya cargadas. Si una llegada tarde queda anulada por el módulo de incidencias existente, no se muestra.
-
----
+**5. Registro de ruta**
+- Agregar `/instructivo/gerente` en `src/App.tsx`
+- Agregar link en sidebar para roles `gerente_sucursal` y `admin_rrhh` (módulo "Capacitación" o dentro de Vacaciones)
 
 ### Detalles técnicos
 
-**Migraciones nuevas:**
+```text
+DB
+└── instructivos_editables (jsonb secciones, versionado simple)
+        ▲
+        │ select (gerente_sucursal, admin_rrhh)
+        │ update (admin_rrhh)
+        │
+UI /instructivo/gerente
+├── Vista accordion (todos)
+├── Botón Descargar PDF (todos)
+└── Modo Editar (solo admin_rrhh)
+    ├── Editor markdown por sección
+    ├── Reordenar / agregar / eliminar
+    └── Guardar → upsert
+```
 
-1. `categorias_justificacion_asistencia` — `id`, `nombre`, `color`, `orden`, `activa`, `es_justificada` (bool, true para todo menos "Sin justificar"). RLS: lectura `authenticated`, escritura admin/rrhh. Seed con las 6 categorías iniciales.
-2. `justificaciones_asistencia` — `id`, `tipo_evento` (`'llegada_tarde'` | `'ausencia'`), `evento_ref_id` (uuid del fichaje tardío o ausencia), `empleado_id`, `fecha_evento` (date), `categoria_id`, `observacion`, `creado_por` (auth.uid), `created_at`, `updated_at`. Índice único `(tipo_evento, evento_ref_id)` para upsert. RLS: `authenticated` puede SELECT/INSERT/UPDATE/DELETE; auditoría via `creado_por`.
-3. RPC `get_eventos_asistencia(p_desde, p_hasta, p_sucursales uuid[], p_empleados uuid[], p_tipos text[])` SECURITY DEFINER: cruza `fichajes_tardios` (no anulados) + ausencias derivadas de `asistencia_diaria` / lógica existente del módulo, hace LEFT JOIN con `justificaciones_asistencia` y devuelve todo en un solo set. Aplica `debeOmitirControles` (feriados/domingos) si corresponde.
+Contenido inicial seed: las 6 secciones ya redactadas en el mensaje anterior (Acceso, Dashboard, Aprobación 1ra instancia paso a paso, Reglas de negocio, FAQs, Buenas prácticas).
 
-**Frontend nuevo:**
-
-- `src/pages/InformeAsistenciaGerencial.tsx` — orquestador (filtros + tabla + acciones de exportación).
-- `src/components/informe-asistencia/FiltrosInforme.tsx` — reutiliza `ListasEmpleadosManager` y selector de sucursales existente.
-- `src/components/informe-asistencia/TablaEventosRevisables.tsx` — tabla virtualizada (>500 filas), edición inline de categoría/observación con upsert a `justificaciones_asistencia`.
-- `src/components/informe-asistencia/CategoriaSelect.tsx`.
-- `src/pages/ConfiguracionCategoriasJustificacion.tsx` — CRUD de categorías.
-- `src/utils/informeAsistenciaGerencialPDF.ts` — generador estilo `reporteLlegadasTardePDF.ts`, paleta corporativa.
-- `src/utils/informeAsistenciaGerencialXLSX.ts` — opcional, dos hojas (Resumen, Detalle).
-
-**Ruta y sidebar:** agregar entrada en `app_pages` ("Informe gerencial de asistencia", sección RRHH, permiso admin/rrhh).
-
-**Fuera de alcance:**
-- No se modifica la lógica que detecta llegadas tarde o ausencias (solo se consume).
-- No se notifica automáticamente al empleado.
-- Las categorías no afectan liquidación de sueldos.
+### Fuera de alcance
+- Versionado histórico completo (solo se guarda última versión + autor/fecha)
+- Editor WYSIWYG visual (se usa markdown simple, suficiente para RRHH)
+- Adjuntar imágenes/screenshots editables (se puede agregar después si lo necesitan)
