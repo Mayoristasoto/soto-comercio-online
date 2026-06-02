@@ -156,6 +156,7 @@ const App = () => (
             <Route path="operaciones/tareas/reportes" element={<Tareas />} />
             <Route path="instructivo/delegacion-tareas" element={<InstructivoDelegacionTareas />} />
             <Route path="instructivo" element={<Instructivo />} />
+            <Route path="instructivo/gerente" element={<InstructivoGerente />} />
             <Route path="operaciones/novedades-alertas" element={<NovedadesAlert />} />
             <Route path="operaciones/confirmacion-staff" element={<ConfirmacionStaffGerente />} />
             {/* Módulo Reconocimiento */}
