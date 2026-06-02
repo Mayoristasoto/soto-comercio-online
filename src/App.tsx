@@ -72,6 +72,7 @@ import DashboardDemo from "./pages/DashboardDemo";
 import KioscoDemo from "./pages/KioscoDemo";
 import InstructivoDelegacionTareas from "./pages/InstructivoDelegacionTareas";
 import Instructivo from "./pages/Instructivo";
+import InstructivoGerente from "./pages/InstructivoGerente";
 import EditorFechasIngreso from "./pages/EditorFechasIngreso";
 import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
