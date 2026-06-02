@@ -5696,6 +5696,42 @@ export type Database = {
         }
         Relationships: []
       }
+      instructivos_editables: {
+        Row: {
+          actualizado_en: string
+          actualizado_por: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          secciones: Json
+          slug: string
+          titulo: string
+          version: number
+        }
+        Insert: {
+          actualizado_en?: string
+          actualizado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          secciones?: Json
+          slug: string
+          titulo: string
+          version?: number
+        }
+        Update: {
+          actualizado_en?: string
+          actualizado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          secciones?: Json
+          slug?: string
+          titulo?: string
+          version?: number
+        }
+        Relationships: []
+      }
       intentos_evaluacion: {
         Row: {
           aprobado: boolean
