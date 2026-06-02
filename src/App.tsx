@@ -79,6 +79,7 @@ import Rentabilidad from "./pages/Rentabilidad";
 import NovedadesAlert from "./pages/NovedadesAlert";
 import TableroProyectos from "./pages/TableroProyectos";
 import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
+import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
 
 const queryClient = new QueryClient();
@@ -134,6 +135,7 @@ const App = () => (
             <Route path="rrhh/presentacion-ejecutiva" element={<PresentacionEjecutiva />} />
             <Route path="rrhh/entregas" element={<EntregasEmpleados />} />
             <Route path="rrhh/novedades-liquidacion" element={<NovedadesLiquidacion />} />
+            <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />

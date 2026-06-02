@@ -1538,6 +1538,39 @@ export type Database = {
           },
         ]
       }
+      categorias_justificacion_asistencia: {
+        Row: {
+          activa: boolean
+          color: string
+          created_at: string
+          es_justificada: boolean
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          color?: string
+          created_at?: string
+          es_justificada?: boolean
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          color?: string
+          created_at?: string
+          es_justificada?: boolean
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       centros_costo: {
         Row: {
           activo: boolean | null
@@ -5708,6 +5741,81 @@ export type Database = {
         }
         Relationships: []
       }
+      justificaciones_asistencia: {
+        Row: {
+          categoria_id: string
+          creado_por: string | null
+          created_at: string
+          empleado_id: string
+          evento_ref_id: string | null
+          fecha_evento: string
+          id: string
+          observacion: string | null
+          tipo_evento: string
+          updated_at: string
+        }
+        Insert: {
+          categoria_id: string
+          creado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          evento_ref_id?: string | null
+          fecha_evento: string
+          id?: string
+          observacion?: string | null
+          tipo_evento: string
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: string
+          creado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          evento_ref_id?: string | null
+          fecha_evento?: string
+          id?: string
+          observacion?: string | null
+          tipo_evento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "justificaciones_asistencia_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_justificacion_asistencia"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "justificaciones_asistencia_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "justificaciones_asistencia_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "justificaciones_asistencia_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "justificaciones_asistencia_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kiosk_devices: {
         Row: {
           allowed_ips: unknown[]
@@ -9723,6 +9831,36 @@ export type Database = {
           porcentaje_puntualidad: number
           puede_obtener_insignia: boolean
           total_dias: number
+        }[]
+      }
+      get_eventos_asistencia: {
+        Args: {
+          p_desde: string
+          p_empleados?: string[]
+          p_hasta: string
+          p_sucursales?: string[]
+          p_tipos?: string[]
+        }
+        Returns: {
+          categoria_color: string
+          categoria_id: string
+          categoria_nombre: string
+          detalle: string
+          empleado_apellido: string
+          empleado_id: string
+          empleado_legajo: string
+          empleado_nombre: string
+          es_justificada: boolean
+          evento_id: string
+          fecha: string
+          hora_programada: string
+          hora_real: string
+          justificacion_id: string
+          minutos_retraso: number
+          observacion: string
+          sucursal_id: string
+          sucursal_nombre: string
+          tipo_evento: string
         }[]
       }
       get_facial_config: { Args: { config_key: string }; Returns: string }
