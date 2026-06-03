@@ -1,98 +1,104 @@
 
-## Grupos de Empleados Reutilizables
+# Plan por fases — Grupos de Empleados reutilizables
 
-Crear un sistema centralizado de **grupos de empleados** editables que pueda usarse como filtro en cualquier módulo (RRHH, Fichero, Nómina, Vacaciones, Informes, Tareas, etc.) permitiendo elegir entre empleado individual o grupo preguardado.
+Ya está lista la base (tabla `grupos_empleados`, RPC `resolver_grupo_empleados`, helper `gruposEmpleados.ts`, componente `SelectorEmpleadosOGrupo`, página `/rrhh/grupos-empleados`). Falta enchufarlo en los módulos y pulir la gestión. Lo dividimos en fases cortas para poder cortar en cualquier momento y retomar después.
 
-Ya existe `liquidacion_listas_empleados` (usado en novedades de liquidación), pero está acoplado a un solo módulo. La propuesta es **generalizarlo** a `grupos_empleados` y reemplazar usos puntuales para que todo el sistema comparta los mismos grupos.
+---
 
-### 1. Base de datos
+## Fase 0 — Cierre de la base (15 min) ✅ casi listo
+**Objetivo:** dejar la fundación accesible y visible.
+- Agregar link "Grupos de empleados" en el sidebar de RRHH (`AppSidebar` / `app_pages`).
+- Verificar permisos (admin_rrhh, gerente_general, gerente_sucursal) abriendo `/rrhh/grupos-empleados`.
+- Migrar listas existentes de `liquidacion_listas_empleados` → `grupos_empleados` con `modulos_sugeridos=['nomina']` (si no se hizo aún).
 
-**Tabla `grupos_empleados`**
-- `id`, `nombre`, `descripcion`, `color` (para badge visual)
-- `tipo`: `manual` (lista fija de IDs) o `dinamico` (filtro por sucursal/puesto/rol)
-- `empleado_ids` (jsonb array) — usado si tipo=manual
-- `filtros` (jsonb) — usado si tipo=dinamico: `{ sucursal_ids, puesto_ids, roles, activo, antiguedad_min }`
-- `compartido` (bool) — visible para todos los admin_rrhh, o solo el creador
-- `modulos_sugeridos` (text[]) — tags como `["fichero","nomina","vacaciones"]` para autocompletar en cada módulo
-- `created_by`, `created_at`, `updated_at`
+**Checkpoint:** se puede crear/editar/eliminar grupos manuales y dinámicos.
 
-**RLS:** lectura para `admin_rrhh`, `gerente_sucursal`, `gerente_general`; escritura para creador o `admin_rrhh`. GRANTs estándar.
+---
 
-**Migración de datos:** copiar registros existentes de `liquidacion_listas_empleados` con `tipo='manual'` y `modulos_sugeridos=['nomina']`. Dejar la tabla vieja como deprecada (vista que apunta a la nueva) hasta migrar el código.
+## Fase 1 — Informes (mayor ROI, 1 sesión)
+**Objetivo:** que cualquier informe se pueda generar para un grupo guardado.
+- `InformeAsistenciaGerencial.tsx` → reemplazar picker por `<SelectorEmpleadosOGrupo modulo="informes" />`.
+- `ReporteLlegadasTardeGerentes.tsx` → idem.
+- `InformeEjecutivo.tsx` → idem.
+- En cada uno, usar `getEmpleadosDeSeleccion(value)` para alimentar las queries existentes.
 
-### 2. Componente reutilizable `<SelectorEmpleadosOGrupo />`
+**Checkpoint:** generar PDF "Llegadas tarde de Gerentes Sucursal" con un solo click.
 
-Ubicación: `src/components/empleados/SelectorEmpleadosOGrupo.tsx`
+---
 
-Props:
-```ts
-{
-  value: { tipo: 'individual' | 'grupo' | 'multiple', empleadoIds: string[], grupoId?: string }
-  onChange: (v) => void
-  modulo?: string   // filtra grupos sugeridos para ese módulo
-  permitirMultiple?: boolean
-  permitirGrupos?: boolean
-}
-```
+## Fase 2 — Nómina / Novedades (reemplazo del sistema viejo)
+**Objetivo:** unificar `ListasEmpleadosManager` con el nuevo selector.
+- `NovedadesLiquidacion.tsx` → cambiar uso de `ListasEmpleadosManager` por `<SelectorEmpleadosOGrupo modulo="nomina" />`.
+- Mantener compatibilidad: las listas viejas ya migradas aparecen como grupos.
+- Marcar `ListasEmpleadosManager` como deprecated.
 
-UI:
-- Tabs: **Individual** | **Grupo guardado** | **Selección múltiple**
-- Tab Individual: buscador con autocompletar (un solo empleado)
-- Tab Grupo: dropdown de grupos guardados (con preview de empleados resueltos + contador), botón "Editar grupo"
-- Tab Múltiple: picker tipo checkbox con buscador (reutilizar lógica de `ListasEmpleadosManager`)
-- Botón flotante **"Guardar selección como grupo"** que abre dialog para nombrar y compartir
+**Checkpoint:** liquidar novedades de un grupo "Empleados Centro" sin volver a tildar.
 
-### 3. Página de gestión `src/pages/GruposEmpleados.tsx` → `/rrhh/grupos-empleados`
+---
 
-- CRUD completo de grupos (crear, editar, duplicar, eliminar)
-- Editor con tabs Manual / Dinámico
-  - Manual: picker de empleados (reusa selector)
-  - Dinámico: combos de sucursal/puesto/rol/antigüedad con preview en vivo de cuántos empleados matchean
-- Tabla con: nombre, tipo, cantidad de empleados resueltos, módulos sugeridos, creador, acciones
-- Filtros por módulo, creador, tipo
+## Fase 3 — Vacaciones
+**Objetivo:** filtros y aprobaciones masivas por grupo.
+- `AprobacionVacaciones.tsx` → filtro "Ver solo solicitudes de grupo X".
+- `CalendarioVacaciones.tsx` → toggle para mostrar solo empleados del grupo.
+- `MisVacaciones` queda como está (es vista personal).
 
-### 4. Integración en módulos existentes
+**Checkpoint:** ver el calendario filtrado por grupo "Cajas".
 
-Reemplazar pickers ad-hoc por el selector unificado:
+---
 
-| Módulo | Archivo | Uso |
-|---|---|---|
-| Nómina/Novedades | `NovedadesLiquidacion.tsx` (usa `ListasEmpleadosManager`) | Migrar a nuevo selector |
-| Vacaciones | `AprobacionVacaciones.tsx`, `CalendarioVacaciones.tsx` | Filtrar por grupo |
-| Fichero | `Fichero.tsx`, balance diario | Ver fichajes de un grupo |
-| Informes | `InformeAsistenciaGerencial.tsx`, `ReporteLlegadasTardeGerentes.tsx`, `InformeEjecutivo.tsx` | Generar PDF para grupo |
-| Tareas | `CreateTaskDialog.tsx`, `BulkDelegateDialog.tsx` | Asignar tareas a grupo entero |
-| Anotaciones | `NuevaAnotacion.tsx` | Anotación masiva a grupo |
-| Entregas | `EntregasEmpleados.tsx` | Registrar entrega a grupo |
-| Calendarios | `EmpleadosAfectadosPicker.tsx` | Arrobar grupo entero |
-| Evaluaciones | `AsignarEvaluacion.tsx` | Asignar a grupo |
+## Fase 4 — Fichero / Asistencia
+**Objetivo:** ver fichajes y balances por grupo.
+- `Fichero.tsx` → agregar selector arriba para filtrar la grilla.
+- Reporte de horas trabajadas (`ReporteHorasTrabajadas`) → integrar selector.
+- Informe diario de ausencias → filtrar por grupo.
 
-Cada módulo recibe el selector pasando su `modulo` para priorizar grupos relevantes. No se rompen flujos actuales: si el usuario elige individual, funciona como antes.
+**Checkpoint:** ver el balance diario de un grupo "Sucursal Norte".
 
-### 5. Helper de resolución
+---
 
-`src/lib/gruposEmpleados.ts`:
-- `resolverGrupo(grupoId): Promise<string[]>` — devuelve IDs finales (resuelve filtros dinámicos contra la tabla `empleados`)
-- `useGrupoEmpleados(grupoId)` — hook con cache
-- `getEmpleadosDeSeleccion(value)` — convierte el value del selector a lista plana de IDs para queries
+## Fase 5 — Tareas y delegaciones
+**Objetivo:** asignar masivamente.
+- `CreateTaskDialog.tsx` → opción "Asignar a grupo".
+- `BulkDelegateDialog.tsx` → seleccionar destinatarios via grupo.
+- Crear N tareas (una por empleado resuelto) reutilizando edge function `crear-tareas-batch`.
 
-### 6. Permisos y visibilidad
+**Checkpoint:** crear "Capacitación seguridad" para un grupo de 25 empleados en un click.
 
-- `admin_rrhh` y `gerente_general`: ven y editan todos los grupos compartidos
-- `gerente_sucursal`: ven grupos compartidos + propios; al crear, sus grupos dinámicos quedan auto-limitados a su sucursal
-- Empleado normal: no accede a grupos
+---
 
-### Fuera de alcance
-- Grupos anidados (grupo de grupos)
-- Sincronización automática con organigrama jerárquico
-- Versionado histórico de quién estuvo en el grupo en cada momento (snapshot)
-- Migración inmediata de TODOS los módulos: se hace por fases (primero el componente + página, luego se van enchufando módulos uno a uno según prioridad)
+## Fase 6 — Módulos secundarios (por demanda)
+Enchufes rápidos cuando se pidan:
+- Anotaciones (`NuevaAnotacion.tsx`) — anotación masiva.
+- Entregas (`EntregasEmpleados.tsx`) — registrar entrega a grupo.
+- Calendarios (`EmpleadosAfectadosPicker.tsx`) — arrobar grupo.
+- Evaluaciones (`AsignarEvaluacion.tsx`) — asignar a grupo.
 
-### Orden sugerido de implementación
-1. Migración DB + datos seed desde `liquidacion_listas_empleados`
-2. Helper `resolverGrupo` + tests manuales
-3. Componente `SelectorEmpleadosOGrupo`
-4. Página `/rrhh/grupos-empleados` + link en sidebar
-5. Migrar Nómina/Novedades (reemplazo directo de lo existente)
-6. Integrar en Informes (mayor valor inmediato)
-7. Resto de módulos por demanda
+---
+
+## Fase 7 — Mejoras de gestión (opcional, cuando duela)
+- Preview en vivo de empleados resueltos en el editor dinámico.
+- Editor visual de filtros dinámicos con autocompletes (sucursal/puesto/rol).
+- Botón "Duplicar grupo" y "Exportar empleados del grupo a CSV".
+- Auditoría: quién resolvió qué grupo y cuándo (tabla `grupos_empleados_uso`).
+- Grupos privados vs compartidos con UI clara.
+
+---
+
+## Detalles técnicos comunes a cada fase
+- Patrón de integración (no cambia entre módulos):
+  ```tsx
+  const [sel, setSel] = useState<SeleccionEmpleados | null>(null);
+  // ...
+  <SelectorEmpleadosOGrupo value={sel} onChange={setSel} modulo="informes" />
+  // al ejecutar:
+  const ids = await getEmpleadosDeSeleccion(sel);
+  // usar `ids` en la query/RPC existente
+  ```
+- Si el módulo ya hacía un `select().in('empleado_id', ids)`, el cambio es transparente.
+- No tocar lógica de negocio: solo el origen de la lista de IDs.
+
+---
+
+## Sugerencia de hoy
+Hacer **Fase 0 + Fase 1 (solo "Llegadas tarde de Gerentes")** en esta sesión. Es lo que más se va a usar y deja un patrón replicable para que retomemos cualquier otro módulo en una sesión corta.
+
