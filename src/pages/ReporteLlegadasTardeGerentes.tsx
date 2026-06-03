@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
+import { SelectorEmpleadosOGrupo } from "@/components/empleados/SelectorEmpleadosOGrupo"
+import { SeleccionEmpleados, getEmpleadosDeSeleccion } from "@/lib/gruposEmpleados"
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -383,6 +385,7 @@ export default function ReporteLlegadasTardeGerentes() {
   const [gerentes, setGerentes] = useState<GerenteReporte[]>([])
   const [loading, setLoading] = useState(true)
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null)
   
   // Annul state
   const [anularId, setAnularId] = useState<string | null>(null)
@@ -419,9 +422,15 @@ export default function ReporteLlegadasTardeGerentes() {
 
       if (error) throw error
 
-      const soloGerentes = (data || []).filter(
+      let soloGerentes = (data || []).filter(
         (row: any) => row.empleados?.rol === "gerente_sucursal"
       )
+
+      // Filtro opcional por empleado/grupo
+      const idsFiltro = await getEmpleadosDeSeleccion(seleccion)
+      if (idsFiltro.length > 0) {
+        soloGerentes = soloGerentes.filter((row: any) => idsFiltro.includes(row.empleado_id))
+      }
 
       const mapa: Record<string, GerenteReporte> = {}
       soloGerentes.forEach((row: any) => {
@@ -467,7 +476,7 @@ export default function ReporteLlegadasTardeGerentes() {
     } finally {
       setLoading(false)
     }
-  }, [fechaDesde, fechaHasta, diasHabiles])
+  }, [fechaDesde, fechaHasta, diasHabiles, seleccion])
 
   useEffect(() => {
     cargarDatos()
@@ -584,6 +593,20 @@ export default function ReporteLlegadasTardeGerentes() {
             <Button variant="outline" onClick={cargarDatos} className="mb-0.5">
               Actualizar
             </Button>
+          </div>
+          <div className="mt-4 pt-4 border-t">
+            <SelectorEmpleadosOGrupo
+              value={seleccion}
+              onChange={setSeleccion}
+              modulo="informes"
+              label="Filtrar por empleado o grupo (opcional)"
+              permitirIndividual
+              permitirGrupos
+              permitirMultiple
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Si no seleccionás nada, se muestran todos los gerentes de sucursal.
+            </p>
           </div>
         </CardContent>
       </Card>
