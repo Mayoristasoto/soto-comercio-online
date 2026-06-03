@@ -594,6 +594,20 @@ export default function ReporteLlegadasTardeGerentes() {
               Actualizar
             </Button>
           </div>
+          <div className="mt-4 pt-4 border-t">
+            <SelectorEmpleadosOGrupo
+              value={seleccion}
+              onChange={setSeleccion}
+              modulo="informes"
+              label="Filtrar por empleado o grupo (opcional)"
+              permitirIndividual
+              permitirGrupos
+              permitirMultiple
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Si no seleccionás nada, se muestran todos los gerentes de sucursal.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
