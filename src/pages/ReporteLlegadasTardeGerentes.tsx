@@ -476,7 +476,7 @@ export default function ReporteLlegadasTardeGerentes() {
     } finally {
       setLoading(false)
     }
-  }, [fechaDesde, fechaHasta, diasHabiles])
+  }, [fechaDesde, fechaHasta, diasHabiles, seleccion])
 
   useEffect(() => {
     cargarDatos()
