@@ -137,6 +137,7 @@ const App = () => (
             <Route path="rrhh/entregas" element={<EntregasEmpleados />} />
             <Route path="rrhh/novedades-liquidacion" element={<NovedadesLiquidacion />} />
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
+            <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
