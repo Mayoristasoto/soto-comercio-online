@@ -5175,6 +5175,51 @@ export type Database = {
           },
         ]
       }
+      grupos_empleados: {
+        Row: {
+          color: string | null
+          compartido: boolean
+          created_at: string
+          created_by: string | null
+          descripcion: string | null
+          empleado_ids: string[] | null
+          filtros: Json | null
+          id: string
+          modulos_sugeridos: string[] | null
+          nombre: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          compartido?: boolean
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          empleado_ids?: string[] | null
+          filtros?: Json | null
+          id?: string
+          modulos_sugeridos?: string[] | null
+          nombre: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          compartido?: boolean
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          empleado_ids?: string[] | null
+          filtros?: Json | null
+          id?: string
+          modulos_sugeridos?: string[] | null
+          nombre?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       horarios_excepcionales: {
         Row: {
           aprobado_por: string | null
@@ -10334,6 +10379,10 @@ export type Database = {
       reset_facial_auth_rate_limit: {
         Args: { p_ip_address: unknown }
         Returns: undefined
+      }
+      resolver_grupo_empleados: {
+        Args: { _grupo_id: string }
+        Returns: string[]
       }
       user_has_admin_role: { Args: never; Returns: boolean }
       validar_geocerca: {
