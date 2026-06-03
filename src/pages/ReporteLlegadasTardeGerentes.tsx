@@ -422,9 +422,15 @@ export default function ReporteLlegadasTardeGerentes() {
 
       if (error) throw error
 
-      const soloGerentes = (data || []).filter(
+      let soloGerentes = (data || []).filter(
         (row: any) => row.empleados?.rol === "gerente_sucursal"
       )
+
+      // Filtro opcional por empleado/grupo
+      const idsFiltro = await getEmpleadosDeSeleccion(seleccion)
+      if (idsFiltro.length > 0) {
+        soloGerentes = soloGerentes.filter((row: any) => idsFiltro.includes(row.empleado_id))
+      }
 
       const mapa: Record<string, GerenteReporte> = {}
       soloGerentes.forEach((row: any) => {
