@@ -74,6 +74,7 @@ import InstructivoDelegacionTareas from "./pages/InstructivoDelegacionTareas";
 import Instructivo from "./pages/Instructivo";
 import InstructivoGerente from "./pages/InstructivoGerente";
 import EditorFechasIngreso from "./pages/EditorFechasIngreso";
+import GruposEmpleados from "./pages/GruposEmpleados";
 import TestKioskoAlertas from "./pages/TestKioskoAlertas";
 import ReporteLlegadasTardeGerentes from "./pages/ReporteLlegadasTardeGerentes";
 import Rentabilidad from "./pages/Rentabilidad";
@@ -137,6 +138,7 @@ const App = () => (
             <Route path="rrhh/entregas" element={<EntregasEmpleados />} />
             <Route path="rrhh/novedades-liquidacion" element={<NovedadesLiquidacion />} />
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
+            <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
