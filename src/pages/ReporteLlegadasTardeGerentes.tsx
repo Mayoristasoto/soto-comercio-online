@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
+import { SelectorEmpleadosOGrupo } from "@/components/empleados/SelectorEmpleadosOGrupo"
+import { SeleccionEmpleados, getEmpleadosDeSeleccion } from "@/lib/gruposEmpleados"
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
