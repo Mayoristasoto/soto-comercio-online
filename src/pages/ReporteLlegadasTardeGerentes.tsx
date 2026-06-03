@@ -385,6 +385,7 @@ export default function ReporteLlegadasTardeGerentes() {
   const [gerentes, setGerentes] = useState<GerenteReporte[]>([])
   const [loading, setLoading] = useState(true)
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null)
   
   // Annul state
   const [anularId, setAnularId] = useState<string | null>(null)
