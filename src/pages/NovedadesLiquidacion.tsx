@@ -14,7 +14,8 @@ import { Loader2, FileSpreadsheet, FileText, Filter, CalendarDays } from "lucide
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { DetalleEmpleadoDialog } from "@/components/novedades/DetalleEmpleadoDialog";
-import { ListasEmpleadosManager } from "@/components/novedades/ListasEmpleadosManager";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import { FeriadosTrabajadosTable, type FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
