@@ -51,6 +51,11 @@ export default function InformeAsistenciaGerencial() {
   const [filtroBusqueda, setFiltroBusqueda] = useState("");
   const [filtroCat, setFiltroCat] = useState<string>("todas");
 
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
+  const [batchCat, setBatchCat] = useState<string>(SIN_CATEGORIA);
+  const [batchObs, setBatchObs] = useState("");
+  const [batchLoading, setBatchLoading] = useState(false);
+
   const [catDialogOpen, setCatDialogOpen] = useState(false);
 
   useEffect(() => {

@@ -1,61 +1,46 @@
-# Plan: Selector unificado de empleados/grupos (UI compacta del viejo + motor del nuevo)
+# Plan: Selección múltiple y asignación en lote en el Informe de Asistencia
 
 ## Objetivo
-Dejar **un único componente** para seleccionar empleados en toda la app, con la **UI compacta** del actual `ListasEmpleadosManager` (dropdown "Lista guardada" + 3 iconitos), pero usando por debajo `grupos_empleados` (compartidos, con módulos sugeridos, colores, y selección flexible).
+Permitir marcar varios eventos (llegadas tarde / ausencias) y aplicarles la **misma categoría** (Vacaciones, Licencia médica, etc.) + observación opcional en un solo click. Útil cuando un empleado tuvo muchos días seguidos del mismo motivo.
 
-## Fase 1 — Migración de datos
-- Migración SQL que copia `liquidacion_listas_empleados` → `grupos_empleados`:
-  - `tipo='manual'`, `modulos_sugeridos=['nomina']`, `compartido=true`, conserva `nombre`, `empleado_ids`, `created_by`.
-  - Evitar duplicados por nombre (usar `ON CONFLICT DO NOTHING` o WHERE NOT EXISTS).
-- **No** se borra la tabla vieja en esta fase (solo se deja de usar). Se elimina en una fase posterior tras verificar.
+## Cambios en `InformeAsistenciaGerencial.tsx`
 
-## Fase 2 — Componente nuevo `SelectorGrupoCompacto`
-Crear `src/components/empleados/SelectorGrupoCompacto.tsx` con la **misma UI** de la captura:
+### 1. Estado de selección
+- Nuevo `useState<Set<string>>` con los `evento_id` marcados.
+- Limpiar selección automáticamente cuando se recargan eventos o cambian los filtros visibles (los seleccionados que ya no se ven se descartan).
+
+### 2. Checkbox en la tabla
+- Nueva primera columna `<TableHead>` con un checkbox "maestro" en el header (selecciona/deselecciona todos los visibles).
+- Checkbox por fila vinculado al `Set`.
+
+### 3. Barra de acción en lote (aparece cuando hay >=1 seleccionado)
+Aparece justo arriba de la tabla, sticky:
 
 ```text
-[ Lista guardada ▼ ]  [👥]  [💾]  [🗑️]
-[Badge: N empleados]
+[N seleccionados]  Categoría: [Select ▼]  Observación: [Input]  [Aplicar a N]  [Limpiar selección]
 ```
 
-- Dropdown lista grupos de `grupos_empleados` (filtra/ordena por `modulo` si se pasa). Opción "Todos los empleados" + "— Ninguna —".
-- `👥` → abre dialog de selección múltiple con buscador (igual al viejo).
-- `💾` → abre dialog "Guardar como grupo" (nombre + módulo sugerido auto).
-- `🗑️` → elimina grupo seleccionado (solo si el usuario es el creador o admin).
-- Props: `value: SeleccionEmpleados | null`, `onChange`, `modulo?`, `label?`.
-- Internamente reutiliza `gruposEmpleados.ts` (`listarGrupos`, `resolverGrupo`, `guardarGrupo`, `eliminarGrupo`).
+- Select con categorías activas + opción "— Quitar categoría —".
+- Input opcional de observación común.
+- Botón "Aplicar a N" → ejecuta upsert en lote.
 
-## Fase 3 — Reemplazo en módulos existentes
-Sustituir el selector actual por `SelectorGrupoCompacto`:
-1. `src/pages/InformeAsistenciaGerencial.tsx` (saca `ListasEmpleadosManager`)
-2. `src/pages/NovedadesLiquidacion.tsx` (saca `ListasEmpleadosManager`)
-3. `src/pages/ReporteLlegadasTardeGerentes.tsx` (saca `SelectorEmpleadosOGrupo` actual, queda compacto)
+### 4. Lógica de aplicación masiva
+- Nueva función `aplicarMasivo(categoriaId, observacion)`:
+  - Si `categoriaId` es null → `DELETE` de `justificaciones_asistencia` donde `(tipo_evento, empleado_id, fecha_evento)` matchee con cada seleccionado que tenga `justificacion_id`.
+  - Si hay categoría → un único `upsert` con array de filas usando `onConflict: "tipo_evento,empleado_id,fecha_evento"`.
+- Actualizar el estado local de `eventos` sin recargar.
+- Toast con resultado: "N eventos actualizados".
 
-## Fase 4 — Propagación al resto de secciones
-Agregar el selector en módulos que hoy filtran "todos vs un empleado":
-- **Nómina** (`/rrhh/nomina`)
-- **Vacaciones** → calendario y aprobaciones (filtrar por grupo de empleados)
-- **Tareas** (`/rrhh/tareas`) → filtrar dashboard por grupo
-- **Anotaciones** (`/rrhh/anotaciones`) → filtrar historial
-- **Entregas** (`EntregasEmpleados.tsx`)
-- **Evaluaciones** → vista admin
-- **Informe Ejecutivo**
-- **Fichero / Reportes Horarios**
+### 5. Atajos útiles
+- "Seleccionar todos los visibles" / "Limpiar" en el header de la card (al lado del contador "Eventos: X / Y").
+- Tecla `Esc` limpia selección.
 
-En cada pantalla: agregar `useState<SeleccionEmpleados | null>`, pasar al filtro existente vía `getEmpleadosDeSeleccion`.
-
-## Fase 5 — Limpieza
-- Marcar `ListasEmpleadosManager` como deprecated (comentario + redirect interno al nuevo).
-- Una vez verificado en producción, borrar tabla `liquidacion_listas_empleados` y el componente viejo (en migración aparte).
+## Fuera de alcance (lo dejamos para después si querés)
+- Selección con `Shift+click` (rango).
+- Aplicar masivo desde otras pantallas (Novedades, etc.).
+- Crear vacaciones/licencias "reales" en `vacaciones_solicitudes` / `ausencias_medicas` desde acá — por ahora solo se justifica el evento con la categoría correspondiente (que es lo que el informe usa).
 
 ## Detalles técnicos
-- El motor (`grupos_empleados`, RPC `resolver_grupo_empleados`, `gruposEmpleados.ts`) **ya existe**, no se crea nada nuevo a nivel datos salvo la migración de copia.
-- El `SelectorEmpleadosOGrupo` (con tabs Individual/Grupo/Múltiple) se conserva para casos avanzados pero NO es el default; el default pasa a ser el compacto.
-- `SeleccionEmpleados` (tipo unión) sigue siendo el contrato común.
-
-## Entregables por fase
-- **Fase 1+2+3** → 1 PR/migración. Resultado visible: los 3 informes ya unificados.
-- **Fase 4** → iteraciones cortas, módulo por módulo.
-- **Fase 5** → cleanup final.
-
-## Qué hacer ahora
-Empezar por **Fase 1 + 2 + 3** (migración + componente nuevo + reemplazo en los 3 informes existentes). Las demás secciones (Fase 4) las retomamos después una por una.
+- El upsert masivo respeta el constraint actual `(tipo_evento, empleado_id, fecha_evento)`.
+- `creado_por` se setea con el user actual en cada fila del array.
+- Si alguno de los eventos seleccionados ya tenía categoría, se sobreescribe.
