@@ -319,10 +319,58 @@ export default function InformeAsistenciaGerencial() {
             </div>
           </CardHeader>
           <CardContent>
+            {seleccionados.size > 0 && (
+              <div className="flex flex-wrap items-end gap-2 mb-3 p-3 border rounded-md bg-accent/5">
+                <Badge className="h-9 px-3 text-sm">{seleccionados.size} seleccionado{seleccionados.size !== 1 ? "s" : ""}</Badge>
+                <div className="flex-1 min-w-[180px]">
+                  <Label className="text-xs">Categoría a aplicar</Label>
+                  <Select value={batchCat} onValueChange={setBatchCat}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SIN_CATEGORIA}>— Quitar categoría —</SelectItem>
+                      {categorias.filter(c => c.activa).map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                            {c.nombre}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-xs">Observación (opcional)</Label>
+                  <Input className="h-9" value={batchObs} onChange={e => setBatchObs(e.target.value)} placeholder="Ej. Licencia médica del 03 al 10" />
+                </div>
+                <Button onClick={aplicarMasivo} disabled={batchLoading} className="h-9">
+                  {batchLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                  Aplicar a {seleccionados.size}
+                </Button>
+                <Button variant="outline" onClick={() => setSeleccionados(new Set())} className="h-9">
+                  Limpiar
+                </Button>
+              </div>
+            )}
             <div className="border rounded-md max-h-[600px] overflow-auto">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={eventosFiltrados.length > 0 && eventosFiltrados.every(e => seleccionados.has(e.evento_id))}
+                        onCheckedChange={(v) => {
+                          if (v) {
+                            const next = new Set(seleccionados);
+                            eventosFiltrados.forEach(e => next.add(e.evento_id));
+                            setSeleccionados(next);
+                          } else {
+                            const visibles = new Set(eventosFiltrados.map(e => e.evento_id));
+                            setSeleccionados(new Set(Array.from(seleccionados).filter(id => !visibles.has(id))));
+                          }
+                        }}
+                      />
+                    </TableHead>
                     <TableHead>Empleado</TableHead>
                     <TableHead>Sucursal</TableHead>
                     <TableHead>Fecha</TableHead>
@@ -337,11 +385,22 @@ export default function InformeAsistenciaGerencial() {
                     <TableRow
                       key={ev.evento_id}
                       className={
-                        ev.es_justificada === false ? "bg-destructive/5"
-                          : !ev.categoria_id ? "bg-warning/5"
-                            : ""
+                        seleccionados.has(ev.evento_id) ? "bg-primary/10"
+                          : ev.es_justificada === false ? "bg-destructive/5"
+                            : !ev.categoria_id ? "bg-warning/5"
+                              : ""
                       }
                     >
+                      <TableCell>
+                        <Checkbox
+                          checked={seleccionados.has(ev.evento_id)}
+                          onCheckedChange={(v) => {
+                            const next = new Set(seleccionados);
+                            if (v) next.add(ev.evento_id); else next.delete(ev.evento_id);
+                            setSeleccionados(next);
+                          }}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {ev.empleado_apellido}, {ev.empleado_nombre}
                         {ev.empleado_legajo && <div className="text-xs text-muted-foreground">#{ev.empleado_legajo}</div>}
