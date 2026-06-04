@@ -87,8 +87,69 @@ export default function InformeAsistenciaGerencial() {
 
     if (error) { toast.error(error.message); setLoading(false); return; }
     setEventos((data || []) as Evento[]);
+    setSeleccionados(new Set());
     setLoading(false);
     toast.success(`${data?.length || 0} eventos cargados`);
+  };
+
+  const aplicarMasivo = async () => {
+    const ids = Array.from(seleccionados);
+    if (!ids.length) return;
+    const evs = eventos.filter(e => seleccionados.has(e.evento_id));
+    if (!evs.length) return;
+    setBatchLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (batchCat === SIN_CATEGORIA) {
+        const justIds = evs.map(e => e.justificacion_id).filter(Boolean) as string[];
+        if (justIds.length) {
+          const { error } = await supabase.from("justificaciones_asistencia").delete().in("id", justIds);
+          if (error) throw error;
+        }
+        setEventos(prev => prev.map(x => seleccionados.has(x.evento_id)
+          ? { ...x, justificacion_id: null, categoria_id: null, categoria_nombre: null, categoria_color: null, es_justificada: null, observacion: null }
+          : x));
+        toast.success(`${evs.length} eventos sin justificación`);
+      } else {
+        const cat = categorias.find(c => c.id === batchCat);
+        if (!cat) throw new Error("Categoría inválida");
+        const obs = batchObs.trim() || null;
+        const payload = evs.map(e => ({
+          tipo_evento: e.tipo_evento,
+          empleado_id: e.empleado_id,
+          fecha_evento: e.fecha,
+          categoria_id: cat.id,
+          observacion: obs,
+          creado_por: user?.id,
+        }));
+        const { data, error } = await supabase
+          .from("justificaciones_asistencia")
+          .upsert(payload, { onConflict: "tipo_evento,empleado_id,fecha_evento" })
+          .select("id,tipo_evento,empleado_id,fecha_evento");
+        if (error) throw error;
+        const byKey = new Map((data || []).map((d: any) => [`${d.tipo_evento}|${d.empleado_id}|${d.fecha_evento}`, d.id]));
+        setEventos(prev => prev.map(x => {
+          if (!seleccionados.has(x.evento_id)) return x;
+          const k = `${x.tipo_evento}|${x.empleado_id}|${x.fecha}`;
+          return {
+            ...x,
+            justificacion_id: byKey.get(k) ?? x.justificacion_id,
+            categoria_id: cat.id,
+            categoria_nombre: cat.nombre,
+            categoria_color: cat.color,
+            es_justificada: cat.es_justificada,
+            observacion: obs,
+          };
+        }));
+        toast.success(`${evs.length} eventos justificados como "${cat.nombre}"`);
+      }
+      setSeleccionados(new Set());
+      setBatchObs("");
+    } catch (e: any) {
+      toast.error(e.message || "Error al aplicar en lote");
+    } finally {
+      setBatchLoading(false);
+    }
   };
 
   const upsertJustificacion = async (ev: Evento, categoriaId: string | null, observacion: string | null) => {
