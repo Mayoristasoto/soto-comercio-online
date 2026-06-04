@@ -1,36 +1,51 @@
-## Cargar vacaciones 2026 en el informe ejecutivo
+## Cargar 57 días de ausencia mensualizados en el informe ejecutivo
 
-### Empleados detectados
+### Categorías nuevas a crear
 
-| Detalle pasado | Empleado en la base | Estado |
+En `categorias_justificacion_asistencia`:
+
+| Nombre | Justifica | Color |
 |---|---|---|
-| NAVARRETE JULIO | **Julio Cesar Gomez Navarrete** | activo ✅ |
-| DEL VALLE ANALIA | **Analia Victoria Del Valle** | activo ✅ |
-| GALAZ AGUSTINA | **Agustina Lucía Galaz** | activo ✅ |
-| JUSTINIANO GONZALO | **Gonzalo Justiniano** | activo ✅ |
-| LAN LAURA | **Laura Lorena Lan** | activo ✅ |
-| DIAZ TOMAS | **Tomás Javier Diaz** (hay otro "Tomas Diaz" inactivo, lo descarto) | activo ✅ |
+| Enfermedad | ✅ | #0ea5e9 |
+| Enfermedad familiar | ✅ | #14b8a6 |
+| Ausente | ❌ | #f97316 |
 
-Si alguno no es el correcto, avisame antes de aplicar.
+### 15 filas a procesar (mes de 2026)
 
-### Qué voy a hacer (año 2026)
-
-**1) Insertar 6 solicitudes en `solicitudes_vacaciones`** con `estado='aprobada'`, motivo "Carga manual vacaciones 2026":
-
-| Empleado | Desde | Hasta | Días |
+| Mes | Empleado | Categoría | Días |
 |---|---|---|---|
-| Gomez Navarrete, Julio | 2026-01-05 | 2026-01-18 | 14 |
-| Del Valle, Analia | 2026-01-19 | 2026-02-01 | 14 |
-| Galaz, Agustina | 2026-01-19 | 2026-02-01 | 14 |
-| Justiniano, Gonzalo | 2026-03-02 | 2026-03-08 | 7 |
-| Lan, Laura | 2026-05-11 | 2026-05-17 | 7 |
-| Diaz, Tomás | 2026-05-18 | 2026-05-31 | 14 |
+| Enero | Merino | Enfermedad | 5 |
+| Enero | Lan | Enfermedad | 1 |
+| Enero | Lan | Enfermedad familiar | 1 |
+| Enero | Bartolo Loyola | Enfermedad | 3 |
+| Enero | Chumpitaz | Enfermedad | 5 |
+| Febrero | Conforti | Enfermedad | 3 |
+| Marzo | Conforti | Enfermedad | 18 |
+| Marzo | Carrion | Enfermedad | 3 |
+| Marzo | Romero | Enfermedad | 2 |
+| Marzo | Bartolo Loyola | Ausente | 1 |
+| Marzo | Lan | Ausente | 1 |
+| Marzo | Merino | Ausente | 1 |
+| Abril | Chumpitaz | Enfermedad familiar | 1 |
+| Mayo | Chumpitaz | Enfermedad | 11 |
+| Mayo | Carrion | Enfermedad | 1 |
 
-**2) Justificar ausencias en `justificaciones_asistencia`** con la categoría existente **Vacaciones** (id `7a737f02…`), una fila por cada día del rango y por cada empleado (`tipo_evento='ausencia'`, `observacion='Vacaciones 2026 - carga manual'`). Se usa `ON CONFLICT DO NOTHING` para no duplicar si ya hay justificación ese día.
+### Asignación automática de fechas
 
-Esto hace que en el informe ejecutivo esos días aparezcan con el tag verde **Vacaciones** en vez de "Sin justificar".
+Para cada fila, dentro del **mes indicado de 2026**:
+
+1. Construyo los **días laborables** del empleado expandiendo sus `empleado_turnos` activos contra `fichado_turnos.dias_semana`.
+2. Resto los días con **fichaje de entrada** registrado.
+3. Resto los días que **ya tengan una justificación** (cualquier categoría).
+4. Ordeno los días candidatos cronológicamente.
+5. Tomo los **N días** que pide la fila y los inserto en `justificaciones_asistencia` con la nueva categoría y `observacion='<Categoría> 2026 - carga manual'`.
+6. Si dos filas comparten empleado+mes (ej. Lan en enero: Enfermedad 1 + Enfermedad familiar 1), se procesan en orden, sin pisarse.
+
+### Validación previa
+
+Antes de insertar te muestro por consola, fila por fila, las fechas elegidas y aviso si algún empleado tiene menos días candidatos que los requeridos en ese mes (en ese caso no inserto esa fila y te lo reporto).
 
 ### Lo que NO se toca
-- No se modifican fichajes existentes.
-- No se descuenta saldo en `vacaciones_saldo` (cargas históricas/manuales, no consumen cupo automático). Avisame si querés que también descuente.
-- No se cambia código de la app, sólo datos.
+- No se modifican fichajes ni turnos.
+- No se reemplaza ninguna justificación existente (`ON CONFLICT DO NOTHING`).
+- Sin cambios de código, sólo datos + catálogo.
