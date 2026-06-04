@@ -51,6 +51,11 @@ export default function InformeAsistenciaGerencial() {
   const [filtroBusqueda, setFiltroBusqueda] = useState("");
   const [filtroCat, setFiltroCat] = useState<string>("todas");
 
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
+  const [batchCat, setBatchCat] = useState<string>(SIN_CATEGORIA);
+  const [batchObs, setBatchObs] = useState("");
+  const [batchLoading, setBatchLoading] = useState(false);
+
   const [catDialogOpen, setCatDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -82,8 +87,69 @@ export default function InformeAsistenciaGerencial() {
 
     if (error) { toast.error(error.message); setLoading(false); return; }
     setEventos((data || []) as Evento[]);
+    setSeleccionados(new Set());
     setLoading(false);
     toast.success(`${data?.length || 0} eventos cargados`);
+  };
+
+  const aplicarMasivo = async () => {
+    const ids = Array.from(seleccionados);
+    if (!ids.length) return;
+    const evs = eventos.filter(e => seleccionados.has(e.evento_id));
+    if (!evs.length) return;
+    setBatchLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (batchCat === SIN_CATEGORIA) {
+        const justIds = evs.map(e => e.justificacion_id).filter(Boolean) as string[];
+        if (justIds.length) {
+          const { error } = await supabase.from("justificaciones_asistencia").delete().in("id", justIds);
+          if (error) throw error;
+        }
+        setEventos(prev => prev.map(x => seleccionados.has(x.evento_id)
+          ? { ...x, justificacion_id: null, categoria_id: null, categoria_nombre: null, categoria_color: null, es_justificada: null, observacion: null }
+          : x));
+        toast.success(`${evs.length} eventos sin justificación`);
+      } else {
+        const cat = categorias.find(c => c.id === batchCat);
+        if (!cat) throw new Error("Categoría inválida");
+        const obs = batchObs.trim() || null;
+        const payload = evs.map(e => ({
+          tipo_evento: e.tipo_evento,
+          empleado_id: e.empleado_id,
+          fecha_evento: e.fecha,
+          categoria_id: cat.id,
+          observacion: obs,
+          creado_por: user?.id,
+        }));
+        const { data, error } = await supabase
+          .from("justificaciones_asistencia")
+          .upsert(payload, { onConflict: "tipo_evento,empleado_id,fecha_evento" })
+          .select("id,tipo_evento,empleado_id,fecha_evento");
+        if (error) throw error;
+        const byKey = new Map((data || []).map((d: any) => [`${d.tipo_evento}|${d.empleado_id}|${d.fecha_evento}`, d.id]));
+        setEventos(prev => prev.map(x => {
+          if (!seleccionados.has(x.evento_id)) return x;
+          const k = `${x.tipo_evento}|${x.empleado_id}|${x.fecha}`;
+          return {
+            ...x,
+            justificacion_id: byKey.get(k) ?? x.justificacion_id,
+            categoria_id: cat.id,
+            categoria_nombre: cat.nombre,
+            categoria_color: cat.color,
+            es_justificada: cat.es_justificada,
+            observacion: obs,
+          };
+        }));
+        toast.success(`${evs.length} eventos justificados como "${cat.nombre}"`);
+      }
+      setSeleccionados(new Set());
+      setBatchObs("");
+    } catch (e: any) {
+      toast.error(e.message || "Error al aplicar en lote");
+    } finally {
+      setBatchLoading(false);
+    }
   };
 
   const upsertJustificacion = async (ev: Evento, categoriaId: string | null, observacion: string | null) => {
@@ -253,10 +319,58 @@ export default function InformeAsistenciaGerencial() {
             </div>
           </CardHeader>
           <CardContent>
+            {seleccionados.size > 0 && (
+              <div className="flex flex-wrap items-end gap-2 mb-3 p-3 border rounded-md bg-accent/5">
+                <Badge className="h-9 px-3 text-sm">{seleccionados.size} seleccionado{seleccionados.size !== 1 ? "s" : ""}</Badge>
+                <div className="flex-1 min-w-[180px]">
+                  <Label className="text-xs">Categoría a aplicar</Label>
+                  <Select value={batchCat} onValueChange={setBatchCat}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SIN_CATEGORIA}>— Quitar categoría —</SelectItem>
+                      {categorias.filter(c => c.activa).map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                            {c.nombre}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-xs">Observación (opcional)</Label>
+                  <Input className="h-9" value={batchObs} onChange={e => setBatchObs(e.target.value)} placeholder="Ej. Licencia médica del 03 al 10" />
+                </div>
+                <Button onClick={aplicarMasivo} disabled={batchLoading} className="h-9">
+                  {batchLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                  Aplicar a {seleccionados.size}
+                </Button>
+                <Button variant="outline" onClick={() => setSeleccionados(new Set())} className="h-9">
+                  Limpiar
+                </Button>
+              </div>
+            )}
             <div className="border rounded-md max-h-[600px] overflow-auto">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={eventosFiltrados.length > 0 && eventosFiltrados.every(e => seleccionados.has(e.evento_id))}
+                        onCheckedChange={(v) => {
+                          if (v) {
+                            const next = new Set(seleccionados);
+                            eventosFiltrados.forEach(e => next.add(e.evento_id));
+                            setSeleccionados(next);
+                          } else {
+                            const visibles = new Set(eventosFiltrados.map(e => e.evento_id));
+                            setSeleccionados(new Set(Array.from(seleccionados).filter(id => !visibles.has(id))));
+                          }
+                        }}
+                      />
+                    </TableHead>
                     <TableHead>Empleado</TableHead>
                     <TableHead>Sucursal</TableHead>
                     <TableHead>Fecha</TableHead>
@@ -271,11 +385,22 @@ export default function InformeAsistenciaGerencial() {
                     <TableRow
                       key={ev.evento_id}
                       className={
-                        ev.es_justificada === false ? "bg-destructive/5"
-                          : !ev.categoria_id ? "bg-warning/5"
-                            : ""
+                        seleccionados.has(ev.evento_id) ? "bg-primary/10"
+                          : ev.es_justificada === false ? "bg-destructive/5"
+                            : !ev.categoria_id ? "bg-warning/5"
+                              : ""
                       }
                     >
+                      <TableCell>
+                        <Checkbox
+                          checked={seleccionados.has(ev.evento_id)}
+                          onCheckedChange={(v) => {
+                            const next = new Set(seleccionados);
+                            if (v) next.add(ev.evento_id); else next.delete(ev.evento_id);
+                            setSeleccionados(next);
+                          }}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {ev.empleado_apellido}, {ev.empleado_nombre}
                         {ev.empleado_legajo && <div className="text-xs text-muted-foreground">#{ev.empleado_legajo}</div>}
@@ -331,7 +456,7 @@ export default function InformeAsistenciaGerencial() {
                     </TableRow>
                   ))}
                   {!eventosFiltrados.length && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sin eventos con los filtros actuales</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Sin eventos con los filtros actuales</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
