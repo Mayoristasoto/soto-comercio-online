@@ -1,46 +1,37 @@
-# Plan: Selección múltiple y asignación en lote en el Informe de Asistencia
+## Sembrar categorías comunes de justificación
 
-## Objetivo
-Permitir marcar varios eventos (llegadas tarde / ausencias) y aplicarles la **misma categoría** (Vacaciones, Licencia médica, etc.) + observación opcional en un solo click. Útil cuando un empleado tuvo muchos días seguidos del mismo motivo.
+El editor de categorías ya existe (botón "Categorías" arriba a la derecha). Sólo voy a precargar categorías típicas para que estén disponibles desde el primer momento, y vos podés agregar/quitar/editar las que quieras desde ese mismo botón.
 
-## Cambios en `InformeAsistenciaGerencial.tsx`
+### Categorías a insertar
 
-### 1. Estado de selección
-- Nuevo `useState<Set<string>>` con los `evento_id` marcados.
-- Limpiar selección automáticamente cuando se recargan eventos o cambian los filtros visibles (los seleccionados que ya no se ven se descartan).
+Si no existen ya (match por nombre, case-insensitive):
 
-### 2. Checkbox en la tabla
-- Nueva primera columna `<TableHead>` con un checkbox "maestro" en el header (selecciona/deselecciona todos los visibles).
-- Checkbox por fila vinculado al `Set`.
+| Nombre | Justifica | Color |
+|---|---|---|
+| Vacaciones | ✅ | #16a34a (verde) |
+| Licencia médica | ✅ | #0ea5e9 (celeste) |
+| Día médico | ✅ | #38bdf8 |
+| Turno médico | ✅ | #60a5fa |
+| Trámite personal autorizado | ✅ | #a855f7 |
+| Evento de empresa | ✅ | #f59e0b (ámbar) |
+| Capacitación | ✅ | #8b5cf6 |
+| Franco compensatorio | ✅ | #14b8a6 |
+| Día de estudio / examen | ✅ | #6366f1 |
+| Maternidad / Paternidad | ✅ | #ec4899 |
+| Fallecimiento familiar | ✅ | #64748b |
+| Matrimonio | ✅ | #f472b6 |
+| ART / Accidente laboral | ✅ | #dc2626 |
+| Licencia sin goce | ✅ | #94a3b8 |
+| Cambio de turno no actualizado | ✅ | #95198d |
+| Falla técnica de fichaje | ✅ | #4b0d6d |
+| Justificada (otro) | ✅ | #6b7280 |
+| Sin justificar | ❌ | #ef4444 |
 
-### 3. Barra de acción en lote (aparece cuando hay >=1 seleccionado)
-Aparece justo arriba de la tabla, sticky:
+### Cómo se hace
 
-```text
-[N seleccionados]  Categoría: [Select ▼]  Observación: [Input]  [Aplicar a N]  [Limpiar selección]
-```
+Migración SQL idempotente con `INSERT ... WHERE NOT EXISTS` sobre `categorias_justificacion_asistencia` (la tabla, RLS y editor ya están listos). No toca código de la app.
 
-- Select con categorías activas + opción "— Quitar categoría —".
-- Input opcional de observación común.
-- Botón "Aplicar a N" → ejecuta upsert en lote.
+### Después de la migración
 
-### 4. Lógica de aplicación masiva
-- Nueva función `aplicarMasivo(categoriaId, observacion)`:
-  - Si `categoriaId` es null → `DELETE` de `justificaciones_asistencia` donde `(tipo_evento, empleado_id, fecha_evento)` matchee con cada seleccionado que tenga `justificacion_id`.
-  - Si hay categoría → un único `upsert` con array de filas usando `onConflict: "tipo_evento,empleado_id,fecha_evento"`.
-- Actualizar el estado local de `eventos` sin recargar.
-- Toast con resultado: "N eventos actualizados".
-
-### 5. Atajos útiles
-- "Seleccionar todos los visibles" / "Limpiar" en el header de la card (al lado del contador "Eventos: X / Y").
-- Tecla `Esc` limpia selección.
-
-## Fuera de alcance (lo dejamos para después si querés)
-- Selección con `Shift+click` (rango).
-- Aplicar masivo desde otras pantallas (Novedades, etc.).
-- Crear vacaciones/licencias "reales" en `vacaciones_solicitudes` / `ausencias_medicas` desde acá — por ahora solo se justifica el evento con la categoría correspondiente (que es lo que el informe usa).
-
-## Detalles técnicos
-- El upsert masivo respeta el constraint actual `(tipo_evento, empleado_id, fecha_evento)`.
-- `creado_por` se setea con el user actual en cada fila del array.
-- Si alguno de los eventos seleccionados ya tenía categoría, se sobreescribe.
+- En el informe vas a ver todas las categorías nuevas en el selector.
+- Botón **"Categorías"** (arriba a la derecha del informe) para agregar/quitar/editar nombre, color, si justifica o no, y activarlas/desactivarlas.
