@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
-import { SelectorEmpleadosOGrupo } from "@/components/empleados/SelectorEmpleadosOGrupo"
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto"
 import { SeleccionEmpleados, getEmpleadosDeSeleccion } from "@/lib/gruposEmpleados"
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
@@ -595,14 +595,11 @@ export default function ReporteLlegadasTardeGerentes() {
             </Button>
           </div>
           <div className="mt-4 pt-4 border-t">
-            <SelectorEmpleadosOGrupo
+            <SelectorGrupoCompacto
               value={seleccion}
               onChange={setSeleccion}
               modulo="informes"
               label="Filtrar por empleado o grupo (opcional)"
-              permitirIndividual
-              permitirGrupos
-              permitirMultiple
             />
             <p className="text-xs text-muted-foreground mt-2">
               Si no seleccionás nada, se muestran todos los gerentes de sucursal.

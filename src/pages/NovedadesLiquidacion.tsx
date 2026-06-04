@@ -14,7 +14,8 @@ import { Loader2, FileSpreadsheet, FileText, Filter, CalendarDays } from "lucide
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { DetalleEmpleadoDialog } from "@/components/novedades/DetalleEmpleadoDialog";
-import { ListasEmpleadosManager } from "@/components/novedades/ListasEmpleadosManager";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import { FeriadosTrabajadosTable, type FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
@@ -66,7 +67,8 @@ export default function NovedadesLiquidacion() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [sucursalSel, setSucursalSel] = useState<string>("todas");
-  const [empleadosSel, setEmpleadosSel] = useState<string[]>([]);
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
+  const empleadosSel = seleccion?.empleadoIds || [];
   const [soloConNovedades, setSoloConNovedades] = useState(true);
   const [excluirSinFichajes, setExcluirSinFichajes] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -211,11 +213,9 @@ export default function NovedadesLiquidacion() {
                 </SelectContent>
               </Select>
             </div>
-            <ListasEmpleadosManager
-              empleados={empleados}
-              selectedIds={empleadosSel}
-              onSelectedChange={setEmpleadosSel}
-            />
+            <div className="md:col-span-2">
+              <SelectorGrupoCompacto value={seleccion} onChange={setSeleccion} modulo="nomina" empleados={empleados} />
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <div>

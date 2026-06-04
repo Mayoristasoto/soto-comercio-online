@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { FileBarChart, Download, Settings2, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
-import { ListasEmpleadosManager } from "@/components/novedades/ListasEmpleadosManager";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados, getEmpleadosDeSeleccion } from "@/lib/gruposEmpleados";
 import { generarInformeAsistenciaPDF, type EventoInforme } from "@/utils/informeAsistenciaGerencialPDF";
 
 interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; sucursal_id: string | null; }
@@ -37,7 +38,8 @@ export default function InformeAsistenciaGerencial() {
   const [hasta, setHasta] = useState(format(hoy, "yyyy-MM-dd"));
   const [tipoEvento, setTipoEvento] = useState<"todos" | "llegada_tarde" | "ausencia">("todos");
   const [sucursalSel, setSucursalSel] = useState<string>("todas");
-  const [empleadosSel, setEmpleadosSel] = useState<string[]>([]);
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
+  const empleadosSel = seleccion?.empleadoIds || [];
 
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
@@ -198,7 +200,9 @@ export default function InformeAsistenciaGerencial() {
                 </SelectContent>
               </Select>
             </div>
-            <ListasEmpleadosManager empleados={empleados} selectedIds={empleadosSel} onSelectedChange={setEmpleadosSel} />
+            <div className="md:col-span-2">
+              <SelectorGrupoCompacto value={seleccion} onChange={setSeleccion} modulo="informes" empleados={empleados} />
+            </div>
             <div className="md:col-span-2 flex items-end gap-2">
               <Button onClick={cargar} disabled={loading} className="flex-1">
                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
