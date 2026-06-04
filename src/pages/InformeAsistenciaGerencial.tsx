@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { FileBarChart, Download, Settings2, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
-import { ListasEmpleadosManager } from "@/components/novedades/ListasEmpleadosManager";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados, getEmpleadosDeSeleccion } from "@/lib/gruposEmpleados";
 import { generarInformeAsistenciaPDF, type EventoInforme } from "@/utils/informeAsistenciaGerencialPDF";
 
 interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; sucursal_id: string | null; }
