@@ -456,7 +456,7 @@ export default function InformeAsistenciaGerencial() {
                     </TableRow>
                   ))}
                   {!eventosFiltrados.length && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sin eventos con los filtros actuales</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Sin eventos con los filtros actuales</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
