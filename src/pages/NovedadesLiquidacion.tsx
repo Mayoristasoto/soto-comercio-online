@@ -67,7 +67,8 @@ export default function NovedadesLiquidacion() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [sucursalSel, setSucursalSel] = useState<string>("todas");
-  const [empleadosSel, setEmpleadosSel] = useState<string[]>([]);
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
+  const empleadosSel = seleccion?.empleadoIds || [];
   const [soloConNovedades, setSoloConNovedades] = useState(true);
   const [excluirSinFichajes, setExcluirSinFichajes] = useState(false);
   const [loading, setLoading] = useState(false);
