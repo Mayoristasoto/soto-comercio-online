@@ -38,7 +38,8 @@ export default function InformeAsistenciaGerencial() {
   const [hasta, setHasta] = useState(format(hoy, "yyyy-MM-dd"));
   const [tipoEvento, setTipoEvento] = useState<"todos" | "llegada_tarde" | "ausencia">("todos");
   const [sucursalSel, setSucursalSel] = useState<string>("todas");
-  const [empleadosSel, setEmpleadosSel] = useState<string[]>([]);
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
+  const empleadosSel = seleccion?.empleadoIds || [];
 
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
