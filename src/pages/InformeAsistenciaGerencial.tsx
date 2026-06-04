@@ -203,6 +203,8 @@ export default function InformeAsistenciaGerencial() {
             <div className="md:col-span-2">
               <SelectorGrupoCompacto value={seleccion} onChange={setSeleccion} modulo="informes" empleados={empleados} />
             </div>
+            <div className="md:col-span-2 flex items-end gap-2">
+              <Button onClick={cargar} disabled={loading} className="flex-1">
                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Cargar datos
               </Button>
