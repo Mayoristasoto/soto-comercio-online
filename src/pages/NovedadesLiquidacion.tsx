@@ -152,11 +152,10 @@ export default function NovedadesLiquidacion() {
     return arr;
   }, [data, soloConNovedades, excluirSinFichajes]);
 
-  const feriadosFiltrados = useMemo(() => {
-    if (!excluirSinFichajes) return feriados;
-    const ids = new Set(resumen.map(r => r.empleado_id));
-    return feriados.filter(f => ids.has(f.empleado_id));
-  }, [feriados, excluirSinFichajes, resumen]);
+  // Mostrar SIEMPRE a todos los empleados que tienen fichaje en un feriado,
+  // independientemente de si tienen turno asignado o pasan otros filtros.
+  // Si trabajó, tiene que aparecer para que se le pague.
+  const feriadosFiltrados = feriados;
 
   return (
     <div className="container py-6 space-y-6">
