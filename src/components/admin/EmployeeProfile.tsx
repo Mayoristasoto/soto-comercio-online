@@ -353,7 +353,25 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                       value={formData.apellido || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))}
                     />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dni">DNI</Label>
+                    <Input
+                      id="dni"
+                      inputMode="numeric"
+                      value={formData.dni || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dni: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
+                      placeholder="Ej: 34123456"
+                      maxLength={9}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Se usa para el PIN del kiosco (últimos 4 dígitos).
+                    </p>
                   </div>
+                </div>
+
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
