@@ -38,6 +38,7 @@ interface EmpleadoProfile {
   apellido: string
   email: string
   legajo?: string
+  dni?: string
   telefono?: string
   direccion?: string
   puesto?: string
