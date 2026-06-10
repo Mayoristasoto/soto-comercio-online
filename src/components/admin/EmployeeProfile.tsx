@@ -353,6 +353,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                       value={formData.apellido || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))}
                     />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -372,7 +373,6 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                   </div>
                 </div>
 
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
