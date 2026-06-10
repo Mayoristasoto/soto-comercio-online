@@ -196,6 +196,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         nombre: formData.nombre,
         apellido: formData.apellido,
         legajo: formData.legajo || null,
+        dni: formData.dni ? formData.dni.replace(/\D/g, '') : null,
         puesto: formData.puesto === "none" ? null : formData.puesto,
         puesto_id: selectedPuesto?.id || null,
         sucursal_id: formData.sucursal_id || null,
