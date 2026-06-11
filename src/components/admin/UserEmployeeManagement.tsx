@@ -473,6 +473,12 @@ export default function UserEmployeeManagement() {
                   <p><strong>Nombre:</strong> {editingEmployee?.nombre} {editingEmployee?.apellido}</p>
                   <p><strong>Email:</strong> {editingEmployee?.email}</p>
                   <p><strong>Rol:</strong> {editingEmployee?.rol}</p>
+                  <p>
+                    <strong>DNI:</strong>{' '}
+                    {editingEmployee?.dni
+                      ? `${editingEmployee.dni} · PIN kiosco: ${editingEmployee.dni.replace(/\D/g, '').slice(-4)}`
+                      : 'sin cargar (no se generará PIN)'}
+                  </p>
                 </div>
               </div>
 
