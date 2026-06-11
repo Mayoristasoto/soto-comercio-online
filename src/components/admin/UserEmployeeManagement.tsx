@@ -25,6 +25,7 @@ interface Empleado {
   sucursal_id: string | null
   fecha_ingreso: string
   user_id: string | null
+  dni?: string | null
   face_descriptor?: boolean // Will be calculated from sensitive data table
 }
 
@@ -281,9 +282,29 @@ export default function UserEmployeeManagement() {
           throw updateError
         }
 
+        // Si el empleado tiene DNI cargado, generar PIN automáticamente
+        // con los últimos 4 dígitos del DNI (estándar del kiosco)
+        const dniLimpio = (editingEmployee.dni || '').replace(/\D/g, '')
+        let pinMsg = ''
+        if (dniLimpio.length >= 4) {
+          const pin = dniLimpio.slice(-4)
+          const { error: pinError } = await supabase.rpc('admin_set_empleado_pin', {
+            p_empleado_id: editingEmployee.id,
+            p_nuevo_pin: pin
+          })
+          if (pinError) {
+            console.error('Error generando PIN:', pinError)
+            pinMsg = ' (no se pudo generar el PIN automáticamente)'
+          } else {
+            pinMsg = ` · PIN del kiosco: ${pin}`
+          }
+        } else {
+          pinMsg = ' · Cargá el DNI para generar el PIN del kiosco'
+        }
+
         toast({
           title: "Usuario habilitado exitosamente",
-          description: `Se creó la cuenta de acceso para ${editingEmployee.nombre} ${editingEmployee.apellido}`,
+          description: `Cuenta creada para ${editingEmployee.nombre} ${editingEmployee.apellido}.${pinMsg}`,
         })
 
         setEnableUserDialogOpen(false)
@@ -452,6 +473,12 @@ export default function UserEmployeeManagement() {
                   <p><strong>Nombre:</strong> {editingEmployee?.nombre} {editingEmployee?.apellido}</p>
                   <p><strong>Email:</strong> {editingEmployee?.email}</p>
                   <p><strong>Rol:</strong> {editingEmployee?.rol}</p>
+                  <p>
+                    <strong>DNI:</strong>{' '}
+                    {editingEmployee?.dni
+                      ? `${editingEmployee.dni} · PIN kiosco: ${editingEmployee.dni.replace(/\D/g, '').slice(-4)}`
+                      : 'sin cargar (no se generará PIN)'}
+                  </p>
                 </div>
               </div>
 
