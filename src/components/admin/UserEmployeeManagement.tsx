@@ -25,6 +25,7 @@ interface Empleado {
   sucursal_id: string | null
   fecha_ingreso: string
   user_id: string | null
+  dni?: string | null
   face_descriptor?: boolean // Will be calculated from sensitive data table
 }
 
