@@ -432,11 +432,18 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                     : dia.empleados.length > 0
                     ? 'bg-muted/30 border-border'
                     : 'bg-background'
-                }`}
+                } ${puedeReasignar && !dia.bloqueado && dia.empleados.length === 0 ? 'cursor-pointer hover:bg-muted/40' : ''}`}
+                onClick={() => {
+                  if (puedeReasignar && !dia.bloqueado && dia.empleados.length === 0) {
+                    setFechaCargaManual(dia.fecha);
+                    setCargaManualOpen(true);
+                  }
+                }}
               >
                 <div className="text-sm font-medium mb-1">
                   {format(dia.fecha, 'd')}
                 </div>
+
                 {dia.bloqueado && (
                   <Badge variant="destructive" className="text-xs mb-1">
                     Bloqueado
