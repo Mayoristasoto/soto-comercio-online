@@ -171,7 +171,7 @@ export function EntregaElementosImprimir({ onEntregaCreated }: EntregaElementosI
       talla: formData.talla,
       cantidad: parseInt(formData.cantidad),
       observaciones: formData.observaciones,
-      plantilla_id: formData.plantilla_id
+      plantilla_id: null,
     })
 
     if (error) {
