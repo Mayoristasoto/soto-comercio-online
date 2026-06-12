@@ -354,9 +354,6 @@ export function EntregaElementos() {
       <EntregaElementosImprimir onEntregaCreated={loadEntregas} />
     </TabsContent>
 
-    <TabsContent value="plantillas">
-      <PlantillasElementos />
-    </TabsContent>
   </Tabs>
   );
 }
