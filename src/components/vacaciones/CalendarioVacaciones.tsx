@@ -292,7 +292,9 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
       const msg =
         nuevoEstado === 'aprobada' ? 'Solicitud aprobada' :
         nuevoEstado === 'rechazada' ? 'Solicitud rechazada' :
+        nuevoEstado === 'gozadas' ? 'Marcada como gozada' :
         'Solicitud marcada como pendiente';
+
       toast({ title: msg });
       setComentario((c) => ({ ...c, [solicitudId]: '' }));
       fetchVacaciones();
