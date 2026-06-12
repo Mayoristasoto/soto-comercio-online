@@ -85,7 +85,7 @@ export default function Configuracion() {
         </div>
       </div>
 
-      <Tabs defaultValue="fichero" className="space-y-6">
+      <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearchParams({ tab: v }); }} className="space-y-6">
         <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="fichero" className="gap-2">
             <Settings className="h-4 w-4" />
