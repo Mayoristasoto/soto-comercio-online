@@ -157,13 +157,12 @@ export function EntregaElementos() {
 
   return (
     <Tabs defaultValue="registrar" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="registrar">Registrar Entrega</TabsTrigger>
         <TabsTrigger value="imprimir">
           <Printer className="h-4 w-4 mr-2" />
           Imprimir
         </TabsTrigger>
-        <TabsTrigger value="plantillas">Plantillas</TabsTrigger>
       </TabsList>
 
       <TabsContent value="registrar" className="space-y-6">
