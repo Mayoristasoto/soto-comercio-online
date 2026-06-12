@@ -62,17 +62,25 @@ export function EntregaElementosImprimir({ onEntregaCreated }: EntregaElementosI
   }
 
   const loadPlantillas = async () => {
-    const { data, error } = await supabase
-      .from("plantillas_elementos")
-      .select("id, nombre, tipo_elemento, template_html")
-      .eq("activo", true)
-      .order("nombre")
+    const { data, error } = await (supabase as any)
+      .from("plantillas_documentos")
+      .select("id, nombre, tipo_elemento, contenido_html")
+      .eq("categoria", "entregas")
+      .eq("activa", true)
+      .order("nombre");
 
     if (error) {
-      toast.error("Error al cargar plantillas")
-      return
+      toast.error("Error al cargar plantillas");
+      return;
     }
-    setPlantillas(data || [])
+    setPlantillas(
+      (data || []).map((p: any) => ({
+        id: p.id,
+        nombre: p.nombre,
+        tipo_elemento: p.tipo_elemento || "general",
+        template_html: p.contenido_html,
+      }))
+    );
   }
 
   const generateHtml = () => {
@@ -163,7 +171,7 @@ export function EntregaElementosImprimir({ onEntregaCreated }: EntregaElementosI
       talla: formData.talla,
       cantidad: parseInt(formData.cantidad),
       observaciones: formData.observaciones,
-      plantilla_id: formData.plantilla_id
+      plantilla_id: null,
     })
 
     if (error) {
