@@ -15,7 +15,8 @@ import PinManagement from "@/components/admin/PinManagement"
 import KioskSettingsConfig from "@/components/admin/KioskSettingsConfig"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
+
 
 export default function Configuracion() {
   const navigate = useNavigate()
