@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Loader2, Clock, Check, X, UserCog, ChevronsUpDown } from "lucide-react";
+import { Loader2, Clock, Check, X, UserCog, ChevronsUpDown, Plus, CheckCheck } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { ConstanciaVacacionesButton } from "./ConstanciaVacacionesButton";
+import { CargaManualVacacionesDialog } from "./CargaManualVacacionesDialog";
+
 
 interface CalendarioVacacionesProps {
   rol: string;
@@ -46,7 +48,10 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const [nuevoEmpleadoId, setNuevoEmpleadoId] = useState<Record<string, string>>({});
   const [reasignando, setReasignando] = useState<string | null>(null);
   const [empleadoPickerOpen, setEmpleadoPickerOpen] = useState<Record<string, boolean>>({});
+  const [cargaManualOpen, setCargaManualOpen] = useState(false);
+  const [fechaCargaManual, setFechaCargaManual] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
+
 
   useEffect(() => {
     fetchSucursalesYPuestos();
@@ -250,8 +255,9 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
 
   const handleCambioEstado = async (
     solicitudId: string,
-    nuevoEstado: 'pendiente' | 'aprobada' | 'rechazada'
+    nuevoEstado: 'pendiente' | 'aprobada' | 'rechazada' | 'gozadas'
   ) => {
+
     if (nuevoEstado === 'rechazada' && !comentario[solicitudId]?.trim()) {
       toast({ title: "Comentario requerido", description: "Indica el motivo del rechazo", variant: "destructive" });
       return;
