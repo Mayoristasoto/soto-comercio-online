@@ -348,7 +348,16 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
               {format(mesSeleccionado, "MMMM yyyy", { locale: es })}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {puedeReasignar && (
+              <Button
+                size="sm"
+                onClick={() => { setFechaCargaManual(new Date()); setCargaManualOpen(true); }}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Cargar vacaciones
+              </Button>
+            )}
+
             <button
               onClick={() => cambiarMes(-1)}
               className="px-3 py-1 rounded border hover:bg-accent"
