@@ -655,6 +655,14 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           </div>
         </div>
       </CardContent>
+      <CargaManualVacacionesDialog
+        open={cargaManualOpen}
+        onOpenChange={setCargaManualOpen}
+        empleados={empleadosLista}
+        fechaInicial={fechaCargaManual}
+        onSaved={fetchVacaciones}
+      />
     </Card>
   );
 }
+
