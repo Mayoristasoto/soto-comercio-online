@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor, Key } from "lucide-react"
+import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor, Key, FileSignature } from "lucide-react"
+import { PlantillasDocumentosManager } from "@/components/admin/PlantillasDocumentosManager"
 import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes"
