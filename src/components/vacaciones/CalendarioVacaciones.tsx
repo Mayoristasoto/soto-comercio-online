@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Loader2, Clock, Check, X, UserCog, ChevronsUpDown } from "lucide-react";
+import { Loader2, Clock, Check, X, UserCog, ChevronsUpDown, Plus, CheckCheck } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { ConstanciaVacacionesButton } from "./ConstanciaVacacionesButton";
+import { CargaManualVacacionesDialog } from "./CargaManualVacacionesDialog";
+
 
 interface CalendarioVacacionesProps {
   rol: string;
@@ -46,7 +48,10 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const [nuevoEmpleadoId, setNuevoEmpleadoId] = useState<Record<string, string>>({});
   const [reasignando, setReasignando] = useState<string | null>(null);
   const [empleadoPickerOpen, setEmpleadoPickerOpen] = useState<Record<string, boolean>>({});
+  const [cargaManualOpen, setCargaManualOpen] = useState(false);
+  const [fechaCargaManual, setFechaCargaManual] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
+
 
   useEffect(() => {
     fetchSucursalesYPuestos();
@@ -250,8 +255,9 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
 
   const handleCambioEstado = async (
     solicitudId: string,
-    nuevoEstado: 'pendiente' | 'aprobada' | 'rechazada'
+    nuevoEstado: 'pendiente' | 'aprobada' | 'rechazada' | 'gozadas'
   ) => {
+
     if (nuevoEstado === 'rechazada' && !comentario[solicitudId]?.trim()) {
       toast({ title: "Comentario requerido", description: "Indica el motivo del rechazo", variant: "destructive" });
       return;
@@ -286,7 +292,9 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
       const msg =
         nuevoEstado === 'aprobada' ? 'Solicitud aprobada' :
         nuevoEstado === 'rechazada' ? 'Solicitud rechazada' :
+        nuevoEstado === 'gozadas' ? 'Marcada como gozada' :
         'Solicitud marcada como pendiente';
+
       toast({ title: msg });
       setComentario((c) => ({ ...c, [solicitudId]: '' }));
       fetchVacaciones();
@@ -340,7 +348,16 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
               {format(mesSeleccionado, "MMMM yyyy", { locale: es })}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {puedeReasignar && (
+              <Button
+                size="sm"
+                onClick={() => { setFechaCargaManual(new Date()); setCargaManualOpen(true); }}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Cargar vacaciones
+              </Button>
+            )}
+
             <button
               onClick={() => cambiarMes(-1)}
               className="px-3 py-1 rounded border hover:bg-accent"
@@ -415,11 +432,18 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                     : dia.empleados.length > 0
                     ? 'bg-muted/30 border-border'
                     : 'bg-background'
-                }`}
+                } ${puedeReasignar && !dia.bloqueado && dia.empleados.length === 0 ? 'cursor-pointer hover:bg-muted/40' : ''}`}
+                onClick={() => {
+                  if (puedeReasignar && !dia.bloqueado && dia.empleados.length === 0) {
+                    setFechaCargaManual(dia.fecha);
+                    setCargaManualOpen(true);
+                  }
+                }}
               >
                 <div className="text-sm font-medium mb-1">
                   {format(dia.fecha, 'd')}
                 </div>
+
                 {dia.bloqueado && (
                   <Badge variant="destructive" className="text-xs mb-1">
                     Bloqueado
@@ -570,7 +594,20 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                                 <X className="h-3 w-3 mr-1" /> Rechazar
                               </Button>
                             </div>
+                            {puedeReasignar && (emp.estado === 'aprobada' || emp.estado === 'pendiente') && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="w-full"
+                                disabled={accionando === emp.solicitudId}
+
+                                onClick={() => handleCambioEstado(emp.solicitudId, 'gozadas')}
+                              >
+                                <CheckCheck className="h-3 w-3 mr-1" /> Marcar como gozada
+                              </Button>
+                            )}
                           </div>
+
 
                           {(emp.estado === 'aprobada' || emp.estado === 'gozadas') && (
                             <div className="space-y-2 pt-1 border-t">
@@ -618,6 +655,14 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           </div>
         </div>
       </CardContent>
+      <CargaManualVacacionesDialog
+        open={cargaManualOpen}
+        onOpenChange={setCargaManualOpen}
+        empleados={empleadosLista}
+        fechaInicial={fechaCargaManual}
+        onSaved={fetchVacaciones}
+      />
     </Card>
   );
 }
+

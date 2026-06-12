@@ -142,6 +142,10 @@ export function PlantillasDocumentosManager() {
           Editá el contenido de las constancias y notas que se imprimen desde la aplicación.
           Usá variables entre llaves dobles, ej: <code>{"{{empleado}}"}</code>.
         </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          ℹ️ El <strong>logo de la empresa</strong> y los <strong>datos del empleado</strong> (nombre, DNI, legajo, puesto, sucursal) se imprimen automáticamente arriba del documento; no hace falta incluirlos en el texto.
+        </p>
+
       </div>
 
       <Tabs value={active ?? ""} onValueChange={setActive}>

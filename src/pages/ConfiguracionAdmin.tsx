@@ -15,12 +15,17 @@ import PinManagement from "@/components/admin/PinManagement"
 import KioskSettingsConfig from "@/components/admin/KioskSettingsConfig"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
+
 
 export default function Configuracion() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [empleado, setEmpleado] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const initialTab = searchParams.get('tab') || 'fichero'
+  const [tab, setTab] = useState(initialTab)
+
 
   useEffect(() => {
     cargarEmpleado()
@@ -80,7 +85,7 @@ export default function Configuracion() {
         </div>
       </div>
 
-      <Tabs defaultValue="fichero" className="space-y-6">
+      <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearchParams({ tab: v }); }} className="space-y-6">
         <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="fichero" className="gap-2">
             <Settings className="h-4 w-4" />

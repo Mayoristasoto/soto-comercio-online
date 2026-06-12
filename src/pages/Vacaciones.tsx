@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, Clock, User, FileSpreadsheet, Calculator } from "lucide-react";
+import { Loader2, Calendar, Clock, User, FileSpreadsheet, Calculator, FileSignature } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MisVacaciones } from "@/components/vacaciones/MisVacaciones";
@@ -99,12 +99,19 @@ export default function Vacaciones() {
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setImportDialogOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Importar desde Excel
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/configuracion?tab=plantillas')}>
+              <FileSignature className="h-4 w-4 mr-2" />
+              Editar plantillas
+            </Button>
+            <Button onClick={() => setImportDialogOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Importar desde Excel
+            </Button>
+          </div>
         )}
       </div>
+
 
 
       <Tabs defaultValue="mis-vacaciones" className="space-y-4">

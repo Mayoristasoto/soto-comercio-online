@@ -1,83 +1,66 @@
-## Objetivo
 
-Permitir imprimir dos constancias de vacaciones desde el módulo de Vacaciones:
-1. **Constancia de Otorgamiento** — al aprobar una solicitud (firma previa al inicio).
-2. **Constancia de Goce** — disponible siempre que la solicitud esté aprobada (firma posterior al retorno).
+## Resumen
 
-Ambas plantillas se podrán editar desde una nueva pestaña en Configuración, con editor de texto enriquecido y variables `{{...}}`.
+Tres mejoras al módulo de Vacaciones:
 
-## Plantillas detectadas (texto base)
+1. **Plantillas:** ya se editan desde Configuración → "Plantillas Doc.". Vamos a reforzar que aparezca **logo de la empresa** y **nombre del empleado** en el PDF (independiente de lo que escriba el usuario en la plantilla).
+2. **Editor de plantillas:** mejorar el acceso (link directo desde el módulo de Vacaciones) y dejar visible el logo en la vista previa.
+3. **Carga manual de vacaciones por admin_rrhh** desde el calendario, con elección de estado (pendiente / aprobada / gozadas / rechazada).
 
-**Otorgamiento:**
-> Mar del Plata, {{fecha_hoy}}.
-> Por medio de la presente, tomo conocimiento de las vacaciones que me fueran otorgadas desde el {{fecha_inicio}} hasta el {{fecha_fin}}, inclusive.
-> Por lo tanto, me reincorporaré a mis tareas el {{fecha_reintegro}}.
-> Firma: / Aclaración: {{empleado}} / DNI: {{dni}}
+---
 
-**Goce:**
-> Mar del Plata, {{fecha_hoy}}.
-> Por medio de la presente, dejo constancia de haber gozado mis vacaciones desde el {{fecha_inicio}} hasta el {{fecha_fin}}, inclusive. Habiendo retomado mis tareas en el día de la fecha.
-> Firma: / Aclaración: {{empleado}} / DNI: {{dni}}
+## 1) Logo + nombre del empleado en el PDF
 
-## Variables disponibles
+Archivo: `src/utils/constanciaVacacionesPDF.ts`
 
-`{{empleado}}` (Nombre Apellido), `{{dni}}`, `{{legajo}}`, `{{sucursal}}`, `{{puesto}}`, `{{fecha_inicio}}` (con día semana en texto), `{{fecha_fin}}`, `{{fecha_reintegro}}` (día hábil siguiente a fecha_fin), `{{dias}}`, `{{fecha_hoy}}`, `{{ciudad}}` (default "Mar del Plata").
+- Insertar el logo `public/logo-soto.jpeg` (ya existente, definido en `COMPANY_INFO.logo` de `src/utils/pdfStyles.ts`) en la esquina superior izquierda de cada constancia, usando `doc.addImage()` con conversión previa a base64.
+- Bajo el header agregar un bloque fijo con:
+  - **Empleado:** Nombre Apellido
+  - **DNI / Legajo / Sucursal** (si están disponibles)
+  
+  Este bloque se renderiza **siempre**, aunque la plantilla HTML no incluya las variables, así no depende de que el admin las recuerde.
+- El cuerpo HTML editable de la plantilla se mantiene debajo de ese bloque.
 
-## Cambios técnicos
+## 2) Acceso al editor de plantillas
 
-### Base de datos (migración)
-Nueva tabla `plantillas_documentos`:
-- `codigo` text unique (`vacaciones_otorgamiento`, `vacaciones_goce`)
-- `nombre` text, `descripcion` text
-- `contenido_html` text (cuerpo del documento)
-- `ciudad_default` text default 'Mar del Plata'
-- `activa` boolean default true
-- `updated_by` uuid, timestamps
-- GRANTs: SELECT para authenticated, ALL para service_role
-- RLS: SELECT para todos los autenticados; INSERT/UPDATE solo `admin_rrhh` (vía `has_role`)
-- Seed con los dos códigos y el HTML inicial extraído de los .docx
+Archivo: `src/pages/Vacaciones.tsx` (módulo de vacaciones)
 
-### Editor de plantillas
-- Nueva pestaña **"Plantillas Doc."** en `src/pages/ConfiguracionAdmin.tsx`
-- Componente `src/components/admin/PlantillasDocumentosManager.tsx`:
-  - Lista las plantillas, selector entre Otorgamiento / Goce
-  - Editor rich-text liviano (usar `<textarea>` con preview HTML + barra simple de negrita/cursiva/lista) — sin dependencias nuevas pesadas
-  - Panel lateral con las variables disponibles (click para copiar al portapapeles)
-  - Campo "Ciudad por defecto"
-  - Botón "Vista previa" que renderiza con datos de muestra
-  - Botón "Restaurar plantilla original"
+- Agregar un botón **"Editar plantillas de constancias"** (solo visible para `admin_rrhh`) que lleve a `/configuracion?tab=plantillas`.
+- En `src/pages/ConfiguracionAdmin.tsx`: leer `?tab=` de la URL para abrir directamente la pestaña "Plantillas Doc.".
 
-### Generación PDF
-- Nuevo `src/utils/constanciaVacacionesPDF.ts`:
-  - `generarConstanciaPDF(tipo: 'otorgamiento'|'goce', solicitud, empleado)` 
-  - Carga plantilla desde Supabase, reemplaza `{{variables}}`, renderiza con jsPDF + html2canvas (igual patrón que `comprobanteVacacionesPDF.ts`)
-  - Formato carta, fuente serif, encabezado con logo corporativo, pie con firma/aclaración/DNI
-  - Fechas en español con día de la semana (`format(date, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })`)
-  - `fecha_reintegro` = primer día hábil después de `fecha_fin` (skip domingos)
+Archivo: `src/components/admin/PlantillasDocumentosManager.tsx`
 
-### Integración en UI
-Botones "Imprimir constancia" en:
-1. **`AprobacionVacaciones.tsx`**: tras aprobar → dropdown/botón "Otorgamiento" automático en el item recién aprobado
-2. **`CalendarioVacaciones.tsx`**: al click sobre una vacación aprobada en el calendario, agregar al popover/dialog dos botones:
-   - "Constancia Otorgamiento" (siempre que esté aprobada)
-   - "Constancia Goce" (siempre que esté aprobada — según preferencia indicada)
-3. **`MisVacaciones.tsx`**: misma pareja de botones en cada solicitud aprobada del empleado
+- En la vista previa mostrar el logo arriba (mismo que en el PDF) para que se vea representativo del resultado final.
+- Agregar nota explicativa: "El logo y los datos del empleado se imprimen automáticamente; no hace falta incluirlos en el texto".
 
-## Archivos a crear/editar
+## 3) Carga manual de vacaciones (admin_rrhh) desde el calendario
 
-**Nuevos:**
-- `supabase/migrations/<timestamp>_plantillas_documentos.sql`
-- `src/components/admin/PlantillasDocumentosManager.tsx`
-- `src/utils/constanciaVacacionesPDF.ts`
-- `src/components/vacaciones/ConstanciaVacacionesButtons.tsx` (botones reutilizables)
+Archivo nuevo: `src/components/vacaciones/CargaManualVacacionesDialog.tsx`
 
-**Editados:**
-- `src/pages/ConfiguracionAdmin.tsx` — agregar tab
-- `src/components/vacaciones/CalendarioVacaciones.tsx` — botones en detalle
-- `src/components/vacaciones/AprobacionVacaciones.tsx` — botón post-aprobación
-- `src/components/vacaciones/MisVacaciones.tsx` — botones por solicitud
+- Dialog con formulario:
+  - Selector de empleado (combobox con búsqueda, reutilizar la lista `empleadosLista` ya cargada en `CalendarioVacaciones`).
+  - `fecha_inicio`, `fecha_fin` (defaultean al día clickeado).
+  - **Estado inicial:** Select con opciones **Pendiente / Aprobada / Gozadas / Rechazada**.
+  - Comentario opcional.
+- Al guardar inserta en `solicitudes_vacaciones` con `empleado_id`, fechas, `estado` elegido, y si el estado != pendiente: setea `aprobado_por = empleado actual` y `fecha_aprobacion = now()`. Valida conflictos como ya hace `handleReasignar`.
 
-## Fuera de alcance
-- No se modifica el flujo de aprobación existente.
-- No se firma digitalmente; los campos Firma/Aclaración/DNI quedan en blanco para firma manual.
-- No se almacena el PDF generado; se descarga al hacer click.
+Archivo: `src/components/vacaciones/CalendarioVacaciones.tsx`
+
+- Agregar botón **"+ Cargar vacaciones"** arriba del calendario (solo `admin_rrhh`) que abre el dialog.
+- También permitir abrirlo desde el click en un día vacío del calendario (admin_rrhh).
+- Después de guardar, refrescar el calendario.
+
+**Cambio de estado existente:** ya se puede cambiar desde el popover (handleCambioEstado soporta pendiente/aprobada/rechazada). Sumamos **"gozadas"** como opción adicional en ese popover para vacaciones aprobadas.
+
+---
+
+## Detalles técnicos
+
+- No requiere migración: `solicitudes_vacaciones` ya tiene los campos `estado`, `empleado_id`, `aprobado_por`, `fecha_aprobacion`, `comentarios_aprobacion`.
+- El logo se carga vía `fetch('/logo-soto.jpeg')` → `FileReader` → dataURL, cacheado en memoria para no recargar entre PDFs.
+- RLS: `solicitudes_vacaciones` ya permite a admin_rrhh insertar/actualizar; no se toca.
+
+## Archivos afectados
+
+- Modificados: `src/utils/constanciaVacacionesPDF.ts`, `src/components/admin/PlantillasDocumentosManager.tsx`, `src/pages/ConfiguracionAdmin.tsx`, `src/pages/Vacaciones.tsx`, `src/components/vacaciones/CalendarioVacaciones.tsx`.
+- Nuevo: `src/components/vacaciones/CargaManualVacacionesDialog.tsx`.
