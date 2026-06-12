@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Loader2, Clock, Check, X, UserCog, ChevronsUpDown } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
+import { ConstanciaVacacionesButton } from "./ConstanciaVacacionesButton";
 
 interface CalendarioVacacionesProps {
   rol: string;
