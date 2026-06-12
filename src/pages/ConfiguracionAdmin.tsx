@@ -175,6 +175,12 @@ export default function Configuracion() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="plantillas" className="space-y-6">
+          <Card className="p-6">
+            <PlantillasDocumentosManager />
+          </Card>
+        </TabsContent>
+
         <TabsContent value="roles" className="space-y-6">
           <Card className="p-6">
             <RolePreview />
