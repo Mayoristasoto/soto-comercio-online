@@ -20,8 +20,12 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function Configuracion() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [empleado, setEmpleado] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const initialTab = searchParams.get('tab') || 'fichero'
+  const [tab, setTab] = useState(initialTab)
+
 
   useEffect(() => {
     cargarEmpleado()
