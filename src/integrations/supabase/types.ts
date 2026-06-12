@@ -7197,39 +7197,51 @@ export type Database = {
       plantillas_documentos: {
         Row: {
           activa: boolean
+          categoria: string
           ciudad_default: string
           codigo: string
           contenido_html: string
           created_at: string
           descripcion: string | null
+          es_sistema: boolean
           id: string
           nombre: string
+          tipo_elemento: string | null
           updated_at: string
           updated_by: string | null
+          variables_extra: Json
         }
         Insert: {
           activa?: boolean
+          categoria?: string
           ciudad_default?: string
           codigo: string
           contenido_html: string
           created_at?: string
           descripcion?: string | null
+          es_sistema?: boolean
           id?: string
           nombre: string
+          tipo_elemento?: string | null
           updated_at?: string
           updated_by?: string | null
+          variables_extra?: Json
         }
         Update: {
           activa?: boolean
+          categoria?: string
           ciudad_default?: string
           codigo?: string
           contenido_html?: string
           created_at?: string
           descripcion?: string | null
+          es_sistema?: boolean
           id?: string
           nombre?: string
+          tipo_elemento?: string | null
           updated_at?: string
           updated_by?: string | null
+          variables_extra?: Json
         }
         Relationships: []
       }
