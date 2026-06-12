@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { EntregaElementosImprimir } from "./EntregaElementosImprimir";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
 
 interface Empleado {
   id: string;
