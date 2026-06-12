@@ -10,6 +10,7 @@ import { Loader2, Check, X, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { generarComprobanteVacacionesPDF } from "@/utils/comprobanteVacacionesPDF";
+import { imprimirConstanciaVacaciones } from "@/utils/constanciaVacacionesPDF";
 
 interface AprobacionVacacionesProps {
   rol: string;
@@ -164,9 +165,16 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
         }
       }
 
+      // Generar también la constancia de otorgamiento (plantilla editable)
+      try {
+        await imprimirConstanciaVacaciones("vacaciones_otorgamiento", solicitudId);
+      } catch (e) {
+        console.warn("No se pudo generar la constancia de otorgamiento", e);
+      }
+
       toast({
         title: "Solicitud aprobada",
-        description: "Se generó el comprobante para que el empleado lo firme",
+        description: "Se generó el comprobante y la constancia de otorgamiento",
       });
 
       fetchSolicitudes();

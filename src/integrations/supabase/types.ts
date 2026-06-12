@@ -7194,6 +7194,45 @@ export type Database = {
           },
         ]
       }
+      plantillas_documentos: {
+        Row: {
+          activa: boolean
+          ciudad_default: string
+          codigo: string
+          contenido_html: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activa?: boolean
+          ciudad_default?: string
+          codigo: string
+          contenido_html: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activa?: boolean
+          ciudad_default?: string
+          codigo?: string
+          contenido_html?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       plantillas_elementos: {
         Row: {
           activo: boolean | null

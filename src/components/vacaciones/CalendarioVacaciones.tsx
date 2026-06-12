@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Loader2, Clock, Check, X, UserCog, ChevronsUpDown } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
+import { ConstanciaVacacionesButton } from "./ConstanciaVacacionesButton";
 
 interface CalendarioVacacionesProps {
   rol: string;
@@ -427,7 +428,8 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 <div className="space-y-1">
                   {dia.empleados.slice(0, 5).map((emp, empIdx) => {
                     const isPending = emp.estado === 'pendiente';
-                    const canOpenPopover = (isPending && puedeAprobar) || puedeReasignar;
+                    const isAprobada = emp.estado === 'aprobada' || emp.estado === 'gozadas';
+                    const canOpenPopover = (isPending && puedeAprobar) || puedeReasignar || (isAprobada && puedeAprobar);
                     const estadoLabel =
                       emp.estado === 'pendiente' ? 'Pendiente' :
                       emp.estado === 'aprobada' ? 'Aprobada' :
@@ -569,6 +571,22 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                               </Button>
                             </div>
                           </div>
+
+                          {(emp.estado === 'aprobada' || emp.estado === 'gozadas') && (
+                            <div className="space-y-2 pt-1 border-t">
+                              <Label className="text-xs">Constancias</Label>
+                              <div className="flex flex-col gap-1.5">
+                                <ConstanciaVacacionesButton
+                                  solicitudId={emp.solicitudId}
+                                  tipo="vacaciones_otorgamiento"
+                                />
+                                <ConstanciaVacacionesButton
+                                  solicitudId={emp.solicitudId}
+                                  tipo="vacaciones_goce"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </PopoverContent>
                       </Popover>
                     );
