@@ -570,6 +570,22 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                               </Button>
                             </div>
                           </div>
+
+                          {(emp.estado === 'aprobada' || emp.estado === 'gozadas') && (
+                            <div className="space-y-2 pt-1 border-t">
+                              <Label className="text-xs">Constancias</Label>
+                              <div className="flex flex-col gap-1.5">
+                                <ConstanciaVacacionesButton
+                                  solicitudId={emp.solicitudId}
+                                  tipo="vacaciones_otorgamiento"
+                                />
+                                <ConstanciaVacacionesButton
+                                  solicitudId={emp.solicitudId}
+                                  tipo="vacaciones_goce"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </PopoverContent>
                       </Popover>
                     );
