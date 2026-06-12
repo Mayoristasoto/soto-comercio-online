@@ -10,9 +10,9 @@ import { toast } from "sonner";
 import { Package, CheckCircle, Clock, Search, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { PlantillasElementos } from "./PlantillasElementos";
 import { EntregaElementosImprimir } from "./EntregaElementosImprimir";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 
 interface Empleado {
   id: string;
