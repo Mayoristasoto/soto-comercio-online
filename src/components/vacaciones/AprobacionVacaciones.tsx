@@ -165,9 +165,16 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
         }
       }
 
+      // Generar también la constancia de otorgamiento (plantilla editable)
+      try {
+        await imprimirConstanciaVacaciones("vacaciones_otorgamiento", solicitudId);
+      } catch (e) {
+        console.warn("No se pudo generar la constancia de otorgamiento", e);
+      }
+
       toast({
         title: "Solicitud aprobada",
-        description: "Se generó el comprobante para que el empleado lo firme",
+        description: "Se generó el comprobante y la constancia de otorgamiento",
       });
 
       fetchSolicitudes();
