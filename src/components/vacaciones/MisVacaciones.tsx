@@ -192,7 +192,7 @@ export function MisVacaciones({ empleadoId, rol }: MisVacacionesProps) {
               solicitudes.map((solicitud) => (
                 <div
                   key={solicitud.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3"
                 >
                   <div className="flex items-center gap-4">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
@@ -206,8 +206,20 @@ export function MisVacaciones({ empleadoId, rol }: MisVacacionesProps) {
                       )}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="flex flex-col sm:items-end gap-2">
                     {getEstadoBadge(solicitud.estado)}
+                    {(solicitud.estado === 'aprobada' || solicitud.estado === 'gozadas') && (
+                      <div className="flex flex-wrap gap-2">
+                        <ConstanciaVacacionesButton
+                          solicitudId={solicitud.id}
+                          tipo="vacaciones_otorgamiento"
+                        />
+                        <ConstanciaVacacionesButton
+                          solicitudId={solicitud.id}
+                          tipo="vacaciones_goce"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
