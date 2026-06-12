@@ -114,6 +114,10 @@ export default function Configuracion() {
             <Layout className="h-4 w-4" />
             Navegación
           </TabsTrigger>
+          <TabsTrigger value="plantillas" className="gap-2">
+            <FileSignature className="h-4 w-4" />
+            Plantillas Doc.
+          </TabsTrigger>
           <TabsTrigger value="roles" className="gap-2">
             <Eye className="h-4 w-4" />
             Vista Roles
