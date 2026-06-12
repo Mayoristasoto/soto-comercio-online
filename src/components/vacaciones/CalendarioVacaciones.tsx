@@ -428,7 +428,8 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 <div className="space-y-1">
                   {dia.empleados.slice(0, 5).map((emp, empIdx) => {
                     const isPending = emp.estado === 'pendiente';
-                    const canOpenPopover = (isPending && puedeAprobar) || puedeReasignar;
+                    const isAprobada = emp.estado === 'aprobada' || emp.estado === 'gozadas';
+                    const canOpenPopover = (isPending && puedeAprobar) || puedeReasignar || (isAprobada && puedeAprobar);
                     const estadoLabel =
                       emp.estado === 'pendiente' ? 'Pendiente' :
                       emp.estado === 'aprobada' ? 'Aprobada' :
