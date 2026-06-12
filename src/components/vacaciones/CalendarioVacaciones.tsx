@@ -587,7 +587,19 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                                 <X className="h-3 w-3 mr-1" /> Rechazar
                               </Button>
                             </div>
+                            {puedeReasignar && (emp.estado === 'aprobada' || emp.estado === 'pendiente') && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="w-full"
+                                disabled={accionando === emp.solicitudId || emp.estado === 'gozadas'}
+                                onClick={() => handleCambioEstado(emp.solicitudId, 'gozadas')}
+                              >
+                                <CheckCheck className="h-3 w-3 mr-1" /> Marcar como gozada
+                              </Button>
+                            )}
                           </div>
+
 
                           {(emp.estado === 'aprobada' || emp.estado === 'gozadas') && (
                             <div className="space-y-2 pt-1 border-t">
