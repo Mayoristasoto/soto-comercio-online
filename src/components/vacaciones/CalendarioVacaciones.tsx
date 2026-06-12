@@ -592,7 +592,8 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                                 size="sm"
                                 variant="secondary"
                                 className="w-full"
-                                disabled={accionando === emp.solicitudId || emp.estado === 'gozadas'}
+                                disabled={accionando === emp.solicitudId}
+
                                 onClick={() => handleCambioEstado(emp.solicitudId, 'gozadas')}
                               >
                                 <CheckCheck className="h-3 w-3 mr-1" /> Marcar como gozada
