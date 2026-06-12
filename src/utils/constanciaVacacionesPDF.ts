@@ -98,6 +98,26 @@ function htmlToParagraphs(html: string): string[] {
   return decoded.split(/\n{2,}/).map((p) => p.replace(/\s+/g, " ").trim()).filter(Boolean);
 }
 
+let _logoCache: string | null = null;
+async function getLogoDataUrl(): Promise<string | null> {
+  if (_logoCache !== null) return _logoCache;
+  try {
+    const res = await fetch("/logo-soto.jpeg");
+    const blob = await res.blob();
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+    _logoCache = dataUrl;
+    return dataUrl;
+  } catch {
+    _logoCache = "";
+    return null;
+  }
+}
+
 export async function generarConstanciaPDF(
   tipo: TipoConstancia,
   data: ConstanciaData
@@ -122,6 +142,14 @@ export async function generarConstanciaPDF(
   const margin = 25;
   const contentW = pageW - margin * 2;
 
+  // Logo (esquina superior izquierda)
+  const logo = await getLogoDataUrl();
+  if (logo) {
+    try {
+      doc.addImage(logo, "JPEG", margin, 16, 28, 18, undefined, "FAST");
+    } catch {}
+  }
+
   // Header bar
   doc.setFillColor(PRIMARY);
   doc.rect(0, 0, pageW, 12, "F");
@@ -130,15 +158,39 @@ export async function generarConstanciaPDF(
   doc.setFontSize(11);
   doc.text(((plantilla as any).nombre || "").toUpperCase(), pageW / 2, 8, { align: "center" });
 
+  // Bloque de datos del empleado (siempre presente)
+  const nombreCompleto =
+    `${data.empleado.nombre ?? ""} ${data.empleado.apellido ?? ""}`.trim();
+  let yHead = 22;
+  const xHead = margin + 34;
+  doc.setTextColor("#000000");
+  doc.setFont("times", "bold");
+  doc.setFontSize(12);
+  doc.text(nombreCompleto || "—", xHead, yHead);
+  yHead += 5;
+  doc.setFont("times", "normal");
+  doc.setFontSize(10);
+  const datosLinea: string[] = [];
+  if (data.empleado.dni) datosLinea.push(`DNI: ${data.empleado.dni}`);
+  if (data.empleado.legajo) datosLinea.push(`Legajo: ${data.empleado.legajo}`);
+  if (data.empleado.puesto) datosLinea.push(`Puesto: ${data.empleado.puesto}`);
+  if (data.empleado.sucursal) datosLinea.push(`Sucursal: ${data.empleado.sucursal}`);
+  if (datosLinea.length) {
+    doc.text(datosLinea.join("  ·  "), xHead, yHead);
+  }
+
+  // Línea divisoria
+  doc.setDrawColor(200);
+  doc.line(margin, 40, pageW - margin, 40);
+
   // Cuerpo
-  let y = 35;
+  let y = 50;
   doc.setTextColor("#000000");
   doc.setFont("times", "normal");
   doc.setFontSize(12);
 
   for (const p of parrafos) {
     const lines = doc.splitTextToSize(p, contentW);
-    // Si el primer párrafo tiene fecha (ciudad, fecha) lo derechamos
     const esFecha = /^[^,]+,\s+\w+/.test(p) && parrafos.indexOf(p) === 0;
     if (esFecha) {
       doc.text(lines, pageW - margin, y, { align: "right" });
@@ -162,7 +214,7 @@ export async function generarConstanciaPDF(
 
   doc.setFontSize(11);
   doc.text(
-    `Aclaración: ${data.empleado.nombre ?? ""} ${data.empleado.apellido ?? ""}`,
+    `Aclaración: ${nombreCompleto}`,
     margin,
     firmaY + 16
   );
@@ -184,6 +236,7 @@ export async function generarConstanciaPDF(
   const w = window.open(blobUrl as any, "_blank");
   if (!w) doc.save(filename);
 }
+
 
 /** Carga datos del empleado + solicitud y dispara el PDF. */
 export async function imprimirConstanciaVacaciones(
