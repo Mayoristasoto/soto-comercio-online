@@ -86,13 +86,10 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
         aprobadorId = (emp as any)?.id ?? null;
       }
 
-      const diasCorridos = Math.floor((new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / 86400000) + 1;
-
       const payload: any = {
         empleado_id: empleadoId,
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin,
-        dias_solicitados: diasCorridos,
         estado,
         motivo: comentario || "Carga manual por RRHH",
       };
