@@ -805,20 +805,25 @@ export default function KioscoCheckIn() {
 
       // Validar planilla de descansos (solo aplica si fue pausa_inicio y la sucursal tiene planilla)
       if (fichajeId) {
-        supabase.rpc('kiosk_validar_descanso_turno', {
-          p_empleado_id: empleadoParaFichaje.id,
-          p_fichaje_id: fichajeId,
-        }).then(({ data: vd }) => {
-          const v = vd as any
-          if (v && v.ok === false) {
-            toast({
-              title: v.motivo === 'sin_turno' ? '⚠️ Sin turno de descanso' : '⚠️ Descanso fuera de turno',
-              description: v.descripcion || 'Se registró una alerta para RRHH.',
-              variant: 'destructive',
-              duration: 6000,
+        (async () => {
+          try {
+            const { data: vd } = await supabase.rpc('kiosk_validar_descanso_turno', {
+              p_empleado_id: empleadoParaFichaje.id,
+              p_fichaje_id: fichajeId,
             })
+            const v = vd as any
+            if (v && v.ok === false) {
+              toast({
+                title: v.motivo === 'sin_turno' ? '⚠️ Sin turno de descanso' : '⚠️ Descanso fuera de turno',
+                description: v.descripcion || 'Se registró una alerta para RRHH.',
+                variant: 'destructive',
+                duration: 6000,
+              })
+            }
+          } catch (e) {
+            console.warn('No se pudo validar turno de descanso:', e)
           }
-        }).catch((e) => console.warn('No se pudo validar turno de descanso:', e))
+        })()
       }
 
       // 📸 Guardar foto de verificación DESPUÉS del fichaje (ya tenemos fichajeId)
