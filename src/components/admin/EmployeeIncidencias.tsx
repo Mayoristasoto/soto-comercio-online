@@ -21,7 +21,7 @@ interface EmployeeIncidenciasProps {
 
 interface Incidencia {
   id: string
-  tipo: 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion'
+  tipo: 'olvido' | 'error_tecnico' | 'justificacion' | 'correccion' | 'descanso_fuera_turno' | 'descanso_sin_turno'
   descripcion: string
   fecha_incidencia: string
   hora_propuesta?: string
