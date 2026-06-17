@@ -305,6 +305,9 @@ export function EmpleadosSinVacaciones() {
                       {r.tiene_calculo ? r.dias_segun_ley : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-center">
+                      {r.tiene_calculo ? r.dias_usados : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
                       {!r.tiene_calculo ? (
                         <span className="text-muted-foreground">—</span>
                       ) : r.dias_faltantes > 0 ? (
