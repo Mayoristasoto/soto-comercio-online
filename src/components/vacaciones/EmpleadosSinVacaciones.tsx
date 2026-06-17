@@ -283,6 +283,7 @@ export function EmpleadosSinVacaciones() {
                   <TableHead>Ingreso</TableHead>
                   <TableHead>Antigüedad</TableHead>
                   <TableHead className="text-center">Días LCT</TableHead>
+                  <TableHead className="text-center">Días usados</TableHead>
                   <TableHead className="text-center">Días faltantes</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
