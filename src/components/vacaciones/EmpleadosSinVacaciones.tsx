@@ -182,7 +182,7 @@ export function EmpleadosSinVacaciones() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `empleados-sin-vacaciones-${anioActual}.csv`;
+    a.download = `empleados-vacaciones-pendientes-${anioActual}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
