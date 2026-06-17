@@ -1,19 +1,11 @@
-## Consulta entregada en el chat
+## Cambios
 
-Ya te devolví los descansos de los últimos 15 días en José Martí (filtrados por GPS cercano a -38.0443876,-57.572691 y fallback a sucursal asignada cuando no hay GPS).
+1. **Sucursal renombrada** ✅ ya aplicado: "10 de Febrero" → "Olazar 26" (también la dirección).
 
-## Si querés que esto quede como funcionalidad en la app, opciones:
+2. **Generar archivo descargable** `empleados_activos_por_sucursal.xlsx` con:
+   - **Hoja "Por Sucursal"**: columnas Sucursal, Apellido, Nombre, Legajo, DNI, Puesto, Rol, Email, Fecha Ingreso — ordenado por sucursal y apellido.
+   - **Hoja "Resumen"**: cantidad de empleados activos por sucursal + total general.
+   - Empleados sin sucursal asignada agrupados como "Sin sucursal".
+   - Filtro: `empleados.activo = true`.
 
-**Opción A — Reporte en pantalla (recomendado)**
-- Nueva pestaña "Descansos por sucursal" dentro de `/operaciones/fichero` (o en Reportes).
-- Filtros: sucursal, rango de fechas, radio GPS (m), incluir/excluir fallback por sucursal asignada.
-- Tabla: empleado, fecha, inicio, fin, duración (min), fuente (GPS / sucursal), distancia al local.
-- Botón "Exportar CSV/PDF".
-
-**Opción B — Solo exportar CSV ahora**
-- Genero el CSV con los datos de esta consulta y lo dejo descargable, sin UI nueva.
-
-**Opción C — Nada en la app**
-- Te quedás solo con la respuesta del chat.
-
-Decime cuál preferís (A / B / C) y, si es A, si va dentro de "Fichero" o como nuevo módulo de Reportes.
+El archivo se guarda en `/mnt/documents/` para descarga.
