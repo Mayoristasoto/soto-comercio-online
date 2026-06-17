@@ -1,58 +1,51 @@
+## Objetivo
 
-# Plan: Planilla de Turnos de Descanso
+Agregar en `/rrhh/vacaciones` una nueva pestaña que liste a los empleados que **no tienen ninguna solicitud de vacaciones cargada en el año en curso** (independientemente del estado: pendiente, aprobada o rechazada → si no existe ninguna, aparece).
 
 ## Alcance
-- Solo aplica a Sucursal **José Martí** (otras sucursales siguen funcionando como hoy).
-- Planilla **semanal**: una asignación vale lunes a domingo.
-- Cargada manualmente desde una **pantalla admin** (más adelante migrará al dashboard del encargado).
-- Al fichar la pausa **fuera del horario asignado** o **sin turno asignado** → se permite pero genera **alerta/infracción** para RRHH.
 
-## 1. Base de datos
+- Solo lectura / visualización. No se modifica lógica de aprobación, saldos ni bloqueos.
+- Visible para roles que ya ven las pestañas de gestión (mismo criterio que "Aprobaciones" y "Bloqueos" — admin/RRHH).
 
-Nueva tabla `planilla_descansos_turnos` (catálogo de los 7 turnos fijos por sucursal):
-- `sucursal_id`, `numero_turno` (1–7), `hora_desde`, `hora_hasta`, `permite_gerente` (bool, turno 7 = false).
+## UI
 
-Nueva tabla `planilla_descansos_asignaciones` (asignación semanal):
-- `empleado_id`, `sucursal_id`, `numero_turno`, `semana_inicio` (lunes), `semana_fin` (domingo), `activo`.
-- Unique: un empleado por (sucursal, semana). Un turno por (sucursal, numero_turno, semana).
+Nueva pestaña **"Sin cargar"** en `src/pages/Vacaciones.tsx`, junto a Aprobaciones, Bloqueos y Calculadora.
 
-Seed inicial: cargar los 7 turnos de José Martí (10:50–15:30 según planilla).
+Nuevo componente: `src/components/vacaciones/EmpleadosSinVacaciones.tsx`
 
-Nuevos tipos de alerta en `novedades_alertas` / infracciones:
-- `descanso_fuera_de_turno`
-- `descanso_sin_turno_asignado`
+Contenido:
+- Encabezado con el año en curso y contador total ("X empleados sin solicitudes en 2026").
+- Filtros:
+  - Sucursal (select)
+  - Puesto (select)
+  - Buscador por nombre/apellido/DNI
+- Tabla con columnas:
+  - Empleado (nombre + apellido)
+  - DNI
+  - Sucursal
+  - Puesto
+  - Fecha de ingreso
+  - Días disponibles (de `vacaciones_saldo` del año en curso, si existe; si no, "—")
+  - Acción rápida: botón "Cargar solicitud" que abre el diálogo de carga manual ya existente (`CargaManualVacacionesDialog`) precargado con ese empleado.
+- Botón "Exportar CSV" con los registros filtrados.
+- Estado vacío amable cuando todos cargaron.
 
-## 2. Pantalla admin de carga
-Ruta: `/rrhh/planilla-descansos`
+## Lógica de datos
 
-- Selector de semana (lunes-domingo) con navegación ‹ ›.
-- Selector de sucursal (por ahora solo José Martí habilitada).
-- Tabla con los 7 turnos y, en cada fila, un combo para elegir empleado de esa sucursal.
-- Turno 7 (14:50–15:30): filtra y bloquea gerentes.
-- Validación: un empleado no puede estar en dos turnos la misma semana.
-- Botón "Copiar de semana anterior".
-- Guardado en `planilla_descansos_asignaciones`.
+Query en el componente:
+1. Traer empleados activos (`empleados` con `activo = true`).
+2. Traer `solicitudes_vacaciones` del año en curso (`fecha_inicio >= '<año>-01-01'` y `fecha_inicio <= '<año>-12-31'`), seleccionando solo `empleado_id` distinct.
+3. En el cliente, filtrar empleados cuyo `id` no aparece en ese set.
+4. Cruzar con `vacaciones_saldo` (año en curso) para mostrar días disponibles.
+5. Cruzar con `sucursales` y `puestos` para mostrar nombres.
 
-## 3. Validación al fichar pausa (kiosco)
-En el flujo actual de inicio de pausa, si la sucursal del empleado es José Martí:
+## Archivos
 
-1. Buscar asignación vigente del empleado para la semana actual.
-2. Casos:
-   - **Sin asignación** → permite la pausa + crea alerta `descanso_sin_turno_asignado`.
-   - **Con asignación pero fuera de franja** (con tolerancia configurable, default 0 min) → permite + alerta `descanso_fuera_de_turno` indicando turno esperado vs hora real.
-   - **Dentro de franja** → flujo normal, sin alerta.
-3. La alerta aparece en el panel de novedades de RRHH y queda registrada.
+- **Nuevo:** `src/components/vacaciones/EmpleadosSinVacaciones.tsx`
+- **Editar:** `src/pages/Vacaciones.tsx` — agregar `TabsTrigger` y `TabsContent` "sin-cargar" dentro del bloque de permisos de gestión.
 
-## 4. Visualización para el empleado (mínimo)
-En el kiosco, al iniciar sesión y antes de fichar pausa, mostrar un cartel pequeño: "Tu turno de descanso esta semana: Turno X — 12:10 a 12:50" si tiene asignación.
+## No incluye
 
-## Detalles técnicos
-- Edge function / RPC `validar_horario_descanso(empleado_id, timestamp)` con SECURITY DEFINER usada por el flujo anónimo del kiosco (sigue convención de `mem://security/kiosk/acceso-datos-rpc-mechanisms`).
-- Generación de alertas vía RPC para permitir flujo anónimo (igual que `mem://features/kiosk/alertas-pausa-sesion-anonima`).
-- Semana calculada en TZ Argentina (UTC-3) usando `src/lib/dateUtils.ts`.
-- Grants estándar a `authenticated` y `service_role`; RLS por sucursal/rol RRHH.
-
-## Fuera de alcance (futuro)
-- Dashboard del encargado para cargar la planilla por sí mismo.
-- Replicar a otras sucursales.
-- Reportes históricos de cumplimiento de turnos.
+- No modifica `vacaciones_saldo` ni genera solicitudes automáticas.
+- No envía notificaciones a los empleados (se puede agregar después si lo pedís).
+- No cambia el esquema de base de datos.
