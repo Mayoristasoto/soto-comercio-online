@@ -83,6 +83,7 @@ import TableroProyectos from "./pages/TableroProyectos";
 import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
 import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
+import PlanillaDescansos from "./pages/PlanillaDescansos";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +140,7 @@ const App = () => (
             <Route path="rrhh/novedades-liquidacion" element={<NovedadesLiquidacion />} />
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
             <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
+            <Route path="rrhh/planilla-descansos" element={<PlanillaDescansos />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
