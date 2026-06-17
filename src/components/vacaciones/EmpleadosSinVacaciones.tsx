@@ -268,7 +268,7 @@ export function EmpleadosSinVacaciones() {
         ) : filtrados.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {rows.length === 0
-              ? `🎉 Todos los empleados tienen al menos una solicitud cargada en ${anioActual}.`
+              ? `🎉 Todos los empleados tienen sus días de vacaciones al día en ${anioActual}.`
               : "No hay empleados que coincidan con los filtros."}
           </div>
         ) : (
