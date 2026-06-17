@@ -10342,6 +10342,16 @@ export type Database = {
           titulo: string
         }[]
       }
+      kiosk_get_turno_descanso: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          hora_desde: string
+          hora_hasta: string
+          numero_turno: number
+          semana_fin: string
+          semana_inicio: string
+        }[]
+      }
       kiosk_get_turno_empleado: {
         Args: { p_empleado_id: string }
         Returns: Json
@@ -10428,6 +10438,10 @@ export type Database = {
       kiosk_upload_facial_photo: {
         Args: { p_empleado_id: string; p_photo_url: string }
         Returns: string
+      }
+      kiosk_validar_descanso_turno: {
+        Args: { p_empleado_id: string; p_fichaje_id: string }
+        Returns: Json
       }
       kiosk_verificar_pin: {
         Args: { p_empleado_id: string; p_pin: string }
