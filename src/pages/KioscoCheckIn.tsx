@@ -1816,6 +1816,26 @@ export default function KioscoCheckIn() {
         throw new Error(error.message || 'Error al registrar fichaje')
       }
 
+      if (tipoAccion === 'pausa_inicio' && fichajeId) {
+        (async () => {
+          try {
+            const { data: vd } = await supabase.rpc('kiosk_validar_descanso_turno', {
+              p_empleado_id: empleadoParaFichaje.id,
+              p_fichaje_id: fichajeId,
+            })
+            const v = vd as any
+            if (v && v.ok === false) {
+              toast({
+                title: v.motivo === 'sin_turno' ? '⚠️ Sin turno de descanso' : '⚠️ Descanso fuera de turno',
+                description: v.descripcion || 'Se registró una alerta para RRHH.',
+                variant: 'destructive',
+                duration: 6000,
+              })
+            }
+          } catch (e) { console.warn('No se pudo validar turno de descanso:', e) }
+        })()
+      }
+
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
       let tareas: TareaPendiente[] = []
       if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
