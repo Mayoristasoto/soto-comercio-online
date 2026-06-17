@@ -428,7 +428,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 key={idx}
                 className={`min-h-[80px] p-2 border rounded-lg ${
                   dia.bloqueado
-                    ? 'bg-destructive/10 border-destructive'
+                    ? 'bg-sky-100 border-sky-400 dark:bg-sky-900/30 dark:border-sky-700'
                     : dia.empleados.length > 0
                     ? 'bg-muted/30 border-border'
                     : 'bg-background'
@@ -439,14 +439,18 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                     setCargaManualOpen(true);
                   }
                 }}
+                title={dia.motivoBloqueo || undefined}
               >
                 <div className="text-sm font-medium mb-1">
                   {format(dia.fecha, 'd')}
                 </div>
 
                 {dia.bloqueado && (
-                  <Badge variant="destructive" className="text-xs mb-1">
-                    Bloqueado
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] mb-1 bg-sky-200 text-sky-900 border-sky-400 dark:bg-sky-800/60 dark:text-sky-100 dark:border-sky-600 truncate max-w-full"
+                  >
+                    {dia.motivoBloqueo || 'Bloqueado'}
                   </Badge>
                 )}
                 <div className="space-y-1">
