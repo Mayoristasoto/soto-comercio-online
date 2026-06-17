@@ -1,40 +1,58 @@
-## Objetivo
-Crear dos sucursales lógicas (no físicas) **Administración** y **Ventas**, y reasignar a los empleados marcados en verde del Excel a esas nuevas sucursales.
 
-## Pasos
+# Plan: Planilla de Turnos de Descanso
 
-### 1. Crear las dos nuevas sucursales
-Insertar en la tabla `sucursales`:
-- **Administración** — sin dirección/ciudad/provincia (es lógica), `activa = true`
-- **Ventas** — sin dirección/ciudad/provincia (es lógica), `activa = true`
+## Alcance
+- Solo aplica a Sucursal **José Martí** (otras sucursales siguen funcionando como hoy).
+- Planilla **semanal**: una asignación vale lunes a domingo.
+- Cargada manualmente desde una **pantalla admin** (más adelante migrará al dashboard del encargado).
+- Al fichar la pausa **fuera del horario asignado** o **sin turno asignado** → se permite pero genera **alerta/infracción** para RRHH.
 
-> Nota: la tabla `sucursales` no tiene un campo `tipo` para distinguir físicas vs lógicas. Quedarán simplemente sin dirección. Si querés, en un paso futuro puedo agregar una columna `tipo` ('fisica' / 'logica') — avisame.
+## 1. Base de datos
 
-### 2. Reasignar empleados a **Administración**
-Actualizar `empleados.sucursal_id` para:
-| Apellido | Nombre | DNI |
-|---|---|---|
-| Galeote | Mariano Matías | 38256298 |
-| Justiniano | Gonzalo | 34058381 |
-| Soto | Hugo Carlos | 8386725 |
-| Soto | Juan Cruz | — |
-| Soto | María Carolina | 25898323 |
-| Diaz | Tomás Javier | 42282570 |
-| Soto | Juan Ignacio | 27019436 |
+Nueva tabla `planilla_descansos_turnos` (catálogo de los 7 turnos fijos por sucursal):
+- `sucursal_id`, `numero_turno` (1–7), `hora_desde`, `hora_hasta`, `permite_gerente` (bool, turno 7 = false).
 
-### 3. Reasignar empleados a **Ventas**
-| Apellido | Nombre | DNI |
-|---|---|---|
-| Galaz | Agustina Lucía | 42044300 |
-| Voikli | Andrés Nicolás | 23133013 |
+Nueva tabla `planilla_descansos_asignaciones` (asignación semanal):
+- `empleado_id`, `sucursal_id`, `numero_turno`, `semana_inicio` (lunes), `semana_fin` (domingo), `activo`.
+- Unique: un empleado por (sucursal, semana). Un turno por (sucursal, numero_turno, semana).
 
-### 4. Olazar 26
-Bartolo Loyo (Washintong Celindo, DNI 94099511) queda en **Olazar 26** (sucursal física existente, sin cambios).
+Seed inicial: cargar los 7 turnos de José Martí (10:50–15:30 según planilla).
 
-### 5. Regenerar el Excel actualizado
-Volver a generar `empleados_activos_por_sucursal.xlsx` reflejando la nueva agrupación (Administración, Ventas, José Martí, Juan B. Justo, Olazar 26) y la hoja "Resumen" con los nuevos totales.
+Nuevos tipos de alerta en `novedades_alertas` / infracciones:
+- `descanso_fuera_de_turno`
+- `descanso_sin_turno_asignado`
 
-## Notas técnicas
-- Se hace por `INSERT` (nuevas sucursales) + `UPDATE` (reasignación), sin migración de esquema.
-- Identificación de empleados por DNI (más confiable que nombre). Para "Juan Cruz Soto" sin DNI en la planilla, lo identifico por nombre+apellido exacto.
-- No se toca `asignacion_empleado_sucursal` (asignaciones operativas) salvo que lo pidas explícitamente.
+## 2. Pantalla admin de carga
+Ruta: `/rrhh/planilla-descansos`
+
+- Selector de semana (lunes-domingo) con navegación ‹ ›.
+- Selector de sucursal (por ahora solo José Martí habilitada).
+- Tabla con los 7 turnos y, en cada fila, un combo para elegir empleado de esa sucursal.
+- Turno 7 (14:50–15:30): filtra y bloquea gerentes.
+- Validación: un empleado no puede estar en dos turnos la misma semana.
+- Botón "Copiar de semana anterior".
+- Guardado en `planilla_descansos_asignaciones`.
+
+## 3. Validación al fichar pausa (kiosco)
+En el flujo actual de inicio de pausa, si la sucursal del empleado es José Martí:
+
+1. Buscar asignación vigente del empleado para la semana actual.
+2. Casos:
+   - **Sin asignación** → permite la pausa + crea alerta `descanso_sin_turno_asignado`.
+   - **Con asignación pero fuera de franja** (con tolerancia configurable, default 0 min) → permite + alerta `descanso_fuera_de_turno` indicando turno esperado vs hora real.
+   - **Dentro de franja** → flujo normal, sin alerta.
+3. La alerta aparece en el panel de novedades de RRHH y queda registrada.
+
+## 4. Visualización para el empleado (mínimo)
+En el kiosco, al iniciar sesión y antes de fichar pausa, mostrar un cartel pequeño: "Tu turno de descanso esta semana: Turno X — 12:10 a 12:50" si tiene asignación.
+
+## Detalles técnicos
+- Edge function / RPC `validar_horario_descanso(empleado_id, timestamp)` con SECURITY DEFINER usada por el flujo anónimo del kiosco (sigue convención de `mem://security/kiosk/acceso-datos-rpc-mechanisms`).
+- Generación de alertas vía RPC para permitir flujo anónimo (igual que `mem://features/kiosk/alertas-pausa-sesion-anonima`).
+- Semana calculada en TZ Argentina (UTC-3) usando `src/lib/dateUtils.ts`.
+- Grants estándar a `authenticated` y `service_role`; RLS por sucursal/rol RRHH.
+
+## Fuera de alcance (futuro)
+- Dashboard del encargado para cargar la planilla por sí mismo.
+- Replicar a otras sucursales.
+- Reportes históricos de cumplimiento de turnos.
