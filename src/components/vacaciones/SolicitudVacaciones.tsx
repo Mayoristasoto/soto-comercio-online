@@ -235,11 +235,12 @@ export function SolicitudVacaciones({
     try {
       setLoading(true);
 
-      // Verificar bloqueos
+      // Verificar bloqueos totales (los informativos no impiden la carga)
       const { data: bloqueos } = await supabase
         .from('vacaciones_bloqueos')
         .select('*')
         .eq('activo', true)
+        .eq('tipo' as any, 'total')
         .lte('fecha_inicio', fechaFin.toISOString().split('T')[0])
         .gte('fecha_fin', fechaInicio.toISOString().split('T')[0]);
 
