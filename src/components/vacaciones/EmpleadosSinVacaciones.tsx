@@ -5,10 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Plus, Search } from "lucide-react";
 import { CargaManualVacacionesDialog } from "./CargaManualVacacionesDialog";
+
+// Patrones de exclusión para empleados de prueba / familia Soto (no influyen en gestión de vacaciones)
+const PATRONES_EXCLUSION = {
+  contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"], // en nombre o apellido
+  apellidoExacto: ["soto"],
+};
 
 interface EmpleadoRow {
   id: string;
@@ -20,7 +28,27 @@ interface EmpleadoRow {
   puesto_id: string | null;
   sucursal_nombre: string;
   puesto_nombre: string;
-  dias_disponibles: number | null;
+  antiguedad_anios: number;
+  antiguedad_meses: number;
+  dias_segun_ley: number;
+  dias_usados: number;
+  dias_faltantes: number;
+  tiene_calculo: boolean;
+}
+
+function esEmpleadoExcluido(nombre: string, apellido: string): boolean {
+  const n = (nombre ?? "").toLowerCase().trim();
+  const a = (apellido ?? "").toLowerCase().trim();
+  if (PATRONES_EXCLUSION.apellidoExacto.includes(a)) return true;
+  for (const p of PATRONES_EXCLUSION.contiene) {
+    if (n.includes(p) || a.includes(p)) return true;
+  }
+  return false;
+}
+
+function formatAntiguedad(anios: number, meses: number) {
+  if (!anios && !meses) return "—";
+  return `${anios}a ${meses}m`;
 }
 
 export function EmpleadosSinVacaciones() {
@@ -33,6 +61,7 @@ export function EmpleadosSinVacaciones() {
   const [filtroSucursal, setFiltroSucursal] = useState<string>("todas");
   const [filtroPuesto, setFiltroPuesto] = useState<string>("todos");
   const [busqueda, setBusqueda] = useState("");
+  const [excluirPrueba, setExcluirPrueba] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [empleadoPreseleccionado, setEmpleadoPreseleccionado] = useState<EmpleadoRow | null>(null);
 
@@ -42,7 +71,7 @@ export function EmpleadosSinVacaciones() {
       const desde = `${anioActual}-01-01`;
       const hasta = `${anioActual}-12-31`;
 
-      const [empRes, solRes, sucRes, puestoRes, saldoRes] = await Promise.all([
+      const [empRes, solRes, sucRes, puestoRes, calcRes] = await Promise.all([
         supabase
           .from("empleados")
           .select("id, nombre, apellido, dni, fecha_ingreso, sucursal_id, puesto_id")
@@ -55,41 +84,46 @@ export function EmpleadosSinVacaciones() {
           .lte("fecha_inicio", hasta),
         supabase.from("sucursales").select("id, nombre"),
         supabase.from("puestos").select("id, nombre"),
-        supabase
-          .from("vacaciones_saldo")
-          .select("empleado_id, dias_pendientes, dias_acumulados, dias_usados")
-          .eq("anio", anioActual),
+        supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anioActual }),
       ]);
 
       if (empRes.error) throw empRes.error;
       if (solRes.error) throw solRes.error;
+      if (calcRes.error) throw calcRes.error;
 
       const empleadosConSolicitud = new Set(
         (solRes.data ?? []).map((s: any) => s.empleado_id)
       );
       const sucMap = new Map((sucRes.data ?? []).map((s: any) => [s.id, s.nombre]));
       const puestoMap = new Map((puestoRes.data ?? []).map((p: any) => [p.id, p.nombre]));
-      const saldoMap = new Map(
-        (saldoRes.data ?? []).map((s: any) => [
-          s.empleado_id,
-          (s.dias_pendientes ?? (s.dias_acumulados ?? 0) - (s.dias_usados ?? 0)),
-        ])
+      const calcMap = new Map(
+        (calcRes.data ?? []).map((c: any) => [c.empleado_id, c])
       );
 
       const sinCargar: EmpleadoRow[] = (empRes.data ?? [])
         .filter((e: any) => !empleadosConSolicitud.has(e.id))
-        .map((e: any) => ({
-          id: e.id,
-          nombre: e.nombre,
-          apellido: e.apellido,
-          dni: e.dni,
-          fecha_ingreso: e.fecha_ingreso,
-          sucursal_id: e.sucursal_id,
-          puesto_id: e.puesto_id,
-          sucursal_nombre: sucMap.get(e.sucursal_id) ?? "—",
-          puesto_nombre: puestoMap.get(e.puesto_id) ?? "—",
-          dias_disponibles: saldoMap.has(e.id) ? Number(saldoMap.get(e.id)) : null,
-        }));
+        .map((e: any) => {
+          const c: any = calcMap.get(e.id);
+          const dias_segun_ley = Number(c?.dias_segun_ley ?? 0);
+          const dias_usados = Number(c?.dias_usados ?? 0);
+          return {
+            id: e.id,
+            nombre: e.nombre,
+            apellido: e.apellido,
+            dni: e.dni,
+            fecha_ingreso: e.fecha_ingreso,
+            sucursal_id: e.sucursal_id,
+            puesto_id: e.puesto_id,
+            sucursal_nombre: sucMap.get(e.sucursal_id) ?? "—",
+            puesto_nombre: puestoMap.get(e.puesto_id) ?? "—",
+            antiguedad_anios: Number(c?.antiguedad_anios ?? 0),
+            antiguedad_meses: Number(c?.antiguedad_meses ?? 0),
+            dias_segun_ley,
+            dias_usados,
+            dias_faltantes: Math.max(0, dias_segun_ley - dias_usados),
+            tiene_calculo: !!c && !!e.fecha_ingreso,
+          };
+        });
 
       setRows(sinCargar);
       setSucursales((sucRes.data ?? []) as any);
@@ -108,19 +142,34 @@ export function EmpleadosSinVacaciones() {
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (filtroSucursal !== "todas" && r.sucursal_id !== filtroSucursal) return false;
-      if (filtroPuesto !== "todos" && r.puesto_id !== filtroPuesto) return false;
-      if (q) {
-        const hay = `${r.nombre} ${r.apellido} ${r.dni ?? ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [rows, filtroSucursal, filtroPuesto, busqueda]);
+    return rows
+      .filter((r) => {
+        if (excluirPrueba && esEmpleadoExcluido(r.nombre, r.apellido)) return false;
+        if (filtroSucursal !== "todas" && r.sucursal_id !== filtroSucursal) return false;
+        if (filtroPuesto !== "todos" && r.puesto_id !== filtroPuesto) return false;
+        if (q) {
+          const hay = `${r.nombre} ${r.apellido} ${r.dni ?? ""}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => b.dias_faltantes - a.dias_faltantes);
+  }, [rows, filtroSucursal, filtroPuesto, busqueda, excluirPrueba]);
 
   const exportarCSV = () => {
-    const headers = ["Apellido", "Nombre", "DNI", "Sucursal", "Puesto", "Fecha ingreso", "Días disponibles"];
+    const headers = [
+      "Apellido",
+      "Nombre",
+      "DNI",
+      "Sucursal",
+      "Puesto",
+      "Fecha ingreso",
+      "Antigüedad años",
+      "Antigüedad meses",
+      "Días LCT",
+      "Días usados",
+      "Días faltantes",
+    ];
     const lineas = filtrados.map((r) =>
       [
         r.apellido,
@@ -129,7 +178,11 @@ export function EmpleadosSinVacaciones() {
         r.sucursal_nombre,
         r.puesto_nombre,
         r.fecha_ingreso ?? "",
-        r.dias_disponibles ?? "",
+        r.antiguedad_anios,
+        r.antiguedad_meses,
+        r.dias_segun_ley,
+        r.dias_usados,
+        r.dias_faltantes,
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(",")
@@ -207,6 +260,17 @@ export function EmpleadosSinVacaciones() {
           </Select>
         </div>
 
+        <div className="flex items-center gap-2 px-1">
+          <Switch
+            id="excluir-prueba"
+            checked={excluirPrueba}
+            onCheckedChange={setExcluirPrueba}
+          />
+          <Label htmlFor="excluir-prueba" className="text-sm text-muted-foreground cursor-pointer">
+            Excluir empleados de prueba y familia Soto (no influyen en gestión de vacaciones)
+          </Label>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -227,7 +291,9 @@ export function EmpleadosSinVacaciones() {
                   <TableHead>Sucursal</TableHead>
                   <TableHead>Puesto</TableHead>
                   <TableHead>Ingreso</TableHead>
-                  <TableHead className="text-center">Días disponibles</TableHead>
+                  <TableHead>Antigüedad</TableHead>
+                  <TableHead className="text-center">Días LCT</TableHead>
+                  <TableHead className="text-center">Días faltantes</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -239,13 +305,21 @@ export function EmpleadosSinVacaciones() {
                     <TableCell>{r.sucursal_nombre}</TableCell>
                     <TableCell>{r.puesto_nombre}</TableCell>
                     <TableCell>{r.fecha_ingreso ?? "—"}</TableCell>
+                    <TableCell>
+                      {r.tiene_calculo
+                        ? formatAntiguedad(r.antiguedad_anios, r.antiguedad_meses)
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center font-semibold">
+                      {r.tiene_calculo ? r.dias_segun_ley : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                     <TableCell className="text-center">
-                      {r.dias_disponibles === null ? (
+                      {!r.tiene_calculo ? (
                         <span className="text-muted-foreground">—</span>
+                      ) : r.dias_faltantes > 0 ? (
+                        <Badge variant="destructive">{r.dias_faltantes}</Badge>
                       ) : (
-                        <Badge variant={r.dias_disponibles > 0 ? "default" : "secondary"}>
-                          {r.dias_disponibles}
-                        </Badge>
+                        <Badge variant="secondary">0</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
