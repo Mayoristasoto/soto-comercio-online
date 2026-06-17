@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, CalendarIcon, ShieldAlert } from "lucide-react";
+import { Loader2, Plus, Trash2, CalendarIcon, ShieldAlert, Info, Ban } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ interface Bloqueo {
   fecha_inicio: string;
   fecha_fin: string;
   motivo: string;
+  tipo: 'total' | 'informativo';
   activo: boolean;
   created_at: string;
 }
@@ -38,6 +40,7 @@ export function GestionBloqueos() {
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [fechaFin, setFechaFin] = useState<Date>();
   const [motivo, setMotivo] = useState("");
+  const [tipo, setTipo] = useState<'total' | 'informativo'>('total');
   const [reglasActivas, setReglasActivas] = useState(() => {
     try {
       const saved = localStorage.getItem(REGLAS_KEY);
@@ -97,20 +100,24 @@ export function GestionBloqueos() {
         fecha_inicio: fechaInicio.toISOString().split('T')[0],
         fecha_fin: fechaFin.toISOString().split('T')[0],
         motivo,
+        tipo,
         creado_por: empleado.id,
         activo: true,
-      });
+      } as any);
 
       if (error) throw error;
 
       toast({
-        title: "Bloqueo creado",
-        description: "El periodo ha sido bloqueado exitosamente",
+        title: tipo === 'total' ? "Bloqueo creado" : "Aviso informativo creado",
+        description: tipo === 'total'
+          ? "El periodo ha sido bloqueado exitosamente"
+          : "El aviso informativo se mostrará en el calendario",
       });
 
       setFechaInicio(undefined);
       setFechaFin(undefined);
       setMotivo("");
+      setTipo('total');
       setShowNuevo(false);
       fetchBloqueos();
     } catch (error: any) {
@@ -302,10 +309,44 @@ export function GestionBloqueos() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="motivo">Motivo del Bloqueo</Label>
+                <Label>Tipo</Label>
+                <RadioGroup value={tipo} onValueChange={(v) => setTipo(v as 'total' | 'informativo')} className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <label className={cn(
+                    "flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
+                    tipo === 'total' ? "border-destructive bg-destructive/5" : "hover:bg-accent"
+                  )}>
+                    <RadioGroupItem value="total" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium text-sm">
+                        <Ban className="h-4 w-4 text-destructive" /> Bloqueo total
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Impide cargar solicitudes de vacaciones en ese rango.
+                      </p>
+                    </div>
+                  </label>
+                  <label className={cn(
+                    "flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
+                    tipo === 'informativo' ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30" : "hover:bg-accent"
+                  )}>
+                    <RadioGroupItem value="informativo" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium text-sm">
+                        <Info className="h-4 w-4 text-sky-600" /> Informativo
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Solo se muestra como aviso en el calendario. No bloquea solicitudes.
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="motivo">Motivo {tipo === 'total' ? 'del Bloqueo' : 'del Aviso'}</Label>
                 <Textarea
                   id="motivo"
-                  placeholder="Ej: Periodo de alta demanda"
+                  placeholder={tipo === 'total' ? "Ej: Periodo de alta demanda" : "Ej: Receso invernal con condiciones especiales"}
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
                   rows={2}
@@ -313,7 +354,7 @@ export function GestionBloqueos() {
               </div>
 
               <Button onClick={handleCrear} className="w-full">
-                Crear Bloqueo
+                {tipo === 'total' ? 'Crear Bloqueo' : 'Crear Aviso Informativo'}
               </Button>
             </div>
           )}
@@ -330,7 +371,18 @@ export function GestionBloqueos() {
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div>
-                    <p className="font-medium">{bloqueo.motivo}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{bloqueo.motivo}</p>
+                      {bloqueo.tipo === 'informativo' ? (
+                        <Badge variant="outline" className="bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/40 dark:text-sky-100 dark:border-sky-700">
+                          <Info className="h-3 w-3 mr-1" /> Informativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/40">
+                          <Ban className="h-3 w-3 mr-1" /> Bloqueo total
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(bloqueo.fecha_inicio), "d 'de' MMMM", { locale: es })} -{" "}
                       {format(new Date(bloqueo.fecha_fin), "d 'de' MMMM", { locale: es })}
