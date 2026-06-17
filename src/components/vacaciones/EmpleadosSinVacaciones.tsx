@@ -68,44 +68,33 @@ export function EmpleadosSinVacaciones() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const desde = `${anioActual}-01-01`;
-      const hasta = `${anioActual}-12-31`;
 
-      const [empRes, solRes, sucRes, puestoRes, calcRes] = await Promise.all([
+      const [empRes, sucRes, puestoRes, calcRes] = await Promise.all([
         supabase
           .from("empleados")
           .select("id, nombre, apellido, dni, fecha_ingreso, sucursal_id, puesto_id")
           .eq("activo", true)
           .order("apellido", { ascending: true }),
-        supabase
-          .from("solicitudes_vacaciones")
-          .select("empleado_id")
-          .gte("fecha_inicio", desde)
-          .lte("fecha_inicio", hasta),
         supabase.from("sucursales").select("id, nombre"),
         supabase.from("puestos").select("id, nombre"),
         supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anioActual }),
       ]);
 
       if (empRes.error) throw empRes.error;
-      if (solRes.error) throw solRes.error;
       if (calcRes.error) throw calcRes.error;
 
-      const empleadosConSolicitud = new Set(
-        (solRes.data ?? []).map((s: any) => s.empleado_id)
-      );
       const sucMap = new Map((sucRes.data ?? []).map((s: any) => [s.id, s.nombre]));
       const puestoMap = new Map((puestoRes.data ?? []).map((p: any) => [p.id, p.nombre]));
       const calcMap = new Map(
         (calcRes.data ?? []).map((c: any) => [c.empleado_id, c])
       );
 
-      const sinCargar: EmpleadoRow[] = (empRes.data ?? [])
-        .filter((e: any) => !empleadosConSolicitud.has(e.id))
+      const conFaltantes: EmpleadoRow[] = (empRes.data ?? [])
         .map((e: any) => {
           const c: any = calcMap.get(e.id);
           const dias_segun_ley = Number(c?.dias_segun_ley ?? 0);
           const dias_usados = Number(c?.dias_usados ?? 0);
+          const dias_faltantes = Math.max(0, dias_segun_ley - dias_usados);
           return {
             id: e.id,
             nombre: e.nombre,
@@ -120,12 +109,13 @@ export function EmpleadosSinVacaciones() {
             antiguedad_meses: Number(c?.antiguedad_meses ?? 0),
             dias_segun_ley,
             dias_usados,
-            dias_faltantes: Math.max(0, dias_segun_ley - dias_usados),
+            dias_faltantes,
             tiene_calculo: !!c && !!e.fecha_ingreso,
           };
-        });
+        })
+        .filter((r: EmpleadoRow) => r.dias_faltantes > 0);
 
-      setRows(sinCargar);
+      setRows(conFaltantes);
       setSucursales((sucRes.data ?? []) as any);
       setPuestos((puestoRes.data ?? []) as any);
     } catch (e: any) {
@@ -192,7 +182,7 @@ export function EmpleadosSinVacaciones() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `empleados-sin-vacaciones-${anioActual}.csv`;
+    a.download = `empleados-vacaciones-pendientes-${anioActual}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -216,11 +206,11 @@ export function EmpleadosSinVacaciones() {
       <CardHeader>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <CardTitle>Empleados sin vacaciones cargadas</CardTitle>
+            <CardTitle>Empleados con vacaciones pendientes</CardTitle>
             <CardDescription>
               {loading
                 ? "Cargando..."
-                : `${filtrados.length} empleado${filtrados.length === 1 ? "" : "s"} sin solicitudes en ${anioActual}`}
+                : `${filtrados.length} empleado${filtrados.length === 1 ? "" : "s"} con días faltantes por cargar en ${anioActual}`}
             </CardDescription>
           </div>
           <Button variant="outline" onClick={exportarCSV} disabled={loading || filtrados.length === 0}>
@@ -278,7 +268,7 @@ export function EmpleadosSinVacaciones() {
         ) : filtrados.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {rows.length === 0
-              ? `🎉 Todos los empleados tienen al menos una solicitud cargada en ${anioActual}.`
+              ? `🎉 Todos los empleados tienen sus días de vacaciones al día en ${anioActual}.`
               : "No hay empleados que coincidan con los filtros."}
           </div>
         ) : (
@@ -293,6 +283,7 @@ export function EmpleadosSinVacaciones() {
                   <TableHead>Ingreso</TableHead>
                   <TableHead>Antigüedad</TableHead>
                   <TableHead className="text-center">Días LCT</TableHead>
+                  <TableHead className="text-center">Días usados</TableHead>
                   <TableHead className="text-center">Días faltantes</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -312,6 +303,9 @@ export function EmpleadosSinVacaciones() {
                     </TableCell>
                     <TableCell className="text-center font-semibold">
                       {r.tiene_calculo ? r.dias_segun_ley : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {r.tiene_calculo ? r.dias_usados : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       {!r.tiene_calculo ? (
