@@ -64,7 +64,7 @@ export function GestionBloqueos() {
         .order('fecha_inicio', { ascending: false });
 
       if (error) throw error;
-      setBloqueos(data || []);
+      setBloqueos((data as Bloqueo[]) || []);
     } catch (error: any) {
       console.error('Error fetching bloqueos:', error);
       toast({
