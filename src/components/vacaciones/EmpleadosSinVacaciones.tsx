@@ -206,11 +206,11 @@ export function EmpleadosSinVacaciones() {
       <CardHeader>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <CardTitle>Empleados sin vacaciones cargadas</CardTitle>
+            <CardTitle>Empleados con vacaciones pendientes</CardTitle>
             <CardDescription>
               {loading
                 ? "Cargando..."
-                : `${filtrados.length} empleado${filtrados.length === 1 ? "" : "s"} sin solicitudes en ${anioActual}`}
+                : `${filtrados.length} empleado${filtrados.length === 1 ? "" : "s"} con días faltantes por cargar en ${anioActual}`}
             </CardDescription>
           </div>
           <Button variant="outline" onClick={exportarCSV} disabled={loading || filtrados.length === 0}>
