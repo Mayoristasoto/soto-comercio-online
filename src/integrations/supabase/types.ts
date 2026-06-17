@@ -9500,6 +9500,7 @@ export type Database = {
           fecha_inicio: string
           id: string
           motivo: string
+          tipo: string
         }
         Insert: {
           activo?: boolean
@@ -9509,6 +9510,7 @@ export type Database = {
           fecha_inicio: string
           id?: string
           motivo: string
+          tipo?: string
         }
         Update: {
           activo?: boolean
@@ -9518,6 +9520,7 @@ export type Database = {
           fecha_inicio?: string
           id?: string
           motivo?: string
+          tipo?: string
         }
         Relationships: [
           {

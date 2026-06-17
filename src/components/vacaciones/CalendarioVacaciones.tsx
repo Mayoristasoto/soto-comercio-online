@@ -34,6 +34,7 @@ interface VacacionDia {
   }>;
   bloqueado: boolean;
   motivoBloqueo?: string;
+  tipoBloqueo?: 'total' | 'informativo';
 }
 
 export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesProps) {
@@ -200,13 +201,12 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
         const diaStr = format(dia, 'yyyy-MM-dd');
         
         // Verificar si está bloqueado
-        const bloqueado = bloqueos?.some(
+        const bloqueoDelDia = bloqueos?.find(
           (b) => b.fecha_inicio <= diaStr && b.fecha_fin >= diaStr
-        ) || false;
-
-        const motivoBloqueo = bloqueos?.find(
-          (b) => b.fecha_inicio <= diaStr && b.fecha_fin >= diaStr
-        )?.motivo;
+        );
+        const bloqueado = !!bloqueoDelDia;
+        const motivoBloqueo = bloqueoDelDia?.motivo;
+        const tipoBloqueo = ((bloqueoDelDia as any)?.tipo ?? 'total') as 'total' | 'informativo';
 
         // Obtener empleados con vacaciones este día
         const empleadosDelDia = solicitudesFiltradas
@@ -226,6 +226,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           empleados: empleadosDelDia,
           bloqueado,
           motivoBloqueo,
+          tipoBloqueo,
         };
       });
 
@@ -423,23 +424,28 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             <div key={`empty-${i}`} className="min-h-[80px]" />
           ))}
           {vacaciones.map((dia, idx) => {
+            const esInformativo = dia.bloqueado && dia.tipoBloqueo === 'informativo';
+            const esBloqueoTotal = dia.bloqueado && dia.tipoBloqueo === 'total';
+            const puedeAbrirCarga = puedeReasignar && !esBloqueoTotal && dia.empleados.length === 0;
             return (
               <div
                 key={idx}
                 className={`min-h-[80px] p-2 border rounded-lg ${
-                  dia.bloqueado
+                  esBloqueoTotal
+                    ? 'bg-rose-100 border-rose-400 dark:bg-rose-900/30 dark:border-rose-700'
+                    : esInformativo
                     ? 'bg-sky-100 border-sky-400 dark:bg-sky-900/30 dark:border-sky-700'
                     : dia.empleados.length > 0
                     ? 'bg-muted/30 border-border'
                     : 'bg-background'
-                } ${puedeReasignar && !dia.bloqueado && dia.empleados.length === 0 ? 'cursor-pointer hover:bg-muted/40' : ''}`}
+                } ${puedeAbrirCarga ? 'cursor-pointer hover:bg-muted/40' : ''}`}
                 onClick={() => {
-                  if (puedeReasignar && !dia.bloqueado && dia.empleados.length === 0) {
+                  if (puedeAbrirCarga) {
                     setFechaCargaManual(dia.fecha);
                     setCargaManualOpen(true);
                   }
                 }}
-                title={dia.motivoBloqueo || undefined}
+                title={dia.motivoBloqueo ? `${esInformativo ? 'Aviso' : 'Bloqueo'}: ${dia.motivoBloqueo}` : undefined}
               >
                 <div className="text-sm font-medium mb-1">
                   {format(dia.fecha, 'd')}
@@ -448,9 +454,13 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                 {dia.bloqueado && (
                   <Badge
                     variant="outline"
-                    className="text-[10px] mb-1 bg-sky-200 text-sky-900 border-sky-400 dark:bg-sky-800/60 dark:text-sky-100 dark:border-sky-600 truncate max-w-full"
+                    className={`text-[10px] mb-1 truncate max-w-full ${
+                      esBloqueoTotal
+                        ? 'bg-rose-200 text-rose-900 border-rose-400 dark:bg-rose-800/60 dark:text-rose-100 dark:border-rose-600'
+                        : 'bg-sky-200 text-sky-900 border-sky-400 dark:bg-sky-800/60 dark:text-sky-100 dark:border-sky-600'
+                    }`}
                   >
-                    {dia.motivoBloqueo || 'Bloqueado'}
+                    {dia.motivoBloqueo || (esBloqueoTotal ? 'Bloqueado' : 'Aviso')}
                   </Badge>
                 )}
                 <div className="space-y-1">
