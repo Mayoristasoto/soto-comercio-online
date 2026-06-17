@@ -7118,6 +7118,135 @@ export type Database = {
           },
         ]
       }
+      planilla_descansos_asignaciones: {
+        Row: {
+          activo: boolean
+          created_at: string
+          created_by: string | null
+          empleado_id: string
+          id: string
+          notas: string | null
+          semana_fin: string
+          semana_inicio: string
+          sucursal_id: string
+          turno_id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          created_by?: string | null
+          empleado_id: string
+          id?: string
+          notas?: string | null
+          semana_fin: string
+          semana_inicio: string
+          sucursal_id: string
+          turno_id: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          created_by?: string | null
+          empleado_id?: string
+          id?: string
+          notas?: string | null
+          semana_fin?: string
+          semana_inicio?: string
+          sucursal_id?: string
+          turno_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planilla_descansos_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planilla_descansos_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planilla_descansos_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planilla_descansos_asignaciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planilla_descansos_asignaciones_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planilla_descansos_asignaciones_turno_id_fkey"
+            columns: ["turno_id"]
+            isOneToOne: false
+            referencedRelation: "planilla_descansos_turnos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planilla_descansos_turnos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          hora_desde: string
+          hora_hasta: string
+          id: string
+          numero_turno: number
+          permite_gerente: boolean
+          sucursal_id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          hora_desde: string
+          hora_hasta: string
+          id?: string
+          numero_turno: number
+          permite_gerente?: boolean
+          sucursal_id: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          hora_desde?: string
+          hora_hasta?: string
+          id?: string
+          numero_turno?: number
+          permite_gerente?: boolean
+          sucursal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planilla_descansos_turnos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plantilla_trabajo_detalle: {
         Row: {
           created_at: string
@@ -10498,6 +10627,8 @@ export type Database = {
         | "error_tecnico"
         | "justificacion"
         | "correccion"
+        | "descanso_fuera_turno"
+        | "descanso_sin_turno"
       liquidacion_estado:
         | "borrador"
         | "calculada"
@@ -10685,6 +10816,8 @@ export const Constants = {
         "error_tecnico",
         "justificacion",
         "correccion",
+        "descanso_fuera_turno",
+        "descanso_sin_turno",
       ],
       liquidacion_estado: [
         "borrador",
