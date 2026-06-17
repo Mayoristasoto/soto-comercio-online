@@ -68,44 +68,33 @@ export function EmpleadosSinVacaciones() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const desde = `${anioActual}-01-01`;
-      const hasta = `${anioActual}-12-31`;
 
-      const [empRes, solRes, sucRes, puestoRes, calcRes] = await Promise.all([
+      const [empRes, sucRes, puestoRes, calcRes] = await Promise.all([
         supabase
           .from("empleados")
           .select("id, nombre, apellido, dni, fecha_ingreso, sucursal_id, puesto_id")
           .eq("activo", true)
           .order("apellido", { ascending: true }),
-        supabase
-          .from("solicitudes_vacaciones")
-          .select("empleado_id")
-          .gte("fecha_inicio", desde)
-          .lte("fecha_inicio", hasta),
         supabase.from("sucursales").select("id, nombre"),
         supabase.from("puestos").select("id, nombre"),
         supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anioActual }),
       ]);
 
       if (empRes.error) throw empRes.error;
-      if (solRes.error) throw solRes.error;
       if (calcRes.error) throw calcRes.error;
 
-      const empleadosConSolicitud = new Set(
-        (solRes.data ?? []).map((s: any) => s.empleado_id)
-      );
       const sucMap = new Map((sucRes.data ?? []).map((s: any) => [s.id, s.nombre]));
       const puestoMap = new Map((puestoRes.data ?? []).map((p: any) => [p.id, p.nombre]));
       const calcMap = new Map(
         (calcRes.data ?? []).map((c: any) => [c.empleado_id, c])
       );
 
-      const sinCargar: EmpleadoRow[] = (empRes.data ?? [])
-        .filter((e: any) => !empleadosConSolicitud.has(e.id))
+      const conFaltantes: EmpleadoRow[] = (empRes.data ?? [])
         .map((e: any) => {
           const c: any = calcMap.get(e.id);
           const dias_segun_ley = Number(c?.dias_segun_ley ?? 0);
           const dias_usados = Number(c?.dias_usados ?? 0);
+          const dias_faltantes = Math.max(0, dias_segun_ley - dias_usados);
           return {
             id: e.id,
             nombre: e.nombre,
@@ -120,12 +109,13 @@ export function EmpleadosSinVacaciones() {
             antiguedad_meses: Number(c?.antiguedad_meses ?? 0),
             dias_segun_ley,
             dias_usados,
-            dias_faltantes: Math.max(0, dias_segun_ley - dias_usados),
+            dias_faltantes,
             tiene_calculo: !!c && !!e.fecha_ingreso,
           };
-        });
+        })
+        .filter((r: EmpleadoRow) => r.dias_faltantes > 0);
 
-      setRows(sinCargar);
+      setRows(conFaltantes);
       setSucursales((sucRes.data ?? []) as any);
       setPuestos((puestoRes.data ?? []) as any);
     } catch (e: any) {
