@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, Clock, User, FileSpreadsheet, Calculator, FileSignature, UserX } from "lucide-react";
+import { Loader2, Calendar, Clock, User, FileSpreadsheet, Calculator, FileSignature, UserX, ListChecks } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MisVacaciones } from "@/components/vacaciones/MisVacaciones";
@@ -12,6 +12,7 @@ import { GestionBloqueos } from "@/components/vacaciones/GestionBloqueos";
 import { VacacionesImport } from "@/components/vacaciones/VacacionesImport";
 import { CalculadoraVacaciones } from "@/components/vacaciones/CalculadoraVacaciones";
 import { EmpleadosSinVacaciones } from "@/components/vacaciones/EmpleadosSinVacaciones";
+import { ListadoVacaciones } from "@/components/vacaciones/ListadoVacaciones";
 import { Button } from "@/components/ui/button";
 
 interface UserInfo {
@@ -138,6 +139,12 @@ export default function Vacaciones() {
             </TabsTrigger>
           )}
           {isAdmin && (
+            <TabsTrigger value="listado">
+              <ListChecks className="h-4 w-4 mr-2" />
+              Listado
+            </TabsTrigger>
+          )}
+          {isAdmin && (
             <TabsTrigger value="bloqueos">
               Bloqueos
             </TabsTrigger>
@@ -173,6 +180,12 @@ export default function Vacaciones() {
         {isAdmin && (
           <TabsContent value="sin-cargar" className="space-y-4">
             <EmpleadosSinVacaciones />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="listado" className="space-y-4">
+            <ListadoVacaciones />
           </TabsContent>
         )}
 
