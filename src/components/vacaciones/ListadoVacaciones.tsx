@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Download, Search } from "lucide-react";
+import { Loader2, Download, Search, ChevronRight, ChevronDown } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -28,21 +28,28 @@ function esEmpleadoExcluido(nombre: string, apellido: string): boolean {
   return false;
 }
 
-interface SolicitudRow {
+interface SolicitudDetalle {
   id: string;
-  empleado_id: string;
-  empleado_nombre: string;
-  empleado_apellido: string;
-  sucursal_nombre: string;
   fecha_inicio: string;
   fecha_fin: string;
   dias: number;
   estado: string;
   motivo: string | null;
   fecha_aprobacion: string | null;
+}
+
+interface EmpleadoRow {
+  empleado_id: string;
+  empleado_nombre: string;
+  empleado_apellido: string;
+  sucursal_nombre: string;
   dias_segun_ley: number;
-  dias_usados: number;
+  dias_consumidos: number; // pendientes + aprobadas
   dias_restantes: number;
+  pendientes: number;
+  aprobadas: number;
+  rechazadas: number;
+  solicitudes: SolicitudDetalle[];
 }
 
 const ESTADOS = ["todos", "pendiente", "aprobada", "rechazada", "cancelada"];
@@ -69,17 +76,27 @@ export function ListadoVacaciones() {
   const anioActual = new Date().getFullYear();
   const [anio, setAnio] = useState(String(anioActual));
   const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<SolicitudRow[]>([]);
+  const [empleados, setEmpleados] = useState<EmpleadoRow[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [filtroSucursal, setFiltroSucursal] = useState<string>("todas");
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [busqueda, setBusqueda] = useState("");
   const [excluirInactivos, setExcluirInactivos] = useState(true);
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anio]);
+
+  const toggleExpand = (id: string) => {
+    setExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const cargar = async () => {
     setLoading(true);
@@ -110,58 +127,68 @@ export function ListadoVacaciones() {
       if (sucRes.error) throw sucRes.error;
       if (calcRes.error) throw calcRes.error;
 
-      const empleadosMap = new Map<string, any>();
-      (empRes.data ?? []).forEach((e: any) => empleadosMap.set(e.id, e));
-
       const sucursalesMap = new Map<string, string>();
       (sucRes.data ?? []).forEach((s: any) => sucursalesMap.set(s.id, s.nombre));
       setSucursales(sucRes.data ?? []);
 
-      const calcMap = new Map<string, { dias_segun_ley: number; dias_usados: number }>();
+      const calcMap = new Map<string, number>();
       (calcRes.data ?? []).forEach((c: any) => {
-        calcMap.set(c.empleado_id, {
-          dias_segun_ley: Number(c.dias_segun_ley ?? 0),
-          dias_usados: Number(c.dias_usados ?? 0),
-        });
+        calcMap.set(c.empleado_id, Number(c.dias_segun_ley ?? 0));
       });
 
-      const result: SolicitudRow[] = [];
-      for (const s of (solRes.data ?? []) as any[]) {
-        const emp = empleadosMap.get(s.empleado_id);
-        if (!emp) continue;
-        const calc = calcMap.get(s.empleado_id) ?? { dias_segun_ley: 0, dias_usados: 0 };
-        const ini = parseISO(s.fecha_inicio + "T00:00:00");
-        const fin = parseISO(s.fecha_fin + "T00:00:00");
-        const dias = Math.max(1, differenceInCalendarDays(fin, ini) + 1);
-        result.push({
-          id: s.id,
-          empleado_id: s.empleado_id,
+      const empleadosMap = new Map<string, EmpleadoRow>();
+
+      for (const emp of (empRes.data ?? []) as any[]) {
+        if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
+        if (excluirInactivos && emp.activo === false) continue;
+        empleadosMap.set(emp.id, {
+          empleado_id: emp.id,
           empleado_nombre: emp.nombre,
           empleado_apellido: emp.apellido,
           sucursal_nombre: sucursalesMap.get(emp.sucursal_id) ?? "—",
+          dias_segun_ley: calcMap.get(emp.id) ?? 0,
+          dias_consumidos: 0,
+          dias_restantes: 0,
+          pendientes: 0,
+          aprobadas: 0,
+          rechazadas: 0,
+          solicitudes: [],
+        });
+      }
+
+      for (const s of (solRes.data ?? []) as any[]) {
+        const row = empleadosMap.get(s.empleado_id);
+        if (!row) continue;
+        const ini = parseISO(s.fecha_inicio + "T00:00:00");
+        const fin = parseISO(s.fecha_fin + "T00:00:00");
+        const dias = Math.max(1, differenceInCalendarDays(fin, ini) + 1);
+        row.solicitudes.push({
+          id: s.id,
           fecha_inicio: s.fecha_inicio,
           fecha_fin: s.fecha_fin,
           dias,
           estado: s.estado,
           motivo: s.motivo,
           fecha_aprobacion: s.fecha_aprobacion,
-          dias_segun_ley: calc.dias_segun_ley,
-          dias_usados: calc.dias_usados,
-          dias_restantes: Math.max(0, calc.dias_segun_ley - calc.dias_usados),
         });
+        if (s.estado === "pendiente") { row.pendientes += 1; row.dias_consumidos += dias; }
+        else if (s.estado === "aprobada") { row.aprobadas += 1; row.dias_consumidos += dias; }
+        else if (s.estado === "rechazada") { row.rechazadas += 1; }
       }
 
-      // Filtrar excluidos / inactivos
-      const filtrado = result.filter((r) => {
-        if (esEmpleadoExcluido(r.empleado_nombre, r.empleado_apellido)) return false;
-        if (excluirInactivos) {
-          const emp = empleadosMap.get(r.empleado_id);
-          if (emp && emp.activo === false) return false;
-        }
-        return true;
+      const result: EmpleadoRow[] = [];
+      empleadosMap.forEach((r) => {
+        r.dias_restantes = Math.max(0, r.dias_segun_ley - r.dias_consumidos);
+        result.push(r);
       });
 
-      setRows(filtrado);
+      // Ordenar: con solicitudes primero, luego alfabético
+      result.sort((a, b) => {
+        if (b.solicitudes.length !== a.solicitudes.length) return b.solicitudes.length - a.solicitudes.length;
+        return `${a.empleado_apellido} ${a.empleado_nombre}`.localeCompare(`${b.empleado_apellido} ${b.empleado_nombre}`);
+      });
+
+      setEmpleados(result);
     } catch (e: any) {
       console.error(e);
       toast({ title: "Error", description: e.message ?? "No se pudo cargar el listado", variant: "destructive" });
@@ -172,46 +199,52 @@ export function ListadoVacaciones() {
 
   const filtradas = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
-    return rows.filter((r) => {
-      if (filtroEstado !== "todos" && r.estado !== filtroEstado) return false;
-      if (filtroSucursal !== "todas" && r.sucursal_nombre !== sucursales.find(s => s.id === filtroSucursal)?.nombre) return false;
+    return empleados.filter((r) => {
+      if (filtroSucursal !== "todas" && r.sucursal_nombre !== sucursales.find((s) => s.id === filtroSucursal)?.nombre) return false;
+      if (filtroEstado !== "todos") {
+        if (!r.solicitudes.some((s) => s.estado === filtroEstado)) return false;
+      }
       if (q) {
         const t = `${r.empleado_nombre} ${r.empleado_apellido} ${r.sucursal_nombre}`.toLowerCase();
         if (!t.includes(q)) return false;
       }
       return true;
     });
-  }, [rows, filtroEstado, filtroSucursal, busqueda, sucursales]);
+  }, [empleados, filtroEstado, filtroSucursal, busqueda, sucursales]);
 
   const totales = useMemo(() => {
-    const t = { total: filtradas.length, pendientes: 0, aprobadas: 0, dias: 0 };
+    const t = { empleados: filtradas.length, solicitudes: 0, pendientes: 0, aprobadas: 0, dias: 0 };
     filtradas.forEach((r) => {
-      if (r.estado === "pendiente") t.pendientes += 1;
-      if (r.estado === "aprobada") { t.aprobadas += 1; t.dias += r.dias; }
+      t.solicitudes += r.solicitudes.length;
+      t.pendientes += r.pendientes;
+      t.aprobadas += r.aprobadas;
+      r.solicitudes.forEach((s) => { if (s.estado === "aprobada") t.dias += s.dias; });
     });
     return t;
   }, [filtradas]);
 
   const exportarCSV = () => {
     const headers = [
-      "Empleado", "Sucursal", "Estado", "Fecha inicio", "Fecha fin", "Días",
-      "Días LCT", "Días usados", "Días restantes", "Motivo",
+      "Empleado", "Sucursal", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
+      "Estado solicitud", "Inicio", "Fin", "Días",
     ];
     const lines = [headers.join(",")];
     for (const r of filtradas) {
-      const fields = [
-        `"${r.empleado_apellido}, ${r.empleado_nombre}"`,
-        `"${r.sucursal_nombre}"`,
-        r.estado,
-        r.fecha_inicio,
-        r.fecha_fin,
-        String(r.dias),
-        String(r.dias_segun_ley),
-        String(r.dias_usados),
-        String(r.dias_restantes),
-        `"${(r.motivo ?? "").replace(/"/g, '""')}"`,
-      ];
-      lines.push(fields.join(","));
+      if (!r.solicitudes.length) {
+        lines.push([
+          `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
+          r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
+          "", "", "", "",
+        ].join(","));
+        continue;
+      }
+      for (const s of r.solicitudes) {
+        lines.push([
+          `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
+          r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
+          s.estado, s.fecha_inicio, s.fecha_fin, s.dias,
+        ].join(","));
+      }
     }
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -227,9 +260,10 @@ export function ListadoVacaciones() {
       <CardHeader>
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <CardTitle>Listado de vacaciones cargadas</CardTitle>
+            <CardTitle>Listado de vacaciones por empleado</CardTitle>
             <CardDescription>
-              Todas las solicitudes (pendientes, aprobadas, rechazadas) por empleado con sus días restantes según LCT
+              Una línea por empleado. Click para ver el detalle de solicitudes (pendientes, aprobadas, rechazadas).
+              Los días restantes descuentan tanto pendientes como aprobadas.
             </CardDescription>
           </div>
           <Button onClick={exportarCSV} variant="outline" size="sm" disabled={!filtradas.length}>
@@ -238,10 +272,14 @@ export function ListadoVacaciones() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="rounded-md border p-3">
-            <div className="text-xs text-muted-foreground">Total</div>
-            <div className="text-2xl font-bold">{totales.total}</div>
+            <div className="text-xs text-muted-foreground">Empleados</div>
+            <div className="text-2xl font-bold">{totales.empleados}</div>
+          </div>
+          <div className="rounded-md border p-3">
+            <div className="text-xs text-muted-foreground">Solicitudes</div>
+            <div className="text-2xl font-bold">{totales.solicitudes}</div>
           </div>
           <div className="rounded-md border p-3">
             <div className="text-xs text-muted-foreground">Pendientes</div>
@@ -317,44 +355,90 @@ export function ListadoVacaciones() {
           </div>
         ) : filtradas.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            No hay solicitudes que coincidan con los filtros.
+            No hay empleados que coincidan con los filtros.
           </div>
         ) : (
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>Empleado</TableHead>
                   <TableHead>Sucursal</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Inicio</TableHead>
-                  <TableHead>Fin</TableHead>
-                  <TableHead className="text-right">Días</TableHead>
                   <TableHead className="text-right">LCT</TableHead>
-                  <TableHead className="text-right">Usados</TableHead>
+                  <TableHead className="text-right">Pend.</TableHead>
+                  <TableHead className="text-right">Aprob.</TableHead>
+                  <TableHead className="text-right">Consumidos</TableHead>
                   <TableHead className="text-right">Restantes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtradas.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.empleado_apellido}, {r.empleado_nombre}</TableCell>
-                    <TableCell>{r.sucursal_nombre}</TableCell>
-                    <TableCell>
-                      <Badge variant={estadoBadgeVariant(r.estado)} className="capitalize">{r.estado}</Badge>
-                    </TableCell>
-                    <TableCell>{fmt(r.fecha_inicio)}</TableCell>
-                    <TableCell>{fmt(r.fecha_fin)}</TableCell>
-                    <TableCell className="text-right">{r.dias}</TableCell>
-                    <TableCell className="text-right">{r.dias_segun_ley || "—"}</TableCell>
-                    <TableCell className="text-right">{r.dias_usados}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={r.dias_restantes > 0 ? "secondary" : "outline"}>
-                        {r.dias_restantes}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filtradas.map((r) => {
+                  const open = expandidos.has(r.empleado_id);
+                  const tieneDetalle = r.solicitudes.length > 0;
+                  return (
+                    <Fragment key={r.empleado_id}>
+                      <TableRow
+                        className={tieneDetalle ? "cursor-pointer hover:bg-muted/50" : ""}
+                        onClick={() => tieneDetalle && toggleExpand(r.empleado_id)}
+                      >
+                        <TableCell>
+                          {tieneDetalle ? (
+                            open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="font-medium">{r.empleado_apellido}, {r.empleado_nombre}</TableCell>
+                        <TableCell>{r.sucursal_nombre}</TableCell>
+                        <TableCell className="text-right">{r.dias_segun_ley || "—"}</TableCell>
+                        <TableCell className="text-right">{r.pendientes || "—"}</TableCell>
+                        <TableCell className="text-right">{r.aprobadas || "—"}</TableCell>
+                        <TableCell className="text-right">{r.dias_consumidos || "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant={r.dias_restantes > 0 ? "secondary" : "outline"}>
+                            {r.dias_restantes}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                      {open && tieneDetalle && (
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                          <TableCell colSpan={8} className="p-0">
+                            <div className="p-4">
+                              <div className="text-xs font-medium text-muted-foreground mb-2">
+                                Solicitudes ({r.solicitudes.length})
+                              </div>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Estado</TableHead>
+                                    <TableHead>Inicio</TableHead>
+                                    <TableHead>Fin</TableHead>
+                                    <TableHead className="text-right">Días</TableHead>
+                                    <TableHead>Aprobada</TableHead>
+                                    <TableHead>Motivo</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {r.solicitudes.map((s) => (
+                                    <TableRow key={s.id}>
+                                      <TableCell>
+                                        <Badge variant={estadoBadgeVariant(s.estado)} className="capitalize">{s.estado}</Badge>
+                                      </TableCell>
+                                      <TableCell>{fmt(s.fecha_inicio)}</TableCell>
+                                      <TableCell>{fmt(s.fecha_fin)}</TableCell>
+                                      <TableCell className="text-right">{s.dias}</TableCell>
+                                      <TableCell>{s.fecha_aprobacion ? fmt(s.fecha_aprobacion) : "—"}</TableCell>
+                                      <TableCell className="max-w-[280px] truncate">{s.motivo ?? "—"}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
