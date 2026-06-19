@@ -133,9 +133,13 @@ export function ListadoVacaciones() {
       (sucRes.data ?? []).forEach((s: any) => sucursalesMap.set(s.id, s.nombre));
       setSucursales(sucRes.data ?? []);
 
-      const calcMap = new Map<string, number>();
+      const calcMap = new Map<string, { dias: number; fecha_ingreso: string | null; antiguedad: number }>();
       (calcRes.data ?? []).forEach((c: any) => {
-        calcMap.set(c.empleado_id, Number(c.dias_segun_ley ?? 0));
+        calcMap.set(c.empleado_id, {
+          dias: Number(c.dias_segun_ley ?? 0),
+          fecha_ingreso: c.fecha_ingreso ?? null,
+          antiguedad: Number(c.antiguedad_anios ?? 0),
+        });
       });
 
       const empleadosMap = new Map<string, EmpleadoRow>();
@@ -143,12 +147,15 @@ export function ListadoVacaciones() {
       for (const emp of (empRes.data ?? []) as any[]) {
         if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
         if (excluirInactivos && emp.activo === false) continue;
+        const calc = calcMap.get(emp.id);
         empleadosMap.set(emp.id, {
           empleado_id: emp.id,
           empleado_nombre: emp.nombre,
           empleado_apellido: emp.apellido,
           sucursal_nombre: sucursalesMap.get(emp.sucursal_id) ?? "—",
-          dias_segun_ley: calcMap.get(emp.id) ?? 0,
+          fecha_ingreso: calc?.fecha_ingreso ?? null,
+          antiguedad_anios: calc?.antiguedad ?? 0,
+          dias_segun_ley: calc?.dias ?? 0,
           dias_consumidos: 0,
           dias_restantes: 0,
           pendientes: 0,
