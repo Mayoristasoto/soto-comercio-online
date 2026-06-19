@@ -129,7 +129,9 @@ export default function EmployeeIncidencias({ empleadoId }: EmployeeIncidenciasP
       olvido: 'Olvidé fichar',
       error_tecnico: 'Error técnico',
       justificacion: 'Justificación de retraso',
-      correccion: 'Corrección de horario'
+      correccion: 'Corrección de horario',
+      descanso_fuera_turno: 'Descanso fuera de franja',
+      descanso_sin_turno: 'Descanso sin turno asignado'
     }
     return tipos[tipo] || tipo
   }
