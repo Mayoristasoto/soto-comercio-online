@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { useAudioNotifications } from "@/hooks/useAudioNotifications"
 import { CrucesRojasKioscoAlert } from "@/components/kiosko/CrucesRojasKioscoAlert"
 import { PausaExcedidaAlert } from "@/components/kiosko/PausaExcedidaAlert"
+import { DescansoFueraFranjaAlert } from "@/components/kiosko/DescansoFueraFranjaAlert"
 import { LlegadaTardeAlert } from "@/components/kiosko/LlegadaTardeAlert"
 import { TareasPendientesAlert } from "@/components/kiosko/TareasPendientesAlert"
 import { TareasVencenHoyAlert } from "@/components/kiosko/TareasVencenHoyAlert"
@@ -320,6 +321,17 @@ export default function KioscoCheckIn() {
     minutosUsados: number
     minutosPermitidos: number
     registrado: boolean
+  } | null>(null)
+
+  // Alerta: descanso fuera de franja programada
+  const [descansoFranjaInfo, setDescansoFranjaInfo] = useState<{
+    motivo: 'fuera_turno' | 'sin_turno'
+    numeroTurno?: number | null
+    horaDesde?: string | null
+    horaHasta?: string | null
+    horaReal: string
+    descripcion?: string | null
+    empleadoNombre: string
   } | null>(null)
   
   // State for late arrival alert
@@ -813,11 +825,16 @@ export default function KioscoCheckIn() {
             })
             const v = vd as any
             if (v && v.ok === false) {
-              toast({
-                title: v.motivo === 'sin_turno' ? '⚠️ Sin turno de descanso' : '⚠️ Descanso fuera de turno',
-                description: v.descripcion || 'Se registró una alerta para RRHH.',
-                variant: 'destructive',
-                duration: 6000,
+              const ahora = new Date()
+              const horaReal = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+              setDescansoFranjaInfo({
+                motivo: v.motivo === 'sin_turno' ? 'sin_turno' : 'fuera_turno',
+                numeroTurno: v.turno ?? null,
+                horaDesde: v.desde ?? null,
+                horaHasta: v.hasta ?? null,
+                horaReal,
+                descripcion: v.descripcion ?? null,
+                empleadoNombre: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido}`,
               })
             }
           } catch (e) {
@@ -1454,11 +1471,16 @@ export default function KioscoCheckIn() {
             })
             const v = vd as any
             if (v && v.ok === false) {
-              toast({
-                title: v.motivo === 'sin_turno' ? '⚠️ Sin turno de descanso' : '⚠️ Descanso fuera de turno',
-                description: v.descripcion || 'Se registró una alerta para RRHH.',
-                variant: 'destructive',
-                duration: 6000,
+              const ahora = new Date()
+              const horaReal = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+              setDescansoFranjaInfo({
+                motivo: v.motivo === 'sin_turno' ? 'sin_turno' : 'fuera_turno',
+                numeroTurno: v.turno ?? null,
+                horaDesde: v.desde ?? null,
+                horaHasta: v.hasta ?? null,
+                horaReal,
+                descripcion: v.descripcion ?? null,
+                empleadoNombre: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido}`,
               })
             }
           } catch (e) { console.warn('No se pudo validar turno de descanso:', e) }
@@ -1825,11 +1847,16 @@ export default function KioscoCheckIn() {
             })
             const v = vd as any
             if (v && v.ok === false) {
-              toast({
-                title: v.motivo === 'sin_turno' ? '⚠️ Sin turno de descanso' : '⚠️ Descanso fuera de turno',
-                description: v.descripcion || 'Se registró una alerta para RRHH.',
-                variant: 'destructive',
-                duration: 6000,
+              const ahora = new Date()
+              const horaReal = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+              setDescansoFranjaInfo({
+                motivo: v.motivo === 'sin_turno' ? 'sin_turno' : 'fuera_turno',
+                numeroTurno: v.turno ?? null,
+                horaDesde: v.desde ?? null,
+                horaHasta: v.hasta ?? null,
+                horaReal,
+                descripcion: v.descripcion ?? null,
+                empleadoNombre: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido}`,
               })
             }
           } catch (e) { console.warn('No se pudo validar turno de descanso:', e) }
@@ -2508,6 +2535,20 @@ export default function KioscoCheckIn() {
             setShowActionSelection(true)
           }}
           duracionSegundos={config.kioskAlertCrucesRojasSeconds}
+        />
+      )}
+
+      {/* Alerta de Descanso Fuera de Franja Programada */}
+      {descansoFranjaInfo && (
+        <DescansoFueraFranjaAlert
+          empleadoNombre={descansoFranjaInfo.empleadoNombre}
+          motivo={descansoFranjaInfo.motivo}
+          numeroTurno={descansoFranjaInfo.numeroTurno}
+          horaDesde={descansoFranjaInfo.horaDesde}
+          horaHasta={descansoFranjaInfo.horaHasta}
+          horaReal={descansoFranjaInfo.horaReal}
+          descripcion={descansoFranjaInfo.descripcion}
+          onDismiss={() => setDescansoFranjaInfo(null)}
         />
       )}
 

@@ -1,33 +1,51 @@
-## Cambios en pestaña Listado de `/rrhh/vacaciones`
+# Alerta de inicio de descanso fuera de franja programada (Kiosco)
 
-Mantenemos la función SQL actual (`<5→14, <10→21, <20→28, ≥20→35`). Solo agregamos columnas visibles que reflejen la fórmula del Excel:
+## Estado actual
 
-### `src/components/vacaciones/ListadoVacaciones.tsx`
+- Ya existe la infraestructura backend: la RPC `kiosk_validar_descanso_turno(empleado_id, fichaje_id)` se invoca en `KioscoCheckIn.tsx` (líneas 806–827) tras un `pausa_inicio` y, cuando el empleado ficha fuera del turno asignado en `planilla_descansos_asignaciones` / `planilla_descansos_turnos`, ya:
+  - Inserta una incidencia en `fichaje_incidencias` (`descanso_fuera_turno` o `descanso_sin_turno`).
+  - Devuelve `{ ok: false, motivo, turno, desde, hasta, descripcion }`.
+- Hoy esa respuesta solo muestra un `toast` rojo de 6s, igual que un error normal — el empleado puede no verlo y RRHH lo recibe sin contexto visual fuerte.
 
-1. Extender `EmpleadoRow` con:
-   - `fecha_ingreso: string | null`
-   - `antiguedad_anios: number` (proviene del RPC `obtener_calculo_vacaciones_todos`, que ya calcula `EXTRACT(YEAR FROM AGE(31/12/año, fecha_ingreso))` — equivalente a `=DATEDIF(B2;FECHA(AÑO(HOY());12;31);"Y")`).
+## Objetivo
 
-2. En `cargar()`, mapear desde `calcRes.data` no solo `dias_segun_ley` sino también `fecha_ingreso` y `antiguedad_anios`. Cargar el dato aunque el empleado no aparezca en `empRes` (mantener filtro por activo).
+Mostrar en el kiosco una **alerta modal bloqueante** equivalente a `PausaExcedidaAlert` / `LlegadaTardeAlert` cuando el empleado inicia un descanso fuera de su franja programada, de modo que:
+1. El empleado vea claramente que su descanso quedó fuera del turno asignado.
+2. Se muestre la franja correcta y la hora real registrada.
+3. RRHH siga recibiendo la incidencia (no se cambia el backend).
 
-3. En la tabla principal agregar dos columnas nuevas entre "Empleado/Sucursal" y "LCT":
-   - **Fecha ingreso** (formato `dd/MM/yyyy`)
-   - **Antigüedad al 31/12** (años, ej. `7 años`)
+## Cambios
 
-   La columna **LCT** sigue mostrando `dias_segun_ley` (que ya respeta la regla `<5/<10/<20/≥20`).
+### 1. Nuevo componente `src/components/kiosko/DescansoFueraFranjaAlert.tsx`
 
-4. Actualizar `colSpan` del row expandible (de 8 a 10).
+Modal estilo shadcn `AlertDialog` (mismo patrón que `PausaExcedidaAlert.tsx`):
+- Props: `open`, `onClose`, `motivo: 'fuera_turno' | 'sin_turno'`, `numeroTurno?`, `horaDesde?`, `horaHasta?`, `horaReal`, `descripcion`.
+- Contenido:
+  - Título: "⚠️ Descanso fuera de franja" / "⚠️ Sin turno de descanso asignado".
+  - Cuerpo: hora real del fichaje, franja asignada (`HH:MM a HH:MM`), número de turno y aviso de que se notificó a RRHH.
+  - Botón "Entendido" que cierra el modal.
+- Tokens de color desde el design system (destructivo), sin colores hardcodeados.
 
-5. Agregar las dos columnas al CSV (`Fecha ingreso`, `Antigüedad`) antes de `Días LCT`.
+### 2. Integración en `src/pages/KioscoCheckIn.tsx`
 
-6. Agregar tooltip/leyenda breve en el `CardDescription`:
-   > "Antigüedad calculada al 31/12 del año seleccionado. Días LCT según Art. 150: <5 años=14, <10=21, <20=28, ≥20=35."
+- Agregar estado `descansoFranjaInfo: { motivo, numeroTurno?, horaDesde?, horaHasta?, horaReal, descripcion } | null`.
+- En el bloque actual (líneas 806–827) reemplazar el `toast` por `setDescansoFranjaInfo({...})` cuando `v.ok === false`. Mantener el `toast` solo como fallback si la RPC falla.
+- Renderizar `<DescansoFueraFranjaAlert>` junto a las demás alertas del kiosco, encolado de manera consistente con el flujo actual de alertas post-fichaje.
+- Asegurar que cerrar la alerta no rompe la secuencia (foto, novedades, tareas, etc.): se cierra antes de continuar el flujo, igual que `PausaExcedidaAlert`.
 
-### Sin cambios
+### 3. Sin cambios de base de datos
 
-- No se modifica la función SQL `calcular_vacaciones_ley_argentina` (criterio actual confirmado).
-- No se tocan otros componentes ni tabs.
+No se modifican `kiosk_validar_descanso_turno`, `planilla_descansos_*` ni `fichaje_incidencias`. La incidencia ya se registra correctamente.
 
-### Resultado
+## Detalles técnicos
 
-El listado mostrará por cada empleado: Apellido/Nombre, Sucursal, **Fecha ingreso**, **Antigüedad al 31/12**, Días LCT, Pendientes, Aprobadas, Consumidos, Restantes — con el detalle desplegable de solicitudes intacto.
+- Hora real: usar la `hora_propuesta` que devuelve la RPC (formato `HH:MM`) o derivar localmente con `format(new Date(), 'HH:mm', { timeZone: 'America/Argentina/Buenos_Aires' })` vía `dateUtils`.
+- El modal solo aparece para `pausa_inicio`; el resto de tipos de fichaje no son afectados.
+- Reutilizar variantes de `AlertDialog` para conservar consistencia con `PausaExcedidaAlert`.
+
+## Validación
+
+- Probar empleado con asignación vigente fichando dentro de franja → no aparece alerta.
+- Empleado fichando fuera de franja → aparece modal con turno y horario.
+- Empleado sin asignación de turno esa semana → aparece modal con motivo "sin_turno".
+- Verificar en `fichaje_incidencias` que se sigue insertando la fila pendiente.
