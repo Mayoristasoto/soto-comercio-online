@@ -96,7 +96,10 @@ export function KioskAlertConfig() {
 
   useEffect(() => {
     if (!loading) {
-      setOrder(config.kioskAlertOrder)
+      const knownIds = Object.keys(ALERT_DEFS)
+      const merged = [...config.kioskAlertOrder]
+      knownIds.forEach(id => { if (!merged.includes(id)) merged.push(id) })
+      setOrder(merged.filter(id => ALERT_DEFS[id]))
       setSeconds({
         llegada_tarde: config.kioskAlertLlegadaTardeSeconds,
         cruces_rojas: config.kioskAlertCrucesRojasSeconds,
