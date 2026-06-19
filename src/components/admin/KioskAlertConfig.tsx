@@ -150,10 +150,12 @@ export function KioskAlertConfig() {
         updateConfig('kioskAlertPausaExcedidaSeconds', seconds.pausa_excedida),
         updateConfig('kioskAlertNovedadesSeconds', seconds.novedades),
         updateConfig('kioskAlertTareasSeconds', seconds.tareas_pendientes),
+        updateConfig('kioskAlertDescansoFueraSeconds', seconds.descanso_fuera_franja),
         updateConfig('kioskAlertCrucesRojasEnabled', enabled.cruces_rojas ? 'true' : 'false'),
         updateConfig('kioskAlertPausaExcedidaEnabled', enabled.pausa_excedida ? 'true' : 'false'),
         updateConfig('kioskAlertNovedadesEnabled', enabled.novedades ? 'true' : 'false'),
         updateConfig('kioskAlertTareasEnabled', enabled.tareas_pendientes ? 'true' : 'false'),
+        updateConfig('kioskAlertDescansoFueraEnabled', enabled.descanso_fuera_franja ? 'true' : 'false'),
         updateConfig('kioskAlertOrder', JSON.stringify(order)),
       ]
       await Promise.all(updates)
