@@ -322,6 +322,17 @@ export default function KioscoCheckIn() {
     minutosPermitidos: number
     registrado: boolean
   } | null>(null)
+
+  // Alerta: descanso fuera de franja programada
+  const [descansoFranjaInfo, setDescansoFranjaInfo] = useState<{
+    motivo: 'fuera_turno' | 'sin_turno'
+    numeroTurno?: number | null
+    horaDesde?: string | null
+    horaHasta?: string | null
+    horaReal: string
+    descripcion?: string | null
+    empleadoNombre: string
+  } | null>(null)
   
   // State for late arrival alert
   const [showLlegadaTardeAlert, setShowLlegadaTardeAlert] = useState(false)
