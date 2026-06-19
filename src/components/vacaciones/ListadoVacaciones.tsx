@@ -401,6 +401,8 @@ export function ListadoVacaciones() {
                         </TableCell>
                         <TableCell className="font-medium">{r.empleado_apellido}, {r.empleado_nombre}</TableCell>
                         <TableCell>{r.sucursal_nombre}</TableCell>
+                        <TableCell>{r.fecha_ingreso ? fmt(r.fecha_ingreso) : "—"}</TableCell>
+                        <TableCell className="text-right">{r.fecha_ingreso ? `${r.antiguedad_anios} ${r.antiguedad_anios === 1 ? "año" : "años"}` : "—"}</TableCell>
                         <TableCell className="text-right">{r.dias_segun_ley || "—"}</TableCell>
                         <TableCell className="text-right">{r.pendientes || "—"}</TableCell>
                         <TableCell className="text-right">{r.aprobadas || "—"}</TableCell>
@@ -413,7 +415,7 @@ export function ListadoVacaciones() {
                       </TableRow>
                       {open && tieneDetalle && (
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={8} className="p-0">
+                          <TableCell colSpan={10} className="p-0">
                             <div className="p-4">
                               <div className="text-xs font-medium text-muted-foreground mb-2">
                                 Solicitudes ({r.solicitudes.length})
