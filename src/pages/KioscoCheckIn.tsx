@@ -2539,7 +2539,7 @@ export default function KioscoCheckIn() {
       )}
 
       {/* Alerta de Descanso Fuera de Franja Programada */}
-      {descansoFranjaInfo && (
+      {descansoFranjaInfo && config.kioskAlertDescansoFueraEnabled && (
         <DescansoFueraFranjaAlert
           empleadoNombre={descansoFranjaInfo.empleadoNombre}
           motivo={descansoFranjaInfo.motivo}
@@ -2548,6 +2548,7 @@ export default function KioscoCheckIn() {
           horaHasta={descansoFranjaInfo.horaHasta}
           horaReal={descansoFranjaInfo.horaReal}
           descripcion={descansoFranjaInfo.descripcion}
+          duracionSegundos={config.kioskAlertDescansoFueraSeconds}
           onDismiss={() => setDescansoFranjaInfo(null)}
         />
       )}
