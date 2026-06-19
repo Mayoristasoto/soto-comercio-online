@@ -147,6 +147,8 @@ export function useFacialConfig() {
     kioskAlertPausaExcedidaEnabled: 'kiosk_alert_pausa_excedida_enabled',
     kioskAlertNovedadesEnabled: 'kiosk_alert_novedades_enabled',
     kioskAlertTareasEnabled: 'kiosk_alert_tareas_enabled',
+    kioskAlertDescansoFueraSeconds: 'kiosk_alert_descanso_fuera_seconds',
+    kioskAlertDescansoFueraEnabled: 'kiosk_alert_descanso_fuera_enabled',
     kioskAlertOrder: 'kiosk_alert_order',
   }
 
