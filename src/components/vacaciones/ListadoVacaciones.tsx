@@ -43,6 +43,8 @@ interface EmpleadoRow {
   empleado_nombre: string;
   empleado_apellido: string;
   sucursal_nombre: string;
+  fecha_ingreso: string | null;
+  antiguedad_anios: number;
   dias_segun_ley: number;
   dias_consumidos: number; // pendientes + aprobadas
   dias_restantes: number;
