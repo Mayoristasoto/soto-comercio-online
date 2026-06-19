@@ -43,6 +43,8 @@ interface EmpleadoRow {
   empleado_nombre: string;
   empleado_apellido: string;
   sucursal_nombre: string;
+  fecha_ingreso: string | null;
+  antiguedad_anios: number;
   dias_segun_ley: number;
   dias_consumidos: number; // pendientes + aprobadas
   dias_restantes: number;
@@ -131,9 +133,13 @@ export function ListadoVacaciones() {
       (sucRes.data ?? []).forEach((s: any) => sucursalesMap.set(s.id, s.nombre));
       setSucursales(sucRes.data ?? []);
 
-      const calcMap = new Map<string, number>();
+      const calcMap = new Map<string, { dias: number; fecha_ingreso: string | null; antiguedad: number }>();
       (calcRes.data ?? []).forEach((c: any) => {
-        calcMap.set(c.empleado_id, Number(c.dias_segun_ley ?? 0));
+        calcMap.set(c.empleado_id, {
+          dias: Number(c.dias_segun_ley ?? 0),
+          fecha_ingreso: c.fecha_ingreso ?? null,
+          antiguedad: Number(c.antiguedad_anios ?? 0),
+        });
       });
 
       const empleadosMap = new Map<string, EmpleadoRow>();
@@ -141,12 +147,15 @@ export function ListadoVacaciones() {
       for (const emp of (empRes.data ?? []) as any[]) {
         if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
         if (excluirInactivos && emp.activo === false) continue;
+        const calc = calcMap.get(emp.id);
         empleadosMap.set(emp.id, {
           empleado_id: emp.id,
           empleado_nombre: emp.nombre,
           empleado_apellido: emp.apellido,
           sucursal_nombre: sucursalesMap.get(emp.sucursal_id) ?? "—",
-          dias_segun_ley: calcMap.get(emp.id) ?? 0,
+          fecha_ingreso: calc?.fecha_ingreso ?? null,
+          antiguedad_anios: calc?.antiguedad ?? 0,
+          dias_segun_ley: calc?.dias ?? 0,
           dias_consumidos: 0,
           dias_restantes: 0,
           pendientes: 0,
@@ -225,15 +234,17 @@ export function ListadoVacaciones() {
 
   const exportarCSV = () => {
     const headers = [
-      "Empleado", "Sucursal", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
+      "Empleado", "Sucursal", "Fecha ingreso", "Antigüedad", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
       "Estado solicitud", "Inicio", "Fin", "Días",
     ];
     const lines = [headers.join(",")];
     for (const r of filtradas) {
+      const fi = r.fecha_ingreso ?? "";
+      const ant = r.fecha_ingreso ? r.antiguedad_anios : "";
       if (!r.solicitudes.length) {
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
-          r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
+          fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
           "", "", "", "",
         ].join(","));
         continue;
@@ -241,7 +252,7 @@ export function ListadoVacaciones() {
       for (const s of r.solicitudes) {
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
-          r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
+          fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
           s.estado, s.fecha_inicio, s.fecha_fin, s.dias,
         ].join(","));
       }
@@ -263,7 +274,8 @@ export function ListadoVacaciones() {
             <CardTitle>Listado de vacaciones por empleado</CardTitle>
             <CardDescription>
               Una línea por empleado. Click para ver el detalle de solicitudes (pendientes, aprobadas, rechazadas).
-              Los días restantes descuentan tanto pendientes como aprobadas.
+              Los días restantes descuentan tanto pendientes como aprobadas. Antigüedad calculada al 31/12 del año
+              seleccionado. Días LCT (Art. 150): &lt;5 años=14, &lt;10=21, &lt;20=28, ≥20=35.
             </CardDescription>
           </div>
           <Button onClick={exportarCSV} variant="outline" size="sm" disabled={!filtradas.length}>
@@ -365,6 +377,8 @@ export function ListadoVacaciones() {
                   <TableHead className="w-8"></TableHead>
                   <TableHead>Empleado</TableHead>
                   <TableHead>Sucursal</TableHead>
+                  <TableHead>Fecha ingreso</TableHead>
+                  <TableHead className="text-right">Antigüedad 31/12</TableHead>
                   <TableHead className="text-right">LCT</TableHead>
                   <TableHead className="text-right">Pend.</TableHead>
                   <TableHead className="text-right">Aprob.</TableHead>
@@ -389,6 +403,8 @@ export function ListadoVacaciones() {
                         </TableCell>
                         <TableCell className="font-medium">{r.empleado_apellido}, {r.empleado_nombre}</TableCell>
                         <TableCell>{r.sucursal_nombre}</TableCell>
+                        <TableCell>{r.fecha_ingreso ? fmt(r.fecha_ingreso) : "—"}</TableCell>
+                        <TableCell className="text-right">{r.fecha_ingreso ? `${r.antiguedad_anios} ${r.antiguedad_anios === 1 ? "año" : "años"}` : "—"}</TableCell>
                         <TableCell className="text-right">{r.dias_segun_ley || "—"}</TableCell>
                         <TableCell className="text-right">{r.pendientes || "—"}</TableCell>
                         <TableCell className="text-right">{r.aprobadas || "—"}</TableCell>
@@ -401,7 +417,7 @@ export function ListadoVacaciones() {
                       </TableRow>
                       {open && tieneDetalle && (
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={8} className="p-0">
+                          <TableCell colSpan={10} className="p-0">
                             <div className="p-4">
                               <div className="text-xs font-medium text-muted-foreground mb-2">
                                 Solicitudes ({r.solicitudes.length})
