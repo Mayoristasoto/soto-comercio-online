@@ -54,6 +54,16 @@ const ALERT_DEFS: Record<string, AlertDef> = {
     secondsKey: 'kioskAlertPausaExcedidaSeconds',
     enabledKey: 'kioskAlertPausaExcedidaEnabled',
   },
+  descanso_fuera_franja: {
+    id: 'descanso_fuera_franja',
+    label: 'Descanso fuera de franja',
+    description: 'Se muestra cuando el empleado inicia un descanso fuera de su franja programada o sin asignación de turno',
+    icon: <CalendarClock className="h-5 w-5" />,
+    color: 'text-orange-600',
+    canDisable: true,
+    secondsKey: 'kioskAlertDescansoFueraSeconds',
+    enabledKey: 'kioskAlertDescansoFueraEnabled',
+  },
   novedades: {
     id: 'novedades',
     label: 'Novedades',
