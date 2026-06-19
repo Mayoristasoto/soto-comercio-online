@@ -825,11 +825,16 @@ export default function KioscoCheckIn() {
             })
             const v = vd as any
             if (v && v.ok === false) {
-              toast({
-                title: v.motivo === 'sin_turno' ? '⚠️ Sin turno de descanso' : '⚠️ Descanso fuera de turno',
-                description: v.descripcion || 'Se registró una alerta para RRHH.',
-                variant: 'destructive',
-                duration: 6000,
+              const ahora = new Date()
+              const horaReal = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+              setDescansoFranjaInfo({
+                motivo: v.motivo === 'sin_turno' ? 'sin_turno' : 'fuera_turno',
+                numeroTurno: v.turno ?? null,
+                horaDesde: v.desde ?? null,
+                horaHasta: v.hasta ?? null,
+                horaReal,
+                descripcion: v.descripcion ?? null,
+                empleadoNombre: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido}`,
               })
             }
           } catch (e) {
