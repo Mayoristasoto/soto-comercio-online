@@ -2538,6 +2538,20 @@ export default function KioscoCheckIn() {
         />
       )}
 
+      {/* Alerta de Descanso Fuera de Franja Programada */}
+      {descansoFranjaInfo && (
+        <DescansoFueraFranjaAlert
+          empleadoNombre={descansoFranjaInfo.empleadoNombre}
+          motivo={descansoFranjaInfo.motivo}
+          numeroTurno={descansoFranjaInfo.numeroTurno}
+          horaDesde={descansoFranjaInfo.horaDesde}
+          horaHasta={descansoFranjaInfo.horaHasta}
+          horaReal={descansoFranjaInfo.horaReal}
+          descripcion={descansoFranjaInfo.descripcion}
+          onDismiss={() => setDescansoFranjaInfo(null)}
+        />
+      )}
+
       {/* Alerta de Pausa Excedida (Overlay) */}
       {showPausaExcedidaAlert && pausaExcedidaInfo && recognizedEmployee && (
         <PausaExcedidaAlert
