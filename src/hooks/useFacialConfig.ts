@@ -114,6 +114,8 @@ export function useFacialConfig() {
           kioskAlertPausaExcedidaEnabled: parseBool(configMap.kiosk_alert_pausa_excedida_enabled ?? 'true'),
           kioskAlertNovedadesEnabled: parseBool(configMap.kiosk_alert_novedades_enabled ?? 'true'),
           kioskAlertTareasEnabled: parseBool(configMap.kiosk_alert_tareas_enabled ?? 'true'),
+          kioskAlertDescansoFueraSeconds: parseInt(configMap.kiosk_alert_descanso_fuera_seconds) || defaultConfig.kioskAlertDescansoFueraSeconds,
+          kioskAlertDescansoFueraEnabled: parseBool(configMap.kiosk_alert_descanso_fuera_enabled ?? 'true'),
           kioskAlertOrder: alertOrder,
         })
       }
