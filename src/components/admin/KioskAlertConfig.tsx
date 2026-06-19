@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "@/hooks/use-toast"
 import {
   Clock, AlertTriangle, ShieldAlert, Coffee, Bell, ClipboardList,
-  ArrowUp, ArrowDown, Save, RotateCcw, GripVertical, Zap, Eye
+  ArrowUp, ArrowDown, Save, RotateCcw, GripVertical, Zap, Eye, CalendarClock
 } from "lucide-react"
 
 interface AlertDef {
@@ -54,6 +54,16 @@ const ALERT_DEFS: Record<string, AlertDef> = {
     secondsKey: 'kioskAlertPausaExcedidaSeconds',
     enabledKey: 'kioskAlertPausaExcedidaEnabled',
   },
+  descanso_fuera_franja: {
+    id: 'descanso_fuera_franja',
+    label: 'Descanso fuera de franja',
+    description: 'Se muestra cuando el empleado inicia un descanso fuera de su franja programada o sin asignación de turno',
+    icon: <CalendarClock className="h-5 w-5" />,
+    color: 'text-orange-600',
+    canDisable: true,
+    secondsKey: 'kioskAlertDescansoFueraSeconds',
+    enabledKey: 'kioskAlertDescansoFueraEnabled',
+  },
   novedades: {
     id: 'novedades',
     label: 'Novedades',
@@ -86,19 +96,24 @@ export function KioskAlertConfig() {
 
   useEffect(() => {
     if (!loading) {
-      setOrder(config.kioskAlertOrder)
+      const knownIds = Object.keys(ALERT_DEFS)
+      const merged = [...config.kioskAlertOrder]
+      knownIds.forEach(id => { if (!merged.includes(id)) merged.push(id) })
+      setOrder(merged.filter(id => ALERT_DEFS[id]))
       setSeconds({
         llegada_tarde: config.kioskAlertLlegadaTardeSeconds,
         cruces_rojas: config.kioskAlertCrucesRojasSeconds,
         pausa_excedida: config.kioskAlertPausaExcedidaSeconds,
         novedades: config.kioskAlertNovedadesSeconds,
         tareas_pendientes: config.kioskAlertTareasSeconds,
+        descanso_fuera_franja: config.kioskAlertDescansoFueraSeconds,
       })
       setEnabled({
         cruces_rojas: config.kioskAlertCrucesRojasEnabled,
         pausa_excedida: config.kioskAlertPausaExcedidaEnabled,
         novedades: config.kioskAlertNovedadesEnabled,
         tareas_pendientes: config.kioskAlertTareasEnabled,
+        descanso_fuera_franja: config.kioskAlertDescansoFueraEnabled,
       })
     }
   }, [loading, config])
@@ -138,10 +153,12 @@ export function KioskAlertConfig() {
         updateConfig('kioskAlertPausaExcedidaSeconds', seconds.pausa_excedida),
         updateConfig('kioskAlertNovedadesSeconds', seconds.novedades),
         updateConfig('kioskAlertTareasSeconds', seconds.tareas_pendientes),
+        updateConfig('kioskAlertDescansoFueraSeconds', seconds.descanso_fuera_franja),
         updateConfig('kioskAlertCrucesRojasEnabled', enabled.cruces_rojas ? 'true' : 'false'),
         updateConfig('kioskAlertPausaExcedidaEnabled', enabled.pausa_excedida ? 'true' : 'false'),
         updateConfig('kioskAlertNovedadesEnabled', enabled.novedades ? 'true' : 'false'),
         updateConfig('kioskAlertTareasEnabled', enabled.tareas_pendientes ? 'true' : 'false'),
+        updateConfig('kioskAlertDescansoFueraEnabled', enabled.descanso_fuera_franja ? 'true' : 'false'),
         updateConfig('kioskAlertOrder', JSON.stringify(order)),
       ]
       await Promise.all(updates)

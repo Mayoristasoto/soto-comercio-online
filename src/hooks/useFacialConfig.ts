@@ -18,10 +18,12 @@ interface FacialConfig {
   kioskAlertPausaExcedidaSeconds: number
   kioskAlertNovedadesSeconds: number
   kioskAlertTareasSeconds: number
+  kioskAlertDescansoFueraSeconds: number
   kioskAlertCrucesRojasEnabled: boolean
   kioskAlertPausaExcedidaEnabled: boolean
   kioskAlertNovedadesEnabled: boolean
   kioskAlertTareasEnabled: boolean
+  kioskAlertDescansoFueraEnabled: boolean
   kioskAlertOrder: string[]
 }
 
@@ -41,11 +43,13 @@ const defaultConfig: FacialConfig = {
   kioskAlertPausaExcedidaSeconds: 2,
   kioskAlertNovedadesSeconds: 5,
   kioskAlertTareasSeconds: 10,
+  kioskAlertDescansoFueraSeconds: 8,
   kioskAlertCrucesRojasEnabled: true,
   kioskAlertPausaExcedidaEnabled: true,
   kioskAlertNovedadesEnabled: true,
   kioskAlertTareasEnabled: true,
-  kioskAlertOrder: ["llegada_tarde","cruces_rojas","pausa_excedida","novedades","tareas_pendientes"],
+  kioskAlertDescansoFueraEnabled: true,
+  kioskAlertOrder: ["llegada_tarde","descanso_fuera_franja","cruces_rojas","pausa_excedida","novedades","tareas_pendientes"],
 }
 
 const parseBool = (raw: any): boolean => {
@@ -110,6 +114,8 @@ export function useFacialConfig() {
           kioskAlertPausaExcedidaEnabled: parseBool(configMap.kiosk_alert_pausa_excedida_enabled ?? 'true'),
           kioskAlertNovedadesEnabled: parseBool(configMap.kiosk_alert_novedades_enabled ?? 'true'),
           kioskAlertTareasEnabled: parseBool(configMap.kiosk_alert_tareas_enabled ?? 'true'),
+          kioskAlertDescansoFueraSeconds: parseInt(configMap.kiosk_alert_descanso_fuera_seconds) || defaultConfig.kioskAlertDescansoFueraSeconds,
+          kioskAlertDescansoFueraEnabled: parseBool(configMap.kiosk_alert_descanso_fuera_enabled ?? 'true'),
           kioskAlertOrder: alertOrder,
         })
       }
@@ -141,6 +147,8 @@ export function useFacialConfig() {
     kioskAlertPausaExcedidaEnabled: 'kiosk_alert_pausa_excedida_enabled',
     kioskAlertNovedadesEnabled: 'kiosk_alert_novedades_enabled',
     kioskAlertTareasEnabled: 'kiosk_alert_tareas_enabled',
+    kioskAlertDescansoFueraSeconds: 'kiosk_alert_descanso_fuera_seconds',
+    kioskAlertDescansoFueraEnabled: 'kiosk_alert_descanso_fuera_enabled',
     kioskAlertOrder: 'kiosk_alert_order',
   }
 

@@ -358,6 +358,8 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
       case 'error_tecnico': return 'Error técnico'
       case 'justificacion': return 'Justificación'
       case 'correccion': return 'Corrección'
+      case 'descanso_fuera_turno': return 'Descanso fuera de franja'
+      case 'descanso_sin_turno': return 'Descanso sin turno asignado'
       default: return tipo
     }
   }
