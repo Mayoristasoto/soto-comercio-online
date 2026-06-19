@@ -234,15 +234,17 @@ export function ListadoVacaciones() {
 
   const exportarCSV = () => {
     const headers = [
-      "Empleado", "Sucursal", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
+      "Empleado", "Sucursal", "Fecha ingreso", "Antigüedad", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
       "Estado solicitud", "Inicio", "Fin", "Días",
     ];
     const lines = [headers.join(",")];
     for (const r of filtradas) {
+      const fi = r.fecha_ingreso ?? "";
+      const ant = r.fecha_ingreso ? r.antiguedad_anios : "";
       if (!r.solicitudes.length) {
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
-          r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
+          fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
           "", "", "", "",
         ].join(","));
         continue;
@@ -250,7 +252,7 @@ export function ListadoVacaciones() {
       for (const s of r.solicitudes) {
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
-          r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
+          fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
           s.estado, s.fecha_inicio, s.fecha_fin, s.dias,
         ].join(","));
       }
