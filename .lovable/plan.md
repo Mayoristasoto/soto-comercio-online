@@ -1,51 +1,33 @@
-## Objetivo
+## Cambios en pestaña Listado de `/rrhh/vacaciones`
 
-Agregar en `/rrhh/vacaciones` una nueva pestaña que liste a los empleados que **no tienen ninguna solicitud de vacaciones cargada en el año en curso** (independientemente del estado: pendiente, aprobada o rechazada → si no existe ninguna, aparece).
+Mantenemos la función SQL actual (`<5→14, <10→21, <20→28, ≥20→35`). Solo agregamos columnas visibles que reflejen la fórmula del Excel:
 
-## Alcance
+### `src/components/vacaciones/ListadoVacaciones.tsx`
 
-- Solo lectura / visualización. No se modifica lógica de aprobación, saldos ni bloqueos.
-- Visible para roles que ya ven las pestañas de gestión (mismo criterio que "Aprobaciones" y "Bloqueos" — admin/RRHH).
+1. Extender `EmpleadoRow` con:
+   - `fecha_ingreso: string | null`
+   - `antiguedad_anios: number` (proviene del RPC `obtener_calculo_vacaciones_todos`, que ya calcula `EXTRACT(YEAR FROM AGE(31/12/año, fecha_ingreso))` — equivalente a `=DATEDIF(B2;FECHA(AÑO(HOY());12;31);"Y")`).
 
-## UI
+2. En `cargar()`, mapear desde `calcRes.data` no solo `dias_segun_ley` sino también `fecha_ingreso` y `antiguedad_anios`. Cargar el dato aunque el empleado no aparezca en `empRes` (mantener filtro por activo).
 
-Nueva pestaña **"Sin cargar"** en `src/pages/Vacaciones.tsx`, junto a Aprobaciones, Bloqueos y Calculadora.
+3. En la tabla principal agregar dos columnas nuevas entre "Empleado/Sucursal" y "LCT":
+   - **Fecha ingreso** (formato `dd/MM/yyyy`)
+   - **Antigüedad al 31/12** (años, ej. `7 años`)
 
-Nuevo componente: `src/components/vacaciones/EmpleadosSinVacaciones.tsx`
+   La columna **LCT** sigue mostrando `dias_segun_ley` (que ya respeta la regla `<5/<10/<20/≥20`).
 
-Contenido:
-- Encabezado con el año en curso y contador total ("X empleados sin solicitudes en 2026").
-- Filtros:
-  - Sucursal (select)
-  - Puesto (select)
-  - Buscador por nombre/apellido/DNI
-- Tabla con columnas:
-  - Empleado (nombre + apellido)
-  - DNI
-  - Sucursal
-  - Puesto
-  - Fecha de ingreso
-  - Días disponibles (de `vacaciones_saldo` del año en curso, si existe; si no, "—")
-  - Acción rápida: botón "Cargar solicitud" que abre el diálogo de carga manual ya existente (`CargaManualVacacionesDialog`) precargado con ese empleado.
-- Botón "Exportar CSV" con los registros filtrados.
-- Estado vacío amable cuando todos cargaron.
+4. Actualizar `colSpan` del row expandible (de 8 a 10).
 
-## Lógica de datos
+5. Agregar las dos columnas al CSV (`Fecha ingreso`, `Antigüedad`) antes de `Días LCT`.
 
-Query en el componente:
-1. Traer empleados activos (`empleados` con `activo = true`).
-2. Traer `solicitudes_vacaciones` del año en curso (`fecha_inicio >= '<año>-01-01'` y `fecha_inicio <= '<año>-12-31'`), seleccionando solo `empleado_id` distinct.
-3. En el cliente, filtrar empleados cuyo `id` no aparece en ese set.
-4. Cruzar con `vacaciones_saldo` (año en curso) para mostrar días disponibles.
-5. Cruzar con `sucursales` y `puestos` para mostrar nombres.
+6. Agregar tooltip/leyenda breve en el `CardDescription`:
+   > "Antigüedad calculada al 31/12 del año seleccionado. Días LCT según Art. 150: <5 años=14, <10=21, <20=28, ≥20=35."
 
-## Archivos
+### Sin cambios
 
-- **Nuevo:** `src/components/vacaciones/EmpleadosSinVacaciones.tsx`
-- **Editar:** `src/pages/Vacaciones.tsx` — agregar `TabsTrigger` y `TabsContent` "sin-cargar" dentro del bloque de permisos de gestión.
+- No se modifica la función SQL `calcular_vacaciones_ley_argentina` (criterio actual confirmado).
+- No se tocan otros componentes ni tabs.
 
-## No incluye
+### Resultado
 
-- No modifica `vacaciones_saldo` ni genera solicitudes automáticas.
-- No envía notificaciones a los empleados (se puede agregar después si lo pedís).
-- No cambia el esquema de base de datos.
+El listado mostrará por cada empleado: Apellido/Nombre, Sucursal, **Fecha ingreso**, **Antigüedad al 31/12**, Días LCT, Pendientes, Aprobadas, Consumidos, Restantes — con el detalle desplegable de solicitudes intacto.
