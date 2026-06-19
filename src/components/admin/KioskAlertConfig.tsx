@@ -103,12 +103,14 @@ export function KioskAlertConfig() {
         pausa_excedida: config.kioskAlertPausaExcedidaSeconds,
         novedades: config.kioskAlertNovedadesSeconds,
         tareas_pendientes: config.kioskAlertTareasSeconds,
+        descanso_fuera_franja: config.kioskAlertDescansoFueraSeconds,
       })
       setEnabled({
         cruces_rojas: config.kioskAlertCrucesRojasEnabled,
         pausa_excedida: config.kioskAlertPausaExcedidaEnabled,
         novedades: config.kioskAlertNovedadesEnabled,
         tareas_pendientes: config.kioskAlertTareasEnabled,
+        descanso_fuera_franja: config.kioskAlertDescansoFueraEnabled,
       })
     }
   }, [loading, config])
