@@ -375,6 +375,8 @@ export function ListadoVacaciones() {
                   <TableHead className="w-8"></TableHead>
                   <TableHead>Empleado</TableHead>
                   <TableHead>Sucursal</TableHead>
+                  <TableHead>Fecha ingreso</TableHead>
+                  <TableHead className="text-right">Antigüedad 31/12</TableHead>
                   <TableHead className="text-right">LCT</TableHead>
                   <TableHead className="text-right">Pend.</TableHead>
                   <TableHead className="text-right">Aprob.</TableHead>
