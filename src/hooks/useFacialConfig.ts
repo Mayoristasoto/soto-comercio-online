@@ -43,11 +43,13 @@ const defaultConfig: FacialConfig = {
   kioskAlertPausaExcedidaSeconds: 2,
   kioskAlertNovedadesSeconds: 5,
   kioskAlertTareasSeconds: 10,
+  kioskAlertDescansoFueraSeconds: 8,
   kioskAlertCrucesRojasEnabled: true,
   kioskAlertPausaExcedidaEnabled: true,
   kioskAlertNovedadesEnabled: true,
   kioskAlertTareasEnabled: true,
-  kioskAlertOrder: ["llegada_tarde","cruces_rojas","pausa_excedida","novedades","tareas_pendientes"],
+  kioskAlertDescansoFueraEnabled: true,
+  kioskAlertOrder: ["llegada_tarde","descanso_fuera_franja","cruces_rojas","pausa_excedida","novedades","tareas_pendientes"],
 }
 
 const parseBool = (raw: any): boolean => {
