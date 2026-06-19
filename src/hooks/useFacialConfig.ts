@@ -18,10 +18,12 @@ interface FacialConfig {
   kioskAlertPausaExcedidaSeconds: number
   kioskAlertNovedadesSeconds: number
   kioskAlertTareasSeconds: number
+  kioskAlertDescansoFueraSeconds: number
   kioskAlertCrucesRojasEnabled: boolean
   kioskAlertPausaExcedidaEnabled: boolean
   kioskAlertNovedadesEnabled: boolean
   kioskAlertTareasEnabled: boolean
+  kioskAlertDescansoFueraEnabled: boolean
   kioskAlertOrder: string[]
 }
 
