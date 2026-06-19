@@ -272,7 +272,8 @@ export function ListadoVacaciones() {
             <CardTitle>Listado de vacaciones por empleado</CardTitle>
             <CardDescription>
               Una línea por empleado. Click para ver el detalle de solicitudes (pendientes, aprobadas, rechazadas).
-              Los días restantes descuentan tanto pendientes como aprobadas.
+              Los días restantes descuentan tanto pendientes como aprobadas. Antigüedad calculada al 31/12 del año
+              seleccionado. Días LCT (Art. 150): &lt;5 años=14, &lt;10=21, &lt;20=28, ≥20=35.
             </CardDescription>
           </div>
           <Button onClick={exportarCSV} variant="outline" size="sm" disabled={!filtradas.length}>
