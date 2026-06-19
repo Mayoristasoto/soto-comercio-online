@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "@/hooks/use-toast"
 import {
   Clock, AlertTriangle, ShieldAlert, Coffee, Bell, ClipboardList,
-  ArrowUp, ArrowDown, Save, RotateCcw, GripVertical, Zap, Eye
+  ArrowUp, ArrowDown, Save, RotateCcw, GripVertical, Zap, Eye, CalendarClock
 } from "lucide-react"
 
 interface AlertDef {
