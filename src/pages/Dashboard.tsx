@@ -265,7 +265,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Calendario de Eventos - Primero */}
+      {/* Estado del personal hoy */}
+      {(isAdmin || isGerente) && (
+        <EstadoPersonalHoy />
+      )}
+
+      {/* Calendario de Eventos */}
       {(isAdmin || isGerente) && (
         <EventCalendar showAllEvents={true} />
       )}
