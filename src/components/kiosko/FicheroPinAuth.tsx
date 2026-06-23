@@ -785,14 +785,26 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
             </div>
 
             {!fotoCapturada ? (
-              <Button
-                onClick={handleCapturarFoto}
-                disabled={!cameraReady}
-                className="w-full h-14 text-lg"
-              >
-                <Camera className="h-5 w-5 mr-2" />
-                Capturar Foto
-              </Button>
+              <>
+                {empleadoFlags.liveness && (
+                  <div className={`text-sm text-center p-2 rounded ${livenessOk ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-900'}`}>
+                    {livenessStatus ?? 'Prueba de vida requerida: parpadee al menos una vez.'}
+                  </div>
+                )}
+                <Button
+                  onClick={handleCapturarFoto}
+                  disabled={!cameraReady || livenessRunning}
+                  className="w-full h-14 text-lg"
+                >
+                  {livenessRunning ? (
+                    <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Detectando parpadeo...</>
+                  ) : empleadoFlags.liveness && !livenessOk ? (
+                    <><Camera className="h-5 w-5 mr-2" />Iniciar prueba de vida</>
+                  ) : (
+                    <><Camera className="h-5 w-5 mr-2" />Capturar Foto</>
+                  )}
+                </Button>
+              </>
             ) : (
               <div className="flex gap-2">
                 <Button 
