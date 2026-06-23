@@ -29,7 +29,6 @@ interface Ubicacion {
 interface FotoVerif {
   id: string
   foto_url: string | null
-  storage_path: string | null
   created_at: string
   metodo_fichaje: string | null
 }
