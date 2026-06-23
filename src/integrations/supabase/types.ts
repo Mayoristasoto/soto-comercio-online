@@ -10010,6 +10010,21 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      dashboard_estado_personal_hoy: {
+        Args: never
+        Returns: {
+          apellido: string
+          avatar_url: string
+          empleado_id: string
+          estado: string
+          hora_entrada: string
+          hora_evento: string
+          nombre: string
+          puesto: string
+          sucursal_id: string
+          sucursal_nombre: string
+        }[]
+      }
       delegacion_masiva_tareas: {
         Args: {
           p_comentarios?: string

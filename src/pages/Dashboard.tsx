@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import EventCalendar from "@/components/dashboard/EventCalendar"
+import { EstadoPersonalHoy } from "@/components/dashboard/EstadoPersonalHoy"
 import { PWAInstallPrompt, PWAUpdatePrompt } from "@/components/PWAInstall"
 
 interface UserInfo {
@@ -265,7 +266,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Calendario de Eventos - Primero */}
+      {/* Estado del personal hoy */}
+      {(isAdmin || isGerente) && (
+        <EstadoPersonalHoy />
+      )}
+
+      {/* Calendario de Eventos */}
       {(isAdmin || isGerente) && (
         <EventCalendar showAllEvents={true} />
       )}
