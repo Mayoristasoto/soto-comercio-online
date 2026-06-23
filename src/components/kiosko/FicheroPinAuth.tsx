@@ -252,19 +252,31 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
       if (!result) throw new Error('Respuesta inválida del servidor')
       
       if (result.valido) {
-        // PIN correcto, obtener acciones disponibles
+        // PIN correcto: cargar flags del empleado (GPS / liveness obligatorios)
+        try {
+          const { data: flagsData } = await (supabase.rpc as any)('kiosk_get_empleado_flags', {
+            p_empleado_id: empleadoSeleccionado.id,
+          })
+          const f = flagsData?.[0]
+          setEmpleadoFlags({
+            gps: !!f?.gps_obligatorio,
+            liveness: !!f?.liveness_obligatorio,
+          })
+        } catch {
+          setEmpleadoFlags({ gps: false, liveness: false })
+        }
+        setLivenessOk(false)
+        setLivenessStatus(null)
+
         const acciones = await obtenerAccionesDisponibles(empleadoSeleccionado.id)
         setAccionesDisponibles(acciones)
         
         if (acciones.length === 1) {
-          // Solo una acción disponible, ir directo a foto
           setTipoAccionSeleccionado(acciones[0].tipo)
           setStep('photo')
         } else if (acciones.length > 1) {
-          // Múltiples acciones, mostrar selector
           setStep('action')
         } else {
-          // Sin acciones disponibles (no debería pasar)
           setStep('photo')
           setTipoAccionSeleccionado(null)
         }
