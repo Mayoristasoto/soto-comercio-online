@@ -70,6 +70,12 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
   const [cameraReady, setCameraReady] = useState(false)
   const [fotoCapturada, setFotoCapturada] = useState<string | null>(null)
 
+  // Per-employee flags (gps obligatorio / prueba de vida)
+  const [empleadoFlags, setEmpleadoFlags] = useState<{ gps: boolean; liveness: boolean }>({ gps: false, liveness: false })
+  const [livenessStatus, setLivenessStatus] = useState<string | null>(null)
+  const [livenessOk, setLivenessOk] = useState(false)
+  const [livenessRunning, setLivenessRunning] = useState(false)
+
   // Buscar empleados
   const buscarEmpleados = useCallback(async (query: string) => {
     if (query.length < 2) {
