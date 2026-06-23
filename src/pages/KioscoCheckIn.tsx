@@ -797,6 +797,25 @@ export default function KioscoCheckIn() {
       // Obtener ubicación GPS (opcional)
       const ubicacion = await obtenerUbicacionObligatoria(toast)
 
+      // Validar GPS obligatorio por empleado
+      try {
+        const { data: flagsData } = await (supabase.rpc as any)('kiosk_get_empleado_flags', {
+          p_empleado_id: empleadoParaFichaje.id,
+        })
+        const f = flagsData?.[0]
+        if (f?.gps_obligatorio && !ubicacion) {
+          toast({
+            title: 'GPS requerido',
+            description: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido} tiene GPS obligatorio. Active la ubicación e intente nuevamente.`,
+            variant: 'destructive',
+          })
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        console.warn('No se pudieron leer flags del empleado:', e)
+      }
+
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
@@ -813,6 +832,20 @@ export default function KioscoCheckIn() {
 
       if (error) {
         throw new Error(error.message || 'Error al registrar fichaje')
+      }
+
+      // Registrar ubicación reciente (purga a 10 si empleado tiene flag)
+      if (fichajeId && ubicacion) {
+        try {
+          await (supabase.rpc as any)('kiosk_registrar_ubicacion_reciente', {
+            p_empleado_id: empleadoParaFichaje.id,
+            p_lat: ubicacion.latitud,
+            p_lng: ubicacion.longitud,
+            p_accuracy: null,
+            p_metodo: 'facial',
+            p_fichaje_id: fichajeId,
+          })
+        } catch (e) { console.warn('No se pudo registrar ubicación reciente:', e) }
       }
 
       // Validar planilla de descansos (solo aplica si fue pausa_inicio y la sucursal tiene planilla)
@@ -1444,6 +1477,25 @@ export default function KioscoCheckIn() {
       // Obtener ubicación GPS (opcional)
       const ubicacion = await obtenerUbicacionObligatoria(toast)
 
+      // Validar GPS obligatorio por empleado
+      try {
+        const { data: flagsData } = await (supabase.rpc as any)('kiosk_get_empleado_flags', {
+          p_empleado_id: empleadoParaFichaje.id,
+        })
+        const f = flagsData?.[0]
+        if (f?.gps_obligatorio && !ubicacion) {
+          toast({
+            title: 'GPS requerido',
+            description: `${empleadoParaFichaje.nombre} ${empleadoParaFichaje.apellido} tiene GPS obligatorio. Active la ubicación e intente nuevamente.`,
+            variant: 'destructive',
+          })
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        console.warn('No se pudieron leer flags del empleado:', e)
+      }
+
       // Registrar fichaje usando función segura del kiosco
       const { data: fichajeId, error } = await supabase.rpc('kiosk_insert_fichaje', {
         p_empleado_id: empleadoParaFichaje.id,
@@ -1460,6 +1512,19 @@ export default function KioscoCheckIn() {
 
       if (error) {
         throw new Error(error.message || 'Error al registrar fichaje')
+      }
+
+      if (fichajeId && ubicacion) {
+        try {
+          await (supabase.rpc as any)('kiosk_registrar_ubicacion_reciente', {
+            p_empleado_id: empleadoParaFichaje.id,
+            p_lat: ubicacion.latitud,
+            p_lng: ubicacion.longitud,
+            p_accuracy: null,
+            p_metodo: 'facial',
+            p_fichaje_id: fichajeId,
+          })
+        } catch (e) { console.warn('No se pudo registrar ubicación reciente:', e) }
       }
 
       if (tipoAccion === 'pausa_inicio' && fichajeId) {

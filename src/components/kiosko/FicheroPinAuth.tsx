@@ -22,6 +22,7 @@ import {
   LogOut
 } from "lucide-react"
 import { guardarFotoVerificacion, capturarImagenCanvas } from "@/lib/verificacionFotosService"
+import { detectarParpadeo } from "@/lib/livenessDetection"
 
 interface EmpleadoBusqueda {
   id: string
@@ -68,6 +69,12 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
   const videoRef = useRef<HTMLVideoElement>(null)
   const [cameraReady, setCameraReady] = useState(false)
   const [fotoCapturada, setFotoCapturada] = useState<string | null>(null)
+
+  // Per-employee flags (gps obligatorio / prueba de vida)
+  const [empleadoFlags, setEmpleadoFlags] = useState<{ gps: boolean; liveness: boolean }>({ gps: false, liveness: false })
+  const [livenessStatus, setLivenessStatus] = useState<string | null>(null)
+  const [livenessOk, setLivenessOk] = useState(false)
+  const [livenessRunning, setLivenessRunning] = useState(false)
 
   // Buscar empleados
   const buscarEmpleados = useCallback(async (query: string) => {
@@ -245,19 +252,31 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
       if (!result) throw new Error('Respuesta inválida del servidor')
       
       if (result.valido) {
-        // PIN correcto, obtener acciones disponibles
+        // PIN correcto: cargar flags del empleado (GPS / liveness obligatorios)
+        try {
+          const { data: flagsData } = await (supabase.rpc as any)('kiosk_get_empleado_flags', {
+            p_empleado_id: empleadoSeleccionado.id,
+          })
+          const f = flagsData?.[0]
+          setEmpleadoFlags({
+            gps: !!f?.gps_obligatorio,
+            liveness: !!f?.liveness_obligatorio,
+          })
+        } catch {
+          setEmpleadoFlags({ gps: false, liveness: false })
+        }
+        setLivenessOk(false)
+        setLivenessStatus(null)
+
         const acciones = await obtenerAccionesDisponibles(empleadoSeleccionado.id)
         setAccionesDisponibles(acciones)
         
         if (acciones.length === 1) {
-          // Solo una acción disponible, ir directo a foto
           setTipoAccionSeleccionado(acciones[0].tipo)
           setStep('photo')
         } else if (acciones.length > 1) {
-          // Múltiples acciones, mostrar selector
           setStep('action')
         } else {
-          // Sin acciones disponibles (no debería pasar)
           setStep('photo')
           setTipoAccionSeleccionado(null)
         }
@@ -283,9 +302,44 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     setFotoCapturada(null)
   }
 
+  // Ejecutar prueba de vida (parpadeo) si es obligatoria
+  const ejecutarLiveness = async () => {
+    if (!videoRef.current || livenessRunning) return
+    setLivenessRunning(true)
+    setLivenessOk(false)
+    setLivenessStatus('Mire a la cámara y parpadee...')
+    try {
+      const ok = await detectarParpadeo(videoRef.current, {
+        timeoutMs: 8000,
+        onProgress: (m) => setLivenessStatus(m),
+      })
+      if (ok) {
+        setLivenessOk(true)
+        setLivenessStatus('Prueba de vida verificada ✓')
+      } else {
+        setLivenessStatus('No se detectó parpadeo. Intente nuevamente.')
+        toast({
+          title: 'Prueba de vida fallida',
+          description: 'No se detectó parpadeo. Parpadee al menos una vez frente a la cámara.',
+          variant: 'destructive',
+        })
+      }
+    } catch (e) {
+      console.error('Error liveness:', e)
+      setLivenessStatus('Error en la prueba de vida')
+    } finally {
+      setLivenessRunning(false)
+    }
+  }
+
   // Capturar foto
-  const handleCapturarFoto = () => {
+  const handleCapturarFoto = async () => {
     if (!videoRef.current) return
+    // Si el empleado requiere prueba de vida obligatoria, debe pasar antes de capturar
+    if (empleadoFlags.liveness && !livenessOk) {
+      await ejecutarLiveness()
+      return
+    }
     const foto = capturarImagenCanvas(videoRef.current)
     if (foto) {
       setFotoCapturada(foto)
@@ -301,20 +355,23 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     
     try {
       // Obtener ubicación
-      let ubicacion = { latitud: null as number | null, longitud: null as number | null }
+      let ubicacion = { latitud: null as number | null, longitud: null as number | null, accuracy: null as number | null }
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, enableHighAccuracy: true })
         })
         ubicacion = {
           latitud: position.coords.latitude,
-          longitud: position.coords.longitude
+          longitud: position.coords.longitude,
+          accuracy: position.coords.accuracy ?? null,
         }
       } catch {
-        if (facialConfig.pinGpsRequired) {
+        if (facialConfig.pinGpsRequired || empleadoFlags.gps) {
           toast({
             title: "GPS requerido",
-            description: "Debe activar el GPS para fichar con PIN. Habilite la ubicación en su dispositivo e intente nuevamente.",
+            description: empleadoFlags.gps
+              ? "Este empleado tiene GPS obligatorio. Habilite la ubicación en el dispositivo e intente nuevamente."
+              : "Debe activar el GPS para fichar con PIN. Habilite la ubicación en su dispositivo e intente nuevamente.",
             variant: "destructive"
           })
           setStep('photo')
@@ -323,6 +380,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
         }
         console.log('No se pudo obtener ubicación')
       }
+
 
       // Llamar RPC para fichaje con PIN
       const { data, error } = await supabase.rpc('kiosk_fichaje_pin', {
@@ -384,6 +442,21 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
          setLoading(false)
          return
        }
+
+      // Registrar ubicación reciente (purga automática a 10 si empleado tiene flag)
+      try {
+        await (supabase.rpc as any)('kiosk_registrar_ubicacion_reciente', {
+          p_empleado_id: empleadoSeleccionado.id,
+          p_lat: ubicacion.latitud,
+          p_lng: ubicacion.longitud,
+          p_accuracy: ubicacion.accuracy,
+          p_metodo: 'pin',
+          p_fichaje_id: result.fichaje_id,
+        })
+      } catch (e) {
+        console.warn('[Fichaje PIN] No se pudo registrar ubicación reciente:', e)
+      }
+
 
       // Notificar éxito
       onSuccess(
@@ -712,14 +785,26 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
             </div>
 
             {!fotoCapturada ? (
-              <Button
-                onClick={handleCapturarFoto}
-                disabled={!cameraReady}
-                className="w-full h-14 text-lg"
-              >
-                <Camera className="h-5 w-5 mr-2" />
-                Capturar Foto
-              </Button>
+              <>
+                {empleadoFlags.liveness && (
+                  <div className={`text-sm text-center p-2 rounded ${livenessOk ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-900'}`}>
+                    {livenessStatus ?? 'Prueba de vida requerida: parpadee al menos una vez.'}
+                  </div>
+                )}
+                <Button
+                  onClick={handleCapturarFoto}
+                  disabled={!cameraReady || livenessRunning}
+                  className="w-full h-14 text-lg"
+                >
+                  {livenessRunning ? (
+                    <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Detectando parpadeo...</>
+                  ) : empleadoFlags.liveness && !livenessOk ? (
+                    <><Camera className="h-5 w-5 mr-2" />Iniciar prueba de vida</>
+                  ) : (
+                    <><Camera className="h-5 w-5 mr-2" />Capturar Foto</>
+                  )}
+                </Button>
+              </>
             ) : (
               <div className="flex gap-2">
                 <Button 

@@ -10369,6 +10369,13 @@ export type Database = {
         }[]
       }
       kiosk_get_alert_config: { Args: never; Returns: Json }
+      kiosk_get_empleado_flags: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          gps_obligatorio: boolean
+          liveness_obligatorio: boolean
+        }[]
+      }
       kiosk_get_limpieza_hoy: {
         Args: { p_empleado_id: string }
         Returns: {
