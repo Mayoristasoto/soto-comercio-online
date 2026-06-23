@@ -66,7 +66,7 @@ export default function EmployeeSeguridadTab({ empleadoId }: Props) {
 
       const { data: fts } = await supabase
         .from('fichajes_fotos_verificacion')
-        .select('id, foto_url, storage_path, created_at, metodo_fichaje')
+        .select('id, foto_url, created_at, metodo_fichaje')
         .eq('empleado_id', empleadoId)
         .order('created_at', { ascending: false })
         .limit(10)
