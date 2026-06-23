@@ -22,6 +22,7 @@ import {
   LogOut
 } from "lucide-react"
 import { guardarFotoVerificacion, capturarImagenCanvas } from "@/lib/verificacionFotosService"
+import { detectarParpadeo } from "@/lib/livenessDetection"
 
 interface EmpleadoBusqueda {
   id: string
