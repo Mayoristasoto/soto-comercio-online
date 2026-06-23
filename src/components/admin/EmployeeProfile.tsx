@@ -646,6 +646,10 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
           <TabsContent value="cruces-rojas">
             <EmployeeCrucesRojas empleadoId={empleado.id} />
           </TabsContent>
+
+          <TabsContent value="seguridad">
+            <EmployeeSeguridadTab empleadoId={empleado.id} />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
