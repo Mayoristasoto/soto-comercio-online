@@ -302,9 +302,44 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     setFotoCapturada(null)
   }
 
+  // Ejecutar prueba de vida (parpadeo) si es obligatoria
+  const ejecutarLiveness = async () => {
+    if (!videoRef.current || livenessRunning) return
+    setLivenessRunning(true)
+    setLivenessOk(false)
+    setLivenessStatus('Mire a la cámara y parpadee...')
+    try {
+      const ok = await detectarParpadeo(videoRef.current, {
+        timeoutMs: 8000,
+        onProgress: (m) => setLivenessStatus(m),
+      })
+      if (ok) {
+        setLivenessOk(true)
+        setLivenessStatus('Prueba de vida verificada ✓')
+      } else {
+        setLivenessStatus('No se detectó parpadeo. Intente nuevamente.')
+        toast({
+          title: 'Prueba de vida fallida',
+          description: 'No se detectó parpadeo. Parpadee al menos una vez frente a la cámara.',
+          variant: 'destructive',
+        })
+      }
+    } catch (e) {
+      console.error('Error liveness:', e)
+      setLivenessStatus('Error en la prueba de vida')
+    } finally {
+      setLivenessRunning(false)
+    }
+  }
+
   // Capturar foto
-  const handleCapturarFoto = () => {
+  const handleCapturarFoto = async () => {
     if (!videoRef.current) return
+    // Si el empleado requiere prueba de vida obligatoria, debe pasar antes de capturar
+    if (empleadoFlags.liveness && !livenessOk) {
+      await ejecutarLiveness()
+      return
+    }
     const foto = capturarImagenCanvas(videoRef.current)
     if (foto) {
       setFotoCapturada(foto)
@@ -320,20 +355,23 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     
     try {
       // Obtener ubicación
-      let ubicacion = { latitud: null as number | null, longitud: null as number | null }
+      let ubicacion = { latitud: null as number | null, longitud: null as number | null, accuracy: null as number | null }
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, enableHighAccuracy: true })
         })
         ubicacion = {
           latitud: position.coords.latitude,
-          longitud: position.coords.longitude
+          longitud: position.coords.longitude,
+          accuracy: position.coords.accuracy ?? null,
         }
       } catch {
-        if (facialConfig.pinGpsRequired) {
+        if (facialConfig.pinGpsRequired || empleadoFlags.gps) {
           toast({
             title: "GPS requerido",
-            description: "Debe activar el GPS para fichar con PIN. Habilite la ubicación en su dispositivo e intente nuevamente.",
+            description: empleadoFlags.gps
+              ? "Este empleado tiene GPS obligatorio. Habilite la ubicación en el dispositivo e intente nuevamente."
+              : "Debe activar el GPS para fichar con PIN. Habilite la ubicación en su dispositivo e intente nuevamente.",
             variant: "destructive"
           })
           setStep('photo')
@@ -342,6 +380,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
         }
         console.log('No se pudo obtener ubicación')
       }
+
 
       // Llamar RPC para fichaje con PIN
       const { data, error } = await supabase.rpc('kiosk_fichaje_pin', {
