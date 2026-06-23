@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import EventCalendar from "@/components/dashboard/EventCalendar"
+import { EstadoPersonalHoy } from "@/components/dashboard/EstadoPersonalHoy"
 import { PWAInstallPrompt, PWAUpdatePrompt } from "@/components/PWAInstall"
 
 interface UserInfo {
