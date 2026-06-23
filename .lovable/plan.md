@@ -1,116 +1,70 @@
+
 ## Objetivo
 
-Agregar configuración por empleado para:
-1. **GPS obligatorio** (aplica a fichaje PIN y facial)
-2. **Prueba de vida obligatoria al fichar con PIN** (parpadeo/movimiento, no solo foto)
-3. **Retención de 10 fotos + 10 ubicaciones recientes** específicamente para Agustina Galaz
+Agregar al Dashboard Principal una nueva sección **"Estado del personal hoy"** que muestre, agrupado por sucursal, cuántos empleados están:
 
----
+- **Trabajando** (con fichaje de entrada hoy sin salida)
+- **En descanso / pausa** (pausa activa actual)
+- **Ausentes / no fichados** (con turno hoy pero sin fichar)
+- **De vacaciones** (solicitud aprobada que incluye hoy)
+- **Con licencia / ausencia médica** (ausencia médica aprobada vigente hoy)
+- **Franco / sin turno** (no tiene turno hoy)
 
-## 1. Base de datos
+## UI
 
-**Migración** que agrega 2 columnas a `empleados`:
+Nueva tarjeta en `src/pages/Dashboard.tsx` arriba del Calendario de Eventos:
 
-- `gps_obligatorio` BOOLEAN DEFAULT false — fuerza GPS activo en cualquier fichaje (PIN o facial)
-- `liveness_obligatorio` BOOLEAN DEFAULT false — fuerza prueba de vida en fichaje con PIN
+- Encabezado con título, fecha de hoy y total general por estado (chips de colores).
+- Grid de **cards por sucursal**, cada una con:
+  - Nombre de sucursal + total de empleados activos
+  - Contadores con colores semánticos: verde (Trabajando), ámbar (Descanso), rojo (Ausente), azul (Vacaciones), violeta (Licencia), gris (Franco)
+  - Botón "Ver detalle" → abre un Dialog con la lista de empleados de esa sucursal y su estado, con avatar/nombre/puesto/hora de entrada si aplica.
+- Filtro arriba: selector de sucursal (Todas / específica) y switch "Solo con incidencias".
+- Botón refrescar manual + auto-refresh cada 60s.
 
-**Tabla nueva `empleados_ubicaciones_recientes`** (para Agustina y futuros casos similares):
-- `empleado_id`, `lat`, `lng`, `accuracy`, `metodo` ('pin'|'facial'), `fichaje_id`, `created_at`
-- RLS: admins leen, edge functions/RPC escriben
-- GRANTs estándar
+Componentes nuevos:
+- `src/components/dashboard/EstadoPersonalHoy.tsx` — contenedor + grid de sucursales
+- `src/components/dashboard/EstadoSucursalCard.tsx` — card de una sucursal
+- `src/components/dashboard/EstadoPersonalDetalleDialog.tsx` — modal con lista de empleados
 
-**Trigger / función `mantener_ultimas_n_ubicaciones`** que purga al insertar, dejando solo las últimas N (10 por defecto). Se ejecuta solo si el empleado tiene flag `retener_ubicaciones_recientes` activo (nuevo bool en `empleados`, inicializado true para Agustina).
+## Lógica de datos
 
-**Trigger en `fichajes_fotos_verificacion`** equivalente: cuando un empleado tiene `retener_fotos_recientes = true`, al insertar nueva foto se purgan las anteriores dejando solo 10 (eliminando archivo en storage vía función).
+Hook `src/hooks/useEstadoPersonalHoy.ts` que para `hoy` (TZ Argentina) calcula por empleado activo su estado, en este orden de prioridad:
 
-Inicialización para Agustina (`56cf495f-41ca-4615-8a57-05d62c429c9c`):
-```sql
-UPDATE empleados SET 
-  retener_ubicaciones_recientes = true,
-  retener_fotos_recientes = true
-WHERE id = '56cf495f-41ca-4615-8a57-05d62c429c9c';
-```
+1. **Vacaciones**: existe `solicitudes_vacaciones` con `estado='aprobada'` y `hoy BETWEEN fecha_inicio AND fecha_fin`.
+2. **Licencia**: existe `ausencias_medicas` aprobada vigente hoy.
+3. **Trabajando / Descanso / Ausente**: a partir de `fichajes` y `empleado_turnos` del día:
+   - Tiene fichaje de entrada hoy sin salida → si hay pausa activa (lógica existente `kiosk_get_pausa_activa` / campos de pausa en `fichajes`) → **Descanso**, si no → **Trabajando**.
+   - Tiene turno hoy y no fichó → **Ausente**.
+   - No tiene turno hoy → **Franco**.
 
----
+Para evitar N+1: una sola RPC `dashboard_estado_personal_hoy()` (SECURITY DEFINER) que devuelva una fila por empleado activo con `empleado_id, nombre, apellido, sucursal_id, sucursal_nombre, puesto, estado, hora_entrada, hora_pausa_inicio`. El frontend agrupa por sucursal y cuenta.
 
-## 2. Frontend — Configuración por empleado
-
-En `src/components/admin/EmployeeProfile.tsx` (o pestaña Seguridad/Fichaje del perfil), agregar 2 switches:
-- "GPS obligatorio en fichaje"
-- "Prueba de vida obligatoria al fichar con PIN"
-
-Persisten en `empleados.gps_obligatorio` y `empleados.liveness_obligatorio`.
-
----
-
-## 3. Frontend — Flujo PIN (`src/components/kiosko/FicheroPinAuth.tsx`)
-
-Después de seleccionar empleado, leer flags del empleado (`gps_obligatorio`, `liveness_obligatorio`).
-
-**GPS obligatorio:**
-- Si flag activo y `getCurrentPosition` falla → bloquear fichaje (mensaje claro). Hoy ya existe lógica con `pinGpsRequired` global; se extiende para usar `OR (empleado.gps_obligatorio)`.
-
-**Prueba de vida (parpadeo) en PIN:**
-- Si `liveness_obligatorio = true`, antes de la captura, ejecutar detección de parpadeo usando `face-api.js` (ya cargado en kiosco facial).
-- Reusar el detector existente: cargar modelos `tinyFaceDetector` + `faceLandmark68Net`, calcular EAR (eye aspect ratio) sobre frames durante ~5s, exigir al menos 1 parpadeo (EAR < 0.22 → > 0.28).
-- Si no se detecta parpadeo en X segundos → mostrar mensaje "Parpadee al menos una vez" y reintentar; cancelar fichaje si se aborta.
-- Capturar la foto durante o inmediatamente después del parpadeo confirmado.
-
-Crear utilitario nuevo `src/lib/livenessDetection.ts` con función `detectarParpadeo(videoEl, opts): Promise<{ok: boolean, foto?: string}>`.
-
----
-
-## 4. Frontend — Flujo Facial (`src/pages/KioscoCheckIn.tsx`)
-
-Tras reconocer al empleado, antes de confirmar el fichaje:
-- Si `empleado.gps_obligatorio = true` y no hay coords válidas → bloquear con mensaje claro y pedir habilitar GPS.
-
-(El flujo facial ya hace liveness de algún tipo; no se modifica esa parte.)
-
----
-
-## 5. Persistencia adicional para empleados con retención
-
-Tras un fichaje exitoso, además del INSERT actual en `fichajes_fotos_verificacion`:
-- Si `empleado.retener_ubicaciones_recientes = true`, INSERT en `empleados_ubicaciones_recientes` con lat/lng/accuracy.
-- Los triggers se encargan de purgar a 10 entradas máx.
-
-El insert de la ubicación se hace dentro del RPC `kiosk_fichaje_pin` y del flujo facial (RPC server-side) para no depender del cliente.
-
----
-
-## 6. Visualización (admin)
-
-Nueva sección en `EmployeeProfile.tsx` "Auditoría reciente" (visible solo si el empleado tiene los flags de retención):
-- Galería de últimas 10 fotos (signed URLs desde storage)
-- Mapa simple o lista con últimas 10 ubicaciones (lat/lng + fecha + método)
-
----
+Acceso: solo roles con permiso de ver el dashboard global (admin / admin_rrhh / gerente_sucursal). Para gerente_sucursal, la RPC filtra a sus sucursales asignadas (`asignacion_empleado_sucursal`).
 
 ## Detalles técnicos
 
-**Archivos a crear:**
-- `src/lib/livenessDetection.ts` — utilidad de detección de parpadeo
-- `src/components/admin/EmployeeAuditoriaReciente.tsx` — galería de fotos + lista ubicaciones
+**Archivos nuevos:**
+- `src/components/dashboard/EstadoPersonalHoy.tsx`
+- `src/components/dashboard/EstadoSucursalCard.tsx`
+- `src/components/dashboard/EstadoPersonalDetalleDialog.tsx`
+- `src/hooks/useEstadoPersonalHoy.ts`
 
 **Archivos a modificar:**
-- `src/components/kiosko/FicheroPinAuth.tsx` — leer flags por empleado, integrar liveness, validar GPS
-- `src/pages/KioscoCheckIn.tsx` — validar GPS por empleado en flujo facial
-- `src/components/admin/EmployeeProfile.tsx` — switches de GPS/liveness + sección auditoría
+- `src/pages/Dashboard.tsx` — montar `<EstadoPersonalHoy />` antes del calendario.
 
 **Migración:**
-- ALTER `empleados` + 4 columnas (`gps_obligatorio`, `liveness_obligatorio`, `retener_fotos_recientes`, `retener_ubicaciones_recientes`)
-- CREATE `empleados_ubicaciones_recientes` con GRANTs + RLS + triggers de purga
-- Trigger `purgar_fotos_verificacion_recientes` sobre `fichajes_fotos_verificacion`
-- UPDATE para Agustina activando ambos retener_* y `liveness_obligatorio` + `gps_obligatorio`
+- Crear RPC `public.dashboard_estado_personal_hoy()` SECURITY DEFINER que aplique el cálculo anterior y aplique filtro por sucursales del usuario si es gerente. GRANT EXECUTE a `authenticated`.
 
-**RPC `kiosk_fichaje_pin`:** ampliar para insertar en `empleados_ubicaciones_recientes` cuando corresponda (usa SECURITY DEFINER, ya bypassa RLS).
+**Colores:** usar tokens semánticos existentes (`text-emerald-600`, `text-amber-600`, etc. ya usados en el proyecto). Sin hardcode de hex.
 
----
+**TZ:** usar `src/lib/dateUtils.ts` (Argentina UTC-3) para obtener "hoy".
 
 ## Validación
 
-1. Activar `gps_obligatorio` en un empleado de prueba → simular GPS bloqueado → fichaje rechazado tanto en PIN como facial.
-2. Activar `liveness_obligatorio` → entrar al flujo PIN → no permitir capturar foto sin parpadeo detectado.
-3. Hacer 12 fichajes consecutivos para Agustina → verificar que solo quedan las últimas 10 fotos en `fichajes_fotos_verificacion` (filtrado por empleado_id) y 10 ubicaciones en `empleados_ubicaciones_recientes`.
-4. Confirmar que para empleados sin flag, el comportamiento actual no cambia.
+1. Empleado fichado entrada sin salida → cuenta en **Trabajando** de su sucursal.
+2. Mismo empleado inicia pausa → pasa a **Descanso**.
+3. Empleado con `solicitudes_vacaciones` aprobada que cubre hoy → **Vacaciones** (aunque tenga turno).
+4. Empleado con turno hoy y sin fichaje → **Ausente**.
+5. Gerente de sucursal solo ve sus sucursales; admin/RRHH ven todas.
+6. Totales por sucursal coinciden con totales generales.
