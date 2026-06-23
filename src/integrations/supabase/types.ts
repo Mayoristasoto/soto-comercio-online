@@ -2655,14 +2655,18 @@ export type Database = {
           email: string
           fecha_baja: string | null
           fecha_ingreso: string
+          gps_obligatorio: boolean
           grupo_id: string | null
           horas_jornada_estandar: number | null
           horas_semanales_objetivo: number | null
           id: string
           legajo: string | null
+          liveness_obligatorio: boolean
           nombre: string
           puesto: string | null
           puesto_id: string | null
+          retener_fotos_recientes: boolean
+          retener_ubicaciones_recientes: boolean
           rol: Database["public"]["Enums"]["user_role"]
           sucursal_id: string | null
           tipo_jornada: string
@@ -2683,14 +2687,18 @@ export type Database = {
           email: string
           fecha_baja?: string | null
           fecha_ingreso?: string
+          gps_obligatorio?: boolean
           grupo_id?: string | null
           horas_jornada_estandar?: number | null
           horas_semanales_objetivo?: number | null
           id?: string
           legajo?: string | null
+          liveness_obligatorio?: boolean
           nombre: string
           puesto?: string | null
           puesto_id?: string | null
+          retener_fotos_recientes?: boolean
+          retener_ubicaciones_recientes?: boolean
           rol?: Database["public"]["Enums"]["user_role"]
           sucursal_id?: string | null
           tipo_jornada?: string
@@ -2711,14 +2719,18 @@ export type Database = {
           email?: string
           fecha_baja?: string | null
           fecha_ingreso?: string
+          gps_obligatorio?: boolean
           grupo_id?: string | null
           horas_jornada_estandar?: number | null
           horas_semanales_objetivo?: number | null
           id?: string
           legajo?: string | null
+          liveness_obligatorio?: boolean
           nombre?: string
           puesto?: string | null
           puesto_id?: string | null
+          retener_fotos_recientes?: boolean
+          retener_ubicaciones_recientes?: boolean
           rol?: Database["public"]["Enums"]["user_role"]
           sucursal_id?: string | null
           tipo_jornada?: string
@@ -3312,6 +3324,68 @@ export type Database = {
           },
           {
             foreignKeyName: "empleados_rostros_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleados_ubicaciones_recientes: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          empleado_id: string
+          fichaje_id: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          metodo: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          empleado_id: string
+          fichaje_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          metodo?: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          empleado_id?: string
+          fichaje_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          metodo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleados_ubicaciones_recientes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_ubicaciones_recientes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_ubicaciones_recientes_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleados_ubicaciones_recientes_empleado_id_fkey"
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
@@ -10419,6 +10493,17 @@ export type Database = {
           p_asignacion_id: string
           p_completada: boolean
           p_empleado_id: string
+        }
+        Returns: undefined
+      }
+      kiosk_registrar_ubicacion_reciente: {
+        Args: {
+          p_accuracy?: number
+          p_empleado_id: string
+          p_fichaje_id?: string
+          p_lat: number
+          p_lng: number
+          p_metodo?: string
         }
         Returns: undefined
       }
