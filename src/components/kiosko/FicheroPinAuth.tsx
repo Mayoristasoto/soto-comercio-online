@@ -443,6 +443,21 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
          return
        }
 
+      // Registrar ubicación reciente (purga automática a 10 si empleado tiene flag)
+      try {
+        await (supabase.rpc as any)('kiosk_registrar_ubicacion_reciente', {
+          p_empleado_id: empleadoSeleccionado.id,
+          p_lat: ubicacion.latitud,
+          p_lng: ubicacion.longitud,
+          p_accuracy: ubicacion.accuracy,
+          p_metodo: 'pin',
+          p_fichaje_id: result.fichaje_id,
+        })
+      } catch (e) {
+        console.warn('[Fichaje PIN] No se pudo registrar ubicación reciente:', e)
+      }
+
+
       // Notificar éxito
       onSuccess(
         empleadoSeleccionado.id,
