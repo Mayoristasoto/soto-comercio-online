@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Download, Search, ChevronRight, ChevronDown } from "lucide-react";
+import { Loader2, Download, Search, ChevronRight, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { es } from "date-fns/locale";
 
