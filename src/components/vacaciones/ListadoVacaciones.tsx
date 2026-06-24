@@ -303,12 +303,6 @@ export function ListadoVacaciones() {
         ].join(","));
         continue;
       }
-          `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
-          fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
-          "", "", "", "",
-        ].join(","));
-        continue;
-      }
       for (const s of r.solicitudes) {
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
