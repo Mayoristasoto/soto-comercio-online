@@ -85,6 +85,18 @@ export function ListadoVacaciones() {
   const [busqueda, setBusqueda] = useState("");
   const [excluirInactivos, setExcluirInactivos] = useState(true);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  type SortKey = "empleado" | "sucursal" | "fecha_ingreso" | "antiguedad" | "lct" | "pendientes" | "aprobadas" | "consumidos" | "restantes";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   useEffect(() => {
     cargar();
