@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Download, Search, ChevronRight, ChevronDown } from "lucide-react";
+import { Loader2, Download, Search, ChevronRight, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -85,6 +85,18 @@ export function ListadoVacaciones() {
   const [busqueda, setBusqueda] = useState("");
   const [excluirInactivos, setExcluirInactivos] = useState(true);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  type SortKey = "empleado" | "sucursal" | "fecha_ingreso" | "antiguedad" | "lct" | "pendientes" | "aprobadas" | "consumidos" | "restantes";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   useEffect(() => {
     cargar();
@@ -232,13 +244,55 @@ export function ListadoVacaciones() {
     return t;
   }, [filtradas]);
 
+  const filtradasOrdenadas = useMemo(() => {
+    if (!sortKey) return filtradas;
+    const arr = [...filtradas];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const getVal = (r: EmpleadoRow): string | number => {
+      switch (sortKey) {
+        case "empleado": return `${r.empleado_apellido} ${r.empleado_nombre}`.toLowerCase();
+        case "sucursal": return (r.sucursal_nombre ?? "").toLowerCase();
+        case "fecha_ingreso": return r.fecha_ingreso ? new Date(r.fecha_ingreso).getTime() : 0;
+        case "antiguedad": return r.antiguedad_anios;
+        case "lct": return r.dias_segun_ley;
+        case "pendientes": return r.pendientes;
+        case "aprobadas": return r.aprobadas;
+        case "consumidos": return r.dias_consumidos;
+        case "restantes": return r.dias_restantes;
+      }
+    };
+    arr.sort((a, b) => {
+      const av = getVal(a); const bv = getVal(b);
+      if (typeof av === "string" && typeof bv === "string") return av.localeCompare(bv) * dir;
+      return ((av as number) - (bv as number)) * dir;
+    });
+    return arr;
+  }, [filtradas, sortKey, sortDir]);
+
+  const SortableHead = ({ k, label, align }: { k: SortKey; label: string; align?: "right" }) => {
+    const active = sortKey === k;
+    const Icon = active ? (sortDir === "asc" ? ChevronUp : ChevronDown) : ChevronsUpDown;
+    return (
+      <TableHead className={align === "right" ? "text-right" : ""}>
+        <button
+          type="button"
+          onClick={() => toggleSort(k)}
+          className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-foreground font-semibold" : ""} ${align === "right" ? "ml-auto" : ""}`}
+        >
+          {label}
+          <Icon className="h-3.5 w-3.5 opacity-70" />
+        </button>
+      </TableHead>
+    );
+  };
+
   const exportarCSV = () => {
     const headers = [
       "Empleado", "Sucursal", "Fecha ingreso", "Antigüedad", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
       "Estado solicitud", "Inicio", "Fin", "Días",
     ];
     const lines = [headers.join(",")];
-    for (const r of filtradas) {
+    for (const r of filtradasOrdenadas) {
       const fi = r.fecha_ingreso ?? "";
       const ant = r.fecha_ingreso ? r.antiguedad_anios : "";
       if (!r.solicitudes.length) {
@@ -375,19 +429,19 @@ export function ListadoVacaciones() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
-                  <TableHead>Empleado</TableHead>
-                  <TableHead>Sucursal</TableHead>
-                  <TableHead>Fecha ingreso</TableHead>
-                  <TableHead className="text-right">Antigüedad 31/12</TableHead>
-                  <TableHead className="text-right">LCT</TableHead>
-                  <TableHead className="text-right">Pend.</TableHead>
-                  <TableHead className="text-right">Aprob.</TableHead>
-                  <TableHead className="text-right">Consumidos</TableHead>
-                  <TableHead className="text-right">Restantes</TableHead>
+                  <SortableHead k="empleado" label="Empleado" />
+                  <SortableHead k="sucursal" label="Sucursal" />
+                  <SortableHead k="fecha_ingreso" label="Fecha ingreso" />
+                  <SortableHead k="antiguedad" label="Antigüedad 31/12" align="right" />
+                  <SortableHead k="lct" label="LCT" align="right" />
+                  <SortableHead k="pendientes" label="Pend." align="right" />
+                  <SortableHead k="aprobadas" label="Aprob." align="right" />
+                  <SortableHead k="consumidos" label="Consumidos" align="right" />
+                  <SortableHead k="restantes" label="Restantes" align="right" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtradas.map((r) => {
+                {filtradasOrdenadas.map((r) => {
                   const open = expandidos.has(r.empleado_id);
                   const tieneDetalle = r.solicitudes.length > 0;
                   return (
