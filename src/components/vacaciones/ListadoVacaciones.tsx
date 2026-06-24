@@ -181,7 +181,7 @@ export function ListadoVacaciones() {
           fecha_aprobacion: s.fecha_aprobacion,
         });
         if (s.estado === "pendiente") { row.pendientes += 1; row.dias_consumidos += dias; }
-        else if (s.estado === "aprobada") { row.aprobadas += 1; row.dias_consumidos += dias; }
+        else if (s.estado === "aprobada" || s.estado === "gozadas") { row.aprobadas += 1; row.dias_consumidos += dias; }
         else if (s.estado === "rechazada") { row.rechazadas += 1; }
       }
 
