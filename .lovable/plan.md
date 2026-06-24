@@ -1,70 +1,42 @@
+# Diagnóstico — Por qué no pudo fichar Washintong
 
-## Objetivo
+## Resultado de la investigación
 
-Agregar al Dashboard Principal una nueva sección **"Estado del personal hoy"** que muestre, agrupado por sucursal, cuántos empleados están:
+Washintong Celindo Bartolo Loyola (legajo 1) **no tiene ningún intento de fichaje registrado hoy** (24/06/2026):
 
-- **Trabajando** (con fichaje de entrada hoy sin salida)
-- **En descanso / pausa** (pausa activa actual)
-- **Ausentes / no fichados** (con turno hoy pero sin fichar)
-- **De vacaciones** (solicitud aprobada que incluye hoy)
-- **Con licencia / ausencia médica** (ausencia médica aprobada vigente hoy)
-- **Franco / sin turno** (no tiene turno hoy)
+- 0 fichajes en `fichajes`
+- 0 eventos en `facial_recognition_logs`
+- 0 llamadas en `api_logs`
+- 0 incidencias en `fichaje_incidencias`
+- Sin rate limit activo
+- Empleado activo, con turno asignado y 2 rostros válidos (confianza 0.89 y 0.91)
+- Último fichaje OK: ayer 23/06 (entrada 10:19, salida 18:23 UTC)
 
-## UI
+## Causa raíz probable
 
-Nueva tarjeta en `src/pages/Dashboard.tsx` arriba del Calendario de Eventos:
+Pertenece a la sucursal **Olazar 26**. Revisando el resto de empleados de esa sucursal:
 
-- Encabezado con título, fecha de hoy y total general por estado (chips de colores).
-- Grid de **cards por sucursal**, cada una con:
-  - Nombre de sucursal + total de empleados activos
-  - Contadores con colores semánticos: verde (Trabajando), ámbar (Descanso), rojo (Ausente), azul (Vacaciones), violeta (Licencia), gris (Franco)
-  - Botón "Ver detalle" → abre un Dialog con la lista de empleados de esa sucursal y su estado, con avatar/nombre/puesto/hora de entrada si aplica.
-- Filtro arriba: selector de sucursal (Todas / específica) y switch "Solo con incidencias".
-- Botón refrescar manual + auto-refresh cada 60s.
+| Empleado | Fichajes hoy |
+|---|---|
+| Washintong Celindo Bartolo Loyola | 0 |
+| Juan Domingo Martinez | 0 |
 
-Componentes nuevos:
-- `src/components/dashboard/EstadoPersonalHoy.tsx` — contenedor + grid de sucursales
-- `src/components/dashboard/EstadoSucursalCard.tsx` — card de una sucursal
-- `src/components/dashboard/EstadoPersonalDetalleDialog.tsx` — modal con lista de empleados
+**Nadie de Olazar 26 fichó hoy.** En el resto de sucursales sí hubo actividad normal (José Martí 6, Juan B. Justo 4, Ventas 1, Administración 1).
 
-## Lógica de datos
+Conclusión: el problema **no es del empleado ni del sistema**, sino del **dispositivo kiosco de la sucursal Olazar 26**, que no envió ninguna request hoy.
 
-Hook `src/hooks/useEstadoPersonalHoy.ts` que para `hoy` (TZ Argentina) calcula por empleado activo su estado, en este orden de prioridad:
+## Acciones sugeridas (a confirmar con el usuario)
 
-1. **Vacaciones**: existe `solicitudes_vacaciones` con `estado='aprobada'` y `hoy BETWEEN fecha_inicio AND fecha_fin`.
-2. **Licencia**: existe `ausencias_medicas` aprobada vigente hoy.
-3. **Trabajando / Descanso / Ausente**: a partir de `fichajes` y `empleado_turnos` del día:
-   - Tiene fichaje de entrada hoy sin salida → si hay pausa activa (lógica existente `kiosk_get_pausa_activa` / campos de pausa en `fichajes`) → **Descanso**, si no → **Trabajando**.
-   - Tiene turno hoy y no fichó → **Ausente**.
-   - No tiene turno hoy → **Franco**.
+1. **Verificar físicamente** el kiosco de Olazar 26:
+   - Equipo encendido
+   - Conexión a internet
+   - Navegador abierto en la URL del kiosco
+   - Cámara funcionando
+   - Token de dispositivo válido (revisar `kiosk_devices` para esa sucursal)
+2. Una vez restablecido, decidir si:
+   - Se cargan **fichajes manuales** para Washintong y Juan Domingo del día de hoy, o
+   - Se generan **incidencias** (`fichaje_incidencias`) para que los empleados/gerente las justifiquen desde Autogestión.
 
-Para evitar N+1: una sola RPC `dashboard_estado_personal_hoy()` (SECURITY DEFINER) que devuelva una fila por empleado activo con `empleado_id, nombre, apellido, sucursal_id, sucursal_nombre, puesto, estado, hora_entrada, hora_pausa_inicio`. El frontend agrupa por sucursal y cuenta.
+## Próximo paso
 
-Acceso: solo roles con permiso de ver el dashboard global (admin / admin_rrhh / gerente_sucursal). Para gerente_sucursal, la RPC filtra a sus sucursales asignadas (`asignacion_empleado_sucursal`).
-
-## Detalles técnicos
-
-**Archivos nuevos:**
-- `src/components/dashboard/EstadoPersonalHoy.tsx`
-- `src/components/dashboard/EstadoSucursalCard.tsx`
-- `src/components/dashboard/EstadoPersonalDetalleDialog.tsx`
-- `src/hooks/useEstadoPersonalHoy.ts`
-
-**Archivos a modificar:**
-- `src/pages/Dashboard.tsx` — montar `<EstadoPersonalHoy />` antes del calendario.
-
-**Migración:**
-- Crear RPC `public.dashboard_estado_personal_hoy()` SECURITY DEFINER que aplique el cálculo anterior y aplique filtro por sucursales del usuario si es gerente. GRANT EXECUTE a `authenticated`.
-
-**Colores:** usar tokens semánticos existentes (`text-emerald-600`, `text-amber-600`, etc. ya usados en el proyecto). Sin hardcode de hex.
-
-**TZ:** usar `src/lib/dateUtils.ts` (Argentina UTC-3) para obtener "hoy".
-
-## Validación
-
-1. Empleado fichado entrada sin salida → cuenta en **Trabajando** de su sucursal.
-2. Mismo empleado inicia pausa → pasa a **Descanso**.
-3. Empleado con `solicitudes_vacaciones` aprobada que cubre hoy → **Vacaciones** (aunque tenga turno).
-4. Empleado con turno hoy y sin fichaje → **Ausente**.
-5. Gerente de sucursal solo ve sus sucursales; admin/RRHH ven todas.
-6. Totales por sucursal coinciden con totales generales.
+Confirmar con el usuario qué acción tomar (revisar dispositivo, cargar fichaje manual masivo para la sucursal, o generar incidencias).
