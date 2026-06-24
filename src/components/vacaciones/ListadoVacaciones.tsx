@@ -244,16 +244,48 @@ export function ListadoVacaciones() {
     return t;
   }, [filtradas]);
 
-  const exportarCSV = () => {
-    const headers = [
-      "Empleado", "Sucursal", "Fecha ingreso", "Antigüedad", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
-      "Estado solicitud", "Inicio", "Fin", "Días",
-    ];
-    const lines = [headers.join(",")];
-    for (const r of filtradas) {
-      const fi = r.fecha_ingreso ?? "";
-      const ant = r.fecha_ingreso ? r.antiguedad_anios : "";
-      if (!r.solicitudes.length) {
+  const filtradasOrdenadas = useMemo(() => {
+    if (!sortKey) return filtradas;
+    const arr = [...filtradas];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const getVal = (r: EmpleadoRow): string | number => {
+      switch (sortKey) {
+        case "empleado": return `${r.empleado_apellido} ${r.empleado_nombre}`.toLowerCase();
+        case "sucursal": return (r.sucursal_nombre ?? "").toLowerCase();
+        case "fecha_ingreso": return r.fecha_ingreso ? new Date(r.fecha_ingreso).getTime() : 0;
+        case "antiguedad": return r.antiguedad_anios;
+        case "lct": return r.dias_segun_ley;
+        case "pendientes": return r.pendientes;
+        case "aprobadas": return r.aprobadas;
+        case "consumidos": return r.dias_consumidos;
+        case "restantes": return r.dias_restantes;
+      }
+    };
+    arr.sort((a, b) => {
+      const av = getVal(a); const bv = getVal(b);
+      if (typeof av === "string" && typeof bv === "string") return av.localeCompare(bv) * dir;
+      return ((av as number) - (bv as number)) * dir;
+    });
+    return arr;
+  }, [filtradas, sortKey, sortDir]);
+
+  const SortableHead = ({ k, label, align }: { k: SortKey; label: string; align?: "right" }) => {
+    const active = sortKey === k;
+    const Icon = active ? (sortDir === "asc" ? ChevronUp : ChevronDown) : ChevronsUpDown;
+    return (
+      <TableHead className={align === "right" ? "text-right" : ""}>
+        <button
+          type="button"
+          onClick={() => toggleSort(k)}
+          className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-foreground font-semibold" : ""} ${align === "right" ? "ml-auto" : ""}`}
+        >
+          {label}
+          <Icon className="h-3.5 w-3.5 opacity-70" />
+        </button>
+      </TableHead>
+    );
+  };
+
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
           fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
