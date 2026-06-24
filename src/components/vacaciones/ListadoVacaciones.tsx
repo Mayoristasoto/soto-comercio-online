@@ -227,7 +227,7 @@ export function ListadoVacaciones() {
       t.solicitudes += r.solicitudes.length;
       t.pendientes += r.pendientes;
       t.aprobadas += r.aprobadas;
-      r.solicitudes.forEach((s) => { if (s.estado === "aprobada") t.dias += s.dias; });
+      r.solicitudes.forEach((s) => { if (s.estado === "aprobada" || s.estado === "gozadas") t.dias += s.dias; });
     });
     return t;
   }, [filtradas]);
