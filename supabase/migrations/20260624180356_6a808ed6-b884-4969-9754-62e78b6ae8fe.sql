@@ -1,0 +1,1 @@
+SELECT public.recalcular_todos_saldos_vacaciones(2026);
