@@ -429,19 +429,19 @@ export function ListadoVacaciones() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
-                  <TableHead>Empleado</TableHead>
-                  <TableHead>Sucursal</TableHead>
-                  <TableHead>Fecha ingreso</TableHead>
-                  <TableHead className="text-right">Antigüedad 31/12</TableHead>
-                  <TableHead className="text-right">LCT</TableHead>
-                  <TableHead className="text-right">Pend.</TableHead>
-                  <TableHead className="text-right">Aprob.</TableHead>
-                  <TableHead className="text-right">Consumidos</TableHead>
-                  <TableHead className="text-right">Restantes</TableHead>
+                  <SortableHead k="empleado" label="Empleado" />
+                  <SortableHead k="sucursal" label="Sucursal" />
+                  <SortableHead k="fecha_ingreso" label="Fecha ingreso" />
+                  <SortableHead k="antiguedad" label="Antigüedad 31/12" align="right" />
+                  <SortableHead k="lct" label="LCT" align="right" />
+                  <SortableHead k="pendientes" label="Pend." align="right" />
+                  <SortableHead k="aprobadas" label="Aprob." align="right" />
+                  <SortableHead k="consumidos" label="Consumidos" align="right" />
+                  <SortableHead k="restantes" label="Restantes" align="right" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtradas.map((r) => {
+                {filtradasOrdenadas.map((r) => {
                   const open = expandidos.has(r.empleado_id);
                   const tieneDetalle = r.solicitudes.length > 0;
                   return (
