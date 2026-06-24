@@ -269,7 +269,7 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
         variant: errorCount > 0 ? "destructive" : "default",
       });
 
-      if (successCount > 0) {
+      if (successCount > 0 || updatedCount > 0) {
         onImportComplete();
         onOpenChange(false);
         setPreviewData([]);
