@@ -1,42 +1,21 @@
-# Diagnóstico — Por qué no pudo fichar Washintong
+## Objetivo
+Desactivar `gps_obligatorio` para todos los empleados, manteniéndolo activo únicamente para **Galaz Agustina**.
 
-## Resultado de la investigación
+## Cambios
 
-Washintong Celindo Bartolo Loyola (legajo 1) **no tiene ningún intento de fichaje registrado hoy** (24/06/2026):
+1. **Update masivo en `empleados`**: poner `gps_obligatorio = false` en todos los registros.
+2. **Excepción**: poner `gps_obligatorio = true` solo en el empleado cuyo nombre/apellido coincide con "Galaz Agustina".
 
-- 0 fichajes en `fichajes`
-- 0 eventos en `facial_recognition_logs`
-- 0 llamadas en `api_logs`
-- 0 incidencias en `fichaje_incidencias`
-- Sin rate limit activo
-- Empleado activo, con turno asignado y 2 rostros válidos (confianza 0.89 y 0.91)
-- Último fichaje OK: ayer 23/06 (entrada 10:19, salida 18:23 UTC)
+## SQL a ejecutar
+```sql
+UPDATE public.empleados SET gps_obligatorio = false;
+UPDATE public.empleados SET gps_obligatorio = true
+WHERE unaccent(lower(nombre)) LIKE '%agustina%'
+  AND unaccent(lower(apellido)) LIKE '%galaz%';
+```
 
-## Causa raíz probable
+Antes de aplicar verifico que exista exactamente una empleada Galaz Agustina para no activarlo por error en otra persona. Si hay homónimos, te pregunto cuál es la correcta antes de ejecutar.
 
-Pertenece a la sucursal **Olazar 26**. Revisando el resto de empleados de esa sucursal:
-
-| Empleado | Fichajes hoy |
-|---|---|
-| Washintong Celindo Bartolo Loyola | 0 |
-| Juan Domingo Martinez | 0 |
-
-**Nadie de Olazar 26 fichó hoy.** En el resto de sucursales sí hubo actividad normal (José Martí 6, Juan B. Justo 4, Ventas 1, Administración 1).
-
-Conclusión: el problema **no es del empleado ni del sistema**, sino del **dispositivo kiosco de la sucursal Olazar 26**, que no envió ninguna request hoy.
-
-## Acciones sugeridas (a confirmar con el usuario)
-
-1. **Verificar físicamente** el kiosco de Olazar 26:
-   - Equipo encendido
-   - Conexión a internet
-   - Navegador abierto en la URL del kiosco
-   - Cámara funcionando
-   - Token de dispositivo válido (revisar `kiosk_devices` para esa sucursal)
-2. Una vez restablecido, decidir si:
-   - Se cargan **fichajes manuales** para Washintong y Juan Domingo del día de hoy, o
-   - Se generan **incidencias** (`fichaje_incidencias`) para que los empleados/gerente las justifiquen desde Autogestión.
-
-## Próximo paso
-
-Confirmar con el usuario qué acción tomar (revisar dispositivo, cargar fichaje manual masivo para la sucursal, o generar incidencias).
+## Notas
+- No toco el flag global `pinGpsRequired` (config de kiosco), solo el override por empleado.
+- No hay cambios de código, es solo data.
