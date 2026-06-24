@@ -162,6 +162,8 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
 
     try {
       let successCount = 0;
+      let updatedCount = 0;
+      let skippedCount = 0;
       let errorCount = 0;
 
       for (const vacacion of previewData) {
@@ -185,7 +187,54 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
             vacacion.estado?.toLowerCase() || ''
           ) ? (vacacion.estado?.toLowerCase() as 'pendiente' | 'aprobada' | 'rechazada' | 'cancelada' | 'gozadas') : 'pendiente';
 
-          // Insertar solicitud de vacaciones
+          // Deduplicación: buscar solicitudes existentes del mismo empleado que solapen
+          // con el rango a importar y estén en un estado activo.
+          const { data: existentes, error: dupError } = await supabase
+            .from('solicitudes_vacaciones')
+            .select('id, fecha_inicio, fecha_fin, estado')
+            .eq('empleado_id', empleado.id)
+            .in('estado', ['pendiente', 'aprobada', 'gozadas'])
+            .lte('fecha_inicio', vacacion.fecha_fin)
+            .gte('fecha_fin', vacacion.fecha_inicio);
+
+          if (dupError) {
+            console.error('Error verificando duplicados:', dupError);
+            errorCount++;
+            continue;
+          }
+
+          // Coincidencia exacta de fechas: actualizar la fila existente
+          const exacta = (existentes || []).find(
+            (e: any) => e.fecha_inicio === vacacion.fecha_inicio && e.fecha_fin === vacacion.fecha_fin
+          );
+
+          if (exacta) {
+            const { error: updError } = await supabase
+              .from('solicitudes_vacaciones')
+              .update({
+                estado: estadoValido,
+                motivo: vacacion.motivo || 'Migración de datos',
+              })
+              .eq('id', exacta.id);
+            if (updError) {
+              console.error('Error actualizando vacación existente:', updError);
+              errorCount++;
+            } else {
+              updatedCount++;
+            }
+            continue;
+          }
+
+          // Solapamiento sin coincidencia exacta: omitir para no crear duplicado parcial
+          if ((existentes || []).length > 0) {
+            console.warn(
+              `Omitido por solapamiento con solicitud existente (legajo ${vacacion.empleado_legajo}, ${vacacion.fecha_inicio} → ${vacacion.fecha_fin})`
+            );
+            skippedCount++;
+            continue;
+          }
+
+          // Insertar solicitud de vacaciones nueva
           const { error: insertError } = await supabase
             .from('solicitudes_vacaciones')
             .insert([{
@@ -208,9 +257,15 @@ export function VacacionesImport({ open, onOpenChange, onImportComplete }: Vacac
         }
       }
 
+      const partes = [
+        `${successCount} nuevas`,
+        `${updatedCount} actualizadas`,
+        `${skippedCount} omitidas (solapan)`,
+        `${errorCount} errores`,
+      ];
       toast({
         title: "Importación completada",
-        description: `${successCount} vacaciones importadas correctamente. ${errorCount} errores.`,
+        description: partes.join(' · '),
         variant: errorCount > 0 ? "destructive" : "default",
       });
 
