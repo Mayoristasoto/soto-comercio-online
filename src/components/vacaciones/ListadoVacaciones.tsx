@@ -181,7 +181,7 @@ export function ListadoVacaciones() {
           fecha_aprobacion: s.fecha_aprobacion,
         });
         if (s.estado === "pendiente") { row.pendientes += 1; row.dias_consumidos += dias; }
-        else if (s.estado === "aprobada") { row.aprobadas += 1; row.dias_consumidos += dias; }
+        else if (s.estado === "aprobada" || s.estado === "gozadas") { row.aprobadas += 1; row.dias_consumidos += dias; }
         else if (s.estado === "rechazada") { row.rechazadas += 1; }
       }
 
@@ -227,7 +227,7 @@ export function ListadoVacaciones() {
       t.solicitudes += r.solicitudes.length;
       t.pendientes += r.pendientes;
       t.aprobadas += r.aprobadas;
-      r.solicitudes.forEach((s) => { if (s.estado === "aprobada") t.dias += s.dias; });
+      r.solicitudes.forEach((s) => { if (s.estado === "aprobada" || s.estado === "gozadas") t.dias += s.dias; });
     });
     return t;
   }, [filtradas]);
