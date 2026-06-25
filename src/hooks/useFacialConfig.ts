@@ -39,6 +39,7 @@ const defaultConfig: FacialConfig = {
   autoPrintTasksEnabled: false,
   lateArrivalAlertEnabled: false,
   pinGpsRequired: false,
+  pinLivenessRequired: false,
   kioskAlertLlegadaTardeSeconds: 2,
   kioskAlertCrucesRojasSeconds: 2,
   kioskAlertPausaExcedidaSeconds: 2,
