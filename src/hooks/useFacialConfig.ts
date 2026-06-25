@@ -107,6 +107,7 @@ export function useFacialConfig() {
           autoPrintTasksEnabled: parseBool(configMap.auto_print_tasks_enabled),
           lateArrivalAlertEnabled: parseBool(configMap.late_arrival_alert_enabled),
           pinGpsRequired: parseBool(configMap.pin_gps_required ?? 'false'),
+          pinLivenessRequired: parseBool(configMap.pin_liveness_required ?? 'false'),
           kioskAlertLlegadaTardeSeconds: parseInt(configMap.kiosk_alert_llegada_tarde_seconds) || defaultConfig.kioskAlertLlegadaTardeSeconds,
           kioskAlertCrucesRojasSeconds: parseInt(configMap.kiosk_alert_cruces_rojas_seconds) || defaultConfig.kioskAlertCrucesRojasSeconds,
           kioskAlertPausaExcedidaSeconds: parseInt(configMap.kiosk_alert_pausa_excedida_seconds) || defaultConfig.kioskAlertPausaExcedidaSeconds,
