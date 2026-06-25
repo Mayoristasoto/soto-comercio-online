@@ -60,6 +60,39 @@ const parseBool = (raw: any): boolean => {
   return str === 'true' || str === '1' || str === 'yes'
 }
 
+const booleanConfigKeys: Array<keyof FacialConfig> = [
+  'emotionRecognitionEnabled',
+  'autoPrintTasksEnabled',
+  'lateArrivalAlertEnabled',
+  'pinGpsRequired',
+  'pinLivenessRequired',
+  'kioskAlertCrucesRojasEnabled',
+  'kioskAlertPausaExcedidaEnabled',
+  'kioskAlertNovedadesEnabled',
+  'kioskAlertTareasEnabled',
+  'kioskAlertDescansoFueraEnabled',
+]
+
+const numberConfigKeys: Array<keyof FacialConfig> = [
+  'confidenceThresholdKiosk',
+  'confidenceThresholdSpecific',
+  'confidenceThresholdDemo',
+  'maxAttemptsPerMinute',
+  'livenessTimeoutSeconds',
+  'kioskAlertLlegadaTardeSeconds',
+  'kioskAlertCrucesRojasSeconds',
+  'kioskAlertPausaExcedidaSeconds',
+  'kioskAlertNovedadesSeconds',
+  'kioskAlertTareasSeconds',
+  'kioskAlertDescansoFueraSeconds',
+]
+
+const normalizeConfigValue = (key: keyof FacialConfig, value: string | number | boolean) => {
+  if (booleanConfigKeys.includes(key)) return parseBool(value)
+  if (numberConfigKeys.includes(key)) return typeof value === 'number' ? value : Number(value)
+  return value
+}
+
 export function useFacialConfig() {
   const [config, setConfig] = useState<FacialConfig>(defaultConfig)
   const [loading, setLoading] = useState(true)
@@ -156,7 +189,7 @@ export function useFacialConfig() {
     kioskAlertOrder: 'kiosk_alert_order',
   }
 
-  const updateConfig = async (key: keyof FacialConfig, value: string | number) => {
+  const updateConfig = async (key: keyof FacialConfig, value: string | number | boolean) => {
     try {
       const dbKey = dbKeyMap[key]
 
@@ -175,7 +208,7 @@ export function useFacialConfig() {
 
       setConfig(prev => ({
         ...prev,
-        [key]: typeof value === 'string' ? value : value
+        [key]: normalizeConfigValue(key, value)
       }))
 
       return true
