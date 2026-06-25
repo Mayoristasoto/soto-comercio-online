@@ -14,6 +14,7 @@ export default function KioskSettingsConfig() {
     autoPrintTasksEnabled: false,
     lateArrivalAlertEnabled: false,
     pinGpsRequired: false,
+    pinLivenessRequired: false,
   })
   const [isSaving, setIsSaving] = useState(false)
 
@@ -22,13 +23,15 @@ export default function KioskSettingsConfig() {
       autoPrintTasksEnabled: config.autoPrintTasksEnabled,
       lateArrivalAlertEnabled: config.lateArrivalAlertEnabled,
       pinGpsRequired: config.pinGpsRequired,
+      pinLivenessRequired: config.pinLivenessRequired,
     })
   }, [config])
 
   const hasChanges =
     edited.autoPrintTasksEnabled !== config.autoPrintTasksEnabled ||
     edited.lateArrivalAlertEnabled !== config.lateArrivalAlertEnabled ||
-    edited.pinGpsRequired !== config.pinGpsRequired
+    edited.pinGpsRequired !== config.pinGpsRequired ||
+    edited.pinLivenessRequired !== config.pinLivenessRequired
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -37,6 +40,7 @@ export default function KioskSettingsConfig() {
         { key: "autoPrintTasksEnabled", value: edited.autoPrintTasksEnabled.toString() },
         { key: "lateArrivalAlertEnabled", value: edited.lateArrivalAlertEnabled.toString() },
         { key: "pinGpsRequired", value: edited.pinGpsRequired.toString() },
+        { key: "pinLivenessRequired", value: edited.pinLivenessRequired.toString() },
       ]
       let ok = true
       for (const u of updates) {
@@ -58,6 +62,7 @@ export default function KioskSettingsConfig() {
       autoPrintTasksEnabled: config.autoPrintTasksEnabled,
       lateArrivalAlertEnabled: config.lateArrivalAlertEnabled,
       pinGpsRequired: config.pinGpsRequired,
+      pinLivenessRequired: config.pinLivenessRequired,
     })
   }
 
@@ -95,6 +100,14 @@ export default function KioskSettingsConfig() {
             <p className="text-xs text-muted-foreground">Requiere que el GPS esté activado para permitir el check-in con PIN</p>
           </div>
           <Switch checked={edited.pinGpsRequired} onCheckedChange={(v) => setEdited((p) => ({ ...p, pinGpsRequired: v }))} />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label>Prueba de Vida Obligatoria para PIN</Label>
+            <p className="text-xs text-muted-foreground">Requiere detección de parpadeo antes de capturar la foto en check-in con PIN (aplica a todos los empleados)</p>
+          </div>
+          <Switch checked={edited.pinLivenessRequired} onCheckedChange={(v) => setEdited((p) => ({ ...p, pinLivenessRequired: v }))} />
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">

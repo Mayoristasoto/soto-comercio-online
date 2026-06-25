@@ -336,7 +336,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
   const handleCapturarFoto = async () => {
     if (!videoRef.current) return
     // Si el empleado requiere prueba de vida obligatoria, debe pasar antes de capturar
-    if (empleadoFlags.liveness && !livenessOk) {
+    if ((empleadoFlags.liveness || facialConfig.pinLivenessRequired) && !livenessOk) {
       await ejecutarLiveness()
       return
     }
@@ -811,7 +811,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
 
             {!fotoCapturada ? (
               <>
-                {empleadoFlags.liveness && (
+                {(empleadoFlags.liveness || facialConfig.pinLivenessRequired) && (
                   <div className={`text-sm text-center p-2 rounded ${livenessOk ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-900'}`}>
                     {livenessStatus ?? 'Prueba de vida requerida: parpadee al menos una vez.'}
                   </div>
@@ -823,7 +823,7 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
                 >
                   {livenessRunning ? (
                     <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Detectando parpadeo...</>
-                  ) : empleadoFlags.liveness && !livenessOk ? (
+                  ) : (empleadoFlags.liveness || facialConfig.pinLivenessRequired) && !livenessOk ? (
                     <><Camera className="h-5 w-5 mr-2" />Iniciar prueba de vida</>
                   ) : (
                     <><Camera className="h-5 w-5 mr-2" />Capturar Foto</>
