@@ -354,31 +354,56 @@ export default function FicheroPinAuth({ onSuccess, onCancel }: FicheroPinAuthPr
     setLoading(true)
     
     try {
-      // Obtener ubicación
+      // Obtener ubicación - SIEMPRE obligatorio para fichaje PIN
       let ubicacion = { latitud: null as number | null, longitud: null as number | null, accuracy: null as number | null }
+
+      if (!navigator.geolocation) {
+        toast({
+          title: "GPS no disponible",
+          description: "Este dispositivo no soporta geolocalización. No se puede fichar con PIN.",
+          variant: "destructive"
+        })
+        setStep('photo')
+        setLoading(false)
+        return
+      }
+
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, enableHighAccuracy: true })
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 })
         })
         ubicacion = {
           latitud: position.coords.latitude,
           longitud: position.coords.longitude,
           accuracy: position.coords.accuracy ?? null,
         }
-      } catch {
-        if (facialConfig.pinGpsRequired || empleadoFlags.gps) {
-          toast({
-            title: "GPS requerido",
-            description: empleadoFlags.gps
-              ? "Este empleado tiene GPS obligatorio. Habilite la ubicación en el dispositivo e intente nuevamente."
-              : "Debe activar el GPS para fichar con PIN. Habilite la ubicación en su dispositivo e intente nuevamente.",
-            variant: "destructive"
-          })
-          setStep('photo')
-          setLoading(false)
-          return
-        }
-        console.log('No se pudo obtener ubicación')
+      } catch (err: any) {
+        const motivo = err?.code === 1
+          ? "El permiso de ubicación fue denegado. Habilítelo desde la configuración del navegador."
+          : err?.code === 2
+          ? "No se pudo determinar la ubicación. Verifique que el GPS esté encendido."
+          : err?.code === 3
+          ? "Tiempo de espera agotado al obtener la ubicación. Intente nuevamente."
+          : "No se pudo obtener la ubicación. Habilite el GPS e intente nuevamente."
+        toast({
+          title: "GPS obligatorio para fichaje con PIN",
+          description: motivo,
+          variant: "destructive"
+        })
+        setStep('photo')
+        setLoading(false)
+        return
+      }
+
+      if (ubicacion.latitud == null || ubicacion.longitud == null) {
+        toast({
+          title: "GPS obligatorio para fichaje con PIN",
+          description: "No se obtuvieron coordenadas válidas. Habilite el GPS e intente nuevamente.",
+          variant: "destructive"
+        })
+        setStep('photo')
+        setLoading(false)
+        return
       }
 
 
