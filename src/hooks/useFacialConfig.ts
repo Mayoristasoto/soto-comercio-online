@@ -141,6 +141,7 @@ export function useFacialConfig() {
     autoPrintTasksEnabled: 'auto_print_tasks_enabled',
     lateArrivalAlertEnabled: 'late_arrival_alert_enabled',
     pinGpsRequired: 'pin_gps_required',
+    pinLivenessRequired: 'pin_liveness_required',
     kioskAlertLlegadaTardeSeconds: 'kiosk_alert_llegada_tarde_seconds',
     kioskAlertCrucesRojasSeconds: 'kiosk_alert_cruces_rojas_seconds',
     kioskAlertPausaExcedidaSeconds: 'kiosk_alert_pausa_excedida_seconds',
