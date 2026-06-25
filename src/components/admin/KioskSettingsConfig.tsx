@@ -14,6 +14,7 @@ export default function KioskSettingsConfig() {
     autoPrintTasksEnabled: false,
     lateArrivalAlertEnabled: false,
     pinGpsRequired: false,
+    pinLivenessRequired: false,
   })
   const [isSaving, setIsSaving] = useState(false)
 
