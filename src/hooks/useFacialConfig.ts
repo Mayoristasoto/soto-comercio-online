@@ -12,6 +12,7 @@ interface FacialConfig {
   autoPrintTasksEnabled: boolean
   lateArrivalAlertEnabled: boolean
   pinGpsRequired: boolean
+  pinLivenessRequired: boolean
   // Kiosk alert config
   kioskAlertLlegadaTardeSeconds: number
   kioskAlertCrucesRojasSeconds: number
