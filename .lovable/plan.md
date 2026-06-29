@@ -1,28 +1,66 @@
-## Plan: Ordenamiento por columna en Listado de vacaciones
+## Carga Masiva de Horarios – Sábados y Domingos
 
-Hacer que los encabezados de la tabla en `ListadoVacaciones.tsx` sean clickeables para ordenar ascendente/descendente, manteniendo los filtros globales existentes tal cual.
+### Ubicación
+- **Nueva página**: `/rrhh/horarios-masivos` (registrada en `src/App.tsx` y entrada en sidebar para `admin_rrhh`).
+- **Nueva pestaña** "Carga masiva" dentro de `src/pages/PlanificacionSemanal.tsx`, que reutiliza el mismo componente.
 
-### Cambios
+### Componente principal
+`src/components/horarios/CargaMasivaHorarios.tsx` con un wizard de 3 pasos:
 
-**`src/components/vacaciones/ListadoVacaciones.tsx`**
+**Paso 1 – Configuración**
+- Selector de **día**: Sábado / Domingo (multi-select, permite ambos).
+- Selector de **alcance**:
+  - Excepción puntual → pide fecha específica (escribe en `horarios_excepcionales`).
+  - Turno habitual recurrente → escribe/actualiza `empleado_turnos` con `dia_semana`.
+- Selector de **modo de carga**:
+  1. **Manual masivo**: filtros (sucursal, rol, grupo, búsqueda) + tabla con checkboxes para seleccionar empleados, e inputs únicos de Entrada / Salida / Pausa que se aplican a todos los seleccionados.
+  2. **Por grupos**: dropdown con `grupos_empleados`; trae los miembros automáticamente.
+  3. **Importar Excel/CSV**: drop-zone que acepta columnas `DNI | Empleado | Día | Entrada | Salida | Pausa (min)`. Botón "Descargar plantilla".
 
-1. Agregar estado de ordenamiento:
-   - `sortKey`: clave de columna (empleado, sucursal, fecha_ingreso, antiguedad, lct, pendientes, aprobadas, consumidos, restantes)
-   - `sortDir`: `"asc" | "desc"`
-   - Default: ordenar como hoy (más solicitudes primero, luego alfabético) cuando no hay sort activo.
+**Paso 2 – Vista previa y validación**
+Tabla con todas las filas a aplicar mostrando: Empleado, Sucursal, Día/Fecha, Entrada, Salida y columna **Estado** con badges:
+- 🟢 OK – sin conflictos.
+- 🟡 Conflicto turno – ya tiene turno cargado ese día (muestra el existente; permite "sobrescribir" / "omitir").
+- 🔴 Vacaciones / Licencia – el empleado tiene vacaciones aprobadas o ausencia médica en esa fecha; bloqueado por defecto.
+- ⚫ Error de importación – DNI no encontrado, formato HH:MM inválido, salida ≤ entrada, sucursal inexistente.
 
-2. Reemplazar cada `<TableHead>` por un botón clickeable que:
-   - Muestra el texto del título + ícono (`ChevronsUpDown` cuando inactivo, `ChevronUp`/`ChevronDown` cuando activo).
-   - Al hacer click: si es la misma columna, alterna asc↔desc; si es otra, la activa en asc.
-   - Cursor pointer y hover sutil.
+Contadores arriba: total / OK / conflictos / bloqueados. Botón **"Confirmar y guardar"** queda deshabilitado si hay filas en estado bloqueado sin resolver.
 
-3. Aplicar ordenamiento sobre `filtradas` con un nuevo `useMemo` (`filtradasOrdenadas`):
-   - Comparador por tipo de dato (string con `localeCompare`, número directo, fecha parseada).
-   - Si no hay `sortKey`, se respeta el orden actual.
+**Paso 3 – Resultado**
+Resumen: insertados, actualizados, omitidos, con descarga CSV del log.
 
-4. Renderizar `filtradasOrdenadas` en el `TableBody` (en lugar de `filtradas`).
+### Validaciones (RPC nueva)
+`public.validar_horarios_masivos(payload jsonb) returns jsonb` (SECURITY DEFINER, solo `admin_rrhh`):
+- Resuelve empleado por DNI o por id; verifica `activo = true`.
+- Cruza contra `empleado_turnos` (mismo `dia_semana`, `activo = true`) → conflicto turno.
+- Cruza contra `solicitudes_vacaciones` (estado aprobada/gozadas) y `ausencias_medicas` en la fecha → bloqueado.
+- Verifica formato `HH:MM` y que `salida > entrada`.
+- Devuelve el listado con `status` por fila.
 
-### Sin cambios
+### Guardado (RPC nueva)
+`public.guardar_horarios_masivos(payload jsonb, sobrescribir boolean) returns jsonb`:
+- Si **excepción puntual** → `INSERT` en `horarios_excepcionales` con la fecha.
+- Si **turno habitual** → upsert en `empleado_turnos` por `(empleado_id, dia_semana)` respetando los índices únicos parciales existentes.
+- Registra auditoría en `fichaje_auditoria` con motivo "carga_masiva_horarios".
 
-- Filtros globales (búsqueda, año, estado, sucursal, excluir inactivos) se mantienen idénticos.
-- Lógica de carga de datos, totales, expansión de filas y exportación CSV no se tocan.
+### Validaciones de UI (zod)
+Schema para el formulario manual y para cada fila del CSV: horas en formato `HH:MM`, pausa entre 0 y 180, día ∈ {sábado, domingo}.
+
+### Detalles técnicos
+- Parser de Excel con `xlsx` (ya en dependencias por `VacacionesImport`).
+- Hook `useEmpleadosActivos` reutilizado para filtros.
+- Sin cambios en lógica existente de turnos; solo se agregan las dos RPC nuevas y la UI.
+
+### Archivos
+**Nuevos**
+- `src/pages/HorariosMasivos.tsx`
+- `src/components/horarios/CargaMasivaHorarios.tsx`
+- `src/components/horarios/PasoConfiguracion.tsx`
+- `src/components/horarios/PasoVistaPrevia.tsx`
+- `src/components/horarios/ImportadorCSV.tsx`
+- Migración con las dos RPC.
+
+**Modificados**
+- `src/App.tsx` – ruta nueva.
+- `src/pages/PlanificacionSemanal.tsx` – pestaña "Carga masiva".
+- Sidebar (`app_pages`) – entrada de menú.
