@@ -324,7 +324,143 @@ export function CoberturaSucursales() {
             {format(fecha, "EEEE d 'de' MMMM yyyy", { locale: es })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filtros
+                {(prefs.hidden.length > 0 ||
+                  !prefs.fuentes.excepcion ||
+                  !prefs.fuentes.planif ||
+                  !prefs.fuentes.habitual ||
+                  prefs.hourStart !== DEFAULT_HOUR_START ||
+                  prefs.hourEnd !== DEFAULT_HOUR_END) && (
+                  <Badge variant="secondary" className="h-5 px-1.5">
+                    on
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                    Rango horario
+                  </Label>
+                  <div className="flex items-center justify-between text-xs mt-2 mb-1">
+                    <span>{String(prefs.hourStart).padStart(2, "0")}:00</span>
+                    <span>{String(prefs.hourEnd).padStart(2, "0")}:00</span>
+                  </div>
+                  <Slider
+                    value={[prefs.hourStart, prefs.hourEnd]}
+                    min={0}
+                    max={24}
+                    step={1}
+                    minStepsBetweenThumbs={1}
+                    onValueChange={(v) =>
+                      setPrefs((p) => ({ ...p, hourStart: v[0], hourEnd: v[1] }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                    Fuente de horario
+                  </Label>
+                  <div className="space-y-2 mt-2">
+                    {(
+                      [
+                        ["excepcion", "Excepciones del día"],
+                        ["planif", "Planificación semanal"],
+                        ["habitual", "Turno habitual"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <label
+                        key={key}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={prefs.fuentes[key]}
+                          onCheckedChange={(v) =>
+                            setPrefs((p) => ({
+                              ...p,
+                              fuentes: { ...p.fuentes, [key]: !!v },
+                            }))
+                          }
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                      Sucursales
+                    </Label>
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setPrefs((p) => ({ ...p, hidden: [] }))}
+                      >
+                        Mostrar todas
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() =>
+                          setPrefs((p) => ({
+                            ...p,
+                            hidden: sucursales.map((s) => s.id),
+                          }))
+                        }
+                      >
+                        Ocultar todas
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1 mt-2">
+                    {sucursales.map((s) => {
+                      const visible = !prefs.hidden.includes(s.id);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleHidden(s.id)}
+                          className="w-full flex items-center justify-between gap-2 text-sm px-2 py-1.5 rounded hover:bg-accent"
+                        >
+                          <span className="truncate">{s.nombre}</span>
+                          {visible ? (
+                            <Eye className="h-4 w-4 text-primary" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setPrefs(DEFAULT_PREFS)}
+                >
+                  Restablecer filtros
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <Button
             variant="outline"
             size="icon"
