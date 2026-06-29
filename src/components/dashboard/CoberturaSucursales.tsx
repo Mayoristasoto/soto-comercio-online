@@ -1,11 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { format, addDays, parseISO } from "date-fns";
+import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Building2, Users, RefreshCw } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Building2,
+  Users,
+  RefreshCw,
+  Filter,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -14,9 +31,23 @@ import {
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 
-const HOUR_START = 7;
-const HOUR_END = 23; // exclusive (last shown hour = 22)
-const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i);
+const DEFAULT_HOUR_START = 7;
+const DEFAULT_HOUR_END = 23; // exclusive
+const STORAGE_KEY = "dashboard:cobertura:prefs:v1";
+
+type Prefs = {
+  hidden: string[];
+  hourStart: number;
+  hourEnd: number;
+  fuentes: { excepcion: boolean; planif: boolean; habitual: boolean };
+};
+
+const DEFAULT_PREFS: Prefs = {
+  hidden: [],
+  hourStart: DEFAULT_HOUR_START,
+  hourEnd: DEFAULT_HOUR_END,
+  fuentes: { excepcion: true, planif: true, habitual: true },
+};
 
 type Sucursal = { id: string; nombre: string };
 type Empleado = {
@@ -101,6 +132,36 @@ export function CoberturaSucursales() {
   const [loading, setLoading] = useState(true);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [coberturas, setCoberturas] = useState<CoberturaEmpleado[]>([]);
+  const [prefs, setPrefs] = useState<Prefs>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_PREFS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    } catch {}
+  }, [prefs]);
+
+  const HOURS = useMemo(
+    () =>
+      Array.from(
+        { length: Math.max(1, prefs.hourEnd - prefs.hourStart) },
+        (_, i) => prefs.hourStart + i
+      ),
+    [prefs.hourStart, prefs.hourEnd]
+  );
+
+  const toggleHidden = (id: string) =>
+    setPrefs((p) => ({
+      ...p,
+      hidden: p.hidden.includes(id)
+        ? p.hidden.filter((x) => x !== id)
+        : [...p.hidden, id],
+    }));
 
   const fechaStr = format(fecha, "yyyy-MM-dd");
   const diaSemana = fecha.getDay();
@@ -212,15 +273,31 @@ export function CoberturaSucursales() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fechaStr]);
 
+  const coberturasFiltradas = useMemo(
+    () =>
+      coberturas.filter((c) => {
+        if (c.fuente === "Excepción" && !prefs.fuentes.excepcion) return false;
+        if (c.fuente === "Planificación" && !prefs.fuentes.planif) return false;
+        if (c.fuente === "Turno habitual" && !prefs.fuentes.habitual) return false;
+        return true;
+      }),
+    [coberturas, prefs.fuentes]
+  );
+
   const porSucursal = useMemo(() => {
     const map = new Map<string, CoberturaEmpleado[]>();
     sucursales.forEach((s) => map.set(s.id, []));
-    coberturas.forEach((c) => {
+    coberturasFiltradas.forEach((c) => {
       const arr = map.get(c.sucursal_id);
       if (arr) arr.push(c);
     });
     return map;
-  }, [sucursales, coberturas]);
+  }, [sucursales, coberturasFiltradas]);
+
+  const sucursalesVisibles = useMemo(
+    () => sucursales.filter((s) => !prefs.hidden.includes(s.id)),
+    [sucursales, prefs.hidden]
+  );
 
   const maxPorSucursal = useMemo(() => {
     const m = new Map<string, number>();
@@ -247,7 +324,143 @@ export function CoberturaSucursales() {
             {format(fecha, "EEEE d 'de' MMMM yyyy", { locale: es })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filtros
+                {(prefs.hidden.length > 0 ||
+                  !prefs.fuentes.excepcion ||
+                  !prefs.fuentes.planif ||
+                  !prefs.fuentes.habitual ||
+                  prefs.hourStart !== DEFAULT_HOUR_START ||
+                  prefs.hourEnd !== DEFAULT_HOUR_END) && (
+                  <Badge variant="secondary" className="h-5 px-1.5">
+                    on
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                    Rango horario
+                  </Label>
+                  <div className="flex items-center justify-between text-xs mt-2 mb-1">
+                    <span>{String(prefs.hourStart).padStart(2, "0")}:00</span>
+                    <span>{String(prefs.hourEnd).padStart(2, "0")}:00</span>
+                  </div>
+                  <Slider
+                    value={[prefs.hourStart, prefs.hourEnd]}
+                    min={0}
+                    max={24}
+                    step={1}
+                    minStepsBetweenThumbs={1}
+                    onValueChange={(v) =>
+                      setPrefs((p) => ({ ...p, hourStart: v[0], hourEnd: v[1] }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                    Fuente de horario
+                  </Label>
+                  <div className="space-y-2 mt-2">
+                    {(
+                      [
+                        ["excepcion", "Excepciones del día"],
+                        ["planif", "Planificación semanal"],
+                        ["habitual", "Turno habitual"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <label
+                        key={key}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={prefs.fuentes[key]}
+                          onCheckedChange={(v) =>
+                            setPrefs((p) => ({
+                              ...p,
+                              fuentes: { ...p.fuentes, [key]: !!v },
+                            }))
+                          }
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                      Sucursales
+                    </Label>
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setPrefs((p) => ({ ...p, hidden: [] }))}
+                      >
+                        Mostrar todas
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() =>
+                          setPrefs((p) => ({
+                            ...p,
+                            hidden: sucursales.map((s) => s.id),
+                          }))
+                        }
+                      >
+                        Ocultar todas
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1 mt-2">
+                    {sucursales.map((s) => {
+                      const visible = !prefs.hidden.includes(s.id);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleHidden(s.id)}
+                          className="w-full flex items-center justify-between gap-2 text-sm px-2 py-1.5 rounded hover:bg-accent"
+                        >
+                          <span className="truncate">{s.nombre}</span>
+                          {visible ? (
+                            <Eye className="h-4 w-4 text-primary" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setPrefs(DEFAULT_PREFS)}
+                >
+                  Restablecer filtros
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <Button
             variant="outline"
             size="icon"
@@ -298,7 +511,7 @@ export function CoberturaSucursales() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sucursales.map((s) => {
+                  {sucursalesVisibles.map((s) => {
                     const cobs = porSucursal.get(s.id) || [];
                     const max = maxPorSucursal.get(s.id) || 0;
                     return (
@@ -366,13 +579,15 @@ export function CoberturaSucursales() {
                       </tr>
                     );
                   })}
-                  {sucursales.length === 0 && (
+                  {sucursalesVisibles.length === 0 && (
                     <tr>
                       <td
                         colSpan={HOURS.length + 2}
                         className="text-center text-muted-foreground p-6"
                       >
-                        Sin sucursales activas.
+                        {sucursales.length === 0
+                          ? "Sin sucursales activas."
+                          : "Todas las sucursales están ocultas. Ajustá los filtros."}
                       </td>
                     </tr>
                   )}
