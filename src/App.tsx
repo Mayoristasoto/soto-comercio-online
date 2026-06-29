@@ -84,6 +84,7 @@ import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
 import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
 import PlanillaDescansos from "./pages/PlanillaDescansos";
+import HorariosMasivos from "./pages/HorariosMasivos";
 
 const queryClient = new QueryClient();
 
@@ -191,6 +192,7 @@ const App = () => (
               <Route path="empleados/:id" element={<EmpleadoPerfilPage />} />
               <Route path="asignar-sucursales" element={<AsignarSucursales />} />
               <Route path="planificacion-semanal" element={<PlanificacionSemanal />} />
+              <Route path="horarios-masivos" element={<HorariosMasivos />} />
               <Route path="ranking-incidencias" element={<RankingIncidencias />} />
               <Route path="listado-incidencias" element={<ListadoIncidencias />} />
               <Route path="sucursales" element={<AdminDashboard />} />
