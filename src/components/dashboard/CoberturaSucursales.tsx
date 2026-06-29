@@ -132,6 +132,36 @@ export function CoberturaSucursales() {
   const [loading, setLoading] = useState(true);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [coberturas, setCoberturas] = useState<CoberturaEmpleado[]>([]);
+  const [prefs, setPrefs] = useState<Prefs>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_PREFS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    } catch {}
+  }, [prefs]);
+
+  const HOURS = useMemo(
+    () =>
+      Array.from(
+        { length: Math.max(1, prefs.hourEnd - prefs.hourStart) },
+        (_, i) => prefs.hourStart + i
+      ),
+    [prefs.hourStart, prefs.hourEnd]
+  );
+
+  const toggleHidden = (id: string) =>
+    setPrefs((p) => ({
+      ...p,
+      hidden: p.hidden.includes(id)
+        ? p.hidden.filter((x) => x !== id)
+        : [...p.hidden, id],
+    }));
 
   const fechaStr = format(fecha, "yyyy-MM-dd");
   const diaSemana = fecha.getDay();
@@ -243,15 +273,31 @@ export function CoberturaSucursales() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fechaStr]);
 
+  const coberturasFiltradas = useMemo(
+    () =>
+      coberturas.filter((c) => {
+        if (c.fuente === "Excepción" && !prefs.fuentes.excepcion) return false;
+        if (c.fuente === "Planificación" && !prefs.fuentes.planif) return false;
+        if (c.fuente === "Turno habitual" && !prefs.fuentes.habitual) return false;
+        return true;
+      }),
+    [coberturas, prefs.fuentes]
+  );
+
   const porSucursal = useMemo(() => {
     const map = new Map<string, CoberturaEmpleado[]>();
     sucursales.forEach((s) => map.set(s.id, []));
-    coberturas.forEach((c) => {
+    coberturasFiltradas.forEach((c) => {
       const arr = map.get(c.sucursal_id);
       if (arr) arr.push(c);
     });
     return map;
-  }, [sucursales, coberturas]);
+  }, [sucursales, coberturasFiltradas]);
+
+  const sucursalesVisibles = useMemo(
+    () => sucursales.filter((s) => !prefs.hidden.includes(s.id)),
+    [sucursales, prefs.hidden]
+  );
 
   const maxPorSucursal = useMemo(() => {
     const m = new Map<string, number>();
