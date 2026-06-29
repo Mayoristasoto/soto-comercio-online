@@ -1,0 +1,2 @@
+ALTER TABLE public.asignaciones_especiales DROP CONSTRAINT IF EXISTS asignaciones_especiales_tipo_check;
+ALTER TABLE public.asignaciones_especiales ADD CONSTRAINT asignaciones_especiales_tipo_check CHECK (tipo IN ('domingo','feriado','sabado'));
