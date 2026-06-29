@@ -1,11 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { format, addDays, parseISO } from "date-fns";
+import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Building2, Users, RefreshCw } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Building2,
+  Users,
+  RefreshCw,
+  Filter,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -14,9 +31,23 @@ import {
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 
-const HOUR_START = 7;
-const HOUR_END = 23; // exclusive (last shown hour = 22)
-const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i);
+const DEFAULT_HOUR_START = 7;
+const DEFAULT_HOUR_END = 23; // exclusive
+const STORAGE_KEY = "dashboard:cobertura:prefs:v1";
+
+type Prefs = {
+  hidden: string[];
+  hourStart: number;
+  hourEnd: number;
+  fuentes: { excepcion: boolean; planif: boolean; habitual: boolean };
+};
+
+const DEFAULT_PREFS: Prefs = {
+  hidden: [],
+  hourStart: DEFAULT_HOUR_START,
+  hourEnd: DEFAULT_HOUR_END,
+  fuentes: { excepcion: true, planif: true, habitual: true },
+};
 
 type Sucursal = { id: string; nombre: string };
 type Empleado = {
