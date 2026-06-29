@@ -511,7 +511,7 @@ export function CoberturaSucursales() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sucursales.map((s) => {
+                  {sucursalesVisibles.map((s) => {
                     const cobs = porSucursal.get(s.id) || [];
                     const max = maxPorSucursal.get(s.id) || 0;
                     return (
@@ -579,13 +579,15 @@ export function CoberturaSucursales() {
                       </tr>
                     );
                   })}
-                  {sucursales.length === 0 && (
+                  {sucursalesVisibles.length === 0 && (
                     <tr>
                       <td
                         colSpan={HOURS.length + 2}
                         className="text-center text-muted-foreground p-6"
                       >
-                        Sin sucursales activas.
+                        {sucursales.length === 0
+                          ? "Sin sucursales activas."
+                          : "Todas las sucursales están ocultas. Ajustá los filtros."}
                       </td>
                     </tr>
                   )}
