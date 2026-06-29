@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import EventCalendar from "@/components/dashboard/EventCalendar"
 import { EstadoPersonalHoy } from "@/components/dashboard/EstadoPersonalHoy"
+import { CoberturaSucursales } from "@/components/dashboard/CoberturaSucursales"
 import { PWAInstallPrompt, PWAUpdatePrompt } from "@/components/PWAInstall"
 
 interface UserInfo {
@@ -269,6 +270,11 @@ export default function Dashboard() {
       {/* Estado del personal hoy */}
       {(isAdmin || isGerente) && (
         <EstadoPersonalHoy />
+      )}
+
+      {/* Cobertura horaria por sucursal */}
+      {(isAdmin || isGerente) && (
+        <CoberturaSucursales />
       )}
 
       {/* Calendario de Eventos */}
