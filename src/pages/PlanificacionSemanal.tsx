@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, Plus, FileText, Copy, Trash2, Download, Sun, Flag } from 'lucide-react';
+import { Calendar, Plus, FileText, Copy, Trash2, Download, Sun, Flag, Upload } from 'lucide-react';
+import { CargaMasivaHorarios } from '@/components/horarios/CargaMasivaHorarios';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format, startOfWeek, addWeeks, addDays, isSunday } from 'date-fns';
@@ -726,7 +727,7 @@ export default function PlanificacionSemanal() {
         </div>
 
         <Tabs defaultValue="planificacion" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="planificacion">
               <Calendar className="h-4 w-4 mr-2" />
               Planificación Semanal
@@ -743,7 +744,15 @@ export default function PlanificacionSemanal() {
               <Flag className="h-4 w-4 mr-2" />
               Feriado
             </TabsTrigger>
+            <TabsTrigger value="masivo">
+              <Upload className="h-4 w-4 mr-2" />
+              Carga masiva
+            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="masivo" className="space-y-4">
+            <CargaMasivaHorarios />
+          </TabsContent>
 
           {/* Tab Planificación Semanal */}
           <TabsContent value="planificacion" className="space-y-4">
