@@ -1,37 +1,39 @@
-## Plan: Encabezados sticky en Entregas a Empleados
+## Objetivo
 
-### Problema
-Al hacer scroll vertical dentro de la página de **Entregas a Empleados**, el título de la página, los filtros y los encabezados de la tabla (Faja, Zapatos, Remera, etc.) salen de la vista. Esto dificulta saber qué ítem se está registrando mientras se recorre la lista de empleados.
+Generar un único archivo PDF descargable (`entregas_pantalon_cargo.pdf`) con **13 páginas**, una por empleado, usando la plantilla HTML existente "Pantalon" (`plantillas_elementos.id = d9d1255d-...`).
 
-### Solución
-Convertir el área de título/filtros y el `<thead>` de la tabla en **encabezados sticky**, que permanezcan visibles mientras se hace scroll, respetando el header unificado ya existente.
+## Datos por empleado (orden y talle)
 
-### Cambios a realizar
+| # | Empleado | Talle |
+|---|---|---|
+| 1 | Marina | 40 |
+| 2 | Uriel | 40 |
+| 3 | Juan | 40 |
+| 4 | Carlos | 42 |
+| 5 | Daniel | 42 |
+| 6 | Josep | 42 |
+| 7 | Julio | 44 |
+| 8 | Analia | 46 |
+| 9 | Jony | 46 |
+| 10 | Carla | 48 |
+| 11 | Belen | 56 |
+| 12 | Washintong | 56 |
+| 13 | Laura | 60 |
 
-1. **Sticky del título y filtros (`src/pages/EntregasEmpleados.tsx`)**
-   - Envolver el bloque del título + filtros en un contenedor sticky.
-   - Posicionarlo debajo del header unificado (offset `top-14 md:top-16` ~ `56px` / `64px`).
-   - Usar `z-30` para quedar por encima de la tabla pero debajo del header unificado (`z-40`).
-   - Fondo semántico (`bg-background` o `bg-muted/50`) + borde inferior para separar visualmente.
+## Reemplazos en la plantilla
 
-2. **Sticky del `<thead>` de la tabla**
-   - Ajustar la posición `top` del `<thead>` para que quede justo debajo del título/filtros sticky.
-   - Usar `z-20` para quedar por encima de las filas.
-   - Mantener el fondo semántico (`bg-muted/50`) y el borde.
+- `{{empleado_nombre}}` → nombre tal cual (ej. "Marina")
+- `{{detalle}}` → `Pantalón Cargo Negro SAG Talle {{talle}}` (ej. "Pantalón Cargo Negro SAG Talle 40")
+- `{{item}}` → "Pantalón Cargo Negro SAG"
+- `{{fecha}}` → 30/06/2026
+- `{{legajo}}`, `{{observaciones}}` → vacío
 
-3. **Compatibilidad con scroll horizontal**
-   - Preservar `overflow-x-auto` del contenedor de la tabla.
-   - Asegurar que la primera columna "Empleado" siga siendo sticky horizontalmente (`sticky left-0`) y conserve su z-index correcto.
+## Cómo se genera (técnico)
 
-### Detalles técnicos
+1. Descargar `template_html` desde `plantillas_elementos`.
+2. Por cada empleado, hacer `replaceAll` de los placeholders.
+3. Concatenar las 13 secciones con `page-break-after: always` en un solo HTML.
+4. Renderizar a PDF con Chromium headless (Playwright) en A4.
+5. Guardar en `/mnt/documents/entregas_pantalon_cargo.pdf` y entregarlo como artifact.
 
-- El scroll vertical ocurre en el `<main className="flex-1 overflow-auto">` de `UnifiedLayout.tsx`, por lo que los elementos sticky deben ser descendientes directos de ese contenedor.
-- No se requieren cambios de base de datos ni lógica de negocio; solo ajustes de layout CSS.
-- Se mantendrán los colores semánticos del tema actual (no hardcodear colores).
-
-### Resultado esperado
-
-Al scrollear hacia abajo, el usuario seguirá viendo:
-1. El título "Entregas a Empleados" y los filtros de búsqueda.
-2. La fila de encabezados de la tabla con los nombres de los ítems (Faja, Zapatos, Remera, etc.).
-3. La columna del empleado seguirá fija al hacer scroll horizontal.
+No se modifica código del proyecto ni base de datos.
