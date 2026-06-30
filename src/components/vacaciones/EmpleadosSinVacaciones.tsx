@@ -135,8 +135,10 @@ export function EmpleadosSinVacaciones() {
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
+    const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
     return rows
       .filter((r) => {
+        if (grupoIds && !grupoIds.has(r.id)) return false;
         if (excluirPrueba && esEmpleadoExcluido(r.nombre, r.apellido)) return false;
         if (filtroSucursal !== "todas" && r.sucursal_id !== filtroSucursal) return false;
         if (filtroPuesto !== "todos" && r.puesto_id !== filtroPuesto) return false;
@@ -147,7 +149,7 @@ export function EmpleadosSinVacaciones() {
         return true;
       })
       .sort((a, b) => b.dias_faltantes - a.dias_faltantes);
-  }, [rows, filtroSucursal, filtroPuesto, busqueda, excluirPrueba]);
+  }, [rows, filtroSucursal, filtroPuesto, busqueda, excluirPrueba, grupoSel]);
 
   const exportarCSV = () => {
     const headers = [
