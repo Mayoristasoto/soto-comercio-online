@@ -401,7 +401,7 @@ export default function EntregasEmpleados() {
 
         <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <CardHeader className="shrink-0 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Buscar</Label>
                 <div className="relative">
@@ -413,6 +413,15 @@ export default function EntregasEmpleados() {
                     className="pl-9"
                   />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <SelectorGrupoCompacto
+                  value={grupoSel}
+                  onChange={setGrupoSel}
+                  modulo="entregas"
+                  empleados={empleados as any}
+                  label="Grupo"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Sucursal</Label>
@@ -462,6 +471,7 @@ export default function EntregasEmpleados() {
             </div>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 overflow-hidden flex flex-col p-6">
+
             <div className="overflow-auto rounded-md border flex-1 min-h-0">
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
