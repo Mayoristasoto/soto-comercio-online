@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Plus, Search } from "lucide-react";
 import { CargaManualVacacionesDialog } from "./CargaManualVacacionesDialog";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 // Patrones de exclusión para empleados de prueba / familia Soto (no influyen en gestión de vacaciones)
 const PATRONES_EXCLUSION = {
