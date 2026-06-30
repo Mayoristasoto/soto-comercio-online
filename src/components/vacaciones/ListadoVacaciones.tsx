@@ -223,7 +223,9 @@ export function ListadoVacaciones() {
 
   const filtradas = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
+    const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
     return empleados.filter((r) => {
+      if (grupoIds && !grupoIds.has(r.empleado_id)) return false;
       if (filtroSucursal !== "todas" && r.sucursal_nombre !== sucursales.find((s) => s.id === filtroSucursal)?.nombre) return false;
       if (filtroEstado !== "todos") {
         if (!r.solicitudes.some((s) => s.estado === filtroEstado)) return false;
@@ -234,7 +236,7 @@ export function ListadoVacaciones() {
       }
       return true;
     });
-  }, [empleados, filtroEstado, filtroSucursal, busqueda, sucursales]);
+  }, [empleados, filtroEstado, filtroSucursal, busqueda, sucursales, grupoSel]);
 
   const totales = useMemo(() => {
     const t = { empleados: filtradas.length, solicitudes: 0, pendientes: 0, aprobadas: 0, dias: 0 };
