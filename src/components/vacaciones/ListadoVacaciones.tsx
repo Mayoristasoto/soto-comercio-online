@@ -413,6 +413,9 @@ export function ListadoVacaciones() {
               </SelectContent>
             </Select>
           </div>
+          <div className="min-w-[220px]">
+            <SelectorGrupoCompacto value={grupoSel} onChange={setGrupoSel} modulo="vacaciones" label="Grupo" />
+          </div>
           <div className="flex items-center gap-2 pb-2">
             <Switch id="excl-inact" checked={excluirInactivos} onCheckedChange={setExcluirInactivos} />
             <Label htmlFor="excl-inact" className="text-xs">Excluir inactivos</Label>
