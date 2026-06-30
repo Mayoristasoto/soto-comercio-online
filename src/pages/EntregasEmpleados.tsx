@@ -212,7 +212,9 @@ export default function EntregasEmpleados() {
 
   const empleadosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
+    const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
     return empleados.filter((e) => {
+      if (grupoIds && !grupoIds.has(e.id)) return false;
       if (filtroSucursal !== "todas" && e.sucursal_id !== filtroSucursal) return false;
       if (filtroPuesto !== "todos" && e.puesto !== filtroPuesto) return false;
       if (q) {
@@ -229,7 +231,7 @@ export default function EntregasEmpleados() {
       }
       return true;
     });
-  }, [empleados, busqueda, filtroSucursal, filtroPuesto, filtroEstado, mapa, items]);
+  }, [empleados, busqueda, filtroSucursal, filtroPuesto, filtroEstado, mapa, items, grupoSel]);
 
   const resumen = useMemo(() => {
     let completos = 0;
