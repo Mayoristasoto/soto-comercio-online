@@ -86,6 +86,7 @@ export function ListadoVacaciones() {
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [busqueda, setBusqueda] = useState("");
   const [excluirInactivos, setExcluirInactivos] = useState(true);
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   type SortKey = "empleado" | "sucursal" | "fecha_ingreso" | "antiguedad" | "lct" | "pendientes" | "aprobadas" | "consumidos" | "restantes";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
