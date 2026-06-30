@@ -50,6 +50,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import DOMPurify from "dompurify";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import {
   AlertDialog,
   AlertDialogAction,
