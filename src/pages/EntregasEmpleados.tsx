@@ -119,6 +119,7 @@ export default function EntregasEmpleados() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroSucursal, setFiltroSucursal] = useState("todas");
   const [filtroPuesto, setFiltroPuesto] = useState("todos");
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "faltantes" | "completos">(
     "todos"
   );
