@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Plus, Search } from "lucide-react";
 import { CargaManualVacacionesDialog } from "./CargaManualVacacionesDialog";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 // Patrones de exclusión para empleados de prueba / familia Soto (no influyen en gestión de vacaciones)
 const PATRONES_EXCLUSION = {
@@ -62,6 +64,7 @@ export function EmpleadosSinVacaciones() {
   const [filtroPuesto, setFiltroPuesto] = useState<string>("todos");
   const [busqueda, setBusqueda] = useState("");
   const [excluirPrueba, setExcluirPrueba] = useState(true);
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [empleadoPreseleccionado, setEmpleadoPreseleccionado] = useState<EmpleadoRow | null>(null);
 
@@ -132,8 +135,10 @@ export function EmpleadosSinVacaciones() {
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
+    const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
     return rows
       .filter((r) => {
+        if (grupoIds && !grupoIds.has(r.id)) return false;
         if (excluirPrueba && esEmpleadoExcluido(r.nombre, r.apellido)) return false;
         if (filtroSucursal !== "todas" && r.sucursal_id !== filtroSucursal) return false;
         if (filtroPuesto !== "todos" && r.puesto_id !== filtroPuesto) return false;
@@ -144,7 +149,7 @@ export function EmpleadosSinVacaciones() {
         return true;
       })
       .sort((a, b) => b.dias_faltantes - a.dias_faltantes);
-  }, [rows, filtroSucursal, filtroPuesto, busqueda, excluirPrueba]);
+  }, [rows, filtroSucursal, filtroPuesto, busqueda, excluirPrueba, grupoSel]);
 
   const exportarCSV = () => {
     const headers = [
@@ -220,7 +225,7 @@ export function EmpleadosSinVacaciones() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -230,6 +235,7 @@ export function EmpleadosSinVacaciones() {
               className="pl-9"
             />
           </div>
+          <SelectorGrupoCompacto value={grupoSel} onChange={setGrupoSel} modulo="vacaciones" label="Grupo" />
           <Select value={filtroSucursal} onValueChange={setFiltroSucursal}>
             <SelectTrigger><SelectValue placeholder="Sucursal" /></SelectTrigger>
             <SelectContent>
@@ -249,6 +255,7 @@ export function EmpleadosSinVacaciones() {
             </SelectContent>
           </Select>
         </div>
+
 
         <div className="flex items-center gap-2 px-1">
           <Switch

@@ -50,6 +50,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import DOMPurify from "dompurify";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,6 +119,7 @@ export default function EntregasEmpleados() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroSucursal, setFiltroSucursal] = useState("todas");
   const [filtroPuesto, setFiltroPuesto] = useState("todos");
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "faltantes" | "completos">(
     "todos"
   );
@@ -209,7 +212,9 @@ export default function EntregasEmpleados() {
 
   const empleadosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
+    const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
     return empleados.filter((e) => {
+      if (grupoIds && !grupoIds.has(e.id)) return false;
       if (filtroSucursal !== "todas" && e.sucursal_id !== filtroSucursal) return false;
       if (filtroPuesto !== "todos" && e.puesto !== filtroPuesto) return false;
       if (q) {
@@ -226,7 +231,7 @@ export default function EntregasEmpleados() {
       }
       return true;
     });
-  }, [empleados, busqueda, filtroSucursal, filtroPuesto, filtroEstado, mapa, items]);
+  }, [empleados, busqueda, filtroSucursal, filtroPuesto, filtroEstado, mapa, items, grupoSel]);
 
   const resumen = useMemo(() => {
     let completos = 0;
@@ -396,7 +401,7 @@ export default function EntregasEmpleados() {
 
         <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <CardHeader className="shrink-0 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Buscar</Label>
                 <div className="relative">
@@ -408,6 +413,15 @@ export default function EntregasEmpleados() {
                     className="pl-9"
                   />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <SelectorGrupoCompacto
+                  value={grupoSel}
+                  onChange={setGrupoSel}
+                  modulo="entregas"
+                  empleados={empleados as any}
+                  label="Grupo"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Sucursal</Label>
@@ -457,6 +471,7 @@ export default function EntregasEmpleados() {
             </div>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 overflow-hidden flex flex-col p-6">
+
             <div className="overflow-auto rounded-md border flex-1 min-h-0">
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">

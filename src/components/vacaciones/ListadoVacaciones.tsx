@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Search, ChevronRight, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 const PATRONES_EXCLUSION = {
   contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"],
@@ -84,6 +86,7 @@ export function ListadoVacaciones() {
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [busqueda, setBusqueda] = useState("");
   const [excluirInactivos, setExcluirInactivos] = useState(true);
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   type SortKey = "empleado" | "sucursal" | "fecha_ingreso" | "antiguedad" | "lct" | "pendientes" | "aprobadas" | "consumidos" | "restantes";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -220,7 +223,9 @@ export function ListadoVacaciones() {
 
   const filtradas = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
+    const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
     return empleados.filter((r) => {
+      if (grupoIds && !grupoIds.has(r.empleado_id)) return false;
       if (filtroSucursal !== "todas" && r.sucursal_nombre !== sucursales.find((s) => s.id === filtroSucursal)?.nombre) return false;
       if (filtroEstado !== "todos") {
         if (!r.solicitudes.some((s) => s.estado === filtroEstado)) return false;
@@ -231,7 +236,7 @@ export function ListadoVacaciones() {
       }
       return true;
     });
-  }, [empleados, filtroEstado, filtroSucursal, busqueda, sucursales]);
+  }, [empleados, filtroEstado, filtroSucursal, busqueda, sucursales, grupoSel]);
 
   const totales = useMemo(() => {
     const t = { empleados: filtradas.length, solicitudes: 0, pendientes: 0, aprobadas: 0, dias: 0 };
@@ -407,6 +412,9 @@ export function ListadoVacaciones() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="min-w-[220px]">
+            <SelectorGrupoCompacto value={grupoSel} onChange={setGrupoSel} modulo="vacaciones" label="Grupo" />
           </div>
           <div className="flex items-center gap-2 pb-2">
             <Switch id="excl-inact" checked={excluirInactivos} onCheckedChange={setExcluirInactivos} />
