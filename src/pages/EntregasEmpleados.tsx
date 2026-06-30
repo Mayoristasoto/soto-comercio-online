@@ -374,7 +374,7 @@ export default function EntregasEmpleados() {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="container mx-auto p-6 flex flex-col gap-6 min-h-0">
+      <div className="container mx-auto p-6 flex flex-col gap-6 min-h-0 h-full">
         <div className="shrink-0 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -459,18 +459,18 @@ export default function EntregasEmpleados() {
           <CardContent className="flex-1 min-h-0 overflow-hidden flex flex-col p-6">
             <div className="overflow-x-auto overflow-y-auto rounded-md border flex-1 min-h-0">
               <table className="w-full text-sm border-collapse">
-                <thead className="bg-muted/50 sticky top-0 z-20">
+                <thead className="sticky top-0 z-20">
                   <tr>
-                    <th className="text-left px-3 py-2 sticky left-0 bg-muted/50 z-30 min-w-[240px] border-r">
+                    <th className="text-left px-3 py-2 sticky left-0 top-0 bg-muted z-30 min-w-[240px] border-r border-b">
                       Empleado
                     </th>
                     {items.map((it) => (
-                      <th key={it.id} className="px-2 py-2 text-center min-w-[90px]">
+                      <th key={it.id} className="px-2 py-2 text-center min-w-[90px] sticky top-0 bg-muted z-20 border-b">
                         {it.nombre}
                       </th>
                     ))}
                     {items.length === 0 && (
-                      <th className="px-3 py-2 text-muted-foreground">
+                      <th className="px-3 py-2 text-muted-foreground sticky top-0 bg-muted z-20 border-b">
                         Sin items configurados
                       </th>
                     )}
