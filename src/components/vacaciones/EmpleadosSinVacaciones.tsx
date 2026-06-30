@@ -64,6 +64,7 @@ export function EmpleadosSinVacaciones() {
   const [filtroPuesto, setFiltroPuesto] = useState<string>("todos");
   const [busqueda, setBusqueda] = useState("");
   const [excluirPrueba, setExcluirPrueba] = useState(true);
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [empleadoPreseleccionado, setEmpleadoPreseleccionado] = useState<EmpleadoRow | null>(null);
 
