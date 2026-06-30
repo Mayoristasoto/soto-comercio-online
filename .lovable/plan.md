@@ -1,66 +1,37 @@
-## Carga Masiva de Horarios – Sábados y Domingos
+## Plan: Encabezados sticky en Entregas a Empleados
 
-### Ubicación
-- **Nueva página**: `/rrhh/horarios-masivos` (registrada en `src/App.tsx` y entrada en sidebar para `admin_rrhh`).
-- **Nueva pestaña** "Carga masiva" dentro de `src/pages/PlanificacionSemanal.tsx`, que reutiliza el mismo componente.
+### Problema
+Al hacer scroll vertical dentro de la página de **Entregas a Empleados**, el título de la página, los filtros y los encabezados de la tabla (Faja, Zapatos, Remera, etc.) salen de la vista. Esto dificulta saber qué ítem se está registrando mientras se recorre la lista de empleados.
 
-### Componente principal
-`src/components/horarios/CargaMasivaHorarios.tsx` con un wizard de 3 pasos:
+### Solución
+Convertir el área de título/filtros y el `<thead>` de la tabla en **encabezados sticky**, que permanezcan visibles mientras se hace scroll, respetando el header unificado ya existente.
 
-**Paso 1 – Configuración**
-- Selector de **día**: Sábado / Domingo (multi-select, permite ambos).
-- Selector de **alcance**:
-  - Excepción puntual → pide fecha específica (escribe en `horarios_excepcionales`).
-  - Turno habitual recurrente → escribe/actualiza `empleado_turnos` con `dia_semana`.
-- Selector de **modo de carga**:
-  1. **Manual masivo**: filtros (sucursal, rol, grupo, búsqueda) + tabla con checkboxes para seleccionar empleados, e inputs únicos de Entrada / Salida / Pausa que se aplican a todos los seleccionados.
-  2. **Por grupos**: dropdown con `grupos_empleados`; trae los miembros automáticamente.
-  3. **Importar Excel/CSV**: drop-zone que acepta columnas `DNI | Empleado | Día | Entrada | Salida | Pausa (min)`. Botón "Descargar plantilla".
+### Cambios a realizar
 
-**Paso 2 – Vista previa y validación**
-Tabla con todas las filas a aplicar mostrando: Empleado, Sucursal, Día/Fecha, Entrada, Salida y columna **Estado** con badges:
-- 🟢 OK – sin conflictos.
-- 🟡 Conflicto turno – ya tiene turno cargado ese día (muestra el existente; permite "sobrescribir" / "omitir").
-- 🔴 Vacaciones / Licencia – el empleado tiene vacaciones aprobadas o ausencia médica en esa fecha; bloqueado por defecto.
-- ⚫ Error de importación – DNI no encontrado, formato HH:MM inválido, salida ≤ entrada, sucursal inexistente.
+1. **Sticky del título y filtros (`src/pages/EntregasEmpleados.tsx`)**
+   - Envolver el bloque del título + filtros en un contenedor sticky.
+   - Posicionarlo debajo del header unificado (offset `top-14 md:top-16` ~ `56px` / `64px`).
+   - Usar `z-30` para quedar por encima de la tabla pero debajo del header unificado (`z-40`).
+   - Fondo semántico (`bg-background` o `bg-muted/50`) + borde inferior para separar visualmente.
 
-Contadores arriba: total / OK / conflictos / bloqueados. Botón **"Confirmar y guardar"** queda deshabilitado si hay filas en estado bloqueado sin resolver.
+2. **Sticky del `<thead>` de la tabla**
+   - Ajustar la posición `top` del `<thead>` para que quede justo debajo del título/filtros sticky.
+   - Usar `z-20` para quedar por encima de las filas.
+   - Mantener el fondo semántico (`bg-muted/50`) y el borde.
 
-**Paso 3 – Resultado**
-Resumen: insertados, actualizados, omitidos, con descarga CSV del log.
-
-### Validaciones (RPC nueva)
-`public.validar_horarios_masivos(payload jsonb) returns jsonb` (SECURITY DEFINER, solo `admin_rrhh`):
-- Resuelve empleado por DNI o por id; verifica `activo = true`.
-- Cruza contra `empleado_turnos` (mismo `dia_semana`, `activo = true`) → conflicto turno.
-- Cruza contra `solicitudes_vacaciones` (estado aprobada/gozadas) y `ausencias_medicas` en la fecha → bloqueado.
-- Verifica formato `HH:MM` y que `salida > entrada`.
-- Devuelve el listado con `status` por fila.
-
-### Guardado (RPC nueva)
-`public.guardar_horarios_masivos(payload jsonb, sobrescribir boolean) returns jsonb`:
-- Si **excepción puntual** → `INSERT` en `horarios_excepcionales` con la fecha.
-- Si **turno habitual** → upsert en `empleado_turnos` por `(empleado_id, dia_semana)` respetando los índices únicos parciales existentes.
-- Registra auditoría en `fichaje_auditoria` con motivo "carga_masiva_horarios".
-
-### Validaciones de UI (zod)
-Schema para el formulario manual y para cada fila del CSV: horas en formato `HH:MM`, pausa entre 0 y 180, día ∈ {sábado, domingo}.
+3. **Compatibilidad con scroll horizontal**
+   - Preservar `overflow-x-auto` del contenedor de la tabla.
+   - Asegurar que la primera columna "Empleado" siga siendo sticky horizontalmente (`sticky left-0`) y conserve su z-index correcto.
 
 ### Detalles técnicos
-- Parser de Excel con `xlsx` (ya en dependencias por `VacacionesImport`).
-- Hook `useEmpleadosActivos` reutilizado para filtros.
-- Sin cambios en lógica existente de turnos; solo se agregan las dos RPC nuevas y la UI.
 
-### Archivos
-**Nuevos**
-- `src/pages/HorariosMasivos.tsx`
-- `src/components/horarios/CargaMasivaHorarios.tsx`
-- `src/components/horarios/PasoConfiguracion.tsx`
-- `src/components/horarios/PasoVistaPrevia.tsx`
-- `src/components/horarios/ImportadorCSV.tsx`
-- Migración con las dos RPC.
+- El scroll vertical ocurre en el `<main className="flex-1 overflow-auto">` de `UnifiedLayout.tsx`, por lo que los elementos sticky deben ser descendientes directos de ese contenedor.
+- No se requieren cambios de base de datos ni lógica de negocio; solo ajustes de layout CSS.
+- Se mantendrán los colores semánticos del tema actual (no hardcodear colores).
 
-**Modificados**
-- `src/App.tsx` – ruta nueva.
-- `src/pages/PlanificacionSemanal.tsx` – pestaña "Carga masiva".
-- Sidebar (`app_pages`) – entrada de menú.
+### Resultado esperado
+
+Al scrollear hacia abajo, el usuario seguirá viendo:
+1. El título "Entregas a Empleados" y los filtros de búsqueda.
+2. La fila de encabezados de la tabla con los nombres de los ítems (Faja, Zapatos, Remera, etc.).
+3. La columna del empleado seguirá fija al hacer scroll horizontal.

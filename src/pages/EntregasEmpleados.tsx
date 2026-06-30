@@ -374,8 +374,8 @@ export default function EntregasEmpleados() {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div className="container mx-auto p-6 flex flex-col gap-6 min-h-0">
+        <div className="shrink-0 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <Package className="h-7 w-7" /> Entregas a Empleados
@@ -394,8 +394,8 @@ export default function EntregasEmpleados() {
           </div>
         </div>
 
-        <Card>
-          <CardHeader className="space-y-4">
+        <Card className="flex flex-col min-h-0 overflow-hidden">
+          <CardHeader className="shrink-0 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Buscar</Label>
@@ -456,12 +456,12 @@ export default function EntregasEmpleados() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto rounded-md border">
+          <CardContent className="flex-1 min-h-0 overflow-hidden flex flex-col p-6">
+            <div className="overflow-x-auto overflow-y-auto rounded-md border flex-1 min-h-0">
               <table className="w-full text-sm border-collapse">
-                <thead className="bg-muted/50 sticky top-0">
+                <thead className="bg-muted/50 sticky top-0 z-20">
                   <tr>
-                    <th className="text-left px-3 py-2 sticky left-0 bg-muted/50 z-10 min-w-[240px] border-r">
+                    <th className="text-left px-3 py-2 sticky left-0 bg-muted/50 z-30 min-w-[240px] border-r">
                       Empleado
                     </th>
                     {items.map((it) => (
@@ -517,7 +517,7 @@ export default function EntregasEmpleados() {
               </table>
             </div>
 
-            <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground items-center">
+            <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground items-center shrink-0">
               <Leyenda />
               <div className="ml-auto flex gap-3">
                 <Badge variant="outline">{resumen.total} empleados</Badge>
