@@ -225,7 +225,7 @@ export function EmpleadosSinVacaciones() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -235,6 +235,7 @@ export function EmpleadosSinVacaciones() {
               className="pl-9"
             />
           </div>
+          <SelectorGrupoCompacto value={grupoSel} onChange={setGrupoSel} modulo="vacaciones" label="Grupo" />
           <Select value={filtroSucursal} onValueChange={setFiltroSucursal}>
             <SelectTrigger><SelectValue placeholder="Sucursal" /></SelectTrigger>
             <SelectContent>
@@ -254,6 +255,7 @@ export function EmpleadosSinVacaciones() {
             </SelectContent>
           </Select>
         </div>
+
 
         <div className="flex items-center gap-2 px-1">
           <Switch
