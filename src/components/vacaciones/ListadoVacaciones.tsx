@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Search, ChevronRight, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 const PATRONES_EXCLUSION = {
   contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"],
