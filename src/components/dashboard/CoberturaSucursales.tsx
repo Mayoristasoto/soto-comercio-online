@@ -30,6 +30,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { useEstadoPersonalHoy } from "@/hooks/useEstadoPersonalHoy";
+import { isToday } from "date-fns";
+
 
 const DEFAULT_HOUR_START = 7;
 const DEFAULT_HOUR_END = 23; // exclusive
