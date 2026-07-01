@@ -127,6 +127,13 @@ export default function OptimizadorHorarios() {
   const [empSel, setEmpSel] = useState<string | null>(null);
   const [franjaDraft, setFranjaDraft] = useState<Record<string, { desde: number; hasta: number; min: number }>>({});
 
+  // ---- Propuesta guiada ----
+  type Movimiento = { id: string; sucursal_id: string; empleado_id: string; nueva_entrada: string };
+  type FranjaObj = { id: string; sucursal_id: string; desde: number; hasta: number; min: number };
+  const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
+  const [franjasObj, setFranjasObj] = useState<FranjaObj[]>([]);
+  const uid = () => Math.random().toString(36).slice(2, 9);
+
   const getTarget = (sucId: string, hour: number) => {
     const override = targetsHora[sucId]?.[hour];
     if (override != null) return override;
