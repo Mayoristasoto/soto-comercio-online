@@ -364,6 +364,72 @@ export default function OptimizadorHorarios() {
 
   const resetPropuesta = () => setAsignaciones(asignacionesBase);
 
+  // Aplicar la propuesta guiada al mapa (movimientos + franjas objetivo)
+  const aplicarPropuestaGuiada = () => {
+    let movsAplicados = 0;
+    movimientos.forEach((m) => {
+      if (!m.empleado_id || !m.nueva_entrada) return;
+      setEntradaEmpleado(m.empleado_id, m.nueva_entrada);
+      movsAplicados++;
+    });
+    setTargetsHora((prev) => {
+      const next = { ...prev };
+      franjasObj.forEach((f) => {
+        if (!f.sucursal_id) return;
+        const lo = Math.min(f.desde, f.hasta);
+        const hi = Math.max(f.desde, f.hasta);
+        next[f.sucursal_id] = { ...(next[f.sucursal_id] || {}) };
+        for (let h = lo; h <= hi; h++) next[f.sucursal_id][h] = f.min;
+      });
+      return next;
+    });
+    toast({
+      title: "Propuesta aplicada",
+      description: `${movsAplicados} movimiento(s) y ${franjasObj.length} objetivo(s) por franja.`,
+    });
+  };
+
+  // Preset "Reforzar Martí tarde": busca empleados por apellido y arma la propuesta
+  const preloadPresetMartiTarde = () => {
+    const martí = sucursales.find(
+      (s) => s.nombre.toLowerCase().includes("marti") || s.nombre.toLowerCase().includes("martí")
+    );
+    if (!martí) {
+      toast({ title: "Sucursal Martí no encontrada", variant: "destructive" });
+      return;
+    }
+    const findByApellido = (ap: string) =>
+      asignacionesBase.find(
+        (a) =>
+          a.sucursal_id === martí.id &&
+          a.empleado_nombre.toLowerCase().startsWith(ap.toLowerCase() + ",")
+      );
+
+    const cajero = findByApellido("Lan") || findByApellido("Vera");
+    const repositor =
+      findByApellido("Chumpitaz Bartolo") ||
+      findByApellido("Romero") ||
+      findByApellido("Conforti");
+
+    const movs: Movimiento[] = [];
+    if (cajero)
+      movs.push({ id: uid(), sucursal_id: martí.id, empleado_id: cajero.empleado_id, nueva_entrada: "11:00" });
+    if (repositor)
+      movs.push({ id: uid(), sucursal_id: martí.id, empleado_id: repositor.empleado_id, nueva_entrada: "12:00" });
+
+    const franjas: FranjaObj[] = [
+      { id: uid(), sucursal_id: martí.id, desde: 15, hasta: 18, min: 4 },
+      { id: uid(), sucursal_id: martí.id, desde: 19, hasta: 20, min: 2 },
+    ];
+
+    setMovimientos(movs);
+    setFranjasObj(franjas);
+    toast({
+      title: "Preset cargado",
+      description: "Editá empleados, horarios o mínimos antes de aplicar.",
+    });
+  };
+
   const cambios = useMemo(() => {
     const base = new Map(asignacionesBase.map((a) => [a.empleado_id, a]));
     return asignaciones.filter((a) => {
