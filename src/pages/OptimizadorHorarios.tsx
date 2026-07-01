@@ -120,7 +120,37 @@ export default function OptimizadorHorarios() {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [sucursalFiltro, setSucursalFiltro] = useState<string>("all");
   const [targets, setTargets] = useState<Record<string, number>>({}); // por sucursal, objetivo min de empleados por hora
+  const [targetsHora, setTargetsHora] = useState<Record<string, Record<number, number>>>({}); // override por sucursal+hora
   const [empSel, setEmpSel] = useState<string | null>(null);
+  const [franjaDraft, setFranjaDraft] = useState<Record<string, { desde: number; hasta: number; min: number }>>({});
+
+  const getTarget = (sucId: string, hour: number) => {
+    const override = targetsHora[sucId]?.[hour];
+    if (override != null) return override;
+    return targets[sucId] ?? 1;
+  };
+
+  const aplicarFranja = (sucId: string) => {
+    const d = franjaDraft[sucId];
+    if (!d) return;
+    const { desde, hasta, min } = d;
+    const lo = Math.min(desde, hasta);
+    const hi = Math.max(desde, hasta);
+    setTargetsHora((prev) => {
+      const next = { ...prev, [sucId]: { ...(prev[sucId] || {}) } };
+      for (let h = lo; h <= hi; h++) next[sucId][h] = min;
+      return next;
+    });
+    toast({ title: "Franja aplicada", description: `${String(lo).padStart(2, "0")}:00–${String(hi).padStart(2, "0")}:59 → mín. ${min}` });
+  };
+
+  const limpiarFranjas = (sucId: string) => {
+    setTargetsHora((prev) => {
+      const next = { ...prev };
+      delete next[sucId];
+      return next;
+    });
+  };
 
   const fechaStr = format(fecha, "yyyy-MM-dd");
   const diaSemana = fecha.getDay();
