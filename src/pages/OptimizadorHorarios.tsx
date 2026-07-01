@@ -366,9 +366,9 @@ export default function OptimizadorHorarios() {
   const sugerencias = useMemo(() => {
     const out: { sucursal: string; sucursal_id: string; hora: number; deficit: number; candidatos: { empleado_id: string; nombre: string; from: string; to: string }[] }[] = [];
     sucursalesVisibles.forEach((s) => {
-      const target = targets[s.id] ?? 1;
       const conteo = conteoPropPorSuc.get(s.id) || [];
       HOURS.forEach((h, i) => {
+        const target = getTarget(s.id, h);
         const n = conteo[i] || 0;
         if (n < target) {
           const deficit = target - n;
