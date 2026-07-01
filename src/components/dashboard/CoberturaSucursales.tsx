@@ -345,8 +345,14 @@ export function CoberturaSucursales() {
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1 capitalize">
             {format(fecha, "EEEE d 'de' MMMM yyyy", { locale: es })}
+            {filtroTrabajandoActivo && (
+              <Badge variant="outline" className="ml-2 bg-sky-100 text-sky-700 border-sky-200 capitalize-none">
+                Trabajando ahora ({trabajandoHoy.size})
+              </Badge>
+            )}
           </p>
         </div>
+
         <div className="flex items-center gap-2 flex-wrap">
           <Popover>
             <PopoverTrigger asChild>
