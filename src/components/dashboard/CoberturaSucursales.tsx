@@ -113,14 +113,21 @@ function getCellCount(cobs: CoberturaEmpleado[], hour: number): CoberturaEmplead
   });
 }
 
-function colorForCount(n: number, max: number): string {
+function colorForCount(n: number, max: number, palette: "emerald" | "sky" = "emerald"): string {
   if (n === 0) return "bg-muted/40";
   const ratio = max > 0 ? n / max : 0;
+  if (palette === "sky") {
+    if (ratio > 0.75) return "bg-sky-600/85 text-white";
+    if (ratio > 0.5) return "bg-sky-500/75 text-white";
+    if (ratio > 0.25) return "bg-sky-400/70 text-white";
+    return "bg-sky-300/70";
+  }
   if (ratio > 0.75) return "bg-emerald-500/80 text-white";
   if (ratio > 0.5) return "bg-emerald-400/70 text-white";
   if (ratio > 0.25) return "bg-emerald-300/70";
   return "bg-emerald-200/70";
 }
+
 
 function getWeekStartISO(d: Date): string {
   // ISO week: Monday
