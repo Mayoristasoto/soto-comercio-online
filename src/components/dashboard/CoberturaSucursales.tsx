@@ -387,6 +387,21 @@ export function CoberturaSucursales() {
                   />
                 </div>
 
+                <div className="flex items-start justify-between gap-3 rounded-md border p-3 bg-sky-50/50">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Solo empleados trabajando ahora</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Filtra por fichajes activos (celdas en azul). Solo aplica al día de hoy.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={prefs.soloTrabajando}
+                    onCheckedChange={(v) => setPrefs((p) => ({ ...p, soloTrabajando: !!v }))}
+                  />
+                </div>
+
+
+
                 <div>
                   <Label className="text-xs font-semibold uppercase text-muted-foreground">
                     Fuente de horario
