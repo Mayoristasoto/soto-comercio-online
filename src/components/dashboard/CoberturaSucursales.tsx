@@ -30,6 +30,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { useEstadoPersonalHoy } from "@/hooks/useEstadoPersonalHoy";
+import { isToday } from "date-fns";
+
 
 const DEFAULT_HOUR_START = 7;
 const DEFAULT_HOUR_END = 23; // exclusive
@@ -40,6 +44,7 @@ type Prefs = {
   hourStart: number;
   hourEnd: number;
   fuentes: { excepcion: boolean; planif: boolean; habitual: boolean };
+  soloTrabajando: boolean;
 };
 
 const DEFAULT_PREFS: Prefs = {
@@ -47,7 +52,9 @@ const DEFAULT_PREFS: Prefs = {
   hourStart: DEFAULT_HOUR_START,
   hourEnd: DEFAULT_HOUR_END,
   fuentes: { excepcion: true, planif: true, habitual: true },
+  soloTrabajando: false,
 };
+
 
 type Sucursal = { id: string; nombre: string };
 type Empleado = {
@@ -110,14 +117,21 @@ function getCellCount(cobs: CoberturaEmpleado[], hour: number): CoberturaEmplead
   });
 }
 
-function colorForCount(n: number, max: number): string {
+function colorForCount(n: number, max: number, palette: "emerald" | "sky" = "emerald"): string {
   if (n === 0) return "bg-muted/40";
   const ratio = max > 0 ? n / max : 0;
+  if (palette === "sky") {
+    if (ratio > 0.75) return "bg-sky-600/85 text-white";
+    if (ratio > 0.5) return "bg-sky-500/75 text-white";
+    if (ratio > 0.25) return "bg-sky-400/70 text-white";
+    return "bg-sky-300/70";
+  }
   if (ratio > 0.75) return "bg-emerald-500/80 text-white";
   if (ratio > 0.5) return "bg-emerald-400/70 text-white";
   if (ratio > 0.25) return "bg-emerald-300/70";
   return "bg-emerald-200/70";
 }
+
 
 function getWeekStartISO(d: Date): string {
   // ISO week: Monday
@@ -273,16 +287,25 @@ export function CoberturaSucursales() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fechaStr]);
 
+  const { rows: estadoRows } = useEstadoPersonalHoy(60000);
+  const trabajandoHoy = useMemo(
+    () => new Set(estadoRows.filter((r) => r.estado === "trabajando" || r.estado === "descanso").map((r) => r.empleado_id)),
+    [estadoRows]
+  );
+  const filtroTrabajandoActivo = prefs.soloTrabajando && isToday(fecha);
+
   const coberturasFiltradas = useMemo(
     () =>
       coberturas.filter((c) => {
         if (c.fuente === "Excepción" && !prefs.fuentes.excepcion) return false;
         if (c.fuente === "Planificación" && !prefs.fuentes.planif) return false;
         if (c.fuente === "Turno habitual" && !prefs.fuentes.habitual) return false;
+        if (filtroTrabajandoActivo && !trabajandoHoy.has(c.empleado.id)) return false;
         return true;
       }),
-    [coberturas, prefs.fuentes]
+    [coberturas, prefs.fuentes, filtroTrabajandoActivo, trabajandoHoy]
   );
+
 
   const porSucursal = useMemo(() => {
     const map = new Map<string, CoberturaEmpleado[]>();
@@ -322,8 +345,14 @@ export function CoberturaSucursales() {
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1 capitalize">
             {format(fecha, "EEEE d 'de' MMMM yyyy", { locale: es })}
+            {filtroTrabajandoActivo && (
+              <Badge variant="outline" className="ml-2 bg-sky-100 text-sky-700 border-sky-200 capitalize-none">
+                Trabajando ahora ({trabajandoHoy.size})
+              </Badge>
+            )}
           </p>
         </div>
+
         <div className="flex items-center gap-2 flex-wrap">
           <Popover>
             <PopoverTrigger asChild>
@@ -363,6 +392,21 @@ export function CoberturaSucursales() {
                     }
                   />
                 </div>
+
+                <div className="flex items-start justify-between gap-3 rounded-md border p-3 bg-sky-50/50">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Solo empleados trabajando ahora</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Filtra por fichajes activos (celdas en azul). Solo aplica al día de hoy.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={prefs.soloTrabajando}
+                    onCheckedChange={(v) => setPrefs((p) => ({ ...p, soloTrabajando: !!v }))}
+                  />
+                </div>
+
+
 
                 <div>
                   <Label className="text-xs font-semibold uppercase text-muted-foreground">
@@ -532,8 +576,10 @@ export function CoberturaSucursales() {
                                   <div
                                     className={`h-9 rounded flex items-center justify-center text-[11px] font-semibold cursor-default ${colorForCount(
                                       n,
-                                      max
+                                      max,
+                                      filtroTrabajandoActivo ? "sky" : "emerald"
                                     )}`}
+
                                   >
                                     {n > 0 ? n : ""}
                                   </div>
