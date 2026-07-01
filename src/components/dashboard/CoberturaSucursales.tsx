@@ -40,6 +40,7 @@ type Prefs = {
   hourStart: number;
   hourEnd: number;
   fuentes: { excepcion: boolean; planif: boolean; habitual: boolean };
+  soloTrabajando: boolean;
 };
 
 const DEFAULT_PREFS: Prefs = {
@@ -47,7 +48,9 @@ const DEFAULT_PREFS: Prefs = {
   hourStart: DEFAULT_HOUR_START,
   hourEnd: DEFAULT_HOUR_END,
   fuentes: { excepcion: true, planif: true, habitual: true },
+  soloTrabajando: false,
 };
+
 
 type Sucursal = { id: string; nombre: string };
 type Empleado = {
