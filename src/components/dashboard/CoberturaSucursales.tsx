@@ -287,16 +287,25 @@ export function CoberturaSucursales() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fechaStr]);
 
+  const { rows: estadoRows } = useEstadoPersonalHoy(60000);
+  const trabajandoHoy = useMemo(
+    () => new Set(estadoRows.filter((r) => r.estado === "trabajando" || r.estado === "descanso").map((r) => r.empleado_id)),
+    [estadoRows]
+  );
+  const filtroTrabajandoActivo = prefs.soloTrabajando && isToday(fecha);
+
   const coberturasFiltradas = useMemo(
     () =>
       coberturas.filter((c) => {
         if (c.fuente === "Excepción" && !prefs.fuentes.excepcion) return false;
         if (c.fuente === "Planificación" && !prefs.fuentes.planif) return false;
         if (c.fuente === "Turno habitual" && !prefs.fuentes.habitual) return false;
+        if (filtroTrabajandoActivo && !trabajandoHoy.has(c.empleado.id)) return false;
         return true;
       }),
-    [coberturas, prefs.fuentes]
+    [coberturas, prefs.fuentes, filtroTrabajandoActivo, trabajandoHoy]
   );
+
 
   const porSucursal = useMemo(() => {
     const map = new Map<string, CoberturaEmpleado[]>();
