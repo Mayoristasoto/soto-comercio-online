@@ -13,6 +13,9 @@ import {
   Undo2,
   AlertTriangle,
   CheckCircle2,
+  Sparkles,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -123,6 +126,13 @@ export default function OptimizadorHorarios() {
   const [targetsHora, setTargetsHora] = useState<Record<string, Record<number, number>>>({}); // override por sucursal+hora
   const [empSel, setEmpSel] = useState<string | null>(null);
   const [franjaDraft, setFranjaDraft] = useState<Record<string, { desde: number; hasta: number; min: number }>>({});
+
+  // ---- Propuesta guiada ----
+  type Movimiento = { id: string; sucursal_id: string; empleado_id: string; nueva_entrada: string };
+  type FranjaObj = { id: string; sucursal_id: string; desde: number; hasta: number; min: number };
+  const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
+  const [franjasObj, setFranjasObj] = useState<FranjaObj[]>([]);
+  const uid = () => Math.random().toString(36).slice(2, 9);
 
   const getTarget = (sucId: string, hour: number) => {
     const override = targetsHora[sucId]?.[hour];
@@ -353,6 +363,72 @@ export default function OptimizadorHorarios() {
   };
 
   const resetPropuesta = () => setAsignaciones(asignacionesBase);
+
+  // Aplicar la propuesta guiada al mapa (movimientos + franjas objetivo)
+  const aplicarPropuestaGuiada = () => {
+    let movsAplicados = 0;
+    movimientos.forEach((m) => {
+      if (!m.empleado_id || !m.nueva_entrada) return;
+      setEntradaEmpleado(m.empleado_id, m.nueva_entrada);
+      movsAplicados++;
+    });
+    setTargetsHora((prev) => {
+      const next = { ...prev };
+      franjasObj.forEach((f) => {
+        if (!f.sucursal_id) return;
+        const lo = Math.min(f.desde, f.hasta);
+        const hi = Math.max(f.desde, f.hasta);
+        next[f.sucursal_id] = { ...(next[f.sucursal_id] || {}) };
+        for (let h = lo; h <= hi; h++) next[f.sucursal_id][h] = f.min;
+      });
+      return next;
+    });
+    toast({
+      title: "Propuesta aplicada",
+      description: `${movsAplicados} movimiento(s) y ${franjasObj.length} objetivo(s) por franja.`,
+    });
+  };
+
+  // Preset "Reforzar Martí tarde": busca empleados por apellido y arma la propuesta
+  const preloadPresetMartiTarde = () => {
+    const martí = sucursales.find(
+      (s) => s.nombre.toLowerCase().includes("marti") || s.nombre.toLowerCase().includes("martí")
+    );
+    if (!martí) {
+      toast({ title: "Sucursal Martí no encontrada", variant: "destructive" });
+      return;
+    }
+    const findByApellido = (ap: string) =>
+      asignacionesBase.find(
+        (a) =>
+          a.sucursal_id === martí.id &&
+          a.empleado_nombre.toLowerCase().startsWith(ap.toLowerCase() + ",")
+      );
+
+    const cajero = findByApellido("Lan") || findByApellido("Vera");
+    const repositor =
+      findByApellido("Chumpitaz Bartolo") ||
+      findByApellido("Romero") ||
+      findByApellido("Conforti");
+
+    const movs: Movimiento[] = [];
+    if (cajero)
+      movs.push({ id: uid(), sucursal_id: martí.id, empleado_id: cajero.empleado_id, nueva_entrada: "11:00" });
+    if (repositor)
+      movs.push({ id: uid(), sucursal_id: martí.id, empleado_id: repositor.empleado_id, nueva_entrada: "12:00" });
+
+    const franjas: FranjaObj[] = [
+      { id: uid(), sucursal_id: martí.id, desde: 15, hasta: 18, min: 4 },
+      { id: uid(), sucursal_id: martí.id, desde: 19, hasta: 20, min: 2 },
+    ];
+
+    setMovimientos(movs);
+    setFranjasObj(franjas);
+    toast({
+      title: "Preset cargado",
+      description: "Editá empleados, horarios o mínimos antes de aplicar.",
+    });
+  };
 
   const cambios = useMemo(() => {
     const base = new Map(asignacionesBase.map((a) => [a.empleado_id, a]));
@@ -665,7 +741,172 @@ export default function OptimizadorHorarios() {
             </CardContent>
           </Card>
 
+          {/* PROPUESTA GUIADA */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Propuesta guiada
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Editá movimientos y objetivos por franja, luego aplicá al mapa de calor. Todo simulado.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={preloadPresetMartiTarde}>
+                  <Sparkles className="h-3 w-3 mr-1" /> Preset: Reforzar Martí tarde
+                </Button>
+                <Button size="sm" onClick={aplicarPropuestaGuiada} disabled={movimientos.length === 0 && franjasObj.length === 0}>
+                  Aplicar al mapa
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Movimientos */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium">Movimientos de empleados</div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setMovimientos((p) => [
+                        ...p,
+                        { id: uid(), sucursal_id: sucursalFiltro !== "all" ? sucursalFiltro : sucursales[0]?.id || "", empleado_id: "", nueva_entrada: "11:00" },
+                      ])
+                    }
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Agregar
+                  </Button>
+                </div>
+                {movimientos.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">Sin movimientos. Cargá el preset o agregá uno.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {movimientos.map((m) => {
+                      const empleadosSuc = asignacionesBase.filter((a) => a.sucursal_id === m.sucursal_id);
+                      const base = asignacionesBase.find((a) => a.empleado_id === m.empleado_id);
+                      return (
+                        <div key={m.id} className="flex flex-wrap items-end gap-2 border rounded-md p-2">
+                          <div className="min-w-[160px]">
+                            <Label className="text-[10px]">Sucursal</Label>
+                            <Select
+                              value={m.sucursal_id}
+                              onValueChange={(v) =>
+                                setMovimientos((p) => p.map((x) => (x.id === m.id ? { ...x, sucursal_id: v, empleado_id: "" } : x)))
+                              }
+                            >
+                              <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {sucursales.map((s) => (
+                                  <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Empleado</Label>
+                            <Select
+                              value={m.empleado_id}
+                              onValueChange={(v) => setMovimientos((p) => p.map((x) => (x.id === m.id ? { ...x, empleado_id: v } : x)))}
+                            >
+                              <SelectTrigger className="h-8 w-64"><SelectValue placeholder="Elegí empleado" /></SelectTrigger>
+                              <SelectContent>
+                                {empleadosSuc.map((e) => (
+                                  <SelectItem key={e.empleado_id} value={e.empleado_id}>
+                                    {e.empleado_nombre} ({e.hora_entrada}→{e.hora_salida})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Nueva entrada</Label>
+                            <Input
+                              type="time"
+                              className="h-8 w-28"
+                              value={m.nueva_entrada}
+                              onChange={(e) => setMovimientos((p) => p.map((x) => (x.id === m.id ? { ...x, nueva_entrada: e.target.value } : x)))}
+                            />
+                          </div>
+                          {base && (
+                            <div className="text-[11px] text-muted-foreground">
+                              Actual: <strong>{base.hora_entrada}</strong> · Dur. {(base.duracion_min / 60).toFixed(1)}h
+                              {m.nueva_entrada && (
+                                <> · Nueva salida: <strong>{minToTime(timeToMin(m.nueva_entrada) + base.duracion_min)}</strong></>
+                              )}
+                            </div>
+                          )}
+                          <Button size="icon" variant="ghost" className="h-8 w-8 ml-auto" onClick={() => setMovimientos((p) => p.filter((x) => x.id !== m.id))}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Franjas objetivo */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium">Objetivos mínimos por franja</div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setFranjasObj((p) => [
+                        ...p,
+                        { id: uid(), sucursal_id: sucursalFiltro !== "all" ? sucursalFiltro : sucursales[0]?.id || "", desde: 15, hasta: 20, min: 3 },
+                      ])
+                    }
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Agregar
+                  </Button>
+                </div>
+                {franjasObj.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">Sin franjas objetivo definidas.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {franjasObj.map((f) => (
+                      <div key={f.id} className="flex flex-wrap items-end gap-2 border rounded-md p-2">
+                        <div>
+                          <Label className="text-[10px]">Sucursal</Label>
+                          <Select value={f.sucursal_id} onValueChange={(v) => setFranjasObj((p) => p.map((x) => (x.id === f.id ? { ...x, sucursal_id: v } : x)))}>
+                            <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {sucursales.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Desde (h)</Label>
+                          <Input type="number" min={7} max={22} className="h-8 w-20" value={f.desde} onChange={(e) => setFranjasObj((p) => p.map((x) => (x.id === f.id ? { ...x, desde: Number(e.target.value) } : x)))} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Hasta (h)</Label>
+                          <Input type="number" min={7} max={22} className="h-8 w-20" value={f.hasta} onChange={(e) => setFranjasObj((p) => p.map((x) => (x.id === f.id ? { ...x, hasta: Number(e.target.value) } : x)))} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Mín. empleados</Label>
+                          <Input type="number" min={0} className="h-8 w-24" value={f.min} onChange={(e) => setFranjasObj((p) => p.map((x) => (x.id === f.id ? { ...x, min: Number(e.target.value) } : x)))} />
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 ml-auto" onClick={() => setFranjasObj((p) => p.filter((x) => x.id !== f.id))}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* SUGERENCIAS */}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
