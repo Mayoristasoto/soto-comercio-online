@@ -396,7 +396,7 @@ export default function OptimizadorHorarios() {
       toast({ title: "Sin cambios", description: "No hay movimientos para exportar." });
       return;
     }
-    const csv = rows.map((r) => r.map((c) => `"${(c || "").replaceAll('"', '""')}"`).join(",")).join("\n");
+    const csv = rows.map((r) => r.map((c) => `"${(c || "").split('"').join('""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
