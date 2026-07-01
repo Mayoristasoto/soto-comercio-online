@@ -85,6 +85,7 @@ import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
 import PlanillaDescansos from "./pages/PlanillaDescansos";
 import HorariosMasivos from "./pages/HorariosMasivos";
+import OptimizadorHorarios from "./pages/OptimizadorHorarios";
 
 const queryClient = new QueryClient();
 
@@ -142,6 +143,7 @@ const App = () => (
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
             <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
             <Route path="rrhh/planilla-descansos" element={<PlanillaDescansos />} />
+            <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
             <Route path="operaciones/fichero" element={<Fichero />} />
