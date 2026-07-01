@@ -120,7 +120,37 @@ export default function OptimizadorHorarios() {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [sucursalFiltro, setSucursalFiltro] = useState<string>("all");
   const [targets, setTargets] = useState<Record<string, number>>({}); // por sucursal, objetivo min de empleados por hora
+  const [targetsHora, setTargetsHora] = useState<Record<string, Record<number, number>>>({}); // override por sucursal+hora
   const [empSel, setEmpSel] = useState<string | null>(null);
+  const [franjaDraft, setFranjaDraft] = useState<Record<string, { desde: number; hasta: number; min: number }>>({});
+
+  const getTarget = (sucId: string, hour: number) => {
+    const override = targetsHora[sucId]?.[hour];
+    if (override != null) return override;
+    return targets[sucId] ?? 1;
+  };
+
+  const aplicarFranja = (sucId: string) => {
+    const d = franjaDraft[sucId];
+    if (!d) return;
+    const { desde, hasta, min } = d;
+    const lo = Math.min(desde, hasta);
+    const hi = Math.max(desde, hasta);
+    setTargetsHora((prev) => {
+      const next = { ...prev, [sucId]: { ...(prev[sucId] || {}) } };
+      for (let h = lo; h <= hi; h++) next[sucId][h] = min;
+      return next;
+    });
+    toast({ title: "Franja aplicada", description: `${String(lo).padStart(2, "0")}:00–${String(hi).padStart(2, "0")}:59 → mín. ${min}` });
+  };
+
+  const limpiarFranjas = (sucId: string) => {
+    setTargetsHora((prev) => {
+      const next = { ...prev };
+      delete next[sucId];
+      return next;
+    });
+  };
 
   const fechaStr = format(fecha, "yyyy-MM-dd");
   const diaSemana = fecha.getDay();
@@ -336,9 +366,9 @@ export default function OptimizadorHorarios() {
   const sugerencias = useMemo(() => {
     const out: { sucursal: string; sucursal_id: string; hora: number; deficit: number; candidatos: { empleado_id: string; nombre: string; from: string; to: string }[] }[] = [];
     sucursalesVisibles.forEach((s) => {
-      const target = targets[s.id] ?? 1;
       const conteo = conteoPropPorSuc.get(s.id) || [];
       HOURS.forEach((h, i) => {
+        const target = getTarget(s.id, h);
         const n = conteo[i] || 0;
         if (n < target) {
           const deficit = target - n;
@@ -499,40 +529,49 @@ export default function OptimizadorHorarios() {
                       {sucursalesVisibles.map((s) => {
                         const base = conteoBasePorSuc.get(s.id) || [];
                         const prop = conteoPropPorSuc.get(s.id) || [];
-                        const target = targets[s.id] ?? 1;
+                        const targetGen = targets[s.id] ?? 1;
+                        const overrides = targetsHora[s.id] || {};
+                        const draft = franjaDraft[s.id] || { desde: 14, hasta: 22, min: 3 };
                         return (
                           <>
                             <tr key={s.id + "-base"} className="border-t">
-                              <td className="sticky left-0 bg-card p-2 z-10" rowSpan={2}>
+                              <td className="sticky left-0 bg-card p-2 z-10" rowSpan={3}>
                                 <div className="font-medium">{s.nombre}</div>
-                                <div className="text-[10px] text-muted-foreground">Base / Propuesta</div>
+                                <div className="text-[10px] text-muted-foreground">Base / Propuesta / Objetivo</div>
                               </td>
-                              {HOURS.map((h, i) => (
-                                <td key={h} className="p-0.5">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <div className={`h-7 rounded flex items-center justify-center text-[11px] font-semibold ${heatColor(base[i] || 0, target)}`}>
-                                        {base[i] || ""}
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Base {String(h).padStart(2, "0")}:00 → {base[i] || 0} vs objetivo {target}</TooltipContent>
-                                  </Tooltip>
-                                </td>
-                              ))}
-                              <td rowSpan={2} className="p-2">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  className="h-8 w-16"
-                                  value={target}
-                                  onChange={(e) =>
-                                    setTargets((p) => ({ ...p, [s.id]: Math.max(0, Number(e.target.value) || 0) }))
-                                  }
-                                />
+                              {HOURS.map((h, i) => {
+                                const t = getTarget(s.id, h);
+                                return (
+                                  <td key={h} className="p-0.5">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className={`h-7 rounded flex items-center justify-center text-[11px] font-semibold ${heatColor(base[i] || 0, t)}`}>
+                                          {base[i] || ""}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Base {String(h).padStart(2, "0")}:00 → {base[i] || 0} vs objetivo {t}</TooltipContent>
+                                    </Tooltip>
+                                  </td>
+                                );
+                              })}
+                              <td rowSpan={3} className="p-2 align-top">
+                                <div className="space-y-1">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    className="h-8 w-16"
+                                    value={targetGen}
+                                    onChange={(e) =>
+                                      setTargets((p) => ({ ...p, [s.id]: Math.max(0, Number(e.target.value) || 0) }))
+                                    }
+                                  />
+                                  <div className="text-[9px] text-muted-foreground">general</div>
+                                </div>
                               </td>
                             </tr>
                             <tr>
                               {HOURS.map((h, i) => {
+                                const t = getTarget(s.id, h);
                                 const n = prop[i] || 0;
                                 const b = base[i] || 0;
                                 const diff = n - b;
@@ -540,12 +579,12 @@ export default function OptimizadorHorarios() {
                                   <td key={h} className="p-0.5">
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className={`h-7 rounded flex items-center justify-center text-[11px] font-semibold ${heatColor(n, target)} ${diff !== 0 ? "ring-2 ring-primary/60" : ""}`}>
+                                        <div className={`h-7 rounded flex items-center justify-center text-[11px] font-semibold ${heatColor(n, t)} ${diff !== 0 ? "ring-2 ring-primary/60" : ""}`}>
                                           {n || ""}
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent>
-                                        Propuesta {String(h).padStart(2, "0")}:00 → {n} vs objetivo {target}
+                                        Propuesta {String(h).padStart(2, "0")}:00 → {n} vs objetivo {t}
                                         {diff !== 0 && (
                                           <div className="text-[10px] text-primary">Cambio: {diff > 0 ? "+" : ""}{diff}</div>
                                         )}
@@ -554,6 +593,60 @@ export default function OptimizadorHorarios() {
                                   </td>
                                 );
                               })}
+                            </tr>
+                            <tr className="border-b">
+                              {HOURS.map((h) => {
+                                const ov = overrides[h];
+                                return (
+                                  <td key={h} className="p-0.5">
+                                    <div className={`h-6 rounded text-[10px] flex items-center justify-center border ${ov != null ? "bg-primary/10 border-primary/40 text-primary font-semibold" : "bg-muted/30 text-muted-foreground border-transparent"}`}>
+                                      {ov != null ? ov : targetGen}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                            <tr>
+                              <td colSpan={HOURS.length + 2} className="p-2 bg-muted/20">
+                                <div className="flex flex-wrap items-end gap-2 text-xs">
+                                  <span className="text-muted-foreground">Mínimo por franja en <strong>{s.nombre}</strong>:</span>
+                                  <div>
+                                    <Label className="text-[10px]">Desde</Label>
+                                    <Input
+                                      type="number" min={7} max={22}
+                                      className="h-7 w-16"
+                                      value={draft.desde}
+                                      onChange={(e) => setFranjaDraft((p) => ({ ...p, [s.id]: { ...draft, desde: Number(e.target.value) } }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[10px]">Hasta</Label>
+                                    <Input
+                                      type="number" min={7} max={22}
+                                      className="h-7 w-16"
+                                      value={draft.hasta}
+                                      onChange={(e) => setFranjaDraft((p) => ({ ...p, [s.id]: { ...draft, hasta: Number(e.target.value) } }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[10px]">Mínimo</Label>
+                                    <Input
+                                      type="number" min={0}
+                                      className="h-7 w-16"
+                                      value={draft.min}
+                                      onChange={(e) => setFranjaDraft((p) => ({ ...p, [s.id]: { ...draft, min: Number(e.target.value) } }))}
+                                    />
+                                  </div>
+                                  <Button size="sm" variant="outline" className="h-7" onClick={() => aplicarFranja(s.id)}>
+                                    Aplicar franja
+                                  </Button>
+                                  {Object.keys(overrides).length > 0 && (
+                                    <Button size="sm" variant="ghost" className="h-7" onClick={() => limpiarFranjas(s.id)}>
+                                      Limpiar overrides
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
                             </tr>
                           </>
                         );
