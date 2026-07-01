@@ -555,8 +555,10 @@ export function CoberturaSucursales() {
                                   <div
                                     className={`h-9 rounded flex items-center justify-center text-[11px] font-semibold cursor-default ${colorForCount(
                                       n,
-                                      max
+                                      max,
+                                      filtroTrabajandoActivo ? "sky" : "emerald"
                                     )}`}
+
                                   >
                                     {n > 0 ? n : ""}
                                   </div>
