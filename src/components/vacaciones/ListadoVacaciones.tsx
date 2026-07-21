@@ -126,7 +126,7 @@ export function ListadoVacaciones() {
       const [solRes, empRes, sucRes, calcRes] = await Promise.all([
         supabase
           .from("solicitudes_vacaciones")
-          .select("id, empleado_id, fecha_inicio, fecha_fin, estado, motivo, fecha_aprobacion")
+          .select("id, empleado_id, fecha_inicio, fecha_fin, estado, motivo, fecha_aprobacion, periodo_devengado")
           .gte("fecha_inicio", desde)
           .lte("fecha_inicio", hasta)
           .order("fecha_inicio", { ascending: false }),
