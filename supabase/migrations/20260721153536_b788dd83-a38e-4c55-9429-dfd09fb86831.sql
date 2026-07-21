@@ -1,0 +1,1 @@
+ALTER TABLE public.empleados ADD COLUMN IF NOT EXISTS antiguedad_reconocida date, ADD COLUMN IF NOT EXISTS fecha_prueba date;

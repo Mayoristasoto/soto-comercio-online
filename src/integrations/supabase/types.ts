@@ -2643,6 +2643,7 @@ export type Database = {
       empleados: {
         Row: {
           activo: boolean
+          antiguedad_reconocida: string | null
           apellido: string
           avatar_url: string | null
           centro_costo_id: string | null
@@ -2655,6 +2656,7 @@ export type Database = {
           email: string
           fecha_baja: string | null
           fecha_ingreso: string
+          fecha_prueba: string | null
           gps_obligatorio: boolean
           grupo_id: string | null
           horas_jornada_estandar: number | null
@@ -2675,6 +2677,7 @@ export type Database = {
         }
         Insert: {
           activo?: boolean
+          antiguedad_reconocida?: string | null
           apellido: string
           avatar_url?: string | null
           centro_costo_id?: string | null
@@ -2687,6 +2690,7 @@ export type Database = {
           email: string
           fecha_baja?: string | null
           fecha_ingreso?: string
+          fecha_prueba?: string | null
           gps_obligatorio?: boolean
           grupo_id?: string | null
           horas_jornada_estandar?: number | null
@@ -2707,6 +2711,7 @@ export type Database = {
         }
         Update: {
           activo?: boolean
+          antiguedad_reconocida?: string | null
           apellido?: string
           avatar_url?: string | null
           centro_costo_id?: string | null
@@ -2719,6 +2724,7 @@ export type Database = {
           email?: string
           fecha_baja?: string | null
           fecha_ingreso?: string
+          fecha_prueba?: string | null
           gps_obligatorio?: boolean
           grupo_id?: string | null
           horas_jornada_estandar?: number | null

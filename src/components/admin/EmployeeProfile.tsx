@@ -53,6 +53,8 @@ interface EmpleadoProfile {
   sucursal_id?: string
   activo: boolean
   fecha_ingreso: string
+  antiguedad_reconocida?: string
+  fecha_prueba?: string
   avatar_url?: string
 }
 
@@ -202,7 +204,9 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         puesto_id: selectedPuesto?.id || null,
         sucursal_id: formData.sucursal_id || null,
         email: formData.email,
-        fecha_ingreso: formData.fecha_ingreso
+        fecha_ingreso: formData.fecha_ingreso,
+        antiguedad_reconocida: formData.antiguedad_reconocida || null,
+        fecha_prueba: formData.fecha_prueba || null
       }
 
       const { error: empleadoError } = await supabase
@@ -603,17 +607,47 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="fecha_ingreso"
-                      type="date"
-                      value={formData.fecha_ingreso || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
-                      className="pl-10"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="fecha_ingreso"
+                        type="date"
+                        value={formData.fecha_ingreso || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="antiguedad_reconocida">Antigüedad Reconocida</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="antiguedad_reconocida"
+                        type="date"
+                        value={formData.antiguedad_reconocida || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, antiguedad_reconocida: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fecha_prueba">Fecha Prueba</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="fecha_prueba"
+                        type="date"
+                        value={formData.fecha_prueba || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, fecha_prueba: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>
