@@ -164,10 +164,18 @@ function descargar(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-const HEADERS = ["Sucursal", "Empleado", "Ingreso", "Total", "Tomados", "Aprobadas por tomar", "Pendientes aprobación", "Restantes"];
+const HEADERS_BASE = ["Sucursal", "Empleado", "Ingreso", "Total", "Tomados", "Aprobadas por tomar", "Pendientes aprobación", "Restantes"];
+const HEADER_DETALLE = "Detalle de vacaciones";
 
-function toMatrix(rows: Row[]) {
-  return rows.map((r) => [r.sucursal, r.empleado, r.ingreso, r.total, r.tomados, r.aprobadas, r.pendientes, r.restantes]);
+function getHeaders(incluirFechas: boolean) {
+  return incluirFechas ? [...HEADERS_BASE, HEADER_DETALLE] : HEADERS_BASE;
+}
+
+function toMatrix(rows: Row[], incluirFechas: boolean) {
+  return rows.map((r) => {
+    const base = [r.sucursal, r.empleado, r.ingreso, r.total, r.tomados, r.aprobadas, r.pendientes, r.restantes];
+    return incluirFechas ? [...base, r.detalle] : base;
+  });
 }
 
 export function ResumenVacacionesExport() {
