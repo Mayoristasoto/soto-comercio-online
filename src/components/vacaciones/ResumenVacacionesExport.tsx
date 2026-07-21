@@ -253,6 +253,23 @@ export function ResumenVacacionesExport() {
               onChange={(e) => setAnio(e.target.value)}
             />
           </div>
+          <div className="flex items-start justify-between gap-3 rounded-md border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="toggle-devengado" className="cursor-pointer">
+                Filtrar por período devengado
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {porPeriodoDevengado
+                  ? `Incluye solicitudes cuyo período devengado = ${anio} (sin importar cuándo se tomen).`
+                  : `Incluye solicitudes con fecha de inicio dentro de ${anio}.`}
+              </p>
+            </div>
+            <Switch
+              id="toggle-devengado"
+              checked={porPeriodoDevengado}
+              onCheckedChange={setPorPeriodoDevengado}
+            />
+          </div>
         </div>
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button
