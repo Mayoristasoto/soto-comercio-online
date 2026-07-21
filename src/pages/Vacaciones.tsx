@@ -103,6 +103,7 @@ export default function Vacaciones() {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
+            <ResumenVacacionesExport />
             <Button variant="outline" onClick={() => navigate('/configuracion?tab=plantillas')}>
               <FileSignature className="h-4 w-4 mr-2" />
               Editar plantillas
