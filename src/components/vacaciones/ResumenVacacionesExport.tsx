@@ -267,6 +267,12 @@ export function ResumenVacacionesExport() {
               placeholderTodos="— Todos los empleados —"
             />
           </div>
+          <div className="space-y-1">
+            <SelectorBaseVacaciones value={baseCalculo} onChange={setBaseCalculo} label="Base de cálculo de vacaciones" />
+            <p className="text-xs text-muted-foreground">
+              La antigüedad y los días LCT se calculan usando: <strong>{BASE_VACACIONES_LABEL[baseCalculo]}</strong>. Si el empleado no tiene esa fecha cargada, se usa la fecha de ingreso.
+            </p>
+          </div>
           <div className="flex items-start justify-between gap-3 rounded-md border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="toggle-devengado" className="cursor-pointer">
