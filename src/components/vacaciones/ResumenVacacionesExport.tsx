@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Download, FileSpreadsheet, FileText, FileDown, Loader2 } from "lucide-react";
 import { parseISO, differenceInCalendarDays, format } from "date-fns";
 import * as XLSX from "xlsx";
