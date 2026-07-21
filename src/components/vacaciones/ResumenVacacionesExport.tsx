@@ -21,6 +21,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
 import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
+import { SelectorBaseVacaciones } from "./SelectorBaseVacaciones";
+import { BaseVacaciones, BASE_VACACIONES_LABEL, calcularLCT, fechaBaseDe } from "@/lib/vacacionesBase";
 
 const PATRONES_EXCLUSION = {
   contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"],
@@ -48,7 +50,7 @@ interface Row {
   restantes: number;
 }
 
-async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null): Promise<Row[]> {
+async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
@@ -63,27 +65,24 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
         .gte("fecha_inicio", desde)
         .lte("fecha_inicio", hasta);
 
-  const [solRes, empRes, sucRes, calcRes] = await Promise.all([
+  const [solRes, empRes, sucRes] = await Promise.all([
     solQuery,
-    supabase.from("empleados").select("id, nombre, apellido, sucursal_id, activo"),
+    supabase.from("empleados").select("id, nombre, apellido, sucursal_id, activo, fecha_ingreso, antiguedad_reconocida, fecha_prueba"),
     supabase.from("sucursales").select("id, nombre").order("nombre"),
-    supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anio }),
   ]);
 
   if (solRes.error) throw solRes.error;
   if (empRes.error) throw empRes.error;
   if (sucRes.error) throw sucRes.error;
-  if (calcRes.error) throw calcRes.error;
 
   const sucursalesMap = new Map<string, string>();
   (sucRes.data ?? []).forEach((s: any) => sucursalesMap.set(s.id, s.nombre));
 
   const calcMap = new Map<string, { dias: number; ingreso: string | null }>();
-  (calcRes.data ?? []).forEach((c: any) => {
-    calcMap.set(c.empleado_id, {
-      dias: Number(c.dias_segun_ley ?? 0),
-      ingreso: c.fecha_ingreso ?? null,
-    });
+  (empRes.data ?? []).forEach((e: any) => {
+    const ingreso = fechaBaseDe(e, base);
+    const { dias } = calcularLCT(ingreso, anio);
+    calcMap.set(e.id, { dias, ingreso });
   });
 
   const rows = new Map<string, Row & { _consumidos: number }>();
@@ -158,6 +157,7 @@ export function ResumenVacacionesExport() {
   const [anio, setAnio] = useState(String(new Date().getFullYear()));
   const [porPeriodoDevengado, setPorPeriodoDevengado] = useState(false);
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
+  const [baseCalculo, setBaseCalculo] = useState<BaseVacaciones>("ingreso");
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
@@ -169,13 +169,14 @@ export function ResumenVacacionesExport() {
         return;
       }
       const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
-      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds);
+      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
       }
 
-      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}`;
+      const sufBase = baseCalculo === "ingreso" ? "" : `_${baseCalculo}`;
+      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}`;
       const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
 
       if (tipo === "csv") {
@@ -266,6 +267,12 @@ export function ResumenVacacionesExport() {
               label="Grupo de empleados"
               placeholderTodos="— Todos los empleados —"
             />
+          </div>
+          <div className="space-y-1">
+            <SelectorBaseVacaciones value={baseCalculo} onChange={setBaseCalculo} label="Base de cálculo de vacaciones" />
+            <p className="text-xs text-muted-foreground">
+              La antigüedad y los días LCT se calculan usando: <strong>{BASE_VACACIONES_LABEL[baseCalculo]}</strong>. Si el empleado no tiene esa fecha cargada, se usa la fecha de ingreso.
+            </p>
           </div>
           <div className="flex items-start justify-between gap-3 rounded-md border p-3">
             <div className="space-y-0.5">
