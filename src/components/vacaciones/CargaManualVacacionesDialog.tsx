@@ -188,6 +188,21 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
           </div>
 
           <div className="space-y-1.5">
+            <Label>Período devengado (año LCT)</Label>
+            <Input
+              type="number"
+              min={2015}
+              max={new Date().getFullYear() + 1}
+              value={periodoDevengado}
+              onChange={(e) => setPeriodoDevengado(e.target.value)}
+              placeholder="Ej: 2025"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Año al que corresponden estos días (ej: 2025 para vacaciones devengadas en 2025 aunque se tomen en 2026).
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
             <Label>Comentario (opcional)</Label>
             <Textarea
               value={comentario}
