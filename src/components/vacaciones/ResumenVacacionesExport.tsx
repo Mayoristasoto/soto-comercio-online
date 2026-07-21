@@ -324,6 +324,21 @@ export function ResumenVacacionesExport() {
               onCheckedChange={setPorPeriodoDevengado}
             />
           </div>
+          <div className="flex items-start justify-between gap-3 rounded-md border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="toggle-fechas" className="cursor-pointer">
+                Incluir fechas de vacaciones
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Agrega una columna con el rango de fechas de cada solicitud cargada (gozadas, aprobadas y pendientes).
+              </p>
+            </div>
+            <Switch
+              id="toggle-fechas"
+              checked={incluirFechas}
+              onCheckedChange={setIncluirFechas}
+            />
+          </div>
         </div>
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button
