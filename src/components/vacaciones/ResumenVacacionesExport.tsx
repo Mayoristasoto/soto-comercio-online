@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Download, FileSpreadsheet, FileText, FileDown, Loader2 } from "lucide-react";
 import { parseISO, differenceInCalendarDays, format } from "date-fns";
 import * as XLSX from "xlsx";
@@ -45,16 +46,23 @@ interface Row {
   restantes: number;
 }
 
-async function armarResumen(anio: number): Promise<Row[]> {
+async function armarResumen(anio: number, porPeriodoDevengado: boolean): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
+  const solQuery = porPeriodoDevengado
+    ? supabase
+        .from("solicitudes_vacaciones")
+        .select("empleado_id, fecha_inicio, fecha_fin, estado, periodo_devengado")
+        .eq("periodo_devengado", anio)
+    : supabase
+        .from("solicitudes_vacaciones")
+        .select("empleado_id, fecha_inicio, fecha_fin, estado, periodo_devengado")
+        .gte("fecha_inicio", desde)
+        .lte("fecha_inicio", hasta);
+
   const [solRes, empRes, sucRes, calcRes] = await Promise.all([
-    supabase
-      .from("solicitudes_vacaciones")
-      .select("empleado_id, fecha_inicio, fecha_fin, estado")
-      .gte("fecha_inicio", desde)
-      .lte("fecha_inicio", hasta),
+    solQuery,
     supabase.from("empleados").select("id, nombre, apellido, sucursal_id, activo"),
     supabase.from("sucursales").select("id, nombre").order("nombre"),
     supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anio }),
@@ -145,6 +153,7 @@ export function ResumenVacacionesExport() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [anio, setAnio] = useState(String(new Date().getFullYear()));
+  const [porPeriodoDevengado, setPorPeriodoDevengado] = useState(false);
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
@@ -155,13 +164,14 @@ export function ResumenVacacionesExport() {
         toast({ title: "Año inválido", variant: "destructive" });
         return;
       }
-      const rows = await armarResumen(anioNum);
+      const rows = await armarResumen(anioNum, porPeriodoDevengado);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
       }
 
-      const nombreBase = `resumen_vacaciones_${anioNum}`;
+      const sufijo = porPeriodoDevengado ? "_devengado" : "";
+      const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
 
       if (tipo === "csv") {
         const escape = (v: any) => {
@@ -181,7 +191,7 @@ export function ResumenVacacionesExport() {
         const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
         doc.setFontSize(14);
         doc.setTextColor(75, 13, 109);
-        doc.text(`Resumen de Vacaciones ${anioNum}`, 40, 40);
+        doc.text(`Resumen de Vacaciones ${anioNum}${porPeriodoDevengado ? " (Período devengado)" : ""}`, 40, 40);
         doc.setFontSize(9);
         doc.setTextColor(120);
         doc.text(`Generado: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 40, 56);
@@ -241,6 +251,23 @@ export function ResumenVacacionesExport() {
               max={2100}
               value={anio}
               onChange={(e) => setAnio(e.target.value)}
+            />
+          </div>
+          <div className="flex items-start justify-between gap-3 rounded-md border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="toggle-devengado" className="cursor-pointer">
+                Filtrar por período devengado
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {porPeriodoDevengado
+                  ? `Incluye solicitudes cuyo período devengado = ${anio} (sin importar cuándo se tomen).`
+                  : `Incluye solicitudes con fecha de inicio dentro de ${anio}.`}
+              </p>
+            </div>
+            <Switch
+              id="toggle-devengado"
+              checked={porPeriodoDevengado}
+              onCheckedChange={setPorPeriodoDevengado}
             />
           </div>
         </div>
