@@ -53,6 +53,8 @@ interface EmpleadoProfile {
   sucursal_id?: string
   activo: boolean
   fecha_ingreso: string
+  antiguedad_reconocida?: string
+  fecha_prueba?: string
   avatar_url?: string
 }
 
