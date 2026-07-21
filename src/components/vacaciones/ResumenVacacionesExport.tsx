@@ -123,11 +123,18 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
     if (s.estado === "gozadas") { r.tomados += dias; r._consumidos += dias; }
     else if (s.estado === "aprobada") { r.aprobadas += dias; r._consumidos += dias; }
     else if (s.estado === "pendiente") { r.pendientes += dias; r._consumidos += dias; }
+    r._solicitudes.push({ inicio: s.fecha_inicio, fin: s.fecha_fin, estado: s.estado });
   }
 
   const out: Row[] = [];
   rows.forEach((r) => {
     r.restantes = r.total - r._consumidos;
+    const detalle = incluirFechas
+      ? r._solicitudes
+          .sort((a, b) => a.inicio.localeCompare(b.inicio))
+          .map((s) => `${format(parseISO(s.inicio), "dd/MM/yyyy")}-${format(parseISO(s.fin), "dd/MM/yyyy")} (${ESTADO_LABEL[s.estado] ?? s.estado})`)
+          .join("; ")
+      : "";
     out.push({
       sucursal: r.sucursal,
       empleado: r.empleado,
@@ -137,6 +144,7 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
       aprobadas: r.aprobadas,
       pendientes: r.pendientes,
       restantes: r.restantes,
+      detalle,
     });
   });
   out.sort((a, b) =>
