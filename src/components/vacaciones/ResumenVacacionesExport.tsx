@@ -185,6 +185,7 @@ export function ResumenVacacionesExport() {
   const [porPeriodoDevengado, setPorPeriodoDevengado] = useState(false);
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [baseCalculo, setBaseCalculo] = useState<BaseVacaciones>("ingreso");
+  const [incluirFechas, setIncluirFechas] = useState(false);
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
@@ -196,26 +197,31 @@ export function ResumenVacacionesExport() {
         return;
       }
       const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
-      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo);
+      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo, incluirFechas);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
       }
 
       const sufBase = baseCalculo === "ingreso" ? "" : `_${baseCalculo}`;
-      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}`;
+      const sufFechas = incluirFechas ? "_con_fechas" : "";
+      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}${sufFechas}`;
       const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
+      const headers = getHeaders(incluirFechas);
+      const matrix = toMatrix(rows, incluirFechas);
 
       if (tipo === "csv") {
         const escape = (v: any) => {
           const s = String(v ?? "");
           return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
         };
-        const lines = [HEADERS.join(","), ...toMatrix(rows).map((r) => r.map(escape).join(","))];
+        const lines = [headers.join(","), ...matrix.map((r) => r.map(escape).join(","))];
         descargar(new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" }), `${nombreBase}.csv`);
       } else if (tipo === "xlsx") {
-        const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toMatrix(rows)]);
-        ws["!cols"] = [{ wch: 20 }, { wch: 32 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 20 }, { wch: 22 }, { wch: 12 }];
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...matrix]);
+        const cols = [{ wch: 20 }, { wch: 32 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 20 }, { wch: 22 }, { wch: 12 }];
+        if (incluirFechas) cols.push({ wch: 60 });
+        ws["!cols"] = cols;
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Vacaciones ${anioNum}`);
         const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
@@ -231,8 +237,8 @@ export function ResumenVacacionesExport() {
 
         autoTable(doc, {
           startY: 70,
-          head: [HEADERS],
-          body: toMatrix(rows).map((r) => r.map((v) => String(v))),
+          head: [headers],
+          body: matrix.map((r) => r.map((v) => String(v))),
           styles: { fontSize: 8, cellPadding: 3 },
           headStyles: { fillColor: [75, 13, 109], textColor: 255 },
           alternateRowStyles: { fillColor: [245, 240, 250] },
