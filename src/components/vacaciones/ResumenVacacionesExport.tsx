@@ -48,7 +48,16 @@ interface Row {
   aprobadas: number;
   pendientes: number;
   restantes: number;
+  detalle: string;
 }
+
+type RowAcc = Row & { _consumidos: number; _solicitudes: { inicio: string; fin: string; estado: string }[] };
+
+const ESTADO_LABEL: Record<string, string> = {
+  gozadas: "Gozadas",
+  aprobada: "Aprobadas por tomar",
+  pendiente: "Pendientes aprobación",
+};
 
 async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones): Promise<Row[]> {
   const desde = `${anio}-01-01`;
