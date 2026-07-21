@@ -14,6 +14,8 @@ import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
 import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
+import { SelectorBaseVacaciones } from "./SelectorBaseVacaciones";
+import { BaseVacaciones, BASE_VACACIONES_LABEL, calcularLCT, fechaBaseDe } from "@/lib/vacacionesBase";
 
 const PATRONES_EXCLUSION = {
   contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"],
@@ -88,6 +90,7 @@ export function ListadoVacaciones() {
   const [busqueda, setBusqueda] = useState("");
   const [excluirInactivos, setExcluirInactivos] = useState(true);
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
+  const [baseCalculo, setBaseCalculo] = useState<BaseVacaciones>("ingreso");
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   type SortKey = "empleado" | "sucursal" | "fecha_ingreso" | "antiguedad" | "lct" | "pendientes" | "aprobadas" | "consumidos" | "restantes";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
