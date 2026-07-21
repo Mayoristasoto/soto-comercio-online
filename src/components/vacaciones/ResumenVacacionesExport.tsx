@@ -19,6 +19,8 @@ import { parseISO, differenceInCalendarDays, format } from "date-fns";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 const PATRONES_EXCLUSION = {
   contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"],
@@ -46,7 +48,7 @@ interface Row {
   restantes: number;
 }
 
-async function armarResumen(anio: number, porPeriodoDevengado: boolean): Promise<Row[]> {
+async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
@@ -87,6 +89,7 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean): Promise
   const rows = new Map<string, Row & { _consumidos: number }>();
   for (const emp of (empRes.data ?? []) as any[]) {
     if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
+    if (grupoIds && !grupoIds.has(emp.id)) continue;
     const calc = calcMap.get(emp.id);
     rows.set(emp.id, {
       sucursal: sucursalesMap.get(emp.sucursal_id) ?? "—",
@@ -154,6 +157,7 @@ export function ResumenVacacionesExport() {
   const [open, setOpen] = useState(false);
   const [anio, setAnio] = useState(String(new Date().getFullYear()));
   const [porPeriodoDevengado, setPorPeriodoDevengado] = useState(false);
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
@@ -164,13 +168,14 @@ export function ResumenVacacionesExport() {
         toast({ title: "Año inválido", variant: "destructive" });
         return;
       }
-      const rows = await armarResumen(anioNum, porPeriodoDevengado);
+      const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
+      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
       }
 
-      const sufijo = porPeriodoDevengado ? "_devengado" : "";
+      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}`;
       const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
 
       if (tipo === "csv") {
@@ -251,6 +256,15 @@ export function ResumenVacacionesExport() {
               max={2100}
               value={anio}
               onChange={(e) => setAnio(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <SelectorGrupoCompacto
+              value={grupoSel}
+              onChange={setGrupoSel}
+              modulo="vacaciones"
+              label="Grupo de empleados"
+              placeholderTodos="— Todos los empleados —"
             />
           </div>
           <div className="flex items-start justify-between gap-3 rounded-md border p-3">
