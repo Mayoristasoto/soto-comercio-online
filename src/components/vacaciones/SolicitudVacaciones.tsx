@@ -396,6 +396,23 @@ export function SolicitudVacaciones({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="periodo">Período devengado (año LCT)</Label>
+            <input
+              id="periodo"
+              type="number"
+              min={2015}
+              max={new Date().getFullYear() + 1}
+              value={periodoDevengado}
+              onChange={(e) => setPeriodoDevengado(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="Ej: 2025"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Año al que corresponden estos días. Ej: 2025 si son vacaciones del período 2025 aunque las tomes en 2026.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="motivo">Motivo (opcional)</Label>
             <Textarea
               id="motivo"
