@@ -490,6 +490,7 @@ export function ListadoVacaciones() {
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead>Estado</TableHead>
+                                    <TableHead>Período</TableHead>
                                     <TableHead>Inicio</TableHead>
                                     <TableHead>Fin</TableHead>
                                     <TableHead className="text-right">Días</TableHead>
@@ -502,6 +503,13 @@ export function ListadoVacaciones() {
                                     <TableRow key={s.id}>
                                       <TableCell>
                                         <Badge variant={estadoBadgeVariant(s.estado)} className="capitalize">{s.estado}</Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        {s.periodo_devengado ? (
+                                          <Badge variant="outline">{s.periodo_devengado}</Badge>
+                                        ) : (
+                                          <span className="text-muted-foreground text-xs">—</span>
+                                        )}
                                       </TableCell>
                                       <TableCell>{fmt(s.fecha_inicio)}</TableCell>
                                       <TableCell>{fmt(s.fecha_fin)}</TableCell>
