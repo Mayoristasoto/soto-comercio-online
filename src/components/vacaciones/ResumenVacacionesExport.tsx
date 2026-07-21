@@ -59,7 +59,7 @@ const ESTADO_LABEL: Record<string, string> = {
   pendiente: "Pendientes aprobación",
 };
 
-async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones): Promise<Row[]> {
+async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones, incluirFechas: boolean): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
