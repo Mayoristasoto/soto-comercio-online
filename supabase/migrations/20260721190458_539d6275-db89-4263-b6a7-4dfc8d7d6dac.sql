@@ -1,0 +1,1 @@
+SELECT public.admin_set_empleado_pin('c36c178c-61fc-4654-8b2a-12d5daefdf8b'::uuid, '3531');
