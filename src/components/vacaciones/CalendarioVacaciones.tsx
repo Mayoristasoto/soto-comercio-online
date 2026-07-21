@@ -221,6 +221,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             solicitudId: s.id,
             fechaInicio: s.fecha_inicio,
             fechaFin: s.fecha_fin,
+            periodoDevengado: s.periodo_devengado ?? null,
           })) || [];
 
         return {
