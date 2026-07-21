@@ -48,9 +48,18 @@ interface Row {
   aprobadas: number;
   pendientes: number;
   restantes: number;
+  detalle: string;
 }
 
-async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones): Promise<Row[]> {
+type RowAcc = Row & { _consumidos: number; _solicitudes: { inicio: string; fin: string; estado: string }[] };
+
+const ESTADO_LABEL: Record<string, string> = {
+  gozadas: "Gozadas",
+  aprobada: "Aprobadas por tomar",
+  pendiente: "Pendientes aprobación",
+};
+
+async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones, incluirFechas: boolean): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
@@ -85,7 +94,7 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
     calcMap.set(e.id, { dias, ingreso });
   });
 
-  const rows = new Map<string, Row & { _consumidos: number }>();
+  const rows = new Map<string, RowAcc>();
   for (const emp of (empRes.data ?? []) as any[]) {
     if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
     if (grupoIds && !grupoIds.has(emp.id)) continue;
@@ -99,7 +108,9 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
       aprobadas: 0,
       pendientes: 0,
       restantes: 0,
+      detalle: "",
       _consumidos: 0,
+      _solicitudes: [],
     });
   }
 
@@ -112,11 +123,18 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
     if (s.estado === "gozadas") { r.tomados += dias; r._consumidos += dias; }
     else if (s.estado === "aprobada") { r.aprobadas += dias; r._consumidos += dias; }
     else if (s.estado === "pendiente") { r.pendientes += dias; r._consumidos += dias; }
+    r._solicitudes.push({ inicio: s.fecha_inicio, fin: s.fecha_fin, estado: s.estado });
   }
 
   const out: Row[] = [];
   rows.forEach((r) => {
     r.restantes = r.total - r._consumidos;
+    const detalle = incluirFechas
+      ? r._solicitudes
+          .sort((a, b) => a.inicio.localeCompare(b.inicio))
+          .map((s) => `${format(parseISO(s.inicio), "dd/MM/yyyy")}-${format(parseISO(s.fin), "dd/MM/yyyy")} (${ESTADO_LABEL[s.estado] ?? s.estado})`)
+          .join("; ")
+      : "";
     out.push({
       sucursal: r.sucursal,
       empleado: r.empleado,
@@ -126,6 +144,7 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
       aprobadas: r.aprobadas,
       pendientes: r.pendientes,
       restantes: r.restantes,
+      detalle,
     });
   });
   out.sort((a, b) =>
@@ -145,10 +164,18 @@ function descargar(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-const HEADERS = ["Sucursal", "Empleado", "Ingreso", "Total", "Tomados", "Aprobadas por tomar", "Pendientes aprobación", "Restantes"];
+const HEADERS_BASE = ["Sucursal", "Empleado", "Ingreso", "Total", "Tomados", "Aprobadas por tomar", "Pendientes aprobación", "Restantes"];
+const HEADER_DETALLE = "Detalle de vacaciones";
 
-function toMatrix(rows: Row[]) {
-  return rows.map((r) => [r.sucursal, r.empleado, r.ingreso, r.total, r.tomados, r.aprobadas, r.pendientes, r.restantes]);
+function getHeaders(incluirFechas: boolean) {
+  return incluirFechas ? [...HEADERS_BASE, HEADER_DETALLE] : HEADERS_BASE;
+}
+
+function toMatrix(rows: Row[], incluirFechas: boolean) {
+  return rows.map((r) => {
+    const base = [r.sucursal, r.empleado, r.ingreso, r.total, r.tomados, r.aprobadas, r.pendientes, r.restantes];
+    return incluirFechas ? [...base, r.detalle] : base;
+  });
 }
 
 export function ResumenVacacionesExport() {
@@ -158,6 +185,7 @@ export function ResumenVacacionesExport() {
   const [porPeriodoDevengado, setPorPeriodoDevengado] = useState(false);
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [baseCalculo, setBaseCalculo] = useState<BaseVacaciones>("ingreso");
+  const [incluirFechas, setIncluirFechas] = useState(false);
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
@@ -169,26 +197,31 @@ export function ResumenVacacionesExport() {
         return;
       }
       const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
-      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo);
+      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo, incluirFechas);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
       }
 
       const sufBase = baseCalculo === "ingreso" ? "" : `_${baseCalculo}`;
-      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}`;
+      const sufFechas = incluirFechas ? "_con_fechas" : "";
+      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}${sufFechas}`;
       const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
+      const headers = getHeaders(incluirFechas);
+      const matrix = toMatrix(rows, incluirFechas);
 
       if (tipo === "csv") {
         const escape = (v: any) => {
           const s = String(v ?? "");
           return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
         };
-        const lines = [HEADERS.join(","), ...toMatrix(rows).map((r) => r.map(escape).join(","))];
+        const lines = [headers.join(","), ...matrix.map((r) => r.map(escape).join(","))];
         descargar(new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" }), `${nombreBase}.csv`);
       } else if (tipo === "xlsx") {
-        const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...toMatrix(rows)]);
-        ws["!cols"] = [{ wch: 20 }, { wch: 32 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 20 }, { wch: 22 }, { wch: 12 }];
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...matrix]);
+        const cols = [{ wch: 20 }, { wch: 32 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 20 }, { wch: 22 }, { wch: 12 }];
+        if (incluirFechas) cols.push({ wch: 60 });
+        ws["!cols"] = cols;
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Vacaciones ${anioNum}`);
         const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
@@ -204,8 +237,8 @@ export function ResumenVacacionesExport() {
 
         autoTable(doc, {
           startY: 70,
-          head: [HEADERS],
-          body: toMatrix(rows).map((r) => r.map((v) => String(v))),
+          head: [headers],
+          body: matrix.map((r) => r.map((v) => String(v))),
           styles: { fontSize: 8, cellPadding: 3 },
           headStyles: { fillColor: [75, 13, 109], textColor: 255 },
           alternateRowStyles: { fillColor: [245, 240, 250] },
@@ -289,6 +322,21 @@ export function ResumenVacacionesExport() {
               id="toggle-devengado"
               checked={porPeriodoDevengado}
               onCheckedChange={setPorPeriodoDevengado}
+            />
+          </div>
+          <div className="flex items-start justify-between gap-3 rounded-md border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="toggle-fechas" className="cursor-pointer">
+                Incluir fechas de vacaciones
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Agrega una columna con el rango de fechas de cada solicitud cargada (gozadas, aprobadas y pendientes).
+              </p>
+            </div>
+            <Switch
+              id="toggle-fechas"
+              checked={incluirFechas}
+              onCheckedChange={setIncluirFechas}
             />
           </div>
         </div>
