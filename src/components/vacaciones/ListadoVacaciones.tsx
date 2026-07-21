@@ -195,6 +195,7 @@ export function ListadoVacaciones() {
           estado: s.estado,
           motivo: s.motivo,
           fecha_aprobacion: s.fecha_aprobacion,
+          periodo_devengado: (s as any).periodo_devengado ?? null,
         });
         if (s.estado === "pendiente") { row.pendientes += 1; row.dias_consumidos += dias; }
         else if (s.estado === "aprobada" || s.estado === "gozadas") { row.aprobadas += 1; row.dias_consumidos += dias; }
