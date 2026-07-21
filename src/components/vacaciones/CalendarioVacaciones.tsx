@@ -513,6 +513,14 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                       >
                         {isPending && <Clock className="h-3 w-3 shrink-0" />}
                         <span className="font-medium truncate">{emp.nombre} {emp.apellido.charAt(0)}.</span>
+                        {emp.periodoDevengado != null && (
+                          <span
+                            className="ml-auto text-[9px] leading-none px-1 py-0.5 rounded bg-background/60 text-muted-foreground border border-current/20 shrink-0"
+                            title={`Período devengado ${emp.periodoDevengado}`}
+                          >
+                            '{String(emp.periodoDevengado).slice(-2)}
+                          </span>
+                        )}
                       </div>
                     );
 
