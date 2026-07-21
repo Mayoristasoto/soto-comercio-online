@@ -597,6 +597,41 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                             </div>
                           )}
 
+                          {puedeReasignar && (
+                            <div className="space-y-2 pt-1 border-t">
+                              <Label className="text-xs">Período devengado (año LCT)</Label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="number"
+                                  min={2000}
+                                  max={2100}
+                                  placeholder="Ej: 2025"
+                                  className="flex-1 h-8 rounded-md border border-input bg-background px-2 text-xs"
+                                  value={
+                                    periodoEdit[emp.solicitudId] ??
+                                    (emp.periodoDevengado != null ? String(emp.periodoDevengado) : '')
+                                  }
+                                  onChange={(e) =>
+                                    setPeriodoEdit((s) => ({ ...s, [emp.solicitudId]: e.target.value }))
+                                  }
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={guardandoPeriodo === emp.solicitudId}
+                                  onClick={() => handleGuardarPeriodo(emp.solicitudId)}
+                                >
+                                  {guardandoPeriodo === emp.solicitudId ? '...' : 'Guardar'}
+                                </Button>
+                              </div>
+                              {emp.periodoDevengado != null && (
+                                <p className="text-[10px] text-muted-foreground">
+                                  Actual: {emp.periodoDevengado}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
                           <div className="space-y-2 pt-1 border-t">
                             <Label className="text-xs">Cambiar estado</Label>
                             <Textarea
