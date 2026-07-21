@@ -169,7 +169,7 @@ export function ResumenVacacionesExport() {
         return;
       }
       const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
-      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds);
+      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
