@@ -108,7 +108,7 @@ export function ListadoVacaciones() {
   useEffect(() => {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anio]);
+  }, [anio, baseCalculo]);
 
   const toggleExpand = (id: string) => {
     setExpandidos((prev) => {
@@ -126,7 +126,7 @@ export function ListadoVacaciones() {
       const desde = `${anioNum}-01-01`;
       const hasta = `${anioNum}-12-31`;
 
-      const [solRes, empRes, sucRes, calcRes] = await Promise.all([
+      const [solRes, empRes, sucRes] = await Promise.all([
         supabase
           .from("solicitudes_vacaciones")
           .select("id, empleado_id, fecha_inicio, fecha_fin, estado, motivo, fecha_aprobacion, periodo_devengado")
@@ -135,46 +135,36 @@ export function ListadoVacaciones() {
           .order("fecha_inicio", { ascending: false }),
         supabase
           .from("empleados")
-          .select("id, nombre, apellido, sucursal_id, activo"),
+          .select("id, nombre, apellido, sucursal_id, activo, fecha_ingreso, antiguedad_reconocida, fecha_prueba"),
         supabase
           .from("sucursales")
           .select("id, nombre")
           .order("nombre"),
-        supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anioNum }),
       ]);
 
       if (solRes.error) throw solRes.error;
       if (empRes.error) throw empRes.error;
       if (sucRes.error) throw sucRes.error;
-      if (calcRes.error) throw calcRes.error;
 
       const sucursalesMap = new Map<string, string>();
       (sucRes.data ?? []).forEach((s: any) => sucursalesMap.set(s.id, s.nombre));
       setSucursales(sucRes.data ?? []);
-
-      const calcMap = new Map<string, { dias: number; fecha_ingreso: string | null; antiguedad: number }>();
-      (calcRes.data ?? []).forEach((c: any) => {
-        calcMap.set(c.empleado_id, {
-          dias: Number(c.dias_segun_ley ?? 0),
-          fecha_ingreso: c.fecha_ingreso ?? null,
-          antiguedad: Number(c.antiguedad_anios ?? 0),
-        });
-      });
 
       const empleadosMap = new Map<string, EmpleadoRow>();
 
       for (const emp of (empRes.data ?? []) as any[]) {
         if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
         if (excluirInactivos && emp.activo === false) continue;
-        const calc = calcMap.get(emp.id);
+        const fechaBase = fechaBaseDe(emp, baseCalculo);
+        const { dias, antiguedadAnios } = calcularLCT(fechaBase, anioNum);
         empleadosMap.set(emp.id, {
           empleado_id: emp.id,
           empleado_nombre: emp.nombre,
           empleado_apellido: emp.apellido,
           sucursal_nombre: sucursalesMap.get(emp.sucursal_id) ?? "—",
-          fecha_ingreso: calc?.fecha_ingreso ?? null,
-          antiguedad_anios: calc?.antiguedad ?? 0,
-          dias_segun_ley: calc?.dias ?? 0,
+          fecha_ingreso: fechaBase,
+          antiguedad_anios: antiguedadAnios,
+          dias_segun_ley: dias,
           dias_consumidos: 0,
           dias_restantes: 0,
           pendientes: 0,
