@@ -94,7 +94,7 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
     calcMap.set(e.id, { dias, ingreso });
   });
 
-  const rows = new Map<string, Row & { _consumidos: number }>();
+  const rows = new Map<string, RowAcc>();
   for (const emp of (empRes.data ?? []) as any[]) {
     if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
     if (grupoIds && !grupoIds.has(emp.id)) continue;
@@ -108,7 +108,9 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
       aprobadas: 0,
       pendientes: 0,
       restantes: 0,
+      detalle: "",
       _consumidos: 0,
+      _solicitudes: [],
     });
   }
 
