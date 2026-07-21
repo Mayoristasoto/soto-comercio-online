@@ -48,7 +48,7 @@ interface Row {
   restantes: number;
 }
 
-async function armarResumen(anio: number, porPeriodoDevengado: boolean): Promise<Row[]> {
+async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
