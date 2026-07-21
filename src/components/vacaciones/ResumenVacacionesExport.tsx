@@ -89,6 +89,7 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
   const rows = new Map<string, Row & { _consumidos: number }>();
   for (const emp of (empRes.data ?? []) as any[]) {
     if (esEmpleadoExcluido(emp.nombre, emp.apellido)) continue;
+    if (grupoIds && !grupoIds.has(emp.id)) continue;
     const calc = calcMap.get(emp.id);
     rows.set(emp.id, {
       sucursal: sucursalesMap.get(emp.sucursal_id) ?? "—",
