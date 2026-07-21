@@ -32,6 +32,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
   const [fechaFin, setFechaFin] = useState("");
   const [estado, setEstado] = useState<Estado>("aprobada");
   const [comentario, setComentario] = useState("");
+  const [periodoDevengado, setPeriodoDevengado] = useState<string>(String(new Date().getFullYear() - 1));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
       setEmpleadoId("");
       setEstado("aprobada");
       setComentario("");
+      setPeriodoDevengado(String(base.getFullYear() - 1));
     }
   }, [open, fechaInicial]);
 
@@ -92,6 +94,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
         fecha_fin: fechaFin,
         estado,
         motivo: comentario || "Carga manual por RRHH",
+        periodo_devengado: periodoDevengado ? parseInt(periodoDevengado, 10) : null,
       };
       if (estado !== "pendiente") {
         payload.aprobado_por = aprobadorId;
@@ -182,6 +185,21 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
                 <SelectItem value="rechazada">Rechazada</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Período devengado (año LCT)</Label>
+            <Input
+              type="number"
+              min={2015}
+              max={new Date().getFullYear() + 1}
+              value={periodoDevengado}
+              onChange={(e) => setPeriodoDevengado(e.target.value)}
+              placeholder="Ej: 2025"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Año al que corresponden estos días (ej: 2025 para vacaciones devengadas en 2025 aunque se tomen en 2026).
+            </p>
           </div>
 
           <div className="space-y-1.5">

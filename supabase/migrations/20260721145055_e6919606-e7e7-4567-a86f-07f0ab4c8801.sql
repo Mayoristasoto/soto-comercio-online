@@ -1,0 +1,3 @@
+ALTER TABLE public.solicitudes_vacaciones ADD COLUMN IF NOT EXISTS periodo_devengado integer;
+COMMENT ON COLUMN public.solicitudes_vacaciones.periodo_devengado IS 'Año del período devengado al que corresponden estas vacaciones (LCT). Ej: 2025 para vacaciones devengadas en 2025 aunque se tomen en 2026.';
+CREATE INDEX IF NOT EXISTS idx_solicitudes_vacaciones_periodo ON public.solicitudes_vacaciones(periodo_devengado);

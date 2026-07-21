@@ -109,6 +109,7 @@ export function SolicitudVacaciones({
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [fechaFin, setFechaFin] = useState<Date>();
   const [motivo, setMotivo] = useState("");
+  const [periodoDevengado, setPeriodoDevengado] = useState<string>(String(new Date().getFullYear() - 1));
   const [loading, setLoading] = useState(false);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [hasConflict, setHasConflict] = useState(false);
@@ -259,7 +260,8 @@ export function SolicitudVacaciones({
         fecha_fin: fechaFin.toISOString().split('T')[0],
         motivo: motivo || null,
         estado: 'pendiente',
-      });
+        periodo_devengado: periodoDevengado ? parseInt(periodoDevengado, 10) : null,
+      } as any);
 
       if (error) throw error;
 
@@ -391,6 +393,23 @@ export function SolicitudVacaciones({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="periodo">Período devengado (año LCT)</Label>
+            <input
+              id="periodo"
+              type="number"
+              min={2015}
+              max={new Date().getFullYear() + 1}
+              value={periodoDevengado}
+              onChange={(e) => setPeriodoDevengado(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="Ej: 2025"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Año al que corresponden estos días. Ej: 2025 si son vacaciones del período 2025 aunque las tomes en 2026.
+            </p>
           </div>
 
           <div className="space-y-2">

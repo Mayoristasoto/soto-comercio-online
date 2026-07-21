@@ -38,6 +38,7 @@ interface SolicitudDetalle {
   estado: string;
   motivo: string | null;
   fecha_aprobacion: string | null;
+  periodo_devengado: number | null;
 }
 
 interface EmpleadoRow {
@@ -125,7 +126,7 @@ export function ListadoVacaciones() {
       const [solRes, empRes, sucRes, calcRes] = await Promise.all([
         supabase
           .from("solicitudes_vacaciones")
-          .select("id, empleado_id, fecha_inicio, fecha_fin, estado, motivo, fecha_aprobacion")
+          .select("id, empleado_id, fecha_inicio, fecha_fin, estado, motivo, fecha_aprobacion, periodo_devengado")
           .gte("fecha_inicio", desde)
           .lte("fecha_inicio", hasta)
           .order("fecha_inicio", { ascending: false }),
@@ -194,6 +195,7 @@ export function ListadoVacaciones() {
           estado: s.estado,
           motivo: s.motivo,
           fecha_aprobacion: s.fecha_aprobacion,
+          periodo_devengado: (s as any).periodo_devengado ?? null,
         });
         if (s.estado === "pendiente") { row.pendientes += 1; row.dias_consumidos += dias; }
         else if (s.estado === "aprobada" || s.estado === "gozadas") { row.aprobadas += 1; row.dias_consumidos += dias; }
@@ -294,7 +296,7 @@ export function ListadoVacaciones() {
   const exportarCSV = () => {
     const headers = [
       "Empleado", "Sucursal", "Fecha ingreso", "Antigüedad", "Días LCT", "Pendientes", "Aprobadas", "Días consumidos", "Días restantes",
-      "Estado solicitud", "Inicio", "Fin", "Días",
+      "Estado solicitud", "Período devengado", "Inicio", "Fin", "Días",
     ];
     const lines = [headers.join(",")];
     for (const r of filtradasOrdenadas) {
@@ -304,7 +306,7 @@ export function ListadoVacaciones() {
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
           fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
-          "", "", "", "",
+          "", "", "", "", "",
         ].join(","));
         continue;
       }
@@ -312,7 +314,7 @@ export function ListadoVacaciones() {
         lines.push([
           `"${r.empleado_apellido}, ${r.empleado_nombre}"`, `"${r.sucursal_nombre}"`,
           fi, ant, r.dias_segun_ley, r.pendientes, r.aprobadas, r.dias_consumidos, r.dias_restantes,
-          s.estado, s.fecha_inicio, s.fecha_fin, s.dias,
+          s.estado, s.periodo_devengado ?? "", s.fecha_inicio, s.fecha_fin, s.dias,
         ].join(","));
       }
     }
@@ -488,6 +490,7 @@ export function ListadoVacaciones() {
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead>Estado</TableHead>
+                                    <TableHead>Período</TableHead>
                                     <TableHead>Inicio</TableHead>
                                     <TableHead>Fin</TableHead>
                                     <TableHead className="text-right">Días</TableHead>
@@ -500,6 +503,13 @@ export function ListadoVacaciones() {
                                     <TableRow key={s.id}>
                                       <TableCell>
                                         <Badge variant={estadoBadgeVariant(s.estado)} className="capitalize">{s.estado}</Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        {s.periodo_devengado ? (
+                                          <Badge variant="outline">{s.periodo_devengado}</Badge>
+                                        ) : (
+                                          <span className="text-muted-foreground text-xs">—</span>
+                                        )}
                                       </TableCell>
                                       <TableCell>{fmt(s.fecha_inicio)}</TableCell>
                                       <TableCell>{fmt(s.fecha_fin)}</TableCell>
