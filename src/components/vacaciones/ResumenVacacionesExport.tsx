@@ -191,7 +191,7 @@ export function ResumenVacacionesExport() {
         const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
         doc.setFontSize(14);
         doc.setTextColor(75, 13, 109);
-        doc.text(`Resumen de Vacaciones ${anioNum}`, 40, 40);
+        doc.text(`Resumen de Vacaciones ${anioNum}${porPeriodoDevengado ? " (Período devengado)" : ""}`, 40, 40);
         doc.setFontSize(9);
         doc.setTextColor(120);
         doc.text(`Generado: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 40, 56);
