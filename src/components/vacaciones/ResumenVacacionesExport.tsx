@@ -21,6 +21,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
 import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
+import { SelectorBaseVacaciones } from "./SelectorBaseVacaciones";
+import { BaseVacaciones, BASE_VACACIONES_LABEL, calcularLCT, fechaBaseDe } from "@/lib/vacacionesBase";
 
 const PATRONES_EXCLUSION = {
   contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"],
@@ -48,7 +50,7 @@ interface Row {
   restantes: number;
 }
 
-async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null): Promise<Row[]> {
+async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
@@ -63,27 +65,24 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
         .gte("fecha_inicio", desde)
         .lte("fecha_inicio", hasta);
 
-  const [solRes, empRes, sucRes, calcRes] = await Promise.all([
+  const [solRes, empRes, sucRes] = await Promise.all([
     solQuery,
-    supabase.from("empleados").select("id, nombre, apellido, sucursal_id, activo"),
+    supabase.from("empleados").select("id, nombre, apellido, sucursal_id, activo, fecha_ingreso, antiguedad_reconocida, fecha_prueba"),
     supabase.from("sucursales").select("id, nombre").order("nombre"),
-    supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anio }),
   ]);
 
   if (solRes.error) throw solRes.error;
   if (empRes.error) throw empRes.error;
   if (sucRes.error) throw sucRes.error;
-  if (calcRes.error) throw calcRes.error;
 
   const sucursalesMap = new Map<string, string>();
   (sucRes.data ?? []).forEach((s: any) => sucursalesMap.set(s.id, s.nombre));
 
   const calcMap = new Map<string, { dias: number; ingreso: string | null }>();
-  (calcRes.data ?? []).forEach((c: any) => {
-    calcMap.set(c.empleado_id, {
-      dias: Number(c.dias_segun_ley ?? 0),
-      ingreso: c.fecha_ingreso ?? null,
-    });
+  (empRes.data ?? []).forEach((e: any) => {
+    const ingreso = fechaBaseDe(e, base);
+    const { dias } = calcularLCT(ingreso, anio);
+    calcMap.set(e.id, { dias, ingreso });
   });
 
   const rows = new Map<string, Row & { _consumidos: number }>();
@@ -158,6 +157,7 @@ export function ResumenVacacionesExport() {
   const [anio, setAnio] = useState(String(new Date().getFullYear()));
   const [porPeriodoDevengado, setPorPeriodoDevengado] = useState(false);
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
+  const [baseCalculo, setBaseCalculo] = useState<BaseVacaciones>("ingreso");
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
