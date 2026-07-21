@@ -204,7 +204,9 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         puesto_id: selectedPuesto?.id || null,
         sucursal_id: formData.sucursal_id || null,
         email: formData.email,
-        fecha_ingreso: formData.fecha_ingreso
+        fecha_ingreso: formData.fecha_ingreso,
+        antiguedad_reconocida: formData.antiguedad_reconocida || null,
+        fecha_prueba: formData.fecha_prueba || null
       }
 
       const { error: empleadoError } = await supabase
