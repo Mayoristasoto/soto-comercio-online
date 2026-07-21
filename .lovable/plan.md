@@ -1,39 +1,30 @@
-## Objetivo
+## Crear empleado Uriel Sanchez Gudelevich
 
-Generar un único archivo PDF descargable (`entregas_pantalon_cargo.pdf`) con **13 páginas**, una por empleado, usando la plantilla HTML existente "Pantalon" (`plantillas_elementos.id = d9d1255d-...`).
+Voy a dar de alta al empleado con los datos básicos disponibles. Los datos sensibles (DNI, CUIL, sexo, nacionalidad, fecha nac., etc.) se guardarán en la tabla protegida `empleados_datos_sensibles`.
 
-## Datos por empleado (orden y talle)
+### Datos a cargar
 
-| # | Empleado | Talle |
-|---|---|---|
-| 1 | Marina | 40 |
-| 2 | Uriel | 40 |
-| 3 | Juan | 40 |
-| 4 | Carlos | 42 |
-| 5 | Daniel | 42 |
-| 6 | Josep | 42 |
-| 7 | Julio | 44 |
-| 8 | Analia | 46 |
-| 9 | Jony | 46 |
-| 10 | Carla | 48 |
-| 11 | Belen | 56 |
-| 12 | Washintong | 56 |
-| 13 | Laura | 60 |
+**En `empleados`** (datos generales):
+- Nombre: Uriel
+- Apellido: Sanchez Gudelevich
+- Email: placeholder temporal (`uriel.sanchez@pendiente.local`) — lo actualizás cuando tengas el real
+- Rol: `empleado`
+- Activo: true
+- Fecha ingreso: hoy (editable después)
+- Sucursal: sin asignar (la definís después)
 
-## Reemplazos en la plantilla
+**En `empleados_datos_sensibles`**:
+- DNI: 44043531
+- CUIL: 23-44043531-9
+- Sexo: Masculino
+- Nacionalidad: Argentina
+- Fecha nacimiento: 19/03/2002
+- Fecha emisión DNI: 14/09/2025
+- Fecha vencimiento DNI: 14/09/2040
+- Ejemplar DNI: B
+- Nº trámite: 7400849063751
+- Fecha alta CUIL: 17/04/2006
 
-- `{{empleado_nombre}}` → nombre tal cual (ej. "Marina")
-- `{{detalle}}` → `Pantalón Cargo Negro SAG Talle {{talle}}` (ej. "Pantalón Cargo Negro SAG Talle 40")
-- `{{item}}` → "Pantalón Cargo Negro SAG"
-- `{{fecha}}` → 30/06/2026
-- `{{legajo}}`, `{{observaciones}}` → vacío
-
-## Cómo se genera (técnico)
-
-1. Descargar `template_html` desde `plantillas_elementos`.
-2. Por cada empleado, hacer `replaceAll` de los placeholders.
-3. Concatenar las 13 secciones con `page-break-after: always` en un solo HTML.
-4. Renderizar a PDF con Chromium headless (Playwright) en A4.
-5. Guardar en `/mnt/documents/entregas_pantalon_cargo.pdf` y entregarlo como artifact.
-
-No se modifica código del proyecto ni base de datos.
+### Notas
+- Datos pendientes que podés completar después desde el perfil: email real, teléfono, dirección, puesto, salario, sucursal, fecha de ingreso, antigüedad reconocida, fecha prueba, contacto emergencia.
+- Si algún campo (ej. "ejemplar DNI" o "fecha alta CUIL") no existe en el esquema actual de `empleados_datos_sensibles`, lo agrego con una migración antes del insert.
