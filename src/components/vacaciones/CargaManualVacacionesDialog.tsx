@@ -94,6 +94,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
         fecha_fin: fechaFin,
         estado,
         motivo: comentario || "Carga manual por RRHH",
+        periodo_devengado: periodoDevengado ? parseInt(periodoDevengado, 10) : null,
       };
       if (estado !== "pendiente") {
         payload.aprobado_por = aprobadorId;
