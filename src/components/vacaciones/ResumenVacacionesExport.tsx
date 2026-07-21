@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Download, FileSpreadsheet, FileText, FileDown, Loader2 } from "lucide-react";
 import { parseISO, differenceInCalendarDays, format } from "date-fns";
 import * as XLSX from "xlsx";
@@ -39,6 +40,20 @@ function esEmpleadoExcluido(nombre: string, apellido: string): boolean {
   return false;
 }
 
+type EstadoKey = "gozadas" | "aprobada" | "pendiente";
+
+const ESTADO_LABEL: Record<EstadoKey, string> = {
+  gozadas: "Gozadas",
+  aprobada: "Aprobadas por tomar",
+  pendiente: "Pendientes aprobación",
+};
+
+const ESTADO_COL_LABEL: Record<EstadoKey, string> = {
+  gozadas: "Gozadas (fechas)",
+  aprobada: "Aprobadas (fechas)",
+  pendiente: "Pendientes (fechas)",
+};
+
 interface Row {
   sucursal: string;
   empleado: string;
@@ -48,22 +63,25 @@ interface Row {
   aprobadas: number;
   pendientes: number;
   restantes: number;
-  detalle: string;
+  detallePorEstado: Record<EstadoKey, string>;
 }
 
-type RowAcc = Row & { _consumidos: number; _solicitudes: { inicio: string; fin: string; estado: string }[] };
-
-const ESTADO_LABEL: Record<string, string> = {
-  gozadas: "Gozadas",
-  aprobada: "Aprobadas por tomar",
-  pendiente: "Pendientes aprobación",
+type RowAcc = Omit<Row, "detallePorEstado"> & {
+  _consumidos: number;
+  _solicitudes: { inicio: string; fin: string; estado: EstadoKey }[];
 };
 
-async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds: Set<string> | null, base: BaseVacaciones, incluirFechas: boolean): Promise<Row[]> {
+async function armarResumen(
+  anio: number,
+  porPeriodoDevengado: boolean,
+  grupoIds: Set<string> | null,
+  base: BaseVacaciones,
+  estados: EstadoKey[],
+): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
-  const solQuery = porPeriodoDevengado
+  let solQuery = porPeriodoDevengado
     ? supabase
         .from("solicitudes_vacaciones")
         .select("empleado_id, fecha_inicio, fecha_fin, estado, periodo_devengado")
@@ -73,6 +91,10 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
         .select("empleado_id, fecha_inicio, fecha_fin, estado, periodo_devengado")
         .gte("fecha_inicio", desde)
         .lte("fecha_inicio", hasta);
+
+  if (estados.length > 0) {
+    solQuery = solQuery.in("estado", estados);
+  }
 
   const [solRes, empRes, sucRes] = await Promise.all([
     solQuery,
@@ -108,7 +130,6 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
       aprobadas: 0,
       pendientes: 0,
       restantes: 0,
-      detalle: "",
       _consumidos: 0,
       _solicitudes: [],
     });
@@ -120,21 +141,25 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
     const ini = parseISO(s.fecha_inicio + "T00:00:00");
     const fin = parseISO(s.fecha_fin + "T00:00:00");
     const dias = Math.max(1, differenceInCalendarDays(fin, ini) + 1);
-    if (s.estado === "gozadas") { r.tomados += dias; r._consumidos += dias; }
-    else if (s.estado === "aprobada") { r.aprobadas += dias; r._consumidos += dias; }
-    else if (s.estado === "pendiente") { r.pendientes += dias; r._consumidos += dias; }
-    r._solicitudes.push({ inicio: s.fecha_inicio, fin: s.fecha_fin, estado: s.estado });
+    const est = s.estado as EstadoKey;
+    if (est === "gozadas") { r.tomados += dias; r._consumidos += dias; }
+    else if (est === "aprobada") { r.aprobadas += dias; r._consumidos += dias; }
+    else if (est === "pendiente") { r.pendientes += dias; r._consumidos += dias; }
+    r._solicitudes.push({ inicio: s.fecha_inicio, fin: s.fecha_fin, estado: est });
   }
+
+  const fmtRango = (s: { inicio: string; fin: string }) =>
+    `${format(parseISO(s.inicio), "dd/MM/yyyy")}-${format(parseISO(s.fin), "dd/MM/yyyy")}`;
 
   const out: Row[] = [];
   rows.forEach((r) => {
     r.restantes = r.total - r._consumidos;
-    const detalle = incluirFechas
-      ? r._solicitudes
-          .sort((a, b) => a.inicio.localeCompare(b.inicio))
-          .map((s) => `${format(parseISO(s.inicio), "dd/MM/yyyy")}-${format(parseISO(s.fin), "dd/MM/yyyy")} (${ESTADO_LABEL[s.estado] ?? s.estado})`)
-          .join("; ")
-      : "";
+    const sorted = [...r._solicitudes].sort((a, b) => a.inicio.localeCompare(b.inicio));
+    const detallePorEstado: Record<EstadoKey, string> = {
+      gozadas: sorted.filter((s) => s.estado === "gozadas").map(fmtRango).join("; "),
+      aprobada: sorted.filter((s) => s.estado === "aprobada").map(fmtRango).join("; "),
+      pendiente: sorted.filter((s) => s.estado === "pendiente").map(fmtRango).join("; "),
+    };
     out.push({
       sucursal: r.sucursal,
       empleado: r.empleado,
@@ -144,7 +169,7 @@ async function armarResumen(anio: number, porPeriodoDevengado: boolean, grupoIds
       aprobadas: r.aprobadas,
       pendientes: r.pendientes,
       restantes: r.restantes,
-      detalle,
+      detallePorEstado,
     });
   });
   out.sort((a, b) =>
@@ -165,16 +190,21 @@ function descargar(blob: Blob, filename: string) {
 }
 
 const HEADERS_BASE = ["Sucursal", "Empleado", "Ingreso", "Total", "Tomados", "Aprobadas por tomar", "Pendientes aprobación", "Restantes"];
-const HEADER_DETALLE = "Detalle de vacaciones";
 
-function getHeaders(incluirFechas: boolean) {
-  return incluirFechas ? [...HEADERS_BASE, HEADER_DETALLE] : HEADERS_BASE;
+const ESTADOS_ORDER: EstadoKey[] = ["gozadas", "aprobada", "pendiente"];
+
+function getHeaders(incluirFechas: boolean, estadosSel: EstadoKey[]) {
+  if (!incluirFechas) return HEADERS_BASE;
+  const cols = ESTADOS_ORDER.filter((e) => estadosSel.includes(e)).map((e) => ESTADO_COL_LABEL[e]);
+  return [...HEADERS_BASE, ...cols];
 }
 
-function toMatrix(rows: Row[], incluirFechas: boolean) {
+function toMatrix(rows: Row[], incluirFechas: boolean, estadosSel: EstadoKey[]) {
   return rows.map((r) => {
     const base = [r.sucursal, r.empleado, r.ingreso, r.total, r.tomados, r.aprobadas, r.pendientes, r.restantes];
-    return incluirFechas ? [...base, r.detalle] : base;
+    if (!incluirFechas) return base;
+    const extra = ESTADOS_ORDER.filter((e) => estadosSel.includes(e)).map((e) => r.detallePorEstado[e]);
+    return [...base, ...extra];
   });
 }
 
@@ -186,7 +216,15 @@ export function ResumenVacacionesExport() {
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [baseCalculo, setBaseCalculo] = useState<BaseVacaciones>("ingreso");
   const [incluirFechas, setIncluirFechas] = useState(false);
+  const [estadosSel, setEstadosSel] = useState<EstadoKey[]>(["gozadas", "aprobada", "pendiente"]);
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
+
+  const toggleEstado = (e: EstadoKey, checked: boolean) => {
+    setEstadosSel((prev) => {
+      if (checked) return Array.from(new Set([...prev, e]));
+      return prev.filter((x) => x !== e);
+    });
+  };
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
     try {
@@ -196,8 +234,12 @@ export function ResumenVacacionesExport() {
         toast({ title: "Año inválido", variant: "destructive" });
         return;
       }
+      if (estadosSel.length === 0) {
+        toast({ title: "Elegí al menos un estado de vacaciones", variant: "destructive" });
+        return;
+      }
       const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
-      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo, incluirFechas);
+      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds, baseCalculo, estadosSel);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
@@ -205,10 +247,11 @@ export function ResumenVacacionesExport() {
 
       const sufBase = baseCalculo === "ingreso" ? "" : `_${baseCalculo}`;
       const sufFechas = incluirFechas ? "_con_fechas" : "";
-      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}${sufFechas}`;
+      const sufEstados = estadosSel.length < 3 ? `_${estadosSel.join("-")}` : "";
+      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}${sufFechas}${sufEstados}`;
       const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
-      const headers = getHeaders(incluirFechas);
-      const matrix = toMatrix(rows, incluirFechas);
+      const headers = getHeaders(incluirFechas, estadosSel);
+      const matrix = toMatrix(rows, incluirFechas, estadosSel);
 
       if (tipo === "csv") {
         const escape = (v: any) => {
@@ -220,7 +263,9 @@ export function ResumenVacacionesExport() {
       } else if (tipo === "xlsx") {
         const ws = XLSX.utils.aoa_to_sheet([headers, ...matrix]);
         const cols = [{ wch: 20 }, { wch: 32 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 20 }, { wch: 22 }, { wch: 12 }];
-        if (incluirFechas) cols.push({ wch: 60 });
+        if (incluirFechas) {
+          ESTADOS_ORDER.filter((e) => estadosSel.includes(e)).forEach(() => cols.push({ wch: 45 }));
+        }
         ws["!cols"] = cols;
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Vacaciones ${anioNum}`);
@@ -273,7 +318,7 @@ export function ResumenVacacionesExport() {
           Resumen anual
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Generar resumen de vacaciones</DialogTitle>
           <DialogDescription>
@@ -307,6 +352,26 @@ export function ResumenVacacionesExport() {
               La antigüedad y los días LCT se calculan usando: <strong>{BASE_VACACIONES_LABEL[baseCalculo]}</strong>. Si el empleado no tiene esa fecha cargada, se usa la fecha de ingreso.
             </p>
           </div>
+          <div className="space-y-2 rounded-md border p-3">
+            <Label>Estados de vacaciones a incluir</Label>
+            <div className="space-y-2">
+              {ESTADOS_ORDER.map((e) => (
+                <div key={e} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`estado-${e}`}
+                    checked={estadosSel.includes(e)}
+                    onCheckedChange={(v) => toggleEstado(e, !!v)}
+                  />
+                  <Label htmlFor={`estado-${e}`} className="cursor-pointer font-normal">
+                    {ESTADO_LABEL[e]}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Filtra qué solicitudes se incluyen en los conteos y en el detalle de fechas.
+            </p>
+          </div>
           <div className="flex items-start justify-between gap-3 rounded-md border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="toggle-devengado" className="cursor-pointer">
@@ -330,7 +395,7 @@ export function ResumenVacacionesExport() {
                 Incluir fechas de vacaciones
               </Label>
               <p className="text-xs text-muted-foreground">
-                Agrega una columna con el rango de fechas de cada solicitud cargada (gozadas, aprobadas y pendientes).
+                Agrega columnas separadas por estado (Gozadas / Aprobadas / Pendientes) con el rango de fechas de cada solicitud.
               </p>
             </div>
             <Switch
