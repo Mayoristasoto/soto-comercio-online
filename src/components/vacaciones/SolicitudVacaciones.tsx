@@ -260,7 +260,8 @@ export function SolicitudVacaciones({
         fecha_fin: fechaFin.toISOString().split('T')[0],
         motivo: motivo || null,
         estado: 'pendiente',
-      });
+        periodo_devengado: periodoDevengado ? parseInt(periodoDevengado, 10) : null,
+      } as any);
 
       if (error) throw error;
 
