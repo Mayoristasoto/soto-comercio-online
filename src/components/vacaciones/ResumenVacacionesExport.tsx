@@ -175,7 +175,8 @@ export function ResumenVacacionesExport() {
         return;
       }
 
-      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}`;
+      const sufBase = baseCalculo === "ingreso" ? "" : `_${baseCalculo}`;
+      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}${sufBase}`;
       const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
 
       if (tipo === "csv") {
