@@ -14,6 +14,7 @@ import { CalculadoraVacaciones } from "@/components/vacaciones/CalculadoraVacaci
 import { EmpleadosSinVacaciones } from "@/components/vacaciones/EmpleadosSinVacaciones";
 import { ListadoVacaciones } from "@/components/vacaciones/ListadoVacaciones";
 import { Button } from "@/components/ui/button";
+import { ResumenVacacionesExport } from "@/components/vacaciones/ResumenVacacionesExport";
 
 interface UserInfo {
   id: string;
@@ -102,6 +103,7 @@ export default function Vacaciones() {
         </div>
         {isAdmin && (
           <div className="flex gap-2">
+            <ResumenVacacionesExport />
             <Button variant="outline" onClick={() => navigate('/configuracion?tab=plantillas')}>
               <FileSignature className="h-4 w-4 mr-2" />
               Editar plantillas
