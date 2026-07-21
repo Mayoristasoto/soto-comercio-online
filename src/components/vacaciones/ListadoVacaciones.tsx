@@ -408,6 +408,7 @@ export function ListadoVacaciones() {
               </SelectContent>
             </Select>
           </div>
+          <SelectorBaseVacaciones value={baseCalculo} onChange={setBaseCalculo} />
           <div className="min-w-[220px]">
             <SelectorGrupoCompacto value={grupoSel} onChange={setGrupoSel} modulo="vacaciones" label="Grupo" />
           </div>
