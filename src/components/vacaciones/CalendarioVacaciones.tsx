@@ -31,6 +31,7 @@ interface VacacionDia {
     solicitudId: string;
     fechaInicio: string;
     fechaFin: string;
+    periodoDevengado: number | null;
   }>;
   bloqueado: boolean;
   motivoBloqueo?: string;
