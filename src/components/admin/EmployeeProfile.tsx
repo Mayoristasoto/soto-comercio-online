@@ -607,17 +607,47 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="fecha_ingreso"
-                      type="date"
-                      value={formData.fecha_ingreso || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
-                      className="pl-10"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="fecha_ingreso"
+                        type="date"
+                        value={formData.fecha_ingreso || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="antiguedad_reconocida">Antigüedad Reconocida</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="antiguedad_reconocida"
+                        type="date"
+                        value={formData.antiguedad_reconocida || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, antiguedad_reconocida: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fecha_prueba">Fecha Prueba</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="fecha_prueba"
+                        type="date"
+                        value={formData.fecha_prueba || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, fecha_prueba: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>
