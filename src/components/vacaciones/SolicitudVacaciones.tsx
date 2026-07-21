@@ -109,6 +109,7 @@ export function SolicitudVacaciones({
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [fechaFin, setFechaFin] = useState<Date>();
   const [motivo, setMotivo] = useState("");
+  const [periodoDevengado, setPeriodoDevengado] = useState<string>(String(new Date().getFullYear() - 1));
   const [loading, setLoading] = useState(false);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [hasConflict, setHasConflict] = useState(false);
