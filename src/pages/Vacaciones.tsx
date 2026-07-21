@@ -14,6 +14,7 @@ import { CalculadoraVacaciones } from "@/components/vacaciones/CalculadoraVacaci
 import { EmpleadosSinVacaciones } from "@/components/vacaciones/EmpleadosSinVacaciones";
 import { ListadoVacaciones } from "@/components/vacaciones/ListadoVacaciones";
 import { Button } from "@/components/ui/button";
+import { ResumenVacacionesExport } from "@/components/vacaciones/ResumenVacacionesExport";
 
 interface UserInfo {
   id: string;
