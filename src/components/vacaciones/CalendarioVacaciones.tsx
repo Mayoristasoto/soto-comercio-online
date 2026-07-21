@@ -256,6 +256,31 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const puedeReasignar = rol === 'admin_rrhh';
   const [comentario, setComentario] = useState<Record<string, string>>({});
   const [accionando, setAccionando] = useState<string | null>(null);
+  const [periodoEdit, setPeriodoEdit] = useState<Record<string, string>>({});
+  const [guardandoPeriodo, setGuardandoPeriodo] = useState<string | null>(null);
+
+  const handleGuardarPeriodo = async (solicitudId: string) => {
+    const raw = periodoEdit[solicitudId];
+    const parsed = raw === '' || raw === undefined ? null : parseInt(raw, 10);
+    if (parsed !== null && (isNaN(parsed) || parsed < 2000 || parsed > 2100)) {
+      toast({ title: "Período inválido", description: "Ingresá un año entre 2000 y 2100", variant: "destructive" });
+      return;
+    }
+    try {
+      setGuardandoPeriodo(solicitudId);
+      const { error } = await supabase
+        .from('solicitudes_vacaciones')
+        .update({ periodo_devengado: parsed })
+        .eq('id', solicitudId);
+      if (error) throw error;
+      toast({ title: "Período devengado actualizado" });
+      fetchVacaciones();
+    } catch (e: any) {
+      toast({ title: "Error al guardar período", description: e.message, variant: "destructive" });
+    } finally {
+      setGuardandoPeriodo(null);
+    }
+  };
 
   const handleCambioEstado = async (
     solicitudId: string,
