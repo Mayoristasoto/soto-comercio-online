@@ -46,16 +46,23 @@ interface Row {
   restantes: number;
 }
 
-async function armarResumen(anio: number): Promise<Row[]> {
+async function armarResumen(anio: number, porPeriodoDevengado: boolean): Promise<Row[]> {
   const desde = `${anio}-01-01`;
   const hasta = `${anio}-12-31`;
 
+  const solQuery = porPeriodoDevengado
+    ? supabase
+        .from("solicitudes_vacaciones")
+        .select("empleado_id, fecha_inicio, fecha_fin, estado, periodo_devengado")
+        .eq("periodo_devengado", anio)
+    : supabase
+        .from("solicitudes_vacaciones")
+        .select("empleado_id, fecha_inicio, fecha_fin, estado, periodo_devengado")
+        .gte("fecha_inicio", desde)
+        .lte("fecha_inicio", hasta);
+
   const [solRes, empRes, sucRes, calcRes] = await Promise.all([
-    supabase
-      .from("solicitudes_vacaciones")
-      .select("empleado_id, fecha_inicio, fecha_fin, estado")
-      .gte("fecha_inicio", desde)
-      .lte("fecha_inicio", hasta),
+    solQuery,
     supabase.from("empleados").select("id, nombre, apellido, sucursal_id, activo"),
     supabase.from("sucursales").select("id, nombre").order("nombre"),
     supabase.rpc("obtener_calculo_vacaciones_todos", { p_anio: anio }),
