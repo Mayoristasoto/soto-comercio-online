@@ -32,6 +32,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
   const [fechaFin, setFechaFin] = useState("");
   const [estado, setEstado] = useState<Estado>("aprobada");
   const [comentario, setComentario] = useState("");
+  const [periodoDevengado, setPeriodoDevengado] = useState<string>(String(new Date().getFullYear() - 1));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
       setEmpleadoId("");
       setEstado("aprobada");
       setComentario("");
+      setPeriodoDevengado(String(base.getFullYear() - 1));
     }
   }, [open, fechaInicial]);
 
