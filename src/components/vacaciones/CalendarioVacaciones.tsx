@@ -161,6 +161,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           fecha_fin,
           estado,
           empleado_id,
+          periodo_devengado,
           empleados!solicitudes_vacaciones_empleado_id_fkey(id, nombre, apellido, sucursal_id, puesto)
         `)
         .lte('fecha_inicio', fin.toISOString().split('T')[0])
