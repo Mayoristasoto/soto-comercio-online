@@ -157,6 +157,7 @@ export function ResumenVacacionesExport() {
   const [open, setOpen] = useState(false);
   const [anio, setAnio] = useState(String(new Date().getFullYear()));
   const [porPeriodoDevengado, setPorPeriodoDevengado] = useState(false);
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [generando, setGenerando] = useState<null | "xlsx" | "pdf" | "csv">(null);
 
   const generar = async (tipo: "xlsx" | "pdf" | "csv") => {
@@ -167,13 +168,14 @@ export function ResumenVacacionesExport() {
         toast({ title: "Año inválido", variant: "destructive" });
         return;
       }
-      const rows = await armarResumen(anioNum, porPeriodoDevengado);
+      const grupoIds = grupoSel?.empleadoIds?.length ? new Set(grupoSel.empleadoIds) : null;
+      const rows = await armarResumen(anioNum, porPeriodoDevengado, grupoIds);
       if (rows.length === 0) {
         toast({ title: "Sin datos para exportar", variant: "destructive" });
         return;
       }
 
-      const sufijo = porPeriodoDevengado ? "_devengado" : "";
+      const sufijo = `${porPeriodoDevengado ? "_devengado" : ""}${grupoIds ? "_grupo" : ""}`;
       const nombreBase = `resumen_vacaciones_${anioNum}${sufijo}`;
 
       if (tipo === "csv") {
