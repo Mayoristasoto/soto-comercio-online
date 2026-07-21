@@ -31,6 +31,7 @@ interface VacacionDia {
     solicitudId: string;
     fechaInicio: string;
     fechaFin: string;
+    periodoDevengado: number | null;
   }>;
   bloqueado: boolean;
   motivoBloqueo?: string;
@@ -160,6 +161,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
           fecha_fin,
           estado,
           empleado_id,
+          periodo_devengado,
           empleados!solicitudes_vacaciones_empleado_id_fkey(id, nombre, apellido, sucursal_id, puesto)
         `)
         .lte('fecha_inicio', fin.toISOString().split('T')[0])
@@ -219,6 +221,7 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
             solicitudId: s.id,
             fechaInicio: s.fecha_inicio,
             fechaFin: s.fecha_fin,
+            periodoDevengado: s.periodo_devengado ?? null,
           })) || [];
 
         return {
@@ -253,6 +256,31 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
   const puedeReasignar = rol === 'admin_rrhh';
   const [comentario, setComentario] = useState<Record<string, string>>({});
   const [accionando, setAccionando] = useState<string | null>(null);
+  const [periodoEdit, setPeriodoEdit] = useState<Record<string, string>>({});
+  const [guardandoPeriodo, setGuardandoPeriodo] = useState<string | null>(null);
+
+  const handleGuardarPeriodo = async (solicitudId: string) => {
+    const raw = periodoEdit[solicitudId];
+    const parsed = raw === '' || raw === undefined ? null : parseInt(raw, 10);
+    if (parsed !== null && (isNaN(parsed) || parsed < 2000 || parsed > 2100)) {
+      toast({ title: "Período inválido", description: "Ingresá un año entre 2000 y 2100", variant: "destructive" });
+      return;
+    }
+    try {
+      setGuardandoPeriodo(solicitudId);
+      const { error } = await supabase
+        .from('solicitudes_vacaciones')
+        .update({ periodo_devengado: parsed })
+        .eq('id', solicitudId);
+      if (error) throw error;
+      toast({ title: "Período devengado actualizado" });
+      fetchVacaciones();
+    } catch (e: any) {
+      toast({ title: "Error al guardar período", description: e.message, variant: "destructive" });
+    } finally {
+      setGuardandoPeriodo(null);
+    }
+  };
 
   const handleCambioEstado = async (
     solicitudId: string,
@@ -566,6 +594,41 @@ export function CalendarioVacaciones({ rol, sucursalId }: CalendarioVacacionesPr
                                 <UserCog className="h-3 w-3 mr-1" />
                                 {reasignando === emp.solicitudId ? 'Reasignando...' : 'Reasignar empleado'}
                               </Button>
+                            </div>
+                          )}
+
+                          {puedeReasignar && (
+                            <div className="space-y-2 pt-1 border-t">
+                              <Label className="text-xs">Período devengado (año LCT)</Label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="number"
+                                  min={2000}
+                                  max={2100}
+                                  placeholder="Ej: 2025"
+                                  className="flex-1 h-8 rounded-md border border-input bg-background px-2 text-xs"
+                                  value={
+                                    periodoEdit[emp.solicitudId] ??
+                                    (emp.periodoDevengado != null ? String(emp.periodoDevengado) : '')
+                                  }
+                                  onChange={(e) =>
+                                    setPeriodoEdit((s) => ({ ...s, [emp.solicitudId]: e.target.value }))
+                                  }
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={guardandoPeriodo === emp.solicitudId}
+                                  onClick={() => handleGuardarPeriodo(emp.solicitudId)}
+                                >
+                                  {guardandoPeriodo === emp.solicitudId ? '...' : 'Guardar'}
+                                </Button>
+                              </div>
+                              {emp.periodoDevengado != null && (
+                                <p className="text-[10px] text-muted-foreground">
+                                  Actual: {emp.periodoDevengado}
+                                </p>
+                              )}
                             </div>
                           )}
 
