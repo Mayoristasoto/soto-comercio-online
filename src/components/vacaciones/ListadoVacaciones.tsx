@@ -38,6 +38,7 @@ interface SolicitudDetalle {
   estado: string;
   motivo: string | null;
   fecha_aprobacion: string | null;
+  periodo_devengado: number | null;
 }
 
 interface EmpleadoRow {
