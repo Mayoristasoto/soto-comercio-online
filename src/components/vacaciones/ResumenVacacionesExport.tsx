@@ -19,6 +19,8 @@ import { parseISO, differenceInCalendarDays, format } from "date-fns";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 const PATRONES_EXCLUSION = {
   contiene: ["demo", "dwaddw", "dwadad", "test", "prueba"],
