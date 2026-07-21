@@ -258,6 +258,15 @@ export function ResumenVacacionesExport() {
               onChange={(e) => setAnio(e.target.value)}
             />
           </div>
+          <div className="space-y-1">
+            <SelectorGrupoCompacto
+              value={grupoSel}
+              onChange={setGrupoSel}
+              modulo="vacaciones"
+              label="Grupo de empleados"
+              placeholderTodos="— Todos los empleados —"
+            />
+          </div>
           <div className="flex items-start justify-between gap-3 rounded-md border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="toggle-devengado" className="cursor-pointer">
