@@ -175,6 +175,8 @@ export default function FicheroHorarios() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importAssignmentDialogOpen, setImportAssignmentDialogOpen] = useState(false);
   const [exportandoPlantilla, setExportandoPlantilla] = useState(false);
+  const [grupoExportSel, setGrupoExportSel] = useState<SeleccionEmpleados | null>(null);
+
 
   const exportarPlantillaEmpleadosHorarios = async () => {
     try {
