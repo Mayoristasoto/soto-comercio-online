@@ -20,6 +20,8 @@ import AssignmentImport from './AssignmentImport';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 interface Turno {
   id: string;
