@@ -681,6 +681,14 @@ export default function FicheroHorarios() {
               </Button>
               <Button
                 variant="outline"
+                onClick={exportarPlantillaEmpleadosHorarios}
+                disabled={exportandoPlantilla}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {exportandoPlantilla ? 'Exportando...' : 'Exportar Plantilla'}
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setImportAssignmentDialogOpen(true)}
               >
                 <FileSpreadsheet className="h-4 w-4 mr-2" />
