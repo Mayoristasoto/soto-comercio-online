@@ -172,6 +172,59 @@ export default function FicheroHorarios() {
   const [asignacionDialogOpen, setAsignacionDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importAssignmentDialogOpen, setImportAssignmentDialogOpen] = useState(false);
+  const [exportandoPlantilla, setExportandoPlantilla] = useState(false);
+
+  const exportarPlantillaEmpleadosHorarios = async () => {
+    try {
+      setExportandoPlantilla(true);
+
+      const { data: empleadosData, error: empError } = await supabase
+        .from('empleados')
+        .select('id, legajo, nombre, apellido, sucursales(nombre)')
+        .eq('activo', true)
+        .order('apellido');
+      if (empError) throw empError;
+
+      const { data: asignaciones, error: asigError } = await supabase
+        .from('empleado_turnos')
+        .select('empleado_id, fecha_inicio, fecha_fin, fichado_turnos(nombre)')
+        .eq('activo', true);
+      if (asigError) throw asigError;
+
+      const asigMap = new Map<string, any>();
+      (asignaciones || []).forEach((a: any) => {
+        asigMap.set(a.empleado_id, a);
+      });
+
+      const rows = (empleadosData || []).map((e: any) => {
+        const a = asigMap.get(e.id);
+        return {
+          'Legajo Empleado': e.legajo || '',
+          'Nombre Empleado': `${e.nombre} ${e.apellido}`,
+          'Sucursal': e.sucursales?.nombre || '',
+          'Nombre Turno': a?.fichado_turnos?.nombre || '',
+          'Fecha Inicio': a?.fecha_inicio || new Date().toISOString().split('T')[0],
+          'Fecha Fin (Opcional)': a?.fecha_fin || '',
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [{ wch: 15 }, { wch: 28 }, { wch: 20 }, { wch: 24 }, { wch: 14 }, { wch: 20 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Empleados y Horarios');
+      XLSX.writeFile(wb, `empleados_horarios_plantilla_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      toast({
+        title: 'Plantilla exportada',
+        description: `${rows.length} empleado(s). Editá "Nombre Turno" / fechas y reimportá con "Importar Asignaciones".`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: 'No se pudo exportar la plantilla', variant: 'destructive' });
+    } finally {
+      setExportandoPlantilla(false);
+    }
+  };
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
