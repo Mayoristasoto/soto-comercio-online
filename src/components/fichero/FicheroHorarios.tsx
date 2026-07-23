@@ -20,6 +20,8 @@ import AssignmentImport from './AssignmentImport';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 
 interface Turno {
   id: string;
@@ -173,17 +175,25 @@ export default function FicheroHorarios() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importAssignmentDialogOpen, setImportAssignmentDialogOpen] = useState(false);
   const [exportandoPlantilla, setExportandoPlantilla] = useState(false);
+  const [grupoExportSel, setGrupoExportSel] = useState<SeleccionEmpleados | null>(null);
+
 
   const exportarPlantillaEmpleadosHorarios = async () => {
     try {
       setExportandoPlantilla(true);
 
-      const { data: empleadosData, error: empError } = await supabase
+      const idsFiltro = grupoExportSel?.empleadoIds || null;
+      let query = supabase
         .from('empleados')
         .select('id, legajo, nombre, apellido, sucursales(nombre)')
         .eq('activo', true)
         .order('apellido');
+      if (idsFiltro && idsFiltro.length > 0) {
+        query = query.in('id', idsFiltro);
+      }
+      const { data: empleadosData, error: empError } = await query;
       if (empError) throw empError;
+
 
       const { data: asignaciones, error: asigError } = await supabase
         .from('empleado_turnos')
@@ -671,7 +681,16 @@ export default function FicheroHorarios() {
                 Asignar horarios específicos a empleados y configurar jornada
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-end flex-wrap">
+              <div className="min-w-[220px]">
+                <SelectorGrupoCompacto
+                  value={grupoExportSel}
+                  onChange={setGrupoExportSel}
+                  modulo="horarios"
+                  label="Filtrar exportación"
+                  placeholderTodos="— Todos los activos —"
+                />
+              </div>
               <Button
                 variant="outline"
                 onClick={() => navigate('/operaciones/fichero/reportes')}
@@ -685,8 +704,11 @@ export default function FicheroHorarios() {
                 disabled={exportandoPlantilla}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {exportandoPlantilla ? 'Exportando...' : 'Exportar Plantilla'}
+                {exportandoPlantilla
+                  ? 'Exportando...'
+                  : `Exportar Plantilla${grupoExportSel?.empleadoIds?.length ? ` (${grupoExportSel.empleadoIds.length})` : ''}`}
               </Button>
+
               <Button
                 variant="outline"
                 onClick={() => setImportAssignmentDialogOpen(true)}
