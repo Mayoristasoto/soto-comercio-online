@@ -182,12 +182,18 @@ export default function FicheroHorarios() {
     try {
       setExportandoPlantilla(true);
 
-      const { data: empleadosData, error: empError } = await supabase
+      const idsFiltro = grupoExportSel?.empleadoIds || null;
+      let query = supabase
         .from('empleados')
         .select('id, legajo, nombre, apellido, sucursales(nombre)')
         .eq('activo', true)
         .order('apellido');
+      if (idsFiltro && idsFiltro.length > 0) {
+        query = query.in('id', idsFiltro);
+      }
+      const { data: empleadosData, error: empError } = await query;
       if (empError) throw empError;
+
 
       const { data: asignaciones, error: asigError } = await supabase
         .from('empleado_turnos')
