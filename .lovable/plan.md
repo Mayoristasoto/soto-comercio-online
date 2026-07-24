@@ -1,30 +1,43 @@
-## Crear empleado Uriel Sanchez Gudelevich
 
-Voy a dar de alta al empleado con los datos básicos disponibles. Los datos sensibles (DNI, CUIL, sexo, nacionalidad, fecha nac., etc.) se guardarán en la tabla protegida `empleados_datos_sensibles`.
+# Fichadas de sábados — últimos 90 días
 
-### Datos a cargar
+Analizando la primera fichada de cada sábado por empleado activo (mínimo 2 sábados registrados). Se agrupan por hora promedio de entrada:
 
-**En `empleados`** (datos generales):
-- Nombre: Uriel
-- Apellido: Sanchez Gudelevich
-- Email: placeholder temporal (`uriel.sanchez@pendiente.local`) — lo actualizás cuando tengas el real
-- Rol: `empleado`
-- Activo: true
-- Fecha ingreso: hoy (editable después)
-- Sucursal: sin asignar (la definís después)
+## 🌅 Turno Temprano (entra antes de 08:00)
 
-**En `empleados_datos_sensibles`**:
-- DNI: 44043531
-- CUIL: 23-44043531-9
-- Sexo: Masculino
-- Nacionalidad: Argentina
-- Fecha nacimiento: 19/03/2002
-- Fecha emisión DNI: 14/09/2025
-- Fecha vencimiento DNI: 14/09/2040
-- Ejemplar DNI: B
-- Nº trámite: 7400849063751
-- Fecha alta CUIL: 17/04/2006
+| Empleado | Sucursal | Hora prom. | Sábados |
+|---|---|---|---|
+| Washintong Bartolo Loyola | Olazar 26 | 07:14 | 10 |
+| Laura Lorena Lan | José Martí | 07:29 | 11 |
+| Carlos Adrián Espina | José Martí | 07:30 | 12 |
+| Jesica Anahí Romero | José Martí | 07:32 | 12 |
+| Carla Lorena Carrion | Juan B. Justo | 07:51 | 12 |
+| Marina Ailin Aragon | Juan B. Justo | 07:54 | 12 |
+| Joseph Chumpitaz Bartolo | José Martí | 07:54 | 7 |
 
-### Notas
-- Datos pendientes que podés completar después desde el perfil: email real, teléfono, dirección, puesto, salario, sucursal, fecha de ingreso, antigüedad reconocida, fecha prueba, contacto emergencia.
-- Si algún campo (ej. "ejemplar DNI" o "fecha alta CUIL") no existe en el esquema actual de `empleados_datos_sensibles`, lo agrego con una migración antes del insert.
+## 🕗 Turno Tarde / Medio (entra 08:00 o después)
+
+| Empleado | Sucursal | Hora prom. | Sábados |
+|---|---|---|---|
+| Tomás Javier Diaz | José Martí | 08:00 | 5 |
+| Agustina Lucía Galaz | Ventas | 08:04 | 8 |
+| Analia Victoria Del Valle | Juan B. Justo | 08:07 | 12 |
+| Dario Alejandro Fernandez | Juan B. Justo | 08:10 | 11 |
+| María Belen Castagnari | Juan B. Justo | 08:21 | 12 |
+| Julio Cesar Gomez Navarrete | José Martí | 08:27 | 11 |
+| Jonathan Jesus Vera | José Martí | 08:28 | 12 |
+| Ricardo Daniel Conforti | José Martí | 08:42 | 12 |
+
+## Resumen por sucursal
+
+- **José Martí:** temprano → Lan, Espina, Romero, Chumpitaz. Tarde → Vera, Gomez Navarrete, Conforti, Diaz.
+- **Juan B. Justo:** temprano → Carrion, Aragon. Tarde → Del Valle, Fernandez, Castagnari.
+- **Olazar 26:** solo Bartolo Loyola (temprano).
+- **Ventas:** Galaz (media mañana).
+
+## Notas
+
+- Ricardo Conforti tiene mucha varianza (07:23–11:53); podría estar cubriendo distintos turnos.
+- Dario Fernandez tiene un outlier a las 14:50, revisar si fue evento puntual.
+
+Si querés lo puedo exportar a Excel/PDF, o cambiar la ventana de análisis (ej. últimos 30 días o un mes específico).
