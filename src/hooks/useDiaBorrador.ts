@@ -19,9 +19,11 @@ export interface BorradorDia {
   ediciones: Record<string, EdicionDia>;
   agregados: AgregadoDia[];
   eliminados: string[];
+  /** Horas extras por fila (key = real-<empleadoId> o tramo-<id>) */
+  extras: Record<string, number>;
 }
 
-const VACIO: BorradorDia = { ediciones: {}, agregados: [], eliminados: [] };
+const VACIO: BorradorDia = { ediciones: {}, agregados: [], eliminados: [], extras: {} };
 
 const storageKey = (fecha: string) => `fichero:borrador-dia:${fecha}`;
 
@@ -40,6 +42,7 @@ function leer(fecha: string): BorradorDia {
       // compatibilidad con borradores viejos sin id
       agregados: (parsed.agregados ?? []).map((a: AgregadoDia) => ({ ...a, id: a.id ?? nuevoId() })),
       eliminados: parsed.eliminados ?? [],
+      extras: parsed.extras ?? {},
     };
   } catch {
     return VACIO;
