@@ -230,39 +230,50 @@ export function exportDiaPDF(
   y = drawAxis(y);
 
   for (const [suc, rows] of [...porSucursal.entries()].sort()) {
+    // Un empleado con varios tramos en la misma sucursal se dibuja en una sola línea
+    const lineas = new Map<string, FilaDiaExport[]>();
+    for (const f of rows) {
+      const arr = lineas.get(f.empleado_id) ?? [];
+      arr.push(f);
+      lineas.set(f.empleado_id, arr);
+    }
+
     y = ensure(y, 12);
     doc.setFontSize(8);
     doc.setTextColor(...PRIMARY);
-    doc.text(`${suc} (${rows.length})`, 14, y + 2);
+    doc.text(`${suc} (${lineas.size})`, 14, y + 2);
     doc.setTextColor(0, 0, 0);
     y += 5;
 
-    for (const f of rows) {
+    for (const tramos of lineas.values()) {
       if (y + 6 > h - 12) {
         doc.addPage();
         y = drawAxis(18);
       }
       doc.setFontSize(6.5);
-      doc.text(f.nombre.slice(0, 34), 14, y + 3.2);
+      doc.text(tramos[0].nombre.slice(0, 34), 14, y + 3.2);
       doc.setFillColor(245, 245, 248);
       doc.rect(gx, y, gw, 4.5, "F");
-      const ini = Math.max(toMin(f.entrada), horaIni * 60);
-      const fin = Math.min(toMin(f.salida), horaFin * 60);
-      if (fin > ini) {
-        const x = gx + ((ini - horaIni * 60) * gw) / spanMin;
-        const bw = ((fin - ini) * gw) / spanMin;
-        if (f.origen === "real") doc.setFillColor(37, 99, 235);
-        else doc.setFillColor(...ACCENT);
-        doc.roundedRect(x, y, bw, 4.5, 1, 1, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(5.5);
-        if (bw > 18) doc.text(`${f.entrada}–${f.salida}`, x + 1.5, y + 3.1);
-        doc.setTextColor(0, 0, 0);
+      for (const f of tramos) {
+        const ini = Math.max(toMin(f.entrada), horaIni * 60);
+        const fin = Math.min(toMin(f.salida), horaFin * 60);
+        if (fin > ini) {
+          const x = gx + ((ini - horaIni * 60) * gw) / spanMin;
+          const bw = ((fin - ini) * gw) / spanMin;
+          if (f.origen === "real") doc.setFillColor(37, 99, 235);
+          else doc.setFillColor(...ACCENT);
+          doc.roundedRect(x, y, bw, 4.5, 1, 1, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(5.5);
+          if (bw > 18) doc.text(`${f.entrada}–${f.salida}`, x + 1.5, y + 3.1);
+          doc.setTextColor(0, 0, 0);
+        }
       }
       y += 5.5;
     }
     y += 2;
   }
+
 
   // ---- Planificación del día (detalle) ----
   doc.addPage();
