@@ -855,7 +855,31 @@ export function VistaDiaPlanificacion() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Sucursal del tramo</Label>
+              <Select
+                value={
+                  addSucursalId ||
+                  empleados.find((e) => e.id === addEmpleadoId)?.sucursal_id ||
+                  "sin"
+                }
+                onValueChange={(v) => setAddSucursalId(v === "sin" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sin">Sin sucursal</SelectItem>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-3 gap-2">
+
               <div>
                 <Label>Entrada</Label>
                 <Input type="time" value={addEntrada} onChange={(e) => setAddEntrada(e.target.value)} />
