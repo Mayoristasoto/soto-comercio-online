@@ -909,7 +909,87 @@ export function VistaDiaPlanificacion() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialogo dividir turno */}
+      <Dialog open={!!dividirFila} onOpenChange={(o) => !o && setDividirFila(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dividir jornada — {dividirFila?.nombre}</DialogTitle>
+            <CardDescription>
+              Horario cortado o reparto de horas entre sucursales. Se reemplaza la fila por dos tramos
+              provisorios.
+            </CardDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {[
+              {
+                titulo: "Tramo 1",
+                entrada: t1Entrada,
+                salida: t1Salida,
+                suc: t1Sucursal,
+                setEntrada: setT1Entrada,
+                setSalida: setT1Salida,
+                setSuc: setT1Sucursal,
+              },
+              {
+                titulo: "Tramo 2",
+                entrada: t2Entrada,
+                salida: t2Salida,
+                suc: t2Sucursal,
+                setEntrada: setT2Entrada,
+                setSalida: setT2Salida,
+                setSuc: setT2Sucursal,
+              },
+            ].map((t) => (
+              <div key={t.titulo} className="rounded-md border p-3 space-y-2">
+                <p className="text-sm font-semibold">
+                  {t.titulo}{" "}
+                  <span className="font-normal text-muted-foreground">
+                    ({horasEntre(t.entrada, t.salida, 0).toFixed(1)} h)
+                  </span>
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Entrada</Label>
+                    <Input type="time" value={t.entrada} onChange={(e) => t.setEntrada(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Salida</Label>
+                    <Input type="time" value={t.salida} onChange={(e) => t.setSalida(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Sucursal</Label>
+                    <Select
+                      value={t.suc || "sin"}
+                      onValueChange={(v) => t.setSuc(v === "sin" ? "" : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sin">Sin sucursal</SelectItem>
+                        {sucursales.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDividirFila(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarDividir}>Dividir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 
