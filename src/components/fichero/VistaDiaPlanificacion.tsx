@@ -175,6 +175,8 @@ export function VistaDiaPlanificacion() {
         const ed = borrador.ediciones[f.empleado_id];
         return {
           ...f,
+          key: `real-${f.empleado_id}`,
+          tramo_id: null as string | null,
           entrada: ed?.entrada ?? f.entrada,
           salida: ed?.salida ?? f.salida,
           pausa: ed?.pausa ?? f.pausa,
@@ -183,6 +185,8 @@ export function VistaDiaPlanificacion() {
       });
 
     const extra = borrador.agregados.map((a) => ({
+      key: `tramo-${a.id}`,
+      tramo_id: a.id,
       empleado_id: a.empleado_id,
       nombre: a.nombre,
       sucursal_id: a.sucursal_id,
@@ -199,8 +203,14 @@ export function VistaDiaPlanificacion() {
     return [...base, ...extra]
       .filter((f) => (sucursalFiltro === "todas" ? true : f.sucursal_id === sucursalFiltro))
       .filter((f) => (idsGrupo ? idsGrupo.includes(f.empleado_id) : true))
-      .sort((a, b) => a.sucursal_nombre.localeCompare(b.sucursal_nombre) || a.nombre.localeCompare(b.nombre));
+      .sort(
+        (a, b) =>
+          a.sucursal_nombre.localeCompare(b.sucursal_nombre) ||
+          a.nombre.localeCompare(b.nombre) ||
+          a.entrada.localeCompare(b.entrada)
+      );
   }, [filasReales, borrador, sucursalFiltro, grupoSel]);
+
 
   const horas = useMemo(
     () => Array.from({ length: HORA_HASTA - HORA_DESDE + 1 }, (_, i) => HORA_DESDE + i),
