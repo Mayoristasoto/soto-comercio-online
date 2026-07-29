@@ -106,6 +106,24 @@ export function VistaDiaPlanificacion() {
     localStorage.setItem("fichero:valor-hora-extra", String(valorHoraExtra || 0));
   }, [valorHoraExtra]);
 
+  // Valor de referencia tomado de la pestaña "Horas extras" (config_horas_extras_v4)
+  const valorHoraConfig = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("config_horas_extras_v4");
+      if (!raw) return 0;
+      const cfg = JSON.parse(raw);
+      const esDomingo = new Date(`${fecha}T00:00:00`).getDay() === 0;
+      const v = Number(esDomingo ? cfg.valorHoraDomingo : cfg.valorHoraHabil);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    } catch {
+      return 0;
+    }
+  }, [fecha]);
+
+  // Si no se cargó un valor manual, se usa el de la configuración de Horas extras
+  const valorHoraEfectivo = valorHoraExtra > 0 ? valorHoraExtra : valorHoraConfig;
+
+
   const [addOpen, setAddOpen] = useState(false);
   const [addEmpleadoId, setAddEmpleadoId] = useState<string>("");
   const [addBusqueda, setAddBusqueda] = useState("");
