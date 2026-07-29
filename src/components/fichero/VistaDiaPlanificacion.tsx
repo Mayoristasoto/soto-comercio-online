@@ -320,12 +320,15 @@ export function VistaDiaPlanificacion() {
   };
 
   const baseDe = (empleadoId: string): EdicionDia => {
-    const f = filas.find((x) => x.empleado_id === empleadoId)!;
+    const f = filas.find((x) => x.empleado_id === empleadoId && !x.tramo_id)!;
     return { entrada: f.entrada, salida: f.salida, pausa: f.pausa };
   };
 
+  const nombreSucursal = (id: string | null) =>
+    sucursales.find((s) => s.id === id)?.nombre || "Sin sucursal";
+
+  // Se permite volver a elegir un empleado ya presente (horario cortado / otra sucursal)
   const empleadosDisponibles = empleados
-    .filter((e) => !filas.some((f) => f.empleado_id === e.id))
     .filter((e) =>
       addBusqueda
         ? `${e.apellido} ${e.nombre} ${e.legajo ?? ""}`.toLowerCase().includes(addBusqueda.toLowerCase())
@@ -336,11 +339,12 @@ export function VistaDiaPlanificacion() {
   const confirmarAgregar = () => {
     const emp = empleados.find((e) => e.id === addEmpleadoId);
     if (!emp) return;
+    const sucId = addSucursalId || emp.sucursal_id;
     agregar({
       empleado_id: emp.id,
       nombre: `${emp.apellido}, ${emp.nombre}`,
-      sucursal_id: emp.sucursal_id,
-      sucursal_nombre: sucursales.find((s) => s.id === emp.sucursal_id)?.nombre || "Sin sucursal",
+      sucursal_id: sucId,
+      sucursal_nombre: nombreSucursal(sucId),
       entrada: addEntrada,
       salida: addSalida,
       pausa: addPausa,
@@ -348,6 +352,8 @@ export function VistaDiaPlanificacion() {
     setAddOpen(false);
     setAddEmpleadoId("");
     setAddBusqueda("");
+    setAddSucursalId("");
+
   };
 
   return (
