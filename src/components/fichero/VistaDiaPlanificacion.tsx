@@ -58,6 +58,9 @@ interface FilaReal {
 }
 
 const HORA_DESDE = 6;
+/** Jornada base: las horas por encima de este valor se consideran extras */
+const JORNADA_BASE_HS = 8;
+
 const HORA_HASTA = 23;
 
 const hhmm = (v?: string | null) => (v ? v.slice(0, 5) : "");
@@ -238,7 +241,8 @@ export function VistaDiaPlanificacion() {
           salida: ed?.salida ?? f.salida,
           pausa: ed?.pausa ?? f.pausa,
           origen: (ed ? "modificado" : "real") as FilaDiaExport["origen"],
-          extras: borrador.extras?.[`real-${f.empleado_id}`] ?? 0,
+          extrasManual: borrador.extras?.[`real-${f.empleado_id}`] ?? null,
+          extras: 0,
         };
       });
 
@@ -254,12 +258,36 @@ export function VistaDiaPlanificacion() {
       salida: a.salida,
       pausa: a.pausa,
       origen: "provisorio" as FilaDiaExport["origen"],
-      extras: borrador.extras?.[`tramo-${a.id}`] ?? 0,
+      extrasManual: borrador.extras?.[`tramo-${a.id}`] ?? null,
+      extras: 0,
     }));
+
+    const todas = [...base, ...extra];
+
+    // Horas extras automáticas: excedente sobre 8 hs por empleado (sumando todos sus tramos).
+    // Se imputa al último tramo del día; un valor manual siempre tiene prioridad.
+    const horasPorEmpleado: Record<string, number> = {};
+    for (const f of todas) {
+      horasPorEmpleado[f.empleado_id] =
+        (horasPorEmpleado[f.empleado_id] ?? 0) + horasEntre(f.entrada, f.salida, f.pausa);
+    }
+    const ultimoTramo: Record<string, string> = {};
+    for (const f of todas) {
+      const actual = ultimoTramo[f.empleado_id];
+      const actualFila = todas.find((x) => x.key === actual);
+      if (!actual || f.salida > (actualFila?.salida ?? "")) ultimoTramo[f.empleado_id] = f.key;
+    }
+    for (const f of todas) {
+      const auto =
+        ultimoTramo[f.empleado_id] === f.key
+          ? Math.max(0, Math.round(((horasPorEmpleado[f.empleado_id] ?? 0) - JORNADA_BASE_HS) * 100) / 100)
+          : 0;
+      f.extras = f.extrasManual != null ? f.extrasManual : auto;
+    }
 
     const idsGrupo = grupoSel?.empleadoIds ?? null;
 
-    return [...base, ...extra]
+    return todas
       .filter((f) => (sucursalFiltro === "todas" ? true : f.sucursal_id === sucursalFiltro))
       .filter((f) => (idsGrupo ? idsGrupo.includes(f.empleado_id) : true))
       .sort(
@@ -269,6 +297,7 @@ export function VistaDiaPlanificacion() {
           a.entrada.localeCompare(b.entrada)
       );
   }, [filasReales, borrador, sucursalFiltro, grupoSel]);
+
 
 
   const horas = useMemo(
@@ -869,9 +898,15 @@ export function VistaDiaPlanificacion() {
                         step={0.5}
                         value={f.extras || ""}
                         placeholder="0"
+                        title={
+                          f.extrasManual != null
+                            ? "Valor manual (dejalo en 0 para volver al cálculo automático)"
+                            : "Automático: excedente sobre 8 hs del empleado"
+                        }
                         onChange={(e) => setExtra(f.key, Number(e.target.value) || 0)}
-                        className="h-8"
+                        className={`h-8 ${f.extrasManual == null && (f.extras || 0) > 0 ? "text-muted-foreground" : ""}`}
                       />
+
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {(f.extras || 0) > 0 && valorHoraEfectivo > 0
