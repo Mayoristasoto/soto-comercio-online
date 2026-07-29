@@ -860,6 +860,7 @@ export default function FicheroHorarios() {
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
+          <VistaDiaPlanificacion />
           <TimelineView />
         </TabsContent>
 
