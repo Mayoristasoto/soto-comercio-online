@@ -353,8 +353,61 @@ export function VistaDiaPlanificacion() {
     setAddEmpleadoId("");
     setAddBusqueda("");
     setAddSucursalId("");
-
   };
+
+  const abrirDividir = (f: (typeof filas)[number]) => {
+    setDividirFila({
+      empleado_id: f.empleado_id,
+      nombre: f.nombre,
+      sucursal_id: f.sucursal_id,
+      tramo_id: f.tramo_id,
+      entrada: f.entrada,
+      salida: f.salida,
+      pausa: f.pausa,
+    });
+    const mid = (() => {
+      const [eh, em] = f.entrada.split(":").map(Number);
+      const [sh, sm] = f.salida.split(":").map(Number);
+      if ([eh, em, sh, sm].some((n) => Number.isNaN(n))) return null;
+      let ini = eh * 60 + em;
+      let fin = sh * 60 + sm;
+      if (fin <= ini) fin += 24 * 60;
+      const m = Math.round((ini + fin) / 2 / 30) * 30;
+      return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    })();
+    setT1Entrada(f.entrada);
+    setT1Salida(mid || f.salida);
+    setT2Entrada(mid || f.entrada);
+    setT2Salida(f.salida);
+    setT1Sucursal(f.sucursal_id || "");
+    setT2Sucursal(f.sucursal_id || "");
+  };
+
+  const confirmarDividir = () => {
+    if (!dividirFila) return;
+    const tramos = [
+      { entrada: t1Entrada, salida: t1Salida, suc: t1Sucursal || dividirFila.sucursal_id },
+      { entrada: t2Entrada, salida: t2Salida, suc: t2Sucursal || dividirFila.sucursal_id },
+    ].map((t) => ({
+      empleado_id: dividirFila.empleado_id,
+      nombre: dividirFila.nombre,
+      sucursal_id: t.suc,
+      sucursal_nombre: nombreSucursal(t.suc),
+      entrada: t.entrada,
+      salida: t.salida,
+      pausa: 0,
+    }));
+
+    if (dividirFila.tramo_id) {
+      quitarTramo(dividirFila.tramo_id);
+      agregarVarios(tramos);
+    } else {
+      agregarVarios(tramos, dividirFila.empleado_id);
+    }
+    setDividirFila(null);
+    toast({ title: "Turno dividido", description: "Se crearon 2 tramos provisorios" });
+  };
+
 
   return (
     <div className="space-y-4">
