@@ -226,6 +226,34 @@ export function VistaDiaPlanificacion() {
   const totalHoras = filas.reduce((a, f) => a + horasEntre(f.entrada, f.salida, f.pausa), 0);
   const picoCobertura = cobertura.reduce((max, c) => Math.max(max, c.cantidad), 0);
 
+  const sucursalesEnVista = useMemo(
+    () => Array.from(new Set(filas.map((f) => f.sucursal_nombre))).sort((a, b) => a.localeCompare(b)),
+    [filas]
+  );
+
+  const picoPorSucursal = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const s of sucursalesEnVista) {
+      m[s] = cobertura.reduce((mx, c) => Math.max(mx, c.porSucursal[s] ?? 0), 0);
+    }
+    return m;
+  }, [cobertura, sucursalesEnVista]);
+
+  const minutosDeHora = (v: string) => {
+    const [h, m] = v.split(":").map(Number);
+    return Number.isNaN(h) ? 0 : h * 60 + (m || 0);
+  };
+  const INICIO_MIN = HORA_DESDE * 60;
+  const TOTAL_MIN = (HORA_HASTA + 1 - HORA_DESDE) * 60;
+  const barra = (entrada: string, salida: string) => {
+    const ini = minutosDeHora(entrada);
+    let fin = minutosDeHora(salida);
+    if (fin <= ini) fin += 24 * 60;
+    const left = ((Math.max(ini, INICIO_MIN) - INICIO_MIN) / TOTAL_MIN) * 100;
+    const right = ((Math.min(fin, INICIO_MIN + TOTAL_MIN) - INICIO_MIN) / TOTAL_MIN) * 100;
+    return { left: `${Math.max(0, left)}%`, width: `${Math.max(0, right - left)}%` };
+  };
+
   const filasExport: FilaDiaExport[] = filas.map((f) => ({
     empleado_id: f.empleado_id,
     nombre: f.nombre,
