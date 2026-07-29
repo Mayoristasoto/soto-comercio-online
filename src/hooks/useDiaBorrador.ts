@@ -68,7 +68,8 @@ export function useDiaBorrador(fecha: string) {
         const vacio =
           Object.keys(next.ediciones).length === 0 &&
           next.agregados.length === 0 &&
-          next.eliminados.length === 0;
+          next.eliminados.length === 0 &&
+          Object.keys(next.extras ?? {}).length === 0;
         if (vacio) localStorage.removeItem(storageKey(fecha));
         else localStorage.setItem(storageKey(fecha), JSON.stringify(next));
       } catch {
