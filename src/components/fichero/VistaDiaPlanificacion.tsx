@@ -733,48 +733,59 @@ export function VistaDiaPlanificacion() {
               {sucursalesEnVista.map((suc) => {
                 const delGrupo = filas.filter((f) => f.sucursal_nombre === suc);
                 if (delGrupo.length === 0) return null;
+                // Un empleado con varios tramos en la misma sucursal va en una sola línea
+                const porEmpleado = new Map<string, typeof delGrupo>();
+                for (const f of delGrupo) {
+                  const arr = porEmpleado.get(f.empleado_id) ?? [];
+                  arr.push(f);
+                  porEmpleado.set(f.empleado_id, arr);
+                }
+                const lineas = Array.from(porEmpleado.values()).map((tramos) =>
+                  [...tramos].sort((a, b) => a.entrada.localeCompare(b.entrada))
+                );
                 return (
                   <div key={`grp-${suc}`} className="pt-2 first:pt-0">
                     <div className="flex items-center gap-2 mb-1 border-t pt-2">
                       <span className="text-xs font-semibold">{suc}</span>
                       <Badge variant="secondary" className="text-[10px]">
-                        {delGrupo.length}
+                        {lineas.length}
                       </Badge>
                     </div>
                     <div className="space-y-1">
-                      {delGrupo.map((f) => {
-                        const pos = barra(f.entrada, f.salida);
-                        return (
-                          <div key={`g-${f.key}`} className="flex items-center">
-                            <div className="w-[210px] shrink-0 pr-2 truncate text-xs font-medium">
-                              {f.nombre}
-                            </div>
-                            <div className="flex-1 relative h-6 rounded bg-muted/50">
-                              {horas.map((h, i) => (
-                                <div
-                                  key={h}
-                                  className="absolute top-0 bottom-0 border-l border-border/50"
-                                  style={{ left: `${(i / horas.length) * 100}%` }}
-                                />
-                              ))}
+                      {lineas.map((tramos) => (
+                        <div key={`g-${tramos[0].key}`} className="flex items-center">
+                          <div className="w-[210px] shrink-0 pr-2 truncate text-xs font-medium">
+                            {tramos[0].nombre}
+                          </div>
+                          <div className="flex-1 relative h-6 rounded bg-muted/50">
+                            {horas.map((h, i) => (
                               <div
+                                key={h}
+                                className="absolute top-0 bottom-0 border-l border-border/50"
+                                style={{ left: `${(i / horas.length) * 100}%` }}
+                              />
+                            ))}
+                            {tramos.map((f) => (
+                              <div
+                                key={`b-${f.key}`}
                                 className={`absolute top-0.5 bottom-0.5 rounded px-1 text-[10px] flex items-center overflow-hidden ${
                                   f.origen === "real"
                                     ? "bg-primary text-primary-foreground"
                                     : "bg-accent text-accent-foreground"
                                 }`}
-                                style={pos}
+                                style={barra(f.entrada, f.salida)}
                               >
                                 {f.entrada}–{f.salida}
                               </div>
-                            </div>
+                            ))}
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
               })}
+
             </div>
           </CardContent>
         </Card>
