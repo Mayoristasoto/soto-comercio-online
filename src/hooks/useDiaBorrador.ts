@@ -157,12 +157,26 @@ export function useDiaBorrador(fecha: string) {
     [persistir]
   );
 
+  /** Define las horas extras de una fila */
+  const setExtra = useCallback(
+    (filaKey: string, horas: number) => {
+      persistir((prev) => {
+        const extras = { ...(prev.extras ?? {}) };
+        if (!horas) delete extras[filaKey];
+        else extras[filaKey] = horas;
+        return { ...prev, extras };
+      });
+    },
+    [persistir]
+  );
+
   const restablecer = useCallback(() => persistir(() => VACIO), [persistir]);
 
   const tieneCambios =
     Object.keys(borrador.ediciones).length > 0 ||
     borrador.agregados.length > 0 ||
-    borrador.eliminados.length > 0;
+    borrador.eliminados.length > 0 ||
+    Object.keys(borrador.extras ?? {}).length > 0;
 
   return {
     borrador,
@@ -172,6 +186,7 @@ export function useDiaBorrador(fecha: string) {
     agregarVarios,
     quitar,
     quitarTramo,
+    setExtra,
     restablecer,
     tieneCambios,
   };
