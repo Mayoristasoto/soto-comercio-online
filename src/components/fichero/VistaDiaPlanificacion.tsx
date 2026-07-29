@@ -819,12 +819,17 @@ export function VistaDiaPlanificacion() {
         </CardContent>
       </Card>
 
-      {/* Dialogo agregar empleado */}
+      {/* Dialogo agregar empleado / tramo */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Agregar empleado al día</DialogTitle>
+            <DialogTitle>Agregar tramo al día</DialogTitle>
+            <CardDescription>
+              Podés sumar un empleado nuevo o un segundo tramo (horario cortado u otra sucursal) para
+              alguien que ya está en la lista.
+            </CardDescription>
           </DialogHeader>
+
           <div className="space-y-3">
             <div>
               <Label>Buscar</Label>
