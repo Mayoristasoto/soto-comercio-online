@@ -1,0 +1,591 @@
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Info,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
+import { useDiaBorrador, type EdicionDia } from "@/hooks/useDiaBorrador";
+import {
+  exportDiaPDF,
+  exportDiaXLSX,
+  type CoberturaHora,
+  type FilaDiaExport,
+} from "@/utils/horariosDiaExport";
+
+interface EmpleadoBase {
+  id: string;
+  nombre: string;
+  apellido: string;
+  legajo: string | null;
+  sucursal_id: string | null;
+  activo: boolean;
+}
+
+interface FilaReal {
+  empleado_id: string;
+  nombre: string;
+  sucursal_id: string | null;
+  sucursal_nombre: string;
+  turno_nombre: string;
+  entrada: string;
+  salida: string;
+  pausa: number;
+}
+
+const HORA_DESDE = 6;
+const HORA_HASTA = 23;
+
+const hhmm = (v?: string | null) => (v ? v.slice(0, 5) : "");
+
+function horasEntre(entrada: string, salida: string, pausaMin: number) {
+  const [eh, em] = entrada.split(":").map(Number);
+  const [sh, sm] = salida.split(":").map(Number);
+  if ([eh, em, sh, sm].some((n) => Number.isNaN(n))) return 0;
+  let mins = sh * 60 + sm - (eh * 60 + em);
+  if (mins < 0) mins += 24 * 60;
+  return Math.max(0, (mins - (pausaMin || 0)) / 60);
+}
+
+function cubreHora(entrada: string, salida: string, hora: number) {
+  const [eh, em] = entrada.split(":").map(Number);
+  const [sh, sm] = salida.split(":").map(Number);
+  if ([eh, em, sh, sm].some((n) => Number.isNaN(n))) return false;
+  const ini = eh * 60 + em;
+  let fin = sh * 60 + sm;
+  if (fin <= ini) fin += 24 * 60;
+  const h0 = hora * 60;
+  const h1 = h0 + 60;
+  return ini < h1 && fin > h0;
+}
+
+const hoyISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+export function VistaDiaPlanificacion() {
+  const { toast } = useToast();
+  const [fecha, setFecha] = useState(hoyISO());
+  const [loading, setLoading] = useState(true);
+  const [filasReales, setFilasReales] = useState<FilaReal[]>([]);
+  const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
+  const [empleados, setEmpleados] = useState<EmpleadoBase[]>([]);
+  const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas");
+  const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [addEmpleadoId, setAddEmpleadoId] = useState<string>("");
+  const [addBusqueda, setAddBusqueda] = useState("");
+  const [addEntrada, setAddEntrada] = useState("09:00");
+  const [addSalida, setAddSalida] = useState("17:00");
+  const [addPausa, setAddPausa] = useState(0);
+
+  const { borrador, editar, agregar, quitar, restablecer, tieneCambios } = useDiaBorrador(fecha);
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [{ data: sucs }, { data: emps }, { data: asignaciones }] = await Promise.all([
+          supabase.from("sucursales").select("id, nombre").order("nombre"),
+          supabase
+            .from("empleados")
+            .select("id, nombre, apellido, legajo, sucursal_id, activo")
+            .eq("activo", true)
+            .order("apellido"),
+          supabase
+            .from("empleado_turnos")
+            .select("id, empleado:empleados(*), turno:fichado_turnos(*)")
+            .eq("activo", true)
+            .lte("fecha_inicio", fecha)
+            .or(`fecha_fin.is.null,fecha_fin.gte.${fecha}`),
+        ]);
+
+        if (cancelado) return;
+
+        const sucList = (sucs || []) as { id: string; nombre: string }[];
+        setSucursales(sucList);
+        setEmpleados((emps || []) as EmpleadoBase[]);
+
+        const nombreSuc = new Map(sucList.map((s) => [s.id, s.nombre]));
+        const diaSemana = new Date(`${fecha}T00:00:00`).getDay();
+
+        const filas: FilaReal[] = [];
+        for (const a of (asignaciones || []) as any[]) {
+          const emp = a.empleado;
+          const turno = a.turno;
+          if (!emp || !turno || emp.activo === false) continue;
+          if (Array.isArray(turno.dias_semana) && turno.dias_semana.length > 0) {
+            if (!turno.dias_semana.includes(diaSemana)) continue;
+          }
+          const porDia = turno.horarios_por_dia?.[String(diaSemana)];
+          filas.push({
+            empleado_id: emp.id,
+            nombre: `${emp.apellido}, ${emp.nombre}`,
+            sucursal_id: emp.sucursal_id ?? null,
+            sucursal_nombre: nombreSuc.get(emp.sucursal_id) || "Sin sucursal",
+            turno_nombre: turno.nombre || "—",
+            entrada: hhmm(porDia?.hora_entrada || turno.hora_entrada),
+            salida: hhmm(porDia?.hora_salida || turno.hora_salida),
+            pausa: turno.duracion_pausa_minutos ?? 0,
+          });
+        }
+        filas.sort((a, b) => a.sucursal_nombre.localeCompare(b.sucursal_nombre) || a.nombre.localeCompare(b.nombre));
+        setFilasReales(filas);
+      } catch (e: any) {
+        console.error(e);
+        toast({ title: "Error", description: "No se pudieron cargar los horarios del día", variant: "destructive" });
+      } finally {
+        if (!cancelado) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [fecha, toast]);
+
+  const filas = useMemo(() => {
+    const base = filasReales
+      .filter((f) => !borrador.eliminados.includes(f.empleado_id))
+      .map((f) => {
+        const ed = borrador.ediciones[f.empleado_id];
+        return {
+          ...f,
+          entrada: ed?.entrada ?? f.entrada,
+          salida: ed?.salida ?? f.salida,
+          pausa: ed?.pausa ?? f.pausa,
+          origen: (ed ? "modificado" : "real") as FilaDiaExport["origen"],
+        };
+      });
+
+    const extra = borrador.agregados.map((a) => ({
+      empleado_id: a.empleado_id,
+      nombre: a.nombre,
+      sucursal_id: a.sucursal_id,
+      sucursal_nombre: a.sucursal_nombre,
+      turno_nombre: "Provisorio",
+      entrada: a.entrada,
+      salida: a.salida,
+      pausa: a.pausa,
+      origen: "provisorio" as FilaDiaExport["origen"],
+    }));
+
+    const idsGrupo = grupoSel?.empleadoIds ?? null;
+
+    return [...base, ...extra]
+      .filter((f) => (sucursalFiltro === "todas" ? true : f.sucursal_id === sucursalFiltro))
+      .filter((f) => (idsGrupo ? idsGrupo.includes(f.empleado_id) : true))
+      .sort((a, b) => a.sucursal_nombre.localeCompare(b.sucursal_nombre) || a.nombre.localeCompare(b.nombre));
+  }, [filasReales, borrador, sucursalFiltro, grupoSel]);
+
+  const horas = useMemo(
+    () => Array.from({ length: HORA_HASTA - HORA_DESDE + 1 }, (_, i) => HORA_DESDE + i),
+    []
+  );
+
+  const cobertura: CoberturaHora[] = useMemo(
+    () =>
+      horas.map((h) => {
+        const porSucursal: Record<string, number> = {};
+        let cantidad = 0;
+        for (const f of filas) {
+          if (cubreHora(f.entrada, f.salida, h)) {
+            cantidad++;
+            porSucursal[f.sucursal_nombre] = (porSucursal[f.sucursal_nombre] ?? 0) + 1;
+          }
+        }
+        return { hora: `${String(h).padStart(2, "0")}:00`, cantidad, porSucursal };
+      }),
+    [filas, horas]
+  );
+
+  const totalHoras = filas.reduce((a, f) => a + horasEntre(f.entrada, f.salida, f.pausa), 0);
+  const picoCobertura = cobertura.reduce((max, c) => Math.max(max, c.cantidad), 0);
+
+  const filasExport: FilaDiaExport[] = filas.map((f) => ({
+    empleado_id: f.empleado_id,
+    nombre: f.nombre,
+    sucursal_nombre: f.sucursal_nombre,
+    turno_nombre: f.turno_nombre,
+    entrada: f.entrada,
+    salida: f.salida,
+    pausa: f.pausa,
+    horas: horasEntre(f.entrada, f.salida, f.pausa),
+    origen: f.origen,
+  }));
+
+  const filtrosTexto = [
+    sucursalFiltro === "todas"
+      ? "Todas las sucursales"
+      : sucursales.find((s) => s.id === sucursalFiltro)?.nombre || "Sucursal",
+    grupoSel ? `Grupo: ${grupoSel.empleadoIds.length} empleados` : "Todos los empleados",
+  ].join(" · ");
+
+  const cambiarDia = (delta: number) => {
+    const d = new Date(`${fecha}T00:00:00`);
+    d.setDate(d.getDate() + delta);
+    setFecha(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    );
+  };
+
+  const baseDe = (empleadoId: string): EdicionDia => {
+    const f = filas.find((x) => x.empleado_id === empleadoId)!;
+    return { entrada: f.entrada, salida: f.salida, pausa: f.pausa };
+  };
+
+  const empleadosDisponibles = empleados
+    .filter((e) => !filas.some((f) => f.empleado_id === e.id))
+    .filter((e) =>
+      addBusqueda
+        ? `${e.apellido} ${e.nombre} ${e.legajo ?? ""}`.toLowerCase().includes(addBusqueda.toLowerCase())
+        : true
+    )
+    .slice(0, 50);
+
+  const confirmarAgregar = () => {
+    const emp = empleados.find((e) => e.id === addEmpleadoId);
+    if (!emp) return;
+    agregar({
+      empleado_id: emp.id,
+      nombre: `${emp.apellido}, ${emp.nombre}`,
+      sucursal_id: emp.sucursal_id,
+      sucursal_nombre: sucursales.find((s) => s.id === emp.sucursal_id)?.nombre || "Sin sucursal",
+      entrada: addEntrada,
+      salida: addSalida,
+      pausa: addPausa,
+    });
+    setAddOpen(false);
+    setAddEmpleadoId("");
+    setAddBusqueda("");
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Barra del día */}
+      <Card>
+        <CardContent className="p-4 flex flex-wrap items-end gap-3">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => cambiarDia(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-[170px]"
+            />
+            <Button variant="outline" size="icon" onClick={() => cambiarDia(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" onClick={() => setFecha(hoyISO())}>
+              Hoy
+            </Button>
+          </div>
+
+          <div className="min-w-[180px]">
+            <Label className="text-xs">Sucursal</Label>
+            <Select value={sucursalFiltro} onValueChange={setSucursalFiltro}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                {sucursales.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="min-w-[220px]">
+            <SelectorGrupoCompacto
+              value={grupoSel}
+              onChange={setGrupoSel}
+              modulo="fichero"
+              label="Grupo de empleados"
+            />
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar empleado
+            </Button>
+            <Button variant="outline" onClick={restablecer} disabled={!tieneCambios}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restablecer
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar día
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto)}>
+                  Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto)}>
+                  PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+        <Info className="h-4 w-4 shrink-0" />
+        Simulación informativa — no modifica los horarios asignados. Los cambios quedan guardados solo en
+        este navegador.
+      </div>
+
+      {/* Resumen */}
+      <div className="grid gap-3 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Empleados</p>
+            <p className="text-2xl font-bold">{filas.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Horas programadas</p>
+            <p className="text-2xl font-bold">{totalHoras.toFixed(1)} h</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Pico de cobertura</p>
+            <p className="text-2xl font-bold">{picoCobertura}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Provisorios</p>
+            <p className="text-2xl font-bold">
+              {filas.filter((f) => f.origen !== "real").length}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cobertura por hora */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Cobertura por hora
+          </CardTitle>
+          <CardDescription>Cantidad de empleados presentes en cada franja</CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <div className="flex gap-1 min-w-[720px]">
+            {cobertura.map((c) => (
+              <div key={c.hora} className="flex-1 text-center">
+                <div
+                  className="rounded text-xs py-1 font-medium"
+                  style={{
+                    backgroundColor:
+                      c.cantidad === 0
+                        ? "hsl(var(--muted))"
+                        : `hsl(var(--primary) / ${Math.min(1, 0.2 + c.cantidad / Math.max(picoCobertura, 1) * 0.8)})`,
+                    color: c.cantidad === 0 ? "hsl(var(--muted-foreground))" : "hsl(var(--primary-foreground))",
+                  }}
+                >
+                  {c.cantidad}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">{c.hora.slice(0, 2)}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabla editable del día */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Planificación del día</CardTitle>
+          <CardDescription>
+            Editá horarios o sumá empleados para organizar este día puntual
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-center py-8 text-muted-foreground">Cargando...</p>
+          ) : filas.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">
+              No hay empleados con horario para este día
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sucursal</TableHead>
+                  <TableHead>Empleado</TableHead>
+                  <TableHead>Turno</TableHead>
+                  <TableHead className="w-[120px]">Entrada</TableHead>
+                  <TableHead className="w-[120px]">Salida</TableHead>
+                  <TableHead className="w-[100px]">Pausa</TableHead>
+                  <TableHead className="w-[70px]">Horas</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filas.map((f) => (
+                  <TableRow key={f.empleado_id} className={f.origen !== "real" ? "bg-amber-50/60 dark:bg-amber-950/10" : ""}>
+                    <TableCell className="text-sm">{f.sucursal_nombre}</TableCell>
+                    <TableCell className="text-sm font-medium">
+                      {f.nombre}
+                      {f.origen !== "real" && (
+                        <Badge variant="outline" className="ml-2 text-[10px] border-amber-500 text-amber-700">
+                          provisorio
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{f.turno_nombre}</TableCell>
+                    <TableCell>
+                      <Input
+                        type="time"
+                        value={f.entrada}
+                        onChange={(e) =>
+                          editar(f.empleado_id, { entrada: e.target.value }, baseDe(f.empleado_id))
+                        }
+                        className="h-8"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="time"
+                        value={f.salida}
+                        onChange={(e) =>
+                          editar(f.empleado_id, { salida: e.target.value }, baseDe(f.empleado_id))
+                        }
+                        className="h-8"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={f.pausa}
+                        onChange={(e) =>
+                          editar(
+                            f.empleado_id,
+                            { pausa: Number(e.target.value) || 0 },
+                            baseDe(f.empleado_id)
+                          )
+                        }
+                        className="h-8"
+                      />
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {horasEntre(f.entrada, f.salida, f.pausa).toFixed(1)}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => quitar(f.empleado_id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialogo agregar empleado */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar empleado al día</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Buscar</Label>
+              <Input
+                placeholder="Apellido, nombre o legajo"
+                value={addBusqueda}
+                onChange={(e) => setAddBusqueda(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Empleado</Label>
+              <Select value={addEmpleadoId} onValueChange={setAddEmpleadoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar empleado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empleadosDisponibles.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.apellido}, {e.nombre}
+                      {e.legajo ? ` (${e.legajo})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label>Entrada</Label>
+                <Input type="time" value={addEntrada} onChange={(e) => setAddEntrada(e.target.value)} />
+              </div>
+              <div>
+                <Label>Salida</Label>
+                <Input type="time" value={addSalida} onChange={(e) => setAddSalida(e.target.value)} />
+              </div>
+              <div>
+                <Label>Pausa (min)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={addPausa}
+                  onChange={(e) => setAddPausa(Number(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarAgregar} disabled={!addEmpleadoId}>
+              Agregar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export default VistaDiaPlanificacion;
