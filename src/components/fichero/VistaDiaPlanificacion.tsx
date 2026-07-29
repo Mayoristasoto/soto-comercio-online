@@ -644,7 +644,7 @@ export function VistaDiaPlanificacion() {
                       {delGrupo.map((f) => {
                         const pos = barra(f.entrada, f.salida);
                         return (
-                          <div key={`g-${f.empleado_id}`} className="flex items-center">
+                          <div key={`g-${f.key}`} className="flex items-center">
                             <div className="w-[210px] shrink-0 pr-2 truncate text-xs font-medium">
                               {f.nombre}
                             </div>
