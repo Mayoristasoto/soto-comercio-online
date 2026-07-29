@@ -22,6 +22,8 @@ import {
   Info,
   Plus,
   RotateCcw,
+  Scissors,
+
   Trash2,
   Users,
 } from "lucide-react";
@@ -99,11 +101,39 @@ export function VistaDiaPlanificacion() {
   const [addOpen, setAddOpen] = useState(false);
   const [addEmpleadoId, setAddEmpleadoId] = useState<string>("");
   const [addBusqueda, setAddBusqueda] = useState("");
+  const [addSucursalId, setAddSucursalId] = useState<string>("");
   const [addEntrada, setAddEntrada] = useState("09:00");
   const [addSalida, setAddSalida] = useState("17:00");
   const [addPausa, setAddPausa] = useState(0);
 
-  const { borrador, editar, agregar, quitar, restablecer, tieneCambios } = useDiaBorrador(fecha);
+  const [dividirFila, setDividirFila] = useState<null | {
+    empleado_id: string;
+    nombre: string;
+    sucursal_id: string | null;
+    tramo_id: string | null;
+    entrada: string;
+    salida: string;
+    pausa: number;
+  }>(null);
+  const [t1Entrada, setT1Entrada] = useState("08:00");
+  const [t1Salida, setT1Salida] = useState("12:00");
+  const [t1Sucursal, setT1Sucursal] = useState<string>("");
+  const [t2Entrada, setT2Entrada] = useState("16:00");
+  const [t2Salida, setT2Salida] = useState("20:00");
+  const [t2Sucursal, setT2Sucursal] = useState<string>("");
+
+  const {
+    borrador,
+    editar,
+    editarTramo,
+    agregar,
+    agregarVarios,
+    quitar,
+    quitarTramo,
+    restablecer,
+    tieneCambios,
+  } = useDiaBorrador(fecha);
+
 
   useEffect(() => {
     let cancelado = false;
@@ -175,6 +205,8 @@ export function VistaDiaPlanificacion() {
         const ed = borrador.ediciones[f.empleado_id];
         return {
           ...f,
+          key: `real-${f.empleado_id}`,
+          tramo_id: null as string | null,
           entrada: ed?.entrada ?? f.entrada,
           salida: ed?.salida ?? f.salida,
           pausa: ed?.pausa ?? f.pausa,
@@ -183,6 +215,8 @@ export function VistaDiaPlanificacion() {
       });
 
     const extra = borrador.agregados.map((a) => ({
+      key: `tramo-${a.id}`,
+      tramo_id: a.id,
       empleado_id: a.empleado_id,
       nombre: a.nombre,
       sucursal_id: a.sucursal_id,
@@ -199,8 +233,14 @@ export function VistaDiaPlanificacion() {
     return [...base, ...extra]
       .filter((f) => (sucursalFiltro === "todas" ? true : f.sucursal_id === sucursalFiltro))
       .filter((f) => (idsGrupo ? idsGrupo.includes(f.empleado_id) : true))
-      .sort((a, b) => a.sucursal_nombre.localeCompare(b.sucursal_nombre) || a.nombre.localeCompare(b.nombre));
+      .sort(
+        (a, b) =>
+          a.sucursal_nombre.localeCompare(b.sucursal_nombre) ||
+          a.nombre.localeCompare(b.nombre) ||
+          a.entrada.localeCompare(b.entrada)
+      );
   }, [filasReales, borrador, sucursalFiltro, grupoSel]);
+
 
   const horas = useMemo(
     () => Array.from({ length: HORA_HASTA - HORA_DESDE + 1 }, (_, i) => HORA_DESDE + i),
@@ -282,12 +322,15 @@ export function VistaDiaPlanificacion() {
   };
 
   const baseDe = (empleadoId: string): EdicionDia => {
-    const f = filas.find((x) => x.empleado_id === empleadoId)!;
+    const f = filas.find((x) => x.empleado_id === empleadoId && !x.tramo_id)!;
     return { entrada: f.entrada, salida: f.salida, pausa: f.pausa };
   };
 
+  const nombreSucursal = (id: string | null) =>
+    sucursales.find((s) => s.id === id)?.nombre || "Sin sucursal";
+
+  // Se permite volver a elegir un empleado ya presente (horario cortado / otra sucursal)
   const empleadosDisponibles = empleados
-    .filter((e) => !filas.some((f) => f.empleado_id === e.id))
     .filter((e) =>
       addBusqueda
         ? `${e.apellido} ${e.nombre} ${e.legajo ?? ""}`.toLowerCase().includes(addBusqueda.toLowerCase())
@@ -298,11 +341,12 @@ export function VistaDiaPlanificacion() {
   const confirmarAgregar = () => {
     const emp = empleados.find((e) => e.id === addEmpleadoId);
     if (!emp) return;
+    const sucId = addSucursalId || emp.sucursal_id;
     agregar({
       empleado_id: emp.id,
       nombre: `${emp.apellido}, ${emp.nombre}`,
-      sucursal_id: emp.sucursal_id,
-      sucursal_nombre: sucursales.find((s) => s.id === emp.sucursal_id)?.nombre || "Sin sucursal",
+      sucursal_id: sucId,
+      sucursal_nombre: nombreSucursal(sucId),
       entrada: addEntrada,
       salida: addSalida,
       pausa: addPausa,
@@ -310,7 +354,62 @@ export function VistaDiaPlanificacion() {
     setAddOpen(false);
     setAddEmpleadoId("");
     setAddBusqueda("");
+    setAddSucursalId("");
   };
+
+  const abrirDividir = (f: (typeof filas)[number]) => {
+    setDividirFila({
+      empleado_id: f.empleado_id,
+      nombre: f.nombre,
+      sucursal_id: f.sucursal_id,
+      tramo_id: f.tramo_id,
+      entrada: f.entrada,
+      salida: f.salida,
+      pausa: f.pausa,
+    });
+    const mid = (() => {
+      const [eh, em] = f.entrada.split(":").map(Number);
+      const [sh, sm] = f.salida.split(":").map(Number);
+      if ([eh, em, sh, sm].some((n) => Number.isNaN(n))) return null;
+      let ini = eh * 60 + em;
+      let fin = sh * 60 + sm;
+      if (fin <= ini) fin += 24 * 60;
+      const m = Math.round((ini + fin) / 2 / 30) * 30;
+      return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    })();
+    setT1Entrada(f.entrada);
+    setT1Salida(mid || f.salida);
+    setT2Entrada(mid || f.entrada);
+    setT2Salida(f.salida);
+    setT1Sucursal(f.sucursal_id || "");
+    setT2Sucursal(f.sucursal_id || "");
+  };
+
+  const confirmarDividir = () => {
+    if (!dividirFila) return;
+    const tramos = [
+      { entrada: t1Entrada, salida: t1Salida, suc: t1Sucursal || dividirFila.sucursal_id },
+      { entrada: t2Entrada, salida: t2Salida, suc: t2Sucursal || dividirFila.sucursal_id },
+    ].map((t) => ({
+      empleado_id: dividirFila.empleado_id,
+      nombre: dividirFila.nombre,
+      sucursal_id: t.suc,
+      sucursal_nombre: nombreSucursal(t.suc),
+      entrada: t.entrada,
+      salida: t.salida,
+      pausa: 0,
+    }));
+
+    if (dividirFila.tramo_id) {
+      quitarTramo(dividirFila.tramo_id);
+      agregarVarios(tramos);
+    } else {
+      agregarVarios(tramos, dividirFila.empleado_id);
+    }
+    setDividirFila(null);
+    toast({ title: "Turno dividido", description: "Se crearon 2 tramos provisorios" });
+  };
+
 
   return (
     <div className="space-y-4">
@@ -547,7 +646,7 @@ export function VistaDiaPlanificacion() {
                       {delGrupo.map((f) => {
                         const pos = barra(f.entrada, f.salida);
                         return (
-                          <div key={`g-${f.empleado_id}`} className="flex items-center">
+                          <div key={`g-${f.key}`} className="flex items-center">
                             <div className="w-[210px] shrink-0 pr-2 truncate text-xs font-medium">
                               {f.nombre}
                             </div>
@@ -614,14 +713,51 @@ export function VistaDiaPlanificacion() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filas.map((f) => (
-                  <TableRow key={f.empleado_id} className={f.origen !== "real" ? "bg-amber-50/60 dark:bg-amber-950/10" : ""}>
-                    <TableCell className="text-sm">{f.sucursal_nombre}</TableCell>
+                {filas.map((f) => {
+                  const setCampo = (cambios: Partial<EdicionDia>) =>
+                    f.tramo_id
+                      ? editarTramo(f.tramo_id, cambios)
+                      : editar(f.empleado_id, cambios, baseDe(f.empleado_id));
+                  const tramosDelEmpleado = filas.filter((x) => x.empleado_id === f.empleado_id).length;
+                  return (
+                  <TableRow key={f.key} className={f.origen !== "real" ? "bg-amber-50/60 dark:bg-amber-950/10" : ""}>
+                    <TableCell className="text-sm">
+                      {f.tramo_id ? (
+                        <Select
+                          value={f.sucursal_id ?? "sin"}
+                          onValueChange={(v) =>
+                            editarTramo(f.tramo_id!, {
+                              sucursal_id: v === "sin" ? null : v,
+                              sucursal_nombre: v === "sin" ? "Sin sucursal" : nombreSucursal(v),
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-[150px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sin">Sin sucursal</SelectItem>
+                            {sucursales.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        f.sucursal_nombre
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm font-medium">
                       {f.nombre}
                       {f.origen !== "real" && (
                         <Badge variant="outline" className="ml-2 text-[10px] border-amber-500 text-amber-700">
                           provisorio
+                        </Badge>
+                      )}
+                      {tramosDelEmpleado > 1 && (
+                        <Badge variant="secondary" className="ml-2 text-[10px]">
+                          {tramosDelEmpleado} tramos
                         </Badge>
                       )}
                     </TableCell>
@@ -630,9 +766,7 @@ export function VistaDiaPlanificacion() {
                       <Input
                         type="time"
                         value={f.entrada}
-                        onChange={(e) =>
-                          editar(f.empleado_id, { entrada: e.target.value }, baseDe(f.empleado_id))
-                        }
+                        onChange={(e) => setCampo({ entrada: e.target.value })}
                         className="h-8"
                       />
                     </TableCell>
@@ -640,9 +774,7 @@ export function VistaDiaPlanificacion() {
                       <Input
                         type="time"
                         value={f.salida}
-                        onChange={(e) =>
-                          editar(f.empleado_id, { salida: e.target.value }, baseDe(f.empleado_id))
-                        }
+                        onChange={(e) => setCampo({ salida: e.target.value })}
                         className="h-8"
                       />
                     </TableCell>
@@ -651,13 +783,7 @@ export function VistaDiaPlanificacion() {
                         type="number"
                         min={0}
                         value={f.pausa}
-                        onChange={(e) =>
-                          editar(
-                            f.empleado_id,
-                            { pausa: Number(e.target.value) || 0 },
-                            baseDe(f.empleado_id)
-                          )
-                        }
+                        onChange={(e) => setCampo({ pausa: Number(e.target.value) || 0 })}
                         className="h-8"
                       />
                     </TableCell>
@@ -665,24 +791,45 @@ export function VistaDiaPlanificacion() {
                       {horasEntre(f.entrada, f.salida, f.pausa).toFixed(1)}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => quitar(f.empleado_id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Dividir en dos tramos"
+                          onClick={() => abrirDividir(f)}
+                        >
+                          <Scissors className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => (f.tramo_id ? quitarTramo(f.tramo_id) : quitar(f.empleado_id))}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
+
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
 
-      {/* Dialogo agregar empleado */}
+      {/* Dialogo agregar empleado / tramo */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Agregar empleado al día</DialogTitle>
+            <DialogTitle>Agregar tramo al día</DialogTitle>
+            <CardDescription>
+              Podés sumar un empleado nuevo o un segundo tramo (horario cortado u otra sucursal) para
+              alguien que ya está en la lista.
+            </CardDescription>
           </DialogHeader>
+
           <div className="space-y-3">
             <div>
               <Label>Buscar</Label>
@@ -708,7 +855,31 @@ export function VistaDiaPlanificacion() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Sucursal del tramo</Label>
+              <Select
+                value={
+                  addSucursalId ||
+                  empleados.find((e) => e.id === addEmpleadoId)?.sucursal_id ||
+                  "sin"
+                }
+                onValueChange={(v) => setAddSucursalId(v === "sin" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sin">Sin sucursal</SelectItem>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-3 gap-2">
+
               <div>
                 <Label>Entrada</Label>
                 <Input type="time" value={addEntrada} onChange={(e) => setAddEntrada(e.target.value)} />
@@ -738,7 +909,87 @@ export function VistaDiaPlanificacion() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialogo dividir turno */}
+      <Dialog open={!!dividirFila} onOpenChange={(o) => !o && setDividirFila(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dividir jornada — {dividirFila?.nombre}</DialogTitle>
+            <CardDescription>
+              Horario cortado o reparto de horas entre sucursales. Se reemplaza la fila por dos tramos
+              provisorios.
+            </CardDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {[
+              {
+                titulo: "Tramo 1",
+                entrada: t1Entrada,
+                salida: t1Salida,
+                suc: t1Sucursal,
+                setEntrada: setT1Entrada,
+                setSalida: setT1Salida,
+                setSuc: setT1Sucursal,
+              },
+              {
+                titulo: "Tramo 2",
+                entrada: t2Entrada,
+                salida: t2Salida,
+                suc: t2Sucursal,
+                setEntrada: setT2Entrada,
+                setSalida: setT2Salida,
+                setSuc: setT2Sucursal,
+              },
+            ].map((t) => (
+              <div key={t.titulo} className="rounded-md border p-3 space-y-2">
+                <p className="text-sm font-semibold">
+                  {t.titulo}{" "}
+                  <span className="font-normal text-muted-foreground">
+                    ({horasEntre(t.entrada, t.salida, 0).toFixed(1)} h)
+                  </span>
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Entrada</Label>
+                    <Input type="time" value={t.entrada} onChange={(e) => t.setEntrada(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Salida</Label>
+                    <Input type="time" value={t.salida} onChange={(e) => t.setSalida(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Sucursal</Label>
+                    <Select
+                      value={t.suc || "sin"}
+                      onValueChange={(v) => t.setSuc(v === "sin" ? "" : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sin">Sin sucursal</SelectItem>
+                        {sucursales.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDividirFila(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarDividir}>Dividir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 
