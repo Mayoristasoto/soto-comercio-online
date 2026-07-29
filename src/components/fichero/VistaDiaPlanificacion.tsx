@@ -711,14 +711,51 @@ export function VistaDiaPlanificacion() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filas.map((f) => (
-                  <TableRow key={f.empleado_id} className={f.origen !== "real" ? "bg-amber-50/60 dark:bg-amber-950/10" : ""}>
-                    <TableCell className="text-sm">{f.sucursal_nombre}</TableCell>
+                {filas.map((f) => {
+                  const setCampo = (cambios: Partial<EdicionDia>) =>
+                    f.tramo_id
+                      ? editarTramo(f.tramo_id, cambios)
+                      : editar(f.empleado_id, cambios, baseDe(f.empleado_id));
+                  const tramosDelEmpleado = filas.filter((x) => x.empleado_id === f.empleado_id).length;
+                  return (
+                  <TableRow key={f.key} className={f.origen !== "real" ? "bg-amber-50/60 dark:bg-amber-950/10" : ""}>
+                    <TableCell className="text-sm">
+                      {f.tramo_id ? (
+                        <Select
+                          value={f.sucursal_id ?? "sin"}
+                          onValueChange={(v) =>
+                            editarTramo(f.tramo_id!, {
+                              sucursal_id: v === "sin" ? null : v,
+                              sucursal_nombre: v === "sin" ? "Sin sucursal" : nombreSucursal(v),
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-[150px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sin">Sin sucursal</SelectItem>
+                            {sucursales.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        f.sucursal_nombre
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm font-medium">
                       {f.nombre}
                       {f.origen !== "real" && (
                         <Badge variant="outline" className="ml-2 text-[10px] border-amber-500 text-amber-700">
                           provisorio
+                        </Badge>
+                      )}
+                      {tramosDelEmpleado > 1 && (
+                        <Badge variant="secondary" className="ml-2 text-[10px]">
+                          {tramosDelEmpleado} tramos
                         </Badge>
                       )}
                     </TableCell>
@@ -727,9 +764,7 @@ export function VistaDiaPlanificacion() {
                       <Input
                         type="time"
                         value={f.entrada}
-                        onChange={(e) =>
-                          editar(f.empleado_id, { entrada: e.target.value }, baseDe(f.empleado_id))
-                        }
+                        onChange={(e) => setCampo({ entrada: e.target.value })}
                         className="h-8"
                       />
                     </TableCell>
@@ -737,9 +772,7 @@ export function VistaDiaPlanificacion() {
                       <Input
                         type="time"
                         value={f.salida}
-                        onChange={(e) =>
-                          editar(f.empleado_id, { salida: e.target.value }, baseDe(f.empleado_id))
-                        }
+                        onChange={(e) => setCampo({ salida: e.target.value })}
                         className="h-8"
                       />
                     </TableCell>
@@ -748,13 +781,7 @@ export function VistaDiaPlanificacion() {
                         type="number"
                         min={0}
                         value={f.pausa}
-                        onChange={(e) =>
-                          editar(
-                            f.empleado_id,
-                            { pausa: Number(e.target.value) || 0 },
-                            baseDe(f.empleado_id)
-                          )
-                        }
+                        onChange={(e) => setCampo({ pausa: Number(e.target.value) || 0 })}
                         className="h-8"
                       />
                     </TableCell>
@@ -762,12 +789,28 @@ export function VistaDiaPlanificacion() {
                       {horasEntre(f.entrada, f.salida, f.pausa).toFixed(1)}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => quitar(f.empleado_id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Dividir en dos tramos"
+                          onClick={() => abrirDividir(f)}
+                        >
+                          <Scissors className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => (f.tramo_id ? quitarTramo(f.tramo_id) : quitar(f.empleado_id))}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
+
               </TableBody>
             </Table>
           )}
