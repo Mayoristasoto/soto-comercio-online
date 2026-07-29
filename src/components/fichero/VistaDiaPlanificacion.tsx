@@ -458,6 +458,115 @@ export function VistaDiaPlanificacion() {
         </CardContent>
       </Card>
 
+      {/* Cobertura por hora y sucursal */}
+      {sucursalesEnVista.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Cobertura por hora y sucursal
+            </CardTitle>
+            <CardDescription>Empleados presentes en cada franja, por sucursal</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-xs border-separate border-spacing-[2px]">
+              <thead>
+                <tr>
+                  <th className="text-left font-medium text-muted-foreground px-2">Sucursal</th>
+                  {cobertura.map((c) => (
+                    <th key={c.hora} className="font-medium text-muted-foreground">
+                      {c.hora.slice(0, 2)}
+                    </th>
+                  ))}
+                  <th className="font-medium text-muted-foreground px-2">Pico</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sucursalesEnVista.map((s) => (
+                  <tr key={s}>
+                    <td className="px-2 whitespace-nowrap font-medium">{s}</td>
+                    {cobertura.map((c) => {
+                      const n = c.porSucursal[s] ?? 0;
+                      return (
+                        <td key={c.hora} className="text-center">
+                          <div
+                            className="rounded py-1 font-medium"
+                            style={{
+                              backgroundColor:
+                                n === 0
+                                  ? "hsl(var(--muted))"
+                                  : `hsl(var(--primary) / ${Math.min(1, 0.2 + (n / Math.max(picoPorSucursal[s] || 1, 1)) * 0.8)})`,
+                              color: n === 0 ? "hsl(var(--muted-foreground))" : "hsl(var(--primary-foreground))",
+                            }}
+                          >
+                            {n || "-"}
+                          </div>
+                        </td>
+                      );
+                    })}
+                    <td className="text-center px-2 font-semibold">{picoPorSucursal[s] ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gráfico de empleados seleccionados */}
+      {filas.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Gráfico de horarios</CardTitle>
+            <CardDescription>Franja horaria de cada empleado seleccionado</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <div className="min-w-[820px] space-y-1">
+              <div className="flex">
+                <div className="w-[210px] shrink-0" />
+                <div className="flex-1 flex">
+                  {horas.map((h) => (
+                    <div key={h} className="flex-1 text-[10px] text-muted-foreground text-center">
+                      {String(h).padStart(2, "0")}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {filas.map((f) => {
+                const pos = barra(f.entrada, f.salida);
+                return (
+                  <div key={`g-${f.empleado_id}`} className="flex items-center">
+                    <div className="w-[210px] shrink-0 pr-2 truncate text-xs">
+                      <span className="font-medium">{f.nombre}</span>
+                      <span className="text-muted-foreground"> · {f.sucursal_nombre}</span>
+                    </div>
+                    <div className="flex-1 relative h-6 rounded bg-muted/50">
+                      {horas.map((h, i) => (
+                        <div
+                          key={h}
+                          className="absolute top-0 bottom-0 border-l border-border/50"
+                          style={{ left: `${(i / horas.length) * 100}%` }}
+                        />
+                      ))}
+                      <div
+                        className={`absolute top-0.5 bottom-0.5 rounded px-1 text-[10px] flex items-center overflow-hidden ${
+                          f.origen === "real" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
+                        }`}
+                        style={pos}
+                      >
+                        {f.entrada}–{f.salida}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
+
       {/* Tabla editable del día */}
       <Card>
         <CardHeader className="pb-2">
