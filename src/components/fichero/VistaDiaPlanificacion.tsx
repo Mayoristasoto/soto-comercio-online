@@ -106,6 +106,24 @@ export function VistaDiaPlanificacion() {
     localStorage.setItem("fichero:valor-hora-extra", String(valorHoraExtra || 0));
   }, [valorHoraExtra]);
 
+  // Valor de referencia tomado de la pestaña "Horas extras" (config_horas_extras_v4)
+  const valorHoraConfig = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("config_horas_extras_v4");
+      if (!raw) return 0;
+      const cfg = JSON.parse(raw);
+      const esDomingo = new Date(`${fecha}T00:00:00`).getDay() === 0;
+      const v = Number(esDomingo ? cfg.valorHoraDomingo : cfg.valorHoraHabil);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    } catch {
+      return 0;
+    }
+  }, [fecha]);
+
+  // Si no se cargó un valor manual, se usa el de la configuración de Horas extras
+  const valorHoraEfectivo = valorHoraExtra > 0 ? valorHoraExtra : valorHoraConfig;
+
+
   const [addOpen, setAddOpen] = useState(false);
   const [addEmpleadoId, setAddEmpleadoId] = useState<string>("");
   const [addBusqueda, setAddBusqueda] = useState("");
@@ -276,7 +294,7 @@ export function VistaDiaPlanificacion() {
 
   const totalHoras = filas.reduce((a, f) => a + horasEntre(f.entrada, f.salida, f.pausa), 0);
   const totalExtras = filas.reduce((a, f) => a + (f.extras || 0), 0);
-  const costoExtras = totalExtras * (valorHoraExtra || 0);
+  const costoExtras = totalExtras * (valorHoraEfectivo || 0);
   const picoCobertura = cobertura.reduce((max, c) => Math.max(max, c.cantidad), 0);
 
   const sucursalesEnVista = useMemo(
@@ -317,7 +335,7 @@ export function VistaDiaPlanificacion() {
     pausa: f.pausa,
     horas: horasEntre(f.entrada, f.salida, f.pausa),
     extras: f.extras || 0,
-    costoExtra: (f.extras || 0) * (valorHoraExtra || 0),
+    costoExtra: (f.extras || 0) * (valorHoraEfectivo || 0),
     origen: f.origen,
   }));
 
@@ -475,17 +493,33 @@ export function VistaDiaPlanificacion() {
             />
           </div>
 
-          <div className="min-w-[150px]">
+          <div className="min-w-[170px]">
             <Label className="text-xs">Valor hora extra ($)</Label>
             <Input
               type="number"
               min={0}
               step={100}
               value={valorHoraExtra || ""}
-              placeholder="0"
+              placeholder={valorHoraConfig ? String(valorHoraConfig) : "0"}
               onChange={(e) => setValorHoraExtra(Number(e.target.value) || 0)}
             />
+            {valorHoraConfig > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {valorHoraExtra > 0 ? (
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setValorHoraExtra(0)}
+                  >
+                    Usar $ {valorHoraConfig.toLocaleString("es-AR")} de Horas extras
+                  </button>
+                ) : (
+                  <>Usando $ {valorHoraConfig.toLocaleString("es-AR")} de Horas extras</>
+                )}
+              </p>
+            )}
           </div>
+
 
           <div className="ml-auto flex items-center gap-2">
             <Button variant="outline" onClick={() => setAddOpen(true)}>
@@ -504,10 +538,10 @@ export function VistaDiaPlanificacion() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraExtra)}>
+                <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
                   Excel (.xlsx)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraExtra)}>
+                <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
                   PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -840,8 +874,8 @@ export function VistaDiaPlanificacion() {
                       />
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
-                      {(f.extras || 0) > 0 && valorHoraExtra > 0
-                        ? `$ ${((f.extras || 0) * valorHoraExtra).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`
+                      {(f.extras || 0) > 0 && valorHoraEfectivo > 0
+                        ? `$ ${((f.extras || 0) * valorHoraEfectivo).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`
                         : "—"}
                     </TableCell>
                     <TableCell>
