@@ -294,7 +294,7 @@ export function VistaDiaPlanificacion() {
 
   const totalHoras = filas.reduce((a, f) => a + horasEntre(f.entrada, f.salida, f.pausa), 0);
   const totalExtras = filas.reduce((a, f) => a + (f.extras || 0), 0);
-  const costoExtras = totalExtras * (valorHoraExtra || 0);
+  const costoExtras = totalExtras * (valorHoraEfectivo || 0);
   const picoCobertura = cobertura.reduce((max, c) => Math.max(max, c.cantidad), 0);
 
   const sucursalesEnVista = useMemo(
@@ -335,7 +335,7 @@ export function VistaDiaPlanificacion() {
     pausa: f.pausa,
     horas: horasEntre(f.entrada, f.salida, f.pausa),
     extras: f.extras || 0,
-    costoExtra: (f.extras || 0) * (valorHoraExtra || 0),
+    costoExtra: (f.extras || 0) * (valorHoraEfectivo || 0),
     origen: f.origen,
   }));
 
@@ -522,10 +522,10 @@ export function VistaDiaPlanificacion() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraExtra)}>
+                <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
                   Excel (.xlsx)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraExtra)}>
+                <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
                   PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -858,8 +858,8 @@ export function VistaDiaPlanificacion() {
                       />
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
-                      {(f.extras || 0) > 0 && valorHoraExtra > 0
-                        ? `$ ${((f.extras || 0) * valorHoraExtra).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`
+                      {(f.extras || 0) > 0 && valorHoraEfectivo > 0
+                        ? `$ ${((f.extras || 0) * valorHoraEfectivo).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`
                         : "—"}
                     </TableCell>
                     <TableCell>
