@@ -22,6 +22,8 @@ import {
   Info,
   Plus,
   RotateCcw,
+  Scissors,
+
   Trash2,
   Users,
 } from "lucide-react";
