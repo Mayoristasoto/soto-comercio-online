@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Settings } from 'lucide-react';
 import { TimelineView } from './TimelineView';
+import VistaDiaPlanificacion from './VistaDiaPlanificacion';
 import HorariosDragDrop from './HorariosDragDrop';
 import ScheduleImport from './ScheduleImport';
 import AssignmentImport from './AssignmentImport';
