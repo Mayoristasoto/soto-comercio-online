@@ -99,11 +99,39 @@ export function VistaDiaPlanificacion() {
   const [addOpen, setAddOpen] = useState(false);
   const [addEmpleadoId, setAddEmpleadoId] = useState<string>("");
   const [addBusqueda, setAddBusqueda] = useState("");
+  const [addSucursalId, setAddSucursalId] = useState<string>("");
   const [addEntrada, setAddEntrada] = useState("09:00");
   const [addSalida, setAddSalida] = useState("17:00");
   const [addPausa, setAddPausa] = useState(0);
 
-  const { borrador, editar, agregar, quitar, restablecer, tieneCambios } = useDiaBorrador(fecha);
+  const [dividirFila, setDividirFila] = useState<null | {
+    empleado_id: string;
+    nombre: string;
+    sucursal_id: string | null;
+    tramo_id: string | null;
+    entrada: string;
+    salida: string;
+    pausa: number;
+  }>(null);
+  const [t1Entrada, setT1Entrada] = useState("08:00");
+  const [t1Salida, setT1Salida] = useState("12:00");
+  const [t1Sucursal, setT1Sucursal] = useState<string>("");
+  const [t2Entrada, setT2Entrada] = useState("16:00");
+  const [t2Salida, setT2Salida] = useState("20:00");
+  const [t2Sucursal, setT2Sucursal] = useState<string>("");
+
+  const {
+    borrador,
+    editar,
+    editarTramo,
+    agregar,
+    agregarVarios,
+    quitar,
+    quitarTramo,
+    restablecer,
+    tieneCambios,
+  } = useDiaBorrador(fecha);
+
 
   useEffect(() => {
     let cancelado = false;
