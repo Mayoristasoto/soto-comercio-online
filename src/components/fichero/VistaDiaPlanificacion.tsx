@@ -493,17 +493,33 @@ export function VistaDiaPlanificacion() {
             />
           </div>
 
-          <div className="min-w-[150px]">
+          <div className="min-w-[170px]">
             <Label className="text-xs">Valor hora extra ($)</Label>
             <Input
               type="number"
               min={0}
               step={100}
               value={valorHoraExtra || ""}
-              placeholder="0"
+              placeholder={valorHoraConfig ? String(valorHoraConfig) : "0"}
               onChange={(e) => setValorHoraExtra(Number(e.target.value) || 0)}
             />
+            {valorHoraConfig > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {valorHoraExtra > 0 ? (
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setValorHoraExtra(0)}
+                  >
+                    Usar $ {valorHoraConfig.toLocaleString("es-AR")} de Horas extras
+                  </button>
+                ) : (
+                  <>Usando $ {valorHoraConfig.toLocaleString("es-AR")} de Horas extras</>
+                )}
+              </p>
+            )}
           </div>
+
 
           <div className="ml-auto flex items-center gap-2">
             <Button variant="outline" onClick={() => setAddOpen(true)}>
