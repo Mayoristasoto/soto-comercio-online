@@ -11,6 +11,8 @@ export interface FilaDiaExport {
   salida: string;
   pausa: number;
   horas: number;
+  extras: number;
+  costoExtra: number;
   origen: "real" | "modificado" | "provisorio";
 }
 
@@ -43,7 +45,8 @@ export function exportDiaXLSX(
   fecha: string,
   filas: FilaDiaExport[],
   cobertura: CoberturaHora[],
-  filtros: string
+  filtros: string,
+  valorHoraExtra = 0
 ) {
   const wb = XLSX.utils.book_new();
 
@@ -52,6 +55,9 @@ export function exportDiaXLSX(
     { Campo: "Filtros", Valor: filtros },
     { Campo: "Empleados", Valor: filas.length },
     { Campo: "Horas programadas", Valor: Number(filas.reduce((a, f) => a + f.horas, 0).toFixed(2)) },
+    { Campo: "Valor hora extra", Valor: valorHoraExtra },
+    { Campo: "Horas extras", Valor: Number(filas.reduce((a, f) => a + (f.extras || 0), 0).toFixed(2)) },
+    { Campo: "Costo horas extras", Valor: Number(filas.reduce((a, f) => a + (f.costoExtra || 0), 0).toFixed(2)) },
     { Campo: "Nota", Valor: "Documento informativo — no modifica los horarios asignados" },
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(info), "Info");
@@ -64,6 +70,8 @@ export function exportDiaXLSX(
     Salida: f.salida,
     "Pausa (min)": f.pausa,
     Horas: Number(f.horas.toFixed(2)),
+    "Horas extras": f.extras || 0,
+    "Costo extra": Number((f.costoExtra || 0).toFixed(2)),
     Origen: ORIGEN_LABEL[f.origen],
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalle), "Detalle");
@@ -88,7 +96,8 @@ export function exportDiaPDF(
   fecha: string,
   filas: FilaDiaExport[],
   cobertura: CoberturaHora[],
-  filtros: string
+  filtros: string,
+  valorHoraExtra = 0
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const w = doc.internal.pageSize.getWidth();
@@ -126,12 +135,21 @@ export function exportDiaPDF(
   const pico = cobertura.reduce((m, c) => Math.max(m, c.cantidad), 0);
   autoTable(doc, {
     startY: y,
-    head: [["Empleados / tramos", "Horas programadas", "Pico de cobertura", "Sucursales"]],
+    head: [[
+      "Empleados / tramos",
+      "Horas programadas",
+      "Pico de cobertura",
+      "Sucursales",
+      "Horas extras",
+      "Costo horas extras",
+    ]],
     body: [[
       String(filas.length),
       `${totalHoras.toFixed(1)} h`,
       String(pico),
       String(new Set(filas.map((f) => f.sucursal_nombre)).size),
+      `${filas.reduce((a, f) => a + (f.extras || 0), 0).toFixed(1)} h`,
+      `$ ${filas.reduce((a, f) => a + (f.costoExtra || 0), 0).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`,
     ]],
     styles: { fontSize: 9, halign: "center", cellPadding: 2 },
     headStyles: { fillColor: PRIMARY, textColor: 255, fontSize: 8 },
@@ -259,7 +277,17 @@ export function exportDiaPDF(
   for (const [suc, rows] of [...porSucursal.entries()].sort()) {
     autoTable(doc, {
       startY: y,
-      head: [[`${suc} (${rows.length})`, "Turno", "Entrada", "Salida", "Pausa", "Horas", "Origen"]],
+      head: [[
+        `${suc} (${rows.length})`,
+        "Turno",
+        "Entrada",
+        "Salida",
+        "Pausa",
+        "Horas",
+        "H. extras",
+        "Costo extra",
+        "Origen",
+      ]],
       body: rows.map((f) => [
         f.nombre,
         f.turno_nombre,
@@ -267,6 +295,10 @@ export function exportDiaPDF(
         f.salida,
         `${f.pausa} min`,
         f.horas.toFixed(2),
+        (f.extras || 0) ? `${f.extras} h` : "-",
+        (f.costoExtra || 0)
+          ? `$ ${f.costoExtra.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`
+          : "-",
         ORIGEN_LABEL[f.origen],
       ]),
       styles: { fontSize: 8, cellPadding: 1.5 },

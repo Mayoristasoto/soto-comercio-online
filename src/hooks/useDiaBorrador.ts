@@ -19,9 +19,11 @@ export interface BorradorDia {
   ediciones: Record<string, EdicionDia>;
   agregados: AgregadoDia[];
   eliminados: string[];
+  /** Horas extras por fila (key = real-<empleadoId> o tramo-<id>) */
+  extras: Record<string, number>;
 }
 
-const VACIO: BorradorDia = { ediciones: {}, agregados: [], eliminados: [] };
+const VACIO: BorradorDia = { ediciones: {}, agregados: [], eliminados: [], extras: {} };
 
 const storageKey = (fecha: string) => `fichero:borrador-dia:${fecha}`;
 
@@ -40,6 +42,7 @@ function leer(fecha: string): BorradorDia {
       // compatibilidad con borradores viejos sin id
       agregados: (parsed.agregados ?? []).map((a: AgregadoDia) => ({ ...a, id: a.id ?? nuevoId() })),
       eliminados: parsed.eliminados ?? [],
+      extras: parsed.extras ?? {},
     };
   } catch {
     return VACIO;
@@ -65,7 +68,8 @@ export function useDiaBorrador(fecha: string) {
         const vacio =
           Object.keys(next.ediciones).length === 0 &&
           next.agregados.length === 0 &&
-          next.eliminados.length === 0;
+          next.eliminados.length === 0 &&
+          Object.keys(next.extras ?? {}).length === 0;
         if (vacio) localStorage.removeItem(storageKey(fecha));
         else localStorage.setItem(storageKey(fecha), JSON.stringify(next));
       } catch {
@@ -153,12 +157,26 @@ export function useDiaBorrador(fecha: string) {
     [persistir]
   );
 
+  /** Define las horas extras de una fila */
+  const setExtra = useCallback(
+    (filaKey: string, horas: number) => {
+      persistir((prev) => {
+        const extras = { ...(prev.extras ?? {}) };
+        if (!horas) delete extras[filaKey];
+        else extras[filaKey] = horas;
+        return { ...prev, extras };
+      });
+    },
+    [persistir]
+  );
+
   const restablecer = useCallback(() => persistir(() => VACIO), [persistir]);
 
   const tieneCambios =
     Object.keys(borrador.ediciones).length > 0 ||
     borrador.agregados.length > 0 ||
-    borrador.eliminados.length > 0;
+    borrador.eliminados.length > 0 ||
+    Object.keys(borrador.extras ?? {}).length > 0;
 
   return {
     borrador,
@@ -168,6 +186,7 @@ export function useDiaBorrador(fecha: string) {
     agregarVarios,
     quitar,
     quitarTramo,
+    setExtra,
     restablecer,
     tieneCambios,
   };
