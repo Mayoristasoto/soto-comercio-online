@@ -898,9 +898,15 @@ export function VistaDiaPlanificacion() {
                         step={0.5}
                         value={f.extras || ""}
                         placeholder="0"
+                        title={
+                          f.extrasManual != null
+                            ? "Valor manual (dejalo en 0 para volver al cálculo automático)"
+                            : "Automático: excedente sobre 8 hs del empleado"
+                        }
                         onChange={(e) => setExtra(f.key, Number(e.target.value) || 0)}
-                        className="h-8"
+                        className={`h-8 ${f.extrasManual == null && (f.extras || 0) > 0 ? "text-muted-foreground" : ""}`}
                       />
+
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {(f.extras || 0) > 0 && valorHoraEfectivo > 0
