@@ -532,30 +532,47 @@ export function VistaDiaPlanificacion() {
                   ))}
                 </div>
               </div>
-              {filas.map((f) => {
-                const pos = barra(f.entrada, f.salida);
+              {sucursalesEnVista.map((suc) => {
+                const delGrupo = filas.filter((f) => f.sucursal_nombre === suc);
+                if (delGrupo.length === 0) return null;
                 return (
-                  <div key={`g-${f.empleado_id}`} className="flex items-center">
-                    <div className="w-[210px] shrink-0 pr-2 truncate text-xs">
-                      <span className="font-medium">{f.nombre}</span>
-                      <span className="text-muted-foreground"> · {f.sucursal_nombre}</span>
+                  <div key={`grp-${suc}`} className="pt-2 first:pt-0">
+                    <div className="flex items-center gap-2 mb-1 border-t pt-2">
+                      <span className="text-xs font-semibold">{suc}</span>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {delGrupo.length}
+                      </Badge>
                     </div>
-                    <div className="flex-1 relative h-6 rounded bg-muted/50">
-                      {horas.map((h, i) => (
-                        <div
-                          key={h}
-                          className="absolute top-0 bottom-0 border-l border-border/50"
-                          style={{ left: `${(i / horas.length) * 100}%` }}
-                        />
-                      ))}
-                      <div
-                        className={`absolute top-0.5 bottom-0.5 rounded px-1 text-[10px] flex items-center overflow-hidden ${
-                          f.origen === "real" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
-                        }`}
-                        style={pos}
-                      >
-                        {f.entrada}–{f.salida}
-                      </div>
+                    <div className="space-y-1">
+                      {delGrupo.map((f) => {
+                        const pos = barra(f.entrada, f.salida);
+                        return (
+                          <div key={`g-${f.empleado_id}`} className="flex items-center">
+                            <div className="w-[210px] shrink-0 pr-2 truncate text-xs font-medium">
+                              {f.nombre}
+                            </div>
+                            <div className="flex-1 relative h-6 rounded bg-muted/50">
+                              {horas.map((h, i) => (
+                                <div
+                                  key={h}
+                                  className="absolute top-0 bottom-0 border-l border-border/50"
+                                  style={{ left: `${(i / horas.length) * 100}%` }}
+                                />
+                              ))}
+                              <div
+                                className={`absolute top-0.5 bottom-0.5 rounded px-1 text-[10px] flex items-center overflow-hidden ${
+                                  f.origen === "real"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-accent text-accent-foreground"
+                                }`}
+                                style={pos}
+                              >
+                                {f.entrada}–{f.salida}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
