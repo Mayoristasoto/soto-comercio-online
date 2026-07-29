@@ -6,7 +6,9 @@ export interface EdicionDia {
   pausa: number;
 }
 
+/** Tramo provisorio: un empleado puede tener varios (horario cortado o multi-sucursal) */
 export interface AgregadoDia extends EdicionDia {
+  id: string;
   empleado_id: string;
   nombre: string;
   sucursal_id: string | null;
@@ -23,6 +25,11 @@ const VACIO: BorradorDia = { ediciones: {}, agregados: [], eliminados: [] };
 
 const storageKey = (fecha: string) => `fichero:borrador-dia:${fecha}`;
 
+const nuevoId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `t-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 function leer(fecha: string): BorradorDia {
   try {
     const raw = localStorage.getItem(storageKey(fecha));
@@ -30,7 +37,8 @@ function leer(fecha: string): BorradorDia {
     const parsed = JSON.parse(raw);
     return {
       ediciones: parsed.ediciones ?? {},
-      agregados: parsed.agregados ?? [],
+      // compatibilidad con borradores viejos sin id
+      agregados: (parsed.agregados ?? []).map((a: AgregadoDia) => ({ ...a, id: a.id ?? nuevoId() })),
       eliminados: parsed.eliminados ?? [],
     };
   } catch {
@@ -66,42 +74,76 @@ export function useDiaBorrador(fecha: string) {
     [fecha]
   );
 
+  /** Edita una fila real (proveniente del turno asignado) */
   const editar = useCallback(
     (empleadoId: string, cambios: Partial<EdicionDia>, base: EdicionDia) => {
       const actual = borrador.ediciones[empleadoId] ?? base;
       persistir({
         ...borrador,
         ediciones: { ...borrador.ediciones, [empleadoId]: { ...actual, ...cambios } },
-        agregados: borrador.agregados.map((a) =>
-          a.empleado_id === empleadoId ? { ...a, ...cambios } : a
-        ),
       });
     },
     [borrador, persistir]
   );
 
-  const agregar = useCallback(
-    (fila: AgregadoDia) => {
-      if (borrador.agregados.some((a) => a.empleado_id === fila.empleado_id)) return;
+  /** Edita un tramo provisorio (horario, pausa o sucursal) */
+  const editarTramo = useCallback(
+    (tramoId: string, cambios: Partial<Omit<AgregadoDia, "id" | "empleado_id" | "nombre">>) => {
       persistir({
         ...borrador,
-        agregados: [...borrador.agregados, fila],
-        eliminados: borrador.eliminados.filter((id) => id !== fila.empleado_id),
+        agregados: borrador.agregados.map((a) => (a.id === tramoId ? { ...a, ...cambios } : a)),
       });
     },
     [borrador, persistir]
   );
 
+  /** Agrega un tramo provisorio. Se permiten varios por empleado. */
+  const agregar = useCallback(
+    (fila: Omit<AgregadoDia, "id"> & { id?: string }) => {
+      persistir({
+        ...borrador,
+        agregados: [...borrador.agregados, { ...fila, id: fila.id ?? nuevoId() }],
+      });
+    },
+    [borrador, persistir]
+  );
+
+  /** Agrega varios tramos de una (por ejemplo al dividir un turno) */
+  const agregarVarios = useCallback(
+    (filas: (Omit<AgregadoDia, "id"> & { id?: string })[], ocultarEmpleadoId?: string) => {
+      persistir({
+        ...borrador,
+        agregados: [
+          ...borrador.agregados,
+          ...filas.map((f) => ({ ...f, id: f.id ?? nuevoId() })),
+        ],
+        eliminados: ocultarEmpleadoId
+          ? [...new Set([...borrador.eliminados, ocultarEmpleadoId])]
+          : borrador.eliminados,
+      });
+    },
+    [borrador, persistir]
+  );
+
+  /** Quita una fila real del día */
   const quitar = useCallback(
     (empleadoId: string) => {
-      const esAgregado = borrador.agregados.some((a) => a.empleado_id === empleadoId);
       const { [empleadoId]: _omit, ...restoEdiciones } = borrador.ediciones;
       persistir({
+        ...borrador,
         ediciones: restoEdiciones,
-        agregados: borrador.agregados.filter((a) => a.empleado_id !== empleadoId),
-        eliminados: esAgregado
-          ? borrador.eliminados
-          : [...new Set([...borrador.eliminados, empleadoId])],
+        eliminados: [...new Set([...borrador.eliminados, empleadoId])],
+      });
+    },
+    [borrador, persistir]
+  );
+
+  /** Quita un tramo provisorio */
+  const quitarTramo = useCallback(
+    (tramoId: string) => {
+      persistir({
+        ...borrador,
+        agregados: borrador.agregados.filter((a) => a.id !== tramoId),
       });
     },
     [borrador, persistir]
@@ -114,5 +156,15 @@ export function useDiaBorrador(fecha: string) {
     borrador.agregados.length > 0 ||
     borrador.eliminados.length > 0;
 
-  return { borrador, editar, agregar, quitar, restablecer, tieneCambios };
+  return {
+    borrador,
+    editar,
+    editarTramo,
+    agregar,
+    agregarVarios,
+    quitar,
+    quitarTramo,
+    restablecer,
+    tieneCambios,
+  };
 }
