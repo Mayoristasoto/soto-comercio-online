@@ -58,6 +58,9 @@ interface FilaReal {
 }
 
 const HORA_DESDE = 6;
+/** Jornada base: las horas por encima de este valor se consideran extras */
+const JORNADA_BASE_HS = 8;
+
 const HORA_HASTA = 23;
 
 const hhmm = (v?: string | null) => (v ? v.slice(0, 5) : "");
