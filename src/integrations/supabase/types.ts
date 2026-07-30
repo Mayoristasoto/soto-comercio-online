@@ -10019,6 +10019,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      current_user_sucursal_id: { Args: never; Returns: string }
       dashboard_estado_personal_hoy: {
         Args: never
         Returns: {
