@@ -62,7 +62,7 @@ const Gondolas = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isTooltipHovered, setIsTooltipHovered] = useState(false);
-  const [tooltipTimeoutId, setTooltipTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [tooltipTimeoutId, setTooltipTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [viewport, setViewport] = useState<ViewportSettings>({ x: 0, y: 0, width: 800, height: 600, zoom: 1 });
   const [graphicElements, setGraphicElements] = useState<GraphicElement[]>([]);
   
