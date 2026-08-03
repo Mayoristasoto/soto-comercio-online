@@ -122,7 +122,7 @@ function dibujarDiaPDF(
     doc.rect(0, 0, w, 22, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14);
-    doc.text("Planificación del día", 14, 10);
+    doc.text(tituloPrincipal, 14, 10);
     doc.setFontSize(10);
     doc.text(fechaLarga(fecha), 14, 17);
     doc.setFontSize(8);
