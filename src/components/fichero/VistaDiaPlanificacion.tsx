@@ -151,6 +151,7 @@ export function VistaDiaPlanificacion({
   const [filasReales, setFilasReales] = useState<FilaReal[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [empleados, setEmpleados] = useState<EmpleadoBase[]>([]);
+  const [empleadosVacaciones, setEmpleadosVacaciones] = useState<Set<string>>(new Set());
   const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas");
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [valorHoraExtra, setValorHoraExtra] = useState<number>(() => {
@@ -223,7 +224,7 @@ export function VistaDiaPlanificacion({
     (async () => {
       setLoading(true);
       try {
-        const [{ data: sucs }, { data: emps }, { data: asignaciones }] = await Promise.all([
+        const [{ data: sucs }, { data: emps }, { data: asignaciones }, { data: vacs }] = await Promise.all([
           supabase.from("sucursales").select("id, nombre").order("nombre"),
           supabase
             .from("empleados")
@@ -236,13 +237,23 @@ export function VistaDiaPlanificacion({
             .eq("activo", true)
             .lte("fecha_inicio", fecha)
             .or(`fecha_fin.is.null,fecha_fin.gte.${fecha}`),
+          // Vacaciones aprobadas, gozadas o pendientes de aprobación que cubren la fecha
+          supabase
+            .from("solicitudes_vacaciones")
+            .select("empleado_id, fecha_inicio, fecha_fin, estado")
+            .in("estado", ["pendiente", "aprobada", "gozadas"])
+            .lte("fecha_inicio", fecha)
+            .gte("fecha_fin", fecha),
         ]);
 
         if (cancelado) return;
 
+        const enVacaciones = new Set(((vacs || []) as any[]).map((v) => v.empleado_id));
+        setEmpleadosVacaciones(enVacaciones);
+
         const sucList = (sucs || []) as { id: string; nombre: string }[];
         setSucursales(sucList);
-        setEmpleados((emps || []) as EmpleadoBase[]);
+        setEmpleados(((emps || []) as EmpleadoBase[]).filter((e) => !enVacaciones.has(e.id)));
 
         const nombreSuc = new Map(sucList.map((s) => [s.id, s.nombre]));
         const diaSemana = new Date(`${fecha}T00:00:00`).getDay();
@@ -252,6 +263,8 @@ export function VistaDiaPlanificacion({
           const emp = a.empleado;
           const turno = a.turno;
           if (!emp || !turno || emp.activo === false) continue;
+          // No se planifica a quien está de vacaciones (aprobadas, gozadas o pendientes)
+          if (enVacaciones.has(emp.id)) continue;
           if (Array.isArray(turno.dias_semana) && turno.dias_semana.length > 0) {
             if (!turno.dias_semana.includes(diaSemana)) continue;
           }
@@ -299,7 +312,9 @@ export function VistaDiaPlanificacion({
         };
       });
 
-    const extra = borrador.agregados.map((a) => ({
+    const extra = borrador.agregados
+      .filter((a) => !empleadosVacaciones.has(a.empleado_id))
+      .map((a) => ({
       key: `tramo-${a.id}`,
       tramo_id: a.id,
       empleado_id: a.empleado_id,
@@ -349,7 +364,7 @@ export function VistaDiaPlanificacion({
           a.nombre.localeCompare(b.nombre) ||
           a.entrada.localeCompare(b.entrada)
       );
-  }, [filasReales, borrador, sucursalFiltro, grupoSel]);
+  }, [filasReales, borrador, sucursalFiltro, grupoSel, empleadosVacaciones]);
 
 
 
