@@ -21,6 +21,8 @@ export interface BorradorDia {
   eliminados: string[];
   /** Horas extras por fila (key = real-<empleadoId> o tramo-<id>) */
   extras: Record<string, number>;
+  /** Cuando es true se ignoran los turnos reales: el día se arma solo con los tramos cargados */
+  soloAgregados?: boolean;
 }
 
 const VACIO: BorradorDia = { ediciones: {}, agregados: [], eliminados: [], extras: {} };
@@ -43,11 +45,28 @@ function leer(fecha: string): BorradorDia {
       agregados: (parsed.agregados ?? []).map((a: AgregadoDia) => ({ ...a, id: a.id ?? nuevoId() })),
       eliminados: parsed.eliminados ?? [],
       extras: parsed.extras ?? {},
+      soloAgregados: parsed.soloAgregados ?? false,
     };
   } catch {
     return VACIO;
   }
 }
+
+/** Lee el borrador de una fecha sin usar el hook (para orquestar varios días) */
+export const leerBorradorDia = (fecha: string) => leer(fecha);
+
+/** Escribe (o limpia) el borrador de una fecha sin usar el hook */
+export function escribirBorradorDia(fecha: string, borrador: BorradorDia | null) {
+  try {
+    if (!borrador) localStorage.removeItem(storageKey(fecha));
+    else localStorage.setItem(storageKey(fecha), JSON.stringify(borrador));
+  } catch {
+    /* storage lleno o bloqueado */
+  }
+}
+
+export const nuevoTramoId = nuevoId;
+
 
 /**
  * Borrador local (no persiste en base de datos) para simular la organización
