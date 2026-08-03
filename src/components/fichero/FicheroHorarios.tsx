@@ -649,7 +649,7 @@ export default function FicheroHorarios() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="assignments">
             <Users className="h-4 w-4 mr-2" />
             Asignación de Horarios
@@ -662,11 +662,16 @@ export default function FicheroHorarios() {
             <Calendar className="h-4 w-4 mr-2" />
             Vista Calendario
           </TabsTrigger>
+          <TabsTrigger value="week">
+            <CalendarRange className="h-4 w-4 mr-2" />
+            Planificación Semanal
+          </TabsTrigger>
           <TabsTrigger value="management">
             <Clock className="h-4 w-4 mr-2" />
             Gestión de Turnos
           </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="assignments" className="space-y-6">
       {/* Asignación de Horarios */}
