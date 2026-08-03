@@ -22,6 +22,7 @@ import {
   BarChart3,
   Filter,
   Trash2,
+  Pencil,
   Calendar as CalendarDaysIcon,
   TrendingUp,
   History,
@@ -104,6 +105,8 @@ export default function FicheroHistorial() {
   const [resumenEmpleados, setResumenEmpleados] = useState<EmpleadoResumen[]>([])
   const [mostrarResumen, setMostrarResumen] = useState(false)
   const [fichajeAEliminar, setFichajeAEliminar] = useState<string | null>(null)
+  const [fichajeAEditar, setFichajeAEditar] = useState<{ id: string; nombre: string; tipo: string; fecha: string; hora: string } | null>(null)
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false)
   const [esAdmin, setEsAdmin] = useState(false)
   const [fotoModal, setFotoModal] = useState<{open: boolean, foto: FotoVerificacion | null, loading: boolean}>({
     open: false,
@@ -304,6 +307,55 @@ export default function FicheroHistorial() {
       })
     } finally {
       setFichajeAEliminar(null)
+    }
+  }
+
+  const abrirEdicion = (fichaje: FichajeHistorial) => {
+    setFichajeAEditar({
+      id: fichaje.id,
+      nombre: `${fichaje.empleado_nombre} ${fichaje.empleado_apellido}`,
+      tipo: fichaje.tipo,
+      // Fecha y hora en zona Argentina
+      fecha: formatArgentinaDate(fichaje.timestamp_real, 'yyyy-MM-dd'),
+      hora: formatArgentinaTime(fichaje.timestamp_real).slice(0, 5)
+    })
+  }
+
+  const guardarEdicion = async () => {
+    if (!fichajeAEditar) return
+    const { id, fecha, hora } = fichajeAEditar
+    if (!fecha || !hora) {
+      toast({ title: "Datos incompletos", description: "Indicá fecha y hora", variant: "destructive" })
+      return
+    }
+
+    setGuardandoEdicion(true)
+    try {
+      // Se guarda con offset de Argentina (-03:00)
+      const nuevoTimestamp = new Date(`${fecha}T${hora}:00-03:00`).toISOString()
+
+      const { error } = await supabase
+        .from('fichajes')
+        .update({ timestamp_real: nuevoTimestamp })
+        .eq('id', id)
+
+      if (error) throw error
+
+      toast({
+        title: "Fichaje actualizado",
+        description: `Nueva hora: ${hora} del ${fecha.split('-').reverse().join('/')}`
+      })
+      setFichajeAEditar(null)
+      cargarFichajes()
+    } catch (error: any) {
+      console.error('Error editando fichaje:', error)
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el fichaje",
+        variant: "destructive"
+      })
+    } finally {
+      setGuardandoEdicion(false)
     }
   }
 
@@ -901,6 +953,15 @@ export default function FicheroHistorial() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => abrirEdicion(fichaje)}
+                            className="h-8 w-8"
+                            title="Editar fecha y hora"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => setFichajeAEliminar(fichaje.id)}
                             className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
@@ -934,6 +995,48 @@ export default function FicheroHistorial() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Diálogo de edición de fecha/hora */}
+      <Dialog open={fichajeAEditar !== null} onOpenChange={(open) => !open && setFichajeAEditar(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar fichaje</DialogTitle>
+            <DialogDescription>
+              {fichajeAEditar
+                ? `${fichajeAEditar.nombre} — ${fichajeAEditar.tipo.replace('_', ' ')}`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Fecha</label>
+              <Input
+                type="date"
+                value={fichajeAEditar?.fecha ?? ''}
+                onChange={(e) =>
+                  setFichajeAEditar((prev) => (prev ? { ...prev, fecha: e.target.value } : prev))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Hora</label>
+              <Input
+                type="time"
+                value={fichajeAEditar?.hora ?? ''}
+                onChange={(e) =>
+                  setFichajeAEditar((prev) => (prev ? { ...prev, hora: e.target.value } : prev))
+                }
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setFichajeAEditar(null)}>Cancelar</Button>
+            <Button onClick={guardarEdicion} disabled={guardandoEdicion}>
+              {guardandoEdicion ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de foto de verificación */}
       <Dialog open={fotoModal.open} onOpenChange={(open) => !open && setFotoModal({ open: false, foto: null, loading: false })}>
