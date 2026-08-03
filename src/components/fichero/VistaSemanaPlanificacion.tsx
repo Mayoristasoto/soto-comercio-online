@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -133,12 +134,22 @@ export function VistaSemanaPlanificacion() {
     setGuardando(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
+      let empleadoId: string | null = null;
+      if (userData.user?.id) {
+        const { data: emp } = await supabase
+          .from("empleados")
+          .select("id")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        empleadoId = emp?.id ?? null;
+      }
+
       const payloadCabecera: any = {
         fecha_inicio_semana: inicio,
         nombre: nombre.trim() || `Semana del ${fechaCorta(inicio)}`,
         notas: notas.trim() || null,
         estado,
-        creado_por: userData.user?.id ?? null,
+        creado_por: empleadoId,
       };
 
       let planId = planActual?.id ?? null;
@@ -149,9 +160,10 @@ export function VistaSemanaPlanificacion() {
           .eq("id", planId);
         if (error) throw error;
       } else {
+        // upsert por fecha_inicio_semana (única) para evitar conflictos 409
         const { data, error } = await supabase
           .from("planificacion_semanal")
-          .insert(payloadCabecera)
+          .upsert(payloadCabecera, { onConflict: "fecha_inicio_semana" })
           .select("id")
           .single();
         if (error) throw error;
@@ -565,6 +577,9 @@ export function VistaSemanaPlanificacion() {
             <DialogTitle>
               {planActual ? "Actualizar planificación" : "Guardar planificación semanal"}
             </DialogTitle>
+            <DialogDescription>
+              Definí nombre, estado y notas para la planificación de la semana del {fechaCorta(inicio)}.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -579,7 +594,7 @@ export function VistaSemanaPlanificacion() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="borrador">Borrador</SelectItem>
-                  <SelectItem value="confirmada">Confirmada</SelectItem>
+                  <SelectItem value="confirmado">Confirmada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
