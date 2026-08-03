@@ -1310,6 +1310,7 @@ export type Database = {
           hora_salida_nueva: string | null
           id: string
           justificacion: string
+          planificacion_id: string | null
           solicitado_por: string
           tipo_cambio: string
           updated_at: string
@@ -1324,6 +1325,7 @@ export type Database = {
           hora_salida_nueva?: string | null
           id?: string
           justificacion: string
+          planificacion_id?: string | null
           solicitado_por: string
           tipo_cambio: string
           updated_at?: string
@@ -1338,6 +1340,7 @@ export type Database = {
           hora_salida_nueva?: string | null
           id?: string
           justificacion?: string
+          planificacion_id?: string | null
           solicitado_por?: string
           tipo_cambio?: string
           updated_at?: string
@@ -1397,6 +1400,13 @@ export type Database = {
             columns: ["empleado_intercambio_id"]
             isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cambios_horario_planificacion_id_fkey"
+            columns: ["planificacion_id"]
+            isOneToOne: false
+            referencedRelation: "planificacion_semanal"
             referencedColumns: ["id"]
           },
           {
@@ -7055,31 +7065,40 @@ export type Database = {
       }
       planificacion_semanal: {
         Row: {
+          aplicada_at: string | null
+          aplicada_por: string | null
           creado_por: string | null
           created_at: string
           estado: string
           fecha_inicio_semana: string
           id: string
+          nombre: string | null
           notas: string | null
           plantilla_base_id: string | null
           updated_at: string
         }
         Insert: {
+          aplicada_at?: string | null
+          aplicada_por?: string | null
           creado_por?: string | null
           created_at?: string
           estado?: string
           fecha_inicio_semana: string
           id?: string
+          nombre?: string | null
           notas?: string | null
           plantilla_base_id?: string | null
           updated_at?: string
         }
         Update: {
+          aplicada_at?: string | null
+          aplicada_por?: string | null
           creado_por?: string | null
           created_at?: string
           estado?: string
           fecha_inicio_semana?: string
           id?: string
+          nombre?: string | null
           notas?: string | null
           plantilla_base_id?: string | null
           updated_at?: string
@@ -7127,31 +7146,46 @@ export type Database = {
           created_at: string
           dia_semana: number
           empleado_id: string
+          fecha: string | null
           hora_entrada: string
           hora_salida: string
+          horas_extras: number
           id: string
+          notas: string | null
+          pausa_minutos: number
           planificacion_id: string
           sucursal_id: string
+          valor_hora_extra: number | null
         }
         Insert: {
           created_at?: string
           dia_semana: number
           empleado_id: string
+          fecha?: string | null
           hora_entrada: string
           hora_salida: string
+          horas_extras?: number
           id?: string
+          notas?: string | null
+          pausa_minutos?: number
           planificacion_id: string
           sucursal_id: string
+          valor_hora_extra?: number | null
         }
         Update: {
           created_at?: string
           dia_semana?: number
           empleado_id?: string
+          fecha?: string | null
           hora_entrada?: string
           hora_salida?: string
+          horas_extras?: number
           id?: string
+          notas?: string | null
+          pausa_minutos?: number
           planificacion_id?: string
           sucursal_id?: string
+          valor_hora_extra?: number | null
         }
         Relationships: [
           {
@@ -9929,6 +9963,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      aplicar_planificacion_semanal: {
+        Args: { _planificacion_id: string }
+        Returns: number
+      }
       aplicar_redondeo_fichaje: {
         Args: { redondeo_minutos: number; timestamp_real: string }
         Returns: string
@@ -10697,6 +10735,10 @@ export type Database = {
       resolver_grupo_empleados: {
         Args: { _grupo_id: string }
         Returns: string[]
+      }
+      revertir_planificacion_semanal: {
+        Args: { _planificacion_id: string }
+        Returns: number
       }
       user_has_admin_role: { Args: never; Returns: boolean }
       validar_geocerca: {
