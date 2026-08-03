@@ -87,6 +87,9 @@ export function VistaSemanaPlanificacion() {
   const [notas, setNotas] = useState("");
   const [estado, setEstado] = useState("borrador");
   const [copiarDe, setCopiarDe] = useState<string>("");
+  const [copiaOpen, setCopiaOpen] = useState(false);
+  const [copiaOrigen, setCopiaOrigen] = useState(0);
+  const [copiaDestinos, setCopiaDestinos] = useState<number[]>([]);
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => sumarDias(inicio, i)), [inicio]);
   const fechaActual = dias[diaSel];
