@@ -263,6 +263,8 @@ export function VistaDiaPlanificacion({
           const emp = a.empleado;
           const turno = a.turno;
           if (!emp || !turno || emp.activo === false) continue;
+          // No se planifica a quien está de vacaciones (aprobadas, gozadas o pendientes)
+          if (enVacaciones.has(emp.id)) continue;
           if (Array.isArray(turno.dias_semana) && turno.dias_semana.length > 0) {
             if (!turno.dias_semana.includes(diaSemana)) continue;
           }
