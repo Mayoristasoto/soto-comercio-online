@@ -276,6 +276,66 @@ export function VistaSemanaPlanificacion() {
     toast({ title: "Semana restablecida", description: "Se volvieron a cargar los turnos asignados" });
   };
 
+  /** Copia los tramos de un día a otros días de la semana */
+  const copiarDia = () => {
+    const origen = dias[copiaOrigen];
+    const filas = datos[origen]?.filas ?? [];
+    if (!filas.length) {
+      toast({
+        title: "Sin datos para copiar",
+        description: `El ${DIA_CORTO[copiaOrigen]} ${fechaCorta(origen)} no tiene tramos.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const destinos = copiaDestinos.filter((i) => i !== copiaOrigen);
+    if (!destinos.length) {
+      toast({ title: "Elegí al menos un día destino", variant: "destructive" });
+      return;
+    }
+
+    for (const idx of destinos) {
+      const fecha = dias[idx];
+      const agregados = filas.map((f) => ({
+        id: nuevoTramoId(),
+        empleado_id: f.empleado_id,
+        nombre: f.nombre,
+        sucursal_id: f.sucursal_id,
+        sucursal_nombre: f.sucursal_nombre,
+        entrada: f.entrada,
+        salida: f.salida,
+        pausa: f.pausa || 0,
+      }));
+      const extras: Record<string, number> = {};
+      agregados.forEach((a, i) => {
+        const h = Number(filas[i].extras || 0);
+        if (h > 0) extras[`tramo-${a.id}`] = h;
+      });
+      escribirBorradorDia(fecha, {
+        ediciones: {},
+        agregados,
+        eliminados: [],
+        extras,
+        soloAgregados: true,
+      });
+    }
+
+    setDatos((prev) => {
+      const next = { ...prev };
+      for (const idx of destinos) delete next[dias[idx]];
+      return next;
+    });
+    setRemountKey((k) => k + 1);
+    setCopiaOpen(false);
+    toast({
+      title: "Día copiado",
+      description: `${filas.length} tramos del ${DIA_CORTO[copiaOrigen]} a: ${destinos
+        .map((i) => DIA_CORTO[i])
+        .join(", ")}`,
+    });
+  };
+
+
   const eliminarPlan = async (planId: string) => {
     if (!confirm("¿Eliminar esta planificación guardada?")) return;
     const { error } = await supabase.from("planificacion_semanal").delete().eq("id", planId);
