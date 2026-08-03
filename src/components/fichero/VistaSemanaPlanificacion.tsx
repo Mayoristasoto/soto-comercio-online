@@ -577,6 +577,9 @@ export function VistaSemanaPlanificacion() {
             <DialogTitle>
               {planActual ? "Actualizar planificación" : "Guardar planificación semanal"}
             </DialogTitle>
+            <DialogDescription>
+              Definí nombre, estado y notas para la planificación de la semana del {fechaCorta(inicio)}.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
