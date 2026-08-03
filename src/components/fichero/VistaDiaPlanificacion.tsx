@@ -151,6 +151,7 @@ export function VistaDiaPlanificacion({
   const [filasReales, setFilasReales] = useState<FilaReal[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [empleados, setEmpleados] = useState<EmpleadoBase[]>([]);
+  const [empleadosVacaciones, setEmpleadosVacaciones] = useState<Set<string>>(new Set());
   const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas");
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [valorHoraExtra, setValorHoraExtra] = useState<number>(() => {
