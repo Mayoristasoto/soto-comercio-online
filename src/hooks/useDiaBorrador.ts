@@ -192,10 +192,17 @@ export function useDiaBorrador(fecha: string) {
 
   const restablecer = useCallback(() => persistir(() => VACIO), [persistir]);
 
+  /** Reemplaza el borrador completo del día (usado por la planificación semanal) */
+  const reemplazar = useCallback(
+    (nuevo: BorradorDia) => persistir(() => nuevo),
+    [persistir]
+  );
+
   const tieneCambios =
     Object.keys(borrador.ediciones).length > 0 ||
     borrador.agregados.length > 0 ||
     borrador.eliminados.length > 0 ||
+    !!borrador.soloAgregados ||
     Object.keys(borrador.extras ?? {}).length > 0;
 
   return {
@@ -208,6 +215,8 @@ export function useDiaBorrador(fecha: string) {
     quitarTramo,
     setExtra,
     restablecer,
+    reemplazar,
     tieneCambios,
   };
 }
+
