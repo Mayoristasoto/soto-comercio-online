@@ -696,6 +696,78 @@ export function VistaSemanaPlanificacion() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Copiar día */}
+      <Dialog open={copiaOpen} onOpenChange={setCopiaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Copiar día</DialogTitle>
+            <DialogDescription>
+              Replicá los tramos de un día en otros días de la semana (ej. repetir lunes en miércoles y viernes).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Día de origen</Label>
+              <Select value={String(copiaOrigen)} onValueChange={(v) => setCopiaOrigen(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {dias.map((f, i) => (
+                    <SelectItem key={f} value={String(i)}>
+                      {DIA_CORTO[i]} {fechaCorta(f)} · {(datos[f]?.filas.length ?? 0)} tramos
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Días destino</Label>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {dias.map((f, i) => {
+                  const deshabilitado = i === copiaOrigen;
+                  const sel = copiaDestinos.includes(i);
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      disabled={deshabilitado}
+                      onClick={() =>
+                        setCopiaDestinos((prev) =>
+                          prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+                        )
+                      }
+                      className={`rounded-md border px-2 py-2 text-left text-sm transition-colors ${
+                        deshabilitado
+                          ? "opacity-40 cursor-not-allowed"
+                          : sel
+                          ? "border-primary bg-primary/10"
+                          : "hover:bg-muted/60"
+                      }`}
+                    >
+                      <div className="font-medium">{DIA_CORTO[i]}</div>
+                      <div className="text-[11px] text-muted-foreground">{fechaCorta(f)}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Los días destino se reemplazan por los tramos copiados (no se suman a los turnos asignados).
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCopiaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={copiarDia} disabled={!copiaDestinos.length}>
+              <CopyPlus className="h-4 w-4 mr-2" />
+              Copiar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
