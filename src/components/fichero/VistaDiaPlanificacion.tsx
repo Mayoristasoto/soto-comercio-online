@@ -333,7 +333,7 @@ export function VistaDiaPlanificacion({
     for (const f of todas) {
       const auto =
         ultimoTramo[f.empleado_id] === f.key
-          ? Math.max(0, Math.round(((horasPorEmpleado[f.empleado_id] ?? 0) - JORNADA_BASE_HS) * 100) / 100)
+          ? redondearExtras((horasPorEmpleado[f.empleado_id] ?? 0) - JORNADA_BASE_HS)
           : 0;
       f.extras = f.extrasManual != null ? f.extrasManual : auto;
     }
