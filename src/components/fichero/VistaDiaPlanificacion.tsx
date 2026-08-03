@@ -65,13 +65,14 @@ const HORA_HASTA = 23;
 
 const hhmm = (v?: string | null) => (v ? v.slice(0, 5) : "");
 
-function horasEntre(entrada: string, salida: string, pausaMin: number) {
+function horasEntre(entrada: string, salida: string, _pausaMin?: number) {
   const [eh, em] = entrada.split(":").map(Number);
   const [sh, sm] = salida.split(":").map(Number);
   if ([eh, em, sh, sm].some((n) => Number.isNaN(n))) return 0;
   let mins = sh * 60 + sm - (eh * 60 + em);
   if (mins < 0) mins += 24 * 60;
-  return Math.max(0, (mins - (pausaMin || 0)) / 60);
+  // La pausa (40 min) está contemplada dentro de la jornada: no se descuenta
+  return Math.max(0, mins / 60);
 }
 
 function cubreHora(entrada: string, salida: string, hora: number) {
