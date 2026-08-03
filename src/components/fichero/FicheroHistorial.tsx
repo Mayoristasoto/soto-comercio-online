@@ -104,6 +104,8 @@ export default function FicheroHistorial() {
   const [resumenEmpleados, setResumenEmpleados] = useState<EmpleadoResumen[]>([])
   const [mostrarResumen, setMostrarResumen] = useState(false)
   const [fichajeAEliminar, setFichajeAEliminar] = useState<string | null>(null)
+  const [fichajeAEditar, setFichajeAEditar] = useState<{ id: string; nombre: string; tipo: string; fecha: string; hora: string } | null>(null)
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false)
   const [esAdmin, setEsAdmin] = useState(false)
   const [fotoModal, setFotoModal] = useState<{open: boolean, foto: FotoVerificacion | null, loading: boolean}>({
     open: false,
