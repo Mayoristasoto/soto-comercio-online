@@ -12,9 +12,11 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Settings } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, CalendarRange, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Settings } from 'lucide-react';
 import { TimelineView } from './TimelineView';
 import VistaDiaPlanificacion from './VistaDiaPlanificacion';
+import { VistaSemanaPlanificacion } from './VistaSemanaPlanificacion';
+
 import HorariosDragDrop from './HorariosDragDrop';
 import ScheduleImport from './ScheduleImport';
 import AssignmentImport from './AssignmentImport';
