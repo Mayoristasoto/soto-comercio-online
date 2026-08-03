@@ -548,7 +548,7 @@ export function VistaDiaPlanificacion({
       {/* Barra del día */}
       <Card>
         <CardContent className="p-4 flex flex-wrap items-end gap-3">
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${modoSemana ? "hidden" : ""}`}>
             <Button variant="outline" size="icon" onClick={() => cambiarDia(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
