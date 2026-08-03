@@ -22,6 +22,7 @@ import {
   BarChart3,
   Filter,
   Trash2,
+  Pencil,
   Calendar as CalendarDaysIcon,
   TrendingUp,
   History,
