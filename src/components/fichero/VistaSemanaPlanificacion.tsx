@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -590,7 +591,7 @@ export function VistaSemanaPlanificacion() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="borrador">Borrador</SelectItem>
-                  <SelectItem value="confirmada">Confirmada</SelectItem>
+                  <SelectItem value="confirmado">Confirmada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
