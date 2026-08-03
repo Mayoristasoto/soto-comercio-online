@@ -537,4 +537,117 @@ export function exportSemanaPDF(
   doc.save(`planificacion-semana-${inicio}.pdf`);
 }
 
+/* ================= Resumen compacto (cobertura + horarios) ================= */
+
+export function exportSemanaResumenPDF(
+  inicio: string,
+  dias: DiaSemanaExport[],
+  filtros: string,
+  nombre = ""
+) {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  const M = 8;
+
+  // Rango de horas con actividad
+  const horasConDatos = new Set<string>();
+  for (const d of dias) for (const c of d.cobertura) if (c.cantidad > 0) horasConDatos.add(c.hora);
+  const horas = (dias[0]?.cobertura ?? []).map((c) => c.hora).filter((hh) => horasConDatos.has(hh));
+
+  const cabecera = () => {
+    doc.setFillColor(...PRIMARY);
+    doc.rect(0, 0, w, 12, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text("Resumen semanal — cobertura por hora y horarios", M, 5.5);
+    doc.setFontSize(7);
+    doc.text(nombre || `Semana del ${fechaLarga(inicio)}`, M, 9.8);
+    doc.text(filtros, w - M, 9.8, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+  };
+
+  cabecera();
+  let y = 16;
+
+  for (const d of dias) {
+    const filas = d.filas;
+    const porEmp = new Map<string, { nombre: string; suc: string; tramos: string[] }>();
+    for (const f of filas) {
+      const cur = porEmp.get(f.empleado_id) ?? { nombre: f.nombre, suc: f.sucursal_nombre, tramos: [] };
+      cur.tramos.push(`${f.entrada}-${f.salida}`);
+      porEmp.set(f.empleado_id, cur);
+    }
+    const items = [...porEmp.values()].sort((a, b) => a.suc.localeCompare(b.suc) || a.nombre.localeCompare(b.nombre));
+
+    const cols = 4;
+    const lineas = Math.ceil(items.length / cols);
+    const need = 6 + (horas.length ? 8 : 0) + lineas * 3.2 + 4;
+    if (y + need > h - 6) {
+      doc.addPage();
+      cabecera();
+      y = 16;
+    }
+
+    // Título del día
+    doc.setFillColor(240, 235, 246);
+    doc.rect(M, y, w - M * 2, 5, "F");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...PRIMARY);
+    const totH = filas.reduce((a, f) => a + f.horas, 0);
+    doc.text(`${nombreDia(d.fecha)} ${d.fecha.slice(8)}/${d.fecha.slice(5, 7)}`, M + 1.5, y + 3.5);
+    doc.text(
+      `${porEmp.size} empleados · ${totH.toFixed(1)} h`,
+      w - M - 1.5,
+      y + 3.5,
+      { align: "right" }
+    );
+    doc.setTextColor(0, 0, 0);
+    y += 6;
+
+    // Cobertura por hora (una fila de horas + una de cantidades)
+    if (horas.length) {
+      const cw = (w - M * 2) / horas.length;
+      doc.setFontSize(5.5);
+      horas.forEach((hh, i) => {
+        const x = M + i * cw;
+        const cant = d.cobertura.find((c) => c.hora === hh)?.cantidad ?? 0;
+        doc.setFillColor(...PRIMARY);
+        doc.setTextColor(255, 255, 255);
+        doc.rect(x, y, cw, 3.2, "F");
+        doc.text(hh, x + cw / 2, y + 2.3, { align: "center" });
+        const int = cant === 0 ? 255 : Math.max(215 - cant * 12, 150);
+        doc.setFillColor(int, int, 245);
+        doc.rect(x, y + 3.2, cw, 3.6, "F");
+        doc.setDrawColor(220);
+        doc.rect(x, y + 3.2, cw, 3.6, "S");
+        doc.setTextColor(cant === 0 ? 160 : 20);
+        doc.text(String(cant), x + cw / 2, y + 5.8, { align: "center" });
+      });
+      doc.setTextColor(0, 0, 0);
+      y += 8;
+    }
+
+    // Horarios por empleado en columnas
+    doc.setFontSize(6);
+    const colW = (w - M * 2) / cols;
+    items.forEach((it, idx) => {
+      const c = Math.floor(idx / lineas);
+      const r = idx % lineas;
+      const x = M + c * colW;
+      const texto = `${it.nombre} · ${it.tramos.join(" / ")} (${it.suc})`;
+      doc.text(doc.splitTextToSize(texto, colW - 2)[0], x, y + r * 3.2 + 2.2);
+    });
+    y += lineas * 3.2 + 4;
+    if (!items.length) {
+      doc.setTextColor(150);
+      doc.text("Sin asignaciones", M, y - 2);
+      doc.setTextColor(0, 0, 0);
+    }
+  }
+
+  doc.save(`resumen-semana-${inicio}.pdf`);
+}
+
+
 
