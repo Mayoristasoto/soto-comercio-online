@@ -996,6 +996,48 @@ export default function FicheroHistorial() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Diálogo de edición de fecha/hora */}
+      <Dialog open={fichajeAEditar !== null} onOpenChange={(open) => !open && setFichajeAEditar(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar fichaje</DialogTitle>
+            <DialogDescription>
+              {fichajeAEditar
+                ? `${fichajeAEditar.nombre} — ${fichajeAEditar.tipo.replace('_', ' ')}`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Fecha</label>
+              <Input
+                type="date"
+                value={fichajeAEditar?.fecha ?? ''}
+                onChange={(e) =>
+                  setFichajeAEditar((prev) => (prev ? { ...prev, fecha: e.target.value } : prev))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">Hora</label>
+              <Input
+                type="time"
+                value={fichajeAEditar?.hora ?? ''}
+                onChange={(e) =>
+                  setFichajeAEditar((prev) => (prev ? { ...prev, hora: e.target.value } : prev))
+                }
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setFichajeAEditar(null)}>Cancelar</Button>
+            <Button onClick={guardarEdicion} disabled={guardandoEdicion}>
+              {guardandoEdicion ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de foto de verificación */}
       <Dialog open={fotoModal.open} onOpenChange={(open) => !open && setFotoModal({ open: false, foto: null, loading: false })}>
         <DialogContent className="sm:max-w-md">
