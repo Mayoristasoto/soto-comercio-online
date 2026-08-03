@@ -40,7 +40,7 @@ import {
   type DatosDiaPlanificacion,
 } from "@/components/fichero/VistaDiaPlanificacion";
 import { escribirBorradorDia, nuevoTramoId } from "@/hooks/useDiaBorrador";
-import { exportSemanaPDF, exportSemanaXLSX, type DiaSemanaExport } from "@/utils/horariosDiaExport";
+import { exportSemanaPDF, exportSemanaXLSX, exportSemanaResumenPDF, type DiaSemanaExport } from "@/utils/horariosDiaExport";
 
 const DIA_CORTO = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
