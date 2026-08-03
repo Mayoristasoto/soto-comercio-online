@@ -451,6 +451,17 @@ export function VistaSemanaPlanificacion() {
             </div>
 
             <div className="ml-auto flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCopiaOrigen(diaSel);
+                  setCopiaDestinos([]);
+                  setCopiaOpen(true);
+                }}
+              >
+                <CopyPlus className="h-4 w-4 mr-2" />
+                Copiar día
+              </Button>
               <Button variant="outline" onClick={limpiarSemana}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Restablecer semana
