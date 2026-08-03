@@ -364,7 +364,7 @@ export function VistaDiaPlanificacion({
           a.nombre.localeCompare(b.nombre) ||
           a.entrada.localeCompare(b.entrada)
       );
-  }, [filasReales, borrador, sucursalFiltro, grupoSel]);
+  }, [filasReales, borrador, sucursalFiltro, grupoSel, empleadosVacaciones]);
 
 
 
