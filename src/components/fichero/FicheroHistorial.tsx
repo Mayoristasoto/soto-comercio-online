@@ -309,6 +309,55 @@ export default function FicheroHistorial() {
     }
   }
 
+  const abrirEdicion = (fichaje: FichajeHistorial) => {
+    setFichajeAEditar({
+      id: fichaje.id,
+      nombre: `${fichaje.empleado_nombre} ${fichaje.empleado_apellido}`,
+      tipo: fichaje.tipo,
+      // Fecha y hora en zona Argentina
+      fecha: formatArgentinaDate(fichaje.timestamp_real, 'yyyy-MM-dd'),
+      hora: formatArgentinaTime(fichaje.timestamp_real).slice(0, 5)
+    })
+  }
+
+  const guardarEdicion = async () => {
+    if (!fichajeAEditar) return
+    const { id, fecha, hora } = fichajeAEditar
+    if (!fecha || !hora) {
+      toast({ title: "Datos incompletos", description: "Indicá fecha y hora", variant: "destructive" })
+      return
+    }
+
+    setGuardandoEdicion(true)
+    try {
+      // Se guarda con offset de Argentina (-03:00)
+      const nuevoTimestamp = new Date(`${fecha}T${hora}:00-03:00`).toISOString()
+
+      const { error } = await supabase
+        .from('fichajes')
+        .update({ timestamp_real: nuevoTimestamp })
+        .eq('id', id)
+
+      if (error) throw error
+
+      toast({
+        title: "Fichaje actualizado",
+        description: `Nueva hora: ${hora} del ${fecha.split('-').reverse().join('/')}`
+      })
+      setFichajeAEditar(null)
+      cargarFichajes()
+    } catch (error: any) {
+      console.error('Error editando fichaje:', error)
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el fichaje",
+        variant: "destructive"
+      })
+    } finally {
+      setGuardandoEdicion(false)
+    }
+  }
+
   const exportarCSV = () => {
     const headers = ['Empleado', 'Fecha', 'Hora', 'Tipo', 'Estado', 'Confianza Facial']
     const rows = fichajes.map(fichaje => [
