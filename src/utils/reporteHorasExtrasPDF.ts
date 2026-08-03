@@ -18,7 +18,7 @@ export interface ConfigHorasExtras {
   baseDomingoHs: number;
   redondeoMin: number;        // tamaño del bloque de redondeo en minutos (0 = sin redondeo)
   redondeoUmbralMin: number;  // minutos sobrantes a partir de los cuales se redondea hacia arriba
-  horaEntradaRef: string;     // "HH:MM" — minutos fichados antes de esta hora no se computan
+  horaEntradaRef: string;     // Conservado por compatibilidad; el cálculo usa siempre la entrada real
 }
 
 export const DEFAULT_CONFIG_HE: ConfigHorasExtras = {
@@ -75,7 +75,7 @@ export interface JornadaCalculada {
   brutasHs: number;
   extraHs: number; // ya con tolerancia y redondeo aplicados
   extraHsBruto: number; // sin tolerancia (informativo)
-  excesoRealMin: number; // minutos crudos de exceso (post clamp 09:00, pre redondeo)
+  excesoRealMin: number; // minutos crudos de exceso desde la entrada real, antes del redondeo
   redondeoLabel: string; // ej: "19 min → 30 min", "12 min → 0", "50 min → 1h"
 }
 
@@ -132,15 +132,9 @@ export function calcularJornadas(
     const entradaRealMs = new Date(entrada.timestamp_real).getTime();
     const salidaMs = new Date(salida.timestamp_real).getTime();
 
-    // Construir hora de entrada de referencia para esa fecha en zona Argentina (UTC-3).
-    // `fecha` ya viene en YYYY-MM-DD calculado en horario Argentina.
-    const [hhRef, mmRef] = (config.horaEntradaRef || "09:00").split(":").map((n) => parseInt(n, 10) || 0);
-    const refHHMM = `${String(hhRef).padStart(2, "0")}:${String(mmRef).padStart(2, "0")}`;
-    const entradaRefMs = new Date(`${fecha}T${refHHMM}:00-03:00`).getTime();
-
-    // Recortar: si fichó antes de la referencia, contar desde la referencia.
-    const entradaEfectivaMs = Math.max(entradaRealMs, entradaRefMs);
-    const ms = salidaMs - entradaEfectivaMs;
+    // La jornada se mide desde la fichada real. Ej.: 07:00–18:28 son
+    // 11 h 28 min; sobre una base de 8 h, el exceso real es 3 h 28 min.
+    const ms = salidaMs - entradaRealMs;
     if (ms <= 0) continue;
     const brutasHs = ms / (1000 * 60 * 60);
 
