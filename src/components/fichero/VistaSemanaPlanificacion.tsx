@@ -503,8 +503,16 @@ export function VistaSemanaPlanificacion() {
                       exportSemanaPDF(inicio, diasExport, filtrosTexto, valorHoraExtra, planActual?.nombre || "")
                     }
                   >
-                    PDF
+                    PDF completo
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      exportSemanaResumenPDF(inicio, diasExport, filtrosTexto, planActual?.nombre || "")
+                    }
+                  >
+                    PDF resumen (cobertura + horarios)
+                  </DropdownMenuItem>
+
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
