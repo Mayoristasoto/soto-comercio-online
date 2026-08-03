@@ -312,7 +312,9 @@ export function VistaDiaPlanificacion({
         };
       });
 
-    const extra = borrador.agregados.map((a) => ({
+    const extra = borrador.agregados
+      .filter((a) => !empleadosVacaciones.has(a.empleado_id))
+      .map((a) => ({
       key: `tramo-${a.id}`,
       tramo_id: a.id,
       empleado_id: a.empleado_id,
