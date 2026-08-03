@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  CopyPlus,
   Download,
   Info,
   RotateCcw,
