@@ -223,7 +223,7 @@ export function VistaDiaPlanificacion({
     (async () => {
       setLoading(true);
       try {
-        const [{ data: sucs }, { data: emps }, { data: asignaciones }] = await Promise.all([
+        const [{ data: sucs }, { data: emps }, { data: asignaciones }, { data: vacs }] = await Promise.all([
           supabase.from("sucursales").select("id, nombre").order("nombre"),
           supabase
             .from("empleados")
@@ -236,13 +236,23 @@ export function VistaDiaPlanificacion({
             .eq("activo", true)
             .lte("fecha_inicio", fecha)
             .or(`fecha_fin.is.null,fecha_fin.gte.${fecha}`),
+          // Vacaciones aprobadas, gozadas o pendientes de aprobación que cubren la fecha
+          supabase
+            .from("solicitudes_vacaciones")
+            .select("empleado_id, fecha_inicio, fecha_fin, estado")
+            .in("estado", ["pendiente", "aprobada", "gozadas"])
+            .lte("fecha_inicio", fecha)
+            .gte("fecha_fin", fecha),
         ]);
 
         if (cancelado) return;
 
+        const enVacaciones = new Set(((vacs || []) as any[]).map((v) => v.empleado_id));
+        setEmpleadosVacaciones(enVacaciones);
+
         const sucList = (sucs || []) as { id: string; nombre: string }[];
         setSucursales(sucList);
-        setEmpleados((emps || []) as EmpleadoBase[]);
+        setEmpleados(((emps || []) as EmpleadoBase[]).filter((e) => !enVacaciones.has(e.id)));
 
         const nombreSuc = new Map(sucList.map((s) => [s.id, s.nombre]));
         const diaSemana = new Date(`${fecha}T00:00:00`).getDay();
