@@ -91,10 +91,52 @@ const hoyISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-export function VistaDiaPlanificacion() {
+export interface DatosDiaPlanificacion {
+  fecha: string;
+  filas: {
+    key: string;
+    empleado_id: string;
+    nombre: string;
+    sucursal_id: string | null;
+    sucursal_nombre: string;
+    entrada: string;
+    salida: string;
+    pausa: number;
+    horas: number;
+    extras: number;
+    origen: FilaDiaExport["origen"];
+  }[];
+  filasExport: FilaDiaExport[];
+  cobertura: CoberturaHora[];
+  totalHoras: number;
+  totalExtras: number;
+  valorHoraExtra: number;
+}
+
+interface VistaDiaPlanificacionProps {
+  /** Fecha controlada desde afuera (planificación semanal) */
+  fecha?: string;
+  onFechaChange?: (fecha: string) => void;
+  /** Oculta el selector de fecha y el export del día */
+  modoSemana?: boolean;
+  onDatosChange?: (datos: DatosDiaPlanificacion) => void;
+}
+
+export function VistaDiaPlanificacion({
+  fecha: fechaProp,
+  onFechaChange,
+  modoSemana = false,
+  onDatosChange,
+}: VistaDiaPlanificacionProps = {}) {
   const { toast } = useToast();
-  const [fecha, setFecha] = useState(hoyISO());
+  const [fechaInterna, setFechaInterna] = useState(hoyISO());
+  const fecha = fechaProp ?? fechaInterna;
+  const setFecha = (v: string) => {
+    if (onFechaChange) onFechaChange(v);
+    else setFechaInterna(v);
+  };
   const [loading, setLoading] = useState(true);
+
   const [filasReales, setFilasReales] = useState<FilaReal[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [empleados, setEmpleados] = useState<EmpleadoBase[]>([]);
