@@ -271,7 +271,7 @@ export function VistaDiaPlanificacion({
   }, [fecha, toast]);
 
   const filas = useMemo(() => {
-    const base = filasReales
+    const base = (borrador.soloAgregados ? [] : filasReales)
       .filter((f) => !borrador.eliminados.includes(f.empleado_id))
       .map((f) => {
         const ed = borrador.ediciones[f.empleado_id];
