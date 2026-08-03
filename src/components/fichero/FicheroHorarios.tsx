@@ -872,6 +872,12 @@ export default function FicheroHorarios() {
           <TimelineView />
         </TabsContent>
 
+        <TabsContent value="week" className="space-y-4">
+          <VistaSemanaPlanificacion />
+        </TabsContent>
+
+
+
         <TabsContent value="management" className="space-y-6">
       {/* Gestión de Turnos */}
       <Card>
