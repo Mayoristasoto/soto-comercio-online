@@ -629,31 +629,36 @@ export function VistaDiaPlanificacion({
               <RotateCcw className="h-4 w-4 mr-2" />
               Restablecer
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar día
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
-                  Excel (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
-                  PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!modoSemana && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar día
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
+                    Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
+                    PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
-        <Info className="h-4 w-4 shrink-0" />
-        Simulación informativa — no modifica los horarios asignados. Los cambios quedan guardados solo en
-        este navegador.
-      </div>
+      {!modoSemana && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+          <Info className="h-4 w-4 shrink-0" />
+          Simulación informativa — no modifica los horarios asignados. Los cambios quedan guardados solo en
+          este navegador.
+        </div>
+      )}
+
 
       {/* Resumen */}
       <div className="grid gap-3 md:grid-cols-5">
