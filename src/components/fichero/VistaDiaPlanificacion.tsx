@@ -410,6 +410,34 @@ export function VistaDiaPlanificacion({
     origen: f.origen,
   }));
 
+  useEffect(() => {
+    if (!onDatosChange || loading) return;
+    onDatosChange({
+      fecha,
+      filas: filas.map((f) => ({
+        key: f.key,
+        empleado_id: f.empleado_id,
+        nombre: f.nombre,
+        sucursal_id: f.sucursal_id,
+        sucursal_nombre: f.sucursal_nombre,
+        entrada: f.entrada,
+        salida: f.salida,
+        pausa: f.pausa,
+        horas: horasEntre(f.entrada, f.salida, f.pausa),
+        extras: f.extras || 0,
+        origen: f.origen,
+      })),
+      filasExport,
+      cobertura,
+      totalHoras,
+      totalExtras,
+      valorHoraExtra: valorHoraEfectivo || 0,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fecha, loading, filas, cobertura, valorHoraEfectivo]);
+
+
+
   const filtrosTexto = [
     sucursalFiltro === "todas"
       ? "Todas las sucursales"
