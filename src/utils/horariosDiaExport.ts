@@ -341,6 +341,200 @@ function dibujarDiaPDF(
     }
   }
 
-  doc.save(`horarios-dia-${fecha}.pdf`);
 }
+
+/* ============================ Semana ============================ */
+
+export interface DiaSemanaExport {
+  fecha: string;
+  filas: FilaDiaExport[];
+  cobertura: CoberturaHora[];
+}
+
+const DIA_LABEL = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const nombreDia = (fecha: string) => {
+  const [y, m, d] = fecha.split("-").map(Number);
+  return DIA_LABEL[new Date(y, m - 1, d).getDay()];
+};
+
+export function exportSemanaXLSX(
+  inicio: string,
+  dias: DiaSemanaExport[],
+  filtros: string,
+  valorHoraExtra = 0,
+  nombre = ""
+) {
+  const wb = XLSX.utils.book_new();
+
+  const totalHoras = dias.reduce((a, d) => a + d.filas.reduce((s, f) => s + f.horas, 0), 0);
+  const totalExtras = dias.reduce((a, d) => a + d.filas.reduce((s, f) => s + (f.extras || 0), 0), 0);
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet([
+      { Campo: "Planificación", Valor: nombre || `Semana del ${fechaLarga(inicio)}` },
+      { Campo: "Filtros", Valor: filtros },
+      { Campo: "Horas programadas", Valor: Number(totalHoras.toFixed(2)) },
+      { Campo: "Horas extras", Valor: Number(totalExtras.toFixed(2)) },
+      { Campo: "Costo horas extras", Valor: Number((totalExtras * valorHoraExtra).toFixed(2)) },
+    ]),
+    "Info"
+  );
+
+  // Resumen por día
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(
+      dias.map((d) => ({
+        Día: nombreDia(d.fecha),
+        Fecha: d.fecha,
+        Empleados: new Set(d.filas.map((f) => f.empleado_id)).size,
+        Tramos: d.filas.length,
+        Horas: Number(d.filas.reduce((a, f) => a + f.horas, 0).toFixed(2)),
+        "Horas extras": Number(d.filas.reduce((a, f) => a + (f.extras || 0), 0).toFixed(2)),
+        "Pico cobertura": d.cobertura.reduce((m, c) => Math.max(m, c.cantidad), 0),
+      }))
+    ),
+    "Resumen semanal"
+  );
+
+  // Horas por empleado
+  const porEmpleado = new Map<string, { nombre: string; horas: number; extras: number; dias: Set<string> }>();
+  for (const d of dias)
+    for (const f of d.filas) {
+      const cur =
+        porEmpleado.get(f.empleado_id) ?? { nombre: f.nombre, horas: 0, extras: 0, dias: new Set<string>() };
+      cur.horas += f.horas;
+      cur.extras += f.extras || 0;
+      cur.dias.add(d.fecha);
+      porEmpleado.set(f.empleado_id, cur);
+    }
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(
+      [...porEmpleado.values()]
+        .sort((a, b) => a.nombre.localeCompare(b.nombre))
+        .map((e) => ({
+          Empleado: e.nombre,
+          "Días trabajados": e.dias.size,
+          Horas: Number(e.horas.toFixed(2)),
+          "Horas extras": Number(e.extras.toFixed(2)),
+        }))
+    ),
+    "Horas por empleado"
+  );
+
+  // Horas por sucursal
+  const porSucursal = new Map<string, number>();
+  for (const d of dias) for (const f of d.filas) porSucursal.set(f.sucursal_nombre, (porSucursal.get(f.sucursal_nombre) ?? 0) + f.horas);
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(
+      [...porSucursal.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([s, hs]) => ({ Sucursal: s, Horas: Number(hs.toFixed(2)) }))
+    ),
+    "Horas por sucursal"
+  );
+
+  // Una hoja por día
+  for (const d of dias) {
+    const hoja = d.filas.map((f) => ({
+      Sucursal: f.sucursal_nombre,
+      Empleado: f.nombre,
+      Entrada: f.entrada,
+      Salida: f.salida,
+      "Pausa (min)": f.pausa,
+      Horas: Number(f.horas.toFixed(2)),
+      "Horas extras": f.extras || 0,
+      Origen: ORIGEN_LABEL[f.origen],
+    }));
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(hoja.length ? hoja : [{ Sucursal: "Sin asignaciones" }]),
+      `${nombreDia(d.fecha).slice(0, 3)} ${d.fecha.slice(5)}`
+    );
+  }
+
+  XLSX.writeFile(wb, `planificacion-semana-${inicio}.xlsx`);
+}
+
+export function exportSemanaPDF(
+  inicio: string,
+  dias: DiaSemanaExport[],
+  filtros: string,
+  valorHoraExtra = 0,
+  nombre = ""
+) {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const w = doc.internal.pageSize.getWidth();
+
+  // Portada / resumen semanal
+  doc.setFillColor(...PRIMARY);
+  doc.rect(0, 0, w, 22, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.text("Planificación semanal", 14, 10);
+  doc.setFontSize(10);
+  doc.text(nombre || `Semana del ${fechaLarga(inicio)}`, 14, 17);
+  doc.setFontSize(8);
+  doc.text(filtros, w - 14, 17, { align: "right" });
+  doc.setTextColor(...ACCENT);
+  doc.setFontSize(8);
+  doc.text("Documento informativo — no modifica los horarios asignados", 14, 28);
+  doc.setTextColor(0, 0, 0);
+
+  autoTable(doc, {
+    startY: 34,
+    head: [["Día", "Fecha", "Empleados", "Tramos", "Horas", "H. extras", "Pico cobertura"]],
+    body: dias.map((d) => [
+      nombreDia(d.fecha),
+      d.fecha,
+      String(new Set(d.filas.map((f) => f.empleado_id)).size),
+      String(d.filas.length),
+      d.filas.reduce((a, f) => a + f.horas, 0).toFixed(1),
+      d.filas.reduce((a, f) => a + (f.extras || 0), 0).toFixed(1),
+      String(d.cobertura.reduce((m, c) => Math.max(m, c.cantidad), 0)),
+    ]),
+    styles: { fontSize: 8, halign: "center", cellPadding: 1.5 },
+    headStyles: { fillColor: PRIMARY, textColor: 255, fontSize: 8 },
+  });
+
+  let y = (doc as any).lastAutoTable.finalY + 8;
+
+  const porEmpleado = new Map<string, { nombre: string; horas: number; extras: number; dias: Set<string> }>();
+  for (const d of dias)
+    for (const f of d.filas) {
+      const cur =
+        porEmpleado.get(f.empleado_id) ?? { nombre: f.nombre, horas: 0, extras: 0, dias: new Set<string>() };
+      cur.horas += f.horas;
+      cur.extras += f.extras || 0;
+      cur.dias.add(d.fecha);
+      porEmpleado.set(f.empleado_id, cur);
+    }
+
+  doc.setFontSize(10);
+  doc.setTextColor(...PRIMARY);
+  doc.text("Horas por empleado", 14, y);
+  doc.setTextColor(0, 0, 0);
+  autoTable(doc, {
+    startY: y + 2,
+    head: [["Empleado", "Días", "Horas", "H. extras"]],
+    body: [...porEmpleado.values()]
+      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+      .map((e) => [e.nombre, String(e.dias.size), e.horas.toFixed(1), e.extras.toFixed(1)]),
+    styles: { fontSize: 8, cellPadding: 1.5 },
+    columnStyles: { 1: { halign: "center" }, 2: { halign: "right" }, 3: { halign: "right" } },
+    headStyles: { fillColor: [149, 25, 141], textColor: 255, fontSize: 8 },
+  });
+
+  // Un bloque por día
+  for (const d of dias) {
+    doc.addPage();
+    dibujarDiaPDF(doc, d.fecha, d.filas, d.cobertura, filtros, valorHoraExtra, "Planificación semanal");
+  }
+
+  doc.save(`planificacion-semana-${inicio}.pdf`);
+}
+
 
