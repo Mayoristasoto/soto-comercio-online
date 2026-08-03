@@ -75,6 +75,16 @@ function horasEntre(entrada: string, salida: string, _pausaMin?: number) {
   return Math.max(0, mins / 60);
 }
 
+/** Redondeo de horas extras: >=19 min => 0.5 h, >=45 min => 1 h */
+function redondearExtras(horas: number) {
+  if (horas <= 0) return 0;
+  const enteras = Math.floor(horas + 1e-9);
+  const mins = Math.round((horas - enteras) * 60);
+  if (mins >= 45) return enteras + 1;
+  if (mins >= 19) return enteras + 0.5;
+  return enteras;
+}
+
 function cubreHora(entrada: string, salida: string, hora: number) {
   const [eh, em] = entrada.split(":").map(Number);
   const [sh, sm] = salida.split(":").map(Number);
