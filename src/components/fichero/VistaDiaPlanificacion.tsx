@@ -91,10 +91,52 @@ const hoyISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-export function VistaDiaPlanificacion() {
+export interface DatosDiaPlanificacion {
+  fecha: string;
+  filas: {
+    key: string;
+    empleado_id: string;
+    nombre: string;
+    sucursal_id: string | null;
+    sucursal_nombre: string;
+    entrada: string;
+    salida: string;
+    pausa: number;
+    horas: number;
+    extras: number;
+    origen: FilaDiaExport["origen"];
+  }[];
+  filasExport: FilaDiaExport[];
+  cobertura: CoberturaHora[];
+  totalHoras: number;
+  totalExtras: number;
+  valorHoraExtra: number;
+}
+
+interface VistaDiaPlanificacionProps {
+  /** Fecha controlada desde afuera (planificación semanal) */
+  fecha?: string;
+  onFechaChange?: (fecha: string) => void;
+  /** Oculta el selector de fecha y el export del día */
+  modoSemana?: boolean;
+  onDatosChange?: (datos: DatosDiaPlanificacion) => void;
+}
+
+export function VistaDiaPlanificacion({
+  fecha: fechaProp,
+  onFechaChange,
+  modoSemana = false,
+  onDatosChange,
+}: VistaDiaPlanificacionProps = {}) {
   const { toast } = useToast();
-  const [fecha, setFecha] = useState(hoyISO());
+  const [fechaInterna, setFechaInterna] = useState(hoyISO());
+  const fecha = fechaProp ?? fechaInterna;
+  const setFecha = (v: string) => {
+    if (onFechaChange) onFechaChange(v);
+    else setFechaInterna(v);
+  };
   const [loading, setLoading] = useState(true);
+
   const [filasReales, setFilasReales] = useState<FilaReal[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [empleados, setEmpleados] = useState<EmpleadoBase[]>([]);
@@ -229,7 +271,7 @@ export function VistaDiaPlanificacion() {
   }, [fecha, toast]);
 
   const filas = useMemo(() => {
-    const base = filasReales
+    const base = (borrador.soloAgregados ? [] : filasReales)
       .filter((f) => !borrador.eliminados.includes(f.empleado_id))
       .map((f) => {
         const ed = borrador.ediciones[f.empleado_id];
@@ -368,6 +410,34 @@ export function VistaDiaPlanificacion() {
     origen: f.origen,
   }));
 
+  useEffect(() => {
+    if (!onDatosChange || loading) return;
+    onDatosChange({
+      fecha,
+      filas: filas.map((f) => ({
+        key: f.key,
+        empleado_id: f.empleado_id,
+        nombre: f.nombre,
+        sucursal_id: f.sucursal_id,
+        sucursal_nombre: f.sucursal_nombre,
+        entrada: f.entrada,
+        salida: f.salida,
+        pausa: f.pausa,
+        horas: horasEntre(f.entrada, f.salida, f.pausa),
+        extras: f.extras || 0,
+        origen: f.origen,
+      })),
+      filasExport,
+      cobertura,
+      totalHoras,
+      totalExtras,
+      valorHoraExtra: valorHoraEfectivo || 0,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fecha, loading, filas, cobertura, valorHoraEfectivo]);
+
+
+
   const filtrosTexto = [
     sucursalFiltro === "todas"
       ? "Todas las sucursales"
@@ -478,7 +548,7 @@ export function VistaDiaPlanificacion() {
       {/* Barra del día */}
       <Card>
         <CardContent className="p-4 flex flex-wrap items-end gap-3">
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${modoSemana ? "hidden" : ""}`}>
             <Button variant="outline" size="icon" onClick={() => cambiarDia(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -559,31 +629,36 @@ export function VistaDiaPlanificacion() {
               <RotateCcw className="h-4 w-4 mr-2" />
               Restablecer
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar día
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
-                  Excel (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
-                  PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!modoSemana && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar día
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
+                    Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
+                    PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
-        <Info className="h-4 w-4 shrink-0" />
-        Simulación informativa — no modifica los horarios asignados. Los cambios quedan guardados solo en
-        este navegador.
-      </div>
+      {!modoSemana && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+          <Info className="h-4 w-4 shrink-0" />
+          Simulación informativa — no modifica los horarios asignados. Los cambios quedan guardados solo en
+          este navegador.
+        </div>
+      )}
+
 
       {/* Resumen */}
       <div className="grid gap-3 md:grid-cols-5">

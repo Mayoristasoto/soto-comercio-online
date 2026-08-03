@@ -12,9 +12,11 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Plus, Edit, Users, Calendar, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Settings } from 'lucide-react';
+import { Clock, Plus, Edit, Users, Calendar, CalendarRange, ChevronLeft, ChevronRight, GripVertical, FileSpreadsheet, Trash2, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Settings } from 'lucide-react';
 import { TimelineView } from './TimelineView';
 import VistaDiaPlanificacion from './VistaDiaPlanificacion';
+import { VistaSemanaPlanificacion } from './VistaSemanaPlanificacion';
+
 import HorariosDragDrop from './HorariosDragDrop';
 import ScheduleImport from './ScheduleImport';
 import AssignmentImport from './AssignmentImport';
@@ -649,7 +651,7 @@ export default function FicheroHorarios() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="assignments" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="assignments">
             <Users className="h-4 w-4 mr-2" />
             Asignación de Horarios
@@ -662,11 +664,16 @@ export default function FicheroHorarios() {
             <Calendar className="h-4 w-4 mr-2" />
             Vista Calendario
           </TabsTrigger>
+          <TabsTrigger value="week">
+            <CalendarRange className="h-4 w-4 mr-2" />
+            Planificación Semanal
+          </TabsTrigger>
           <TabsTrigger value="management">
             <Clock className="h-4 w-4 mr-2" />
             Gestión de Turnos
           </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="assignments" className="space-y-6">
       {/* Asignación de Horarios */}
@@ -864,6 +871,12 @@ export default function FicheroHorarios() {
           <VistaDiaPlanificacion />
           <TimelineView />
         </TabsContent>
+
+        <TabsContent value="week" className="space-y-4">
+          <VistaSemanaPlanificacion />
+        </TabsContent>
+
+
 
         <TabsContent value="management" className="space-y-6">
       {/* Gestión de Turnos */}
