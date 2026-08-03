@@ -100,6 +100,20 @@ export function exportDiaPDF(
   valorHoraExtra = 0
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  dibujarDiaPDF(doc, fecha, filas, cobertura, filtros, valorHoraExtra);
+  doc.save(`horarios-dia-${fecha}.pdf`);
+}
+
+function dibujarDiaPDF(
+  doc: jsPDF,
+  fecha: string,
+  filas: FilaDiaExport[],
+  cobertura: CoberturaHora[],
+  filtros: string,
+  valorHoraExtra = 0,
+  tituloPrincipal = "Planificación del día"
+) {
+
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
 
