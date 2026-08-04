@@ -618,6 +618,7 @@ export function VistaDiaPlanificacion({
             />
           </div>
 
+          {verCostos && (
           <div className="min-w-[170px]">
             <Label className="text-xs">Valor hora extra ($)</Label>
             <Input
@@ -644,6 +645,8 @@ export function VistaDiaPlanificacion({
               </p>
             )}
           </div>
+          )}
+
 
 
           <div className="ml-auto flex items-center gap-2">
