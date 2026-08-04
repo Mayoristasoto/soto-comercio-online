@@ -21,7 +21,8 @@ import {
   ChevronRight,
   ArrowLeft,
   Image,
-  Calculator
+  Calculator,
+  Eye
 } from "lucide-react"
 import {
   Sidebar,
