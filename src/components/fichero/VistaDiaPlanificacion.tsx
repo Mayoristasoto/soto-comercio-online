@@ -438,7 +438,7 @@ export function VistaDiaPlanificacion({
     pausa: f.pausa,
     horas: horasEntre(f.entrada, f.salida, f.pausa),
     extras: f.extras || 0,
-    costoExtra: (f.extras || 0) * (valorHoraEfectivo || 0),
+    costoExtra: verCostos ? (f.extras || 0) * (valorHoraEfectivo || 0) : 0,
     origen: f.origen,
   }));
 
@@ -463,10 +463,10 @@ export function VistaDiaPlanificacion({
       cobertura,
       totalHoras,
       totalExtras,
-      valorHoraExtra: valorHoraEfectivo || 0,
+      valorHoraExtra: verCostos ? valorHoraEfectivo || 0 : 0,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fecha, loading, filas, cobertura, valorHoraEfectivo]);
+  }, [fecha, loading, filas, cobertura, valorHoraEfectivo, verCostos]);
 
 
 
@@ -673,10 +673,10 @@ export function VistaDiaPlanificacion({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
+                  <DropdownMenuItem onClick={() => exportDiaXLSX(fecha, filasExport, cobertura, filtrosTexto, verCostos ? valorHoraEfectivo : 0)}>
                     Excel (.xlsx)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, valorHoraEfectivo)}>
+                  <DropdownMenuItem onClick={() => exportDiaPDF(fecha, filasExport, cobertura, filtrosTexto, verCostos ? valorHoraEfectivo : 0)}>
                     PDF
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -940,7 +940,7 @@ export function VistaDiaPlanificacion({
                   <TableHead className="w-[100px]">Pausa</TableHead>
                   <TableHead className="w-[70px]">Horas</TableHead>
                   <TableHead className="w-[110px]">H. extras</TableHead>
-                  <TableHead className="w-[110px]">Costo extra</TableHead>
+                  {verCostos && <TableHead className="w-[110px]">Costo extra</TableHead>}
                   <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -1039,11 +1039,13 @@ export function VistaDiaPlanificacion({
                       />
 
                     </TableCell>
-                    <TableCell className="text-sm whitespace-nowrap">
-                      {(f.extras || 0) > 0 && valorHoraEfectivo > 0
-                        ? `$ ${((f.extras || 0) * valorHoraEfectivo).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`
-                        : "—"}
-                    </TableCell>
+                    {verCostos && (
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {(f.extras || 0) > 0 && valorHoraEfectivo > 0
+                          ? `$ ${((f.extras || 0) * valorHoraEfectivo).toLocaleString("es-AR", { maximumFractionDigits: 0 })}`
+                          : "—"}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center">
                         <Button
