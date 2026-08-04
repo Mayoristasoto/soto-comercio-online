@@ -201,6 +201,7 @@ const App = () => (
               <Route path="listado-incidencias" element={<ListadoIncidencias />} />
               <Route path="sucursales" element={<AdminDashboard />} />
               <Route path="gondolas" element={<Gondolas />} />
+              <Route path="insumos" element={<ControlInsumos />} />
               <Route path="gondolasedit" element={<GondolasEdit />} />
               <Route path="configuracion" element={<ConfiguracionAdmin />} />
               <Route path="auth-logs" element={<AdminAuthLogs />} />
