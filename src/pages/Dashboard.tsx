@@ -219,6 +219,11 @@ export default function Dashboard() {
     }
   }
 
+  // Dashboard simplificado para encargados/gerentes de sucursal
+  if (isGerente) {
+    return <DashboardEncargado nombre={userInfo?.nombre} />
+  }
+
   if (loading) {
     return (
       <div className="p-6 space-y-6">
