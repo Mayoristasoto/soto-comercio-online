@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast"
 import EventCalendar from "@/components/dashboard/EventCalendar"
 import { EstadoPersonalHoy } from "@/components/dashboard/EstadoPersonalHoy"
 import { CoberturaSucursales } from "@/components/dashboard/CoberturaSucursales"
+import { DashboardEncargado } from "@/components/dashboard/DashboardEncargado"
 import { PWAInstallPrompt, PWAUpdatePrompt } from "@/components/PWAInstall"
 
 interface UserInfo {
@@ -216,6 +217,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Dashboard simplificado para encargados/gerentes de sucursal
+  if (isGerente) {
+    return <DashboardEncargado nombre={userInfo?.nombre} />
   }
 
   if (loading) {
