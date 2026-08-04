@@ -3409,6 +3409,45 @@ export type Database = {
           },
         ]
       }
+      encargado_dashboard_accesos: {
+        Row: {
+          activo: boolean
+          clave: string
+          created_at: string
+          descripcion: string
+          icono: string
+          id: string
+          orden: number
+          titulo: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          activo?: boolean
+          clave: string
+          created_at?: string
+          descripcion?: string
+          icono?: string
+          id?: string
+          orden?: number
+          titulo: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          activo?: boolean
+          clave?: string
+          created_at?: string
+          descripcion?: string
+          icono?: string
+          id?: string
+          orden?: number
+          titulo?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       entregas_elementos: {
         Row: {
           cantidad: number
