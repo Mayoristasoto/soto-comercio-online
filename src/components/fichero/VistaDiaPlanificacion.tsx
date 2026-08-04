@@ -30,6 +30,8 @@ import {
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
 import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import { useDiaBorrador, type EdicionDia } from "@/hooks/useDiaBorrador";
+import { useEsRRHH } from "@/hooks/useEsRRHH";
+
 import {
   exportDiaPDF,
   exportDiaXLSX,
