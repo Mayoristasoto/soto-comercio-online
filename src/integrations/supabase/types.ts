@@ -7224,11 +7224,14 @@ export type Database = {
         Row: {
           aplicada_at: string | null
           aplicada_por: string | null
+          aprobada_at: string | null
+          aprobada_por: string | null
           creado_por: string | null
           created_at: string
           estado: string
           fecha_inicio_semana: string
           id: string
+          motivo_rechazo: string | null
           nombre: string | null
           notas: string | null
           plantilla_base_id: string | null
@@ -7237,11 +7240,14 @@ export type Database = {
         Insert: {
           aplicada_at?: string | null
           aplicada_por?: string | null
+          aprobada_at?: string | null
+          aprobada_por?: string | null
           creado_por?: string | null
           created_at?: string
           estado?: string
           fecha_inicio_semana: string
           id?: string
+          motivo_rechazo?: string | null
           nombre?: string | null
           notas?: string | null
           plantilla_base_id?: string | null
@@ -7250,11 +7256,14 @@ export type Database = {
         Update: {
           aplicada_at?: string | null
           aplicada_por?: string | null
+          aprobada_at?: string | null
+          aprobada_por?: string | null
           creado_por?: string | null
           created_at?: string
           estado?: string
           fecha_inicio_semana?: string
           id?: string
+          motivo_rechazo?: string | null
           nombre?: string | null
           notas?: string | null
           plantilla_base_id?: string | null
