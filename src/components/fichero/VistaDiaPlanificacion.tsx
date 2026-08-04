@@ -140,6 +140,10 @@ export function VistaDiaPlanificacion({
   onDatosChange,
 }: VistaDiaPlanificacionProps = {}) {
   const { toast } = useToast();
+  const { esRRHH } = useEsRRHH();
+  /** Solo RRHH ve valores y costos de horas extras */
+  const verCostos = esRRHH;
+
   const [fechaInterna, setFechaInterna] = useState(hoyISO());
   const fecha = fechaProp ?? fechaInterna;
   const setFecha = (v: string) => {
