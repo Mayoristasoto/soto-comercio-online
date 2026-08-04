@@ -42,6 +42,7 @@ import ListadoIncidencias from "./pages/ListadoIncidencias";
 
 // Legacy pages (mantener por compatibilidad)
 import Gondolas from "./pages/Gondolas";
+import ControlInsumos from "./pages/ControlInsumos";
 import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
 import ConfiguracionUsuario from "./pages/ConfiguracionUsuario";
 import GondolasEdit from "./pages/GondolasEdit";
