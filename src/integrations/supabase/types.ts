@@ -5906,6 +5906,124 @@ export type Database = {
         }
         Relationships: []
       }
+      insumos_catalogo: {
+        Row: {
+          activo: boolean
+          categoria: string
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+          unidad: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          categoria?: string
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+          unidad?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          unidad?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      insumos_control: {
+        Row: {
+          cantidad: number | null
+          created_at: string
+          estado: string
+          fecha: string
+          id: string
+          insumo_id: string
+          necesita_reposicion: boolean
+          observaciones: string | null
+          registrado_por: string | null
+          sucursal_id: string
+          updated_at: string
+        }
+        Insert: {
+          cantidad?: number | null
+          created_at?: string
+          estado?: string
+          fecha?: string
+          id?: string
+          insumo_id: string
+          necesita_reposicion?: boolean
+          observaciones?: string | null
+          registrado_por?: string | null
+          sucursal_id: string
+          updated_at?: string
+        }
+        Update: {
+          cantidad?: number | null
+          created_at?: string
+          estado?: string
+          fecha?: string
+          id?: string
+          insumo_id?: string
+          necesita_reposicion?: boolean
+          observaciones?: string | null
+          registrado_por?: string | null
+          sucursal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insumos_control_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insumos_control_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insumos_control_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insumos_control_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insumos_control_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insumos_control_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intentos_evaluacion: {
         Row: {
           aprobado: boolean
