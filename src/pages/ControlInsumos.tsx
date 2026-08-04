@@ -78,7 +78,11 @@ export default function ControlInsumos() {
           .select("id, nombre, categoria, orden")
           .eq("activo", true)
           .order("orden", { ascending: true }),
-        supabase.from("sucursales").select("id, nombre").eq("activo", true).order("nombre"),
+        (supabase as any)
+          .from("sucursales")
+          .select("id, nombre")
+          .eq("activo", true)
+          .order("nombre"),
       ])
       setInsumos((ins as Insumo[]) ?? [])
       setSucursales((suc as any) ?? [])
