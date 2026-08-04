@@ -42,6 +42,7 @@ import ListadoIncidencias from "./pages/ListadoIncidencias";
 
 // Legacy pages (mantener por compatibilidad)
 import Gondolas from "./pages/Gondolas";
+import ControlInsumos from "./pages/ControlInsumos";
 import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
 import ConfiguracionUsuario from "./pages/ConfiguracionUsuario";
 import GondolasEdit from "./pages/GondolasEdit";
@@ -200,6 +201,7 @@ const App = () => (
               <Route path="listado-incidencias" element={<ListadoIncidencias />} />
               <Route path="sucursales" element={<AdminDashboard />} />
               <Route path="gondolas" element={<Gondolas />} />
+              <Route path="insumos" element={<ControlInsumos />} />
               <Route path="gondolasedit" element={<GondolasEdit />} />
               <Route path="configuracion" element={<ConfiguracionAdmin />} />
               <Route path="auth-logs" element={<AdminAuthLogs />} />
