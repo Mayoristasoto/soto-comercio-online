@@ -35,6 +35,7 @@ import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
 import AsignarSucursales from "./pages/AsignarSucursales";
 import PlanificacionSemanal from "./pages/PlanificacionSemanal";
+import PreviewPanelEncargado from "./pages/PreviewPanelEncargado";
 import DesafiosTV from "./pages/DesafiosTV";
 import RankingIncidencias from "./pages/RankingIncidencias";
 import ListadoIncidencias from "./pages/ListadoIncidencias";
@@ -207,6 +208,7 @@ const App = () => (
               <Route path="aprobar-fotos-faciales" element={<AprobarFotosFaciales />} />
               <Route path="instructivo-screenshots" element={<InstructivoScreenshots />} />
               <Route path="editor-fechas-ingreso" element={<EditorFechasIngreso />} />
+              <Route path="preview-panel-encargado" element={<PreviewPanelEncargado />} />
             </Route>
             
             {/* Módulo Finanzas / Rentabilidad */}
