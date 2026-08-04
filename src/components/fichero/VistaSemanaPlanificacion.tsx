@@ -33,13 +33,16 @@ import {
   Info,
   RotateCcw,
   Save,
+  Send,
   Trash2,
+  XCircle,
 } from "lucide-react";
 import {
   VistaDiaPlanificacion,
   type DatosDiaPlanificacion,
 } from "@/components/fichero/VistaDiaPlanificacion";
 import { escribirBorradorDia, nuevoTramoId } from "@/hooks/useDiaBorrador";
+import { useEsRRHH } from "@/hooks/useEsRRHH";
 import { exportSemanaPDF, exportSemanaXLSX, exportSemanaResumenPDF, type DiaSemanaExport } from "@/utils/horariosDiaExport";
 
 const DIA_CORTO = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -71,10 +74,23 @@ interface PlanGuardado {
   estado: string | null;
   notas: string | null;
   aplicada_at: string | null;
+  aprobada_at: string | null;
+  motivo_rechazo: string | null;
 }
+
+const ESTADO_LABEL: Record<string, string> = {
+  borrador: "Borrador",
+  pendiente_aprobacion: "Pendiente de aprobación RRHH",
+  aprobada: "Aprobada por RRHH",
+  confirmado: "Confirmada",
+  rechazada: "Rechazada por RRHH",
+};
+
+const estadoTexto = (e?: string | null) => ESTADO_LABEL[e || "borrador"] || e || "borrador";
 
 export function VistaSemanaPlanificacion() {
   const { toast } = useToast();
+  const { esRRHH } = useEsRRHH();
   const [inicio, setInicio] = useState(() => lunesDe(iso(new Date())));
   const [diaSel, setDiaSel] = useState(0);
   const [datos, setDatos] = useState<Record<string, DatosDiaPlanificacion>>({});
@@ -87,6 +103,7 @@ export function VistaSemanaPlanificacion() {
   const [nombre, setNombre] = useState("");
   const [notas, setNotas] = useState("");
   const [estado, setEstado] = useState("borrador");
+  const [aprobando, setAprobando] = useState(false);
   const [copiarDe, setCopiarDe] = useState<string>("");
   const [copiaOpen, setCopiaOpen] = useState(false);
   const [copiaOrigen, setCopiaOrigen] = useState(0);
@@ -98,7 +115,7 @@ export function VistaSemanaPlanificacion() {
   const cargarPlanes = useCallback(async () => {
     const { data } = await supabase
       .from("planificacion_semanal")
-      .select("id, nombre, fecha_inicio_semana, estado, notas, aplicada_at")
+      .select("id, nombre, fecha_inicio_semana, estado, notas, aplicada_at, aprobada_at, motivo_rechazo")
       .order("fecha_inicio_semana", { ascending: false })
       .limit(60);
     setPlanes((data || []) as PlanGuardado[]);
@@ -155,6 +172,14 @@ export function VistaSemanaPlanificacion() {
         estado,
         creado_por: empleadoId,
       };
+
+      // Si no es RRHH, cualquier edición vuelve el estado a pendiente de aprobación
+      if (!esRRHH) {
+        payloadCabecera.estado = estado === "borrador" ? "borrador" : "pendiente_aprobacion";
+        payloadCabecera.aprobada_at = null;
+        payloadCabecera.aprobada_por = null;
+        payloadCabecera.motivo_rechazo = null;
+      }
 
       let planId = planActual?.id ?? null;
       if (planId) {
@@ -214,6 +239,57 @@ export function VistaSemanaPlanificacion() {
       toast({ title: "Error al guardar", description: e.message, variant: "destructive" });
     } finally {
       setGuardando(false);
+    }
+  };
+
+  /** Cambia el estado de aprobación de la semana guardada */
+  const resolverAprobacion = async (nuevo: "pendiente_aprobacion" | "aprobada" | "rechazada") => {
+    if (!planActual) return;
+    setAprobando(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      let empleadoId: string | null = null;
+      if (userData.user?.id) {
+        const { data: emp } = await supabase
+          .from("empleados")
+          .select("id")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        empleadoId = emp?.id ?? null;
+      }
+
+      const payload: any = { estado: nuevo };
+      if (nuevo === "aprobada") {
+        payload.aprobada_at = new Date().toISOString();
+        payload.aprobada_por = empleadoId;
+        payload.motivo_rechazo = null;
+      } else {
+        payload.aprobada_at = null;
+        payload.aprobada_por = null;
+        if (nuevo === "pendiente_aprobacion") payload.motivo_rechazo = null;
+      }
+
+      const { error } = await supabase
+        .from("planificacion_semanal")
+        .update(payload)
+        .eq("id", planActual.id);
+      if (error) throw error;
+
+      toast({
+        title:
+          nuevo === "aprobada"
+            ? "Planificación aprobada"
+            : nuevo === "rechazada"
+            ? "Planificación rechazada"
+            : "Enviada a RRHH",
+        description: `Semana del ${fechaCorta(inicio)}`,
+      });
+      await cargarPlanes();
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setAprobando(false);
     }
   };
 
@@ -471,14 +547,50 @@ export function VistaSemanaPlanificacion() {
                 <Save className="h-4 w-4 mr-2" />
                 {planActual ? "Actualizar semana" : "Guardar semana"}
               </Button>
-              {planActual &&
+              {esRRHH && planActual?.estado === "pendiente_aprobacion" && (
+                <>
+                  <Button
+                    variant="default"
+                    disabled={aprobando}
+                    onClick={() => resolverAprobacion("aprobada")}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Aprobar semana
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={aprobando}
+                    onClick={() => resolverAprobacion("rechazada")}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Rechazar
+                  </Button>
+                </>
+              )}
+              {!esRRHH && planActual && planActual.estado !== "pendiente_aprobacion" && planActual.estado !== "aprobada" && (
+                <Button variant="secondary" disabled={aprobando} onClick={() => resolverAprobacion("pendiente_aprobacion")}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar a RRHH
+                </Button>
+              )}
+              {esRRHH &&
+                planActual &&
                 (planActual.aplicada_at ? (
                   <Button variant="outline" onClick={revertir}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Quitar aplicación
                   </Button>
                 ) : (
-                  <Button variant="secondary" onClick={aplicar}>
+                  <Button
+                    variant="secondary"
+                    onClick={aplicar}
+                    disabled={planActual.estado !== "aprobada"}
+                    title={
+                      planActual.estado !== "aprobada"
+                        ? "La planificación debe estar aprobada por RRHH"
+                        : "Aplicar horarios"
+                    }
+                  >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Aplicar horarios
                   </Button>
@@ -493,14 +605,14 @@ export function VistaSemanaPlanificacion() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={() =>
-                      exportSemanaXLSX(inicio, diasExport, filtrosTexto, valorHoraExtra, planActual?.nombre || "")
+                      exportSemanaXLSX(inicio, diasExport, filtrosTexto, esRRHH ? valorHoraExtra : 0, planActual?.nombre || "")
                     }
                   >
                     Excel (.xlsx)
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
-                      exportSemanaPDF(inicio, diasExport, filtrosTexto, valorHoraExtra, planActual?.nombre || "")
+                      exportSemanaPDF(inicio, diasExport, filtrosTexto, esRRHH ? valorHoraExtra : 0, planActual?.nombre || "")
                     }
                   >
                     PDF completo
@@ -557,11 +669,17 @@ export function VistaSemanaPlanificacion() {
         {planActual ? (
           <>
             <span className="font-medium">{planActual.nombre || "Semana guardada"}</span>
-            <Badge variant="outline">{planActual.estado || "borrador"}</Badge>
+            <Badge variant="outline">{estadoTexto(planActual.estado)}</Badge>
             {planActual.aplicada_at ? (
               <Badge className="bg-green-600 text-white hover:bg-green-600">Aplicada</Badge>
+            ) : planActual.estado === "aprobada" ? (
+              <span>Aprobada por RRHH — lista para aplicar a los horarios reales.</span>
+            ) : planActual.estado === "pendiente_aprobacion" ? (
+              <span>Enviada a RRHH: se aplica solo cuando RRHH la aprueba.</span>
+            ) : planActual.estado === "rechazada" ? (
+              <span>Rechazada por RRHH{planActual.motivo_rechazo ? `: ${planActual.motivo_rechazo}` : ""} — ajustá y volvé a enviarla.</span>
             ) : (
-              <span>Guardada, todavía no aplicada a los horarios reales.</span>
+              <span>Borrador — enviala a RRHH para que la apruebe.</span>
             )}
           </>
         ) : (
@@ -572,7 +690,7 @@ export function VistaSemanaPlanificacion() {
       </div>
 
       {/* Resumen semanal */}
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className={`grid gap-3 ${esRRHH ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Empleados en la semana</p>
@@ -591,14 +709,16 @@ export function VistaSemanaPlanificacion() {
             <p className="text-2xl font-bold">{totalExtras.toFixed(1)} h</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Costo horas extras</p>
-            <p className="text-2xl font-bold">
-              $ {(totalExtras * valorHoraExtra).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-            </p>
-          </CardContent>
-        </Card>
+        {esRRHH && (
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Costo horas extras</p>
+              <p className="text-2xl font-bold">
+                $ {(totalExtras * valorHoraExtra).toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Día seleccionado (los 7 quedan montados para poder guardar y exportar la semana completa) */}
@@ -628,7 +748,7 @@ export function VistaSemanaPlanificacion() {
             >
               <span className="font-medium">{p.nombre || "Semana"}</span>
               <Badge variant="outline">{fechaCorta(p.fecha_inicio_semana)}</Badge>
-              <Badge variant="secondary">{p.estado || "borrador"}</Badge>
+              <Badge variant="secondary">{estadoTexto(p.estado)}</Badge>
               {p.aplicada_at && (
                 <Badge className="bg-green-600 text-white hover:bg-green-600">Aplicada</Badge>
               )}
@@ -677,7 +797,8 @@ export function VistaSemanaPlanificacion() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="borrador">Borrador</SelectItem>
-                  <SelectItem value="confirmado">Confirmada</SelectItem>
+                  <SelectItem value="pendiente_aprobacion">Enviar a aprobación de RRHH</SelectItem>
+                  {esRRHH && <SelectItem value="aprobada">Aprobada por RRHH</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
