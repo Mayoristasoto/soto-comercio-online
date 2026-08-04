@@ -1,44 +1,39 @@
 import { useNavigate } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Package, CalendarRange, Repeat, ArrowRight, LayoutDashboard } from "lucide-react"
+import {
+  Calendar,
+  Package,
+  CalendarRange,
+  Repeat,
+  ArrowRight,
+  LayoutDashboard,
+  Link2,
+  Pencil,
+  type LucideIcon,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useEncargadoAccesos, type AccesoEncargado } from "@/hooks/useEncargadoAccesos"
 
-interface AccesoEncargado {
-  titulo: string
-  descripcion: string
-  icon: any
-  url: string
+const ICONS: Record<string, LucideIcon> = {
+  Calendar,
+  Package,
+  CalendarRange,
+  Repeat,
+  LayoutDashboard,
 }
 
-const accesos: AccesoEncargado[] = [
-  {
-    titulo: "Carga de vacaciones",
-    descripcion: "Cargar y consultar vacaciones del personal de tu sucursal",
-    icon: Calendar,
-    url: "/rrhh/vacaciones",
-  },
-  {
-    titulo: "Control de inventario sucursal",
-    descripcion: "Relevamiento y control de góndolas e inventario",
-    icon: Package,
-    url: "/admin/gondolas",
-  },
-  {
-    titulo: "Planificación semanal",
-    descripcion: "Armar la semana y cubrir ausencias o vacaciones",
-    icon: CalendarRange,
-    url: "/admin/planificacion-semanal",
-  },
-  {
-    titulo: "Cambios de horario por día",
-    descripcion: "Registrar cambios o intercambios de horario entre empleados",
-    icon: Repeat,
-    url: "/operaciones/fichero#cambios",
-  },
-]
+interface Props {
+  nombre?: string
+  mostrarRutas?: boolean
+  onEditar?: (acceso: AccesoEncargado) => void
+  accesos?: AccesoEncargado[]
+}
 
-export function DashboardEncargado({ nombre }: { nombre?: string }) {
+export function DashboardEncargado({ nombre, mostrarRutas, onEditar, accesos: accesosProp }: Props) {
   const navigate = useNavigate()
+  const { accesos: accesosHook } = useEncargadoAccesos()
+  const accesos = accesosProp ?? accesosHook
 
   return (
     <div className="p-6 space-y-6">
@@ -54,26 +49,50 @@ export function DashboardEncargado({ nombre }: { nombre?: string }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {accesos.map((acceso) => (
-          <Card
-            key={acceso.titulo}
-            className="cursor-pointer transition-shadow hover:shadow-lg"
-            onClick={() => navigate(acceso.url)}
-          >
-            <CardContent className="p-6 flex items-start gap-4">
-              <div className="rounded-lg bg-primary/10 p-3">
-                <acceso.icon className="h-7 w-7 text-primary" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-lg font-semibold">{acceso.titulo}</h2>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        {accesos.map((acceso) => {
+          const Icon = ICONS[acceso.icon] ?? LayoutDashboard
+          return (
+            <Card
+              key={acceso.id}
+              className="cursor-pointer transition-shadow hover:shadow-lg"
+              onClick={() => navigate(acceso.url)}
+            >
+              <CardContent className="p-6 flex items-start gap-4">
+                <div className="rounded-lg bg-primary/10 p-3">
+                  <Icon className="h-7 w-7 text-primary" />
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">{acceso.descripcion}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-lg font-semibold">{acceso.titulo}</h2>
+                    <div className="flex items-center gap-1">
+                      {onEditar && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEditar(acceso)
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{acceso.descripcion}</p>
+                  {mostrarRutas && (
+                    <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground font-mono truncate">
+                      <Link2 className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{acceso.url}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )
