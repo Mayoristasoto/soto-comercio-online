@@ -247,6 +247,10 @@ const App = () => (
           {/* Calificación de empleados (página pública) */}
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />
           <Route path="/calificar-v2/:token" element={<CalificarEmpleadoV2 />} />
+
+          {/* Preview del panel de encargados (standalone) */}
+          <Route path="/preview-panel-encargado" element={<PreviewPanelEncargado />} />
+
           
           {/* Generador de QR Demo (protegido) */}
           <Route path="/" element={<UnifiedLayout />}>
