@@ -726,6 +726,25 @@ export default function PlanificacionSemanal() {
           </p>
         </div>
 
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-3 justify-between">
+            <p className="text-sm text-muted-foreground">
+              Para armar la semana con tramos por sucursal, horas extras, cobertura por hora y
+              exportables, usá la vista nueva en <strong>Fichero &gt; Horarios &gt; Semana</strong>.
+              Esta pantalla conviene usarla para plantillas base, domingos/feriados y carga masiva.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => (window.location.href = '/operaciones/fichero#horarios')}
+            >
+              Ir a Fichero &gt; Horarios
+            </Button>
+          </CardContent>
+        </Card>
+
+
         <Tabs defaultValue="planificacion" className="space-y-4">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="planificacion">

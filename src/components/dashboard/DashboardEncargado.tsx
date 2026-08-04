@@ -10,6 +10,13 @@ import {
   LayoutDashboard,
   Link2,
   Pencil,
+  ClipboardList,
+  Users,
+  Clock,
+  FileText,
+  EyeOff,
+  ChevronUp,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,23 +24,39 @@ import { useEncargadoAccesos, type AccesoEncargado } from "@/hooks/useEncargadoA
 
 const ICONS: Record<string, LucideIcon> = {
   Calendar,
-  Package,
   CalendarRange,
+  Package,
   Repeat,
+  ClipboardList,
+  Users,
+  Clock,
+  FileText,
   LayoutDashboard,
 }
 
 interface Props {
   nombre?: string
   mostrarRutas?: boolean
+  modoEdicion?: boolean
   onEditar?: (acceso: AccesoEncargado) => void
+  onMover?: (id: string, direccion: -1 | 1) => void
   accesos?: AccesoEncargado[]
 }
 
-export function DashboardEncargado({ nombre, mostrarRutas, onEditar, accesos: accesosProp }: Props) {
+export function DashboardEncargado({
+  nombre,
+  mostrarRutas,
+  modoEdicion,
+  onEditar,
+  onMover,
+  accesos: accesosProp,
+}: Props) {
   const navigate = useNavigate()
   const { accesos: accesosHook } = useEncargadoAccesos()
-  const accesos = accesosProp ?? accesosHook
+  const todos = accesosProp ?? accesosHook
+  const accesos = [...todos]
+    .filter((a) => modoEdicion || a.activo)
+    .sort((a, b) => a.orden - b.orden)
 
   return (
     <div className="p-6 space-y-6">
@@ -54,7 +77,9 @@ export function DashboardEncargado({ nombre, mostrarRutas, onEditar, accesos: ac
           return (
             <Card
               key={acceso.id}
-              className="cursor-pointer transition-shadow hover:shadow-lg"
+              className={`cursor-pointer transition-shadow hover:shadow-lg ${
+                !acceso.activo ? "opacity-50" : ""
+              }`}
               onClick={() => navigate(acceso.url)}
             >
               <CardContent className="p-6 flex items-start gap-4">
@@ -63,8 +88,39 @@ export function DashboardEncargado({ nombre, mostrarRutas, onEditar, accesos: ac
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-lg font-semibold">{acceso.titulo}</h2>
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      {acceso.titulo}
+                      {modoEdicion && !acceso.activo && (
+                        <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                    </h2>
                     <div className="flex items-center gap-1">
+                      {onMover && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onMover(acceso.id, -1)
+                            }}
+                          >
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onMover(acceso.id, 1)
+                            }}
+                          >
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
                       {onEditar && (
                         <Button
                           variant="ghost"
