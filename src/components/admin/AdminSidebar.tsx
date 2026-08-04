@@ -115,6 +115,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Calificaciones QR", url: "/admin#calificaciones", icon: Trophy },
       { title: "Sorteos", url: "/admin#sorteos", icon: Trophy },
       { title: "Screenshots Instructivo", url: "/admin/instructivo-screenshots", icon: Image },
+      { title: "Ver panel de Encargados", url: "/admin/preview-panel-encargado", icon: Eye },
     ]
   }
 ]
