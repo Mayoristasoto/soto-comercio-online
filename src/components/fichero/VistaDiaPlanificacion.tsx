@@ -696,7 +696,7 @@ export function VistaDiaPlanificacion({
 
 
       {/* Resumen */}
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className={`grid gap-3 ${verCostos ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Empleados</p>
@@ -715,15 +715,25 @@ export function VistaDiaPlanificacion({
             <p className="text-2xl font-bold">{picoCobertura}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Costo horas extras</p>
-            <p className="text-2xl font-bold">
-              $ {costoExtras.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-            </p>
-            <p className="text-[11px] text-muted-foreground">{totalExtras.toFixed(1)} h extras</p>
-          </CardContent>
-        </Card>
+        {verCostos ? (
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Costo horas extras</p>
+              <p className="text-2xl font-bold">
+                $ {costoExtras.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+              </p>
+              <p className="text-[11px] text-muted-foreground">{totalExtras.toFixed(1)} h extras</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Horas extras</p>
+              <p className="text-2xl font-bold">{totalExtras.toFixed(1)} h</p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Provisorios</p>
