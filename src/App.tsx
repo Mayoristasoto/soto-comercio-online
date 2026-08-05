@@ -85,6 +85,7 @@ import Rentabilidad from "./pages/Rentabilidad";
 import NovedadesAlert from "./pages/NovedadesAlert";
 import TableroProyectos from "./pages/TableroProyectos";
 import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
+import ResumenMes from "./pages/ResumenMes";
 import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
 import PlanillaDescansos from "./pages/PlanillaDescansos";
