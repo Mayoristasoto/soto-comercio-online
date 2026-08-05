@@ -562,7 +562,7 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Restablecer semana
               </Button>
-              <Button onClick={abrirGuardar} disabled={guardando}>
+              <Button onClick={abrirGuardar} disabled={guardando || bloqueadaEncargado}>
                 <Save className="h-4 w-4 mr-2" />
                 {planActual ? "Actualizar semana" : "Guardar semana"}
               </Button>
@@ -579,7 +579,10 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
                   <Button
                     variant="outline"
                     disabled={aprobando}
-                    onClick={() => resolverAprobacion("rechazada")}
+                    onClick={() => {
+                      const motivo = window.prompt("Motivo del rechazo (opcional)") ?? undefined;
+                      resolverAprobacion("rechazada", motivo);
+                    }}
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     Rechazar
@@ -589,9 +592,10 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
               {!esRRHH && planActual && planActual.estado !== "pendiente_aprobacion" && planActual.estado !== "aprobada" && (
                 <Button variant="secondary" disabled={aprobando} onClick={() => resolverAprobacion("pendiente_aprobacion")}>
                   <Send className="h-4 w-4 mr-2" />
-                  Enviar a RRHH
+                  Enviar a validación de RRHH
                 </Button>
               )}
+
               {esRRHH &&
                 planActual &&
                 (planActual.aplicada_at ? (
