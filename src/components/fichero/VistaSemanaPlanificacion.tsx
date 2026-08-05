@@ -486,6 +486,12 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
 
   const filtrosTexto = `Semana ${fechaCorta(inicio)} al ${fechaCorta(dias[6])}`;
 
+  /** En modo encargado la semana se bloquea cuando ya fue enviada o aprobada */
+  const bloqueadaEncargado =
+    modoEncargado &&
+    (planActual?.estado === "pendiente_aprobacion" || planActual?.estado === "aprobada");
+
+
   return (
     <div className="space-y-4">
       {/* Barra de la semana */}
