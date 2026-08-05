@@ -608,22 +608,25 @@ export function VistaDiaPlanificacion({
             </Button>
           </div>
 
-          <div className="min-w-[180px]">
-            <Label className="text-xs">Sucursal</Label>
-            <Select value={sucursalFiltro} onValueChange={setSucursalFiltro}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {sucursales.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!sucursalFija && (
+            <div className="min-w-[180px]">
+              <Label className="text-xs">Sucursal</Label>
+              <Select value={sucursalFiltro} onValueChange={setSucursalFiltro}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
 
           <div className="min-w-[220px]">
             <SelectorGrupoCompacto
