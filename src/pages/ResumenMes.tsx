@@ -321,7 +321,7 @@ export default function ResumenMes() {
       "Extras reales": Number(d.extras_reales.toFixed(2)),
       "Extras a pagar": d.extras_pagas,
     }))), "Horas extras");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(feriados.map((f) => ({
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(feriadosFiltrados.map((f) => ({
       Fecha: f.fecha, Feriado: f.feriado_nombre, Legajo: f.empleado_legajo || "",
       Empleado: `${f.empleado_apellido}, ${f.empleado_nombre}`, Sucursal: f.sucursal_nombre || "",
       Entrada: f.hora_entrada?.slice(0, 5) || "", Salida: f.hora_salida?.slice(0, 5) || "",
