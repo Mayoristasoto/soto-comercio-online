@@ -541,10 +541,18 @@ export default function ResumenMes() {
               </Table>
             )
           ) : (
-            <FeriadosTrabajadosTable rows={feriados} />
+            <FeriadosTrabajadosTable rows={feriadosFiltrados} />
           )}
         </CardContent>
       </Card>
+
+      <JustificarEventoDialog
+        evento={eventoJust}
+        open={!!eventoJust}
+        onClose={() => setEventoJust(null)}
+        onSaved={cargarJustificaciones}
+      />
     </div>
+
   );
 }
