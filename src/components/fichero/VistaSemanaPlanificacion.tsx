@@ -818,19 +818,22 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
               <Label>Nombre</Label>
               <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
             </div>
-            <div>
-              <Label>Estado</Label>
-              <Select value={estado} onValueChange={setEstado}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="borrador">Borrador</SelectItem>
-                  <SelectItem value="pendiente_aprobacion">Enviar a aprobación de RRHH</SelectItem>
-                  {esRRHH && <SelectItem value="aprobada">Aprobada por RRHH</SelectItem>}
-                </SelectContent>
-              </Select>
-            </div>
+            {!modoEncargado && (
+              <div>
+                <Label>Estado</Label>
+                <Select value={estado} onValueChange={setEstado}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="borrador">Borrador</SelectItem>
+                    <SelectItem value="pendiente_aprobacion">Enviar a aprobación de RRHH</SelectItem>
+                    {esRRHH && <SelectItem value="aprobada">Aprobada por RRHH</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div>
               <Label>Notas</Label>
               <Textarea
