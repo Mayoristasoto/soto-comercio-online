@@ -133,6 +133,8 @@ interface VistaDiaPlanificacionProps {
   /** Oculta el selector de fecha y el export del día */
   modoSemana?: boolean;
   onDatosChange?: (datos: DatosDiaPlanificacion) => void;
+  /** Fija la sucursal (encargados): oculta el selector de sucursal */
+  sucursalFija?: string | null;
 }
 
 export function VistaDiaPlanificacion({
@@ -140,6 +142,7 @@ export function VistaDiaPlanificacion({
   onFechaChange,
   modoSemana = false,
   onDatosChange,
+  sucursalFija,
 }: VistaDiaPlanificacionProps = {}) {
   const { toast } = useToast();
   const { esRRHH } = useEsRRHH();
@@ -152,6 +155,7 @@ export function VistaDiaPlanificacion({
     if (onFechaChange) onFechaChange(v);
     else setFechaInterna(v);
   };
+
   const [loading, setLoading] = useState(true);
 
   const [filasReales, setFilasReales] = useState<FilaReal[]>([]);
