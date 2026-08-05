@@ -366,6 +366,25 @@ export default function ResumenMes() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1">
+            <Label>Buscar empleado</Label>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-8 w-56"
+                placeholder="Apellido o nombre..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+          </div>
+          <SelectorGrupoCompacto
+            value={seleccion}
+            onChange={setSeleccion}
+            modulo="informes"
+            label="Grupo de empleados"
+            placeholderTodos="— Todos —"
+          />
           <Button onClick={cargar} disabled={loading} variant="outline">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar"}
           </Button>
@@ -374,6 +393,7 @@ export default function ResumenMes() {
           </Button>
         </CardContent>
       </Card>
+
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         {tarjetas.map((t) => (
