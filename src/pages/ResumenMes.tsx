@@ -103,6 +103,26 @@ export default function ResumenMes() {
     supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => setSucursales(data || []));
   }, []);
 
+  const cargarJustificaciones = async () => {
+    const { data, error } = await supabase
+      .from("justificaciones_asistencia")
+      .select("tipo_evento,empleado_id,fecha_evento,categoria_id,observacion,categorias_justificacion_asistencia(nombre,es_justificada)")
+      .gte("fecha_evento", desde)
+      .lte("fecha_evento", hasta);
+    if (error) { console.error(error); return; }
+    const map = new Map<string, { categoria_id: string; categoria: string; observacion: string | null; es_justificada: boolean }>();
+    for (const j of (data || []) as any[]) {
+      map.set(`${j.tipo_evento}|${j.empleado_id}|${j.fecha_evento}`, {
+        categoria_id: j.categoria_id,
+        categoria: j.categorias_justificacion_asistencia?.nombre || "—",
+        observacion: j.observacion,
+        es_justificada: !!j.categorias_justificacion_asistencia?.es_justificada,
+      });
+    }
+    setJustificaciones(map);
+  };
+
+
   const cargar = async () => {
     setLoading(true);
     try {
