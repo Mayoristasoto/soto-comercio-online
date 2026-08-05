@@ -445,19 +445,52 @@ export default function ResumenMes() {
                 <TableHeader><TableRow>
                   <TableHead>Fecha</TableHead><TableHead>Empleado</TableHead><TableHead>Sucursal</TableHead>
                   <TableHead>Situación</TableHead><TableHead>Entrada</TableHead><TableHead>Salida</TableHead>
+                  <TableHead>Justificación</TableHead><TableHead className="text-right">Acción</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {incompletas.map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{format(parseISO(r.fecha + "T00:00:00"), "dd/MM/yyyy")}</TableCell>
-                      <TableCell className="font-medium">{r.empleado}</TableCell>
-                      <TableCell>{r.sucursal || "—"}</TableCell>
-                      <TableCell><Badge variant={r.tipo === "Sin fichar" ? "destructive" : "secondary"}>{r.tipo}</Badge></TableCell>
-                      <TableCell>{r.entrada || "—"}</TableCell>
-                      <TableCell>{r.salida || "—"}</TableCell>
-                    </TableRow>
-                  ))}
+                  {incompletas.map((r, i) => {
+                    const tipoEv = tipoEvento(r.tipo);
+                    const j = jt(tipoEv, r.empleado_id, r.fecha);
+                    return (
+                      <TableRow key={i}>
+                        <TableCell>{format(parseISO(r.fecha + "T00:00:00"), "dd/MM/yyyy")}</TableCell>
+                        <TableCell className="font-medium">{r.empleado}</TableCell>
+                        <TableCell>{r.sucursal || "—"}</TableCell>
+                        <TableCell><Badge variant={r.tipo === "Sin fichar" ? "destructive" : "secondary"}>{r.tipo}</Badge></TableCell>
+                        <TableCell>{r.entrada || "—"}</TableCell>
+                        <TableCell>{r.salida || "—"}</TableCell>
+                        <TableCell>
+                          {j ? (
+                            <div className="space-y-0.5">
+                              <Badge variant={j.es_justificada ? "default" : "outline"}>{j.categoria}</Badge>
+                              {j.observacion && <p className="text-xs text-muted-foreground">{j.observacion}</p>}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Sin justificar</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEventoJust({
+                              empleado_id: r.empleado_id,
+                              empleado: r.empleado,
+                              fecha: r.fecha,
+                              tipo_evento: tipoEv,
+                              categoria_id: j?.categoria_id || null,
+                              observacion: j?.observacion || null,
+                            })}
+                          >
+                            <ShieldCheck className="h-4 w-4 mr-1" />
+                            {j ? "Editar" : "Justificar"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
+
               </Table>
             )
           ) : seccion === "domingos" ? (
