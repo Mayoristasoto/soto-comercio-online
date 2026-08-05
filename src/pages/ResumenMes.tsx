@@ -88,6 +88,14 @@ export default function ResumenMes() {
   const [feriados, setFeriados] = useState<FeriadoTrabajadoRow[]>([]);
   const [dias, setDias] = useState<DiaFichado[]>([]);
 
+  // Filtros extra
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+
+  // Justificaciones: clave `${tipo_evento}|${empleado_id}|${fecha}`
+  const [justificaciones, setJustificaciones] = useState<Map<string, { categoria_id: string; categoria: string; observacion: string | null; es_justificada: boolean }>>(new Map());
+  const [eventoJust, setEventoJust] = useState<EventoJustificable | null>(null);
+
   const desde = useMemo(() => format(startOfMonth(parseISO(mes + "-01")), "yyyy-MM-dd"), [mes]);
   const hasta = useMemo(() => format(endOfMonth(parseISO(mes + "-01")), "yyyy-MM-dd"), [mes]);
 
