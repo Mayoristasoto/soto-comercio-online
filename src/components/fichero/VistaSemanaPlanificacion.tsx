@@ -185,10 +185,16 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
         notas: notas.trim() || null,
         estado,
         creado_por: empleadoId,
+        sucursal_id: modoEncargado ? sucursalId : planActual?.sucursal_id ?? null,
       };
 
-      // Si no es RRHH, cualquier edición vuelve el estado a pendiente de aprobación
-      if (!esRRHH) {
+      // Los encargados siempre guardan borrador: la validación se envía aparte
+      if (modoEncargado) {
+        payloadCabecera.estado = "borrador";
+        payloadCabecera.aprobada_at = null;
+        payloadCabecera.aprobada_por = null;
+        payloadCabecera.motivo_rechazo = null;
+      } else if (!esRRHH) {
         payloadCabecera.estado = estado === "borrador" ? "borrador" : "pendiente_aprobacion";
         payloadCabecera.aprobada_at = null;
         payloadCabecera.aprobada_por = null;
@@ -203,11 +209,14 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
           .eq("id", planId);
         if (error) throw error;
       } else {
-        // upsert por fecha_inicio_semana (única) para evitar conflictos 409
+        // upsert por (sucursal, semana) para evitar conflictos 409
         const { data, error } = await supabase
           .from("planificacion_semanal")
-          .upsert(payloadCabecera, { onConflict: "fecha_inicio_semana" })
+          .upsert(payloadCabecera, {
+            onConflict: modoEncargado ? "sucursal_id,fecha_inicio_semana" : "fecha_inicio_semana",
+          })
           .select("id")
+
           .single();
         if (error) throw error;
         planId = data.id;
