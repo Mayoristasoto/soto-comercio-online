@@ -195,6 +195,7 @@ export default function ResumenMes() {
       }
       resultado.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.empleado.localeCompare(b.empleado));
       setDias(resultado);
+      await cargarJustificaciones();
       toast.success("Resumen del mes actualizado");
     } catch (e: any) {
       console.error(e);
@@ -206,13 +207,33 @@ export default function ResumenMes() {
 
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, [mes, sucursalSel]);
 
+  // ---- Filtros de empleados ----
+  const idsFiltro = useMemo(
+    () => (seleccion?.empleadoIds?.length ? new Set(seleccion.empleadoIds) : null),
+    [seleccion]
+  );
+
+  const pasa = (empleadoId: string, nombre: string) => {
+    if (idsFiltro && !idsFiltro.has(empleadoId)) return false;
+    const q = busqueda.trim().toLowerCase();
+    if (q && !nombre.toLowerCase().includes(q)) return false;
+    return true;
+  };
+
+  const jt = (tipo: string, empleadoId: string, fecha: string) =>
+    justificaciones.get(`${tipo}|${empleadoId}|${fecha}`);
+
+  const tipoEvento = (situacion: string) =>
+    situacion === "Sin fichar" ? "sin_fichar" : situacion === "Sin salida" ? "sin_salida" : "sin_entrada";
+
   // ---- Datos por sección ----
   const vacaciones = useMemo(() => {
-    const map = new Map<string, { empleado: string; legajo: string | null; sucursal: string | null; fechas: string[] }>();
+    const map = new Map<string, { empleado_id: string; empleado: string; legajo: string | null; sucursal: string | null; fechas: string[] }>();
     for (const n of novedades) {
       if (n.estado !== "VACACIONES") continue;
       const k = n.empleado_id;
       const cur = map.get(k) || {
+        empleado_id: n.empleado_id,
         empleado: `${n.empleado_apellido}, ${n.empleado_nombre}`,
         legajo: n.empleado_legajo,
         sucursal: n.sucursal_nombre,
@@ -222,12 +243,13 @@ export default function ResumenMes() {
       map.set(k, cur);
     }
     return [...map.values()]
+      .filter((v) => pasa(v.empleado_id, v.empleado))
       .map((v) => ({ ...v, fechas: v.fechas.sort(), dias: v.fechas.length }))
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
-  }, [novedades]);
+  }, [novedades, idsFiltro, busqueda]);
 
   const incompletas = useMemo(() => {
-    const rows: { empleado: string; legajo: string | null; sucursal: string | null; fecha: string; entrada: string | null; salida: string | null; tipo: string }[] = [];
+    const rows: { empleado_id: string; empleado: string; legajo: string | null; sucursal: string | null; fecha: string; entrada: string | null; salida: string | null; tipo: string }[] = [];
     for (const d of dias) {
       if (d.entrada && !d.salida) rows.push({ ...d, tipo: "Sin salida" });
       else if (!d.entrada && d.salida) rows.push({ ...d, tipo: "Sin entrada" });
@@ -235,6 +257,7 @@ export default function ResumenMes() {
     for (const n of novedades) {
       if (n.estado !== "NO_FICHADA") continue;
       rows.push({
+        empleado_id: n.empleado_id,
         empleado: `${n.empleado_apellido}, ${n.empleado_nombre}`,
         legajo: n.empleado_legajo,
         sucursal: n.sucursal_nombre,
@@ -244,10 +267,15 @@ export default function ResumenMes() {
         tipo: "Sin fichar",
       });
     }
-    return rows.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.empleado.localeCompare(b.empleado));
-  }, [dias, novedades]);
+    return rows
+      .filter((r) => pasa(r.empleado_id, r.empleado))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.empleado.localeCompare(b.empleado));
+  }, [dias, novedades, idsFiltro, busqueda]);
 
-  const domingos = useMemo(() => dias.filter((d) => d.domingo && (d.entrada || d.salida)), [dias]);
+  const domingos = useMemo(
+    () => dias.filter((d) => d.domingo && (d.entrada || d.salida) && pasa(d.empleado_id, d.empleado)),
+    [dias, idsFiltro, busqueda]
+  );
   const extras = useMemo(() => dias.filter((d) => d.extras_pagas > 0), [dias]);
 
   const totales = {
