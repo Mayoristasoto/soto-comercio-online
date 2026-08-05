@@ -265,38 +265,28 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
     }
   };
 
-  /** Cambia el estado de aprobación de la semana guardada */
-  const resolverAprobacion = async (nuevo: "pendiente_aprobacion" | "aprobada" | "rechazada") => {
+  /** Cambia el estado de aprobación de la semana guardada (vía funciones seguras) */
+  const resolverAprobacion = async (
+    nuevo: "pendiente_aprobacion" | "aprobada" | "rechazada",
+    motivo?: string
+  ) => {
     if (!planActual) return;
     setAprobando(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      let empleadoId: string | null = null;
-      if (userData.user?.id) {
-        const { data: emp } = await supabase
-          .from("empleados")
-          .select("id")
-          .eq("user_id", userData.user.id)
-          .maybeSingle();
-        empleadoId = emp?.id ?? null;
-      }
-
-      const payload: any = { estado: nuevo };
-      if (nuevo === "aprobada") {
-        payload.aprobada_at = new Date().toISOString();
-        payload.aprobada_por = empleadoId;
-        payload.motivo_rechazo = null;
+      if (nuevo === "pendiente_aprobacion") {
+        const { error } = await (supabase as any).rpc("enviar_planificacion_a_validacion", {
+          p_planificacion_id: planActual.id,
+        });
+        if (error) throw error;
       } else {
-        payload.aprobada_at = null;
-        payload.aprobada_por = null;
-        if (nuevo === "pendiente_aprobacion") payload.motivo_rechazo = null;
+        const { error } = await (supabase as any).rpc("resolver_planificacion", {
+          p_planificacion_id: planActual.id,
+          p_aprobar: nuevo === "aprobada",
+          p_motivo: motivo ?? null,
+        });
+        if (error) throw error;
       }
 
-      const { error } = await supabase
-        .from("planificacion_semanal")
-        .update(payload)
-        .eq("id", planActual.id);
-      if (error) throw error;
 
       toast({
         title:
