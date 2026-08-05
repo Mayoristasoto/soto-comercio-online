@@ -76,6 +76,7 @@ interface PlanGuardado {
   aplicada_at: string | null;
   aprobada_at: string | null;
   motivo_rechazo: string | null;
+  sucursal_id: string | null;
 }
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -88,13 +89,21 @@ const ESTADO_LABEL: Record<string, string> = {
 
 const estadoTexto = (e?: string | null) => ESTADO_LABEL[e || "borrador"] || e || "borrador";
 
-export function VistaSemanaPlanificacion() {
+interface VistaSemanaProps {
+  /** Vista simplificada para encargados: solo su sucursal, sin costos ni aplicar */
+  modoEncargado?: boolean;
+  /** Sucursal fija (obligatoria en modoEncargado) */
+  sucursalId?: string | null;
+}
+
+export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = null }: VistaSemanaProps = {}) {
   const { toast } = useToast();
   const { esRRHH } = useEsRRHH();
   const [inicio, setInicio] = useState(() => lunesDe(iso(new Date())));
   const [diaSel, setDiaSel] = useState(0);
   const [datos, setDatos] = useState<Record<string, DatosDiaPlanificacion>>({});
   const [remountKey, setRemountKey] = useState(0);
+
 
   const [planes, setPlanes] = useState<PlanGuardado[]>([]);
   const [planActual, setPlanActual] = useState<PlanGuardado | null>(null);
