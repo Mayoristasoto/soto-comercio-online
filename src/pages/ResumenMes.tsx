@@ -20,9 +20,14 @@ import {
   Sun,
   Clock,
   Flag,
+  Search,
+  ShieldCheck,
 } from "lucide-react";
 import { formatArgentinaDate, formatArgentinaTime } from "@/lib/dateUtils";
 import { FeriadosTrabajadosTable, type FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
+import { JustificarEventoDialog, type EventoJustificable } from "@/components/novedades/JustificarEventoDialog";
 
 interface Sucursal { id: string; nombre: string }
 interface EmpleadoLite { id: string; nombre: string; apellido: string; legajo: string | null; sucursal_id: string | null }
@@ -83,12 +88,40 @@ export default function ResumenMes() {
   const [feriados, setFeriados] = useState<FeriadoTrabajadoRow[]>([]);
   const [dias, setDias] = useState<DiaFichado[]>([]);
 
+  // Filtros extra
+  const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+
+  // Justificaciones: clave `${tipo_evento}|${empleado_id}|${fecha}`
+  const [justificaciones, setJustificaciones] = useState<Map<string, { categoria_id: string; categoria: string; observacion: string | null; es_justificada: boolean }>>(new Map());
+  const [eventoJust, setEventoJust] = useState<EventoJustificable | null>(null);
+
   const desde = useMemo(() => format(startOfMonth(parseISO(mes + "-01")), "yyyy-MM-dd"), [mes]);
   const hasta = useMemo(() => format(endOfMonth(parseISO(mes + "-01")), "yyyy-MM-dd"), [mes]);
 
   useEffect(() => {
     supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => setSucursales(data || []));
   }, []);
+
+  const cargarJustificaciones = async () => {
+    const { data, error } = await supabase
+      .from("justificaciones_asistencia")
+      .select("tipo_evento,empleado_id,fecha_evento,categoria_id,observacion,categorias_justificacion_asistencia(nombre,es_justificada)")
+      .gte("fecha_evento", desde)
+      .lte("fecha_evento", hasta);
+    if (error) { console.error(error); return; }
+    const map = new Map<string, { categoria_id: string; categoria: string; observacion: string | null; es_justificada: boolean }>();
+    for (const j of (data || []) as any[]) {
+      map.set(`${j.tipo_evento}|${j.empleado_id}|${j.fecha_evento}`, {
+        categoria_id: j.categoria_id,
+        categoria: j.categorias_justificacion_asistencia?.nombre || "—",
+        observacion: j.observacion,
+        es_justificada: !!j.categorias_justificacion_asistencia?.es_justificada,
+      });
+    }
+    setJustificaciones(map);
+  };
+
 
   const cargar = async () => {
     setLoading(true);
@@ -162,6 +195,7 @@ export default function ResumenMes() {
       }
       resultado.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.empleado.localeCompare(b.empleado));
       setDias(resultado);
+      await cargarJustificaciones();
       toast.success("Resumen del mes actualizado");
     } catch (e: any) {
       console.error(e);
@@ -173,13 +207,33 @@ export default function ResumenMes() {
 
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, [mes, sucursalSel]);
 
+  // ---- Filtros de empleados ----
+  const idsFiltro = useMemo(
+    () => (seleccion?.empleadoIds?.length ? new Set(seleccion.empleadoIds) : null),
+    [seleccion]
+  );
+
+  const pasa = (empleadoId: string, nombre: string) => {
+    if (idsFiltro && !idsFiltro.has(empleadoId)) return false;
+    const q = busqueda.trim().toLowerCase();
+    if (q && !nombre.toLowerCase().includes(q)) return false;
+    return true;
+  };
+
+  const jt = (tipo: string, empleadoId: string, fecha: string) =>
+    justificaciones.get(`${tipo}|${empleadoId}|${fecha}`);
+
+  const tipoEvento = (situacion: string) =>
+    situacion === "Sin fichar" ? "sin_fichar" : situacion === "Sin salida" ? "sin_salida" : "sin_entrada";
+
   // ---- Datos por sección ----
   const vacaciones = useMemo(() => {
-    const map = new Map<string, { empleado: string; legajo: string | null; sucursal: string | null; fechas: string[] }>();
+    const map = new Map<string, { empleado_id: string; empleado: string; legajo: string | null; sucursal: string | null; fechas: string[] }>();
     for (const n of novedades) {
       if (n.estado !== "VACACIONES") continue;
       const k = n.empleado_id;
       const cur = map.get(k) || {
+        empleado_id: n.empleado_id,
         empleado: `${n.empleado_apellido}, ${n.empleado_nombre}`,
         legajo: n.empleado_legajo,
         sucursal: n.sucursal_nombre,
@@ -189,12 +243,13 @@ export default function ResumenMes() {
       map.set(k, cur);
     }
     return [...map.values()]
+      .filter((v) => pasa(v.empleado_id, v.empleado))
       .map((v) => ({ ...v, fechas: v.fechas.sort(), dias: v.fechas.length }))
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
-  }, [novedades]);
+  }, [novedades, idsFiltro, busqueda]);
 
   const incompletas = useMemo(() => {
-    const rows: { empleado: string; legajo: string | null; sucursal: string | null; fecha: string; entrada: string | null; salida: string | null; tipo: string }[] = [];
+    const rows: { empleado_id: string; empleado: string; legajo: string | null; sucursal: string | null; fecha: string; entrada: string | null; salida: string | null; tipo: string }[] = [];
     for (const d of dias) {
       if (d.entrada && !d.salida) rows.push({ ...d, tipo: "Sin salida" });
       else if (!d.entrada && d.salida) rows.push({ ...d, tipo: "Sin entrada" });
@@ -202,6 +257,7 @@ export default function ResumenMes() {
     for (const n of novedades) {
       if (n.estado !== "NO_FICHADA") continue;
       rows.push({
+        empleado_id: n.empleado_id,
         empleado: `${n.empleado_apellido}, ${n.empleado_nombre}`,
         legajo: n.empleado_legajo,
         sucursal: n.sucursal_nombre,
@@ -211,19 +267,32 @@ export default function ResumenMes() {
         tipo: "Sin fichar",
       });
     }
-    return rows.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.empleado.localeCompare(b.empleado));
-  }, [dias, novedades]);
+    return rows
+      .filter((r) => pasa(r.empleado_id, r.empleado))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.empleado.localeCompare(b.empleado));
+  }, [dias, novedades, idsFiltro, busqueda]);
 
-  const domingos = useMemo(() => dias.filter((d) => d.domingo && (d.entrada || d.salida)), [dias]);
-  const extras = useMemo(() => dias.filter((d) => d.extras_pagas > 0), [dias]);
+  const domingos = useMemo(
+    () => dias.filter((d) => d.domingo && (d.entrada || d.salida) && pasa(d.empleado_id, d.empleado)),
+    [dias, idsFiltro, busqueda]
+  );
+  const extras = useMemo(
+    () => dias.filter((d) => d.extras_pagas > 0 && pasa(d.empleado_id, d.empleado)),
+    [dias, idsFiltro, busqueda]
+  );
+  const feriadosFiltrados = useMemo(
+    () => feriados.filter((f: any) => pasa(f.empleado_id, `${f.empleado_apellido}, ${f.empleado_nombre}`)),
+    [feriados, idsFiltro, busqueda]
+  );
 
   const totales = {
     vacaciones: vacaciones.length,
     incompletas: incompletas.length,
     domingos: domingos.length,
     extras: extras.reduce((a, d) => a + d.extras_pagas, 0),
-    feriados: feriados.length,
+    feriados: feriadosFiltrados.length,
   };
+
 
   const exportarExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -232,10 +301,15 @@ export default function ResumenMes() {
       "Días de vacaciones": v.dias,
       Fechas: v.fechas.map((f) => format(parseISO(f + "T00:00:00"), "dd/MM")).join(", "),
     }))), "Vacaciones");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incompletas.map((r) => ({
-      Fecha: r.fecha, Legajo: r.legajo || "", Empleado: r.empleado, Sucursal: r.sucursal || "",
-      Situación: r.tipo, Entrada: r.entrada || "", Salida: r.salida || "",
-    }))), "Fichadas incompletas");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incompletas.map((r) => {
+      const j = jt(tipoEvento(r.tipo), r.empleado_id, r.fecha);
+      return {
+        Fecha: r.fecha, Legajo: r.legajo || "", Empleado: r.empleado, Sucursal: r.sucursal || "",
+        Situación: r.tipo, Entrada: r.entrada || "", Salida: r.salida || "",
+        Justificación: j?.categoria || "Sin justificar",
+        Observación: j?.observacion || "",
+      };
+    })), "Fichadas incompletas");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(domingos.map((d) => ({
       Fecha: d.fecha, Legajo: d.legajo || "", Empleado: d.empleado, Sucursal: d.sucursal || "",
       Entrada: d.entrada || "", Salida: d.salida || "", Horas: Number(d.horas.toFixed(2)),
@@ -247,7 +321,7 @@ export default function ResumenMes() {
       "Extras reales": Number(d.extras_reales.toFixed(2)),
       "Extras a pagar": d.extras_pagas,
     }))), "Horas extras");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(feriados.map((f) => ({
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(feriadosFiltrados.map((f) => ({
       Fecha: f.fecha, Feriado: f.feriado_nombre, Legajo: f.empleado_legajo || "",
       Empleado: `${f.empleado_apellido}, ${f.empleado_nombre}`, Sucursal: f.sucursal_nombre || "",
       Entrada: f.hora_entrada?.slice(0, 5) || "", Salida: f.hora_salida?.slice(0, 5) || "",
@@ -292,6 +366,25 @@ export default function ResumenMes() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1">
+            <Label>Buscar empleado</Label>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-8 w-56"
+                placeholder="Apellido o nombre..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+          </div>
+          <SelectorGrupoCompacto
+            value={seleccion}
+            onChange={setSeleccion}
+            modulo="informes"
+            label="Grupo de empleados"
+            placeholderTodos="— Todos —"
+          />
           <Button onClick={cargar} disabled={loading} variant="outline">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar"}
           </Button>
@@ -300,6 +393,7 @@ export default function ResumenMes() {
           </Button>
         </CardContent>
       </Card>
+
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         {tarjetas.map((t) => (
@@ -351,19 +445,52 @@ export default function ResumenMes() {
                 <TableHeader><TableRow>
                   <TableHead>Fecha</TableHead><TableHead>Empleado</TableHead><TableHead>Sucursal</TableHead>
                   <TableHead>Situación</TableHead><TableHead>Entrada</TableHead><TableHead>Salida</TableHead>
+                  <TableHead>Justificación</TableHead><TableHead className="text-right">Acción</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {incompletas.map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{format(parseISO(r.fecha + "T00:00:00"), "dd/MM/yyyy")}</TableCell>
-                      <TableCell className="font-medium">{r.empleado}</TableCell>
-                      <TableCell>{r.sucursal || "—"}</TableCell>
-                      <TableCell><Badge variant={r.tipo === "Sin fichar" ? "destructive" : "secondary"}>{r.tipo}</Badge></TableCell>
-                      <TableCell>{r.entrada || "—"}</TableCell>
-                      <TableCell>{r.salida || "—"}</TableCell>
-                    </TableRow>
-                  ))}
+                  {incompletas.map((r, i) => {
+                    const tipoEv = tipoEvento(r.tipo);
+                    const j = jt(tipoEv, r.empleado_id, r.fecha);
+                    return (
+                      <TableRow key={i}>
+                        <TableCell>{format(parseISO(r.fecha + "T00:00:00"), "dd/MM/yyyy")}</TableCell>
+                        <TableCell className="font-medium">{r.empleado}</TableCell>
+                        <TableCell>{r.sucursal || "—"}</TableCell>
+                        <TableCell><Badge variant={r.tipo === "Sin fichar" ? "destructive" : "secondary"}>{r.tipo}</Badge></TableCell>
+                        <TableCell>{r.entrada || "—"}</TableCell>
+                        <TableCell>{r.salida || "—"}</TableCell>
+                        <TableCell>
+                          {j ? (
+                            <div className="space-y-0.5">
+                              <Badge variant={j.es_justificada ? "default" : "outline"}>{j.categoria}</Badge>
+                              {j.observacion && <p className="text-xs text-muted-foreground">{j.observacion}</p>}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Sin justificar</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEventoJust({
+                              empleado_id: r.empleado_id,
+                              empleado: r.empleado,
+                              fecha: r.fecha,
+                              tipo_evento: tipoEv,
+                              categoria_id: j?.categoria_id || null,
+                              observacion: j?.observacion || null,
+                            })}
+                          >
+                            <ShieldCheck className="h-4 w-4 mr-1" />
+                            {j ? "Editar" : "Justificar"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
+
               </Table>
             )
           ) : seccion === "domingos" ? (
@@ -414,10 +541,18 @@ export default function ResumenMes() {
               </Table>
             )
           ) : (
-            <FeriadosTrabajadosTable rows={feriados} />
+            <FeriadosTrabajadosTable rows={feriadosFiltrados} />
           )}
         </CardContent>
       </Card>
+
+      <JustificarEventoDialog
+        evento={eventoJust}
+        open={!!eventoJust}
+        onClose={() => setEventoJust(null)}
+        onSaved={cargarJustificaciones}
+      />
     </div>
+
   );
 }
