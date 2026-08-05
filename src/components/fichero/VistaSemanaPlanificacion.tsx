@@ -122,13 +122,18 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
   const fechaActual = dias[diaSel];
 
   const cargarPlanes = useCallback(async () => {
-    const { data } = await supabase
+    let q = supabase
       .from("planificacion_semanal")
-      .select("id, nombre, fecha_inicio_semana, estado, notas, aplicada_at, aprobada_at, motivo_rechazo")
+      .select(
+        "id, nombre, fecha_inicio_semana, estado, notas, aplicada_at, aprobada_at, motivo_rechazo, sucursal_id"
+      )
       .order("fecha_inicio_semana", { ascending: false })
       .limit(60);
+    if (modoEncargado && sucursalId) q = q.eq("sucursal_id", sucursalId);
+    const { data } = await q;
     setPlanes((data || []) as PlanGuardado[]);
-  }, []);
+  }, [modoEncargado, sucursalId]);
+
 
   useEffect(() => {
     cargarPlanes();
