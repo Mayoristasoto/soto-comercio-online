@@ -162,7 +162,13 @@ export function VistaDiaPlanificacion({
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [empleados, setEmpleados] = useState<EmpleadoBase[]>([]);
   const [empleadosVacaciones, setEmpleadosVacaciones] = useState<Set<string>>(new Set());
-  const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas");
+  const [sucursalFiltro, setSucursalFiltro] = useState<string>(sucursalFija || "todas");
+
+  // Si el componente se usa con sucursal fija (encargados), el filtro la sigue
+  useEffect(() => {
+    if (sucursalFija) setSucursalFiltro(sucursalFija);
+  }, [sucursalFija]);
+
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [valorHoraExtra, setValorHoraExtra] = useState<number>(() => {
     const v = Number(localStorage.getItem("fichero:valor-hora-extra"));
