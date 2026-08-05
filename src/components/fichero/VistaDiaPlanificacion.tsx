@@ -133,6 +133,8 @@ interface VistaDiaPlanificacionProps {
   /** Oculta el selector de fecha y el export del día */
   modoSemana?: boolean;
   onDatosChange?: (datos: DatosDiaPlanificacion) => void;
+  /** Fija la sucursal (encargados): oculta el selector de sucursal */
+  sucursalFija?: string | null;
 }
 
 export function VistaDiaPlanificacion({
@@ -140,6 +142,7 @@ export function VistaDiaPlanificacion({
   onFechaChange,
   modoSemana = false,
   onDatosChange,
+  sucursalFija,
 }: VistaDiaPlanificacionProps = {}) {
   const { toast } = useToast();
   const { esRRHH } = useEsRRHH();
@@ -152,13 +155,20 @@ export function VistaDiaPlanificacion({
     if (onFechaChange) onFechaChange(v);
     else setFechaInterna(v);
   };
+
   const [loading, setLoading] = useState(true);
 
   const [filasReales, setFilasReales] = useState<FilaReal[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [empleados, setEmpleados] = useState<EmpleadoBase[]>([]);
   const [empleadosVacaciones, setEmpleadosVacaciones] = useState<Set<string>>(new Set());
-  const [sucursalFiltro, setSucursalFiltro] = useState<string>("todas");
+  const [sucursalFiltro, setSucursalFiltro] = useState<string>(sucursalFija || "todas");
+
+  // Si el componente se usa con sucursal fija (encargados), el filtro la sigue
+  useEffect(() => {
+    if (sucursalFija) setSucursalFiltro(sucursalFija);
+  }, [sucursalFija]);
+
   const [grupoSel, setGrupoSel] = useState<SeleccionEmpleados | null>(null);
   const [valorHoraExtra, setValorHoraExtra] = useState<number>(() => {
     const v = Number(localStorage.getItem("fichero:valor-hora-extra"));
@@ -598,22 +608,25 @@ export function VistaDiaPlanificacion({
             </Button>
           </div>
 
-          <div className="min-w-[180px]">
-            <Label className="text-xs">Sucursal</Label>
-            <Select value={sucursalFiltro} onValueChange={setSucursalFiltro}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {sucursales.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!sucursalFija && (
+            <div className="min-w-[180px]">
+              <Label className="text-xs">Sucursal</Label>
+              <Select value={sucursalFiltro} onValueChange={setSucursalFiltro}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {sucursales.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
 
           <div className="min-w-[220px]">
             <SelectorGrupoCompacto

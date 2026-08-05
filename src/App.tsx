@@ -35,6 +35,8 @@ import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
 import AsignarSucursales from "./pages/AsignarSucursales";
 import PlanificacionSemanal from "./pages/PlanificacionSemanal";
+import EncargadoPlanificacionSemanal from "./pages/EncargadoPlanificacionSemanal";
+
 import PreviewPanelEncargado from "./pages/PreviewPanelEncargado";
 import DesafiosTV from "./pages/DesafiosTV";
 import RankingIncidencias from "./pages/RankingIncidencias";
@@ -196,6 +198,8 @@ const App = () => (
               <Route path="empleados/:id" element={<EmpleadoPerfilPage />} />
               <Route path="asignar-sucursales" element={<AsignarSucursales />} />
               <Route path="planificacion-semanal" element={<PlanificacionSemanal />} />
+              <Route path="mi-planificacion-semanal" element={<EncargadoPlanificacionSemanal />} />
+
               <Route path="horarios-masivos" element={<HorariosMasivos />} />
               <Route path="ranking-incidencias" element={<RankingIncidencias />} />
               <Route path="listado-incidencias" element={<ListadoIncidencias />} />

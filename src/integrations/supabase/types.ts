@@ -7235,6 +7235,7 @@ export type Database = {
           nombre: string | null
           notas: string | null
           plantilla_base_id: string | null
+          sucursal_id: string | null
           updated_at: string
         }
         Insert: {
@@ -7251,6 +7252,7 @@ export type Database = {
           nombre?: string | null
           notas?: string | null
           plantilla_base_id?: string | null
+          sucursal_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -7267,6 +7269,7 @@ export type Database = {
           nombre?: string | null
           notas?: string | null
           plantilla_base_id?: string | null
+          sucursal_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -7303,6 +7306,13 @@ export type Database = {
             columns: ["plantilla_base_id"]
             isOneToOne: false
             referencedRelation: "plantillas_trabajo_semanal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planificacion_semanal_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
             referencedColumns: ["id"]
           },
         ]
@@ -10248,6 +10258,10 @@ export type Database = {
         }
         Returns: Json
       }
+      enviar_planificacion_a_validacion: {
+        Args: { p_planificacion_id: string }
+        Returns: undefined
+      }
       evaluar_puntualidad_mensual: { Args: never; Returns: undefined }
       generar_pins_masivo: {
         Args: never
@@ -10901,6 +10915,14 @@ export type Database = {
       resolver_grupo_empleados: {
         Args: { _grupo_id: string }
         Returns: string[]
+      }
+      resolver_planificacion: {
+        Args: {
+          p_aprobar: boolean
+          p_motivo?: string
+          p_planificacion_id: string
+        }
+        Returns: undefined
       }
       revertir_planificacion_semanal: {
         Args: { _planificacion_id: string }

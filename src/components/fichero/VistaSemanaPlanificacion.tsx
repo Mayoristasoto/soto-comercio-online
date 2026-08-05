@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BandejaPlanificacionesRRHH } from "@/components/fichero/BandejaPlanificacionesRRHH";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +78,7 @@ interface PlanGuardado {
   aplicada_at: string | null;
   aprobada_at: string | null;
   motivo_rechazo: string | null;
+  sucursal_id: string | null;
 }
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -88,13 +91,21 @@ const ESTADO_LABEL: Record<string, string> = {
 
 const estadoTexto = (e?: string | null) => ESTADO_LABEL[e || "borrador"] || e || "borrador";
 
-export function VistaSemanaPlanificacion() {
+interface VistaSemanaProps {
+  /** Vista simplificada para encargados: solo su sucursal, sin costos ni aplicar */
+  modoEncargado?: boolean;
+  /** Sucursal fija (obligatoria en modoEncargado) */
+  sucursalId?: string | null;
+}
+
+export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = null }: VistaSemanaProps = {}) {
   const { toast } = useToast();
   const { esRRHH } = useEsRRHH();
   const [inicio, setInicio] = useState(() => lunesDe(iso(new Date())));
   const [diaSel, setDiaSel] = useState(0);
   const [datos, setDatos] = useState<Record<string, DatosDiaPlanificacion>>({});
   const [remountKey, setRemountKey] = useState(0);
+
 
   const [planes, setPlanes] = useState<PlanGuardado[]>([]);
   const [planActual, setPlanActual] = useState<PlanGuardado | null>(null);
@@ -113,13 +124,18 @@ export function VistaSemanaPlanificacion() {
   const fechaActual = dias[diaSel];
 
   const cargarPlanes = useCallback(async () => {
-    const { data } = await supabase
+    let q = supabase
       .from("planificacion_semanal")
-      .select("id, nombre, fecha_inicio_semana, estado, notas, aplicada_at, aprobada_at, motivo_rechazo")
+      .select(
+        "id, nombre, fecha_inicio_semana, estado, notas, aplicada_at, aprobada_at, motivo_rechazo, sucursal_id"
+      )
       .order("fecha_inicio_semana", { ascending: false })
       .limit(60);
+    if (modoEncargado && sucursalId) q = q.eq("sucursal_id", sucursalId);
+    const { data } = await q;
     setPlanes((data || []) as PlanGuardado[]);
-  }, []);
+  }, [modoEncargado, sucursalId]);
+
 
   useEffect(() => {
     cargarPlanes();
@@ -171,10 +187,16 @@ export function VistaSemanaPlanificacion() {
         notas: notas.trim() || null,
         estado,
         creado_por: empleadoId,
+        sucursal_id: modoEncargado ? sucursalId : planActual?.sucursal_id ?? null,
       };
 
-      // Si no es RRHH, cualquier edición vuelve el estado a pendiente de aprobación
-      if (!esRRHH) {
+      // Los encargados siempre guardan borrador: la validación se envía aparte
+      if (modoEncargado) {
+        payloadCabecera.estado = "borrador";
+        payloadCabecera.aprobada_at = null;
+        payloadCabecera.aprobada_por = null;
+        payloadCabecera.motivo_rechazo = null;
+      } else if (!esRRHH) {
         payloadCabecera.estado = estado === "borrador" ? "borrador" : "pendiente_aprobacion";
         payloadCabecera.aprobada_at = null;
         payloadCabecera.aprobada_por = null;
@@ -189,11 +211,14 @@ export function VistaSemanaPlanificacion() {
           .eq("id", planId);
         if (error) throw error;
       } else {
-        // upsert por fecha_inicio_semana (única) para evitar conflictos 409
+        // upsert por (sucursal, semana) para evitar conflictos 409
         const { data, error } = await supabase
           .from("planificacion_semanal")
-          .upsert(payloadCabecera, { onConflict: "fecha_inicio_semana" })
+          .upsert(payloadCabecera, {
+            onConflict: modoEncargado ? "sucursal_id,fecha_inicio_semana" : "fecha_inicio_semana",
+          })
           .select("id")
+
           .single();
         if (error) throw error;
         planId = data.id;
@@ -242,38 +267,28 @@ export function VistaSemanaPlanificacion() {
     }
   };
 
-  /** Cambia el estado de aprobación de la semana guardada */
-  const resolverAprobacion = async (nuevo: "pendiente_aprobacion" | "aprobada" | "rechazada") => {
+  /** Cambia el estado de aprobación de la semana guardada (vía funciones seguras) */
+  const resolverAprobacion = async (
+    nuevo: "pendiente_aprobacion" | "aprobada" | "rechazada",
+    motivo?: string
+  ) => {
     if (!planActual) return;
     setAprobando(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      let empleadoId: string | null = null;
-      if (userData.user?.id) {
-        const { data: emp } = await supabase
-          .from("empleados")
-          .select("id")
-          .eq("user_id", userData.user.id)
-          .maybeSingle();
-        empleadoId = emp?.id ?? null;
-      }
-
-      const payload: any = { estado: nuevo };
-      if (nuevo === "aprobada") {
-        payload.aprobada_at = new Date().toISOString();
-        payload.aprobada_por = empleadoId;
-        payload.motivo_rechazo = null;
+      if (nuevo === "pendiente_aprobacion") {
+        const { error } = await (supabase as any).rpc("enviar_planificacion_a_validacion", {
+          p_planificacion_id: planActual.id,
+        });
+        if (error) throw error;
       } else {
-        payload.aprobada_at = null;
-        payload.aprobada_por = null;
-        if (nuevo === "pendiente_aprobacion") payload.motivo_rechazo = null;
+        const { error } = await (supabase as any).rpc("resolver_planificacion", {
+          p_planificacion_id: planActual.id,
+          p_aprobar: nuevo === "aprobada",
+          p_motivo: motivo ?? null,
+        });
+        if (error) throw error;
       }
 
-      const { error } = await supabase
-        .from("planificacion_semanal")
-        .update(payload)
-        .eq("id", planActual.id);
-      if (error) throw error;
 
       toast({
         title:
@@ -473,8 +488,16 @@ export function VistaSemanaPlanificacion() {
 
   const filtrosTexto = `Semana ${fechaCorta(inicio)} al ${fechaCorta(dias[6])}`;
 
+  /** En modo encargado la semana se bloquea cuando ya fue enviada o aprobada */
+  const bloqueadaEncargado =
+    modoEncargado &&
+    (planActual?.estado === "pendiente_aprobacion" || planActual?.estado === "aprobada");
+
+
   return (
     <div className="space-y-4">
+      {esRRHH && !modoEncargado && <BandejaPlanificacionesRRHH onCambio={cargarPlanes} />}
+
       {/* Barra de la semana */}
       <Card>
         <CardContent className="p-4 space-y-3">
@@ -543,7 +566,7 @@ export function VistaSemanaPlanificacion() {
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Restablecer semana
               </Button>
-              <Button onClick={abrirGuardar} disabled={guardando}>
+              <Button onClick={abrirGuardar} disabled={guardando || bloqueadaEncargado}>
                 <Save className="h-4 w-4 mr-2" />
                 {planActual ? "Actualizar semana" : "Guardar semana"}
               </Button>
@@ -560,7 +583,10 @@ export function VistaSemanaPlanificacion() {
                   <Button
                     variant="outline"
                     disabled={aprobando}
-                    onClick={() => resolverAprobacion("rechazada")}
+                    onClick={() => {
+                      const motivo = window.prompt("Motivo del rechazo (opcional)") ?? undefined;
+                      resolverAprobacion("rechazada", motivo);
+                    }}
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     Rechazar
@@ -570,9 +596,10 @@ export function VistaSemanaPlanificacion() {
               {!esRRHH && planActual && planActual.estado !== "pendiente_aprobacion" && planActual.estado !== "aprobada" && (
                 <Button variant="secondary" disabled={aprobando} onClick={() => resolverAprobacion("pendiente_aprobacion")}>
                   <Send className="h-4 w-4 mr-2" />
-                  Enviar a RRHH
+                  Enviar a validación de RRHH
                 </Button>
               )}
+
               {esRRHH &&
                 planActual &&
                 (planActual.aplicada_at ? (
@@ -724,7 +751,13 @@ export function VistaSemanaPlanificacion() {
       {/* Día seleccionado (los 7 quedan montados para poder guardar y exportar la semana completa) */}
       {dias.map((f, i) => (
         <div key={`${remountKey}-${f}`} className={i === diaSel ? "" : "hidden"}>
-          <VistaDiaPlanificacion fecha={f} modoSemana onDatosChange={registrarDatos} />
+          <VistaDiaPlanificacion
+            fecha={f}
+            modoSemana
+            onDatosChange={registrarDatos}
+            sucursalFija={modoEncargado ? sucursalId : undefined}
+          />
+
         </div>
       ))}
 
@@ -789,19 +822,22 @@ export function VistaSemanaPlanificacion() {
               <Label>Nombre</Label>
               <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
             </div>
-            <div>
-              <Label>Estado</Label>
-              <Select value={estado} onValueChange={setEstado}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="borrador">Borrador</SelectItem>
-                  <SelectItem value="pendiente_aprobacion">Enviar a aprobación de RRHH</SelectItem>
-                  {esRRHH && <SelectItem value="aprobada">Aprobada por RRHH</SelectItem>}
-                </SelectContent>
-              </Select>
-            </div>
+            {!modoEncargado && (
+              <div>
+                <Label>Estado</Label>
+                <Select value={estado} onValueChange={setEstado}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="borrador">Borrador</SelectItem>
+                    <SelectItem value="pendiente_aprobacion">Enviar a aprobación de RRHH</SelectItem>
+                    {esRRHH && <SelectItem value="aprobada">Aprobada por RRHH</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div>
               <Label>Notas</Label>
               <Textarea
