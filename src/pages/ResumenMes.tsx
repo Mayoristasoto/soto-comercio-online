@@ -301,10 +301,15 @@ export default function ResumenMes() {
       "Días de vacaciones": v.dias,
       Fechas: v.fechas.map((f) => format(parseISO(f + "T00:00:00"), "dd/MM")).join(", "),
     }))), "Vacaciones");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incompletas.map((r) => ({
-      Fecha: r.fecha, Legajo: r.legajo || "", Empleado: r.empleado, Sucursal: r.sucursal || "",
-      Situación: r.tipo, Entrada: r.entrada || "", Salida: r.salida || "",
-    }))), "Fichadas incompletas");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incompletas.map((r) => {
+      const j = jt(tipoEvento(r.tipo), r.empleado_id, r.fecha);
+      return {
+        Fecha: r.fecha, Legajo: r.legajo || "", Empleado: r.empleado, Sucursal: r.sucursal || "",
+        Situación: r.tipo, Entrada: r.entrada || "", Salida: r.salida || "",
+        Justificación: j?.categoria || "Sin justificar",
+        Observación: j?.observacion || "",
+      };
+    })), "Fichadas incompletas");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(domingos.map((d) => ({
       Fecha: d.fecha, Legajo: d.legajo || "", Empleado: d.empleado, Sucursal: d.sucursal || "",
       Entrada: d.entrada || "", Salida: d.salida || "", Horas: Number(d.horas.toFixed(2)),
