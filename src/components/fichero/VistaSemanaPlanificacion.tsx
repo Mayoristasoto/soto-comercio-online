@@ -747,7 +747,13 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
       {/* Día seleccionado (los 7 quedan montados para poder guardar y exportar la semana completa) */}
       {dias.map((f, i) => (
         <div key={`${remountKey}-${f}`} className={i === diaSel ? "" : "hidden"}>
-          <VistaDiaPlanificacion fecha={f} modoSemana onDatosChange={registrarDatos} />
+          <VistaDiaPlanificacion
+            fecha={f}
+            modoSemana
+            onDatosChange={registrarDatos}
+            sucursalFija={modoEncargado ? sucursalId : undefined}
+          />
+
         </div>
       ))}
 
