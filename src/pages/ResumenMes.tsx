@@ -276,15 +276,23 @@ export default function ResumenMes() {
     () => dias.filter((d) => d.domingo && (d.entrada || d.salida) && pasa(d.empleado_id, d.empleado)),
     [dias, idsFiltro, busqueda]
   );
-  const extras = useMemo(() => dias.filter((d) => d.extras_pagas > 0), [dias]);
+  const extras = useMemo(
+    () => dias.filter((d) => d.extras_pagas > 0 && pasa(d.empleado_id, d.empleado)),
+    [dias, idsFiltro, busqueda]
+  );
+  const feriadosFiltrados = useMemo(
+    () => feriados.filter((f: any) => pasa(f.empleado_id, `${f.empleado_apellido}, ${f.empleado_nombre}`)),
+    [feriados, idsFiltro, busqueda]
+  );
 
   const totales = {
     vacaciones: vacaciones.length,
     incompletas: incompletas.length,
     domingos: domingos.length,
     extras: extras.reduce((a, d) => a + d.extras_pagas, 0),
-    feriados: feriados.length,
+    feriados: feriadosFiltrados.length,
   };
+
 
   const exportarExcel = () => {
     const wb = XLSX.utils.book_new();
