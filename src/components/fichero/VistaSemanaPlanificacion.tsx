@@ -494,6 +494,8 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
 
   return (
     <div className="space-y-4">
+      {esRRHH && !modoEncargado && <BandejaPlanificacionesRRHH onCambio={cargarPlanes} />}
+
       {/* Barra de la semana */}
       <Card>
         <CardContent className="p-4 space-y-3">
