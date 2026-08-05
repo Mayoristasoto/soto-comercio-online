@@ -35,6 +35,8 @@ import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
 import AsignarSucursales from "./pages/AsignarSucursales";
 import PlanificacionSemanal from "./pages/PlanificacionSemanal";
+import EncargadoPlanificacionSemanal from "./pages/EncargadoPlanificacionSemanal";
+
 import PreviewPanelEncargado from "./pages/PreviewPanelEncargado";
 import DesafiosTV from "./pages/DesafiosTV";
 import RankingIncidencias from "./pages/RankingIncidencias";
