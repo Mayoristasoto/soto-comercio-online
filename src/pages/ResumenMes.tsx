@@ -20,9 +20,14 @@ import {
   Sun,
   Clock,
   Flag,
+  Search,
+  ShieldCheck,
 } from "lucide-react";
 import { formatArgentinaDate, formatArgentinaTime } from "@/lib/dateUtils";
 import { FeriadosTrabajadosTable, type FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
+import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
+import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
+import { JustificarEventoDialog, type EventoJustificable } from "@/components/novedades/JustificarEventoDialog";
 
 interface Sucursal { id: string; nombre: string }
 interface EmpleadoLite { id: string; nombre: string; apellido: string; legajo: string | null; sucursal_id: string | null }
