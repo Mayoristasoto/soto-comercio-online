@@ -258,6 +258,33 @@ export default function ReporteHorasExtras() {
   const aprobarTodas = () => setAprobadas(new Set(jornadas.map(keyOf)));
   const limpiarTodas = () => setAprobadas(new Set());
 
+  const exportarJornadas = async (modo: "visibles" | "aprobadas") => {
+    const lista = modo === "visibles" ? jornadasFiltradas : aprobadasJornadas;
+    if (lista.length === 0) {
+      toast({ title: "Nada para exportar", description: "No hay jornadas en la selección.", variant: "destructive" });
+      return;
+    }
+    const XLSX = await import("xlsx");
+    const rows = lista.map((j) => ({
+      Fecha: j.fecha.split("-").reverse().join("/"),
+      Empleado: j.empleadoNombre,
+      Sucursal: j.sucursalNombre,
+      Entrada: j.entrada,
+      Salida: j.salida,
+      "Base (hs)": j.baseHs,
+      "Exceso real (min)": j.excesoRealMin,
+      "Pagado (hs)": Number(j.extraHs.toFixed(2)),
+      Redondeo: j.redondeoLabel,
+      Domingo: j.esDomingo ? "Sí" : "No",
+      Aprobada: aprobadas.has(keyOf(j)) ? "Sí" : "No",
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Jornadas");
+    XLSX.writeFile(wb, `jornadas-${modo}-${fechaDesde}-a-${fechaHasta}.xlsx`);
+    toast({ title: "Exportado", description: `${rows.length} jornadas exportadas.` });
+  };
+
+
   const onAprobarYGenerar = async () => {
     if (aprobadasJornadas.length === 0) {
       toast({ title: "Sin selección", description: "Tildá al menos una jornada para aprobar.", variant: "destructive" });
@@ -612,7 +639,15 @@ export default function ReporteHorasExtras() {
                 <div className="w-px h-5 bg-border mx-1" />
                 <Button size="sm" variant="ghost" onClick={aprobarTodas}>Aprobar todas</Button>
                 <Button size="sm" variant="ghost" onClick={limpiarTodas}>Limpiar todas</Button>
+                <div className="w-px h-5 bg-border mx-1" />
+                <Button size="sm" variant="secondary" className="gap-2" onClick={() => exportarJornadas("visibles")}>
+                  <Download className="h-4 w-4" /> Exportar visibles
+                </Button>
+                <Button size="sm" variant="secondary" className="gap-2" onClick={() => exportarJornadas("aprobadas")}>
+                  <Download className="h-4 w-4" /> Exportar tildadas
+                </Button>
               </div>
+
 
               <ScrollArea className="h-[480px]">
                 <Table>
