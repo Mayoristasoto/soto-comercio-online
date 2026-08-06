@@ -612,7 +612,15 @@ export default function ReporteHorasExtras() {
                 <div className="w-px h-5 bg-border mx-1" />
                 <Button size="sm" variant="ghost" onClick={aprobarTodas}>Aprobar todas</Button>
                 <Button size="sm" variant="ghost" onClick={limpiarTodas}>Limpiar todas</Button>
+                <div className="w-px h-5 bg-border mx-1" />
+                <Button size="sm" variant="secondary" className="gap-2" onClick={() => exportarJornadas("visibles")}>
+                  <Download className="h-4 w-4" /> Exportar visibles
+                </Button>
+                <Button size="sm" variant="secondary" className="gap-2" onClick={() => exportarJornadas("aprobadas")}>
+                  <Download className="h-4 w-4" /> Exportar tildadas
+                </Button>
               </div>
+
 
               <ScrollArea className="h-[480px]">
                 <Table>
