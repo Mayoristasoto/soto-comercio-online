@@ -204,8 +204,12 @@ export default function InformeAsistenciaGerencial() {
         if (!match) return false;
       }
       return true;
+    }).sort((a, b) => {
+      if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+      return `${a.empleado_apellido} ${a.empleado_nombre}`.localeCompare(`${b.empleado_apellido} ${b.empleado_nombre}`);
     });
   }, [eventos, filtroEstado, filtroCat, filtroBusqueda]);
+
 
   const pendientes = eventos.filter(e => !e.categoria_id).length;
 
