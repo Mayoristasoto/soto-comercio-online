@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEncargadoAccesos, type AccesoEncargado } from "@/hooks/useEncargadoAccesos"
+import { useTareasEncargado } from "@/hooks/useTareasEncargado"
 
 const ICONS: Record<string, LucideIcon> = {
   Calendar,
