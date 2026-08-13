@@ -54,10 +54,26 @@ export function DashboardEncargado({
 }: Props) {
   const navigate = useNavigate()
   const { accesos: accesosHook } = useEncargadoAccesos()
+  const { total: tareasTotal, urgentes: tareasUrgentes } = useTareasEncargado()
   const todos = accesosProp ?? accesosHook
   const accesos = [...todos]
     .filter((a) => modoEdicion || a.activo)
     .sort((a, b) => a.orden - b.orden)
+
+  const formatVencimiento = (fecha: string | null) => {
+    if (!fecha) return "Sin fecha límite"
+    const f = new Date(fecha)
+    const hoy = new Date()
+    f.setHours(0, 0, 0, 0)
+    hoy.setHours(0, 0, 0, 0)
+    const dias = Math.ceil((f.getTime() - hoy.getTime()) / 86400000)
+    if (dias < 0) return `Vencida hace ${Math.abs(dias)} día(s)`
+    if (dias === 0) return "Vence hoy"
+    if (dias === 1) return "Vence mañana"
+    return `Vence en ${dias} días`
+  }
+
+
 
   return (
     <div className="p-6 space-y-6">
