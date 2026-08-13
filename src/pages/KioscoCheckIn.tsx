@@ -1960,17 +1960,10 @@ export default function KioscoCheckIn() {
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
       let tareas: TareaPendiente[] = []
       if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
-        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
-          p_empleado_id: empleadoParaFichaje.id,
-          p_limit: 5
-        })
-
-        tareas = (tareasData || []).map(t => ({
-          id: t.id,
-          titulo: t.titulo,
-          prioridad: t.prioridad as TareaPendiente['prioridad'],
-          fecha_limite: t.fecha_limite
-        }))
+        tareas = await obtenerTareasRecordatorio(
+          empleadoParaFichaje.id,
+          recognizedEmployee?.data?.rol
+        )
       }
 
       setTareasPendientes(tareas)
