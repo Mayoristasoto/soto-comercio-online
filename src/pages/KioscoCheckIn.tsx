@@ -2773,6 +2773,7 @@ export default function KioscoCheckIn() {
           }}
           duracionSegundos={config.kioskAlertTareasSeconds}
           mostrarBotonAutoGestion={modoAutenticacion === 'facial'}
+          esEncargado={esEncargadoTareas}
         />
       )}
 
