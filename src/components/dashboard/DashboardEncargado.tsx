@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEncargadoAccesos, type AccesoEncargado } from "@/hooks/useEncargadoAccesos"
+import { useTareasEncargado } from "@/hooks/useTareasEncargado"
 
 const ICONS: Record<string, LucideIcon> = {
   Calendar,
@@ -53,10 +54,26 @@ export function DashboardEncargado({
 }: Props) {
   const navigate = useNavigate()
   const { accesos: accesosHook } = useEncargadoAccesos()
+  const { total: tareasTotal, urgentes: tareasUrgentes } = useTareasEncargado()
   const todos = accesosProp ?? accesosHook
   const accesos = [...todos]
     .filter((a) => modoEdicion || a.activo)
     .sort((a, b) => a.orden - b.orden)
+
+  const formatVencimiento = (fecha: string | null) => {
+    if (!fecha) return "Sin fecha límite"
+    const f = new Date(fecha)
+    const hoy = new Date()
+    f.setHours(0, 0, 0, 0)
+    hoy.setHours(0, 0, 0, 0)
+    const dias = Math.ceil((f.getTime() - hoy.getTime()) / 86400000)
+    if (dias < 0) return `Vencida hace ${Math.abs(dias)} día(s)`
+    if (dias === 0) return "Vence hoy"
+    if (dias === 1) return "Vence mañana"
+    return `Vence en ${dias} días`
+  }
+
+
 
   return (
     <div className="p-6 space-y-6">
@@ -90,6 +107,9 @@ export function DashboardEncargado({
                   <div className="flex items-center justify-between gap-2">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
                       {acceso.titulo}
+                      {acceso.clave === "tareas" && tareasTotal > 0 && (
+                        <Badge variant="destructive">{tareasTotal}</Badge>
+                      )}
                       {modoEdicion && !acceso.activo && (
                         <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
                       )}
@@ -138,6 +158,27 @@ export function DashboardEncargado({
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{acceso.descripcion}</p>
+                  {acceso.clave === "tareas" && (
+                    <div className="mt-3 space-y-1.5">
+                      {tareasUrgentes.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Sin tareas pendientes</p>
+                      ) : (
+                        tareasUrgentes.map((t) => (
+                          <div
+                            key={t.id}
+                            className="rounded-md border bg-muted/40 px-2 py-1.5 text-xs"
+                          >
+                            <div className="font-medium truncate">{t.titulo}</div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <span className="capitalize">{t.prioridad}</span>
+                              <span>·</span>
+                              <span>{formatVencimiento(t.fecha_limite)}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                   {mostrarRutas && (
                     <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground font-mono truncate">
                       <Link2 className="h-3 w-3 shrink-0" />

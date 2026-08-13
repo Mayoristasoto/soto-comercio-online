@@ -10,6 +10,7 @@ interface TareaPendiente {
   descripcion?: string
   prioridad: 'baja' | 'media' | 'alta' | 'urgente'
   fecha_limite: string | null
+  origen?: 'propia' | 'delegada_rrhh'
 }
 
 interface TareasPendientesAlertProps {
@@ -22,6 +23,7 @@ interface TareasPendientesAlertProps {
   onVerAutoGestion: () => void
   duracionSegundos?: number
   mostrarBotonAutoGestion?: boolean
+  esEncargado?: boolean
 }
 
 export function TareasPendientesAlert({
@@ -33,7 +35,8 @@ export function TareasPendientesAlert({
   onDismiss,
   onVerAutoGestion,
   duracionSegundos = 8,
-  mostrarBotonAutoGestion = true
+  mostrarBotonAutoGestion = true,
+  esEncargado = false
 }: TareasPendientesAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos)
   const [isImprimiendo, setIsImprimiendo] = useState(false)
@@ -124,6 +127,10 @@ export function TareasPendientesAlert({
     fechaLimite.setHours(23, 59, 59, 999)
     return fechaLimite < new Date()
   })
+  const tareasDelegadas = tareas.filter(t => t.origen === 'delegada_rrhh')
+  const tareasPropias = tareas.filter(t => t.origen !== 'delegada_rrhh')
+
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -131,9 +138,17 @@ export function TareasPendientesAlert({
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center">
           <ClipboardList className="h-12 w-12 mx-auto mb-3" />
-          <h2 className="text-2xl font-bold">Tienes Tareas Pendientes</h2>
+          <h2 className="text-2xl font-bold">
+            {esEncargado ? 'Recordatorio de tareas del encargado' : 'Tienes Tareas Pendientes'}
+          </h2>
           <p className="text-blue-100 mt-1">{empleadoNombre}</p>
+          {esEncargado && (
+            <p className="text-blue-100 text-sm mt-1">
+              {tareasPropias.length} propia(s) · {tareasDelegadas.length} delegada(s) por RRHH
+            </p>
+          )}
         </div>
+
 
         {/* Content */}
         <div className="p-6">
@@ -159,7 +174,14 @@ export function TareasPendientesAlert({
                 key={tarea.id}
                 className={`border-2 rounded-lg p-3 ${getPriorityColor(tarea.prioridad)}`}
               >
-                <div className="font-semibold text-sm">{tarea.titulo}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-semibold text-sm">{tarea.titulo}</div>
+                  {esEncargado && (
+                    <span className="shrink-0 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-white/70 border">
+                      {tarea.origen === 'delegada_rrhh' ? 'Delegada RRHH' : 'Propia'}
+                    </span>
+                  )}
+                </div>
                 {tarea.fecha_limite && (
                   <div className="flex items-center gap-2 text-xs mt-1 opacity-80">
                     <Clock className="h-3 w-3" />

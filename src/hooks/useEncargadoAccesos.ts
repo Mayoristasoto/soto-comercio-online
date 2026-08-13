@@ -65,6 +65,16 @@ export const ACCESOS_ENCARGADO_DEFAULT: AccesoEncargado[] = [
     orden: 4,
     activo: true,
   },
+  {
+    id: "default-tareas",
+    clave: "tareas",
+    titulo: "Tareas pendientes",
+    descripcion: "Ver y gestionar tus tareas pendientes",
+    icon: "ClipboardList",
+    url: "/operaciones/tareas",
+    orden: 5,
+    activo: true,
+  },
 ]
 
 const TABLE = "encargado_dashboard_accesos"

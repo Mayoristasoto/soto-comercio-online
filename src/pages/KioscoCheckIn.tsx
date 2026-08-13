@@ -50,6 +50,7 @@ interface TareaPendiente {
   titulo: string
   prioridad: 'baja' | 'media' | 'alta' | 'urgente'
   fecha_limite: string | null
+  origen?: 'propia' | 'delegada_rrhh'
 }
 
 interface Fichaje {
@@ -347,6 +348,9 @@ export default function KioscoCheckIn() {
   // State for pending tasks alert
   const [showTareasPendientesAlert, setShowTareasPendientesAlert] = useState(false)
   
+  // Indica si el empleado del check-in actual es encargado (para el recordatorio de tareas)
+  const [esEncargadoTareas, setEsEncargadoTareas] = useState(false)
+
   // State for gerente_sucursal task distribution flow
   const [showTareasVencenHoyAlert, setShowTareasVencenHoyAlert] = useState(false)
   const [tareasVencenHoy, setTareasVencenHoy] = useState<TareaPendiente[]>([])
@@ -899,18 +903,11 @@ export default function KioscoCheckIn() {
         })
       }
 
-      // Obtener tareas pendientes del empleado usando RPC seguro del kiosco
-      const { data: tareasRpc } = await supabase.rpc('kiosk_get_tareas', {
-        p_empleado_id: empleadoParaFichaje.id,
-        p_limit: 5
-      })
-
-      const tareas: TareaPendiente[] = (tareasRpc || []).map(t => ({
-        id: t.id,
-        titulo: t.titulo,
-        prioridad: t.prioridad as TareaPendiente['prioridad'],
-        fecha_limite: t.fecha_limite
-      }))
+      // Obtener tareas pendientes (propias + delegadas por RRHH si es encargado)
+      const tareas: TareaPendiente[] = await obtenerTareasRecordatorio(
+        empleadoParaFichaje.id,
+        empleadoData?.rol
+      )
 
       setTareasPendientes(tareas)
 
@@ -1126,6 +1123,48 @@ export default function KioscoCheckIn() {
     } catch (error) {
       console.error('Error obteniendo tareas para distribuir:', error)
       return []
+    }
+  }
+
+  // Tareas del recordatorio de kiosco: propias + (si es encargado) delegadas por RRHH
+  const obtenerTareasRecordatorio = async (
+    empleadoId: string,
+    rol?: string | null
+  ): Promise<TareaPendiente[]> => {
+    const esEncargado = rol === 'gerente_sucursal' || rol === 'gerente'
+    setEsEncargadoTareas(esEncargado)
+
+    const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
+      p_empleado_id: empleadoId,
+      p_limit: 5
+    })
+
+    const propias: TareaPendiente[] = (tareasData || []).map((t: any) => ({
+      id: t.id,
+      titulo: t.titulo,
+      prioridad: t.prioridad as TareaPendiente['prioridad'],
+      fecha_limite: t.fecha_limite,
+      origen: 'propia' as const
+    }))
+
+    if (!esEncargado) return propias
+
+    try {
+      const delegadas = await obtenerTareasParaDistribuirGerente(empleadoId)
+      const yaIncluidas = new Set(propias.map((t) => t.id))
+      const extra: TareaPendiente[] = delegadas
+        .filter((t) => !yaIncluidas.has(t.id))
+        .map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          prioridad: t.prioridad as TareaPendiente['prioridad'],
+          fecha_limite: t.fecha_limite,
+          origen: 'delegada_rrhh' as const
+        }))
+      return [...propias, ...extra]
+    } catch (e) {
+      console.warn('No se pudieron obtener tareas delegadas por RRHH:', e)
+      return propias
     }
   }
 
@@ -1555,17 +1594,7 @@ export default function KioscoCheckIn() {
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
       let tareas: TareaPendiente[] = []
       if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
-        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
-          p_empleado_id: empleadoParaFichaje.id,
-          p_limit: 5
-        })
-
-        tareas = (tareasData || []).map(t => ({
-          id: t.id,
-          titulo: t.titulo,
-          prioridad: t.prioridad as TareaPendiente['prioridad'],
-          fecha_limite: t.fecha_limite
-        }))
+        tareas = await obtenerTareasRecordatorio(empleadoParaFichaje.id, empleadoData?.rol)
       }
 
       setTareasPendientes(tareas)
@@ -1931,17 +1960,10 @@ export default function KioscoCheckIn() {
       // Obtener tareas pendientes del empleado solo si es entrada o fin de pausa
       let tareas: TareaPendiente[] = []
       if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
-        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
-          p_empleado_id: empleadoParaFichaje.id,
-          p_limit: 5
-        })
-
-        tareas = (tareasData || []).map(t => ({
-          id: t.id,
-          titulo: t.titulo,
-          prioridad: t.prioridad as TareaPendiente['prioridad'],
-          fecha_limite: t.fecha_limite
-        }))
+        tareas = await obtenerTareasRecordatorio(
+          empleadoParaFichaje.id,
+          recognizedEmployee?.data?.rol
+        )
       }
 
       setTareasPendientes(tareas)
@@ -2280,16 +2302,7 @@ export default function KioscoCheckIn() {
     let tareas: TareaPendiente[] = []
     if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
       try {
-        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
-          p_empleado_id: empleadoId,
-          p_limit: 5
-        })
-        tareas = (tareasData || []).map((t: any) => ({
-          id: t.id,
-          titulo: t.titulo,
-          prioridad: t.prioridad as TareaPendiente['prioridad'],
-          fecha_limite: t.fecha_limite
-        }))
+        tareas = await obtenerTareasRecordatorio(empleadoId, empleadoData?.rol)
       } catch (err) {
         console.error('[PIN] Error obteniendo tareas:', err)
       }
@@ -2760,6 +2773,7 @@ export default function KioscoCheckIn() {
           }}
           duracionSegundos={config.kioskAlertTareasSeconds}
           mostrarBotonAutoGestion={modoAutenticacion === 'facial'}
+          esEncargado={esEncargadoTareas}
         />
       )}
 
