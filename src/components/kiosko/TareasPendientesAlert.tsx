@@ -10,6 +10,7 @@ interface TareaPendiente {
   descripcion?: string
   prioridad: 'baja' | 'media' | 'alta' | 'urgente'
   fecha_limite: string | null
+  origen?: 'propia' | 'delegada_rrhh'
 }
 
 interface TareasPendientesAlertProps {
@@ -22,6 +23,7 @@ interface TareasPendientesAlertProps {
   onVerAutoGestion: () => void
   duracionSegundos?: number
   mostrarBotonAutoGestion?: boolean
+  esEncargado?: boolean
 }
 
 export function TareasPendientesAlert({
@@ -33,7 +35,8 @@ export function TareasPendientesAlert({
   onDismiss,
   onVerAutoGestion,
   duracionSegundos = 8,
-  mostrarBotonAutoGestion = true
+  mostrarBotonAutoGestion = true,
+  esEncargado = false
 }: TareasPendientesAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos)
   const [isImprimiendo, setIsImprimiendo] = useState(false)
