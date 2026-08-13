@@ -158,6 +158,27 @@ export function DashboardEncargado({
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{acceso.descripcion}</p>
+                  {acceso.clave === "tareas" && (
+                    <div className="mt-3 space-y-1.5">
+                      {tareasUrgentes.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Sin tareas pendientes</p>
+                      ) : (
+                        tareasUrgentes.map((t) => (
+                          <div
+                            key={t.id}
+                            className="rounded-md border bg-muted/40 px-2 py-1.5 text-xs"
+                          >
+                            <div className="font-medium truncate">{t.titulo}</div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <span className="capitalize">{t.prioridad}</span>
+                              <span>·</span>
+                              <span>{formatVencimiento(t.fecha_limite)}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                   {mostrarRutas && (
                     <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground font-mono truncate">
                       <Link2 className="h-3 w-3 shrink-0" />
