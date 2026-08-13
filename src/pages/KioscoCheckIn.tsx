@@ -348,6 +348,9 @@ export default function KioscoCheckIn() {
   // State for pending tasks alert
   const [showTareasPendientesAlert, setShowTareasPendientesAlert] = useState(false)
   
+  // Indica si el empleado del check-in actual es encargado (para el recordatorio de tareas)
+  const [esEncargadoTareas, setEsEncargadoTareas] = useState(false)
+
   // State for gerente_sucursal task distribution flow
   const [showTareasVencenHoyAlert, setShowTareasVencenHoyAlert] = useState(false)
   const [tareasVencenHoy, setTareasVencenHoy] = useState<TareaPendiente[]>([])
