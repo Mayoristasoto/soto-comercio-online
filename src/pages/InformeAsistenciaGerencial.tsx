@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileBarChart, Download, Settings2, Loader2, Plus, Trash2, Wand2, Check } from "lucide-react";
 import { toast } from "sonner";
-import { format, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, addWeeks } from "date-fns";
+import { format, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks } from "date-fns";
 import { es } from "date-fns/locale";
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
 import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
@@ -73,6 +73,8 @@ export default function InformeAsistenciaGerencial() {
   const [filtroCat, setFiltroCat] = useState<string>("todas");
   const [filtroOrigen, setFiltroOrigen] = useState<"todos" | "detectados" | "sin_respaldo">("todos");
   const [agrupar, setAgrupar] = useState(true);
+  const [mesSel, setMesSel] = useState<string>("");
+  const [semanaSel, setSemanaSel] = useState<string>("");
 
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
   const [batchCat, setBatchCat] = useState<string>(SIN_CATEGORIA);
@@ -474,7 +476,7 @@ export default function InformeAsistenciaGerencial() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
               <Label>Mes</Label>
-              <Select value="" onValueChange={v => setRango(startOfMonth(new Date(v + "T12:00:00")), endOfMonth(new Date(v + "T12:00:00")))}>
+              <Select value={mesSel || undefined} onValueChange={v => { setMesSel(v); setSemanaSel(""); setRango(startOfMonth(new Date(v + "T12:00:00")), endOfMonth(new Date(v + "T12:00:00"))); }}>
                 <SelectTrigger><SelectValue placeholder="Elegir mes…" /></SelectTrigger>
                 <SelectContent>
                   {meses.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
@@ -483,7 +485,7 @@ export default function InformeAsistenciaGerencial() {
             </div>
             <div>
               <Label>Semana</Label>
-              <Select value="" onValueChange={v => setRango(new Date(v + "T12:00:00"), endOfWeek(new Date(v + "T12:00:00"), { weekStartsOn: 1 }))}>
+              <Select value={semanaSel || undefined} onValueChange={v => { setSemanaSel(v); setMesSel(""); setRango(new Date(v + "T12:00:00"), endOfWeek(new Date(v + "T12:00:00"), { weekStartsOn: 1 })); }}>
                 <SelectTrigger><SelectValue placeholder="Elegir semana…" /></SelectTrigger>
                 <SelectContent className="max-h-72">
                   {semanas.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
