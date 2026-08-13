@@ -134,9 +134,17 @@ export function TareasPendientesAlert({
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center">
           <ClipboardList className="h-12 w-12 mx-auto mb-3" />
-          <h2 className="text-2xl font-bold">Tienes Tareas Pendientes</h2>
+          <h2 className="text-2xl font-bold">
+            {esEncargado ? 'Recordatorio de tareas del encargado' : 'Tienes Tareas Pendientes'}
+          </h2>
           <p className="text-blue-100 mt-1">{empleadoNombre}</p>
+          {esEncargado && (
+            <p className="text-blue-100 text-sm mt-1">
+              {tareasPropias.length} propia(s) · {tareasDelegadas.length} delegada(s) por RRHH
+            </p>
+          )}
         </div>
+
 
         {/* Content */}
         <div className="p-6">
