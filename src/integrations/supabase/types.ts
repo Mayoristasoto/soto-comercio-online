@@ -1554,6 +1554,7 @@ export type Database = {
           color: string
           created_at: string
           es_justificada: boolean
+          frecuente: boolean
           id: string
           nombre: string
           orden: number
@@ -1564,6 +1565,7 @@ export type Database = {
           color?: string
           created_at?: string
           es_justificada?: boolean
+          frecuente?: boolean
           id?: string
           nombre: string
           orden?: number
@@ -1574,6 +1576,7 @@ export type Database = {
           color?: string
           created_at?: string
           es_justificada?: boolean
+          frecuente?: boolean
           id?: string
           nombre?: string
           orden?: number
@@ -10274,6 +10277,10 @@ export type Database = {
           ya_tenia_pin: boolean
         }[]
       }
+      generar_tareas_justificacion_semana: {
+        Args: { p_desde?: string; p_hasta?: string }
+        Returns: number
+      }
       get_cumpleanos_rango: {
         Args: { _desde: string; _hasta: string }
         Returns: {
@@ -10517,6 +10524,15 @@ export type Database = {
           mes_actual: number
           porcentaje_utilizado: number
           utilizado_mes: number
+        }[]
+      }
+      get_sugerencias_justificacion: {
+        Args: { p_desde: string; p_empleados?: string[]; p_hasta: string }
+        Returns: {
+          detalle: string
+          empleado_id: string
+          fecha: string
+          origen: string
         }[]
       }
       has_role: {
