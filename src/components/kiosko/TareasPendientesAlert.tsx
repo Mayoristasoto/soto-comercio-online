@@ -174,7 +174,14 @@ export function TareasPendientesAlert({
                 key={tarea.id}
                 className={`border-2 rounded-lg p-3 ${getPriorityColor(tarea.prioridad)}`}
               >
-                <div className="font-semibold text-sm">{tarea.titulo}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-semibold text-sm">{tarea.titulo}</div>
+                  {esEncargado && (
+                    <span className="shrink-0 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-white/70 border">
+                      {tarea.origen === 'delegada_rrhh' ? 'Delegada RRHH' : 'Propia'}
+                    </span>
+                  )}
+                </div>
                 {tarea.fecha_limite && (
                   <div className="flex items-center gap-2 text-xs mt-1 opacity-80">
                     <Clock className="h-3 w-3" />
