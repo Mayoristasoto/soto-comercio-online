@@ -2302,16 +2302,7 @@ export default function KioscoCheckIn() {
     let tareas: TareaPendiente[] = []
     if (tipoAccion === 'entrada' || tipoAccion === 'pausa_fin') {
       try {
-        const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
-          p_empleado_id: empleadoId,
-          p_limit: 5
-        })
-        tareas = (tareasData || []).map((t: any) => ({
-          id: t.id,
-          titulo: t.titulo,
-          prioridad: t.prioridad as TareaPendiente['prioridad'],
-          fecha_limite: t.fecha_limite
-        }))
+        tareas = await obtenerTareasRecordatorio(empleadoId, empleadoData?.rol)
       } catch (err) {
         console.error('[PIN] Error obteniendo tareas:', err)
       }
