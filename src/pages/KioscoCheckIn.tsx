@@ -1133,6 +1133,48 @@ export default function KioscoCheckIn() {
     }
   }
 
+  // Tareas del recordatorio de kiosco: propias + (si es encargado) delegadas por RRHH
+  const obtenerTareasRecordatorio = async (
+    empleadoId: string,
+    rol?: string | null
+  ): Promise<TareaPendiente[]> => {
+    const esEncargado = rol === 'gerente_sucursal' || rol === 'gerente'
+    setEsEncargadoTareas(esEncargado)
+
+    const { data: tareasData } = await supabase.rpc('kiosk_get_tareas', {
+      p_empleado_id: empleadoId,
+      p_limit: 5
+    })
+
+    const propias: TareaPendiente[] = (tareasData || []).map((t: any) => ({
+      id: t.id,
+      titulo: t.titulo,
+      prioridad: t.prioridad as TareaPendiente['prioridad'],
+      fecha_limite: t.fecha_limite,
+      origen: 'propia' as const
+    }))
+
+    if (!esEncargado) return propias
+
+    try {
+      const delegadas = await obtenerTareasParaDistribuirGerente(empleadoId)
+      const yaIncluidas = new Set(propias.map((t) => t.id))
+      const extra: TareaPendiente[] = delegadas
+        .filter((t) => !yaIncluidas.has(t.id))
+        .map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          prioridad: t.prioridad as TareaPendiente['prioridad'],
+          fecha_limite: t.fecha_limite,
+          origen: 'delegada_rrhh' as const
+        }))
+      return [...propias, ...extra]
+    } catch (e) {
+      console.warn('No se pudieron obtener tareas delegadas por RRHH:', e)
+      return propias
+    }
+  }
+
   // Función para obtener tareas que vencen hoy del gerente
   const obtenerTareasQueVencenHoy = async (empleadoId: string): Promise<TareaPendiente[]> => {
     try {
