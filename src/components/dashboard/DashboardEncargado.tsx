@@ -107,6 +107,9 @@ export function DashboardEncargado({
                   <div className="flex items-center justify-between gap-2">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
                       {acceso.titulo}
+                      {acceso.clave === "tareas" && tareasTotal > 0 && (
+                        <Badge variant="destructive">{tareasTotal}</Badge>
+                      )}
                       {modoEdicion && !acceso.activo && (
                         <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
                       )}
