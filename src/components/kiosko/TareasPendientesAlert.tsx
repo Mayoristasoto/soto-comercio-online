@@ -127,6 +127,10 @@ export function TareasPendientesAlert({
     fechaLimite.setHours(23, 59, 59, 999)
     return fechaLimite < new Date()
   })
+  const tareasDelegadas = tareas.filter(t => t.origen === 'delegada_rrhh')
+  const tareasPropias = tareas.filter(t => t.origen !== 'delegada_rrhh')
+
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
