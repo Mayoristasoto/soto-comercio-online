@@ -50,6 +50,7 @@ interface TareaPendiente {
   titulo: string
   prioridad: 'baja' | 'media' | 'alta' | 'urgente'
   fecha_limite: string | null
+  origen?: 'propia' | 'delegada_rrhh'
 }
 
 interface Fichaje {
