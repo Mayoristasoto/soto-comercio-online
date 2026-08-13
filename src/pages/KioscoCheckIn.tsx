@@ -903,18 +903,11 @@ export default function KioscoCheckIn() {
         })
       }
 
-      // Obtener tareas pendientes del empleado usando RPC seguro del kiosco
-      const { data: tareasRpc } = await supabase.rpc('kiosk_get_tareas', {
-        p_empleado_id: empleadoParaFichaje.id,
-        p_limit: 5
-      })
-
-      const tareas: TareaPendiente[] = (tareasRpc || []).map(t => ({
-        id: t.id,
-        titulo: t.titulo,
-        prioridad: t.prioridad as TareaPendiente['prioridad'],
-        fecha_limite: t.fecha_limite
-      }))
+      // Obtener tareas pendientes (propias + delegadas por RRHH si es encargado)
+      const tareas: TareaPendiente[] = await obtenerTareasRecordatorio(
+        empleadoParaFichaje.id,
+        empleadoData?.rol
+      )
 
       setTareasPendientes(tareas)
 
