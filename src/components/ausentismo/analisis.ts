@@ -184,12 +184,22 @@ export function calcularPatrones(fila: FilaEmpleado, mesesOrden: string[], ctx: 
     (m) => fila.meses[m]?.esperados > 0 && fila.meses[m].indice > fila.total.indice,
   ).length;
 
+  const conteoVac = new Map<string, { p: PersonaVacaciones; n: number }>();
+  fila.ausencias.forEach((a) =>
+    personasDeVacaciones(ctx, a).forEach((p) => {
+      const prev = conteoVac.get(p.empleado_id);
+      if (prev) prev.n++;
+      else conteoVac.set(p.empleado_id, { p, n: 1 });
+    }),
+  );
+
   return {
     porDiaSemana: [0, 1, 2, 3, 4, 5, 6].map((dia) => ({ dia, cantidad: porDia.get(dia) || 0 })),
     diasClave: fila.ausencias.filter((a) => esDiaClave(a.fecha, a.dia_semana, ctx.feriados)).length,
-    conVacacionesDeOtros: fila.ausencias.filter(
-      (a) => (ctx.vacacionesPorDia.get(`${a.sucursal_id || "-"}|${a.fecha}`) || 0) > 0,
-    ).length,
+    conVacacionesDeOtros: fila.ausencias.filter((a) => personasDeVacaciones(ctx, a).length > 0).length,
+    coincidenciasVacaciones: [...conteoVac.values()]
+      .sort((x, y) => y.n - x.n)
+      .map(({ p, n }) => ({ nombre: p.nombre, rol: p.rol, es_encargado: p.es_encargado, cantidad: n })),
     porCategoria: [...porCat.entries()].sort((a, b) => b[1] - a[1]).map(([nombre, cantidad]) => ({ nombre, cantidad })),
     rachaMax,
     mesesSobrePromedio,
