@@ -16,7 +16,7 @@ import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import { MatrizAusentismo } from "@/components/ausentismo/MatrizAusentismo";
 import { PatronesEmpleadoDialog } from "@/components/ausentismo/PatronesEmpleadoDialog";
 import { construirFilas, mesKey, type ContextoPatrones } from "@/components/ausentismo/analisis";
-import type { DiaAusentismo, FilaEmpleado } from "@/components/ausentismo/types";
+import type { DiaAusentismo, FilaEmpleado, PersonaVacaciones } from "@/components/ausentismo/types";
 import { exportIndiceAusentismoPDF, exportIndiceAusentismoXLSX } from "@/utils/indiceAusentismoExport";
 
 const fmt = (d: Date) => format(d, "yyyy-MM-dd");
