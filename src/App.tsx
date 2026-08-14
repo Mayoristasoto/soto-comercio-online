@@ -86,6 +86,7 @@ import NovedadesAlert from "./pages/NovedadesAlert";
 import TableroProyectos from "./pages/TableroProyectos";
 import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
 import ResumenMes from "./pages/ResumenMes";
+import IndiceAusentismo from "./pages/IndiceAusentismo";
 import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
 import PlanillaDescansos from "./pages/PlanillaDescansos";
