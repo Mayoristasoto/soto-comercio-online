@@ -65,6 +65,22 @@ export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose, o
                 <span className="text-muted-foreground">Días con compañeros de vacaciones</span>
                 <span className="font-medium">{p.conVacacionesDeOtros} ({pct(p.conVacacionesDeOtros)})</span>
               </div>
+              {!!p.coincidenciasVacaciones.length && (
+                <div className="rounded-md border p-2 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">¿Con quién coincide?</p>
+                  {p.coincidenciasVacaciones.slice(0, 5).map((c) => (
+                    <div key={c.nombre} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate">
+                        {c.nombre}
+                        {c.es_encargado && (
+                          <Badge variant="secondary" className="ml-1 text-[10px]">Encargado</Badge>
+                        )}
+                      </span>
+                      <span className="font-medium whitespace-nowrap">{c.cantidad} ({pct(c.cantidad)})</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Racha máxima consecutiva</span>
                 <span className="font-medium">{p.rachaMax} día(s)</span>
