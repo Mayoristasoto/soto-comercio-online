@@ -161,7 +161,7 @@ export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose, o
                           )}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {[clave ? "Feriado/víspera" : null, conVac ? "Compañeros de vacaciones" : null]
+                          {[clave ? "Feriado/víspera" : null, conVac]
                             .filter(Boolean)
                             .join(" · ") || "—"}
                         </TableCell>
