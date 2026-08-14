@@ -283,6 +283,7 @@ export default function IndiceAusentismo() {
           ctx={ctx}
           open={!!detalle}
           onClose={() => setDetalle(null)}
+          onJustificado={() => { setDetalle(null); cargar(); }}
         />
       )}
     </div>
