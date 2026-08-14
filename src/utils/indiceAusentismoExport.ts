@@ -66,6 +66,10 @@ export function exportIndiceAusentismoXLSX(
       "Día más frecuente": topDia?.cantidad ? DIAS_LABEL[topDia.dia] : "",
       "En feriados/vísperas": p.diasClave,
       "Con vacaciones de otros": p.conVacacionesDeOtros,
+      "Coincide con": p.coincidenciasVacaciones
+        .slice(0, 5)
+        .map((c) => `${c.nombre}${c.es_encargado ? " (encargado)" : ""}: ${c.cantidad}`)
+        .join(" | "),
       "Racha máxima": p.rachaMax,
       "Meses sobre promedio": p.mesesSobrePromedio,
       Motivos: p.porCategoria.map((c) => `${c.nombre}: ${c.cantidad}`).join(" | "),

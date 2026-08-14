@@ -16,7 +16,7 @@ import type { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import { MatrizAusentismo } from "@/components/ausentismo/MatrizAusentismo";
 import { PatronesEmpleadoDialog } from "@/components/ausentismo/PatronesEmpleadoDialog";
 import { construirFilas, mesKey, type ContextoPatrones } from "@/components/ausentismo/analisis";
-import type { DiaAusentismo, FilaEmpleado } from "@/components/ausentismo/types";
+import type { DiaAusentismo, FilaEmpleado, PersonaVacaciones } from "@/components/ausentismo/types";
 import { exportIndiceAusentismoPDF, exportIndiceAusentismoXLSX } from "@/utils/indiceAusentismoExport";
 
 const fmt = (d: Date) => format(d, "yyyy-MM-dd");
@@ -34,7 +34,7 @@ export default function IndiceAusentismo() {
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [dias, setDias] = useState<DiaAusentismo[]>([]);
   const [feriados, setFeriados] = useState<Set<string>>(new Set());
-  const [vacacionesPorDia, setVacacionesPorDia] = useState<Map<string, number>>(new Map());
+  const [vacacionesPorDia, setVacacionesPorDia] = useState<Map<string, PersonaVacaciones[]>>(new Map());
   const [loading, setLoading] = useState(false);
   const [detalle, setDetalle] = useState<FilaEmpleado | null>(null);
 
@@ -83,17 +83,32 @@ export default function IndiceAusentismo() {
       setDias(registros);
       setFeriados(new Set((fer.data || []).map((f: any) => f.fecha)));
 
-      // Mapa sucursal|fecha -> compañeros de vacaciones
-      const sucursalDeEmpleado = new Map<string, string>();
-      registros.forEach((r) => sucursalDeEmpleado.set(r.empleado_id, r.sucursal_id || "-"));
-      const mapa = new Map<string, number>();
+      // Datos de quienes están de vacaciones (nombre, rol y sucursal)
+      const idsVac = [...new Set((vac.data || []).map((v: any) => v.empleado_id))];
+      const { data: empVac } = idsVac.length
+        ? await supabase.from("empleados").select("id,nombre,apellido,rol,sucursal_id").in("id", idsVac)
+        : { data: [] as any[] };
+      const infoEmpleado = new Map<string, any>();
+      (empVac || []).forEach((e: any) => infoEmpleado.set(e.id, e));
+
+      // Mapa sucursal|fecha -> compañeros de vacaciones (con nombre y si es encargado)
+      const mapa = new Map<string, PersonaVacaciones[]>();
       (vac.data || []).forEach((v: any) => {
-        const suc = sucursalDeEmpleado.get(v.empleado_id) || "-";
+        const e = infoEmpleado.get(v.empleado_id);
+        const suc = e?.sucursal_id || "-";
+        const persona: PersonaVacaciones = {
+          empleado_id: v.empleado_id,
+          nombre: e ? `${e.apellido}, ${e.nombre}` : "Empleado",
+          rol: e?.rol || null,
+          es_encargado: e?.rol === "gerente_sucursal" || e?.rol === "lider_grupo",
+        };
         let d = new Date(v.fecha_inicio + "T00:00:00");
         const fin = new Date(v.fecha_fin + "T00:00:00");
         while (d <= fin) {
           const k = `${suc}|${fmt(d)}`;
-          mapa.set(k, (mapa.get(k) || 0) + 1);
+          const arr = mapa.get(k);
+          if (arr) arr.push(persona);
+          else mapa.set(k, [persona]);
           d = new Date(d.getTime() + 86400000);
         }
       });
