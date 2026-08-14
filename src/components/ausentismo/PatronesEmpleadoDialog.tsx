@@ -1,8 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { JustificarEventoDialog, type EventoJustificable } from "@/components/novedades/JustificarEventoDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calcularPatrones, esDiaClave, type ContextoPatrones } from "./analisis";
@@ -14,9 +16,11 @@ interface Props {
   ctx: ContextoPatrones;
   open: boolean;
   onClose: () => void;
+  onJustificado?: () => void;
 }
 
-export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose }: Props) {
+export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose, onJustificado }: Props) {
+  const [evento, setEvento] = useState<EventoJustificable | null>(null);
   const p = useMemo(() => calcularPatrones(fila, mesesOrden, ctx), [fila, mesesOrden, ctx]);
   const maxDia = Math.max(1, ...p.porDiaSemana.map((d) => d.cantidad));
   const totalAus = fila.ausencias.length;
@@ -114,6 +118,7 @@ export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose }:
                   <TableHead>Día</TableHead>
                   <TableHead>Motivo</TableHead>
                   <TableHead>Contexto</TableHead>
+                  <TableHead className="text-right">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -139,6 +144,24 @@ export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose }:
                             .filter(Boolean)
                             .join(" · ") || "—"}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant={a.categoria_nombre ? "ghost" : "outline"}
+                            onClick={() =>
+                              setEvento({
+                                empleado_id: a.empleado_id,
+                                empleado: fila.nombre,
+                                fecha: a.fecha,
+                                tipo_evento: "ausencia",
+                                categoria_id: a.categoria_id,
+                                observacion: a.observacion,
+                              })
+                            }
+                          >
+                            {a.categoria_nombre ? "Editar" : "Justificar"}
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -147,6 +170,13 @@ export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose }:
           </div>
         </div>
       </DialogContent>
+
+      <JustificarEventoDialog
+        evento={evento}
+        open={!!evento}
+        onClose={() => setEvento(null)}
+        onSaved={() => onJustificado?.()}
+      />
     </Dialog>
   );
 }
