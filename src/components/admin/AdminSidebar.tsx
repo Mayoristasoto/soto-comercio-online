@@ -23,6 +23,7 @@ import {
   Image,
   Calculator,
   CalendarDays,
+  Activity,
   Eye
 } from "lucide-react"
 import {
