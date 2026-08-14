@@ -23,6 +23,7 @@ import {
   Image,
   Calculator,
   CalendarDays,
+  Activity,
   Eye
 } from "lucide-react"
 import {
@@ -70,6 +71,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Gestión de Payroll", url: "/rrhh/payroll", icon: Calculator },
       { title: "Novedades Liquidación", url: "/rrhh/novedades-liquidacion", icon: FileText },
       { title: "Resumen Mes", url: "/rrhh/resumen-mes", icon: CalendarDays },
+      { title: "Índice de Ausentismo", url: "/rrhh/indice-ausentismo", icon: Activity },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
     ]
   },
