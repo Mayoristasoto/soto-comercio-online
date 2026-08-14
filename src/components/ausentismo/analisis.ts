@@ -19,9 +19,15 @@ const cerrar = (c: CeldaMes): CeldaMes => ({
 export interface ContextoPatrones {
   /** fechas (YYYY-MM-DD) de feriados activos */
   feriados: Set<string>;
-  /** "sucursal_id|fecha" -> cantidad de compañeros de vacaciones/licencia */
-  vacacionesPorDia: Map<string, number>;
+  /** "sucursal_id|fecha" -> compañeros de vacaciones/licencia ese día */
+  vacacionesPorDia: Map<string, PersonaVacaciones[]>;
 }
+
+export const personasDeVacaciones = (
+  ctx: ContextoPatrones,
+  a: Pick<DiaAusentismo, "sucursal_id" | "fecha" | "empleado_id">,
+): PersonaVacaciones[] =>
+  (ctx.vacacionesPorDia.get(`${a.sucursal_id || "-"}|${a.fecha}`) || []).filter((p) => p.empleado_id !== a.empleado_id);
 
 /** Días clave: feriado, víspera de feriado, día posterior a feriado, o víspera de fin de semana (viernes/sábado según día siguiente no laborable). */
 export function esDiaClave(fecha: string, diaSemana: number, feriados: Set<string>) {
