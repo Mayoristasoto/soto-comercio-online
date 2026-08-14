@@ -18,6 +18,13 @@ export interface DiaAusentismo {
   observacion: string | null;
 }
 
+export interface PersonaVacaciones {
+  empleado_id: string;
+  nombre: string;
+  rol: string | null;
+  es_encargado: boolean;
+}
+
 export interface CeldaMes {
   esperados: number;
   ausentes: number;
