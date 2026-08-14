@@ -34,7 +34,7 @@ export default function IndiceAusentismo() {
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [dias, setDias] = useState<DiaAusentismo[]>([]);
   const [feriados, setFeriados] = useState<Set<string>>(new Set());
-  const [vacacionesPorDia, setVacacionesPorDia] = useState<Map<string, number>>(new Map());
+  const [vacacionesPorDia, setVacacionesPorDia] = useState<Map<string, PersonaVacaciones[]>>(new Map());
   const [loading, setLoading] = useState(false);
   const [detalle, setDetalle] = useState<FilaEmpleado | null>(null);
 
