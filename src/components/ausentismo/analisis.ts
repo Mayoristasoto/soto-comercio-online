@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import type { CeldaMes, DiaAusentismo, FilaEmpleado } from "./types";
+import type { CeldaMes, DiaAusentismo, FilaEmpleado, PersonaVacaciones } from "./types";
 
 export const mesKey = (fecha: string) => fecha.slice(0, 7); // YYYY-MM
 export const parseDia = (fecha: string) => new Date(fecha + "T00:00:00");
