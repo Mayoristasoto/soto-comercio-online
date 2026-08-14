@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { JustificarEventoDialog, type EventoJustificable } from "@/components/novedades/JustificarEventoDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { calcularPatrones, esDiaClave, type ContextoPatrones } from "./analisis";
+import { calcularPatrones, esDiaClave, personasDeVacaciones, type ContextoPatrones } from "./analisis";
 import { DIAS_LABEL, type FilaEmpleado } from "./types";
 
 interface Props {
