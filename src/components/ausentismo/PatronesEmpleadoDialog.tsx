@@ -142,7 +142,12 @@ export function PatronesEmpleadoDialog({ fila, mesesOrden, ctx, open, onClose, o
                   .slice()
                   .sort((a, b) => a.fecha.localeCompare(b.fecha))
                   .map((a) => {
-                    const conVac = (ctx.vacacionesPorDia.get(`${a.sucursal_id || "-"}|${a.fecha}`) || 0) > 0;
+                    const enVac = personasDeVacaciones(ctx, a);
+                    const conVac = enVac.length
+                      ? `De vacaciones: ${enVac
+                          .map((v) => (v.es_encargado ? `${v.nombre} (encargado)` : v.nombre))
+                          .join(", ")}`
+                      : null;
                     const clave = esDiaClave(a.fecha, a.dia_semana, ctx.feriados);
                     return (
                       <TableRow key={a.fecha}>
