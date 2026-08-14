@@ -155,6 +155,8 @@ export interface PatronesEmpleado {
   porDiaSemana: { dia: number; cantidad: number }[];
   diasClave: number;
   conVacacionesDeOtros: number;
+  /** compañeros/encargados de vacaciones que más coinciden con sus ausencias */
+  coincidenciasVacaciones: { nombre: string; rol: string | null; es_encargado: boolean; cantidad: number }[];
   porCategoria: { nombre: string; cantidad: number }[];
   rachaMax: number;
   mesesSobrePromedio: number;
