@@ -147,6 +147,7 @@ const App = () => (
             <Route path="rrhh/entregas" element={<EntregasEmpleados />} />
             <Route path="rrhh/novedades-liquidacion" element={<NovedadesLiquidacion />} />
             <Route path="rrhh/resumen-mes" element={<ResumenMes />} />
+            <Route path="rrhh/indice-ausentismo" element={<IndiceAusentismo />} />
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
             <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
             <Route path="rrhh/planilla-descansos" element={<PlanillaDescansos />} />
