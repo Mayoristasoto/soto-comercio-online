@@ -110,10 +110,25 @@ export function construirFilas(
       const clave = ausencias.filter((a) => esDiaClave(a.fecha, a.dia_semana, ctx.feriados)).length;
       if (clave / ausencias.length >= 0.5) alertas.push("Vísperas / feriados");
 
-      const conVac = ausencias.filter(
-        (a) => (ctx.vacacionesPorDia.get(`${a.sucursal_id || "-"}|${a.fecha}`) || 0) > 0,
-      ).length;
-      if (conVac / ausencias.length >= 0.5) alertas.push("Coincide con vacaciones de otros");
+      const conVac = ausencias.filter((a) => personasDeVacaciones(ctx, a).length > 0).length;
+      if (conVac / ausencias.length >= 0.5) {
+        // ¿Con quién coinciden? (empleado puntual o encargado)
+        const conteo = new Map<string, { p: PersonaVacaciones; n: number }>();
+        ausencias.forEach((a) =>
+          personasDeVacaciones(ctx, a).forEach((p) => {
+            const prev = conteo.get(p.empleado_id);
+            if (prev) prev.n++;
+            else conteo.set(p.empleado_id, { p, n: 1 });
+          }),
+        );
+        const ranking = [...conteo.values()].sort((x, y) => y.n - x.n);
+        const encargado = ranking.find((r) => r.p.es_encargado && r.n / ausencias.length >= 0.5);
+        const top = ranking[0];
+        if (encargado) alertas.push(`Coincide con vacaciones del encargado ${encargado.p.nombre}`);
+        else if (top && top.n / ausencias.length >= 0.5)
+          alertas.push(`Coincide con vacaciones de ${top.p.nombre}`);
+        else alertas.push("Coincide con vacaciones de otros");
+      }
 
       const enfermedad = ausencias.filter((a) => /enferm|m[eé]dic|salud/i.test(a.categoria_nombre || "")).length;
       if (enfermedad / ausencias.length >= 0.4) alertas.push("Alta tasa de enfermedad");
