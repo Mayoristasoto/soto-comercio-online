@@ -383,7 +383,7 @@ export default function UbicacionesFichaje() {
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta)}
+              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
