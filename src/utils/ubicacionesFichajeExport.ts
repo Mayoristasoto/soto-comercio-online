@@ -53,6 +53,7 @@ export function exportUbicacionesXLSX(
   puntos: string[],
   desde: string,
   hasta: string,
+  resumenDias: ResumenDias[] = [],
 ) {
   const wb = XLSX.utils.book_new();
 
