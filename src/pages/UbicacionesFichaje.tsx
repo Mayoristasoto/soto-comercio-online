@@ -224,6 +224,57 @@ export default function UbicacionesFichaje() {
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
   }, [filasVista]);
 
+  // Días trabajados por empleado y por kiosco (día = fecha con al menos un fichaje ahí)
+  const resumenDias = useMemo<ResumenDias[]>(() => {
+    const map = new Map<
+      string,
+      { empleado: string; legajo: string | null; sucursal_nombre: string | null; dias: Set<string>; porPunto: Map<string, Set<string>> }
+    >();
+    filasVista.forEach((f) => {
+      const fecha = formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd");
+      let r = map.get(f.empleado_id);
+      if (!r) {
+        r = {
+          empleado: f.empleado,
+          legajo: f.legajo,
+          sucursal_nombre: f.sucursal_nombre,
+          dias: new Set<string>(),
+          porPunto: new Map<string, Set<string>>(),
+        };
+        map.set(f.empleado_id, r);
+      }
+      r.dias.add(fecha);
+      const key = f.clasificacion;
+      if (!r.porPunto.has(key)) r.porPunto.set(key, new Set<string>());
+      r.porPunto.get(key)!.add(fecha);
+    });
+    return Array.from(map.values())
+      .map((r) => {
+        const diasTrabajados = r.dias.size;
+        const diasPorPunto: Record<string, number> = {};
+        const pctPorPunto: Record<string, number> = {};
+        r.porPunto.forEach((set, k) => {
+          diasPorPunto[k] = set.size;
+          pctPorPunto[k] = diasTrabajados ? (set.size / diasTrabajados) * 100 : 0;
+        });
+        return {
+          empleado: r.empleado,
+          legajo: r.legajo,
+          sucursal_nombre: r.sucursal_nombre,
+          diasTrabajados,
+          diasPorPunto,
+          pctPorPunto,
+        };
+      })
+      .sort((a, b) => a.empleado.localeCompare(b.empleado));
+  }, [filasVista]);
+
+  const columnasDias = useMemo(() => {
+    const set = new Set<string>();
+    resumenDias.forEach((r) => Object.keys(r.diasPorPunto).forEach((k) => set.add(k)));
+    return Array.from(set).sort();
+  }, [resumenDias]);
+
   const totales = useMemo(() => {
     const conGps = filasVista.filter((f) => f.latitud != null).length;
     return {
