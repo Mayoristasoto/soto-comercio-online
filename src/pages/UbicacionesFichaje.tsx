@@ -948,8 +948,8 @@ export default function UbicacionesFichaje() {
                               <Badge variant="secondary">OK</Badge>
                             )}
                           </TableCell>
+                          <TableCell className="text-right">
 
-                            {r.diasMultiKiosco ? (
                               <Badge variant="secondary" title={(r.fechasMultiKiosco || []).join(", ")}>
                                 {r.diasMultiKiosco} día(s)
                               </Badge>
