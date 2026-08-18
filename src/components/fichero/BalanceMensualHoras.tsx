@@ -91,6 +91,19 @@ export default function BalanceMensualHoras() {
       const fechaInicio = getArgentinaStartOfDay(primerDia)
       const fechaFin = getArgentinaEndOfDay(ultimoDia)
 
+      // Feriados activos del mes (para aclarar si se cuentan o no)
+      const { data: feriadosRaw } = await supabase
+        .from('dias_feriados')
+        .select('fecha, nombre')
+        .gte('fecha', format(primerDia, 'yyyy-MM-dd'))
+        .lte('fecha', format(ultimoDia, 'yyyy-MM-dd'))
+        .eq('activo', true)
+        .order('fecha')
+      const feriados = (feriadosRaw || []) as { fecha: string; nombre: string }[]
+      setFeriadosMes(feriados)
+      const feriadosSet = new Set(feriados.map(f => f.fecha))
+
+
       const { data: empleadosRaw, error: empError } = await supabase
         .from('empleados')
         .select('id, nombre, apellido, avatar_url, horas_jornada_estandar, sucursal_id, tipo_jornada, horas_semanales_objetivo, dias_laborales_semana')
