@@ -412,7 +412,7 @@ export default function UbicacionesFichaje() {
             </ScrollArea>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6 rounded-md border p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6 rounded-md border p-3">
             <label className="flex items-center gap-2 text-sm">
               <Switch checked={soloEntradaSalida} onCheckedChange={setSoloEntradaSalida} />
               Solo entradas y salidas (sin pausas)
@@ -421,7 +421,16 @@ export default function UbicacionesFichaje() {
               <Switch checked={porJornada} onCheckedChange={setPorJornada} />
               Contar por jornada (1 unidad por día y kiosco)
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={soloHabiles} onCheckedChange={setSoloHabiles} />
+              Contar solo días hábiles (lunes a sábado, sin domingos)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={contarFeriados} onCheckedChange={setContarFeriados} />
+              {contarFeriados ? "Los feriados se cuentan como día trabajado" : "Los feriados NO se cuentan"}
+            </label>
           </div>
+
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={cargar} disabled={loading}>
