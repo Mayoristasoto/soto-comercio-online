@@ -42,7 +42,16 @@ export interface ResumenDias {
   diasTrabajados: number;
   diasPorPunto: Record<string, number>;
   pctPorPunto: Record<string, number>;
+  diasHabilesPeriodo?: number;
+  pctSobreHabiles?: Record<string, number>;
+  pctDiasHabiles?: number;
+  diasMultiKiosco?: number;
+  fechasMultiKiosco?: string[];
+  diasConExtras?: number;
+  horasExtras?: number;
+  nota?: string;
 }
+
 
 const fmtFecha = (ts: string) => formatArgentinaDate(ts, "dd/MM/yyyy");
 const fmtHora = (ts: string) => formatArgentinaTime(ts, "HH:mm");
