@@ -278,6 +278,11 @@ export default function Dashboard() {
         <EstadoPersonalHoy />
       )}
 
+      {/* Incidencias de hoy */}
+      {(isAdmin || isGerente) && (
+        <IncidenciasHoy />
+      )}
+
       {/* Cobertura horaria por sucursal */}
       {(isAdmin || isGerente) && (
         <CoberturaSucursales />
