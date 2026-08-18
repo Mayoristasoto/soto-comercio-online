@@ -55,6 +55,13 @@ export interface ResumenDias {
   diasEsperados?: number;
   diasFaltantes?: number;
   cumple?: boolean;
+  fechasFaltantes?: string[];
+  fechasVacaciones?: string[];
+  fechasMedicas?: string[];
+  fechasJustificadas?: string[];
+  fechasExtras?: string[];
+  kioscosTrabajados?: string[];
+  cantidadKioscos?: number;
   nota?: string;
 }
 
