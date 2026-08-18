@@ -453,6 +453,21 @@ export default function UbicacionesFichaje() {
         ).length;
         const diasEsperados = Math.max(0, habiles - diasVacaciones - diasMedicas - diasJustificados);
         const diasFaltantes = Math.max(0, diasEsperados - diasTrabajados);
+
+        // Detalle de días hábiles no trabajados y sin justificación
+        const fechasFaltantes = diasHabilesInfo.fechasHabiles
+          .filter((f) => !r.dias.has(f) && !a?.vac.has(f) && !a?.med.has(f) && !a?.just.has(f))
+          .map((f) => formatArgentinaDate(`${f}T12:00:00`, "EEE dd/MM"));
+        const fechasVacaciones = Array.from(a?.vac || []).sort().map((f) => formatArgentinaDate(`${f}T12:00:00`, "dd/MM"));
+        const fechasMedicas = Array.from(a?.med || []).sort().map((f) => formatArgentinaDate(`${f}T12:00:00`, "dd/MM"));
+        const fechasJustificadas = Array.from(a?.just || [])
+          .filter((f) => !a!.vac.has(f) && !a!.med.has(f))
+          .sort()
+          .map((f) => formatArgentinaDate(`${f}T12:00:00`, "dd/MM"));
+
+        // Kioscos distintos en el período (para asignar 2 centros de costo)
+        const kioscosTrabajados = Object.keys(diasPorPunto).filter((k) => k !== SIN_GPS && k !== FUERA);
+
         const aus = {
           diasVacaciones,
           diasMedicas,
@@ -464,6 +479,7 @@ export default function UbicacionesFichaje() {
         const notas: string[] = [];
         if (fechasMulti.length)
           notas.push(`Trabajó en 2 o más kioscos en ${fechasMulti.length} día(s): ${fechasMulti.join(", ")}`);
+        if (kioscosTrabajados.length > 1) notas.push(`Kioscos del período: ${kioscosTrabajados.join(" + ")}`);
         if (ex) notas.push(`Superó la jornada de 8 h en ${ex.dias} día(s): +${ex.horas.toFixed(1)} hs extras`);
         if (diasVacaciones) notas.push(`${diasVacaciones} día(s) hábiles de vacaciones`);
         if (diasMedicas) notas.push(`${diasMedicas} día(s) de licencia médica`);
@@ -484,9 +500,17 @@ export default function UbicacionesFichaje() {
           fechasMultiKiosco: fechasMulti,
           diasConExtras: ex?.dias || 0,
           horasExtras: ex ? Number(ex.horas.toFixed(1)) : 0,
+          fechasFaltantes,
+          fechasVacaciones,
+          fechasMedicas,
+          fechasJustificadas,
+          fechasExtras: ex?.fechas || [],
+          kioscosTrabajados,
+          cantidadKioscos: kioscosTrabajados.length,
           ...aus,
           nota: notas.join(" · "),
         };
+
       })
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
   }, [filasVista, diasHabilesInfo, extrasPorEmpleado, ausenciasPorEmpleado]);
