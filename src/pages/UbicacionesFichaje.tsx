@@ -106,6 +106,42 @@ export default function UbicacionesFichaje() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seleccionGrupo]);
 
+  // Feriados del período
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("dias_feriados")
+        .select("fecha,nombre")
+        .gte("fecha", desde)
+        .lte("fecha", hasta)
+        .eq("activo", true)
+        .order("fecha");
+      setFeriados((data as { fecha: string; nombre: string }[]) || []);
+    })();
+  }, [desde, hasta]);
+
+  // Días hábiles del período: lunes a sábado (sin domingos)
+  const diasHabilesInfo = useMemo(() => {
+    const ini = new Date(`${desde}T12:00:00`);
+    const fin = new Date(`${hasta}T12:00:00`);
+    let habiles = 0;
+    let domingos = 0;
+    const cur = new Date(ini);
+    while (cur <= fin) {
+      if (cur.getDay() === 0) domingos++;
+      else habiles++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    const feriadosHabiles = feriados.filter((f) => new Date(`${f.fecha}T12:00:00`).getDay() !== 0);
+    return {
+      habiles,
+      domingos,
+      feriadosHabiles,
+      habilesNetos: contarFeriados ? habiles : habiles - feriadosHabiles.length,
+    };
+  }, [desde, hasta, feriados, contarFeriados]);
+
+
   const empleadosVisibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return empleados.filter((e) => {
