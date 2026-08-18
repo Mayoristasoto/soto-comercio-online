@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns"
@@ -22,12 +23,17 @@ interface EmpleadoBalanceMes {
   avatar_url: string | null
   sucursal_nombre: string | null
   dias_trabajados: number
+  domingos_trabajados: number
+  feriados_trabajados: number
+  minutos_domingos: number
+  minutos_feriados: number
   minutos_trabajados: number
   minutos_esperados: number
   balance_minutos: number
   horas_jornada: number
   horas_semanales_objetivo: number | null
   dias_laborales_semana: number
+  minutos_esperados_por_dia: number
 }
 
 type SortField = 'nombre' | 'sucursal' | 'dias' | 'trabajadas' | 'esperadas' | 'balance'
@@ -64,6 +70,8 @@ export default function BalanceMensualHoras() {
   const [sortField, setSortField] = useState<SortField>('balance')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState<EmpleadoBalanceMes | null>(null)
+  const [feriadosMes, setFeriadosMes] = useState<{ fecha: string; nombre: string }[]>([])
+  const [contarFeriados, setContarFeriados] = useState(true)
 
   const opcionesMeses = useMemo(() => generarOpciones(), [])
 
@@ -84,6 +92,19 @@ export default function BalanceMensualHoras() {
 
       const fechaInicio = getArgentinaStartOfDay(primerDia)
       const fechaFin = getArgentinaEndOfDay(ultimoDia)
+
+      // Feriados activos del mes (para aclarar si se cuentan o no)
+      const { data: feriadosRaw } = await supabase
+        .from('dias_feriados')
+        .select('fecha, nombre')
+        .gte('fecha', format(primerDia, 'yyyy-MM-dd'))
+        .lte('fecha', format(ultimoDia, 'yyyy-MM-dd'))
+        .eq('activo', true)
+        .order('fecha')
+      const feriados = (feriadosRaw || []) as { fecha: string; nombre: string }[]
+      setFeriadosMes(feriados)
+      const feriadosSet = new Set(feriados.map(f => f.fecha))
+
 
       const { data: empleadosRaw, error: empError } = await supabase
         .from('empleados')
@@ -129,9 +150,13 @@ export default function BalanceMensualHoras() {
 
         let totalMinutosTrabajados = 0
         let diasTrabajados = 0
+        let domingosTrabajados = 0
+        let feriadosTrabajados = 0
+        let minutosDomingos = 0
+        let minutosFeriados = 0
 
         if (diasFichados) {
-          diasFichados.forEach((fichajesDia) => {
+          diasFichados.forEach((fichajesDia, diaKey) => {
             const entrada = fichajesDia.find((f: any) => f.tipo === 'entrada')
             const salida = [...fichajesDia].reverse().find((f: any) => f.tipo === 'salida')
 
@@ -139,8 +164,18 @@ export default function BalanceMensualHoras() {
               const diffMs = new Date(salida.timestamp_real).getTime() - new Date(entrada.timestamp_real).getTime()
               const minutos = Math.round(diffMs / 60000)
               if (minutos > 0) {
-                totalMinutosTrabajados += minutos
-                diasTrabajados++
+                const esDomingo = new Date(`${diaKey}T12:00:00`).getDay() === 0
+                const esFeriado = feriadosSet.has(diaKey)
+                if (esDomingo) {
+                  domingosTrabajados++
+                  minutosDomingos += minutos
+                } else if (esFeriado) {
+                  feriadosTrabajados++
+                  minutosFeriados += minutos
+                } else {
+                  totalMinutosTrabajados += minutos
+                  diasTrabajados++
+                }
               }
             }
           })
@@ -167,12 +202,17 @@ export default function BalanceMensualHoras() {
           avatar_url: emp.avatar_url,
           sucursal_nombre: sucursalNombre,
           dias_trabajados: diasTrabajados,
+          domingos_trabajados: domingosTrabajados,
+          feriados_trabajados: feriadosTrabajados,
+          minutos_domingos: minutosDomingos,
+          minutos_feriados: minutosFeriados,
           minutos_trabajados: totalMinutosTrabajados,
           minutos_esperados: Math.round(minutosEsperados),
           balance_minutos: Math.round(totalMinutosTrabajados - minutosEsperados),
           horas_jornada: horasJornada,
           horas_semanales_objetivo: horasSemanalesObjetivo || null,
-          dias_laborales_semana: diasLaboralesSemana
+          dias_laborales_semana: diasLaboralesSemana,
+          minutos_esperados_por_dia: minutosEsperadosPorDia
         }
       })
 
@@ -185,8 +225,45 @@ export default function BalanceMensualHoras() {
     }
   }
 
+  // Días hábiles del mes (lunes a sábado, sin domingos) y feriados que caen en día hábil
+  const diasHabilesInfo = useMemo(() => {
+    const [year, month] = mesSeleccionado.split('-').map(Number)
+    const ultimo = endOfMonth(new Date(year, month - 1, 1)).getDate()
+    let habiles = 0
+    let domingos = 0
+    for (let d = 1; d <= ultimo; d++) {
+      const dow = new Date(year, month - 1, d).getDay()
+      if (dow === 0) domingos++
+      else habiles++
+    }
+    const feriadosHabiles = feriadosMes.filter(f => new Date(`${f.fecha}T12:00:00`).getDay() !== 0)
+    return {
+      habiles,
+      domingos,
+      feriadosHabiles,
+      habilesNetos: contarFeriados ? habiles : habiles - feriadosHabiles.length,
+    }
+  }, [mesSeleccionado, feriadosMes, contarFeriados])
+
+  // Aplica la regla: se cuentan solo días hábiles (L-S). Feriados según el switch.
+  const balanceAjustado = useMemo(() => {
+    return balanceEmpleados.map(emp => {
+      const minutosPorDia = emp.minutos_esperados_por_dia
+      const dias = emp.dias_trabajados + (contarFeriados ? emp.feriados_trabajados : 0)
+      const minutos = emp.minutos_trabajados + (contarFeriados ? emp.minutos_feriados : 0)
+      const esperados = Math.round(dias * minutosPorDia)
+      return {
+        ...emp,
+        dias_trabajados: dias,
+        minutos_trabajados: minutos,
+        minutos_esperados: esperados,
+        balance_minutos: Math.round(minutos - esperados),
+      }
+    })
+  }, [balanceEmpleados, contarFeriados])
+
   const empleadosFiltrados = useMemo(() => {
-    let filtered = balanceEmpleados.filter(emp => {
+    let filtered = balanceAjustado.filter(emp => {
       const matchSearch = searchTerm === '' ||
         `${emp.nombre} ${emp.apellido}`.toLowerCase().includes(searchTerm.toLowerCase())
       const matchSucursal = sucursalFiltro === 'todas' || emp.sucursal_nombre === sucursalFiltro
@@ -236,7 +313,9 @@ export default function BalanceMensualHoras() {
     'Empleado': `${emp.apellido}, ${emp.nombre}`,
     'Sucursal': emp.sucursal_nombre || '-',
     'Jornada': `${emp.horas_jornada}hs`,
-    'Días Trabajados': emp.dias_trabajados,
+    'Días Hábiles Trabajados (L-S)': emp.dias_trabajados,
+    'Domingos trabajados (no cuentan)': emp.domingos_trabajados,
+    'Feriados trabajados': emp.feriados_trabajados,
     'Hs Efectivas': fmtMin(emp.minutos_trabajados),
     'Hs Esperadas': fmtMin(emp.minutos_esperados),
     'Balance': `${emp.balance_minutos > 0 ? '+' : ''}${fmtMin(emp.balance_minutos)}`,
@@ -260,7 +339,9 @@ export default function BalanceMensualHoras() {
             <BarChart3 className="h-5 w-5" />
             Balance Mensual de Horas
           </CardTitle>
-          <CardDescription>Acumulado mensual por empleado — Hs efectivas vs esperadas</CardDescription>
+          <CardDescription>
+            Acumulado mensual por empleado — Hs efectivas vs esperadas. Solo se cuentan días hábiles (lunes a sábado); los domingos quedan fuera del balance.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3 items-center">
@@ -294,12 +375,45 @@ export default function BalanceMensualHoras() {
 
             <ExportButton data={datosExportar} filename={`balance-mensual-${mesSeleccionado}`} sheetName="Balance Mensual" />
           </div>
+
+          <div className="mt-3 rounded-md border p-3 space-y-2 bg-muted/30">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={contarFeriados} onCheckedChange={setContarFeriados} />
+              Contar los feriados como día hábil trabajado
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {contarFeriados
+                ? 'Los feriados trabajados SÍ se cuentan como día hábil y suman horas esperadas.'
+                : 'Los feriados trabajados NO se cuentan: sus horas quedan fuera del balance.'}
+              {' '}Los domingos nunca se cuentan.
+            </p>
+            {diasHabilesInfo.feriadosHabiles.length > 0 && (
+              <p className="text-xs">
+                <span className="font-medium">Feriados del mes (L-S):</span>{' '}
+                {diasHabilesInfo.feriadosHabiles
+                  .map(f => `${format(new Date(`${f.fecha}T12:00:00`), 'dd/MM')} ${f.nombre}`)
+                  .join(' · ')}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
       {/* Summary Cards */}
       {!loading && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card className="border-primary/40">
+            <CardContent className="pt-4 pb-3 text-center">
+              <div className="text-2xl font-bold text-primary">{diasHabilesInfo.habilesNetos}</div>
+              <p className="text-xs text-muted-foreground">Días hábiles del mes (L-S)</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {diasHabilesInfo.habiles} L-S · {diasHabilesInfo.domingos} domingos
+                {diasHabilesInfo.feriadosHabiles.length > 0
+                  ? ` · ${diasHabilesInfo.feriadosHabiles.length} feriados ${contarFeriados ? 'contados' : 'descontados'}`
+                  : ''}
+              </p>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="pt-4 pb-3 text-center">
               <div className="text-2xl font-bold">{totales.conDias}</div>
@@ -339,7 +453,8 @@ export default function BalanceMensualHoras() {
                   <SortHeader field="nombre">Empleado</SortHeader>
                   <SortHeader field="sucursal">Sucursal</SortHeader>
                   <TableHead className="text-center">Jornada</TableHead>
-                  <SortHeader field="dias">Días Trab.</SortHeader>
+                  <SortHeader field="dias">Días Háb. Trab.</SortHeader>
+                  <TableHead className="text-center">Dom. / Fer.</TableHead>
                   <SortHeader field="trabajadas">Hs Efectivas</SortHeader>
                   <SortHeader field="esperadas">Hs Esperadas</SortHeader>
                   <SortHeader field="balance">Balance</SortHeader>
@@ -348,7 +463,7 @@ export default function BalanceMensualHoras() {
               <TableBody>
                 {empleadosFiltrados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No se encontraron empleados
                     </TableCell>
                   </TableRow>
@@ -376,6 +491,9 @@ export default function BalanceMensualHoras() {
                         <TableCell className="text-sm">{emp.sucursal_nombre || '-'}</TableCell>
                         <TableCell className="text-center text-sm">{emp.horas_jornada}hs</TableCell>
                         <TableCell className="text-center text-sm">{emp.dias_trabajados}</TableCell>
+                        <TableCell className="text-center text-xs text-muted-foreground">
+                          {emp.domingos_trabajados} / {emp.feriados_trabajados}
+                        </TableCell>
                         <TableCell className="text-sm font-medium">{fmtMin(emp.minutos_trabajados)}</TableCell>
                         <TableCell className="text-sm">{fmtMin(emp.minutos_esperados)}</TableCell>
                         <TableCell>
