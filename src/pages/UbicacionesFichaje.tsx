@@ -272,22 +272,72 @@ export default function UbicacionesFichaje() {
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
   }, [filasVista]);
 
+  // Horas extras por empleado/día (jornada estándar 8 h, la pausa ya está contemplada)
+  const redondearExtras = (horas: number) => {
+    if (horas <= 0) return 0;
+    const enteras = Math.floor(horas);
+    const min = Math.round((horas - enteras) * 60);
+    if (min >= 45) return enteras + 1;
+    if (min >= 19) return enteras + 0.5;
+    return enteras;
+  };
+
+  const extrasPorEmpleado = useMemo(() => {
+    // Usamos las filas con los mismos filtros de día pero siempre con entrada/salida
+    let base = filas.filter((f) => f.tipo === "entrada" || f.tipo === "salida");
+    if (soloHabiles) {
+      base = base.filter(
+        (f) => new Date(`${formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd")}T12:00:00`).getDay() !== 0,
+      );
+    }
+    if (!contarFeriados && feriados.length) {
+      const set = new Set(feriados.map((f) => f.fecha));
+      base = base.filter((f) => !set.has(formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd")));
+    }
+    const porDia = new Map<string, { entrada?: string; salida?: string }>();
+    base.forEach((f) => {
+      const fecha = formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd");
+      const key = `${f.empleado_id}|${fecha}`;
+      const cur = porDia.get(key) || {};
+      if (f.tipo === "entrada" && (!cur.entrada || f.timestamp_real < cur.entrada)) cur.entrada = f.timestamp_real;
+      if (f.tipo === "salida" && (!cur.salida || f.timestamp_real > cur.salida)) cur.salida = f.timestamp_real;
+      porDia.set(key, cur);
+    });
+    const acc = new Map<string, { dias: number; horas: number; fechas: string[] }>();
+    porDia.forEach((v, key) => {
+      if (!v.entrada || !v.salida) return;
+      const horas = (new Date(v.salida).getTime() - new Date(v.entrada).getTime()) / 3_600_000;
+      if (horas <= 0 || horas > 20) return;
+      const extras = redondearExtras(horas - 8);
+      if (extras <= 0) return;
+      const [empId, fecha] = key.split("|");
+      const r = acc.get(empId) || { dias: 0, horas: 0, fechas: [] };
+      r.dias += 1;
+      r.horas += extras;
+      r.fechas.push(formatArgentinaDate(`${fecha}T12:00:00`, "dd/MM"));
+      acc.set(empId, r);
+    });
+    return acc;
+  }, [filas, soloHabiles, contarFeriados, feriados]);
+
   // Días trabajados por empleado y por kiosco (día = fecha con al menos un fichaje ahí)
   const resumenDias = useMemo<ResumenDias[]>(() => {
     const map = new Map<
       string,
-      { empleado: string; legajo: string | null; sucursal_nombre: string | null; dias: Set<string>; porPunto: Map<string, Set<string>> }
+      { id: string; empleado: string; legajo: string | null; sucursal_nombre: string | null; dias: Set<string>; porPunto: Map<string, Set<string>>; puntosPorDia: Map<string, Set<string>> }
     >();
     filasVista.forEach((f) => {
       const fecha = formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd");
       let r = map.get(f.empleado_id);
       if (!r) {
         r = {
+          id: f.empleado_id,
           empleado: f.empleado,
           legajo: f.legajo,
           sucursal_nombre: f.sucursal_nombre,
           dias: new Set<string>(),
           porPunto: new Map<string, Set<string>>(),
+          puntosPorDia: new Map<string, Set<string>>(),
         };
         map.set(f.empleado_id, r);
       }
@@ -295,16 +345,33 @@ export default function UbicacionesFichaje() {
       const key = f.clasificacion;
       if (!r.porPunto.has(key)) r.porPunto.set(key, new Set<string>());
       r.porPunto.get(key)!.add(fecha);
+      if (key !== SIN_GPS && key !== FUERA) {
+        if (!r.puntosPorDia.has(fecha)) r.puntosPorDia.set(fecha, new Set<string>());
+        r.puntosPorDia.get(fecha)!.add(key);
+      }
     });
+    const habiles = diasHabilesInfo.habilesNetos || 0;
     return Array.from(map.values())
       .map((r) => {
         const diasTrabajados = r.dias.size;
         const diasPorPunto: Record<string, number> = {};
         const pctPorPunto: Record<string, number> = {};
+        const pctSobreHabiles: Record<string, number> = {};
         r.porPunto.forEach((set, k) => {
           diasPorPunto[k] = set.size;
           pctPorPunto[k] = diasTrabajados ? (set.size / diasTrabajados) * 100 : 0;
+          pctSobreHabiles[k] = habiles ? (set.size / habiles) * 100 : 0;
         });
+        const fechasMulti: string[] = [];
+        r.puntosPorDia.forEach((set, fecha) => {
+          if (set.size > 1) fechasMulti.push(formatArgentinaDate(`${fecha}T12:00:00`, "dd/MM"));
+        });
+        fechasMulti.sort();
+        const ex = extrasPorEmpleado.get(r.id);
+        const notas: string[] = [];
+        if (fechasMulti.length)
+          notas.push(`Trabajó en 2 o más kioscos en ${fechasMulti.length} día(s): ${fechasMulti.join(", ")}`);
+        if (ex) notas.push(`Superó la jornada de 8 h en ${ex.dias} día(s): +${ex.horas.toFixed(1)} hs extras`);
         return {
           empleado: r.empleado,
           legajo: r.legajo,
@@ -312,10 +379,19 @@ export default function UbicacionesFichaje() {
           diasTrabajados,
           diasPorPunto,
           pctPorPunto,
+          pctSobreHabiles,
+          diasHabilesPeriodo: habiles,
+          pctDiasHabiles: habiles ? (diasTrabajados / habiles) * 100 : 0,
+          diasMultiKiosco: fechasMulti.length,
+          fechasMultiKiosco: fechasMulti,
+          diasConExtras: ex?.dias || 0,
+          horasExtras: ex ? Number(ex.horas.toFixed(1)) : 0,
+          nota: notas.join(" · "),
         };
       })
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
-  }, [filasVista]);
+  }, [filasVista, diasHabilesInfo, extrasPorEmpleado]);
+
 
   const columnasDias = useMemo(() => {
     const set = new Set<string>();
