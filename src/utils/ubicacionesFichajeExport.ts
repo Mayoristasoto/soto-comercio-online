@@ -151,6 +151,27 @@ export function exportUbicacionesPDF(
     headStyles: { fillColor: [75, 13, 109] },
   });
 
+  if (resumenDias.length) {
+    doc.addPage();
+    doc.setFontSize(12);
+    doc.text("Días trabajados por kiosco", 14, 14);
+    autoTable(doc, {
+      startY: 20,
+      head: [["Empleado", "Sucursal", "Días", ...puntos.flatMap((p) => [`${p} días`, `${p} %`])]],
+      body: resumenDias.map((r) => [
+        r.empleado,
+        r.sucursal_nombre || "",
+        r.diasTrabajados,
+        ...puntos.flatMap((p) => [
+          r.diasPorPunto[p] || 0,
+          `${(r.pctPorPunto[p] || 0).toFixed(1)}%`,
+        ]),
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillColor: [224, 68, 3] },
+    });
+  }
+
   doc.addPage();
   doc.setFontSize(12);
   doc.text("Detalle de fichajes", 14, 14);
