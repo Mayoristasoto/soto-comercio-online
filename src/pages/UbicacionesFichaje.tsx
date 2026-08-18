@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { toast } from "sonner";
 import { format, startOfMonth } from "date-fns";
 import { Loader2, MapPin, FileSpreadsheet, FileDown, Search, ExternalLink, Smartphone, ScanFace } from "lucide-react";
@@ -126,10 +127,16 @@ export default function UbicacionesFichaje() {
     const fin = new Date(`${hasta}T12:00:00`);
     let habiles = 0;
     let domingos = 0;
+    const fechasHabiles: string[] = [];
+    const feriadosSet = new Set(feriados.map((f) => f.fecha));
     const cur = new Date(ini);
     while (cur <= fin) {
+      const f = format(cur, "yyyy-MM-dd");
       if (cur.getDay() === 0) domingos++;
-      else habiles++;
+      else {
+        habiles++;
+        if (contarFeriados || !feriadosSet.has(f)) fechasHabiles.push(f);
+      }
       cur.setDate(cur.getDate() + 1);
     }
     const feriadosHabiles = feriados.filter((f) => new Date(`${f.fecha}T12:00:00`).getDay() !== 0);
@@ -137,9 +144,11 @@ export default function UbicacionesFichaje() {
       habiles,
       domingos,
       feriadosHabiles,
+      fechasHabiles,
       habilesNetos: contarFeriados ? habiles : habiles - feriadosHabiles.length,
     };
   }, [desde, hasta, feriados, contarFeriados]);
+
 
 
   const empleadosVisibles = useMemo(() => {
@@ -445,6 +454,21 @@ export default function UbicacionesFichaje() {
         ).length;
         const diasEsperados = Math.max(0, habiles - diasVacaciones - diasMedicas - diasJustificados);
         const diasFaltantes = Math.max(0, diasEsperados - diasTrabajados);
+
+        // Detalle de días hábiles no trabajados y sin justificación
+        const fechasFaltantes = diasHabilesInfo.fechasHabiles
+          .filter((f) => !r.dias.has(f) && !a?.vac.has(f) && !a?.med.has(f) && !a?.just.has(f))
+          .map((f) => formatArgentinaDate(`${f}T12:00:00`, "EEE dd/MM"));
+        const fechasVacaciones = Array.from(a?.vac || []).sort().map((f) => formatArgentinaDate(`${f}T12:00:00`, "dd/MM"));
+        const fechasMedicas = Array.from(a?.med || []).sort().map((f) => formatArgentinaDate(`${f}T12:00:00`, "dd/MM"));
+        const fechasJustificadas = Array.from(a?.just || [])
+          .filter((f) => !a!.vac.has(f) && !a!.med.has(f))
+          .sort()
+          .map((f) => formatArgentinaDate(`${f}T12:00:00`, "dd/MM"));
+
+        // Kioscos distintos en el período (para asignar 2 centros de costo)
+        const kioscosTrabajados = Object.keys(diasPorPunto).filter((k) => k !== SIN_GPS && k !== FUERA);
+
         const aus = {
           diasVacaciones,
           diasMedicas,
@@ -456,6 +480,7 @@ export default function UbicacionesFichaje() {
         const notas: string[] = [];
         if (fechasMulti.length)
           notas.push(`Trabajó en 2 o más kioscos en ${fechasMulti.length} día(s): ${fechasMulti.join(", ")}`);
+        if (kioscosTrabajados.length > 1) notas.push(`Kioscos del período: ${kioscosTrabajados.join(" + ")}`);
         if (ex) notas.push(`Superó la jornada de 8 h en ${ex.dias} día(s): +${ex.horas.toFixed(1)} hs extras`);
         if (diasVacaciones) notas.push(`${diasVacaciones} día(s) hábiles de vacaciones`);
         if (diasMedicas) notas.push(`${diasMedicas} día(s) de licencia médica`);
@@ -476,9 +501,17 @@ export default function UbicacionesFichaje() {
           fechasMultiKiosco: fechasMulti,
           diasConExtras: ex?.dias || 0,
           horasExtras: ex ? Number(ex.horas.toFixed(1)) : 0,
+          fechasFaltantes,
+          fechasVacaciones,
+          fechasMedicas,
+          fechasJustificadas,
+          fechasExtras: ex?.fechas || [],
+          kioscosTrabajados,
+          cantidadKioscos: kioscosTrabajados.length,
           ...aus,
           nota: notas.join(" · "),
         };
+
       })
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
   }, [filasVista, diasHabilesInfo, extrasPorEmpleado, ausenciasPorEmpleado]);
@@ -486,6 +519,7 @@ export default function UbicacionesFichaje() {
   // ===== Filtros por columna del cuadro de días =====
   const [fKiosco, setFKiosco] = useState(TODAS);
   const [fCumplimiento, setFCumplimiento] = useState(TODAS);
+  const [fCantKioscos, setFCantKioscos] = useState(TODAS);
   const [fSoloMulti, setFSoloMulti] = useState(false);
   const [fSoloExtras, setFSoloExtras] = useState(false);
   const [fBuscaDias, setFBuscaDias] = useState("");
@@ -497,11 +531,14 @@ export default function UbicacionesFichaje() {
     return resumenDias.filter((r) => {
       if (q && !`${r.empleado} ${r.legajo || ""}`.toLowerCase().includes(q)) return false;
       if (fKiosco !== TODAS && !r.diasPorPunto[fKiosco]) return false;
+      if (fCantKioscos === "uno" && (r.cantidadKioscos || 0) !== 1) return false;
+      if (fCantKioscos === "dos" && (r.cantidadKioscos || 0) < 2) return false;
       if (fSoloMulti && !r.diasMultiKiosco) return false;
       if (fSoloExtras && !r.horasExtras) return false;
       if (fCumplimiento === "no_cumple" && (r.diasFaltantes || 0) <= 0) return false;
       if (fCumplimiento === "cumple" && (r.diasFaltantes || 0) > 0) return false;
       if (minPct != null && (r.pctDiasHabiles || 0) < minPct) return false;
+
       return true;
     });
   }, [resumenDias, fBuscaDias, fKiosco, fSoloMulti, fSoloExtras, fCumplimiento, fMinPct]);
@@ -839,7 +876,7 @@ export default function UbicacionesFichaje() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid gap-2 md:grid-cols-5 rounded-md border p-3">
+              <div className="grid gap-2 md:grid-cols-6 rounded-md border p-3">
                 <div>
                   <Label className="text-xs">Buscar empleado</Label>
                   <Input value={fBuscaDias} onChange={(e) => setFBuscaDias(e.target.value)} placeholder="Nombre o legajo" />
@@ -853,6 +890,17 @@ export default function UbicacionesFichaje() {
                       {columnasDias.map((c) => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Sucursales trabajadas</Label>
+                  <Select value={fCantKioscos} onValueChange={setFCantKioscos}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS}>— Todas —</SelectItem>
+                      <SelectItem value="dos">2 o más (doble centro de costo)</SelectItem>
+                      <SelectItem value="uno">Solo 1 (usa sucursal asignada)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -871,6 +919,7 @@ export default function UbicacionesFichaje() {
                   <Label className="text-xs">% mínimo s/ hábiles</Label>
                   <Input type="number" min={0} max={100} value={fMinPct} onChange={(e) => setFMinPct(e.target.value)} placeholder="ej. 80" />
                 </div>
+
                 <div className="flex flex-col justify-end gap-2 text-sm">
                   <label className="flex items-center gap-2">
                     <Switch checked={fSoloMulti} onCheckedChange={setFSoloMulti} /> Solo con 2 kioscos
@@ -918,8 +967,76 @@ export default function UbicacionesFichaje() {
                     ) : (
                       resumenDiasFiltrado.map((r) => (
                         <TableRow key={r.empleado} className={r.cumple ? undefined : "bg-destructive/5"}>
-                          <TableCell className="font-medium">{r.empleado}</TableCell>
-                          <TableCell>{r.sucursal_nombre || "—"}</TableCell>
+                          <TableCell className="font-medium">
+                            <HoverCard openDelay={100}>
+                              <HoverCardTrigger asChild>
+                                <button type="button" className="text-left underline decoration-dotted underline-offset-2">
+                                  {r.empleado}
+                                </button>
+                              </HoverCardTrigger>
+                              <HoverCardContent className="w-96 text-xs space-y-2">
+                                <div className="font-semibold text-sm">{r.empleado}</div>
+                                <div className="text-muted-foreground">
+                                  Trabajó {r.diasTrabajados} de {r.diasEsperados ?? 0} días exigibles ({r.diasHabilesPeriodo} hábiles del período)
+                                </div>
+                                <div>
+                                  <div className="font-medium">Días faltantes sin justificar ({r.fechasFaltantes?.length || 0})</div>
+                                  <div className={r.fechasFaltantes?.length ? "text-destructive" : "text-muted-foreground"}>
+                                    {r.fechasFaltantes?.length ? r.fechasFaltantes.join(" · ") : "Ninguno"}
+                                  </div>
+                                </div>
+                                {!!r.fechasVacaciones?.length && (
+                                  <div>
+                                    <div className="font-medium">Vacaciones</div>
+                                    <div className="text-muted-foreground">{r.fechasVacaciones.join(" · ")}</div>
+                                  </div>
+                                )}
+                                {!!r.fechasMedicas?.length && (
+                                  <div>
+                                    <div className="font-medium">Licencia médica</div>
+                                    <div className="text-muted-foreground">{r.fechasMedicas.join(" · ")}</div>
+                                  </div>
+                                )}
+                                {!!r.fechasJustificadas?.length && (
+                                  <div>
+                                    <div className="font-medium">Faltas justificadas</div>
+                                    <div className="text-muted-foreground">{r.fechasJustificadas.join(" · ")}</div>
+                                  </div>
+                                )}
+                                {!!r.fechasMultiKiosco?.length && (
+                                  <div>
+                                    <div className="font-medium">Días en 2 kioscos</div>
+                                    <div className="text-muted-foreground">{r.fechasMultiKiosco.join(" · ")}</div>
+                                  </div>
+                                )}
+                                {!!r.fechasExtras?.length && (
+                                  <div>
+                                    <div className="font-medium">Días con horas extras (+{(r.horasExtras || 0).toFixed(1)} h)</div>
+                                    <div className="text-muted-foreground">{r.fechasExtras.join(" · ")}</div>
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-medium">Kioscos del período</div>
+                                  <div className="text-muted-foreground">
+                                    {(r.kioscosTrabajados || []).length
+                                      ? (r.kioscosTrabajados || []).join(" + ")
+                                      : "Sin kiosco identificado"}
+                                  </div>
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span>{r.sucursal_nombre || "—"}</span>
+                              {(r.cantidadKioscos || 0) > 1 && (
+                                <Badge variant="outline" title={(r.kioscosTrabajados || []).join(" + ")}>
+                                  2 centros
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+
                           <TableCell className="text-right font-semibold">{r.diasTrabajados}</TableCell>
                           <TableCell className="text-right">{(r.pctDiasHabiles || 0).toFixed(0)}%</TableCell>
 

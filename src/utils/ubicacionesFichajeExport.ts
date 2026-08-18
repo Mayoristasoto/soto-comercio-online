@@ -55,6 +55,13 @@ export interface ResumenDias {
   diasEsperados?: number;
   diasFaltantes?: number;
   cumple?: boolean;
+  fechasFaltantes?: string[];
+  fechasVacaciones?: string[];
+  fechasMedicas?: string[];
+  fechasJustificadas?: string[];
+  fechasExtras?: string[];
+  kioscosTrabajados?: string[];
+  cantidadKioscos?: number;
   nota?: string;
 }
 
@@ -128,10 +135,14 @@ export function exportUbicacionesXLSX(
       row["Faltas justificadas"] = r.diasJustificados ?? 0;
       row["Mínimo exigible"] = r.diasEsperados ?? "";
       row["Días faltantes sin justificar"] = r.diasFaltantes ?? 0;
+      row["Fechas faltantes"] = (r.fechasFaltantes || []).join(" · ");
       row["Cumple mínimo"] = r.cumple === false ? "NO" : "SÍ";
+      row["Kioscos del período"] = (r.kioscosTrabajados || []).join(" + ");
+      row["Cantidad de kioscos"] = r.cantidadKioscos ?? 0;
       row["Días en 2+ kioscos"] = r.diasMultiKiosco ?? 0;
       row["Fechas en 2+ kioscos"] = (r.fechasMultiKiosco || []).join(" · ");
       row["Días con horas extras"] = r.diasConExtras ?? 0;
+      row["Fechas horas extras"] = (r.fechasExtras || []).join(" · ");
       row["Horas extras (total)"] = r.horasExtras ?? 0;
       row["Observaciones"] = r.nota || "";
 
