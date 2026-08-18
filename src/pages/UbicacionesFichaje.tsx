@@ -205,6 +205,14 @@ export default function UbicacionesFichaje() {
   const filasVista = useMemo(() => {
     let base = filas;
     if (soloEntradaSalida) base = base.filter((f) => f.tipo === "entrada" || f.tipo === "salida");
+    if (soloHabiles) {
+      base = base.filter((f) => new Date(`${formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd")}T12:00:00`).getDay() !== 0);
+    }
+    if (!contarFeriados && feriados.length) {
+      const set = new Set(feriados.map((f) => f.fecha));
+      base = base.filter((f) => !set.has(formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd")));
+    }
+
     if (porJornada) {
       const map = new Map<string, FilaUbicacion>();
       base.forEach((f) => {
