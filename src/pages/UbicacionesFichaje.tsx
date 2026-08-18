@@ -390,7 +390,7 @@ export default function UbicacionesFichaje() {
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta)}
+              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
             >
               <FileDown className="h-4 w-4 mr-2" /> PDF
             </Button>
