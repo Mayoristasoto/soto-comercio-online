@@ -23,6 +23,7 @@ import {
   exportUbicacionesXLSX,
   type FilaUbicacion,
   type ResumenUbicacion,
+  type ResumenDias,
 } from "@/utils/ubicacionesFichajeExport";
 
 interface Sucursal { id: string; nombre: string }
@@ -223,6 +224,57 @@ export default function UbicacionesFichaje() {
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
   }, [filasVista]);
 
+  // Días trabajados por empleado y por kiosco (día = fecha con al menos un fichaje ahí)
+  const resumenDias = useMemo<ResumenDias[]>(() => {
+    const map = new Map<
+      string,
+      { empleado: string; legajo: string | null; sucursal_nombre: string | null; dias: Set<string>; porPunto: Map<string, Set<string>> }
+    >();
+    filasVista.forEach((f) => {
+      const fecha = formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd");
+      let r = map.get(f.empleado_id);
+      if (!r) {
+        r = {
+          empleado: f.empleado,
+          legajo: f.legajo,
+          sucursal_nombre: f.sucursal_nombre,
+          dias: new Set<string>(),
+          porPunto: new Map<string, Set<string>>(),
+        };
+        map.set(f.empleado_id, r);
+      }
+      r.dias.add(fecha);
+      const key = f.clasificacion;
+      if (!r.porPunto.has(key)) r.porPunto.set(key, new Set<string>());
+      r.porPunto.get(key)!.add(fecha);
+    });
+    return Array.from(map.values())
+      .map((r) => {
+        const diasTrabajados = r.dias.size;
+        const diasPorPunto: Record<string, number> = {};
+        const pctPorPunto: Record<string, number> = {};
+        r.porPunto.forEach((set, k) => {
+          diasPorPunto[k] = set.size;
+          pctPorPunto[k] = diasTrabajados ? (set.size / diasTrabajados) * 100 : 0;
+        });
+        return {
+          empleado: r.empleado,
+          legajo: r.legajo,
+          sucursal_nombre: r.sucursal_nombre,
+          diasTrabajados,
+          diasPorPunto,
+          pctPorPunto,
+        };
+      })
+      .sort((a, b) => a.empleado.localeCompare(b.empleado));
+  }, [filasVista]);
+
+  const columnasDias = useMemo(() => {
+    const set = new Set<string>();
+    resumenDias.forEach((r) => Object.keys(r.diasPorPunto).forEach((k) => set.add(k)));
+    return Array.from(set).sort();
+  }, [resumenDias]);
+
   const totales = useMemo(() => {
     const conGps = filasVista.filter((f) => f.latitud != null).length;
     return {
@@ -331,14 +383,14 @@ export default function UbicacionesFichaje() {
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta)}
+              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta)}
+              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
             >
               <FileDown className="h-4 w-4 mr-2" /> PDF
             </Button>
@@ -359,6 +411,7 @@ export default function UbicacionesFichaje() {
         <TabsList>
           <TabsTrigger value="detalle">Detalle</TabsTrigger>
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
+          <TabsTrigger value="dias">Días por kiosco</TabsTrigger>
           <TabsTrigger value="puntos">Puntos de fichaje</TabsTrigger>
         </TabsList>
 
@@ -480,6 +533,64 @@ export default function UbicacionesFichaje() {
                           <TableCell className="text-right">{r.sinGps}</TableCell>
                           <TableCell className="text-right">{r.pctFuera.toFixed(1)}%</TableCell>
                           <TableCell className="text-xs">{r.centrosCosto || "—"}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="dias">
+          <Card>
+            <CardHeader>
+              <CardTitle>Días trabajados por kiosco</CardTitle>
+              <CardDescription>
+                Días distintos con fichaje en el período, y cuántos de esos días corresponden a cada kiosco con su porcentaje.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-[600px] overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Empleado</TableHead>
+                      <TableHead>Sucursal</TableHead>
+                      <TableHead className="text-right">Días trabajados</TableHead>
+                      {columnasDias.map((p) => (
+                        <TableHead key={p} className="text-right">{p}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {resumenDias.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3 + columnasDias.length} className="text-center text-muted-foreground">
+                          Generá el informe para ver los días trabajados
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      resumenDias.map((r) => (
+                        <TableRow key={r.empleado}>
+                          <TableCell className="font-medium">{r.empleado}</TableCell>
+                          <TableCell>{r.sucursal_nombre || "—"}</TableCell>
+                          <TableCell className="text-right font-semibold">{r.diasTrabajados}</TableCell>
+                          {columnasDias.map((p) => (
+                            <TableCell key={p} className="text-right">
+                              {r.diasPorPunto[p] ? (
+                                <span>
+                                  {r.diasPorPunto[p]}{" "}
+                                  <span className="text-muted-foreground text-xs">
+                                    ({r.pctPorPunto[p].toFixed(0)}%)
+                                  </span>
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </TableCell>
+                          ))}
                         </TableRow>
                       ))
                     )}

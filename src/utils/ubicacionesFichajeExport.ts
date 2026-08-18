@@ -35,6 +35,15 @@ export interface ResumenUbicacion {
   centrosCosto: string;
 }
 
+export interface ResumenDias {
+  empleado: string;
+  legajo: string | null;
+  sucursal_nombre: string | null;
+  diasTrabajados: number;
+  diasPorPunto: Record<string, number>;
+  pctPorPunto: Record<string, number>;
+}
+
 const fmtFecha = (ts: string) => formatArgentinaDate(ts, "dd/MM/yyyy");
 const fmtHora = (ts: string) => formatArgentinaTime(ts, "HH:mm");
 
@@ -44,6 +53,7 @@ export function exportUbicacionesXLSX(
   puntos: string[],
   desde: string,
   hasta: string,
+  resumenDias: ResumenDias[] = [],
 ) {
   const wb = XLSX.utils.book_new();
 
@@ -82,6 +92,23 @@ export function exportUbicacionesXLSX(
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(res), "Resumen");
 
+  if (resumenDias.length) {
+    const dias = resumenDias.map((r) => {
+      const row: Record<string, string | number> = {
+        Legajo: r.legajo || "",
+        Empleado: r.empleado,
+        Sucursal: r.sucursal_nombre || "",
+        "Días trabajados": r.diasTrabajados,
+      };
+      puntos.forEach((p) => {
+        row[`${p} (días)`] = r.diasPorPunto[p] || 0;
+        row[`${p} (%)`] = Number((r.pctPorPunto[p] || 0).toFixed(1));
+      });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dias), "Días por kiosco");
+  }
+
   XLSX.writeFile(wb, `ubicaciones_fichaje_${desde}_${hasta}.xlsx`);
 }
 
@@ -91,6 +118,7 @@ export function exportUbicacionesPDF(
   puntos: string[],
   desde: string,
   hasta: string,
+  resumenDias: ResumenDias[] = [],
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
@@ -122,6 +150,27 @@ export function exportUbicacionesPDF(
     styles: { fontSize: 7, cellPadding: 1.5 },
     headStyles: { fillColor: [75, 13, 109] },
   });
+
+  if (resumenDias.length) {
+    doc.addPage();
+    doc.setFontSize(12);
+    doc.text("Días trabajados por kiosco", 14, 14);
+    autoTable(doc, {
+      startY: 20,
+      head: [["Empleado", "Sucursal", "Días", ...puntos.flatMap((p) => [`${p} días`, `${p} %`])]],
+      body: resumenDias.map((r) => [
+        r.empleado,
+        r.sucursal_nombre || "",
+        r.diasTrabajados,
+        ...puntos.flatMap((p) => [
+          r.diasPorPunto[p] || 0,
+          `${(r.pctPorPunto[p] || 0).toFixed(1)}%`,
+        ]),
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillColor: [224, 68, 3] },
+    });
+  }
 
   doc.addPage();
   doc.setFontSize(12);
