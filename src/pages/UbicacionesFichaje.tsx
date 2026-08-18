@@ -70,6 +70,10 @@ export default function UbicacionesFichaje() {
   const [cargado, setCargado] = useState(false);
   const [soloEntradaSalida, setSoloEntradaSalida] = useState(false);
   const [porJornada, setPorJornada] = useState(false);
+  const [soloHabiles, setSoloHabiles] = useState(true);
+  const [contarFeriados, setContarFeriados] = useState(true);
+  const [feriados, setFeriados] = useState<{ fecha: string; nombre: string }[]>([]);
+
 
   useEffect(() => {
     (async () => {
@@ -101,6 +105,42 @@ export default function UbicacionesFichaje() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seleccionGrupo]);
+
+  // Feriados del período
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("dias_feriados")
+        .select("fecha,nombre")
+        .gte("fecha", desde)
+        .lte("fecha", hasta)
+        .eq("activo", true)
+        .order("fecha");
+      setFeriados((data as { fecha: string; nombre: string }[]) || []);
+    })();
+  }, [desde, hasta]);
+
+  // Días hábiles del período: lunes a sábado (sin domingos)
+  const diasHabilesInfo = useMemo(() => {
+    const ini = new Date(`${desde}T12:00:00`);
+    const fin = new Date(`${hasta}T12:00:00`);
+    let habiles = 0;
+    let domingos = 0;
+    const cur = new Date(ini);
+    while (cur <= fin) {
+      if (cur.getDay() === 0) domingos++;
+      else habiles++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    const feriadosHabiles = feriados.filter((f) => new Date(`${f.fecha}T12:00:00`).getDay() !== 0);
+    return {
+      habiles,
+      domingos,
+      feriadosHabiles,
+      habilesNetos: contarFeriados ? habiles : habiles - feriadosHabiles.length,
+    };
+  }, [desde, hasta, feriados, contarFeriados]);
+
 
   const empleadosVisibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -165,6 +205,14 @@ export default function UbicacionesFichaje() {
   const filasVista = useMemo(() => {
     let base = filas;
     if (soloEntradaSalida) base = base.filter((f) => f.tipo === "entrada" || f.tipo === "salida");
+    if (soloHabiles) {
+      base = base.filter((f) => new Date(`${formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd")}T12:00:00`).getDay() !== 0);
+    }
+    if (!contarFeriados && feriados.length) {
+      const set = new Set(feriados.map((f) => f.fecha));
+      base = base.filter((f) => !set.has(formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd")));
+    }
+
     if (porJornada) {
       const map = new Map<string, FilaUbicacion>();
       base.forEach((f) => {
@@ -178,7 +226,7 @@ export default function UbicacionesFichaje() {
       );
     }
     return base;
-  }, [filas, soloEntradaSalida, porJornada]);
+  }, [filas, soloEntradaSalida, porJornada, soloHabiles, contarFeriados, feriados]);
 
   const puntosUsados = useMemo(() => {
     const set = new Set<string>();
@@ -364,7 +412,7 @@ export default function UbicacionesFichaje() {
             </ScrollArea>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6 rounded-md border p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6 rounded-md border p-3">
             <label className="flex items-center gap-2 text-sm">
               <Switch checked={soloEntradaSalida} onCheckedChange={setSoloEntradaSalida} />
               Solo entradas y salidas (sin pausas)
@@ -373,7 +421,16 @@ export default function UbicacionesFichaje() {
               <Switch checked={porJornada} onCheckedChange={setPorJornada} />
               Contar por jornada (1 unidad por día y kiosco)
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={soloHabiles} onCheckedChange={setSoloHabiles} />
+              Contar solo días hábiles (lunes a sábado, sin domingos)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={contarFeriados} onCheckedChange={setContarFeriados} />
+              {contarFeriados ? "Los feriados se cuentan como día trabajado" : "Los feriados NO se cuentan"}
+            </label>
           </div>
+
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={cargar} disabled={loading}>
@@ -397,6 +454,44 @@ export default function UbicacionesFichaje() {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-primary/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Días hábiles del período</CardTitle>
+          <CardDescription>
+            {desde} al {hasta} · se cuenta de lunes a sábado, los domingos no son días hábiles.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Días hábiles (L-S)</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.habiles}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Domingos (no hábiles)</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.domingos}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Feriados en día hábil</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.feriadosHabiles.length}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Hábiles a computar</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.habilesNetos}</div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            {contarFeriados
+              ? "Los feriados se cuentan como día hábil trabajado."
+              : "Los feriados se descuentan de los días hábiles y se excluyen del informe."}
+            {diasHabilesInfo.feriadosHabiles.length > 0 && (
+              <span> Feriados: {diasHabilesInfo.feriadosHabiles.map((f) => `${f.fecha} ${f.nombre}`).join(" · ")}.</span>
+            )}
+          </p>
+        </CardContent>
+      </Card>
+
 
       {cargado && (
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
