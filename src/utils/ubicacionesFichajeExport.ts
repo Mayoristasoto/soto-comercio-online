@@ -92,6 +92,23 @@ export function exportUbicacionesXLSX(
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(res), "Resumen");
 
+  if (resumenDias.length) {
+    const dias = resumenDias.map((r) => {
+      const row: Record<string, string | number> = {
+        Legajo: r.legajo || "",
+        Empleado: r.empleado,
+        Sucursal: r.sucursal_nombre || "",
+        "Días trabajados": r.diasTrabajados,
+      };
+      puntos.forEach((p) => {
+        row[`${p} (días)`] = r.diasPorPunto[p] || 0;
+        row[`${p} (%)`] = Number((r.pctPorPunto[p] || 0).toFixed(1));
+      });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dias), "Días por kiosco");
+  }
+
   XLSX.writeFile(wb, `ubicaciones_fichaje_${desde}_${hasta}.xlsx`);
 }
 
@@ -101,6 +118,7 @@ export function exportUbicacionesPDF(
   puntos: string[],
   desde: string,
   hasta: string,
+  resumenDias: ResumenDias[] = [],
 ) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
