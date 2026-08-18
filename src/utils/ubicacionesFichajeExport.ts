@@ -173,22 +173,44 @@ export function exportUbicacionesPDF(
     doc.addPage();
     doc.setFontSize(12);
     doc.text("Días trabajados por kiosco", 14, 14);
+    doc.setFontSize(8);
+    doc.text(
+      `Días hábiles del período: ${resumenDias[0]?.diasHabilesPeriodo ?? "—"} (lunes a sábado). Los % se calculan sobre los días hábiles.`,
+      14,
+      19,
+    );
     autoTable(doc, {
-      startY: 20,
-      head: [["Empleado", "Sucursal", "Días", ...puntos.flatMap((p) => [`${p} días`, `${p} %`])]],
+      startY: 23,
+      head: [[
+        "Empleado",
+        "Sucursal",
+        "Días trab.",
+        "% s/hábiles",
+        ...puntos.flatMap((p) => [`${p} días`, `${p} %`]),
+        "Días 2 kioscos",
+        "Días c/extras",
+        "Hs extras",
+        "Observaciones",
+      ]],
       body: resumenDias.map((r) => [
         r.empleado,
         r.sucursal_nombre || "",
         r.diasTrabajados,
+        `${(r.pctDiasHabiles || 0).toFixed(0)}%`,
         ...puntos.flatMap((p) => [
           r.diasPorPunto[p] || 0,
-          `${(r.pctPorPunto[p] || 0).toFixed(1)}%`,
+          `${(r.pctSobreHabiles?.[p] || 0).toFixed(0)}%`,
         ]),
+        r.diasMultiKiosco || 0,
+        r.diasConExtras || 0,
+        (r.horasExtras || 0).toFixed(1),
+        r.nota || "",
       ]),
-      styles: { fontSize: 7, cellPadding: 1.5 },
+      styles: { fontSize: 6.5, cellPadding: 1.2 },
       headStyles: { fillColor: [224, 68, 3] },
     });
   }
+
 
   doc.addPage();
   doc.setFontSize(12);
