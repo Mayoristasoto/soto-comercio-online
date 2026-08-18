@@ -222,8 +222,49 @@ export default function BalanceMensualHoras() {
     }
   }
 
+  // Días hábiles del mes (lunes a sábado, sin domingos) y feriados que caen en día hábil
+  const diasHabilesInfo = useMemo(() => {
+    const [year, month] = mesSeleccionado.split('-').map(Number)
+    const ultimo = endOfMonth(new Date(year, month - 1, 1)).getDate()
+    let habiles = 0
+    let domingos = 0
+    for (let d = 1; d <= ultimo; d++) {
+      const dow = new Date(year, month - 1, d).getDay()
+      if (dow === 0) domingos++
+      else habiles++
+    }
+    const feriadosHabiles = feriadosMes.filter(f => new Date(`${f.fecha}T12:00:00`).getDay() !== 0)
+    return {
+      habiles,
+      domingos,
+      feriadosHabiles,
+      habilesNetos: contarFeriados ? habiles : habiles - feriadosHabiles.length,
+    }
+  }, [mesSeleccionado, feriadosMes, contarFeriados])
+
+  // Aplica la regla: se cuentan solo días hábiles (L-S). Feriados según el switch.
+  const balanceAjustado = useMemo(() => {
+    return balanceEmpleados.map(emp => {
+      const minutosPorDia = emp.dias_trabajados > 0 || emp.feriados_trabajados > 0
+        ? (emp.horas_semanales_objetivo && emp.dias_laborales_semana
+            ? (emp.horas_semanales_objetivo / emp.dias_laborales_semana) * 60
+            : emp.horas_jornada * 60)
+        : emp.horas_jornada * 60
+      const dias = emp.dias_trabajados + (contarFeriados ? emp.feriados_trabajados : 0)
+      const minutos = emp.minutos_trabajados + (contarFeriados ? emp.minutos_feriados : 0)
+      const esperados = Math.round(dias * minutosPorDia)
+      return {
+        ...emp,
+        dias_trabajados: dias,
+        minutos_trabajados: minutos,
+        minutos_esperados: esperados,
+        balance_minutos: Math.round(minutos - esperados),
+      }
+    })
+  }, [balanceEmpleados, contarFeriados])
+
   const empleadosFiltrados = useMemo(() => {
-    let filtered = balanceEmpleados.filter(emp => {
+    let filtered = balanceAjustado.filter(emp => {
       const matchSearch = searchTerm === '' ||
         `${emp.nombre} ${emp.apellido}`.toLowerCase().includes(searchTerm.toLowerCase())
       const matchSucursal = sucursalFiltro === 'todas' || emp.sucursal_nombre === sucursalFiltro
