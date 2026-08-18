@@ -518,6 +518,7 @@ export default function UbicacionesFichaje() {
   // ===== Filtros por columna del cuadro de días =====
   const [fKiosco, setFKiosco] = useState(TODAS);
   const [fCumplimiento, setFCumplimiento] = useState(TODAS);
+  const [fCantKioscos, setFCantKioscos] = useState(TODAS);
   const [fSoloMulti, setFSoloMulti] = useState(false);
   const [fSoloExtras, setFSoloExtras] = useState(false);
   const [fBuscaDias, setFBuscaDias] = useState("");
@@ -529,11 +530,14 @@ export default function UbicacionesFichaje() {
     return resumenDias.filter((r) => {
       if (q && !`${r.empleado} ${r.legajo || ""}`.toLowerCase().includes(q)) return false;
       if (fKiosco !== TODAS && !r.diasPorPunto[fKiosco]) return false;
+      if (fCantKioscos === "uno" && (r.cantidadKioscos || 0) !== 1) return false;
+      if (fCantKioscos === "dos" && (r.cantidadKioscos || 0) < 2) return false;
       if (fSoloMulti && !r.diasMultiKiosco) return false;
       if (fSoloExtras && !r.horasExtras) return false;
       if (fCumplimiento === "no_cumple" && (r.diasFaltantes || 0) <= 0) return false;
       if (fCumplimiento === "cumple" && (r.diasFaltantes || 0) > 0) return false;
       if (minPct != null && (r.pctDiasHabiles || 0) < minPct) return false;
+
       return true;
     });
   }, [resumenDias, fBuscaDias, fKiosco, fSoloMulti, fSoloExtras, fCumplimiento, fMinPct]);
