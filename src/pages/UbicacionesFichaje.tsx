@@ -630,14 +630,14 @@ export default function UbicacionesFichaje() {
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
+              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta, resumenDiasFiltrado)}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
+              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta, resumenDiasFiltrado)}
             >
               <FileDown className="h-4 w-4 mr-2" /> PDF
             </Button>
