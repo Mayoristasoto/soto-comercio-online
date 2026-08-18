@@ -47,7 +47,7 @@ export function IncidenciasHoy() {
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/admin/incidencias">
+              <Link to="/admin/listado-incidencias">
                 Ver todas <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
