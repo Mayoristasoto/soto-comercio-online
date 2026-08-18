@@ -719,7 +719,9 @@ export default function UbicacionesFichaje() {
             <CardHeader>
               <CardTitle>Días trabajados por kiosco</CardTitle>
               <CardDescription>
-                Días distintos con fichaje en el período, y cuántos de esos días corresponden a cada kiosco con su porcentaje.
+                Sobre {diasHabilesInfo.habilesNetos} días hábiles del período: días trabajados en cada kiosco y su
+                porcentaje. Se indica si el empleado trabajó en 2 kioscos distintos el mismo día y si superó la jornada
+                de 8 h (horas extras, la pausa ya está contemplada).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -730,15 +732,19 @@ export default function UbicacionesFichaje() {
                       <TableHead>Empleado</TableHead>
                       <TableHead>Sucursal</TableHead>
                       <TableHead className="text-right">Días trabajados</TableHead>
+                      <TableHead className="text-right">% s/ hábiles</TableHead>
                       {columnasDias.map((p) => (
                         <TableHead key={p} className="text-right">{p}</TableHead>
                       ))}
+                      <TableHead className="text-right">2 kioscos</TableHead>
+                      <TableHead className="text-right">Hs extras</TableHead>
+                      <TableHead>Observaciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {resumenDias.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3 + columnasDias.length} className="text-center text-muted-foreground">
+                        <TableCell colSpan={6 + columnasDias.length} className="text-center text-muted-foreground">
                           Generá el informe para ver los días trabajados
                         </TableCell>
                       </TableRow>
@@ -748,13 +754,14 @@ export default function UbicacionesFichaje() {
                           <TableCell className="font-medium">{r.empleado}</TableCell>
                           <TableCell>{r.sucursal_nombre || "—"}</TableCell>
                           <TableCell className="text-right font-semibold">{r.diasTrabajados}</TableCell>
+                          <TableCell className="text-right">{(r.pctDiasHabiles || 0).toFixed(0)}%</TableCell>
                           {columnasDias.map((p) => (
                             <TableCell key={p} className="text-right">
                               {r.diasPorPunto[p] ? (
                                 <span>
                                   {r.diasPorPunto[p]}{" "}
                                   <span className="text-muted-foreground text-xs">
-                                    ({r.pctPorPunto[p].toFixed(0)}%)
+                                    ({(r.pctSobreHabiles?.[p] ?? r.pctPorPunto[p]).toFixed(0)}%)
                                   </span>
                                 </span>
                               ) : (
@@ -762,9 +769,27 @@ export default function UbicacionesFichaje() {
                               )}
                             </TableCell>
                           ))}
+                          <TableCell className="text-right">
+                            {r.diasMultiKiosco ? (
+                              <Badge variant="secondary" title={(r.fechasMultiKiosco || []).join(", ")}>
+                                {r.diasMultiKiosco} día(s)
+                              </Badge>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {r.horasExtras ? (
+                              <Badge variant="destructive">+{r.horasExtras.toFixed(1)} h</Badge>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[280px]">{r.nota || "—"}</TableCell>
                         </TableRow>
                       ))
                     )}
+
                   </TableBody>
                 </Table>
               </div>
