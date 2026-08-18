@@ -949,8 +949,9 @@ export default function UbicacionesFichaje() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-
+                            {r.diasMultiKiosco ? (
                               <Badge variant="secondary" title={(r.fechasMultiKiosco || []).join(", ")}>
+
                                 {r.diasMultiKiosco} día(s)
                               </Badge>
                             ) : (
