@@ -32,6 +32,7 @@ interface EmpleadoBalanceMes {
   horas_jornada: number
   horas_semanales_objetivo: number | null
   dias_laborales_semana: number
+  minutos_esperados_por_dia: number
 }
 
 type SortField = 'nombre' | 'sucursal' | 'dias' | 'trabajadas' | 'esperadas' | 'balance'
@@ -209,7 +210,8 @@ export default function BalanceMensualHoras() {
           balance_minutos: Math.round(totalMinutosTrabajados - minutosEsperados),
           horas_jornada: horasJornada,
           horas_semanales_objetivo: horasSemanalesObjetivo || null,
-          dias_laborales_semana: diasLaboralesSemana
+          dias_laborales_semana: diasLaboralesSemana,
+          minutos_esperados_por_dia: minutosEsperadosPorDia
         }
       })
 
@@ -245,11 +247,7 @@ export default function BalanceMensualHoras() {
   // Aplica la regla: se cuentan solo días hábiles (L-S). Feriados según el switch.
   const balanceAjustado = useMemo(() => {
     return balanceEmpleados.map(emp => {
-      const minutosPorDia = emp.dias_trabajados > 0 || emp.feriados_trabajados > 0
-        ? (emp.horas_semanales_objetivo && emp.dias_laborales_semana
-            ? (emp.horas_semanales_objetivo / emp.dias_laborales_semana) * 60
-            : emp.horas_jornada * 60)
-        : emp.horas_jornada * 60
+      const minutosPorDia = emp.minutos_esperados_por_dia
       const dias = emp.dias_trabajados + (contarFeriados ? emp.feriados_trabajados : 0)
       const minutos = emp.minutos_trabajados + (contarFeriados ? emp.minutos_feriados : 0)
       const esperados = Math.round(dias * minutosPorDia)
