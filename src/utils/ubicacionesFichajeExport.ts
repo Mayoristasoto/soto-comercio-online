@@ -49,8 +49,15 @@ export interface ResumenDias {
   fechasMultiKiosco?: string[];
   diasConExtras?: number;
   horasExtras?: number;
+  diasVacaciones?: number;
+  diasMedicas?: number;
+  diasJustificados?: number;
+  diasEsperados?: number;
+  diasFaltantes?: number;
+  cumple?: boolean;
   nota?: string;
 }
+
 
 
 const fmtFecha = (ts: string) => formatArgentinaDate(ts, "dd/MM/yyyy");
