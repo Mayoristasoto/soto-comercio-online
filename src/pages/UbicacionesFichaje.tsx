@@ -320,7 +320,76 @@ export default function UbicacionesFichaje() {
     return acc;
   }, [filas, soloHabiles, contarFeriados, feriados]);
 
+  // Vacaciones, licencias médicas y faltas justificadas del período (para el mínimo exigible)
+  const [vacaciones, setVacaciones] = useState<{ empleado_id: string; fecha_inicio: string; fecha_fin: string }[]>([]);
+  const [medicas, setMedicas] = useState<{ empleado_id: string; fecha_inicio: string; fecha_fin: string }[]>([]);
+  const [justificaciones, setJustificaciones] = useState<{ empleado_id: string; fecha_evento: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [v, m, j] = await Promise.all([
+        supabase
+          .from("solicitudes_vacaciones")
+          .select("empleado_id,fecha_inicio,fecha_fin,estado")
+          .in("estado", ["aprobada", "pendiente", "gozadas"])
+          .lte("fecha_inicio", hasta)
+          .gte("fecha_fin", desde),
+        supabase
+          .from("ausencias_medicas")
+          .select("empleado_id,fecha_inicio,fecha_fin")
+          .lte("fecha_inicio", hasta)
+          .gte("fecha_fin", desde),
+        supabase
+          .from("justificaciones_asistencia")
+          .select("empleado_id,fecha_evento")
+          .gte("fecha_evento", desde)
+          .lte("fecha_evento", hasta),
+      ]);
+      setVacaciones((v.data as any[]) || []);
+      setMedicas((m.data as any[]) || []);
+      setJustificaciones((j.data as any[]) || []);
+    })();
+  }, [desde, hasta]);
+
+  // Días hábiles ausentes justificados por empleado
+  const ausenciasPorEmpleado = useMemo(() => {
+    const feriadosSet = new Set(feriados.map((f) => f.fecha));
+    const esHabilComputable = (fecha: string) => {
+      const d = new Date(`${fecha}T12:00:00`);
+      if (d.getDay() === 0) return false;
+      if (!contarFeriados && feriadosSet.has(fecha)) return false;
+      return true;
+    };
+    const acc = new Map<string, { vac: Set<string>; med: Set<string>; just: Set<string> }>();
+    const get = (id: string) => {
+      let r = acc.get(id);
+      if (!r) {
+        r = { vac: new Set(), med: new Set(), just: new Set() };
+        acc.set(id, r);
+      }
+      return r;
+    };
+    const recorrer = (ini: string, fin: string, add: (f: string) => void) => {
+      const start = ini < desde ? desde : ini;
+      const end = fin > hasta ? hasta : fin;
+      const cur = new Date(`${start}T12:00:00`);
+      const last = new Date(`${end}T12:00:00`);
+      while (cur <= last) {
+        const f = format(cur, "yyyy-MM-dd");
+        if (esHabilComputable(f)) add(f);
+        cur.setDate(cur.getDate() + 1);
+      }
+    };
+    vacaciones.forEach((v) => recorrer(v.fecha_inicio, v.fecha_fin, (f) => get(v.empleado_id).vac.add(f)));
+    medicas.forEach((m) => recorrer(m.fecha_inicio, m.fecha_fin, (f) => get(m.empleado_id).med.add(f)));
+    justificaciones.forEach((j) => {
+      if (esHabilComputable(j.fecha_evento)) get(j.empleado_id).just.add(j.fecha_evento);
+    });
+    return acc;
+  }, [vacaciones, medicas, justificaciones, feriados, contarFeriados, desde, hasta]);
+
   // Días trabajados por empleado y por kiosco (día = fecha con al menos un fichaje ahí)
+
   const resumenDias = useMemo<ResumenDias[]>(() => {
     const map = new Map<
       string,
