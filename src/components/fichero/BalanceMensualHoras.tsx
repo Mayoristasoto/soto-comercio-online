@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns"
@@ -312,7 +313,9 @@ export default function BalanceMensualHoras() {
     'Empleado': `${emp.apellido}, ${emp.nombre}`,
     'Sucursal': emp.sucursal_nombre || '-',
     'Jornada': `${emp.horas_jornada}hs`,
-    'Días Trabajados': emp.dias_trabajados,
+    'Días Hábiles Trabajados (L-S)': emp.dias_trabajados,
+    'Domingos trabajados (no cuentan)': emp.domingos_trabajados,
+    'Feriados trabajados': emp.feriados_trabajados,
     'Hs Efectivas': fmtMin(emp.minutos_trabajados),
     'Hs Esperadas': fmtMin(emp.minutos_esperados),
     'Balance': `${emp.balance_minutos > 0 ? '+' : ''}${fmtMin(emp.balance_minutos)}`,
@@ -336,7 +339,9 @@ export default function BalanceMensualHoras() {
             <BarChart3 className="h-5 w-5" />
             Balance Mensual de Horas
           </CardTitle>
-          <CardDescription>Acumulado mensual por empleado — Hs efectivas vs esperadas</CardDescription>
+          <CardDescription>
+            Acumulado mensual por empleado — Hs efectivas vs esperadas. Solo se cuentan días hábiles (lunes a sábado); los domingos quedan fuera del balance.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3 items-center">
@@ -370,12 +375,45 @@ export default function BalanceMensualHoras() {
 
             <ExportButton data={datosExportar} filename={`balance-mensual-${mesSeleccionado}`} sheetName="Balance Mensual" />
           </div>
+
+          <div className="mt-3 rounded-md border p-3 space-y-2 bg-muted/30">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={contarFeriados} onCheckedChange={setContarFeriados} />
+              Contar los feriados como día hábil trabajado
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {contarFeriados
+                ? 'Los feriados trabajados SÍ se cuentan como día hábil y suman horas esperadas.'
+                : 'Los feriados trabajados NO se cuentan: sus horas quedan fuera del balance.'}
+              {' '}Los domingos nunca se cuentan.
+            </p>
+            {diasHabilesInfo.feriadosHabiles.length > 0 && (
+              <p className="text-xs">
+                <span className="font-medium">Feriados del mes (L-S):</span>{' '}
+                {diasHabilesInfo.feriadosHabiles
+                  .map(f => `${format(new Date(`${f.fecha}T12:00:00`), 'dd/MM')} ${f.nombre}`)
+                  .join(' · ')}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
       {/* Summary Cards */}
       {!loading && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card className="border-primary/40">
+            <CardContent className="pt-4 pb-3 text-center">
+              <div className="text-2xl font-bold text-primary">{diasHabilesInfo.habilesNetos}</div>
+              <p className="text-xs text-muted-foreground">Días hábiles del mes (L-S)</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {diasHabilesInfo.habiles} L-S · {diasHabilesInfo.domingos} domingos
+                {diasHabilesInfo.feriadosHabiles.length > 0
+                  ? ` · ${diasHabilesInfo.feriadosHabiles.length} feriados ${contarFeriados ? 'contados' : 'descontados'}`
+                  : ''}
+              </p>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="pt-4 pb-3 text-center">
               <div className="text-2xl font-bold">{totales.conDias}</div>
@@ -415,7 +453,8 @@ export default function BalanceMensualHoras() {
                   <SortHeader field="nombre">Empleado</SortHeader>
                   <SortHeader field="sucursal">Sucursal</SortHeader>
                   <TableHead className="text-center">Jornada</TableHead>
-                  <SortHeader field="dias">Días Trab.</SortHeader>
+                  <SortHeader field="dias">Días Háb. Trab.</SortHeader>
+                  <TableHead className="text-center">Dom. / Fer.</TableHead>
                   <SortHeader field="trabajadas">Hs Efectivas</SortHeader>
                   <SortHeader field="esperadas">Hs Esperadas</SortHeader>
                   <SortHeader field="balance">Balance</SortHeader>
@@ -424,7 +463,7 @@ export default function BalanceMensualHoras() {
               <TableBody>
                 {empleadosFiltrados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No se encontraron empleados
                     </TableCell>
                   </TableRow>
@@ -452,6 +491,9 @@ export default function BalanceMensualHoras() {
                         <TableCell className="text-sm">{emp.sucursal_nombre || '-'}</TableCell>
                         <TableCell className="text-center text-sm">{emp.horas_jornada}hs</TableCell>
                         <TableCell className="text-center text-sm">{emp.dias_trabajados}</TableCell>
+                        <TableCell className="text-center text-xs text-muted-foreground">
+                          {emp.domingos_trabajados} / {emp.feriados_trabajados}
+                        </TableCell>
                         <TableCell className="text-sm font-medium">{fmtMin(emp.minutos_trabajados)}</TableCell>
                         <TableCell className="text-sm">{fmtMin(emp.minutos_esperados)}</TableCell>
                         <TableCell>
