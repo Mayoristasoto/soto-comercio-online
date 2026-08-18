@@ -543,6 +543,64 @@ export default function UbicacionesFichaje() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="dias">
+          <Card>
+            <CardHeader>
+              <CardTitle>Días trabajados por kiosco</CardTitle>
+              <CardDescription>
+                Días distintos con fichaje en el período, y cuántos de esos días corresponden a cada kiosco con su porcentaje.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-[600px] overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Empleado</TableHead>
+                      <TableHead>Sucursal</TableHead>
+                      <TableHead className="text-right">Días trabajados</TableHead>
+                      {columnasDias.map((p) => (
+                        <TableHead key={p} className="text-right">{p}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {resumenDias.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3 + columnasDias.length} className="text-center text-muted-foreground">
+                          Generá el informe para ver los días trabajados
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      resumenDias.map((r) => (
+                        <TableRow key={r.empleado}>
+                          <TableCell className="font-medium">{r.empleado}</TableCell>
+                          <TableCell>{r.sucursal_nombre || "—"}</TableCell>
+                          <TableCell className="text-right font-semibold">{r.diasTrabajados}</TableCell>
+                          {columnasDias.map((p) => (
+                            <TableCell key={p} className="text-right">
+                              {r.diasPorPunto[p] ? (
+                                <span>
+                                  {r.diasPorPunto[p]}{" "}
+                                  <span className="text-muted-foreground text-xs">
+                                    ({r.pctPorPunto[p].toFixed(0)}%)
+                                  </span>
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="puntos">
           <PuntosFichajeManager onChanged={() => cargado && cargar()} />
         </TabsContent>
