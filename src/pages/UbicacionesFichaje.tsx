@@ -126,10 +126,16 @@ export default function UbicacionesFichaje() {
     const fin = new Date(`${hasta}T12:00:00`);
     let habiles = 0;
     let domingos = 0;
+    const fechasHabiles: string[] = [];
+    const feriadosSet = new Set(feriados.map((f) => f.fecha));
     const cur = new Date(ini);
     while (cur <= fin) {
+      const f = format(cur, "yyyy-MM-dd");
       if (cur.getDay() === 0) domingos++;
-      else habiles++;
+      else {
+        habiles++;
+        if (contarFeriados || !feriadosSet.has(f)) fechasHabiles.push(f);
+      }
       cur.setDate(cur.getDate() + 1);
     }
     const feriadosHabiles = feriados.filter((f) => new Date(`${f.fecha}T12:00:00`).getDay() !== 0);
@@ -137,9 +143,11 @@ export default function UbicacionesFichaje() {
       habiles,
       domingos,
       feriadosHabiles,
+      fechasHabiles,
       habilesNetos: contarFeriados ? habiles : habiles - feriadosHabiles.length,
     };
   }, [desde, hasta, feriados, contarFeriados]);
+
 
 
   const empleadosVisibles = useMemo(() => {
