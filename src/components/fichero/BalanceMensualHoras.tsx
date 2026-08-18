@@ -22,6 +22,10 @@ interface EmpleadoBalanceMes {
   avatar_url: string | null
   sucursal_nombre: string | null
   dias_trabajados: number
+  domingos_trabajados: number
+  feriados_trabajados: number
+  minutos_domingos: number
+  minutos_feriados: number
   minutos_trabajados: number
   minutos_esperados: number
   balance_minutos: number
