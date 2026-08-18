@@ -386,18 +386,42 @@ export default function UbicacionesFichaje() {
           fechasMultiKiosco: fechasMulti,
           diasConExtras: ex?.dias || 0,
           horasExtras: ex ? Number(ex.horas.toFixed(1)) : 0,
+          ...aus,
           nota: notas.join(" · "),
         };
       })
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
-  }, [filasVista, diasHabilesInfo, extrasPorEmpleado]);
+  }, [filasVista, diasHabilesInfo, extrasPorEmpleado, ausenciasPorEmpleado]);
 
+  // ===== Filtros por columna del cuadro de días =====
+  const [fKiosco, setFKiosco] = useState(TODAS);
+  const [fCumplimiento, setFCumplimiento] = useState(TODAS);
+  const [fSoloMulti, setFSoloMulti] = useState(false);
+  const [fSoloExtras, setFSoloExtras] = useState(false);
+  const [fBuscaDias, setFBuscaDias] = useState("");
+  const [fMinPct, setFMinPct] = useState("");
+
+  const resumenDiasFiltrado = useMemo(() => {
+    const q = fBuscaDias.trim().toLowerCase();
+    const minPct = fMinPct ? Number(fMinPct) : null;
+    return resumenDias.filter((r) => {
+      if (q && !`${r.empleado} ${r.legajo || ""}`.toLowerCase().includes(q)) return false;
+      if (fKiosco !== TODAS && !r.diasPorPunto[fKiosco]) return false;
+      if (fSoloMulti && !r.diasMultiKiosco) return false;
+      if (fSoloExtras && !r.horasExtras) return false;
+      if (fCumplimiento === "no_cumple" && (r.diasFaltantes || 0) <= 0) return false;
+      if (fCumplimiento === "cumple" && (r.diasFaltantes || 0) > 0) return false;
+      if (minPct != null && (r.pctDiasHabiles || 0) < minPct) return false;
+      return true;
+    });
+  }, [resumenDias, fBuscaDias, fKiosco, fSoloMulti, fSoloExtras, fCumplimiento, fMinPct]);
 
   const columnasDias = useMemo(() => {
     const set = new Set<string>();
     resumenDias.forEach((r) => Object.keys(r.diasPorPunto).forEach((k) => set.add(k)));
     return Array.from(set).sort();
   }, [resumenDias]);
+
 
   const totales = useMemo(() => {
     const conGps = filasVista.filter((f) => f.latitud != null).length;
