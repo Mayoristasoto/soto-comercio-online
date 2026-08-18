@@ -123,11 +123,18 @@ export function exportUbicacionesXLSX(
       });
       row["Días hábiles del período"] = r.diasHabilesPeriodo ?? "";
       row["% días hábiles trabajados"] = r.pctDiasHabiles != null ? Number(r.pctDiasHabiles.toFixed(1)) : "";
+      row["Días vacaciones (hábiles)"] = r.diasVacaciones ?? 0;
+      row["Días licencia médica"] = r.diasMedicas ?? 0;
+      row["Faltas justificadas"] = r.diasJustificados ?? 0;
+      row["Mínimo exigible"] = r.diasEsperados ?? "";
+      row["Días faltantes sin justificar"] = r.diasFaltantes ?? 0;
+      row["Cumple mínimo"] = r.cumple === false ? "NO" : "SÍ";
       row["Días en 2+ kioscos"] = r.diasMultiKiosco ?? 0;
       row["Fechas en 2+ kioscos"] = (r.fechasMultiKiosco || []).join(" · ");
       row["Días con horas extras"] = r.diasConExtras ?? 0;
       row["Horas extras (total)"] = r.horasExtras ?? 0;
       row["Observaciones"] = r.nota || "";
+
       return row;
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dias), "Días por kiosco");
