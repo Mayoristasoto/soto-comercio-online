@@ -875,7 +875,7 @@ export default function UbicacionesFichaje() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid gap-2 md:grid-cols-5 rounded-md border p-3">
+              <div className="grid gap-2 md:grid-cols-6 rounded-md border p-3">
                 <div>
                   <Label className="text-xs">Buscar empleado</Label>
                   <Input value={fBuscaDias} onChange={(e) => setFBuscaDias(e.target.value)} placeholder="Nombre o legajo" />
@@ -889,6 +889,17 @@ export default function UbicacionesFichaje() {
                       {columnasDias.map((c) => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Sucursales trabajadas</Label>
+                  <Select value={fCantKioscos} onValueChange={setFCantKioscos}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS}>— Todas —</SelectItem>
+                      <SelectItem value="dos">2 o más (doble centro de costo)</SelectItem>
+                      <SelectItem value="uno">Solo 1 (usa sucursal asignada)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -907,6 +918,7 @@ export default function UbicacionesFichaje() {
                   <Label className="text-xs">% mínimo s/ hábiles</Label>
                   <Input type="number" min={0} max={100} value={fMinPct} onChange={(e) => setFMinPct(e.target.value)} placeholder="ej. 80" />
                 </div>
+
                 <div className="flex flex-col justify-end gap-2 text-sm">
                   <label className="flex items-center gap-2">
                     <Switch checked={fSoloMulti} onCheckedChange={setFSoloMulti} /> Solo con 2 kioscos
