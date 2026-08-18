@@ -23,6 +23,7 @@ import {
   exportUbicacionesXLSX,
   type FilaUbicacion,
   type ResumenUbicacion,
+  type ResumenDias,
 } from "@/utils/ubicacionesFichajeExport";
 
 interface Sucursal { id: string; nombre: string }
