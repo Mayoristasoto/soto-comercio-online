@@ -226,7 +226,7 @@ export default function UbicacionesFichaje() {
       );
     }
     return base;
-  }, [filas, soloEntradaSalida, porJornada]);
+  }, [filas, soloEntradaSalida, porJornada, soloHabiles, contarFeriados, feriados]);
 
   const puntosUsados = useMemo(() => {
     const set = new Set<string>();
