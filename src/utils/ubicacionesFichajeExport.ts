@@ -111,12 +111,21 @@ export function exportUbicacionesXLSX(
       };
       puntos.forEach((p) => {
         row[`${p} (días)`] = r.diasPorPunto[p] || 0;
-        row[`${p} (%)`] = Number((r.pctPorPunto[p] || 0).toFixed(1));
+        row[`${p} (% días trabajados)`] = Number((r.pctPorPunto[p] || 0).toFixed(1));
+        row[`${p} (% días hábiles)`] = Number((r.pctSobreHabiles?.[p] || 0).toFixed(1));
       });
+      row["Días hábiles del período"] = r.diasHabilesPeriodo ?? "";
+      row["% días hábiles trabajados"] = r.pctDiasHabiles != null ? Number(r.pctDiasHabiles.toFixed(1)) : "";
+      row["Días en 2+ kioscos"] = r.diasMultiKiosco ?? 0;
+      row["Fechas en 2+ kioscos"] = (r.fechasMultiKiosco || []).join(" · ");
+      row["Días con horas extras"] = r.diasConExtras ?? 0;
+      row["Horas extras (total)"] = r.horasExtras ?? 0;
+      row["Observaciones"] = r.nota || "";
       return row;
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dias), "Días por kiosco");
   }
+
 
   XLSX.writeFile(wb, `ubicaciones_fichaje_${desde}_${hasta}.xlsx`);
 }
