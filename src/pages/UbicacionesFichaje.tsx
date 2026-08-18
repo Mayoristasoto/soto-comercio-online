@@ -70,6 +70,10 @@ export default function UbicacionesFichaje() {
   const [cargado, setCargado] = useState(false);
   const [soloEntradaSalida, setSoloEntradaSalida] = useState(false);
   const [porJornada, setPorJornada] = useState(false);
+  const [soloHabiles, setSoloHabiles] = useState(true);
+  const [contarFeriados, setContarFeriados] = useState(true);
+  const [feriados, setFeriados] = useState<{ fecha: string; nombre: string }[]>([]);
+
 
   useEffect(() => {
     (async () => {
