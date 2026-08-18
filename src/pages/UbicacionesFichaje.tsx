@@ -15,7 +15,7 @@ import { format, startOfMonth } from "date-fns";
 import { Loader2, MapPin, FileSpreadsheet, FileDown, Search, ExternalLink, Smartphone, ScanFace } from "lucide-react";
 import { formatArgentinaDate, formatArgentinaTime } from "@/lib/dateUtils";
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
-import { resolverSeleccion, type SeleccionEmpleados } from "@/lib/gruposEmpleados";
+import { getEmpleadosDeSeleccion, type SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import PuntosFichajeManager from "@/components/fichero/PuntosFichajeManager";
 import {
   exportUbicacionesPDF,
@@ -90,7 +90,7 @@ export default function UbicacionesFichaje() {
   useEffect(() => {
     (async () => {
       if (!seleccionGrupo) return;
-      const ids = await resolverSeleccion(seleccionGrupo);
+      const ids = await getEmpleadosDeSeleccion(seleccionGrupo);
       const next: Record<string, boolean> = {};
       empleados.forEach((e) => (next[e.id] = ids.includes(e.id)));
       setChecked(next);
