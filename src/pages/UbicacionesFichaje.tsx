@@ -838,7 +838,55 @@ export default function UbicacionesFichaje() {
                 de 8 h (horas extras, la pausa ya está contemplada).
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <div className="grid gap-2 md:grid-cols-5 rounded-md border p-3">
+                <div>
+                  <Label className="text-xs">Buscar empleado</Label>
+                  <Input value={fBuscaDias} onChange={(e) => setFBuscaDias(e.target.value)} placeholder="Nombre o legajo" />
+                </div>
+                <div>
+                  <Label className="text-xs">Kiosco</Label>
+                  <Select value={fKiosco} onValueChange={setFKiosco}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS}>— Todos —</SelectItem>
+                      {columnasDias.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Cumplimiento de días hábiles</Label>
+                  <Select value={fCumplimiento} onValueChange={setFCumplimiento}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS}>— Todos —</SelectItem>
+                      <SelectItem value="no_cumple">No cumplió el mínimo</SelectItem>
+                      <SelectItem value="cumple">Cumplió el mínimo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">% mínimo s/ hábiles</Label>
+                  <Input type="number" min={0} max={100} value={fMinPct} onChange={(e) => setFMinPct(e.target.value)} placeholder="ej. 80" />
+                </div>
+                <div className="flex flex-col justify-end gap-2 text-sm">
+                  <label className="flex items-center gap-2">
+                    <Switch checked={fSoloMulti} onCheckedChange={setFSoloMulti} /> Solo con 2 kioscos
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <Switch checked={fSoloExtras} onCheckedChange={setFSoloExtras} /> Solo con horas extras
+                  </label>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary">{resumenDiasFiltrado.length} empleados</Badge>
+                <span>
+                  Mínimo exigible = días hábiles ({diasHabilesInfo.habilesNetos}) − vacaciones − licencias médicas −
+                  faltas justificadas.
+                </span>
+              </div>
               <div className="max-h-[600px] overflow-auto">
                 <Table>
                   <TableHeader>
@@ -850,25 +898,31 @@ export default function UbicacionesFichaje() {
                       {columnasDias.map((p) => (
                         <TableHead key={p} className="text-right">{p}</TableHead>
                       ))}
+                      <TableHead className="text-right">Vac.</TableHead>
+                      <TableHead className="text-right">Lic. méd.</TableHead>
+                      <TableHead className="text-right">Justif.</TableHead>
+                      <TableHead className="text-right">Mín. exigible</TableHead>
+                      <TableHead className="text-right">Faltantes</TableHead>
                       <TableHead className="text-right">2 kioscos</TableHead>
                       <TableHead className="text-right">Hs extras</TableHead>
                       <TableHead>Observaciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {resumenDias.length === 0 ? (
+                    {resumenDiasFiltrado.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6 + columnasDias.length} className="text-center text-muted-foreground">
-                          Generá el informe para ver los días trabajados
+                        <TableCell colSpan={11 + columnasDias.length} className="text-center text-muted-foreground">
+                          Sin resultados con los filtros actuales
                         </TableCell>
                       </TableRow>
                     ) : (
-                      resumenDias.map((r) => (
-                        <TableRow key={r.empleado}>
+                      resumenDiasFiltrado.map((r) => (
+                        <TableRow key={r.empleado} className={r.cumple ? undefined : "bg-destructive/5"}>
                           <TableCell className="font-medium">{r.empleado}</TableCell>
                           <TableCell>{r.sucursal_nombre || "—"}</TableCell>
                           <TableCell className="text-right font-semibold">{r.diasTrabajados}</TableCell>
                           <TableCell className="text-right">{(r.pctDiasHabiles || 0).toFixed(0)}%</TableCell>
+
                           {columnasDias.map((p) => (
                             <TableCell key={p} className="text-right">
                               {r.diasPorPunto[p] ? (
