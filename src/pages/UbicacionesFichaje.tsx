@@ -320,7 +320,76 @@ export default function UbicacionesFichaje() {
     return acc;
   }, [filas, soloHabiles, contarFeriados, feriados]);
 
+  // Vacaciones, licencias médicas y faltas justificadas del período (para el mínimo exigible)
+  const [vacaciones, setVacaciones] = useState<{ empleado_id: string; fecha_inicio: string; fecha_fin: string }[]>([]);
+  const [medicas, setMedicas] = useState<{ empleado_id: string; fecha_inicio: string; fecha_fin: string }[]>([]);
+  const [justificaciones, setJustificaciones] = useState<{ empleado_id: string; fecha_evento: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [v, m, j] = await Promise.all([
+        supabase
+          .from("solicitudes_vacaciones")
+          .select("empleado_id,fecha_inicio,fecha_fin,estado")
+          .in("estado", ["aprobada", "pendiente", "gozadas"])
+          .lte("fecha_inicio", hasta)
+          .gte("fecha_fin", desde),
+        supabase
+          .from("ausencias_medicas")
+          .select("empleado_id,fecha_inicio,fecha_fin")
+          .lte("fecha_inicio", hasta)
+          .gte("fecha_fin", desde),
+        supabase
+          .from("justificaciones_asistencia")
+          .select("empleado_id,fecha_evento")
+          .gte("fecha_evento", desde)
+          .lte("fecha_evento", hasta),
+      ]);
+      setVacaciones((v.data as any[]) || []);
+      setMedicas((m.data as any[]) || []);
+      setJustificaciones((j.data as any[]) || []);
+    })();
+  }, [desde, hasta]);
+
+  // Días hábiles ausentes justificados por empleado
+  const ausenciasPorEmpleado = useMemo(() => {
+    const feriadosSet = new Set(feriados.map((f) => f.fecha));
+    const esHabilComputable = (fecha: string) => {
+      const d = new Date(`${fecha}T12:00:00`);
+      if (d.getDay() === 0) return false;
+      if (!contarFeriados && feriadosSet.has(fecha)) return false;
+      return true;
+    };
+    const acc = new Map<string, { vac: Set<string>; med: Set<string>; just: Set<string> }>();
+    const get = (id: string) => {
+      let r = acc.get(id);
+      if (!r) {
+        r = { vac: new Set(), med: new Set(), just: new Set() };
+        acc.set(id, r);
+      }
+      return r;
+    };
+    const recorrer = (ini: string, fin: string, add: (f: string) => void) => {
+      const start = ini < desde ? desde : ini;
+      const end = fin > hasta ? hasta : fin;
+      const cur = new Date(`${start}T12:00:00`);
+      const last = new Date(`${end}T12:00:00`);
+      while (cur <= last) {
+        const f = format(cur, "yyyy-MM-dd");
+        if (esHabilComputable(f)) add(f);
+        cur.setDate(cur.getDate() + 1);
+      }
+    };
+    vacaciones.forEach((v) => recorrer(v.fecha_inicio, v.fecha_fin, (f) => get(v.empleado_id).vac.add(f)));
+    medicas.forEach((m) => recorrer(m.fecha_inicio, m.fecha_fin, (f) => get(m.empleado_id).med.add(f)));
+    justificaciones.forEach((j) => {
+      if (esHabilComputable(j.fecha_evento)) get(j.empleado_id).just.add(j.fecha_evento);
+    });
+    return acc;
+  }, [vacaciones, medicas, justificaciones, feriados, contarFeriados, desde, hasta]);
+
   // Días trabajados por empleado y por kiosco (día = fecha con al menos un fichaje ahí)
+
   const resumenDias = useMemo<ResumenDias[]>(() => {
     const map = new Map<
       string,
@@ -368,10 +437,31 @@ export default function UbicacionesFichaje() {
         });
         fechasMulti.sort();
         const ex = extrasPorEmpleado.get(r.id);
+        const a = ausenciasPorEmpleado.get(r.id);
+        const diasVacaciones = a?.vac.size || 0;
+        const diasMedicas = a?.med.size || 0;
+        const diasJustificados = Array.from(a?.just || []).filter(
+          (f) => !a!.vac.has(f) && !a!.med.has(f),
+        ).length;
+        const diasEsperados = Math.max(0, habiles - diasVacaciones - diasMedicas - diasJustificados);
+        const diasFaltantes = Math.max(0, diasEsperados - diasTrabajados);
+        const aus = {
+          diasVacaciones,
+          diasMedicas,
+          diasJustificados,
+          diasEsperados,
+          diasFaltantes,
+          cumple: diasFaltantes === 0,
+        };
         const notas: string[] = [];
         if (fechasMulti.length)
           notas.push(`Trabajó en 2 o más kioscos en ${fechasMulti.length} día(s): ${fechasMulti.join(", ")}`);
         if (ex) notas.push(`Superó la jornada de 8 h en ${ex.dias} día(s): +${ex.horas.toFixed(1)} hs extras`);
+        if (diasVacaciones) notas.push(`${diasVacaciones} día(s) hábiles de vacaciones`);
+        if (diasMedicas) notas.push(`${diasMedicas} día(s) de licencia médica`);
+        if (diasJustificados) notas.push(`${diasJustificados} falta(s) justificada(s)`);
+        if (diasFaltantes) notas.push(`Faltan ${diasFaltantes} día(s) hábiles sin justificar`);
+
         return {
           empleado: r.empleado,
           legajo: r.legajo,
@@ -386,18 +476,42 @@ export default function UbicacionesFichaje() {
           fechasMultiKiosco: fechasMulti,
           diasConExtras: ex?.dias || 0,
           horasExtras: ex ? Number(ex.horas.toFixed(1)) : 0,
+          ...aus,
           nota: notas.join(" · "),
         };
       })
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
-  }, [filasVista, diasHabilesInfo, extrasPorEmpleado]);
+  }, [filasVista, diasHabilesInfo, extrasPorEmpleado, ausenciasPorEmpleado]);
 
+  // ===== Filtros por columna del cuadro de días =====
+  const [fKiosco, setFKiosco] = useState(TODAS);
+  const [fCumplimiento, setFCumplimiento] = useState(TODAS);
+  const [fSoloMulti, setFSoloMulti] = useState(false);
+  const [fSoloExtras, setFSoloExtras] = useState(false);
+  const [fBuscaDias, setFBuscaDias] = useState("");
+  const [fMinPct, setFMinPct] = useState("");
+
+  const resumenDiasFiltrado = useMemo(() => {
+    const q = fBuscaDias.trim().toLowerCase();
+    const minPct = fMinPct ? Number(fMinPct) : null;
+    return resumenDias.filter((r) => {
+      if (q && !`${r.empleado} ${r.legajo || ""}`.toLowerCase().includes(q)) return false;
+      if (fKiosco !== TODAS && !r.diasPorPunto[fKiosco]) return false;
+      if (fSoloMulti && !r.diasMultiKiosco) return false;
+      if (fSoloExtras && !r.horasExtras) return false;
+      if (fCumplimiento === "no_cumple" && (r.diasFaltantes || 0) <= 0) return false;
+      if (fCumplimiento === "cumple" && (r.diasFaltantes || 0) > 0) return false;
+      if (minPct != null && (r.pctDiasHabiles || 0) < minPct) return false;
+      return true;
+    });
+  }, [resumenDias, fBuscaDias, fKiosco, fSoloMulti, fSoloExtras, fCumplimiento, fMinPct]);
 
   const columnasDias = useMemo(() => {
     const set = new Set<string>();
     resumenDias.forEach((r) => Object.keys(r.diasPorPunto).forEach((k) => set.add(k)));
     return Array.from(set).sort();
   }, [resumenDias]);
+
 
   const totales = useMemo(() => {
     const conGps = filasVista.filter((f) => f.latitud != null).length;
@@ -516,14 +630,14 @@ export default function UbicacionesFichaje() {
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
+              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta, resumenDiasFiltrado)}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
             <Button
               variant="outline"
               disabled={!filasVista.length}
-              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta, resumenDias)}
+              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta, resumenDiasFiltrado)}
             >
               <FileDown className="h-4 w-4 mr-2" /> PDF
             </Button>
@@ -724,7 +838,55 @@ export default function UbicacionesFichaje() {
                 de 8 h (horas extras, la pausa ya está contemplada).
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <div className="grid gap-2 md:grid-cols-5 rounded-md border p-3">
+                <div>
+                  <Label className="text-xs">Buscar empleado</Label>
+                  <Input value={fBuscaDias} onChange={(e) => setFBuscaDias(e.target.value)} placeholder="Nombre o legajo" />
+                </div>
+                <div>
+                  <Label className="text-xs">Kiosco</Label>
+                  <Select value={fKiosco} onValueChange={setFKiosco}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS}>— Todos —</SelectItem>
+                      {columnasDias.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Cumplimiento de días hábiles</Label>
+                  <Select value={fCumplimiento} onValueChange={setFCumplimiento}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS}>— Todos —</SelectItem>
+                      <SelectItem value="no_cumple">No cumplió el mínimo</SelectItem>
+                      <SelectItem value="cumple">Cumplió el mínimo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">% mínimo s/ hábiles</Label>
+                  <Input type="number" min={0} max={100} value={fMinPct} onChange={(e) => setFMinPct(e.target.value)} placeholder="ej. 80" />
+                </div>
+                <div className="flex flex-col justify-end gap-2 text-sm">
+                  <label className="flex items-center gap-2">
+                    <Switch checked={fSoloMulti} onCheckedChange={setFSoloMulti} /> Solo con 2 kioscos
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <Switch checked={fSoloExtras} onCheckedChange={setFSoloExtras} /> Solo con horas extras
+                  </label>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary">{resumenDiasFiltrado.length} empleados</Badge>
+                <span>
+                  Mínimo exigible = días hábiles ({diasHabilesInfo.habilesNetos}) − vacaciones − licencias médicas −
+                  faltas justificadas.
+                </span>
+              </div>
               <div className="max-h-[600px] overflow-auto">
                 <Table>
                   <TableHeader>
@@ -736,25 +898,31 @@ export default function UbicacionesFichaje() {
                       {columnasDias.map((p) => (
                         <TableHead key={p} className="text-right">{p}</TableHead>
                       ))}
+                      <TableHead className="text-right">Vac.</TableHead>
+                      <TableHead className="text-right">Lic. méd.</TableHead>
+                      <TableHead className="text-right">Justif.</TableHead>
+                      <TableHead className="text-right">Mín. exigible</TableHead>
+                      <TableHead className="text-right">Faltantes</TableHead>
                       <TableHead className="text-right">2 kioscos</TableHead>
                       <TableHead className="text-right">Hs extras</TableHead>
                       <TableHead>Observaciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {resumenDias.length === 0 ? (
+                    {resumenDiasFiltrado.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6 + columnasDias.length} className="text-center text-muted-foreground">
-                          Generá el informe para ver los días trabajados
+                        <TableCell colSpan={11 + columnasDias.length} className="text-center text-muted-foreground">
+                          Sin resultados con los filtros actuales
                         </TableCell>
                       </TableRow>
                     ) : (
-                      resumenDias.map((r) => (
-                        <TableRow key={r.empleado}>
+                      resumenDiasFiltrado.map((r) => (
+                        <TableRow key={r.empleado} className={r.cumple ? undefined : "bg-destructive/5"}>
                           <TableCell className="font-medium">{r.empleado}</TableCell>
                           <TableCell>{r.sucursal_nombre || "—"}</TableCell>
                           <TableCell className="text-right font-semibold">{r.diasTrabajados}</TableCell>
                           <TableCell className="text-right">{(r.pctDiasHabiles || 0).toFixed(0)}%</TableCell>
+
                           {columnasDias.map((p) => (
                             <TableCell key={p} className="text-right">
                               {r.diasPorPunto[p] ? (
@@ -769,9 +937,21 @@ export default function UbicacionesFichaje() {
                               )}
                             </TableCell>
                           ))}
+                          <TableCell className="text-right">{r.diasVacaciones || "—"}</TableCell>
+                          <TableCell className="text-right">{r.diasMedicas || "—"}</TableCell>
+                          <TableCell className="text-right">{r.diasJustificados || "—"}</TableCell>
+                          <TableCell className="text-right font-medium">{r.diasEsperados ?? "—"}</TableCell>
+                          <TableCell className="text-right">
+                            {r.diasFaltantes ? (
+                              <Badge variant="destructive">{r.diasFaltantes}</Badge>
+                            ) : (
+                              <Badge variant="secondary">OK</Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
                             {r.diasMultiKiosco ? (
                               <Badge variant="secondary" title={(r.fechasMultiKiosco || []).join(", ")}>
+
                                 {r.diasMultiKiosco} día(s)
                               </Badge>
                             ) : (

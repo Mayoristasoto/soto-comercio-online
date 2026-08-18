@@ -49,8 +49,15 @@ export interface ResumenDias {
   fechasMultiKiosco?: string[];
   diasConExtras?: number;
   horasExtras?: number;
+  diasVacaciones?: number;
+  diasMedicas?: number;
+  diasJustificados?: number;
+  diasEsperados?: number;
+  diasFaltantes?: number;
+  cumple?: boolean;
   nota?: string;
 }
+
 
 
 const fmtFecha = (ts: string) => formatArgentinaDate(ts, "dd/MM/yyyy");
@@ -116,11 +123,18 @@ export function exportUbicacionesXLSX(
       });
       row["Días hábiles del período"] = r.diasHabilesPeriodo ?? "";
       row["% días hábiles trabajados"] = r.pctDiasHabiles != null ? Number(r.pctDiasHabiles.toFixed(1)) : "";
+      row["Días vacaciones (hábiles)"] = r.diasVacaciones ?? 0;
+      row["Días licencia médica"] = r.diasMedicas ?? 0;
+      row["Faltas justificadas"] = r.diasJustificados ?? 0;
+      row["Mínimo exigible"] = r.diasEsperados ?? "";
+      row["Días faltantes sin justificar"] = r.diasFaltantes ?? 0;
+      row["Cumple mínimo"] = r.cumple === false ? "NO" : "SÍ";
       row["Días en 2+ kioscos"] = r.diasMultiKiosco ?? 0;
       row["Fechas en 2+ kioscos"] = (r.fechasMultiKiosco || []).join(" · ");
       row["Días con horas extras"] = r.diasConExtras ?? 0;
       row["Horas extras (total)"] = r.horasExtras ?? 0;
       row["Observaciones"] = r.nota || "";
+
       return row;
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dias), "Días por kiosco");
@@ -187,6 +201,11 @@ export function exportUbicacionesPDF(
         "Días trab.",
         "% s/hábiles",
         ...puntos.flatMap((p) => [`${p} días`, `${p} %`]),
+        "Vac.",
+        "Lic. méd.",
+        "Justif.",
+        "Mín. exig.",
+        "Faltantes",
         "Días 2 kioscos",
         "Días c/extras",
         "Hs extras",
@@ -201,8 +220,14 @@ export function exportUbicacionesPDF(
           r.diasPorPunto[p] || 0,
           `${(r.pctSobreHabiles?.[p] || 0).toFixed(0)}%`,
         ]),
+        r.diasVacaciones || 0,
+        r.diasMedicas || 0,
+        r.diasJustificados || 0,
+        r.diasEsperados ?? "",
+        r.diasFaltantes || 0,
         r.diasMultiKiosco || 0,
         r.diasConExtras || 0,
+
         (r.horasExtras || 0).toFixed(1),
         r.nota || "",
       ]),
