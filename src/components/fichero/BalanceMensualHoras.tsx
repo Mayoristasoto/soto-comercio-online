@@ -148,9 +148,13 @@ export default function BalanceMensualHoras() {
 
         let totalMinutosTrabajados = 0
         let diasTrabajados = 0
+        let domingosTrabajados = 0
+        let feriadosTrabajados = 0
+        let minutosDomingos = 0
+        let minutosFeriados = 0
 
         if (diasFichados) {
-          diasFichados.forEach((fichajesDia) => {
+          diasFichados.forEach((fichajesDia, diaKey) => {
             const entrada = fichajesDia.find((f: any) => f.tipo === 'entrada')
             const salida = [...fichajesDia].reverse().find((f: any) => f.tipo === 'salida')
 
@@ -158,8 +162,18 @@ export default function BalanceMensualHoras() {
               const diffMs = new Date(salida.timestamp_real).getTime() - new Date(entrada.timestamp_real).getTime()
               const minutos = Math.round(diffMs / 60000)
               if (minutos > 0) {
-                totalMinutosTrabajados += minutos
-                diasTrabajados++
+                const esDomingo = new Date(`${diaKey}T12:00:00`).getDay() === 0
+                const esFeriado = feriadosSet.has(diaKey)
+                if (esDomingo) {
+                  domingosTrabajados++
+                  minutosDomingos += minutos
+                } else if (esFeriado) {
+                  feriadosTrabajados++
+                  minutosFeriados += minutos
+                } else {
+                  totalMinutosTrabajados += minutos
+                  diasTrabajados++
+                }
               }
             }
           })
