@@ -937,7 +937,18 @@ export default function UbicacionesFichaje() {
                               )}
                             </TableCell>
                           ))}
+                          <TableCell className="text-right">{r.diasVacaciones || "—"}</TableCell>
+                          <TableCell className="text-right">{r.diasMedicas || "—"}</TableCell>
+                          <TableCell className="text-right">{r.diasJustificados || "—"}</TableCell>
+                          <TableCell className="text-right font-medium">{r.diasEsperados ?? "—"}</TableCell>
                           <TableCell className="text-right">
+                            {r.diasFaltantes ? (
+                              <Badge variant="destructive">{r.diasFaltantes}</Badge>
+                            ) : (
+                              <Badge variant="secondary">OK</Badge>
+                            )}
+                          </TableCell>
+
                             {r.diasMultiKiosco ? (
                               <Badge variant="secondary" title={(r.fechasMultiKiosco || []).join(", ")}>
                                 {r.diasMultiKiosco} día(s)
