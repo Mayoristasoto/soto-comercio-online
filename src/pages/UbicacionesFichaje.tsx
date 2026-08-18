@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -184,11 +185,11 @@ export default function UbicacionesFichaje() {
       if (f.clasificacion !== SIN_GPS && f.clasificacion !== FUERA) set.add(f.clasificacion);
     });
     return Array.from(set).sort();
-  }, [filas]);
+  }, [filasVista]);
 
   const resumen = useMemo<ResumenUbicacion[]>(() => {
     const map = new Map<string, ResumenUbicacion & { centros: Set<string> }>();
-    filas.forEach((f) => {
+    filasVista.forEach((f) => {
       let r = map.get(f.empleado_id);
       if (!r) {
         r = {
@@ -220,17 +221,17 @@ export default function UbicacionesFichaje() {
         centrosCosto: Array.from(r.centros).join(", "),
       }))
       .sort((a, b) => a.empleado.localeCompare(b.empleado));
-  }, [filas]);
+  }, [filasVista]);
 
   const totales = useMemo(() => {
-    const conGps = filas.filter((f) => f.latitud != null).length;
+    const conGps = filasVista.filter((f) => f.latitud != null).length;
     return {
-      total: filas.length,
+      total: filasVista.length,
       conGps,
-      sinGps: filas.length - conGps,
-      fuera: filas.filter((f) => f.clasificacion === FUERA).length,
+      sinGps: filasVista.length - conGps,
+      fuera: filasVista.filter((f) => f.clasificacion === FUERA).length,
     };
-  }, [filas]);
+  }, [filasVista]);
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -311,6 +312,17 @@ export default function UbicacionesFichaje() {
             </ScrollArea>
           </div>
 
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6 rounded-md border p-3">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={soloEntradaSalida} onCheckedChange={setSoloEntradaSalida} />
+              Solo entradas y salidas (sin pausas)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={porJornada} onCheckedChange={setPorJornada} />
+              Contar por jornada (1 unidad por día y kiosco)
+            </label>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             <Button onClick={cargar} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
@@ -318,15 +330,15 @@ export default function UbicacionesFichaje() {
             </Button>
             <Button
               variant="outline"
-              disabled={!filas.length}
-              onClick={() => exportUbicacionesXLSX(filas, resumen, puntosUsados, desde, hasta)}
+              disabled={!filasVista.length}
+              onClick={() => exportUbicacionesXLSX(filasVista, resumen, puntosUsados, desde, hasta)}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
             <Button
               variant="outline"
-              disabled={!filas.length}
-              onClick={() => exportUbicacionesPDF(filas, resumen, puntosUsados, desde, hasta)}
+              disabled={!filasVista.length}
+              onClick={() => exportUbicacionesPDF(filasVista, resumen, puntosUsados, desde, hasta)}
             >
               <FileDown className="h-4 w-4 mr-2" /> PDF
             </Button>
@@ -369,14 +381,14 @@ export default function UbicacionesFichaje() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filas.length === 0 ? (
+                    {filasVista.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={9} className="text-center text-muted-foreground">
                           Generá el informe para ver los fichajes
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filas.map((f) => (
+                      filasVista.map((f) => (
                         <TableRow key={f.fichaje_id}>
                           <TableCell className="font-medium">{f.empleado}</TableCell>
                           <TableCell>{formatArgentinaDate(f.timestamp_real, "dd/MM/yyyy")}</TableCell>
