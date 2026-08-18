@@ -24,6 +24,7 @@ import {
   Calculator,
   CalendarDays,
   Activity,
+  MapPin,
   Eye
 } from "lucide-react"
 import {
