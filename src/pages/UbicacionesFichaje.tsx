@@ -411,6 +411,7 @@ export default function UbicacionesFichaje() {
         <TabsList>
           <TabsTrigger value="detalle">Detalle</TabsTrigger>
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
+          <TabsTrigger value="dias">Días por kiosco</TabsTrigger>
           <TabsTrigger value="puntos">Puntos de fichaje</TabsTrigger>
         </TabsList>
 
