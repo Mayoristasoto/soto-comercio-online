@@ -35,6 +35,15 @@ export interface ResumenUbicacion {
   centrosCosto: string;
 }
 
+export interface ResumenDias {
+  empleado: string;
+  legajo: string | null;
+  sucursal_nombre: string | null;
+  diasTrabajados: number;
+  diasPorPunto: Record<string, number>;
+  pctPorPunto: Record<string, number>;
+}
+
 const fmtFecha = (ts: string) => formatArgentinaDate(ts, "dd/MM/yyyy");
 const fmtHora = (ts: string) => formatArgentinaTime(ts, "HH:mm");
 
