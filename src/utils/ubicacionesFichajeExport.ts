@@ -42,7 +42,16 @@ export interface ResumenDias {
   diasTrabajados: number;
   diasPorPunto: Record<string, number>;
   pctPorPunto: Record<string, number>;
+  diasHabilesPeriodo?: number;
+  pctSobreHabiles?: Record<string, number>;
+  pctDiasHabiles?: number;
+  diasMultiKiosco?: number;
+  fechasMultiKiosco?: string[];
+  diasConExtras?: number;
+  horasExtras?: number;
+  nota?: string;
 }
+
 
 const fmtFecha = (ts: string) => formatArgentinaDate(ts, "dd/MM/yyyy");
 const fmtHora = (ts: string) => formatArgentinaTime(ts, "HH:mm");
@@ -102,12 +111,21 @@ export function exportUbicacionesXLSX(
       };
       puntos.forEach((p) => {
         row[`${p} (días)`] = r.diasPorPunto[p] || 0;
-        row[`${p} (%)`] = Number((r.pctPorPunto[p] || 0).toFixed(1));
+        row[`${p} (% días trabajados)`] = Number((r.pctPorPunto[p] || 0).toFixed(1));
+        row[`${p} (% días hábiles)`] = Number((r.pctSobreHabiles?.[p] || 0).toFixed(1));
       });
+      row["Días hábiles del período"] = r.diasHabilesPeriodo ?? "";
+      row["% días hábiles trabajados"] = r.pctDiasHabiles != null ? Number(r.pctDiasHabiles.toFixed(1)) : "";
+      row["Días en 2+ kioscos"] = r.diasMultiKiosco ?? 0;
+      row["Fechas en 2+ kioscos"] = (r.fechasMultiKiosco || []).join(" · ");
+      row["Días con horas extras"] = r.diasConExtras ?? 0;
+      row["Horas extras (total)"] = r.horasExtras ?? 0;
+      row["Observaciones"] = r.nota || "";
       return row;
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dias), "Días por kiosco");
   }
+
 
   XLSX.writeFile(wb, `ubicaciones_fichaje_${desde}_${hasta}.xlsx`);
 }
@@ -155,22 +173,44 @@ export function exportUbicacionesPDF(
     doc.addPage();
     doc.setFontSize(12);
     doc.text("Días trabajados por kiosco", 14, 14);
+    doc.setFontSize(8);
+    doc.text(
+      `Días hábiles del período: ${resumenDias[0]?.diasHabilesPeriodo ?? "—"} (lunes a sábado). Los % se calculan sobre los días hábiles.`,
+      14,
+      19,
+    );
     autoTable(doc, {
-      startY: 20,
-      head: [["Empleado", "Sucursal", "Días", ...puntos.flatMap((p) => [`${p} días`, `${p} %`])]],
+      startY: 23,
+      head: [[
+        "Empleado",
+        "Sucursal",
+        "Días trab.",
+        "% s/hábiles",
+        ...puntos.flatMap((p) => [`${p} días`, `${p} %`]),
+        "Días 2 kioscos",
+        "Días c/extras",
+        "Hs extras",
+        "Observaciones",
+      ]],
       body: resumenDias.map((r) => [
         r.empleado,
         r.sucursal_nombre || "",
         r.diasTrabajados,
+        `${(r.pctDiasHabiles || 0).toFixed(0)}%`,
         ...puntos.flatMap((p) => [
           r.diasPorPunto[p] || 0,
-          `${(r.pctPorPunto[p] || 0).toFixed(1)}%`,
+          `${(r.pctSobreHabiles?.[p] || 0).toFixed(0)}%`,
         ]),
+        r.diasMultiKiosco || 0,
+        r.diasConExtras || 0,
+        (r.horasExtras || 0).toFixed(1),
+        r.nota || "",
       ]),
-      styles: { fontSize: 7, cellPadding: 1.5 },
+      styles: { fontSize: 6.5, cellPadding: 1.2 },
       headStyles: { fillColor: [224, 68, 3] },
     });
   }
+
 
   doc.addPage();
   doc.setFontSize(12);
