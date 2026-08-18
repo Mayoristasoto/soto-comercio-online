@@ -157,9 +157,28 @@ export default function UbicacionesFichaje() {
     setCargado(true);
   };
 
+  // Vista aplicando los toggles
+  const filasVista = useMemo(() => {
+    let base = filas;
+    if (soloEntradaSalida) base = base.filter((f) => f.tipo === "entrada" || f.tipo === "salida");
+    if (porJornada) {
+      const map = new Map<string, FilaUbicacion>();
+      base.forEach((f) => {
+        const fecha = formatArgentinaDate(f.timestamp_real, "yyyy-MM-dd");
+        const key = `${f.empleado_id}|${fecha}|${f.clasificacion}`;
+        const prev = map.get(key);
+        if (!prev || f.timestamp_real < prev.timestamp_real) map.set(key, f);
+      });
+      base = Array.from(map.values()).sort((a, b) =>
+        a.timestamp_real < b.timestamp_real ? -1 : a.timestamp_real > b.timestamp_real ? 1 : 0,
+      );
+    }
+    return base;
+  }, [filas, soloEntradaSalida, porJornada]);
+
   const puntosUsados = useMemo(() => {
     const set = new Set<string>();
-    filas.forEach((f) => {
+    filasVista.forEach((f) => {
       if (f.clasificacion !== SIN_GPS && f.clasificacion !== FUERA) set.add(f.clasificacion);
     });
     return Array.from(set).sort();
