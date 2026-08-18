@@ -455,6 +455,44 @@ export default function UbicacionesFichaje() {
         </CardContent>
       </Card>
 
+      <Card className="border-primary/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Días hábiles del período</CardTitle>
+          <CardDescription>
+            {desde} al {hasta} · se cuenta de lunes a sábado, los domingos no son días hábiles.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Días hábiles (L-S)</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.habiles}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Domingos (no hábiles)</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.domingos}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Feriados en día hábil</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.feriadosHabiles.length}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Hábiles a computar</div>
+              <div className="text-2xl font-bold">{diasHabilesInfo.habilesNetos}</div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            {contarFeriados
+              ? "Los feriados se cuentan como día hábil trabajado."
+              : "Los feriados se descuentan de los días hábiles y se excluyen del informe."}
+            {diasHabilesInfo.feriadosHabiles.length > 0 && (
+              <span> Feriados: {diasHabilesInfo.feriadosHabiles.map((f) => `${f.fecha} ${f.nombre}`).join(" · ")}.</span>
+            )}
+          </p>
+        </CardContent>
+      </Card>
+
+
       {cargado && (
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
           <Card><CardContent className="pt-6"><div className="text-sm text-muted-foreground">Fichajes</div><div className="text-2xl font-bold">{totales.total}</div></CardContent></Card>
