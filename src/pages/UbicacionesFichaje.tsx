@@ -437,10 +437,31 @@ export default function UbicacionesFichaje() {
         });
         fechasMulti.sort();
         const ex = extrasPorEmpleado.get(r.id);
+        const a = ausenciasPorEmpleado.get(r.id);
+        const diasVacaciones = a?.vac.size || 0;
+        const diasMedicas = a?.med.size || 0;
+        const diasJustificados = Array.from(a?.just || []).filter(
+          (f) => !a!.vac.has(f) && !a!.med.has(f),
+        ).length;
+        const diasEsperados = Math.max(0, habiles - diasVacaciones - diasMedicas - diasJustificados);
+        const diasFaltantes = Math.max(0, diasEsperados - diasTrabajados);
+        const aus = {
+          diasVacaciones,
+          diasMedicas,
+          diasJustificados,
+          diasEsperados,
+          diasFaltantes,
+          cumple: diasFaltantes === 0,
+        };
         const notas: string[] = [];
         if (fechasMulti.length)
           notas.push(`Trabajó en 2 o más kioscos en ${fechasMulti.length} día(s): ${fechasMulti.join(", ")}`);
         if (ex) notas.push(`Superó la jornada de 8 h en ${ex.dias} día(s): +${ex.horas.toFixed(1)} hs extras`);
+        if (diasVacaciones) notas.push(`${diasVacaciones} día(s) hábiles de vacaciones`);
+        if (diasMedicas) notas.push(`${diasMedicas} día(s) de licencia médica`);
+        if (diasJustificados) notas.push(`${diasJustificados} falta(s) justificada(s)`);
+        if (diasFaltantes) notas.push(`Faltan ${diasFaltantes} día(s) hábiles sin justificar`);
+
         return {
           empleado: r.empleado,
           legajo: r.legajo,
