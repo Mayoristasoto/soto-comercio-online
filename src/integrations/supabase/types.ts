@@ -4441,6 +4441,7 @@ export type Database = {
       fichado_ubicaciones: {
         Row: {
           activa: boolean | null
+          centro_costo_id: string | null
           created_at: string | null
           direccion: string | null
           id: string
@@ -4454,6 +4455,7 @@ export type Database = {
         }
         Insert: {
           activa?: boolean | null
+          centro_costo_id?: string | null
           created_at?: string | null
           direccion?: string | null
           id?: string
@@ -4467,6 +4469,7 @@ export type Database = {
         }
         Update: {
           activa?: boolean | null
+          centro_costo_id?: string | null
           created_at?: string | null
           direccion?: string | null
           id?: string
@@ -4479,6 +4482,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fichado_ubicaciones_centro_costo_id_fkey"
+            columns: ["centro_costo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_costo"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fichado_ubicaciones_sucursal_id_fkey"
             columns: ["sucursal_id"]
@@ -10261,6 +10271,10 @@ export type Database = {
         }
         Returns: Json
       }
+      distancia_metros: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       enviar_planificacion_a_validacion: {
         Args: { p_planificacion_id: string }
         Returns: undefined
@@ -10280,6 +10294,15 @@ export type Database = {
       generar_tareas_justificacion_semana: {
         Args: { p_desde?: string; p_hasta?: string }
         Returns: number
+      }
+      get_clusters_fichajes_gps: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          cantidad: number
+          lat: number
+          lon: number
+          punto_nombre: string
+        }[]
       }
       get_cumpleanos_rango: {
         Args: { _desde: string; _hasta: string }
@@ -10471,6 +10494,29 @@ export type Database = {
           horas_trabajadas: number
           sucursal_id: string
           sucursal_nombre: string
+        }[]
+      }
+      get_fichajes_ubicaciones: {
+        Args: { p_desde: string; p_empleados?: string[]; p_hasta: string }
+        Returns: {
+          centro_costo_id: string
+          centro_costo_nombre: string
+          dentro_radio: boolean
+          distancia_metros: number
+          empleado_apellido: string
+          empleado_id: string
+          empleado_nombre: string
+          fichaje_id: string
+          latitud: number
+          longitud: number
+          metodo: string
+          punto_id: string
+          punto_nombre: string
+          punto_radio: number
+          sucursal_id: string
+          sucursal_nombre: string
+          timestamp_real: string
+          tipo: string
         }[]
       }
       get_indice_ausentismo: {
