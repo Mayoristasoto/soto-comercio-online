@@ -66,6 +66,8 @@ export default function UbicacionesFichaje() {
   const [filas, setFilas] = useState<FilaUbicacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [cargado, setCargado] = useState(false);
+  const [soloEntradaSalida, setSoloEntradaSalida] = useState(false);
+  const [porJornada, setPorJornada] = useState(false);
 
   useEffect(() => {
     (async () => {
