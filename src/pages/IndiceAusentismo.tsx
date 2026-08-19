@@ -29,6 +29,7 @@ export default function IndiceAusentismo() {
   const [sucursalSel, setSucursalSel] = useState(TODOS);
   const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
   const [soloSinJustificar, setSoloSinJustificar] = useState(false);
+  const [excluirVacaciones, setExcluirVacaciones] = useState(true);
   const [busqueda, setBusqueda] = useState("");
 
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
