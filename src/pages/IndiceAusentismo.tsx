@@ -208,6 +208,10 @@ export default function IndiceAusentismo() {
               <Switch checked={soloSinJustificar} onCheckedChange={setSoloSinJustificar} id="sinjust" />
               <Label htmlFor="sinjust" className="cursor-pointer">Contar solo ausencias sin justificar</Label>
             </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={excluirVacaciones} onCheckedChange={setExcluirVacaciones} id="excluirvac" />
+              <Label htmlFor="excluirvac" className="cursor-pointer">Excluir vacaciones del índice</Label>
+            </div>
             <Button onClick={cargar} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Calcular
