@@ -69,6 +69,7 @@ export default function IndiceAusentismo() {
           p_hasta: hasta,
           p_sucursales: sucParam,
           p_empleados: empParam,
+          p_excluir_vacaciones: excluirVacaciones,
         } as any),
         supabase.from("dias_feriados").select("fecha").eq("activo", true).gte("fecha", desde).lte("fecha", hasta),
         supabase
