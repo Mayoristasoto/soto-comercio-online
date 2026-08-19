@@ -10519,33 +10519,62 @@ export type Database = {
           tipo: string
         }[]
       }
-      get_indice_ausentismo: {
-        Args: {
-          p_desde: string
-          p_empleados?: string[]
-          p_hasta: string
-          p_sucursales?: string[]
-        }
-        Returns: {
-          categoria_color: string
-          categoria_id: string
-          categoria_nombre: string
-          dia_semana: number
-          empleado_apellido: string
-          empleado_id: string
-          empleado_legajo: string
-          empleado_nombre: string
-          es_ausente: boolean
-          es_esperado: boolean
-          es_justificada: boolean
-          estado: string
-          fecha: string
-          horas_esperadas: number
-          observacion: string
-          sucursal_id: string
-          sucursal_nombre: string
-        }[]
-      }
+      get_indice_ausentismo:
+        | {
+            Args: {
+              p_desde: string
+              p_empleados?: string[]
+              p_hasta: string
+              p_sucursales?: string[]
+            }
+            Returns: {
+              categoria_color: string
+              categoria_id: string
+              categoria_nombre: string
+              dia_semana: number
+              empleado_apellido: string
+              empleado_id: string
+              empleado_legajo: string
+              empleado_nombre: string
+              es_ausente: boolean
+              es_esperado: boolean
+              es_justificada: boolean
+              estado: string
+              fecha: string
+              horas_esperadas: number
+              observacion: string
+              sucursal_id: string
+              sucursal_nombre: string
+            }[]
+          }
+        | {
+            Args: {
+              p_desde: string
+              p_empleados?: string[]
+              p_excluir_vacaciones?: boolean
+              p_hasta: string
+              p_sucursales?: string[]
+            }
+            Returns: {
+              categoria_color: string
+              categoria_id: string
+              categoria_nombre: string
+              dia_semana: number
+              empleado_apellido: string
+              empleado_id: string
+              empleado_legajo: string
+              empleado_nombre: string
+              es_ausente: boolean
+              es_esperado: boolean
+              es_justificada: boolean
+              estado: string
+              fecha: string
+              horas_esperadas: number
+              observacion: string
+              sucursal_id: string
+              sucursal_nombre: string
+            }[]
+          }
       get_kiosk_config_value: { Args: { p_clave: string }; Returns: string }
       get_manager_employee_view: {
         Args: never
