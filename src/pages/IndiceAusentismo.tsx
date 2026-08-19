@@ -29,6 +29,7 @@ export default function IndiceAusentismo() {
   const [sucursalSel, setSucursalSel] = useState(TODOS);
   const [seleccion, setSeleccion] = useState<SeleccionEmpleados | null>(null);
   const [soloSinJustificar, setSoloSinJustificar] = useState(false);
+  const [excluirVacaciones, setExcluirVacaciones] = useState(true);
   const [busqueda, setBusqueda] = useState("");
 
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
@@ -68,6 +69,7 @@ export default function IndiceAusentismo() {
           p_hasta: hasta,
           p_sucursales: sucParam,
           p_empleados: empParam,
+          p_excluir_vacaciones: excluirVacaciones,
         } as any),
         supabase.from("dias_feriados").select("fecha").eq("activo", true).gte("fecha", desde).lte("fecha", hasta),
         supabase
@@ -205,6 +207,10 @@ export default function IndiceAusentismo() {
             <div className="flex items-center gap-2">
               <Switch checked={soloSinJustificar} onCheckedChange={setSoloSinJustificar} id="sinjust" />
               <Label htmlFor="sinjust" className="cursor-pointer">Contar solo ausencias sin justificar</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={excluirVacaciones} onCheckedChange={setExcluirVacaciones} id="excluirvac" />
+              <Label htmlFor="excluirvac" className="cursor-pointer">Excluir vacaciones del índice</Label>
             </div>
             <Button onClick={cargar} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
