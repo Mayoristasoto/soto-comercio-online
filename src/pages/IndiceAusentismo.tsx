@@ -206,12 +206,19 @@ export default function IndiceAusentismo() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Switch checked={soloSinJustificar} onCheckedChange={setSoloSinJustificar} id="sinjust" />
-              <Label htmlFor="sinjust" className="cursor-pointer">Contar solo ausencias sin justificar</Label>
+              <Label htmlFor="sinjust" className="cursor-pointer">
+                Contar solo ausencias sin justificar
+                <span className="block text-xs text-muted-foreground">Apagado: cuenta todo tipo de ausencia (licencias, permisos y justificadas)</span>
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={excluirVacaciones} onCheckedChange={setExcluirVacaciones} id="excluirvac" />
-              <Label htmlFor="excluirvac" className="cursor-pointer">Excluir vacaciones del índice</Label>
+              <Label htmlFor="excluirvac" className="cursor-pointer">
+                Excluir vacaciones del índice
+                <span className="block text-xs text-muted-foreground">Apagado: las vacaciones cuentan como ausencia</span>
+              </Label>
             </div>
+
             <Button onClick={cargar} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Calcular
