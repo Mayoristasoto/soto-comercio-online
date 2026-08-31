@@ -106,5 +106,59 @@ export function exportNovedadesXLSX(
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ferRows), "Feriados Trabajados");
 
+  // Hoja 6: Vacaciones del período (solicitudes)
+  const vacSolRows = (extras.vacaciones || []).map(v => ({
+    Legajo: v.empleado_legajo || "",
+    Empleado: v.empleado_nombre,
+    Sucursal: v.sucursal_nombre || "",
+    Desde: v.fecha_inicio,
+    Hasta: v.fecha_fin,
+    "Días en el período": v.dias_en_periodo,
+    "Período devengado": v.periodo_devengado ?? "",
+    Estado: v.estado,
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vacSolRows), "Vacaciones Solicitudes");
+
+  // Hoja 7: Horas extras (resumen y detalle)
+  const hex = extras.horasExtras || [];
+  const hexMap = new Map<string, { Empleado: string; Sucursal: string; Jornadas: number; "Hs hábiles": number; "Hs domingo": number; Monto: number }>();
+  for (const h of hex) {
+    const k = h.empleado_id || h.empleado_nombre;
+    let acc = hexMap.get(k);
+    if (!acc) { acc = { Empleado: h.empleado_nombre, Sucursal: h.sucursal_nombre || "", Jornadas: 0, "Hs hábiles": 0, "Hs domingo": 0, Monto: 0 }; hexMap.set(k, acc); }
+    acc.Jornadas++;
+    acc.Monto += Number(h.monto || 0);
+    if (h.es_domingo) acc["Hs domingo"] += Number(h.extra_hs || 0);
+    else acc["Hs hábiles"] += Number(h.extra_hs || 0);
+  }
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([...hexMap.values()].map(e => ({
+    ...e, "Hs hábiles": Number(e["Hs hábiles"].toFixed(2)), "Hs domingo": Number(e["Hs domingo"].toFixed(2)), Monto: Number(e.Monto.toFixed(2)),
+  }))), "Horas Extras");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hex.map(h => ({
+    Fecha: h.fecha,
+    Empleado: h.empleado_nombre,
+    Sucursal: h.sucursal_nombre || "",
+    Domingo: h.es_domingo ? "Sí" : "No",
+    Entrada: h.entrada?.slice(0, 5) || "",
+    Salida: h.salida?.slice(0, 5) || "",
+    "Hs extra": Number(Number(h.extra_hs).toFixed(2)),
+    Monto: Number(Number(h.monto).toFixed(2)),
+  }))), "Horas Extras Detalle");
+
+  // Hoja 8: Adelantos
+  const adeRows = (extras.adelantos || []).map(a => ({
+    Fecha: a.fecha_solicitud,
+    Legajo: a.empleado_legajo || "",
+    Empleado: a.empleado_nombre,
+    Sucursal: a.sucursal_nombre || "",
+    Monto: Number(Number(a.monto).toFixed(2)),
+    Estado: a.estado,
+    Origen: a.origen,
+    Observaciones: a.descripcion || "",
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(adeRows), "Adelantos");
+
+
+
   XLSX.writeFile(wb, `novedades-liquidacion-${desde}-a-${hasta}.xlsx`);
 }
