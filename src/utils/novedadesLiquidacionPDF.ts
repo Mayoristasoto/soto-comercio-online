@@ -4,8 +4,17 @@ import { format } from "date-fns";
 import { PDF_STYLES, COMPANY_INFO } from "./pdfStyles";
 import type { ResumenEmpleado } from "@/pages/NovedadesLiquidacion";
 import type { FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
+import type { NovedadesExtras } from "./novedadesLiquidacionXLSX";
 
-export function exportNovedadesPDF(resumen: ResumenEmpleado[], desde: string, hasta: string, feriados: FeriadoTrabajadoRow[] = []) {
+const money = (n: number) => "$ " + Number(n || 0).toLocaleString("es-AR", { maximumFractionDigits: 0 });
+
+export function exportNovedadesPDF(
+  resumen: ResumenEmpleado[],
+  desde: string,
+  hasta: string,
+  feriados: FeriadoTrabajadoRow[] = [],
+  extras: NovedadesExtras = {},
+) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const w = doc.internal.pageSize.getWidth();
 
