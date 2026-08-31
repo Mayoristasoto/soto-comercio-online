@@ -55,6 +55,8 @@ interface EmpleadoProfile {
   fecha_ingreso: string
   antiguedad_reconocida?: string
   fecha_prueba?: string
+  obra_social?: string
+  obra_social_desde?: string
   avatar_url?: string
 }
 
@@ -206,7 +208,9 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         email: formData.email,
         fecha_ingreso: formData.fecha_ingreso,
         antiguedad_reconocida: formData.antiguedad_reconocida || null,
-        fecha_prueba: formData.fecha_prueba || null
+        fecha_prueba: formData.fecha_prueba || null,
+        obra_social: formData.obra_social || null,
+        obra_social_desde: formData.obra_social_desde || null
       }
 
       const { error: empleadoError } = await supabase
@@ -645,6 +649,32 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                         type="date"
                         value={formData.fecha_prueba || ''}
                         onChange={(e) => setFormData(prev => ({ ...prev, fecha_prueba: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="obra_social">Obra Social</Label>
+                    <Input
+                      id="obra_social"
+                      placeholder="Ej: OSECAC, SANCOR, OMINT"
+                      value={formData.obra_social || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, obra_social: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="obra_social_desde">Obra Social Desde</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="obra_social_desde"
+                        type="date"
+                        value={formData.obra_social_desde || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, obra_social_desde: e.target.value }))}
                         className="pl-10"
                       />
                     </div>

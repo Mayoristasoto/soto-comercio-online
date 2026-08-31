@@ -22,6 +22,7 @@ import { HorasExtrasNovedadesTable, type HoraExtraNovedadRow } from "@/component
 import { AdelantosNovedadesTable, type AdelantoNovedadRow } from "@/components/novedades/AdelantosNovedadesTable";
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
+import { exportNovedadesEstudioXLSX, type EmpleadoEstudio } from "@/utils/novedadesEstudioXLSX";
 
 export interface NovedadRow {
   empleado_id: string;
@@ -44,7 +45,12 @@ export interface NovedadRow {
 }
 
 interface Sucursal { id: string; nombre: string; }
-interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; sucursal_id?: string | null; }
+interface Empleado {
+  id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean;
+  sucursal_id?: string | null;
+  obra_social?: string | null; obra_social_desde?: string | null;
+  horas_jornada_estandar?: number | null;
+}
 
 export interface ResumenEmpleado {
   empleado_id: string;
@@ -86,7 +92,7 @@ export default function NovedadesLiquidacion() {
     supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => {
       setSucursales(data || []);
     });
-    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id").order("apellido").then(({ data }) => {
+    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id,obra_social,obra_social_desde,horas_jornada_estandar").order("apellido").then(({ data }) => {
       setEmpleados((data || []) as Empleado[]);
     });
   }, []);
@@ -179,7 +185,7 @@ export default function NovedadesLiquidacion() {
 
   useEffect(() => { if (empleados.length) fetchData(); /* eslint-disable-next-line */ }, [empleados.length]);
 
-  const resumen = useMemo<ResumenEmpleado[]>(() => {
+  const resumenBase = useMemo<ResumenEmpleado[]>(() => {
     const map = new Map<string, ResumenEmpleado>();
     for (const r of data) {
       let res = map.get(r.empleado_id);
@@ -208,7 +214,11 @@ export default function NovedadesLiquidacion() {
         default: res.otras_licencias++;
       }
     }
-    let arr = [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    return [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [data]);
+
+  const resumen = useMemo<ResumenEmpleado[]>(() => {
+    let arr = resumenBase;
     if (excluirSinFichajes) {
       arr = arr.filter(e => e.trabajados > 0);
     }
@@ -216,7 +226,21 @@ export default function NovedadesLiquidacion() {
       arr = arr.filter(e => e.no_fichadas + e.lic_medica + e.vacaciones + e.feriados + e.otras_licencias > 0);
     }
     return arr;
-  }, [data, soloConNovedades, excluirSinFichajes]);
+  }, [resumenBase, soloConNovedades, excluirSinFichajes]);
+
+  // Empleados que van a la planilla del estudio contable (activos, según filtros de sucursal/grupo)
+  const empleadosEstudio = useMemo<EmpleadoEstudio[]>(() => {
+    return empleados
+      .filter(e => e.activo)
+      .filter(e => sucursalSel === "todas" || e.sucursal_id === sucursalSel)
+      .filter(e => !empleadosSel.length || empleadosSel.includes(e.id))
+      .map(e => ({
+        id: e.id, nombre: e.nombre, apellido: e.apellido, legajo: e.legajo,
+        obra_social: e.obra_social ?? null,
+        obra_social_desde: e.obra_social_desde ?? null,
+        horas_jornada_estandar: e.horas_jornada_estandar ?? null,
+      }));
+  }, [empleados, sucursalSel, empleadosSel]);
 
   // Mostrar SIEMPRE a todos los empleados que tienen fichaje en un feriado,
   // independientemente de si tienen turno asignado o pasan otros filtros.
@@ -312,6 +336,13 @@ export default function NovedadesLiquidacion() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Reporte — {format(new Date(desde + "T00:00:00"), "dd/MM/yyyy")} al {format(new Date(hasta + "T00:00:00"), "dd/MM/yyyy")}</CardTitle>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => exportNovedadesEstudioXLSX(empleadosEstudio, resumenBase, desde, hasta, feriadosFiltrados, vacaciones, adelantos)}
+              disabled={!empleadosEstudio.length}
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel Estudio Contable
+            </Button>
             <Button variant="outline" size="sm" onClick={() => exportNovedadesXLSX(resumen, desde, hasta, feriadosFiltrados, { vacaciones, horasExtras, adelantos })} disabled={!resumen.length}>
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
