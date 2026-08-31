@@ -125,6 +125,8 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
   const [copiaOpen, setCopiaOpen] = useState(false);
   const [copiaOrigen, setCopiaOrigen] = useState(0);
   const [copiaDestinos, setCopiaDestinos] = useState<number[]>([]);
+  const [rotarOpen, setRotarOpen] = useState(false);
+  const [rotaciones, setRotaciones] = useState<string[]>([]);
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => sumarDias(inicio, i)), [inicio]);
   const fechaActual = dias[diaSel];
