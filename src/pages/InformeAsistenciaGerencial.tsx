@@ -706,6 +706,7 @@ function CategoriasDialog({
   const [editId, setEditId] = useState<string | null>(null);
   const [editNombre, setEditNombre] = useState("");
   const [editColor, setEditColor] = useState("#95198d");
+  const [editJustif, setEditJustif] = useState(true);
 
   const reload = async () => {
     const { data } = await supabase.from("categorias_justificacion_asistencia").select("*").order("orden");
