@@ -184,7 +184,7 @@ export default function NovedadesLiquidacion() {
 
   useEffect(() => { if (empleados.length) fetchData(); /* eslint-disable-next-line */ }, [empleados.length]);
 
-  const resumen = useMemo<ResumenEmpleado[]>(() => {
+  const resumenBase = useMemo<ResumenEmpleado[]>(() => {
     const map = new Map<string, ResumenEmpleado>();
     for (const r of data) {
       let res = map.get(r.empleado_id);
@@ -213,7 +213,11 @@ export default function NovedadesLiquidacion() {
         default: res.otras_licencias++;
       }
     }
-    let arr = [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    return [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [data]);
+
+  const resumen = useMemo<ResumenEmpleado[]>(() => {
+    let arr = resumenBase;
     if (excluirSinFichajes) {
       arr = arr.filter(e => e.trabajados > 0);
     }
@@ -221,7 +225,21 @@ export default function NovedadesLiquidacion() {
       arr = arr.filter(e => e.no_fichadas + e.lic_medica + e.vacaciones + e.feriados + e.otras_licencias > 0);
     }
     return arr;
-  }, [data, soloConNovedades, excluirSinFichajes]);
+  }, [resumenBase, soloConNovedades, excluirSinFichajes]);
+
+  // Empleados que van a la planilla del estudio contable (activos, según filtros de sucursal/grupo)
+  const empleadosEstudio = useMemo<EmpleadoEstudio[]>(() => {
+    return empleados
+      .filter(e => e.activo)
+      .filter(e => sucursalSel === "todas" || e.sucursal_id === sucursalSel)
+      .filter(e => !empleadosSel.length || empleadosSel.includes(e.id))
+      .map(e => ({
+        id: e.id, nombre: e.nombre, apellido: e.apellido, legajo: e.legajo,
+        obra_social: e.obra_social ?? null,
+        obra_social_desde: e.obra_social_desde ?? null,
+        horas_jornada_estandar: e.horas_jornada_estandar ?? null,
+      }));
+  }, [empleados, sucursalSel, empleadosSel]);
 
   // Mostrar SIEMPRE a todos los empleados que tienen fichaje en un feriado,
   // independientemente de si tienen turno asignado o pasan otros filtros.
