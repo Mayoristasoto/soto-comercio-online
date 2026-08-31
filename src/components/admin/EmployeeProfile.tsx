@@ -55,6 +55,8 @@ interface EmpleadoProfile {
   fecha_ingreso: string
   antiguedad_reconocida?: string
   fecha_prueba?: string
+  obra_social?: string
+  obra_social_desde?: string
   avatar_url?: string
 }
 
