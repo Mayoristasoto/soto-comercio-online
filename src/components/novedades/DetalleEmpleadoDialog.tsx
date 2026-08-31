@@ -27,6 +27,7 @@ const ESTADO_LABEL: Record<string, { label: string; variant: any }> = {
   LICENCIA_MEDICA: { label: "Lic. médica", variant: "secondary" },
   DIA_ESTUDIO: { label: "Día estudio", variant: "outline" },
   JUSTIFICACION_INASISTENCIA: { label: "Justificada", variant: "outline" },
+  AUSENCIA_JUSTIFICADA: { label: "Ausencia justificada", variant: "secondary" },
 };
 
 const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -77,9 +78,9 @@ export function DetalleEmpleadoDialog({ empleado, open, onClose, onJustified }: 
                       <TableCell className="text-right">{Number(r.horas_esperadas).toFixed(1)}</TableCell>
                       <TableCell className="text-right">{Number(r.horas_trabajadas).toFixed(1)}</TableCell>
                       <TableCell>
-                        {r.estado === "NO_FICHADA" && (
+                        {(r.estado === "NO_FICHADA" || r.estado === "AUSENCIA_JUSTIFICADA") && (
                           <Button size="sm" variant="outline" onClick={() => setJustificarRow(r)}>
-                            Justificar
+                            {r.estado === "AUSENCIA_JUSTIFICADA" ? "Editar motivo" : "Justificar"}
                           </Button>
                         )}
                       </TableCell>

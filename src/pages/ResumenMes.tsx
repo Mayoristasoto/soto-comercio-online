@@ -255,7 +255,7 @@ export default function ResumenMes() {
       else if (!d.entrada && d.salida) rows.push({ ...d, tipo: "Sin entrada" });
     }
     for (const n of novedades) {
-      if (n.estado !== "NO_FICHADA") continue;
+      if (n.estado !== "NO_FICHADA" && n.estado !== "AUSENCIA_JUSTIFICADA") continue;
       rows.push({
         empleado_id: n.empleado_id,
         empleado: `${n.empleado_apellido}, ${n.empleado_nombre}`,
@@ -264,7 +264,7 @@ export default function ResumenMes() {
         fecha: n.fecha,
         entrada: n.hora_entrada_esperada?.slice(0, 5) || null,
         salida: n.hora_salida_esperada?.slice(0, 5) || null,
-        tipo: "Sin fichar",
+        tipo: n.estado === "AUSENCIA_JUSTIFICADA" ? "Sin fichar (justificada)" : "Sin fichar",
       });
     }
     return rows
