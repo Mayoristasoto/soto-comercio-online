@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import {
+  ArrowLeftRight,
   CalendarRange,
   CheckCircle2,
   ChevronLeft,
@@ -43,6 +44,11 @@ import {
   VistaDiaPlanificacion,
   type DatosDiaPlanificacion,
 } from "@/components/fichero/VistaDiaPlanificacion";
+import {
+  RotarEmpleadosDialog,
+  type FilaRotacion,
+  type ModoRotacion,
+} from "@/components/fichero/RotarEmpleadosDialog";
 import { escribirBorradorDia, nuevoTramoId } from "@/hooks/useDiaBorrador";
 import { useEsRRHH } from "@/hooks/useEsRRHH";
 import { exportSemanaPDF, exportSemanaXLSX, exportSemanaResumenPDF, type DiaSemanaExport } from "@/utils/horariosDiaExport";
