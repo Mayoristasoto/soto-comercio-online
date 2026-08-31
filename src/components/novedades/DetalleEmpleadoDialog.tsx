@@ -78,9 +78,9 @@ export function DetalleEmpleadoDialog({ empleado, open, onClose, onJustified }: 
                       <TableCell className="text-right">{Number(r.horas_esperadas).toFixed(1)}</TableCell>
                       <TableCell className="text-right">{Number(r.horas_trabajadas).toFixed(1)}</TableCell>
                       <TableCell>
-                        {r.estado === "NO_FICHADA" && (
+                        {(r.estado === "NO_FICHADA" || r.estado === "AUSENCIA_JUSTIFICADA") && (
                           <Button size="sm" variant="outline" onClick={() => setJustificarRow(r)}>
-                            Justificar
+                            {r.estado === "AUSENCIA_JUSTIFICADA" ? "Editar motivo" : "Justificar"}
                           </Button>
                         )}
                       </TableCell>
