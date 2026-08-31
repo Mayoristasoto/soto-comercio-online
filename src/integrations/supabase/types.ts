@@ -2678,6 +2678,8 @@ export type Database = {
           legajo: string | null
           liveness_obligatorio: boolean
           nombre: string
+          obra_social: string | null
+          obra_social_desde: string | null
           puesto: string | null
           puesto_id: string | null
           retener_fotos_recientes: boolean
@@ -2712,6 +2714,8 @@ export type Database = {
           legajo?: string | null
           liveness_obligatorio?: boolean
           nombre: string
+          obra_social?: string | null
+          obra_social_desde?: string | null
           puesto?: string | null
           puesto_id?: string | null
           retener_fotos_recientes?: boolean
@@ -2746,6 +2750,8 @@ export type Database = {
           legajo?: string | null
           liveness_obligatorio?: boolean
           nombre?: string
+          obra_social?: string | null
+          obra_social_desde?: string | null
           puesto?: string | null
           puesto_id?: string | null
           retener_fotos_recientes?: boolean
