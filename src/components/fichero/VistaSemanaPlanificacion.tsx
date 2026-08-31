@@ -455,6 +455,107 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
     });
   };
 
+  /* ------------------------- Rotar empleados ------------------------- */
+
+  const filasPorDia: Record<string, FilaRotacion[]> = useMemo(() => {
+    const out: Record<string, FilaRotacion[]> = {};
+    for (const f of dias) {
+      out[f] = (datos[f]?.filas ?? []).map((x) => ({
+        empleado_id: x.empleado_id,
+        nombre: x.nombre,
+        sucursal_id: x.sucursal_id,
+        sucursal_nombre: x.sucursal_nombre,
+        entrada: x.entrada,
+        salida: x.salida,
+        pausa: x.pausa || 0,
+        extras: x.extras || 0,
+      }));
+    }
+    return out;
+  }, [dias, datos]);
+
+  const rotarEmpleados = ({
+    empleadoA,
+    empleadoB,
+    modo,
+    diasIdx,
+  }: {
+    empleadoA: string;
+    empleadoB: string;
+    modo: ModoRotacion;
+    diasIdx: number[];
+  }) => {
+    let diasTocados = 0;
+    let nombreA = "";
+    let nombreB = "";
+
+    for (const idx of diasIdx) {
+      const fecha = dias[idx];
+      const filas = filasPorDia[fecha] ?? [];
+      const refA = filas.find((f) => f.empleado_id === empleadoA);
+      const refB = filas.find((f) => f.empleado_id === empleadoB);
+      if (!refA && !refB) continue;
+      if (refA) nombreA = refA.nombre;
+      if (refB) nombreB = refB.nombre;
+
+      const nuevas = filas.map((f) => {
+        const ref = f.empleado_id === empleadoA ? refB : f.empleado_id === empleadoB ? refA : null;
+        if (!ref) return f;
+        return {
+          ...f,
+          sucursal_id: ref.sucursal_id,
+          sucursal_nombre: ref.sucursal_nombre,
+          ...(modo === "puesto"
+            ? { entrada: ref.entrada, salida: ref.salida, pausa: ref.pausa, extras: ref.extras }
+            : {}),
+        };
+      });
+
+      const agregados = nuevas.map((f) => ({
+        id: nuevoTramoId(),
+        empleado_id: f.empleado_id,
+        nombre: f.nombre,
+        sucursal_id: f.sucursal_id,
+        sucursal_nombre: f.sucursal_nombre,
+        entrada: f.entrada,
+        salida: f.salida,
+        pausa: f.pausa || 0,
+      }));
+      const extras: Record<string, number> = {};
+      agregados.forEach((a, i) => {
+        const h = Number(nuevas[i].extras || 0);
+        if (h > 0) extras[`tramo-${a.id}`] = h;
+      });
+
+      escribirBorradorDia(fecha, {
+        ediciones: {},
+        agregados,
+        eliminados: [],
+        extras,
+        soloAgregados: true,
+      });
+      diasTocados++;
+    }
+
+    if (!diasTocados) {
+      toast({
+        title: "Sin cambios",
+        description: "Los empleados elegidos no tienen tramos en los días seleccionados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDatos({});
+    setRemountKey((k) => k + 1);
+    const etiqueta = `${nombreA || "Empleado A"} ⇄ ${nombreB || "Empleado B"}`;
+    setRotaciones((prev) => [...new Set([...prev, etiqueta])]);
+    toast({
+      title: "Rotación aplicada",
+      description: `${etiqueta} en ${diasTocados} día(s). Guardá la semana para dejarla registrada.`,
+    });
+  };
+
 
   const eliminarPlan = async (planId: string) => {
     if (!confirm("¿Eliminar esta planificación guardada?")) return;
