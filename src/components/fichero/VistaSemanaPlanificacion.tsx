@@ -1069,6 +1069,17 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rotar empleados entre sucursales */}
+      <RotarEmpleadosDialog
+        key={`rotar-${inicio}`}
+        open={rotarOpen}
+        onOpenChange={setRotarOpen}
+        dias={dias}
+        diasCorto={DIA_CORTO}
+        filasPorDia={filasPorDia}
+        onAplicar={rotarEmpleados}
+      />
     </div>
   );
 }
