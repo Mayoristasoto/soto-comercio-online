@@ -385,6 +385,30 @@ export default function NovedadesLiquidacion() {
                 <FeriadosTrabajadosTable rows={feriadosFiltrados} />
               )}
             </TabsContent>
+
+            <TabsContent value="vacaciones">
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : (
+                <VacacionesNovedadesTable rows={vacaciones} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="extras">
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : (
+                <HorasExtrasNovedadesTable rows={horasExtras} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="adelantos">
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : (
+                <AdelantosNovedadesTable rows={adelantos} empleados={empleados} desde={desde} hasta={hasta} onChange={fetchData} />
+              )}
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
