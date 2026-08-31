@@ -48,7 +48,7 @@ interface Sucursal { id: string; nombre: string; }
 interface Empleado {
   id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean;
   sucursal_id?: string | null;
-  obra_social?: string | null; obra_social_desde?: string | null;
+  obra_social?: string | null; obra_social_desde?: string | null; exento_fichaje?: boolean | null;
   horas_jornada_estandar?: number | null;
 }
 
@@ -92,7 +92,7 @@ export default function NovedadesLiquidacion() {
     supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => {
       setSucursales(data || []);
     });
-    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id,obra_social,obra_social_desde,horas_jornada_estandar").order("apellido").then(({ data }) => {
+    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id,obra_social,obra_social_desde,horas_jornada_estandar,exento_fichaje").order("apellido").then(({ data }) => {
       setEmpleados((data || []) as Empleado[]);
     });
   }, []);
@@ -239,6 +239,7 @@ export default function NovedadesLiquidacion() {
         obra_social: e.obra_social ?? null,
         obra_social_desde: e.obra_social_desde ?? null,
         horas_jornada_estandar: e.horas_jornada_estandar ?? null,
+        exento_fichaje: e.exento_fichaje ?? false,
       }));
   }, [empleados, sucursalSel, empleadosSel]);
 

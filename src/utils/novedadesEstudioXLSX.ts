@@ -14,7 +14,9 @@ export interface EmpleadoEstudio {
   obra_social: string | null;
   obra_social_desde: string | null;
   horas_jornada_estandar: number | null;
+  exento_fichaje?: boolean | null;
 }
+
 
 const VERDE = "FFC6E0B4";
 const ROJO = "FFFF7C80";
@@ -124,6 +126,7 @@ export async function exportNovedadesEstudioXLSX(
 
   for (const e of lista) {
     const res = resMap.get(e.id);
+    const exento = !!e.exento_fichaje;
     let gremio = 0, enf = 0, enfFam = 0, inas = 0;
     for (const row of res?.rows || []) {
       const c = clasificar(row.estado, row.detalle);
@@ -132,6 +135,9 @@ export async function exportNovedadesEstudioXLSX(
       else if (c === "enfFam") enfFam++;
       else if (c === "inasistencia") inas++;
     }
+    // Empleados exentos de fichaje: solo informamos vacaciones/licencias, nunca inasistencias
+    if (exento) inas = 0;
+
 
     const vac = vacPorEmp.get(e.id);
     const nombreCompleto = up(`${e.apellido} ${e.nombre}`);

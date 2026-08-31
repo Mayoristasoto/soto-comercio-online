@@ -2667,6 +2667,7 @@ export type Database = {
           dias_laborales_semana: number
           dni: string | null
           email: string
+          exento_fichaje: boolean
           fecha_baja: string | null
           fecha_ingreso: string
           fecha_prueba: string | null
@@ -2703,6 +2704,7 @@ export type Database = {
           dias_laborales_semana?: number
           dni?: string | null
           email: string
+          exento_fichaje?: boolean
           fecha_baja?: string | null
           fecha_ingreso?: string
           fecha_prueba?: string | null
@@ -2739,6 +2741,7 @@ export type Database = {
           dias_laborales_semana?: number
           dni?: string | null
           email?: string
+          exento_fichaje?: boolean
           fecha_baja?: string | null
           fecha_ingreso?: string
           fecha_prueba?: string | null
