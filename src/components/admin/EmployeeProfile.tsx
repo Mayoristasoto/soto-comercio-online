@@ -650,6 +650,32 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                     </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="obra_social">Obra Social</Label>
+                    <Input
+                      id="obra_social"
+                      placeholder="Ej: OSECAC, SANCOR, OMINT"
+                      value={formData.obra_social || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, obra_social: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="obra_social_desde">Obra Social Desde</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="obra_social_desde"
+                        type="date"
+                        value={formData.obra_social_desde || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, obra_social_desde: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
