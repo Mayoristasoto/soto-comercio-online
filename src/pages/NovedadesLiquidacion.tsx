@@ -22,6 +22,7 @@ import { HorasExtrasNovedadesTable, type HoraExtraNovedadRow } from "@/component
 import { AdelantosNovedadesTable, type AdelantoNovedadRow } from "@/components/novedades/AdelantosNovedadesTable";
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
+import { exportNovedadesEstudioXLSX, type EmpleadoEstudio } from "@/utils/novedadesEstudioXLSX";
 
 export interface NovedadRow {
   empleado_id: string;
