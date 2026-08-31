@@ -17,6 +17,9 @@ import { DetalleEmpleadoDialog } from "@/components/novedades/DetalleEmpleadoDia
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
 import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import { FeriadosTrabajadosTable, type FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
+import { VacacionesNovedadesTable, type VacacionNovedadRow } from "@/components/novedades/VacacionesNovedadesTable";
+import { HorasExtrasNovedadesTable, type HoraExtraNovedadRow } from "@/components/novedades/HorasExtrasNovedadesTable";
+import { AdelantosNovedadesTable, type AdelantoNovedadRow } from "@/components/novedades/AdelantosNovedadesTable";
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
 
@@ -74,6 +77,9 @@ export default function NovedadesLiquidacion() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<NovedadRow[]>([]);
   const [feriados, setFeriados] = useState<FeriadoTrabajadoRow[]>([]);
+  const [vacaciones, setVacaciones] = useState<VacacionNovedadRow[]>([]);
+  const [horasExtras, setHorasExtras] = useState<HoraExtraNovedadRow[]>([]);
+  const [adelantos, setAdelantos] = useState<AdelantoNovedadRow[]>([]);
   const [selectedEmp, setSelectedEmp] = useState<ResumenEmpleado | null>(null);
 
   useEffect(() => {
@@ -90,18 +96,74 @@ export default function NovedadesLiquidacion() {
     try {
       const empParam = empleadosSel.length ? empleadosSel : null;
       const sucParam = sucursalSel !== "todas" ? [sucursalSel] : null;
-      const [novRes, ferRes] = await Promise.all([
+      const [novRes, ferRes, vacRes, hexRes, adeRes] = await Promise.all([
         supabase.rpc("get_novedades_liquidacion", {
           p_desde: desde, p_hasta: hasta, p_sucursales: sucParam, p_empleados: empParam,
         } as any),
         supabase.rpc("get_feriados_trabajados", {
           p_desde: desde, p_hasta: hasta, p_sucursales: sucParam, p_empleados: empParam,
         } as any),
+        supabase.from("solicitudes_vacaciones")
+          .select("id,empleado_id,fecha_inicio,fecha_fin,estado,periodo_devengado,empleados!inner(nombre,apellido,legajo,sucursal_id,sucursales(nombre))")
+          .in("estado", ["aprobada", "gozadas"])
+          .lte("fecha_inicio", hasta).gte("fecha_fin", desde),
+        supabase.from("liquidaciones_horas_extras_items")
+          .select("id,empleado_id,empleado_nombre,sucursal_id,sucursal_nombre,fecha,es_domingo,entrada,salida,extra_hs,monto")
+          .gte("fecha", desde).lte("fecha", hasta).order("fecha"),
+        supabase.from("solicitudes_generales")
+          .select("id,empleado_id,fecha_solicitud,monto,descripcion,estado,empleados!inner(nombre,apellido,legajo,sucursal_id,sucursales(nombre))")
+          .eq("tipo_solicitud", "adelanto_sueldo")
+          .gte("fecha_solicitud", desde).lte("fecha_solicitud", hasta)
+          .order("fecha_solicitud"),
       ]);
       if (novRes.error) throw novRes.error;
       if (ferRes.error) throw ferRes.error;
       setData((novRes.data || []) as NovedadRow[]);
       setFeriados((ferRes.data || []) as FeriadoTrabajadoRow[]);
+
+      const matchFiltros = (empId: string, sucId: string | null) =>
+        (!empParam || empParam.includes(empId)) && (!sucParam || (sucId && sucParam.includes(sucId)));
+
+      const dias = (ini: string, fin: string) => {
+        const a = new Date((ini > desde ? ini : desde) + "T00:00:00");
+        const b = new Date((fin < hasta ? fin : hasta) + "T00:00:00");
+        return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86400000) + 1);
+      };
+
+      setVacaciones(((vacRes.data || []) as any[])
+        .filter(v => matchFiltros(v.empleado_id, v.empleados?.sucursal_id || null))
+        .map(v => ({
+          id: v.id, empleado_id: v.empleado_id,
+          empleado_nombre: `${v.empleados?.apellido || ""}, ${v.empleados?.nombre || ""}`,
+          empleado_legajo: v.empleados?.legajo ?? null,
+          sucursal_nombre: v.empleados?.sucursales?.nombre ?? null,
+          fecha_inicio: v.fecha_inicio, fecha_fin: v.fecha_fin,
+          estado: String(v.estado), periodo_devengado: v.periodo_devengado ?? null,
+          dias_en_periodo: dias(v.fecha_inicio, v.fecha_fin),
+        }))
+        .sort((a, b) => a.empleado_nombre.localeCompare(b.empleado_nombre) || a.fecha_inicio.localeCompare(b.fecha_inicio)));
+
+      setHorasExtras(((hexRes.data || []) as any[])
+        .filter(h => matchFiltros(h.empleado_id, h.sucursal_id || null))
+        .map(h => ({
+          id: h.id, empleado_id: h.empleado_id, empleado_nombre: h.empleado_nombre,
+          sucursal_nombre: h.sucursal_nombre ?? null, fecha: h.fecha, es_domingo: !!h.es_domingo,
+          entrada: h.entrada, salida: h.salida,
+          extra_hs: Number(h.extra_hs || 0), monto: Number(h.monto || 0),
+        })));
+
+      setAdelantos(((adeRes.data || []) as any[])
+        .filter(a => matchFiltros(a.empleado_id, a.empleados?.sucursal_id || null))
+        .map(a => ({
+          id: a.id, empleado_id: a.empleado_id,
+          empleado_nombre: `${a.empleados?.apellido || ""}, ${a.empleados?.nombre || ""}`,
+          empleado_legajo: a.empleados?.legajo ?? null,
+          sucursal_nombre: a.empleados?.sucursales?.nombre ?? null,
+          fecha_solicitud: a.fecha_solicitud, monto: Number(a.monto || 0),
+          descripcion: a.descripcion ?? null, estado: String(a.estado),
+          origen: (a.descripcion || "").toLowerCase().includes("novedades") ? "Carga manual" : "Kiosco / Autogestión",
+        })));
+
       toast.success(`${novRes.data?.length || 0} registros · ${ferRes.data?.length || 0} feriados trabajados`);
     } catch (e: any) {
       console.error(e);
@@ -246,10 +308,10 @@ export default function NovedadesLiquidacion() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Reporte — {format(new Date(desde + "T00:00:00"), "dd/MM/yyyy")} al {format(new Date(hasta + "T00:00:00"), "dd/MM/yyyy")}</CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => exportNovedadesXLSX(resumen, desde, hasta, feriadosFiltrados)} disabled={!resumen.length}>
+            <Button variant="outline" size="sm" onClick={() => exportNovedadesXLSX(resumen, desde, hasta, feriadosFiltrados, { vacaciones, horasExtras, adelantos })} disabled={!resumen.length}>
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
-            <Button variant="outline" size="sm" onClick={() => exportNovedadesPDF(resumen, desde, hasta, feriadosFiltrados)} disabled={!resumen.length}>
+            <Button variant="outline" size="sm" onClick={() => exportNovedadesPDF(resumen, desde, hasta, feriadosFiltrados, { vacaciones, horasExtras, adelantos })} disabled={!resumen.length}>
               <FileText className="h-4 w-4 mr-2" /> PDF
             </Button>
           </div>
@@ -261,6 +323,9 @@ export default function NovedadesLiquidacion() {
               <TabsTrigger value="feriados">
                 <CalendarDays className="h-4 w-4 mr-1" /> Feriados trabajados ({feriadosFiltrados.length})
               </TabsTrigger>
+              <TabsTrigger value="vacaciones">Vacaciones ({vacaciones.length})</TabsTrigger>
+              <TabsTrigger value="extras">Horas extras ({horasExtras.length})</TabsTrigger>
+              <TabsTrigger value="adelantos">Adelantos ({adelantos.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="resumen">
@@ -318,6 +383,30 @@ export default function NovedadesLiquidacion() {
                 <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (
                 <FeriadosTrabajadosTable rows={feriadosFiltrados} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="vacaciones">
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : (
+                <VacacionesNovedadesTable rows={vacaciones} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="extras">
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : (
+                <HorasExtrasNovedadesTable rows={horasExtras} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="adelantos">
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              ) : (
+                <AdelantosNovedadesTable rows={adelantos} empleados={empleados} desde={desde} hasta={hasta} onChange={fetchData} />
               )}
             </TabsContent>
           </Tabs>

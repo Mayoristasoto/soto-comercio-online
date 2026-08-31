@@ -4,8 +4,17 @@ import { format } from "date-fns";
 import { PDF_STYLES, COMPANY_INFO } from "./pdfStyles";
 import type { ResumenEmpleado } from "@/pages/NovedadesLiquidacion";
 import type { FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
+import type { NovedadesExtras } from "./novedadesLiquidacionXLSX";
 
-export function exportNovedadesPDF(resumen: ResumenEmpleado[], desde: string, hasta: string, feriados: FeriadoTrabajadoRow[] = []) {
+const money = (n: number) => "$ " + Number(n || 0).toLocaleString("es-AR", { maximumFractionDigits: 0 });
+
+export function exportNovedadesPDF(
+  resumen: ResumenEmpleado[],
+  desde: string,
+  hasta: string,
+  feriados: FeriadoTrabajadoRow[] = [],
+  extras: NovedadesExtras = {},
+) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const w = doc.internal.pageSize.getWidth();
 
@@ -107,5 +116,91 @@ export function exportNovedadesPDF(resumen: ResumenEmpleado[], desde: string, ha
     });
   }
 
+  // Vacaciones del período
+  const vacs = extras.vacaciones || [];
+  if (vacs.length) {
+    const y = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_STYLES.colors.primary);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Vacaciones en el período (${vacs.length})`, 14, y);
+    autoTable(doc, {
+      startY: y + 3,
+      head: [["Empleado", "Sucursal", "Desde", "Hasta", "Días", "Período dev.", "Estado"]],
+      body: vacs.map(v => [
+        v.empleado_nombre + (v.empleado_legajo ? ` (#${v.empleado_legajo})` : ""),
+        v.sucursal_nombre || "—",
+        format(new Date(v.fecha_inicio + "T00:00:00"), "dd/MM/yyyy"),
+        format(new Date(v.fecha_fin + "T00:00:00"), "dd/MM/yyyy"),
+        v.dias_en_periodo,
+        v.periodo_devengado ?? "—",
+        v.estado,
+      ]),
+      foot: [["", "", "", "Total días", vacs.reduce((a, v) => a + v.dias_en_periodo, 0), "", ""]],
+      headStyles: { fillColor: PDF_STYLES.colors.primary, textColor: "#ffffff", fontSize: 9 },
+      footStyles: { fillColor: "#f0eaf4", textColor: PDF_STYLES.colors.primary, fontStyle: "bold", fontSize: 8 },
+      bodyStyles: { fontSize: 8 },
+    });
+  }
+
+  // Horas extras
+  const hex = extras.horasExtras || [];
+  if (hex.length) {
+    const map = new Map<string, { nombre: string; suc: string; jor: number; hs: number; hsD: number; monto: number }>();
+    for (const h of hex) {
+      const k = h.empleado_id || h.empleado_nombre;
+      let acc = map.get(k);
+      if (!acc) { acc = { nombre: h.empleado_nombre, suc: h.sucursal_nombre || "—", jor: 0, hs: 0, hsD: 0, monto: 0 }; map.set(k, acc); }
+      acc.jor++; acc.monto += Number(h.monto || 0);
+      if (h.es_domingo) acc.hsD += Number(h.extra_hs || 0); else acc.hs += Number(h.extra_hs || 0);
+    }
+    const arr = [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    const y = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_STYLES.colors.secondary);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Horas extras liquidadas (${hex.length} jornadas)`, 14, y);
+    autoTable(doc, {
+      startY: y + 3,
+      head: [["Empleado", "Sucursal", "Jornadas", "Hs hábiles", "Hs domingo", "Monto"]],
+      body: arr.map(e => [e.nombre, e.suc, e.jor, e.hs.toFixed(1), e.hsD.toFixed(1), money(e.monto)]),
+      foot: [["Totales", "", arr.reduce((a, e) => a + e.jor, 0),
+        arr.reduce((a, e) => a + e.hs, 0).toFixed(1),
+        arr.reduce((a, e) => a + e.hsD, 0).toFixed(1),
+        money(arr.reduce((a, e) => a + e.monto, 0))]],
+      headStyles: { fillColor: PDF_STYLES.colors.secondary, textColor: "#ffffff", fontSize: 9 },
+      footStyles: { fillColor: "#f0eaf4", textColor: PDF_STYLES.colors.primary, fontStyle: "bold", fontSize: 8 },
+      bodyStyles: { fontSize: 8 },
+    });
+  }
+
+  // Adelantos
+  const ade = extras.adelantos || [];
+  if (ade.length) {
+    const y = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_STYLES.colors.accent || PDF_STYLES.colors.primary);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Adelantos de sueldo (${ade.length})`, 14, y);
+    autoTable(doc, {
+      startY: y + 3,
+      head: [["Fecha", "Empleado", "Sucursal", "Monto", "Estado", "Origen", "Observaciones"]],
+      body: ade.map(a => [
+        format(new Date(a.fecha_solicitud + "T00:00:00"), "dd/MM/yyyy"),
+        a.empleado_nombre + (a.empleado_legajo ? ` (#${a.empleado_legajo})` : ""),
+        a.sucursal_nombre || "—",
+        money(a.monto),
+        a.estado,
+        a.origen,
+        a.descripcion || "—",
+      ]),
+      foot: [["", "", "Total aprobado", money(ade.filter(a => a.estado === "aprobada").reduce((s, a) => s + Number(a.monto || 0), 0)), "", "", ""]],
+      headStyles: { fillColor: PDF_STYLES.colors.primary, textColor: "#ffffff", fontSize: 9 },
+      footStyles: { fillColor: "#f0eaf4", textColor: PDF_STYLES.colors.primary, fontStyle: "bold", fontSize: 8 },
+      bodyStyles: { fontSize: 8 },
+    });
+  }
+
   doc.save(`novedades-liquidacion-${desde}-a-${hasta}.pdf`);
 }
+
