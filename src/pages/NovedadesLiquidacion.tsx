@@ -44,7 +44,7 @@ export interface NovedadRow {
 }
 
 interface Sucursal { id: string; nombre: string; }
-interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; }
+interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; sucursal_id?: string | null; }
 
 export interface ResumenEmpleado {
   empleado_id: string;
@@ -86,7 +86,7 @@ export default function NovedadesLiquidacion() {
     supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => {
       setSucursales(data || []);
     });
-    supabase.from("empleados").select("id,nombre,apellido,legajo,activo").order("apellido").then(({ data }) => {
+    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id").order("apellido").then(({ data }) => {
       setEmpleados((data || []) as Empleado[]);
     });
   }, []);
@@ -104,8 +104,8 @@ export default function NovedadesLiquidacion() {
           p_desde: desde, p_hasta: hasta, p_sucursales: sucParam, p_empleados: empParam,
         } as any),
         supabase.from("solicitudes_vacaciones")
-          .select("id,empleado_id,fecha_inicio,fecha_fin,estado,periodo_devengado,empleados!inner(nombre,apellido,legajo,sucursal_id,sucursales(nombre))")
-          .in("estado", ["aprobada", "gozadas"])
+          .select("id,empleado_id,fecha_inicio,fecha_fin,estado,periodo_devengado")
+          .in("estado", ["aprobada", "gozadas", "pendiente"])
           .lte("fecha_inicio", hasta).gte("fecha_fin", desde),
         supabase.from("liquidaciones_horas_extras_items")
           .select("id,empleado_id,empleado_nombre,sucursal_id,sucursal_nombre,fecha,es_domingo,entrada,salida,extra_hs,monto")
@@ -130,13 +130,17 @@ export default function NovedadesLiquidacion() {
         return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86400000) + 1);
       };
 
+      if (vacRes.error) console.error("vacaciones", vacRes.error);
+      const empMap = new Map(empleados.map(e => [e.id, e]));
+      const sucMap = new Map(sucursales.map(s => [s.id, s.nombre]));
+
       setVacaciones(((vacRes.data || []) as any[])
-        .filter(v => matchFiltros(v.empleado_id, v.empleados?.sucursal_id || null))
+        .filter(v => matchFiltros(v.empleado_id, empMap.get(v.empleado_id)?.sucursal_id ?? null))
         .map(v => ({
           id: v.id, empleado_id: v.empleado_id,
-          empleado_nombre: `${v.empleados?.apellido || ""}, ${v.empleados?.nombre || ""}`,
-          empleado_legajo: v.empleados?.legajo ?? null,
-          sucursal_nombre: v.empleados?.sucursales?.nombre ?? null,
+          empleado_nombre: `${empMap.get(v.empleado_id)?.apellido || ""}, ${empMap.get(v.empleado_id)?.nombre || ""}`.replace(/^, $/, "—"),
+          empleado_legajo: empMap.get(v.empleado_id)?.legajo ?? null,
+          sucursal_nombre: sucMap.get(empMap.get(v.empleado_id)?.sucursal_id || "") ?? null,
           fecha_inicio: v.fecha_inicio, fecha_fin: v.fecha_fin,
           estado: String(v.estado), periodo_devengado: v.periodo_devengado ?? null,
           dias_en_periodo: dias(v.fecha_inicio, v.fecha_fin),
@@ -173,7 +177,7 @@ export default function NovedadesLiquidacion() {
     }
   };
 
-  useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { if (empleados.length) fetchData(); /* eslint-disable-next-line */ }, [empleados.length]);
 
   const resumen = useMemo<ResumenEmpleado[]>(() => {
     const map = new Map<string, ResumenEmpleado>();
