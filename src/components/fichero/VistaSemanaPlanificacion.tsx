@@ -690,6 +690,14 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
                 <CopyPlus className="h-4 w-4 mr-2" />
                 Copiar día
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => setRotarOpen(true)}
+                disabled={bloqueadaEncargado}
+              >
+                <ArrowLeftRight className="h-4 w-4 mr-2" />
+                Rotar empleados
+              </Button>
               <Button variant="outline" onClick={limpiarSemana}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Restablecer semana
