@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
 import { 
   User, 
   Phone, 
@@ -57,6 +58,7 @@ interface EmpleadoProfile {
   fecha_prueba?: string
   obra_social?: string
   obra_social_desde?: string
+  exento_fichaje?: boolean
   avatar_url?: string
 }
 
@@ -210,7 +212,8 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         antiguedad_reconocida: formData.antiguedad_reconocida || null,
         fecha_prueba: formData.fecha_prueba || null,
         obra_social: formData.obra_social || null,
-        obra_social_desde: formData.obra_social_desde || null
+        obra_social_desde: formData.obra_social_desde || null,
+        exento_fichaje: !!formData.exento_fichaje
       }
 
       const { error: empleadoError } = await supabase
