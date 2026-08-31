@@ -381,6 +381,7 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
 
       setInicio(semanaDestino);
       setDatos({});
+      setRotaciones([]);
       setRemountKey((k) => k + 1);
       toast({ title: "Planificación cargada", description: `Semana del ${fechaCorta(semanaDestino)}` });
     } catch (e: any) {
@@ -392,6 +393,7 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
   const limpiarSemana = () => {
     for (const f of dias) escribirBorradorDia(f, null);
     setDatos({});
+    setRotaciones([]);
     setRemountKey((k) => k + 1);
     toast({ title: "Semana restablecida", description: "Se volvieron a cargar los turnos asignados" });
   };
