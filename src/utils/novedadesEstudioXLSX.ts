@@ -30,11 +30,12 @@ const money = (n: number) => "$" + Number(n || 0).toLocaleString("es-AR", { maxi
 function clasificar(estado: string, detalle: string | null): "gremio" | "enf" | "enfFam" | "inasistencia" | null {
   const d = (detalle || "").toLowerCase();
   if (d.includes("gremio")) return "gremio";
+  // La categoría prevalece sobre el estado: "Enfermedad" siempre suma en Lic Enfermedad
+  if (d.includes("familiar")) return "enfFam";
+  if (d.includes("enferm") || d.includes("médic") || d.includes("medic") || d.includes("accidente") || /\bart\b/.test(d)) return "enf";
   if (estado === "LIC_MEDICA") return "enf";
   if (estado === "NO_FICHADA") return "inasistencia";
   if (estado === "AUSENCIA_JUSTIFICADA" || estado === "OTRA_LICENCIA" || estado === "LICENCIA") {
-    if (d.includes("familiar")) return "enfFam";
-    if (d.includes("enfermedad") || d.includes("médic") || d.includes("medic") || d.includes("art") || d.includes("accidente")) return "enf";
     if (d.includes("sin justificar") || d.includes("ausente") || d.includes("injustificad")) return "inasistencia";
     return null;
   }

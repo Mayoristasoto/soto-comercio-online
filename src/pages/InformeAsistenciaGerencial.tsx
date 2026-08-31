@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileBarChart, Download, Settings2, Loader2, Plus, Trash2, Wand2, Check } from "lucide-react";
+import { FileBarChart, Download, Settings2, Loader2, Plus, Trash2, Wand2, Check, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { format, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks } from "date-fns";
 import { es } from "date-fns/locale";
@@ -703,6 +703,9 @@ function CategoriasDialog({
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoColor, setNuevoColor] = useState("#95198d");
   const [nuevoJustif, setNuevoJustif] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editColor, setEditColor] = useState("#95198d");
 
   const reload = async () => {
     const { data } = await supabase.from("categorias_justificacion_asistencia").select("*").order("orden");
@@ -736,6 +739,18 @@ function CategoriasDialog({
     reload();
   };
 
+  const guardarEdicion = async () => {
+    if (!editId) return;
+    if (!editNombre.trim()) { toast.error("Nombre requerido"); return; }
+    const { error } = await supabase.from("categorias_justificacion_asistencia")
+      .update({ nombre: editNombre.trim(), color: editColor })
+      .eq("id", editId);
+    if (error) { toast.error(error.message); return; }
+    setEditId(null);
+    toast.success("Categoría actualizada");
+    reload();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -746,20 +761,41 @@ function CategoriasDialog({
         <div className="space-y-2 max-h-[50vh] overflow-auto">
           {categorias.map(c => (
             <div key={c.id} className="flex items-center gap-2 border rounded-md p-2">
-              <span className="w-4 h-4 rounded-full" style={{ background: c.color }} />
-              <span className="flex-1">{c.nombre}</span>
-              <Badge variant={c.es_justificada ? "secondary" : "destructive"}>
-                {c.es_justificada ? "Justifica" : "No justifica"}
-              </Badge>
-              <label className="flex items-center gap-1 text-xs">
-                <Checkbox checked={!!c.frecuente} onCheckedChange={() => toggleFrecuente(c)} /> frecuente
-              </label>
-              <label className="flex items-center gap-1 text-xs">
-                <Checkbox checked={c.activa} onCheckedChange={() => toggleActiva(c)} /> activa
-              </label>
-              <Button variant="ghost" size="icon" onClick={() => eliminar(c.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {editId === c.id ? (
+                <>
+                  <Input type="color" value={editColor} onChange={e => setEditColor(e.target.value)} className="w-12 h-9 p-1" />
+                  <Input
+                    value={editNombre}
+                    onChange={e => setEditNombre(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") guardarEdicion(); if (e.key === "Escape") setEditId(null); }}
+                    className="flex-1 h-9"
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" onClick={guardarEdicion}><Check className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => setEditId(null)}><X className="h-4 w-4" /></Button>
+                </>
+              ) : (
+                <>
+                  <span className="w-4 h-4 rounded-full" style={{ background: c.color }} />
+                  <span className="flex-1">{c.nombre}</span>
+                  <Badge variant={c.es_justificada ? "secondary" : "destructive"}>
+                    {c.es_justificada ? "Justifica" : "No justifica"}
+                  </Badge>
+                  <label className="flex items-center gap-1 text-xs">
+                    <Checkbox checked={!!c.frecuente} onCheckedChange={() => toggleFrecuente(c)} /> frecuente
+                  </label>
+                  <label className="flex items-center gap-1 text-xs">
+                    <Checkbox checked={c.activa} onCheckedChange={() => toggleActiva(c)} /> activa
+                  </label>
+                  <Button variant="ghost" size="icon" title="Editar nombre"
+                    onClick={() => { setEditId(c.id); setEditNombre(c.nombre); setEditColor(c.color || "#95198d"); }}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => eliminar(c.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           ))}
         </div>
