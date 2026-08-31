@@ -612,7 +612,9 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
     setSaveOpen(true);
   };
 
-  const filtrosTexto = `Semana ${fechaCorta(inicio)} al ${fechaCorta(dias[6])}`;
+  const filtrosTexto =
+    `Semana ${fechaCorta(inicio)} al ${fechaCorta(dias[6])}` +
+    (rotaciones.length ? ` · Rotaciones: ${rotaciones.join("; ")}` : "");
 
   /** En modo encargado la semana se bloquea cuando ya fue enviada o aprobada */
   const bloqueadaEncargado =
