@@ -336,6 +336,13 @@ export default function NovedadesLiquidacion() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Reporte — {format(new Date(desde + "T00:00:00"), "dd/MM/yyyy")} al {format(new Date(hasta + "T00:00:00"), "dd/MM/yyyy")}</CardTitle>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => exportNovedadesEstudioXLSX(empleadosEstudio, resumenBase, desde, hasta, feriadosFiltrados, vacaciones, adelantos)}
+              disabled={!empleadosEstudio.length}
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel Estudio Contable
+            </Button>
             <Button variant="outline" size="sm" onClick={() => exportNovedadesXLSX(resumen, desde, hasta, feriadosFiltrados, { vacaciones, horasExtras, adelantos })} disabled={!resumen.length}>
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
