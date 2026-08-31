@@ -91,7 +91,7 @@ export default function NovedadesLiquidacion() {
     supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => {
       setSucursales(data || []);
     });
-    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id").order("apellido").then(({ data }) => {
+    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id,obra_social,obra_social_desde,horas_jornada_estandar").order("apellido").then(({ data }) => {
       setEmpleados((data || []) as Empleado[]);
     });
   }, []);
