@@ -104,8 +104,8 @@ export default function NovedadesLiquidacion() {
           p_desde: desde, p_hasta: hasta, p_sucursales: sucParam, p_empleados: empParam,
         } as any),
         supabase.from("solicitudes_vacaciones")
-          .select("id,empleado_id,fecha_inicio,fecha_fin,estado,periodo_devengado,empleados!inner(nombre,apellido,legajo,sucursal_id,sucursales(nombre))")
-          .in("estado", ["aprobada", "gozadas"])
+          .select("id,empleado_id,fecha_inicio,fecha_fin,estado,periodo_devengado")
+          .in("estado", ["aprobada", "gozadas", "pendiente"])
           .lte("fecha_inicio", hasta).gte("fecha_fin", desde),
         supabase.from("liquidaciones_horas_extras_items")
           .select("id,empleado_id,empleado_nombre,sucursal_id,sucursal_nombre,fecha,es_domingo,entrada,salida,extra_hs,monto")
