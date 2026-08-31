@@ -740,17 +740,26 @@ function CategoriasDialog({
     reload();
   };
 
+  const toggleJustifica = async (c: Categoria) => {
+    const { error } = await supabase.from("categorias_justificacion_asistencia")
+      .update({ es_justificada: !c.es_justificada }).eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(!c.es_justificada ? "Ahora justifica" : "Ahora no justifica");
+    reload();
+  };
+
   const guardarEdicion = async () => {
     if (!editId) return;
     if (!editNombre.trim()) { toast.error("Nombre requerido"); return; }
     const { error } = await supabase.from("categorias_justificacion_asistencia")
-      .update({ nombre: editNombre.trim(), color: editColor })
+      .update({ nombre: editNombre.trim(), color: editColor, es_justificada: editJustif })
       .eq("id", editId);
     if (error) { toast.error(error.message); return; }
     setEditId(null);
     toast.success("Categoría actualizada");
     reload();
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
