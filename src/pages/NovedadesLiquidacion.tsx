@@ -17,6 +17,9 @@ import { DetalleEmpleadoDialog } from "@/components/novedades/DetalleEmpleadoDia
 import { SelectorGrupoCompacto } from "@/components/empleados/SelectorGrupoCompacto";
 import { SeleccionEmpleados } from "@/lib/gruposEmpleados";
 import { FeriadosTrabajadosTable, type FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
+import { VacacionesNovedadesTable, type VacacionNovedadRow } from "@/components/novedades/VacacionesNovedadesTable";
+import { HorasExtrasNovedadesTable, type HoraExtraNovedadRow } from "@/components/novedades/HorasExtrasNovedadesTable";
+import { AdelantosNovedadesTable, type AdelantoNovedadRow } from "@/components/novedades/AdelantosNovedadesTable";
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
 
