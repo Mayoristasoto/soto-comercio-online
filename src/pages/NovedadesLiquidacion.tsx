@@ -177,7 +177,7 @@ export default function NovedadesLiquidacion() {
     }
   };
 
-  useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { if (empleados.length) fetchData(); /* eslint-disable-next-line */ }, [empleados.length]);
 
   const resumen = useMemo<ResumenEmpleado[]>(() => {
     const map = new Map<string, ResumenEmpleado>();
