@@ -44,7 +44,12 @@ export interface NovedadRow {
 }
 
 interface Sucursal { id: string; nombre: string; }
-interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; sucursal_id?: string | null; }
+interface Empleado {
+  id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean;
+  sucursal_id?: string | null;
+  obra_social?: string | null; obra_social_desde?: string | null;
+  horas_jornada_estandar?: number | null;
+}
 
 export interface ResumenEmpleado {
   empleado_id: string;
