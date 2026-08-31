@@ -65,6 +65,18 @@ export function exportNovedadesXLSX(resumen: ResumenEmpleado[], desde: string, h
     })));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(noFichRows), "No Fichadas");
 
+  // Hoja: Ausencias justificadas (informe gerencial)
+  const justRows = resumen
+    .flatMap(e => e.rows.filter(r => r.estado === "AUSENCIA_JUSTIFICADA").map(r => ({
+      Legajo: e.legajo || "",
+      Empleado: e.nombre,
+      Sucursal: e.sucursal || "",
+      Fecha: r.fecha,
+      Motivo: r.detalle || "",
+      "Horas esperadas": Number(Number(r.horas_esperadas).toFixed(2)),
+    })));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(justRows), "Ausencias Justificadas");
+
   // Hoja 5: Feriados trabajados
   const ferRows = feriados.map(f => ({
     Fecha: f.fecha,
