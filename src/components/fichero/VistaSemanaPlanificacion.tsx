@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import {
+  ArrowLeftRight,
   CalendarRange,
   CheckCircle2,
   ChevronLeft,
@@ -43,6 +44,11 @@ import {
   VistaDiaPlanificacion,
   type DatosDiaPlanificacion,
 } from "@/components/fichero/VistaDiaPlanificacion";
+import {
+  RotarEmpleadosDialog,
+  type FilaRotacion,
+  type ModoRotacion,
+} from "@/components/fichero/RotarEmpleadosDialog";
 import { escribirBorradorDia, nuevoTramoId } from "@/hooks/useDiaBorrador";
 import { useEsRRHH } from "@/hooks/useEsRRHH";
 import { exportSemanaPDF, exportSemanaXLSX, exportSemanaResumenPDF, type DiaSemanaExport } from "@/utils/horariosDiaExport";
@@ -119,6 +125,8 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
   const [copiaOpen, setCopiaOpen] = useState(false);
   const [copiaOrigen, setCopiaOrigen] = useState(0);
   const [copiaDestinos, setCopiaDestinos] = useState<number[]>([]);
+  const [rotarOpen, setRotarOpen] = useState(false);
+  const [rotaciones, setRotaciones] = useState<string[]>([]);
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => sumarDias(inicio, i)), [inicio]);
   const fechaActual = dias[diaSel];
@@ -373,6 +381,7 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
 
       setInicio(semanaDestino);
       setDatos({});
+      setRotaciones([]);
       setRemountKey((k) => k + 1);
       toast({ title: "Planificación cargada", description: `Semana del ${fechaCorta(semanaDestino)}` });
     } catch (e: any) {
@@ -384,6 +393,7 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
   const limpiarSemana = () => {
     for (const f of dias) escribirBorradorDia(f, null);
     setDatos({});
+    setRotaciones([]);
     setRemountKey((k) => k + 1);
     toast({ title: "Semana restablecida", description: "Se volvieron a cargar los turnos asignados" });
   };
@@ -447,6 +457,107 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
     });
   };
 
+  /* ------------------------- Rotar empleados ------------------------- */
+
+  const filasPorDia: Record<string, FilaRotacion[]> = useMemo(() => {
+    const out: Record<string, FilaRotacion[]> = {};
+    for (const f of dias) {
+      out[f] = (datos[f]?.filas ?? []).map((x) => ({
+        empleado_id: x.empleado_id,
+        nombre: x.nombre,
+        sucursal_id: x.sucursal_id,
+        sucursal_nombre: x.sucursal_nombre,
+        entrada: x.entrada,
+        salida: x.salida,
+        pausa: x.pausa || 0,
+        extras: x.extras || 0,
+      }));
+    }
+    return out;
+  }, [dias, datos]);
+
+  const rotarEmpleados = ({
+    empleadoA,
+    empleadoB,
+    modo,
+    diasIdx,
+  }: {
+    empleadoA: string;
+    empleadoB: string;
+    modo: ModoRotacion;
+    diasIdx: number[];
+  }) => {
+    let diasTocados = 0;
+    let nombreA = "";
+    let nombreB = "";
+
+    for (const idx of diasIdx) {
+      const fecha = dias[idx];
+      const filas = filasPorDia[fecha] ?? [];
+      const refA = filas.find((f) => f.empleado_id === empleadoA);
+      const refB = filas.find((f) => f.empleado_id === empleadoB);
+      if (!refA && !refB) continue;
+      if (refA) nombreA = refA.nombre;
+      if (refB) nombreB = refB.nombre;
+
+      const nuevas = filas.map((f) => {
+        const ref = f.empleado_id === empleadoA ? refB : f.empleado_id === empleadoB ? refA : null;
+        if (!ref) return f;
+        return {
+          ...f,
+          sucursal_id: ref.sucursal_id,
+          sucursal_nombre: ref.sucursal_nombre,
+          ...(modo === "puesto"
+            ? { entrada: ref.entrada, salida: ref.salida, pausa: ref.pausa, extras: ref.extras }
+            : {}),
+        };
+      });
+
+      const agregados = nuevas.map((f) => ({
+        id: nuevoTramoId(),
+        empleado_id: f.empleado_id,
+        nombre: f.nombre,
+        sucursal_id: f.sucursal_id,
+        sucursal_nombre: f.sucursal_nombre,
+        entrada: f.entrada,
+        salida: f.salida,
+        pausa: f.pausa || 0,
+      }));
+      const extras: Record<string, number> = {};
+      agregados.forEach((a, i) => {
+        const h = Number(nuevas[i].extras || 0);
+        if (h > 0) extras[`tramo-${a.id}`] = h;
+      });
+
+      escribirBorradorDia(fecha, {
+        ediciones: {},
+        agregados,
+        eliminados: [],
+        extras,
+        soloAgregados: true,
+      });
+      diasTocados++;
+    }
+
+    if (!diasTocados) {
+      toast({
+        title: "Sin cambios",
+        description: "Los empleados elegidos no tienen tramos en los días seleccionados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDatos({});
+    setRemountKey((k) => k + 1);
+    const etiqueta = `${nombreA || "Empleado A"} ⇄ ${nombreB || "Empleado B"}`;
+    setRotaciones((prev) => [...new Set([...prev, etiqueta])]);
+    toast({
+      title: "Rotación aplicada",
+      description: `${etiqueta} en ${diasTocados} día(s). Guardá la semana para dejarla registrada.`,
+    });
+  };
+
 
   const eliminarPlan = async (planId: string) => {
     if (!confirm("¿Eliminar esta planificación guardada?")) return;
@@ -503,7 +614,9 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
     setSaveOpen(true);
   };
 
-  const filtrosTexto = `Semana ${fechaCorta(inicio)} al ${fechaCorta(dias[6])}`;
+  const filtrosTexto =
+    `Semana ${fechaCorta(inicio)} al ${fechaCorta(dias[6])}` +
+    (rotaciones.length ? ` · Rotaciones: ${rotaciones.join("; ")}` : "");
 
   /** En modo encargado la semana se bloquea cuando ya fue enviada o aprobada */
   const bloqueadaEncargado =
@@ -578,6 +691,14 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
               >
                 <CopyPlus className="h-4 w-4 mr-2" />
                 Copiar día
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setRotarOpen(true)}
+                disabled={bloqueadaEncargado}
+              >
+                <ArrowLeftRight className="h-4 w-4 mr-2" />
+                Rotar empleados
               </Button>
               <Button variant="outline" onClick={limpiarSemana}>
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -950,6 +1071,17 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rotar empleados entre sucursales */}
+      <RotarEmpleadosDialog
+        key={`rotar-${inicio}`}
+        open={rotarOpen}
+        onOpenChange={setRotarOpen}
+        dias={dias}
+        diasCorto={DIA_CORTO}
+        filasPorDia={filasPorDia}
+        onAplicar={rotarEmpleados}
+      />
     </div>
   );
 }
