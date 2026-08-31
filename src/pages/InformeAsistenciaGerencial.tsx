@@ -703,6 +703,9 @@ function CategoriasDialog({
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoColor, setNuevoColor] = useState("#95198d");
   const [nuevoJustif, setNuevoJustif] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editColor, setEditColor] = useState("#95198d");
 
   const reload = async () => {
     const { data } = await supabase.from("categorias_justificacion_asistencia").select("*").order("orden");
