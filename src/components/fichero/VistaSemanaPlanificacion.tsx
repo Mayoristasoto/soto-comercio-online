@@ -211,17 +211,34 @@ export function VistaSemanaPlanificacion({ modoEncargado = false, sucursalId = n
           .eq("id", planId);
         if (error) throw error;
       } else {
-        // upsert por (sucursal, semana) para evitar conflictos 409
-        const { data, error } = await supabase
+        // Los índices únicos son parciales, así que ON CONFLICT no aplica: buscamos y luego insert/update
+        let q = supabase
           .from("planificacion_semanal")
-          .upsert(payloadCabecera, {
-            onConflict: modoEncargado ? "sucursal_id,fecha_inicio_semana" : "fecha_inicio_semana",
-          })
           .select("id")
+          .eq("fecha_inicio_semana", inicio);
+        q = payloadCabecera.sucursal_id
+          ? q.eq("sucursal_id", payloadCabecera.sucursal_id)
+          : q.is("sucursal_id", null);
+        const { data: existente, error: findError } = await q.maybeSingle();
+        if (findError) throw findError;
 
-          .single();
-        if (error) throw error;
-        planId = data.id;
+        if (existente?.id) {
+          const { error } = await supabase
+            .from("planificacion_semanal")
+            .update(payloadCabecera)
+            .eq("id", existente.id);
+          if (error) throw error;
+          planId = existente.id;
+        } else {
+          const { data, error } = await supabase
+            .from("planificacion_semanal")
+            .insert(payloadCabecera)
+            .select("id")
+            .single();
+          if (error) throw error;
+          planId = data.id;
+        }
+
       }
 
       await supabase.from("planificacion_semanal_detalle").delete().eq("planificacion_id", planId);
