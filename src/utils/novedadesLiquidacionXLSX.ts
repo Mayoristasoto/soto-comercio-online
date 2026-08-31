@@ -2,9 +2,25 @@ import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import type { ResumenEmpleado } from "@/pages/NovedadesLiquidacion";
 import type { FeriadoTrabajadoRow } from "@/components/novedades/FeriadosTrabajadosTable";
+import type { VacacionNovedadRow } from "@/components/novedades/VacacionesNovedadesTable";
+import type { HoraExtraNovedadRow } from "@/components/novedades/HorasExtrasNovedadesTable";
+import type { AdelantoNovedadRow } from "@/components/novedades/AdelantosNovedadesTable";
 
-export function exportNovedadesXLSX(resumen: ResumenEmpleado[], desde: string, hasta: string, feriados: FeriadoTrabajadoRow[] = []) {
+export interface NovedadesExtras {
+  vacaciones?: VacacionNovedadRow[];
+  horasExtras?: HoraExtraNovedadRow[];
+  adelantos?: AdelantoNovedadRow[];
+}
+
+export function exportNovedadesXLSX(
+  resumen: ResumenEmpleado[],
+  desde: string,
+  hasta: string,
+  feriados: FeriadoTrabajadoRow[] = [],
+  extras: NovedadesExtras = {},
+) {
   const wb = XLSX.utils.book_new();
+
 
   // Hoja 1: Resumen
   const resumenRows = resumen.map(e => ({
