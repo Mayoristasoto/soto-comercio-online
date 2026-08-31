@@ -27,6 +27,7 @@ const ESTADO_LABEL: Record<string, { label: string; variant: any }> = {
   LICENCIA_MEDICA: { label: "Lic. médica", variant: "secondary" },
   DIA_ESTUDIO: { label: "Día estudio", variant: "outline" },
   JUSTIFICACION_INASISTENCIA: { label: "Justificada", variant: "outline" },
+  AUSENCIA_JUSTIFICADA: { label: "Ausencia justificada", variant: "secondary" },
 };
 
 const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
