@@ -63,6 +63,26 @@ export function exportNovedadesPDF(resumen: ResumenEmpleado[], desde: string, ha
     });
   }
 
+  // Ausencias justificadas (informe gerencial)
+  const justificadas = resumen.flatMap(e => e.rows.filter(r => r.estado === "AUSENCIA_JUSTIFICADA").map(r => ({ e, r })));
+  if (justificadas.length) {
+    const y = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_STYLES.colors.secondary);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Ausencias justificadas (${justificadas.length})`, 14, y);
+    autoTable(doc, {
+      startY: y + 3,
+      head: [["Empleado", "Fecha", "Sucursal", "Motivo", "Hs esperadas"]],
+      body: justificadas.map(({ e, r }) => [
+        e.nombre, format(new Date(r.fecha + "T00:00:00"), "dd/MM/yyyy"),
+        e.sucursal || "—", r.detalle || "—", Number(r.horas_esperadas).toFixed(1),
+      ]),
+      headStyles: { fillColor: PDF_STYLES.colors.secondary, textColor: "#ffffff", fontSize: 9 },
+      bodyStyles: { fontSize: 8 },
+    });
+  }
+
   // Feriados trabajados
   if (feriados.length) {
     const y = (doc as any).lastAutoTable.finalY + 10;
