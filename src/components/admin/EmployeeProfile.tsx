@@ -683,6 +683,20 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
                     </div>
                   </div>
                 </div>
+
+                <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="exento_fichaje">Exento de fichaje</Label>
+                    <p className="text-xs text-muted-foreground">
+                      No ficha en kiosco. Aparece en el Excel del estudio contable solo con vacaciones/licencias, sin contar inasistencias.
+                    </p>
+                  </div>
+                  <Switch
+                    id="exento_fichaje"
+                    checked={!!formData.exento_fichaje}
+                    onCheckedChange={(v) => setFormData(prev => ({ ...prev, exento_fichaje: v }))}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
