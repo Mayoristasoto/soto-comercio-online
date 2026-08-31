@@ -208,7 +208,9 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
         email: formData.email,
         fecha_ingreso: formData.fecha_ingreso,
         antiguedad_reconocida: formData.antiguedad_reconocida || null,
-        fecha_prueba: formData.fecha_prueba || null
+        fecha_prueba: formData.fecha_prueba || null,
+        obra_social: formData.obra_social || null,
+        obra_social_desde: formData.obra_social_desde || null
       }
 
       const { error: empleadoError } = await supabase
