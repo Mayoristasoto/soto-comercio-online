@@ -44,7 +44,7 @@ export interface NovedadRow {
 }
 
 interface Sucursal { id: string; nombre: string; }
-interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; }
+interface Empleado { id: string; nombre: string; apellido: string; legajo: string | null; activo: boolean; sucursal_id?: string | null; }
 
 export interface ResumenEmpleado {
   empleado_id: string;
@@ -86,7 +86,7 @@ export default function NovedadesLiquidacion() {
     supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => {
       setSucursales(data || []);
     });
-    supabase.from("empleados").select("id,nombre,apellido,legajo,activo").order("apellido").then(({ data }) => {
+    supabase.from("empleados").select("id,nombre,apellido,legajo,activo,sucursal_id").order("apellido").then(({ data }) => {
       setEmpleados((data || []) as Empleado[]);
     });
   }, []);
