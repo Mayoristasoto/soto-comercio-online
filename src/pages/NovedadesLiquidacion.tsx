@@ -130,13 +130,17 @@ export default function NovedadesLiquidacion() {
         return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86400000) + 1);
       };
 
+      if (vacRes.error) console.error("vacaciones", vacRes.error);
+      const empMap = new Map(empleados.map(e => [e.id, e]));
+      const sucMap = new Map(sucursales.map(s => [s.id, s.nombre]));
+
       setVacaciones(((vacRes.data || []) as any[])
-        .filter(v => matchFiltros(v.empleado_id, v.empleados?.sucursal_id || null))
+        .filter(v => matchFiltros(v.empleado_id, empMap.get(v.empleado_id)?.sucursal_id ?? null))
         .map(v => ({
           id: v.id, empleado_id: v.empleado_id,
-          empleado_nombre: `${v.empleados?.apellido || ""}, ${v.empleados?.nombre || ""}`,
-          empleado_legajo: v.empleados?.legajo ?? null,
-          sucursal_nombre: v.empleados?.sucursales?.nombre ?? null,
+          empleado_nombre: `${empMap.get(v.empleado_id)?.apellido || ""}, ${empMap.get(v.empleado_id)?.nombre || ""}`.replace(/^, $/, "—"),
+          empleado_legajo: empMap.get(v.empleado_id)?.legajo ?? null,
+          sucursal_nombre: sucMap.get(empMap.get(v.empleado_id)?.sucursal_id || "") ?? null,
           fecha_inicio: v.fecha_inicio, fecha_fin: v.fecha_fin,
           estado: String(v.estado), periodo_devengado: v.periodo_devengado ?? null,
           dias_en_periodo: dias(v.fecha_inicio, v.fecha_fin),
