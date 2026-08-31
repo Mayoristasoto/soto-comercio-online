@@ -184,29 +184,71 @@ function dibujarDiaPDF(
   });
   y = (doc as any).lastAutoTable.finalY + 6;
 
-  // ---- Cobertura por hora y sucursal ----
+  // ---- Cobertura por hora y sucursal (grilla tipo mapa de calor) ----
   const sucursales = [...new Set(filas.map((f) => f.sucursal_nombre))].sort();
-  y = ensure(y, 14 + sucursales.length * 7);
+  const maxCob = Math.max(
+    1,
+    ...cobertura.flatMap((c) => sucursales.map((s) => c.porSucursal[s] ?? 0))
+  );
+  y = ensure(y, 16 + sucursales.length * 6.5);
   doc.setFontSize(10);
   doc.setTextColor(...PRIMARY);
-  doc.text("Cobertura por hora y sucursal", 14, y);
+  doc.text("Cobertura de empleados por sucursal", 14, y);
   doc.setTextColor(0, 0, 0);
-  autoTable(doc, {
-    startY: y + 2,
-    head: [["Sucursal", ...cobertura.map((c) => c.hora.slice(0, 2)), "Pico"]],
-    body: sucursales.map((s) => [
-      s,
-      ...cobertura.map((c) => {
-        const n = c.porSucursal[s] ?? 0;
-        return n === 0 ? "-" : String(n);
-      }),
-      String(cobertura.reduce((m, c) => Math.max(m, c.porSucursal[s] ?? 0), 0)),
-    ]),
-    styles: { fontSize: 7, halign: "center", cellPadding: 1 },
-    columnStyles: { 0: { halign: "left", cellWidth: 40 } },
-    headStyles: { fillColor: [149, 25, 141], textColor: 255, fontSize: 7 },
+  y += 4;
+
+  const labelW = 42;
+  const picoW = 12;
+  const gridX = 14 + labelW;
+  const gridW = w - 14 - gridX - picoW;
+  const cellW = gridW / Math.max(1, cobertura.length);
+  const rowH = 6;
+
+  // Encabezado de horas
+  doc.setFontSize(6.5);
+  doc.setTextColor(110, 110, 110);
+  cobertura.forEach((c, i) => {
+    doc.text(c.hora.slice(0, 2), gridX + i * cellW + cellW / 2, y + 3, { align: "center" });
   });
-  y = (doc as any).lastAutoTable.finalY + 8;
+  doc.text("Pico", w - 14 - picoW / 2, y + 3, { align: "center" });
+  doc.setTextColor(0, 0, 0);
+  y += 5;
+
+  for (const s of sucursales) {
+    y = ensure(y, rowH + 2);
+    doc.setFontSize(7);
+    doc.text(s.slice(0, 26), 14, y + rowH / 2 + 1.2);
+    let pico = 0;
+    cobertura.forEach((c, i) => {
+      const n = c.porSucursal[s] ?? 0;
+      pico = Math.max(pico, n);
+      const x = gridX + i * cellW;
+      if (n === 0) {
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(x + 0.4, y, cellW - 0.8, rowH - 1, 0.8, 0.8, "F");
+        doc.setFontSize(6);
+        doc.setTextColor(170, 175, 185);
+        doc.text("-", x + cellW / 2, y + rowH / 2 + 0.8, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+      } else {
+        const t = n / maxCob; // 0..1
+        const r = Math.round(191 - 154 * t);
+        const g = Math.round(219 - 120 * t);
+        const b = Math.round(254 - 19 * t);
+        doc.setFillColor(r, g, b);
+        doc.roundedRect(x + 0.4, y, cellW - 0.8, rowH - 1, 0.8, 0.8, "F");
+        doc.setFontSize(6.2);
+        doc.setTextColor(t > 0.45 ? 255 : 30);
+        doc.text(String(n), x + cellW / 2, y + rowH / 2 + 0.8, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+      }
+    });
+    doc.setFontSize(7);
+    doc.text(String(pico), w - 14 - picoW / 2, y + rowH / 2 + 1.2, { align: "center" });
+    y += rowH;
+  }
+  y += 4;
+
 
   // ---- Gráfico de horarios ----
   const horaIni = cobertura.length ? Number(cobertura[0].hora.slice(0, 2)) : 6;
