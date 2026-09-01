@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -51,6 +51,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSidebarLinks } from "@/hooks/useSidebarLinks"
+import { useAccesosRapidos } from "@/hooks/useAccesosRapidos"
+import { AccesosRapidosDialog } from "@/components/AccesosRapidosDialog"
+import { Star, Plus } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -139,6 +142,26 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const { theme, setTheme } = useTheme()
   const { links, loading } = useSidebarLinks(userInfo?.rol || null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const { accesos, toggle: toggleAcceso } = useAccesosRapidos(userInfo?.id)
+  const [dialogAccesos, setDialogAccesos] = useState(false)
+
+  // Secciones disponibles (aplanadas) para elegir accesos rápidos
+  const seccionesDisponibles = useMemo(() => {
+    const out: { path: string; nombre: string; icon: string; grupo?: string }[] = []
+    const walk = (items: any[], grupo?: string) => {
+      for (const it of items || []) {
+        if (it.tipo === 'separator') continue
+        if (it.path && !it.path.startsWith('#')) {
+          out.push({ path: it.path, nombre: it.nombre, icon: it.icon, grupo })
+        }
+        if (it.children?.length) walk(it.children, it.nombre)
+      }
+    }
+    walk(links as any[])
+    const seen = new Set<string>()
+    return out.filter((s) => (seen.has(s.path) ? false : (seen.add(s.path), true)))
+  }, [links])
+
   const currentFullPath = `${location.pathname}${location.hash || ''}`
   
   const isActive = (path: string) => {
@@ -229,6 +252,59 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center justify-between">
+            <span>Accesos rápidos</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              title="Agregar acceso rápido"
+              onClick={() => setDialogAccesos(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {accesos.length === 0 && (
+                <p className="px-3 py-1 text-xs text-muted-foreground">
+                  Agregá secciones con el botón +
+                </p>
+              )}
+              {accesos.map((acceso) => {
+                const AccesoIcon = getIcon(acceso.icon)
+                const activo = isActive(acceso.path)
+                return (
+                  <SidebarMenuItem key={acceso.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={activo}
+                      tooltip={acceso.nombre}
+                      className={`my-0.5 rounded-md ${activo ? 'bg-primary/15 text-primary font-semibold' : ''}`}
+                    >
+                      <NavLink to={acceso.path} className="flex items-center gap-2">
+                        <AccesoIcon className="h-4 w-4 shrink-0" />
+                        <span className="truncate text-sm">{acceso.nombre}</span>
+                        <Star className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <AccesosRapidosDialog
+          open={dialogAccesos}
+          onOpenChange={setDialogAccesos}
+          secciones={seccionesDisponibles}
+          accesos={accesos}
+          onToggle={toggleAcceso}
+        />
+
+
         {loading ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
             Cargando menú...
