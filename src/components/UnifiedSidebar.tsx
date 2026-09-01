@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -51,6 +51,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSidebarLinks } from "@/hooks/useSidebarLinks"
+import { useAccesosRapidos } from "@/hooks/useAccesosRapidos"
+import { AccesosRapidosDialog } from "@/components/AccesosRapidosDialog"
+import { Star, Plus } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
