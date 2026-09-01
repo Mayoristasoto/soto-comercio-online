@@ -75,6 +75,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Índice de Ausentismo", url: "/rrhh/indice-ausentismo", icon: Activity },
       { title: "Ubicaciones de Fichaje", url: "/rrhh/ubicaciones-fichaje", icon: MapPin },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
+      { title: "Checklist de Control", url: "/rrhh/checklist", icon: FileText },
     ]
   },
   {
