@@ -139,6 +139,26 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const { theme, setTheme } = useTheme()
   const { links, loading } = useSidebarLinks(userInfo?.rol || null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const { accesos, toggle: toggleAcceso } = useAccesosRapidos(userInfo?.id)
+  const [dialogAccesos, setDialogAccesos] = useState(false)
+
+  // Secciones disponibles (aplanadas) para elegir accesos rápidos
+  const seccionesDisponibles = useMemo(() => {
+    const out: { path: string; nombre: string; icon: string; grupo?: string }[] = []
+    const walk = (items: any[], grupo?: string) => {
+      for (const it of items || []) {
+        if (it.tipo === 'separator') continue
+        if (it.path && !it.path.startsWith('#')) {
+          out.push({ path: it.path, nombre: it.nombre, icon: it.icon, grupo })
+        }
+        if (it.children?.length) walk(it.children, it.nombre)
+      }
+    }
+    walk(links as any[])
+    const seen = new Set<string>()
+    return out.filter((s) => (seen.has(s.path) ? false : (seen.add(s.path), true)))
+  }, [links])
+
   const currentFullPath = `${location.pathname}${location.hash || ''}`
   
   const isActive = (path: string) => {
