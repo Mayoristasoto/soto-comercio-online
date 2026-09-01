@@ -35,6 +35,16 @@ export default function ChecklistControlDetalle() {
 
   const readOnly = control?.estado === "cerrado";
 
+  const secciones = (() => {
+    const mapa = new Map<string, ChecklistItem[]>();
+    items.forEach((i) => {
+      const key = i.seccion?.trim() || SIN_SECCION;
+      if (!mapa.has(key)) mapa.set(key, []);
+      mapa.get(key)!.push(i);
+    });
+    return Array.from(mapa.entries());
+  })();
+
   const cargar = async () => {
     if (!id) return;
     setLoading(true);
