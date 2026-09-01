@@ -1622,6 +1622,270 @@ export type Database = {
           },
         ]
       }
+      checklist_control_encargados: {
+        Row: {
+          control_id: string
+          created_at: string
+          empleado_id: string
+          id: string
+        }
+        Insert: {
+          control_id: string
+          created_at?: string
+          empleado_id: string
+          id?: string
+        }
+        Update: {
+          control_id?: string
+          created_at?: string
+          empleado_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_control_encargados_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_encargados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_encargados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_encargados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_encargados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_control_items: {
+        Row: {
+          control_id: string
+          created_at: string
+          estado: Database["public"]["Enums"]["checklist_estado_item"] | null
+          id: string
+          observaciones: string | null
+          orden: number
+          seccion: string | null
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          control_id: string
+          created_at?: string
+          estado?: Database["public"]["Enums"]["checklist_estado_item"] | null
+          id?: string
+          observaciones?: string | null
+          orden?: number
+          seccion?: string | null
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          control_id?: string
+          created_at?: string
+          estado?: Database["public"]["Enums"]["checklist_estado_item"] | null
+          id?: string
+          observaciones?: string | null
+          orden?: number
+          seccion?: string | null
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_control_items_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_controles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_controles: {
+        Row: {
+          cerrado_at: string | null
+          cerrado_por: string | null
+          created_at: string
+          estado: string
+          fecha_hora: string
+          id: string
+          observaciones_generales: string | null
+          plantilla_id: string | null
+          responsable_id: string | null
+          sucursal_id: string
+          titulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          estado?: string
+          fecha_hora?: string
+          id?: string
+          observaciones_generales?: string | null
+          plantilla_id?: string | null
+          responsable_id?: string | null
+          sucursal_id: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          estado?: string
+          fecha_hora?: string
+          id?: string
+          observaciones_generales?: string | null
+          plantilla_id?: string | null
+          responsable_id?: string | null
+          sucursal_id?: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_controles_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_plantillas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_controles_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_item_fotos: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_fotos_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_control_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_plantilla_items: {
+        Row: {
+          created_at: string
+          id: string
+          obligatorio: boolean
+          orden: number
+          plantilla_id: string
+          seccion: string | null
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          obligatorio?: boolean
+          orden?: number
+          plantilla_id: string
+          seccion?: string | null
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          obligatorio?: boolean
+          orden?: number
+          plantilla_id?: string
+          seccion?: string | null
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_plantilla_items_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_plantillas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_plantillas: {
+        Row: {
+          activo: boolean
+          created_at: string
+          created_by: string | null
+          descripcion: string | null
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conceptos_liquidacion: {
         Row: {
           activo: boolean
@@ -11076,6 +11340,7 @@ export type Database = {
         | "administrativo"
         | "deposito"
         | "otro"
+      checklist_estado_item: "cumple" | "parcial" | "no_cumple"
       concepto_categoria: "haberes" | "descuentos" | "contribuciones"
       concepto_tipo: "remunerativo" | "no_remunerativo" | "deduccion"
       desafio_estado: "borrador" | "activo" | "finalizado"
@@ -11265,6 +11530,7 @@ export const Constants = {
         "deposito",
         "otro",
       ],
+      checklist_estado_item: ["cumple", "parcial", "no_cumple"],
       concepto_categoria: ["haberes", "descuentos", "contribuciones"],
       concepto_tipo: ["remunerativo", "no_remunerativo", "deduccion"],
       desafio_estado: ["borrador", "activo", "finalizado"],
