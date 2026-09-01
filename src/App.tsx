@@ -88,6 +88,9 @@ import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
 import ResumenMes from "./pages/ResumenMes";
 import IndiceAusentismo from "./pages/IndiceAusentismo";
 import UbicacionesFichaje from "./pages/UbicacionesFichaje";
+import ChecklistControles from "./pages/ChecklistControles";
+import ChecklistControlDetalle from "./pages/ChecklistControlDetalle";
+import ChecklistPlantillas from "./pages/ChecklistPlantillas";
 import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
 import EntregasEmpleados from "./pages/EntregasEmpleados";
 import PlanillaDescansos from "./pages/PlanillaDescansos";
@@ -153,6 +156,9 @@ const App = () => (
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
             <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
             <Route path="rrhh/planilla-descansos" element={<PlanillaDescansos />} />
+            <Route path="rrhh/checklist" element={<ChecklistControles />} />
+            <Route path="rrhh/checklist/plantillas" element={<ChecklistPlantillas />} />
+            <Route path="rrhh/checklist/:id" element={<ChecklistControlDetalle />} />
             <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
