@@ -19,6 +19,8 @@ import type {
   ChecklistItem,
 } from "@/components/checklist/checklistTypes";
 
+const SIN_SECCION = "__sin_seccion__";
+
 export default function ChecklistControlDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
