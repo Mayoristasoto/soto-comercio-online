@@ -58,28 +58,17 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
     const offset = ahora.getTimezoneOffset() * 60000;
     setFecha(new Date(ahora.getTime() - offset).toISOString().slice(0, 16));
     (async () => {
-      const sel = (s: string): string => s;
-      const suc = await supabase
-        .from("sucursales")
-        .select(sel("id, nombre"))
-        .eq("activo", true)
-        .order("nombre")
-        .returns<Sucursal[]>();
-      const pl = await supabase
-        .from("checklist_plantillas")
-        .select(sel("id, nombre"))
-        .eq("activo", true)
-        .order("nombre")
-        .returns<Plantilla[]>();
-      const emp = await supabase
+      const db = supabase as any;
+      const suc = await db.from("sucursales").select("id, nombre").eq("activo", true).order("nombre");
+      const pl = await db.from("checklist_plantillas").select("id, nombre").eq("activo", true).order("nombre");
+      const emp = await db
         .from("empleados")
-        .select(sel("id, nombre, apellido, sucursal_id"))
+        .select("id, nombre, apellido, sucursal_id")
         .eq("activo", true)
-        .order("apellido")
-        .returns<Empleado[]>();
-      setSucursales(suc.data || []);
-      setPlantillas(pl.data || []);
-      setEmpleados(emp.data || []);
+        .order("apellido");
+      setSucursales((suc.data as Sucursal[]) || []);
+      setPlantillas((pl.data as Plantilla[]) || []);
+      setEmpleados((emp.data as Empleado[]) || []);
     })();
   }, [open]);
 
