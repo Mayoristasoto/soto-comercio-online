@@ -156,6 +156,9 @@ const App = () => (
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
             <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
             <Route path="rrhh/planilla-descansos" element={<PlanillaDescansos />} />
+            <Route path="rrhh/checklist" element={<ChecklistControles />} />
+            <Route path="rrhh/checklist/plantillas" element={<ChecklistPlantillas />} />
+            <Route path="rrhh/checklist/:id" element={<ChecklistControlDetalle />} />
             <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
