@@ -37,39 +37,43 @@ export function ChecklistItemRow({
 }: Props) {
   return (
     <Card className={cn(item.estado && ESTADO_SOFT_CLASSES[item.estado].split(" ").pop())}>
-      <CardContent className="space-y-3 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <p className="flex-1 text-sm font-medium">{item.texto}</p>
+      <CardContent className="space-y-3 p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <p className="flex-1 text-sm font-medium leading-snug">{item.texto}</p>
           {readOnly ? (
             item.estado ? (
-              <Badge variant="outline" className={ESTADO_SOFT_CLASSES[item.estado]}>
+              <Badge variant="outline" className={cn("self-start", ESTADO_SOFT_CLASSES[item.estado])}>
                 {ESTADO_LABEL[item.estado]}
               </Badge>
             ) : (
-              <Badge variant="outline">Sin evaluar</Badge>
+              <Badge variant="outline" className="self-start">
+                Sin evaluar
+              </Badge>
             )
           ) : (
-            <div className="flex flex-wrap items-center gap-1">
-              {ESTADOS.map((e) => (
-                <Button
-                  key={e}
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={cn("text-xs", item.estado === e && ESTADO_CLASSES[e])}
-                  onClick={() => onEstado(item.estado === e ? null : e)}
-                >
-                  {ESTADO_LABEL[e]}
-                </Button>
-              ))}
+            <div className="flex items-center gap-1">
+              <div className="grid flex-1 grid-cols-3 gap-1 sm:flex sm:flex-none">
+                {ESTADOS.map((e) => (
+                  <Button
+                    key={e}
+                    type="button"
+                    variant="outline"
+                    className={cn("h-10 px-2 text-xs sm:h-9", item.estado === e && ESTADO_CLASSES[e])}
+                    onClick={() => onEstado(item.estado === e ? null : e)}
+                  >
+                    {ESTADO_LABEL[e]}
+                  </Button>
+                ))}
+              </div>
               {onEliminar && (
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={onEliminar}>
+                <Button type="button" size="icon" variant="ghost" className="h-10 w-10 shrink-0" onClick={onEliminar}>
                   <Trash2 className="h-4 w-4 text-muted-foreground" />
                 </Button>
               )}
             </div>
           )}
         </div>
+
 
         {readOnly ? (
           item.observaciones ? (
