@@ -208,21 +208,32 @@ export default function ChecklistControlDetalle() {
             Marcá el estado de cada ítem, agregá observaciones y subí fotos como evidencia.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground">Todavía no hay ítems. Agregá el primero abajo.</p>
           )}
-          {items.map((item) => (
-            <ChecklistItemRow
-              key={item.id}
-              item={item}
-              fotos={fotos.filter((f) => f.item_id === item.id)}
-              readOnly={readOnly}
-              onEstado={(estado: ChecklistEstadoItem | null) => actualizarItem(item.id, { estado })}
-              onObservaciones={(observaciones) => actualizarItem(item.id, { observaciones })}
-              onEliminar={readOnly ? undefined : () => eliminarItem(item.id)}
-              onFotosChange={recargarFotos}
-            />
+
+          {secciones.map(([seccion, secItems]) => (
+            <div key={seccion} className="space-y-2">
+              {seccion !== SIN_SECCION && (
+                <div className="flex items-center justify-between gap-2 border-b pb-1">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{seccion}</h2>
+                  <ResumenChecklist items={secItems} compacto />
+                </div>
+              )}
+              {secItems.map((item) => (
+                <ChecklistItemRow
+                  key={item.id}
+                  item={item}
+                  fotos={fotos.filter((f) => f.item_id === item.id)}
+                  readOnly={readOnly}
+                  onEstado={(estado: ChecklistEstadoItem | null) => actualizarItem(item.id, { estado })}
+                  onObservaciones={(observaciones) => actualizarItem(item.id, { observaciones })}
+                  onEliminar={readOnly ? undefined : () => eliminarItem(item.id)}
+                  onFotosChange={recargarFotos}
+                />
+              ))}
+            </div>
           ))}
 
           {!readOnly && (
@@ -236,7 +247,7 @@ export default function ChecklistControlDetalle() {
                   if (e.key === "Enter") agregarItem();
                 }}
               />
-              <Button onClick={agregarItem} disabled={!nuevoItem.trim()}>
+              <Button onClick={agregarItem} disabled={!nuevoItem.trim()} className="sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Agregar ítem
               </Button>
