@@ -59,7 +59,7 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
     setFecha(new Date(ahora.getTime() - offset).toISOString().slice(0, 16));
     (async () => {
       const db = supabase as any;
-      const suc = await db.from("sucursales").select("id, nombre").eq("activo", true).order("nombre");
+      const suc = await db.from("sucursales").select("id, nombre").eq("activa", true).order("nombre");
       const pl = await db.from("checklist_plantillas").select("id, nombre").eq("activo", true).order("nombre");
       const emp = await db
         .from("empleados")
