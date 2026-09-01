@@ -252,6 +252,59 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center justify-between">
+            <span>Accesos rápidos</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              title="Agregar acceso rápido"
+              onClick={() => setDialogAccesos(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {accesos.length === 0 && (
+                <p className="px-3 py-1 text-xs text-muted-foreground">
+                  Agregá secciones con el botón +
+                </p>
+              )}
+              {accesos.map((acceso) => {
+                const AccesoIcon = getIcon(acceso.icon)
+                const activo = isActive(acceso.path)
+                return (
+                  <SidebarMenuItem key={acceso.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={activo}
+                      tooltip={acceso.nombre}
+                      className={`my-0.5 rounded-md ${activo ? 'bg-primary/15 text-primary font-semibold' : ''}`}
+                    >
+                      <NavLink to={acceso.path} className="flex items-center gap-2">
+                        <AccesoIcon className="h-4 w-4 shrink-0" />
+                        <span className="truncate text-sm">{acceso.nombre}</span>
+                        <Star className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <AccesosRapidosDialog
+          open={dialogAccesos}
+          onOpenChange={setDialogAccesos}
+          secciones={seccionesDisponibles}
+          accesos={accesos}
+          onToggle={toggleAcceso}
+        />
+
+
         {loading ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
             Cargando menú...
