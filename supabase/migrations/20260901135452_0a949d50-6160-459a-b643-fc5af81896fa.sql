@@ -1,0 +1,3 @@
+INSERT INTO public.app_pages (nombre, path, icon, descripcion, orden, visible, mostrar_en_sidebar, parent_id, tipo, roles_permitidos)
+SELECT 'Checklist de Control', '/rrhh/checklist', 'ClipboardCheck', 'Controles de salón con checklist y evidencias', 12, true, true, '7061a2c1-b453-46ac-bad5-0715162cced7', 'link', ARRAY['admin_rrhh','gerente_sucursal']
+WHERE NOT EXISTS (SELECT 1 FROM public.app_pages WHERE path = '/rrhh/checklist');
