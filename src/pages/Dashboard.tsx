@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
-import { useOutletContext, useNavigate } from "react-router-dom"
+import { useOutletContext, useNavigate, Navigate } from "react-router-dom"
+import { useVistaNavegacion } from "@/hooks/useVistaNavegacion"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -83,6 +85,8 @@ export default function Dashboard() {
   const isAdmin = userInfo?.rol === 'admin_rrhh'
   const isGerente = userInfo?.rol === 'gerente_sucursal'
   const isLider = userInfo?.rol === 'lider_grupo'
+  const { vista, cargando: cargandoVista } = useVistaNavegacion(userInfo?.id)
+
 
   useEffect(() => {
     if (userInfo) {
@@ -220,10 +224,17 @@ export default function Dashboard() {
     }
   }
 
+  // Vista 2: centro de accesos como inicio para admin_rrhh
+  if (isAdmin && !cargandoVista && vista === 'vista2') {
+    return <Navigate to="/centro-accesos" replace />
+  }
+
   // Dashboard simplificado para encargados/gerentes de sucursal
   if (isGerente) {
     return <DashboardEncargado nombre={userInfo?.nombre} />
   }
+
+
 
   if (loading) {
     return (

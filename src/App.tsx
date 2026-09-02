@@ -47,6 +47,8 @@ import Gondolas from "./pages/Gondolas";
 import ControlInsumos from "./pages/ControlInsumos";
 import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
 import ConfiguracionUsuario from "./pages/ConfiguracionUsuario";
+import CentroAccesos from "./pages/CentroAccesos";
+
 import GondolasEdit from "./pages/GondolasEdit";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -200,6 +202,8 @@ const App = () => (
             
             {/* Configuración de Usuario (accesible para todos) */}
             <Route path="mi-configuracion" element={<ConfiguracionUsuario />} />
+            <Route path="centro-accesos" element={<CentroAccesos />} />
+
             <Route path="temas" element={<ConfiguracionTemas />} />
             
             {/* Módulo Administración con nuevo layout */}
