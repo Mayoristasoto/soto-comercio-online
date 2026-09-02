@@ -83,6 +83,8 @@ export default function Dashboard() {
   const isAdmin = userInfo?.rol === 'admin_rrhh'
   const isGerente = userInfo?.rol === 'gerente_sucursal'
   const isLider = userInfo?.rol === 'lider_grupo'
+  const { vista, cargando: cargandoVista } = useVistaNavegacion(userInfo?.id)
+
 
   useEffect(() => {
     if (userInfo) {
