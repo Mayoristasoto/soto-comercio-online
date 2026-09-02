@@ -47,6 +47,8 @@ import Gondolas from "./pages/Gondolas";
 import ControlInsumos from "./pages/ControlInsumos";
 import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
 import ConfiguracionUsuario from "./pages/ConfiguracionUsuario";
+import CentroAccesos from "./pages/CentroAccesos";
+
 import GondolasEdit from "./pages/GondolasEdit";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
