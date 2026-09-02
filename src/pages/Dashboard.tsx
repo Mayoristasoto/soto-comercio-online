@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
-import { useOutletContext, useNavigate } from "react-router-dom"
+import { useOutletContext, useNavigate, Navigate } from "react-router-dom"
+import { useVistaNavegacion } from "@/hooks/useVistaNavegacion"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
