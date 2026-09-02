@@ -200,6 +200,8 @@ const App = () => (
             
             {/* Configuración de Usuario (accesible para todos) */}
             <Route path="mi-configuracion" element={<ConfiguracionUsuario />} />
+            <Route path="centro-accesos" element={<CentroAccesos />} />
+
             <Route path="temas" element={<ConfiguracionTemas />} />
             
             {/* Módulo Administración con nuevo layout */}
