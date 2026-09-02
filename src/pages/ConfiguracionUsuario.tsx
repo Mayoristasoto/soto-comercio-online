@@ -1,11 +1,15 @@
-import { useOutletContext } from "react-router-dom"
+import { useOutletContext, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AccessibilitySettings } from "@/components/AccessibilitySettings"
-import { Settings, Bell, Shield, Palette, User } from "lucide-react"
+import { Settings, Bell, Shield, Palette, User, LayoutGrid, LayoutDashboard, Check } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { useVistaNavegacion } from "@/hooks/useVistaNavegacion"
 import { useState } from "react"
+
 
 interface UserInfo {
   id: string
