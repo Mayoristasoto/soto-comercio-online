@@ -224,10 +224,17 @@ export default function Dashboard() {
     }
   }
 
+  // Vista 2: centro de accesos como inicio para admin_rrhh
+  if (isAdmin && !cargandoVista && vista === 'vista2') {
+    return <Navigate to="/centro-accesos" replace />
+  }
+
   // Dashboard simplificado para encargados/gerentes de sucursal
   if (isGerente) {
     return <DashboardEncargado nombre={userInfo?.nombre} />
   }
+
+
 
   if (loading) {
     return (
