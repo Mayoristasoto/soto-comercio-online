@@ -21,8 +21,12 @@ interface UserInfo {
 
 export default function ConfiguracionUsuario() {
   const { userInfo } = useOutletContext<{ userInfo: UserInfo }>()
+  const navigate = useNavigate()
+  const { vista, cambiarVista } = useVistaNavegacion(userInfo?.id)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [pushNotifications, setPushNotifications] = useState(false)
+  const esAdmin = userInfo?.rol === 'admin_rrhh'
+
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
