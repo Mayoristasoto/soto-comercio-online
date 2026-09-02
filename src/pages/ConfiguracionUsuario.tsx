@@ -74,6 +74,68 @@ export default function ConfiguracionUsuario() {
         </CardContent>
       </Card>
 
+      {/* Vista de navegación (solo admin_rrhh) */}
+      {esAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <LayoutGrid className="h-5 w-5" />
+              <span>Vista de navegación</span>
+            </CardTitle>
+            <CardDescription>
+              Elegí cómo querés ver la plataforma al iniciar
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => cambiarVista('vista1')}
+                className={cn(
+                  "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors hover:bg-accent",
+                  vista === 'vista1' ? "border-primary bg-primary/5" : "border-border"
+                )}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="flex items-center gap-2 font-medium">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Vista 1 (actual)
+                  </span>
+                  {vista === 'vista1' && <Check className="h-4 w-4 text-primary" />}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Dashboard con métricas y menú lateral, como hasta ahora.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => cambiarVista('vista2')}
+                className={cn(
+                  "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors hover:bg-accent",
+                  vista === 'vista2' ? "border-primary bg-primary/5" : "border-border"
+                )}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="flex items-center gap-2 font-medium">
+                    <LayoutGrid className="h-4 w-4" />
+                    Vista 2 (Centro de accesos)
+                  </span>
+                  {vista === 'vista2' && <Check className="h-4 w-4 text-primary" />}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Todas las secciones agrupadas por módulo en una sola pantalla.
+                </p>
+              </button>
+            </div>
+            <Button variant="outline" onClick={() => navigate('/centro-accesos')}>
+              Ver Centro de accesos
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+
       {/* Notificaciones */}
       <Card>
         <CardHeader>
