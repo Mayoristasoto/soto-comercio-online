@@ -13,6 +13,8 @@ import {
   ChevronRight,
   ListChecks,
   Lock,
+  Unlock,
+
   MessageSquare,
   SkipForward,
   X,
