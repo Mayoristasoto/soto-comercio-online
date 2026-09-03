@@ -36,23 +36,29 @@ export function EvidenciaUploader({
   useEffect(() => {
     let cancelado = false;
     (async () => {
-      if (fotos.length === 0) {
-        setUrls({});
-        return;
-      }
-      const paths = fotos.map((f) => f.storage_path);
+      if (fotos.length === 0) return;
+      const paths = fotos.map((f) => f.storage_path).filter((p) => !urls[p]);
+      if (paths.length === 0) return;
       const { data } = await supabase.storage.from(BUCKET_EVIDENCIAS).createSignedUrls(paths, 3600);
-      if (cancelado || !data) return;
+      if (cancelado) return;
       const map: Record<string, string> = {};
-      data.forEach((d, i) => {
+      (data ?? []).forEach((d, i) => {
         if (d.signedUrl) map[paths[i]] = d.signedUrl;
       });
-      setUrls(map);
+      // Fallback: si no se pudo firmar, se descarga el archivo y se genera un blob URL
+      const faltantes = paths.filter((p) => !map[p]);
+      for (const p of faltantes) {
+        const { data: blob } = await supabase.storage.from(BUCKET_EVIDENCIAS).download(p);
+        if (blob) map[p] = URL.createObjectURL(blob);
+      }
+      if (cancelado) return;
+      setUrls((prev) => ({ ...prev, ...map }));
     })();
     return () => {
       cancelado = true;
     };
   }, [fotos.map((f) => f.storage_path).join("|")]);
+
 
   /** Reduce la imagen a máx 1600px y la convierte a JPEG para que la subida sea liviana desde el celular */
   const comprimir = async (file: File): Promise<Blob> => {
