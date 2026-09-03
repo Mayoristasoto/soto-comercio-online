@@ -241,6 +241,17 @@ export default function ChecklistControles() {
         </CardContent>
       </Card>
 
+      {/* Botón flotante en móvil */}
+      <Button
+        size="lg"
+        className="fixed bottom-5 right-5 z-40 h-14 rounded-full shadow-lg md:hidden"
+        onClick={() => setNuevoOpen(true)}
+      >
+        <Plus className="mr-2 h-5 w-5" />
+        Nuevo control
+      </Button>
+
+
       <NuevoControlDialog
         open={nuevoOpen}
         onOpenChange={(v) => {
