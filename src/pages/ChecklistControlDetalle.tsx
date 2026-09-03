@@ -230,6 +230,10 @@ export default function ChecklistControlDetalle() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={readOnly ? "secondary" : "outline"}>{readOnly ? "Cerrado" : "Borrador"}</Badge>
+          <Button variant="outline" onClick={() => setModoGuiado(true)}>
+            <Smartphone className="mr-2 h-4 w-4" />
+            Modo control
+          </Button>
           <Button variant={readOnly ? "outline" : "default"} onClick={() => cambiarEstado(!readOnly)}>
             {readOnly ? <Unlock className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
             {readOnly ? "Reabrir" : "Cerrar control"}
