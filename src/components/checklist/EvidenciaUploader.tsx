@@ -39,22 +39,47 @@ export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, 
     };
   }, [fotos.map((f) => f.storage_path).join("|")]);
 
+  /** Reduce la imagen a máx 1600px y la convierte a JPEG para que la subida sea liviana desde el celular */
+  const comprimir = async (file: File): Promise<Blob> => {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const max = 1600;
+      const escala = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * escala);
+      canvas.height = Math.round(bitmap.height * escala);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.82));
+      return blob && blob.size > 0 ? blob : file;
+    } catch {
+      return file;
+    }
+  };
+
   const subir = async (files: FileList) => {
     setSubiendo(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) {
-          toast.error(`${file.name}: solo se permiten imágenes`);
+        // Algunas cámaras móviles no informan el tipo MIME; en ese caso se acepta igual
+        if (file.type && !file.type.startsWith("image/")) {
+          toast.error(`${file.name || "Archivo"}: solo se permiten imágenes`);
           continue;
         }
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name}: máximo 10MB`);
+        if (file.size > 25 * 1024 * 1024) {
+          toast.error(`${file.name || "Archivo"}: máximo 25MB`);
           continue;
         }
-        const ext = file.name.split(".").pop() || "jpg";
+        const blob = await comprimir(file);
+        const esJpeg = blob !== file;
+        const contentType = esJpeg ? "image/jpeg" : file.type || "image/jpeg";
+        const ext = esJpeg ? "jpg" : (contentType.split("/")[1] || "jpg").replace("jpeg", "jpg");
         const path = `${controlId}/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from(BUCKET_EVIDENCIAS).upload(path, file);
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET_EVIDENCIAS)
+          .upload(path, blob, { contentType, upsert: false });
         if (upErr) throw upErr;
         const { error: dbErr } = await supabase
           .from("checklist_item_fotos")
@@ -62,12 +87,14 @@ export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, 
         if (dbErr) throw dbErr;
       }
       onChange();
+      toast.success("Foto cargada");
     } catch (e: any) {
       toast.error("Error al subir la foto: " + (e.message || e));
     } finally {
       setSubiendo(false);
     }
   };
+
 
   const eliminar = async (foto: ChecklistFoto) => {
     try {
