@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Unlock } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Unlock } from "lucide-react";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import { ResumenChecklist } from "@/components/checklist/ResumenChecklist";
 import { ChecklistItemRow } from "@/components/checklist/ChecklistItemRow";
+import { ChecklistModoGuiado } from "@/components/checklist/ChecklistModoGuiado";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   ChecklistControl,
   ChecklistEstadoItem,
