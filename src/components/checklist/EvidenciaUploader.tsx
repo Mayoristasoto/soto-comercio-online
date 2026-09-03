@@ -202,6 +202,32 @@ export function EvidenciaUploader({
           </div>
         </>
       )}
+
+      {sucursalId && itemTexto && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="px-2 text-muted-foreground"
+          onClick={() => setHistorialAbierto(true)}
+        >
+          <History className="mr-2 h-4 w-4" />
+          Ver fotos anteriores
+        </Button>
+      )}
+
+      <FotoLightbox url={fotoAbierta} onClose={() => setFotoAbierta(null)} />
+
+      {sucursalId && itemTexto && historialAbierto && (
+        <HistorialFotosItem
+          open={historialAbierto}
+          onOpenChange={setHistorialAbierto}
+          itemTexto={itemTexto}
+          sucursalId={sucursalId}
+          controlIdActual={controlId}
+          onVerFoto={(u) => setFotoAbierta(u)}
+        />
+      )}
     </div>
   );
 }
