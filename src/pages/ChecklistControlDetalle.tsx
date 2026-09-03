@@ -195,7 +195,10 @@ export default function ChecklistControlDetalle() {
         onEstado={(itemId, estado) => actualizarItem(itemId, { estado })}
         onObservaciones={(itemId, observaciones) => actualizarItem(itemId, { observaciones })}
         onFotosChange={recargarFotos}
-        onCerrar={() => cambiarEstado(true)}
+        onCerrar={async () => {
+          await guardarObsGeneral();
+          await cambiarEstado(true);
+        }}
         onSalir={() => setModoGuiado(false)}
       />
     );
