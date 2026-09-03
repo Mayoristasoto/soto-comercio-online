@@ -385,7 +385,7 @@ export function ChecklistModoGuiado({
               )}
             </div>
 
-            {!readOnly && (
+            {!readOnly ? (
               <>
                 <Button className="h-12 w-full" onClick={onCerrar}>
                   <Lock className="mr-2 h-4 w-4" />
@@ -397,7 +397,20 @@ export function ChecklistModoGuiado({
                   </p>
                 )}
               </>
+            ) : (
+              onReabrir && (
+                <>
+                  <Button variant="outline" className="h-12 w-full" onClick={onReabrir}>
+                    <Unlock className="mr-2 h-4 w-4" />
+                    Reabrir control
+                  </Button>
+                  <p className="text-center text-xs text-muted-foreground">
+                    El control está cerrado. Reabrilo para editar estados, observaciones o subir fotos.
+                  </p>
+                </>
+              )
             )}
+
           </div>
         )}
       </main>
