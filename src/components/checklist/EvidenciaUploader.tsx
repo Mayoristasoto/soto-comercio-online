@@ -36,23 +36,29 @@ export function EvidenciaUploader({
   useEffect(() => {
     let cancelado = false;
     (async () => {
-      if (fotos.length === 0) {
-        setUrls({});
-        return;
-      }
-      const paths = fotos.map((f) => f.storage_path);
+      if (fotos.length === 0) return;
+      const paths = fotos.map((f) => f.storage_path).filter((p) => !urls[p]);
+      if (paths.length === 0) return;
       const { data } = await supabase.storage.from(BUCKET_EVIDENCIAS).createSignedUrls(paths, 3600);
-      if (cancelado || !data) return;
+      if (cancelado) return;
       const map: Record<string, string> = {};
-      data.forEach((d, i) => {
+      (data ?? []).forEach((d, i) => {
         if (d.signedUrl) map[paths[i]] = d.signedUrl;
       });
-      setUrls(map);
+      // Fallback: si no se pudo firmar, se descarga el archivo y se genera un blob URL
+      const faltantes = paths.filter((p) => !map[p]);
+      for (const p of faltantes) {
+        const { data: blob } = await supabase.storage.from(BUCKET_EVIDENCIAS).download(p);
+        if (blob) map[p] = URL.createObjectURL(blob);
+      }
+      if (cancelado) return;
+      setUrls((prev) => ({ ...prev, ...map }));
     })();
     return () => {
       cancelado = true;
     };
   }, [fotos.map((f) => f.storage_path).join("|")]);
+
 
   /** Reduce la imagen a máx 1600px y la convierte a JPEG para que la subida sea liviana desde el celular */
   const comprimir = async (file: File): Promise<Blob> => {
@@ -96,6 +102,9 @@ export function EvidenciaUploader({
           .from(BUCKET_EVIDENCIAS)
           .upload(path, blob, { contentType, upsert: false });
         if (upErr) throw upErr;
+        // Vista previa inmediata para confirmar visualmente la foto cargada
+        const previewUrl = URL.createObjectURL(blob);
+        setUrls((prev) => ({ ...prev, [path]: previewUrl }));
         const { error: dbErr } = await supabase
           .from("checklist_item_fotos")
           .insert({ item_id: itemId, storage_path: path, uploaded_by: userData.user?.id ?? null });
@@ -105,6 +114,7 @@ export function EvidenciaUploader({
       toast.success("Foto cargada");
     } catch (e: any) {
       toast.error("Error al subir la foto: " + (e.message || e));
+
     } finally {
       setSubiendo(false);
     }
@@ -128,14 +138,24 @@ export function EvidenciaUploader({
         <div className="flex flex-wrap gap-2">
           {fotos.map((f) => (
             <div key={f.id} className="relative">
-              <button type="button" onClick={() => setFotoAbierta(urls[f.storage_path] ?? null)}>
-                <img
-                  src={urls[f.storage_path]}
-                  alt="Evidencia del control"
-                  loading="lazy"
-                  className="h-20 w-20 rounded-md border object-cover"
-                />
+              <button
+                type="button"
+                className="block h-20 w-20 overflow-hidden rounded-md border bg-muted"
+                onClick={() => setFotoAbierta(urls[f.storage_path] ?? null)}
+              >
+                {urls[f.storage_path] ? (
+                  <img
+                    src={urls[f.storage_path]}
+                    alt="Evidencia del control"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </span>
+                )}
               </button>
+
               {!readOnly && (
                 <Button
                   type="button"
