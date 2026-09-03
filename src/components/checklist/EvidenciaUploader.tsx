@@ -128,14 +128,14 @@ export function EvidenciaUploader({
         <div className="flex flex-wrap gap-2">
           {fotos.map((f) => (
             <div key={f.id} className="relative">
-              <a href={urls[f.storage_path]} target="_blank" rel="noreferrer">
+              <button type="button" onClick={() => setFotoAbierta(urls[f.storage_path] ?? null)}>
                 <img
                   src={urls[f.storage_path]}
                   alt="Evidencia del control"
                   loading="lazy"
                   className="h-20 w-20 rounded-md border object-cover"
                 />
-              </a>
+              </button>
               {!readOnly && (
                 <Button
                   type="button"
