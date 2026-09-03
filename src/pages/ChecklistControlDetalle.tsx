@@ -199,6 +199,8 @@ export default function ChecklistControlDetalle() {
           await guardarObsGeneral();
           await cambiarEstado(true);
         }}
+        onReabrir={() => cambiarEstado(false)}
+
         onSalir={() => setModoGuiado(false)}
         sucursalId={control.sucursal_id}
       />
