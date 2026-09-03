@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Camera, Loader2, X } from "lucide-react";
+import { Camera, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { BUCKET_EVIDENCIAS, type ChecklistFoto } from "./checklistTypes";
 
 interface Props {
@@ -113,10 +113,21 @@ export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, 
       {!readOnly && (
         <>
           <Input
-            id={`evidencia-${itemId}`}
+            id={`evidencia-cam-${itemId}`}
             type="file"
             accept="image/*"
             capture="environment"
+            className="hidden"
+            disabled={subiendo}
+            onChange={(e) => {
+              if (e.target.files?.length) subir(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <Input
+            id={`evidencia-lib-${itemId}`}
+            type="file"
+            accept="image/*"
             multiple
             className="hidden"
             disabled={subiendo}
@@ -125,16 +136,28 @@ export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, 
               e.target.value = "";
             }}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={subiendo}
-            onClick={() => document.getElementById(`evidencia-${itemId}`)?.click()}
-          >
-            {subiendo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-            {subiendo ? "Subiendo..." : "Agregar foto"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={subiendo}
+              onClick={() => document.getElementById(`evidencia-cam-${itemId}`)?.click()}
+            >
+              {subiendo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+              {subiendo ? "Subiendo..." : "Tomar foto"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={subiendo}
+              onClick={() => document.getElementById(`evidencia-lib-${itemId}`)?.click()}
+            >
+              <ImageIcon className="mr-2 h-4 w-4" />
+              Elegir de galería
+            </Button>
+          </div>
         </>
       )}
     </div>
