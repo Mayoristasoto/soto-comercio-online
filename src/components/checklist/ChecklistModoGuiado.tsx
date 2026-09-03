@@ -48,6 +48,8 @@ interface Props {
   onObservaciones: (itemId: string, texto: string) => void;
   onFotosChange: () => void;
   onCerrar: () => void;
+  onReabrir?: () => void;
+
   onSalir: () => void;
   sucursalId?: string | null;
 }
