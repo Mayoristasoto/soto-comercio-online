@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Camera, Image as ImageIcon, Loader2, X } from "lucide-react";
+import { Camera, History, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { BUCKET_EVIDENCIAS, type ChecklistFoto } from "./checklistTypes";
+import { FotoLightbox } from "./FotoLightbox";
+import { HistorialFotosItem } from "./HistorialFotosItem";
 
 interface Props {
   controlId: string;
@@ -12,11 +14,24 @@ interface Props {
   fotos: ChecklistFoto[];
   readOnly?: boolean;
   onChange: () => void;
+  /** Para ver fotos anteriores del mismo ítem en la misma sucursal */
+  sucursalId?: string | null;
+  itemTexto?: string;
 }
 
-export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, onChange }: Props) {
+export function EvidenciaUploader({
+  controlId,
+  itemId,
+  fotos,
+  readOnly = false,
+  onChange,
+  sucursalId,
+  itemTexto,
+}: Props) {
   const [subiendo, setSubiendo] = useState(false);
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const [fotoAbierta, setFotoAbierta] = useState<string | null>(null);
+  const [historialAbierto, setHistorialAbierto] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -113,14 +128,14 @@ export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, 
         <div className="flex flex-wrap gap-2">
           {fotos.map((f) => (
             <div key={f.id} className="relative">
-              <a href={urls[f.storage_path]} target="_blank" rel="noreferrer">
+              <button type="button" onClick={() => setFotoAbierta(urls[f.storage_path] ?? null)}>
                 <img
                   src={urls[f.storage_path]}
                   alt="Evidencia del control"
                   loading="lazy"
                   className="h-20 w-20 rounded-md border object-cover"
                 />
-              </a>
+              </button>
               {!readOnly && (
                 <Button
                   type="button"
@@ -186,6 +201,32 @@ export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, 
             </Button>
           </div>
         </>
+      )}
+
+      {sucursalId && itemTexto && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="px-2 text-muted-foreground"
+          onClick={() => setHistorialAbierto(true)}
+        >
+          <History className="mr-2 h-4 w-4" />
+          Ver fotos anteriores
+        </Button>
+      )}
+
+      <FotoLightbox url={fotoAbierta} onClose={() => setFotoAbierta(null)} />
+
+      {sucursalId && itemTexto && historialAbierto && (
+        <HistorialFotosItem
+          open={historialAbierto}
+          onOpenChange={setHistorialAbierto}
+          itemTexto={itemTexto}
+          sucursalId={sucursalId}
+          controlIdActual={controlId}
+          onVerFoto={(u) => setFotoAbierta(u)}
+        />
       )}
     </div>
   );

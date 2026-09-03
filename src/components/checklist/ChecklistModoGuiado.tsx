@@ -47,6 +47,7 @@ interface Props {
   onFotosChange: () => void;
   onCerrar: () => void;
   onSalir: () => void;
+  sucursalId?: string | null;
 }
 
 type Pantalla = "item" | "seccion" | "cierre";
@@ -70,6 +71,7 @@ export function ChecklistModoGuiado({
   onFotosChange,
   onCerrar,
   onSalir,
+  sucursalId,
 }: Props) {
   const [indice, setIndice] = useState(0);
   const [pantalla, setPantalla] = useState<Pantalla>(items.length ? "item" : "cierre");
@@ -318,6 +320,8 @@ export function ChecklistModoGuiado({
                 fotos={fotosItem}
                 readOnly={readOnly}
                 onChange={onFotosChange}
+                sucursalId={sucursalId}
+                itemTexto={item.texto}
               />
             )}
           </div>
