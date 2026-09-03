@@ -102,6 +102,9 @@ export function EvidenciaUploader({
           .from(BUCKET_EVIDENCIAS)
           .upload(path, blob, { contentType, upsert: false });
         if (upErr) throw upErr;
+        // Vista previa inmediata para confirmar visualmente la foto cargada
+        const previewUrl = URL.createObjectURL(blob);
+        setUrls((prev) => ({ ...prev, [path]: previewUrl }));
         const { error: dbErr } = await supabase
           .from("checklist_item_fotos")
           .insert({ item_id: itemId, storage_path: path, uploaded_by: userData.user?.id ?? null });
@@ -111,6 +114,7 @@ export function EvidenciaUploader({
       toast.success("Foto cargada");
     } catch (e: any) {
       toast.error("Error al subir la foto: " + (e.message || e));
+
     } finally {
       setSubiendo(false);
     }
