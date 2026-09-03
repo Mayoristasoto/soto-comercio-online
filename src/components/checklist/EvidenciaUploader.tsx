@@ -116,6 +116,7 @@ export function EvidenciaUploader({ controlId, itemId, fotos, readOnly = false, 
             id={`evidencia-${itemId}`}
             type="file"
             accept="image/*"
+            capture="environment"
             multiple
             className="hidden"
             disabled={subiendo}

@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Unlock } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Unlock } from "lucide-react";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import { ResumenChecklist } from "@/components/checklist/ResumenChecklist";
 import { ChecklistItemRow } from "@/components/checklist/ChecklistItemRow";
+import { ChecklistModoGuiado } from "@/components/checklist/ChecklistModoGuiado";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   ChecklistControl,
   ChecklistEstadoItem,
@@ -32,6 +34,9 @@ export default function ChecklistControlDetalle() {
   const [loading, setLoading] = useState(true);
   const [nuevoItem, setNuevoItem] = useState("");
   const [obsGeneral, setObsGeneral] = useState("");
+  const isMobile = useIsMobile();
+  const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
+  const guiadoActivo = modoGuiado ?? isMobile;
 
   const readOnly = control?.estado === "cerrado";
 
@@ -175,6 +180,27 @@ export default function ChecklistControlDetalle() {
     );
   }
 
+  if (guiadoActivo && control) {
+    return (
+      <ChecklistModoGuiado
+        titulo={control.titulo || "Control"}
+        sucursalNombre={sucursalNombre}
+        fechaTexto={formatArgentinaDateTime(control.fecha_hora)}
+        items={items}
+        fotos={fotos}
+        readOnly={readOnly}
+        obsGeneral={obsGeneral}
+        onObsGeneralChange={setObsGeneral}
+        onObsGeneralBlur={guardarObsGeneral}
+        onEstado={(itemId, estado) => actualizarItem(itemId, { estado })}
+        onObservaciones={(itemId, observaciones) => actualizarItem(itemId, { observaciones })}
+        onFotosChange={recargarFotos}
+        onCerrar={() => cambiarEstado(true)}
+        onSalir={() => setModoGuiado(false)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -204,6 +230,10 @@ export default function ChecklistControlDetalle() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={readOnly ? "secondary" : "outline"}>{readOnly ? "Cerrado" : "Borrador"}</Badge>
+          <Button variant="outline" onClick={() => setModoGuiado(true)}>
+            <Smartphone className="mr-2 h-4 w-4" />
+            Modo control
+          </Button>
           <Button variant={readOnly ? "outline" : "default"} onClick={() => cambiarEstado(!readOnly)}>
             {readOnly ? <Unlock className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
             {readOnly ? "Reabrir" : "Cerrar control"}

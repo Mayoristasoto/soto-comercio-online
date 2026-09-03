@@ -170,47 +170,87 @@ export default function ChecklistControles() {
           ) : filtrados.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">No hay controles para estos filtros.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha y hora</TableHead>
-                    <TableHead>Sucursal</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Resumen</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtrados.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {formatArgentinaDateTime(c.fecha_hora)}
-                      </TableCell>
-                      <TableCell className="text-sm">{c.sucursal_nombre ?? "—"}</TableCell>
-                      <TableCell className="text-sm">{c.titulo ?? "Control"}</TableCell>
-                      <TableCell>
-                        <ResumenChecklist items={c.items} compacto />
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={c.estado === "cerrado" ? "secondary" : "outline"}>
-                          {c.estado === "cerrado" ? "Cerrado" : "Borrador"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/rrhh/checklist/${c.id}`}>Abrir</Link>
-                        </Button>
-                      </TableCell>
+            <>
+              {/* Móvil: tarjetas apiladas */}
+              <div className="space-y-2 md:hidden">
+                {filtrados.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/rrhh/checklist/${c.id}`}
+                    className="block rounded-lg border p-3 active:bg-accent/50"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{c.sucursal_nombre ?? "—"}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {formatArgentinaDateTime(c.fecha_hora)}
+                        </p>
+                      </div>
+                      <Badge variant={c.estado === "cerrado" ? "secondary" : "outline"}>
+                        {c.estado === "cerrado" ? "Cerrado" : "Borrador"}
+                      </Badge>
+                    </div>
+                    <div className="mt-2">
+                      <ResumenChecklist items={c.items} compacto />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Escritorio: tabla */}
+              <div className="hidden overflow-x-auto md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha y hora</TableHead>
+                      <TableHead>Sucursal</TableHead>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Resumen</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filtrados.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {formatArgentinaDateTime(c.fecha_hora)}
+                        </TableCell>
+                        <TableCell className="text-sm">{c.sucursal_nombre ?? "—"}</TableCell>
+                        <TableCell className="text-sm">{c.titulo ?? "Control"}</TableCell>
+                        <TableCell>
+                          <ResumenChecklist items={c.items} compacto />
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={c.estado === "cerrado" ? "secondary" : "outline"}>
+                            {c.estado === "cerrado" ? "Cerrado" : "Borrador"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/rrhh/checklist/${c.id}`}>Abrir</Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Botón flotante en móvil */}
+      <Button
+        size="lg"
+        className="fixed bottom-5 right-5 z-40 h-14 rounded-full shadow-lg md:hidden"
+        onClick={() => setNuevoOpen(true)}
+      >
+        <Plus className="mr-2 h-5 w-5" />
+        Nuevo control
+      </Button>
+
 
       <NuevoControlDialog
         open={nuevoOpen}
