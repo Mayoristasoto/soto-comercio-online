@@ -24,6 +24,7 @@ interface Props {
   onObservaciones: (texto: string) => void;
   onEliminar?: () => void;
   onFotosChange: () => void;
+  sucursalId?: string | null;
 }
 
 export function ChecklistItemRow({
@@ -34,6 +35,7 @@ export function ChecklistItemRow({
   onObservaciones,
   onEliminar,
   onFotosChange,
+  sucursalId,
 }: Props) {
   return (
     <Card className={cn(item.estado && ESTADO_SOFT_CLASSES[item.estado].split(" ").pop())}>
@@ -98,6 +100,8 @@ export function ChecklistItemRow({
           fotos={fotos}
           readOnly={readOnly}
           onChange={onFotosChange}
+          sucursalId={sucursalId}
+          itemTexto={item.texto}
         />
       </CardContent>
     </Card>

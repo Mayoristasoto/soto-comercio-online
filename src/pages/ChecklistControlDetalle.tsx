@@ -200,6 +200,7 @@ export default function ChecklistControlDetalle() {
           await cambiarEstado(true);
         }}
         onSalir={() => setModoGuiado(false)}
+        sucursalId={control.sucursal_id}
       />
     );
   }
@@ -276,6 +277,7 @@ export default function ChecklistControlDetalle() {
                   onObservaciones={(observaciones) => actualizarItem(item.id, { observaciones })}
                   onEliminar={readOnly ? undefined : () => eliminarItem(item.id)}
                   onFotosChange={recargarFotos}
+                  sucursalId={control?.sucursal_id}
                 />
               ))}
             </div>
