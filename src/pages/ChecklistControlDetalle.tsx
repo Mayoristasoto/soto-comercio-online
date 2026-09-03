@@ -180,6 +180,27 @@ export default function ChecklistControlDetalle() {
     );
   }
 
+  if (guiadoActivo && control) {
+    return (
+      <ChecklistModoGuiado
+        titulo={control.titulo || "Control"}
+        sucursalNombre={sucursalNombre}
+        fechaTexto={formatArgentinaDateTime(control.fecha_hora)}
+        items={items}
+        fotos={fotos}
+        readOnly={readOnly}
+        obsGeneral={obsGeneral}
+        onObsGeneralChange={setObsGeneral}
+        onObsGeneralBlur={guardarObsGeneral}
+        onEstado={(itemId, estado) => actualizarItem(itemId, { estado })}
+        onObservaciones={(itemId, observaciones) => actualizarItem(itemId, { observaciones })}
+        onFotosChange={recargarFotos}
+        onCerrar={() => cambiarEstado(true)}
+        onSalir={() => setModoGuiado(false)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
