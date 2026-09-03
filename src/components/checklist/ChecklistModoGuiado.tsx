@@ -383,17 +383,13 @@ export function ChecklistModoGuiado({
 
             {!readOnly && (
               <>
-                <Button
-                  className="h-12 w-full"
-                  disabled={resumen.sinEvaluar > 0}
-                  onClick={onCerrar}
-                >
+                <Button className="h-12 w-full" onClick={onCerrar}>
                   <Lock className="mr-2 h-4 w-4" />
                   Cerrar control
                 </Button>
                 {resumen.sinEvaluar > 0 && (
                   <p className="text-center text-xs text-muted-foreground">
-                    Completá los {resumen.sinEvaluar} ítem(s) pendientes para poder cerrar.
+                    Quedan {resumen.sinEvaluar} ítem(s) sin evaluar. Podés cerrar igual.
                   </p>
                 )}
               </>
