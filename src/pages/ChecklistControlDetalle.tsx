@@ -34,6 +34,9 @@ export default function ChecklistControlDetalle() {
   const [loading, setLoading] = useState(true);
   const [nuevoItem, setNuevoItem] = useState("");
   const [obsGeneral, setObsGeneral] = useState("");
+  const isMobile = useIsMobile();
+  const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
+  const guiadoActivo = modoGuiado ?? isMobile;
 
   const readOnly = control?.estado === "cerrado";
 
