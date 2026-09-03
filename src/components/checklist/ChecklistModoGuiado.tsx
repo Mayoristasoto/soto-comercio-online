@@ -74,6 +74,8 @@ export function ChecklistModoGuiado({
   onObservaciones,
   onFotosChange,
   onCerrar,
+  onReabrir,
+
   onSalir,
   sucursalId,
 }: Props) {
