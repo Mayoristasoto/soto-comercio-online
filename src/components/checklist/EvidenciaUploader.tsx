@@ -138,14 +138,24 @@ export function EvidenciaUploader({
         <div className="flex flex-wrap gap-2">
           {fotos.map((f) => (
             <div key={f.id} className="relative">
-              <button type="button" onClick={() => setFotoAbierta(urls[f.storage_path] ?? null)}>
-                <img
-                  src={urls[f.storage_path]}
-                  alt="Evidencia del control"
-                  loading="lazy"
-                  className="h-20 w-20 rounded-md border object-cover"
-                />
+              <button
+                type="button"
+                className="block h-20 w-20 overflow-hidden rounded-md border bg-muted"
+                onClick={() => setFotoAbierta(urls[f.storage_path] ?? null)}
+              >
+                {urls[f.storage_path] ? (
+                  <img
+                    src={urls[f.storage_path]}
+                    alt="Evidencia del control"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </span>
+                )}
               </button>
+
               {!readOnly && (
                 <Button
                   type="button"
