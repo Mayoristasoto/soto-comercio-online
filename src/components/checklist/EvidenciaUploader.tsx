@@ -7,6 +7,7 @@ import { Camera, History, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { BUCKET_EVIDENCIAS, type ChecklistFoto } from "./checklistTypes";
 import { FotoLightbox } from "./FotoLightbox";
 import { HistorialFotosItem } from "./HistorialFotosItem";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Props {
   controlId: string;
@@ -32,11 +33,14 @@ export function EvidenciaUploader({
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [fotoAbierta, setFotoAbierta] = useState<string | null>(null);
   const [historialAbierto, setHistorialAbierto] = useState(false);
+  const { isAdmin } = usePermissions();
+  // Las fotos del control solo son visibles para admin; los demás pueden cargarlas pero no verlas
+  const puedeVerFotos = isAdmin();
 
   useEffect(() => {
     let cancelado = false;
     (async () => {
-      if (fotos.length === 0) return;
+      if (fotos.length === 0 || !puedeVerFotos) return;
       const paths = fotos.map((f) => f.storage_path).filter((p) => !urls[p]);
       if (paths.length === 0) return;
       const { data } = await supabase.storage.from(BUCKET_EVIDENCIAS).createSignedUrls(paths, 3600);
@@ -57,7 +61,7 @@ export function EvidenciaUploader({
     return () => {
       cancelado = true;
     };
-  }, [fotos.map((f) => f.storage_path).join("|")]);
+  }, [fotos.map((f) => f.storage_path).join("|"), puedeVerFotos]);
 
 
   /** Reduce la imagen a máx 1600px y la convierte a JPEG para que la subida sea liviana desde el celular */
@@ -134,7 +138,13 @@ export function EvidenciaUploader({
 
   return (
     <div className="space-y-2">
-      {fotos.length > 0 && (
+      {fotos.length > 0 && !puedeVerFotos && (
+        <p className="text-xs text-muted-foreground">
+          {fotos.length} {fotos.length === 1 ? "foto cargada" : "fotos cargadas"} · visibles solo para administración
+        </p>
+      )}
+
+      {fotos.length > 0 && puedeVerFotos && (
         <div className="flex flex-wrap gap-2">
           {fotos.map((f) => (
             <div key={f.id} className="relative">
@@ -223,7 +233,7 @@ export function EvidenciaUploader({
         </>
       )}
 
-      {sucursalId && itemTexto && (
+      {sucursalId && itemTexto && puedeVerFotos && (
         <Button
           type="button"
           variant="ghost"
@@ -238,7 +248,7 @@ export function EvidenciaUploader({
 
       <FotoLightbox url={fotoAbierta} onClose={() => setFotoAbierta(null)} />
 
-      {sucursalId && itemTexto && historialAbierto && (
+      {sucursalId && itemTexto && puedeVerFotos && historialAbierto && (
         <HistorialFotosItem
           open={historialAbierto}
           onOpenChange={setHistorialAbierto}
