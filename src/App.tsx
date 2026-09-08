@@ -88,6 +88,7 @@ import NovedadesAlert from "./pages/NovedadesAlert";
 import TableroProyectos from "./pages/TableroProyectos";
 import NovedadesLiquidacion from "./pages/NovedadesLiquidacion";
 import ResumenMes from "./pages/ResumenMes";
+import PerformanceIndividual from "./pages/PerformanceIndividual";
 import IndiceAusentismo from "./pages/IndiceAusentismo";
 import UbicacionesFichaje from "./pages/UbicacionesFichaje";
 import ChecklistControles from "./pages/ChecklistControles";
@@ -153,6 +154,7 @@ const App = () => (
             <Route path="rrhh/entregas" element={<EntregasEmpleados />} />
             <Route path="rrhh/novedades-liquidacion" element={<NovedadesLiquidacion />} />
             <Route path="rrhh/resumen-mes" element={<ResumenMes />} />
+            <Route path="rrhh/performance" element={<PerformanceIndividual />} />
             <Route path="rrhh/indice-ausentismo" element={<IndiceAusentismo />} />
             <Route path="rrhh/ubicaciones-fichaje" element={<UbicacionesFichaje />} />
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
