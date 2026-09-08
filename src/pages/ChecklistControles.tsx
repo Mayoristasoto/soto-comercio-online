@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClipboardCheck, Loader2, Plus, Search, LayoutList } from "lucide-react";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
+import { getChecklistBase } from "@/lib/checklistBase";
 import { NuevoControlDialog } from "@/components/checklist/NuevoControlDialog";
 import { ResumenChecklist } from "@/components/checklist/ResumenChecklist";
 import type { ChecklistEstadoItem } from "@/components/checklist/checklistTypes";
@@ -27,6 +28,8 @@ interface ControlRow {
 const TODAS = "todas";
 
 export default function ChecklistControles() {
+  const { pathname } = useLocation();
+  const base = getChecklistBase(pathname);
   const [controles, setControles] = useState<ControlRow[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +102,7 @@ export default function ChecklistControles() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link to="/rrhh/checklist/plantillas">
+            <Link to={`${base}/plantillas`}>
               <LayoutList className="mr-2 h-4 w-4" />
               Plantillas
             </Link>
@@ -176,7 +179,7 @@ export default function ChecklistControles() {
                 {filtrados.map((c) => (
                   <Link
                     key={c.id}
-                    to={`/rrhh/checklist/${c.id}`}
+                    to={`${base}/${c.id}`}
                     className="block rounded-lg border p-3 active:bg-accent/50"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -228,7 +231,7 @@ export default function ChecklistControles() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/rrhh/checklist/${c.id}`}>Abrir</Link>
+                            <Link to={`${base}/${c.id}`}>Abrir</Link>
                           </Button>
                         </TableCell>
                       </TableRow>

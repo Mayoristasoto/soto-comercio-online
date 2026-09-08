@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Unlock } from "lucide-react";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
+import { getChecklistBase } from "@/lib/checklistBase";
 import { ResumenChecklist } from "@/components/checklist/ResumenChecklist";
 import { ChecklistItemRow } from "@/components/checklist/ChecklistItemRow";
 import { ChecklistModoGuiado } from "@/components/checklist/ChecklistModoGuiado";
@@ -59,7 +60,7 @@ export default function ChecklistControlDetalle() {
       if (error) throw error;
       if (!ctrl) {
         toast.error("Control no encontrado");
-        navigate("/rrhh/checklist");
+        navigate(base);
         return;
       }
       setControl(ctrl as ChecklistControl);
@@ -212,7 +213,7 @@ export default function ChecklistControlDetalle() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link to="/rrhh/checklist">
+            <Link to={base}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al historial
             </Link>
