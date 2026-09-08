@@ -27,6 +27,8 @@ const SIN_SECCION = "__sin_seccion__";
 export default function ChecklistControlDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const base = getChecklistBase(pathname);
   const [control, setControl] = useState<ChecklistControl | null>(null);
   const [sucursalNombre, setSucursalNombre] = useState<string | null>(null);
   const [encargados, setEncargados] = useState<string[]>([]);
