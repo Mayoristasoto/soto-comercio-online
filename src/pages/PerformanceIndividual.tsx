@@ -22,12 +22,16 @@ import {
   YAxis,
 } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Clock, MessageSquare, MessageSquareX, Target, TrendingUp } from "lucide-react";
+import CruceFichajeAtencion from "@/components/performance/CruceFichajeAtencion";
+
+/** Empleado monitoreado */
+const EMPLEADO_ID = "56cf495f-41ca-4615-8a57-05d62c429c9c";
 
 /* ------------------------------------------------------------------ */
 /* Datos de ejemplo (sin conexión a base de datos por ahora)          */
 /* ------------------------------------------------------------------ */
 
-const PERSONA = { nombre: "Ana Ríos", rol: "Atención y ventas online" };
+const PERSONA = { nombre: "Agustina Lucía Galaz", rol: "Atención y ventas online" };
 const MES_ACTUAL = "Septiembre 2026";
 
 type Semaforo = "verde" | "amarillo" | "rojo";
@@ -259,10 +263,15 @@ export default function PerformanceIndividual() {
       </header>
 
       <Tabs defaultValue="persona" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="persona">Vista de la persona</TabsTrigger>
           <TabsTrigger value="admin">Vista admin</TabsTrigger>
+          <TabsTrigger value="cruce">Fichaje + atención</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="cruce">
+          <CruceFichajeAtencion empleadoId={EMPLEADO_ID} nombreCompleto={PERSONA.nombre} />
+        </TabsContent>
 
         {/* ---------------- Vista persona ---------------- */}
         <TabsContent value="persona" className="space-y-6">

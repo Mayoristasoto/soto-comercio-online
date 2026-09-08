@@ -517,6 +517,74 @@ export type Database = {
           },
         ]
       }
+      atencion_metricas: {
+        Row: {
+          chats: number
+          chats_sin_respuesta: number
+          created_at: string
+          empleado_id: string
+          fecha: string
+          hora: number | null
+          id: string
+          primera_respuesta_min: number | null
+          resolucion_min: number | null
+          updated_at: string
+        }
+        Insert: {
+          chats?: number
+          chats_sin_respuesta?: number
+          created_at?: string
+          empleado_id: string
+          fecha: string
+          hora?: number | null
+          id?: string
+          primera_respuesta_min?: number | null
+          resolucion_min?: number | null
+          updated_at?: string
+        }
+        Update: {
+          chats?: number
+          chats_sin_respuesta?: number
+          created_at?: string
+          empleado_id?: string
+          fecha?: string
+          hora?: number | null
+          id?: string
+          primera_respuesta_min?: number | null
+          resolucion_min?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atencion_metricas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atencion_metricas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atencion_metricas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atencion_metricas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ausencias_medicas: {
         Row: {
           certificado_url: string | null
