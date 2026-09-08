@@ -31,7 +31,7 @@ const EMPLEADO_ID = "56cf495f-41ca-4615-8a57-05d62c429c9c";
 /* Datos de ejemplo (sin conexión a base de datos por ahora)          */
 /* ------------------------------------------------------------------ */
 
-const PERSONA = { nombre: "Ana Ríos", rol: "Atención y ventas online" };
+const PERSONA = { nombre: "Agustina Lucía Galaz", rol: "Atención y ventas online" };
 const MES_ACTUAL = "Septiembre 2026";
 
 type Semaforo = "verde" | "amarillo" | "rojo";
