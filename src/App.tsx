@@ -92,6 +92,7 @@ import PerformanceIndividual from "./pages/PerformanceIndividual";
 import IndiceAusentismo from "./pages/IndiceAusentismo";
 import UbicacionesFichaje from "./pages/UbicacionesFichaje";
 import ChecklistControles from "./pages/ChecklistControles";
+import ControlesAcceso from "./pages/ControlesAcceso";
 import ChecklistControlDetalle from "./pages/ChecklistControlDetalle";
 import ChecklistPlantillas from "./pages/ChecklistPlantillas";
 import InformeAsistenciaGerencial from "./pages/InformeAsistenciaGerencial";
@@ -117,6 +118,13 @@ const App = () => (
           {/* Autenticación unificada */}
           <Route path="/auth" element={<UnifiedAuth />} />
           
+          {/* Acceso independiente a Controles (login propio, sin menú lateral) */}
+          <Route path="/controles" element={<ControlesAcceso />}>
+            <Route index element={<ChecklistControles />} />
+            <Route path="plantillas" element={<ChecklistPlantillas />} />
+            <Route path=":id" element={<ChecklistControlDetalle />} />
+          </Route>
+
           {/* Instalación PWA */}
           <Route path="/install" element={<Install />} />
           
