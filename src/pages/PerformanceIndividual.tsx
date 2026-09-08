@@ -22,6 +22,10 @@ import {
   YAxis,
 } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Clock, MessageSquare, MessageSquareX, Target, TrendingUp } from "lucide-react";
+import CruceFichajeAtencion from "@/components/performance/CruceFichajeAtencion";
+
+/** Empleado monitoreado */
+const EMPLEADO_ID = "56cf495f-41ca-4615-8a57-05d62c429c9c";
 
 /* ------------------------------------------------------------------ */
 /* Datos de ejemplo (sin conexión a base de datos por ahora)          */
