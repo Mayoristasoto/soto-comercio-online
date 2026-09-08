@@ -263,10 +263,15 @@ export default function PerformanceIndividual() {
       </header>
 
       <Tabs defaultValue="persona" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="persona">Vista de la persona</TabsTrigger>
           <TabsTrigger value="admin">Vista admin</TabsTrigger>
+          <TabsTrigger value="cruce">Fichaje + atención</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="cruce">
+          <CruceFichajeAtencion empleadoId={EMPLEADO_ID} nombreCompleto={PERSONA.nombre} />
+        </TabsContent>
 
         {/* ---------------- Vista persona ---------------- */}
         <TabsContent value="persona" className="space-y-6">
