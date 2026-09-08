@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getChecklistBase } from "@/lib/checklistBase";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -127,7 +128,7 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
       setTitulo("");
       setEncargados([]);
       setPlantillaId(SIN_PLANTILLA);
-      navigate(`/rrhh/checklist/${control.id}`);
+      navigate(`${getChecklistBase(window.location.pathname)}/${control.id}`);
     } catch (e: any) {
       toast.error("Error al crear el control: " + (e.message || e));
     } finally {
