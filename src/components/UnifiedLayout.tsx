@@ -19,6 +19,7 @@ export default function UnifiedLayout() {
   const location = useLocation()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [debeCambiarPassword, setDebeCambiarPassword] = useState(false)
   const [userInfo, setUserInfo] = useState<{
     id: string
     nombre: string
