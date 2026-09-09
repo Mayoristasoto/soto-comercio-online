@@ -8,7 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ClipboardCheck, Loader2, Plus, Search, LayoutList } from "lucide-react";
+import { ClipboardCheck, Loader2, Plus, Search, LayoutList, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { usePermissions } from "@/hooks/usePermissions";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import { getChecklistBase } from "@/lib/checklistBase";
 import { NuevoControlDialog } from "@/components/checklist/NuevoControlDialog";
@@ -37,6 +50,18 @@ export default function ChecklistControles() {
   const [filtroSucursal, setFiltroSucursal] = useState(TODAS);
   const [filtroEstado, setFiltroEstado] = useState(TODAS);
   const [busqueda, setBusqueda] = useState("");
+  const { isAdmin } = usePermissions();
+
+  const eliminarControl = async (controlId: string) => {
+    const db = supabase as any;
+    const { error } = await db.from("checklist_controles").delete().eq("id", controlId);
+    if (error) {
+      toast.error("No se pudo eliminar: " + error.message);
+      return;
+    }
+    setControles((prev) => prev.filter((c) => c.id !== controlId));
+    toast.success("Control eliminado");
+  };
 
   const cargar = async () => {
     setLoading(true);
@@ -177,26 +202,29 @@ export default function ChecklistControles() {
               {/* Móvil: tarjetas apiladas */}
               <div className="space-y-2 md:hidden">
                 {filtrados.map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`${base}/${c.id}`}
-                    className="block rounded-lg border p-3 active:bg-accent/50"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{c.sucursal_nombre ?? "—"}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {formatArgentinaDateTime(c.fecha_hora)}
-                        </p>
+                  <div key={c.id} className="rounded-lg border p-3">
+                    <Link to={`${base}/${c.id}`} className="block active:opacity-70">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{c.sucursal_nombre ?? "—"}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {formatArgentinaDateTime(c.fecha_hora)}
+                          </p>
+                        </div>
+                        <Badge variant={c.estado === "cerrado" ? "secondary" : "outline"}>
+                          {c.estado === "cerrado" ? "Cerrado" : "Borrador"}
+                        </Badge>
                       </div>
-                      <Badge variant={c.estado === "cerrado" ? "secondary" : "outline"}>
-                        {c.estado === "cerrado" ? "Cerrado" : "Borrador"}
-                      </Badge>
-                    </div>
-                    <div className="mt-2">
-                      <ResumenChecklist items={c.items} compacto />
-                    </div>
-                  </Link>
+                      <div className="mt-2">
+                        <ResumenChecklist items={c.items} compacto />
+                      </div>
+                    </Link>
+                    {isAdmin() && (
+                      <div className="mt-2 flex justify-end">
+                        <EliminarControlBoton onConfirm={() => eliminarControl(c.id)} />
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
 
@@ -230,9 +258,12 @@ export default function ChecklistControles() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`${base}/${c.id}`}>Abrir</Link>
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link to={`${base}/${c.id}`}>Abrir</Link>
+                            </Button>
+                            {isAdmin() && <EliminarControlBoton onConfirm={() => eliminarControl(c.id)} />}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -263,5 +294,30 @@ export default function ChecklistControles() {
         }}
       />
     </div>
+  );
+}
+
+function EliminarControlBoton({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-destructive">
+          <Trash2 className="h-4 w-4" />
+          <span className="ml-1 md:hidden">Eliminar</span>
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar este control?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se borran también sus ítems, fotos y registros de actividad. No se puede deshacer.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Eliminar</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

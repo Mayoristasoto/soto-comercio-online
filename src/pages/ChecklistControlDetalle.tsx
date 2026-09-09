@@ -8,7 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Unlock } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Trash2, Unlock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ActividadesPersonalCard } from "@/components/checklist/ActividadesPersonalCard";
+import { usePermissions } from "@/hooks/usePermissions";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import { getChecklistBase } from "@/lib/checklistBase";
 import { ResumenChecklist } from "@/components/checklist/ResumenChecklist";
@@ -38,6 +51,7 @@ export default function ChecklistControlDetalle() {
   const [nuevoItem, setNuevoItem] = useState("");
   const [obsGeneral, setObsGeneral] = useState("");
   const isMobile = useIsMobile();
+  const { isAdmin } = usePermissions();
   const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
   const guiadoActivo = modoGuiado ?? isMobile;
 
@@ -155,6 +169,18 @@ export default function ChecklistControlDetalle() {
     await db.from("checklist_controles").update({ observaciones_generales: obsGeneral }).eq("id", id);
   };
 
+  const eliminarControl = async () => {
+    if (!id) return;
+    const db = supabase as any;
+    const { error } = await db.from("checklist_controles").delete().eq("id", id);
+    if (error) {
+      toast.error("No se pudo eliminar el control: " + error.message);
+      return;
+    }
+    toast.success("Control eliminado");
+    navigate(base);
+  };
+
   const cambiarEstado = async (cerrar: boolean) => {
     if (!id) return;
     const db = supabase as any;
@@ -206,6 +232,7 @@ export default function ChecklistControlDetalle() {
 
         onSalir={() => setModoGuiado(false)}
         sucursalId={control.sucursal_id}
+        controlId={control.id}
       />
     );
   }
@@ -247,6 +274,28 @@ export default function ChecklistControlDetalle() {
             {readOnly ? <Unlock className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
             {readOnly ? "Reabrir" : "Cerrar control"}
           </Button>
+          {isAdmin() && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar este control?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Se borran también sus ítems, fotos y registros de actividad. No se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={eliminarControl}>Eliminar</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </header>
 
@@ -307,6 +356,8 @@ export default function ChecklistControlDetalle() {
           )}
         </CardContent>
       </Card>
+
+      {control && <ActividadesPersonalCard controlId={control.id} readOnly={readOnly} />}
 
       <Card>
         <CardHeader>

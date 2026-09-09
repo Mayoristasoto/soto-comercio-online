@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EvidenciaUploader } from "./EvidenciaUploader";
+import { ActividadesPersonalCard } from "./ActividadesPersonalCard";
 import {
   ESTADO_CLASSES,
   ESTADO_LABEL,
@@ -52,6 +53,7 @@ interface Props {
 
   onSalir: () => void;
   sucursalId?: string | null;
+  controlId?: string;
 }
 
 type Pantalla = "item" | "seccion" | "cierre";
@@ -78,6 +80,7 @@ export function ChecklistModoGuiado({
 
   onSalir,
   sucursalId,
+  controlId,
 }: Props) {
   const [indice, setIndice] = useState(0);
   const [pantalla, setPantalla] = useState<Pantalla>(items.length ? "item" : "cierre");
@@ -371,6 +374,10 @@ export function ChecklistModoGuiado({
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {controlId && (
+              <ActividadesPersonalCard controlId={controlId} readOnly={readOnly} compacto />
             )}
 
             <div className="space-y-2">
