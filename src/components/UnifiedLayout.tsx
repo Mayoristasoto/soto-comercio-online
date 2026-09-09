@@ -13,6 +13,8 @@ import { NotificationCenter, useNotifications } from "@/components/ui/notificati
 import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
+import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
+import { ArrowLeft } from "lucide-react"
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
@@ -30,6 +32,24 @@ export default function UnifiedLayout() {
     grupo_id?: string
     avatar_url?: string
   } | null>(null)
+
+  const isGerenteUser = userInfo?.rol === 'gerente_sucursal'
+  const { accesos, loading: loadingAccesos } = useEncargadoAccesos()
+
+  // Los gerentes solo pueden navegar a los destinos de las tarjetas de su panel
+  useEffect(() => {
+    if (!isGerenteUser || loadingAccesos) return
+    const permitidas = [
+      '/preview-panel-encargado',
+      ...accesos.filter(a => a.activo).map(a => a.url.split('#')[0].split('?')[0]),
+    ]
+    const path = location.pathname
+    const permitido = permitidas.some(r => path === r || path.startsWith(r + '/'))
+    if (!permitido) {
+      navigate('/preview-panel-encargado', { replace: true })
+    }
+  }, [isGerenteUser, loadingAccesos, accesos, location.pathname, navigate])
+
 
   // Notificaciones
   const {
@@ -137,13 +157,14 @@ export default function UnifiedLayout() {
       })
       setDebeCambiarPassword(empleado.debe_cambiar_password || false)
 
-      // Redirección y control de acceso basado en rol
-      if (empleado.rol === 'empleado' || empleado.rol === 'gerente_sucursal') {
+      // Gerentes: acceso restringido a las tarjetas de su panel (manejado en efecto aparte)
+      if (empleado.rol === 'gerente_sucursal') {
+        // no-op aquí
+      } else if (empleado.rol === 'empleado') {
         const currentPath = location.pathname
-        
-        // Rutas base permitidas para empleados
+
         const empleadoRoutes = [
-          '/mi-dashboard', 
+          '/mi-dashboard',
           '/reconoce/premios',
           '/rrhh/vacaciones',
           '/vacaciones', // redirect legacy
@@ -159,23 +180,14 @@ export default function UnifiedLayout() {
           '/insignias',
           '/premios'
         ]
-        
-        // Gerentes tienen acceso a rutas administrativas adicionales
-        const isGerente = empleado.rol === 'gerente_sucursal'
-        const gerenteRoutes = ['/evaluaciones', '/rrhh/evaluaciones', '/solicitudes', '/rrhh/solicitudes', '/anotaciones', '/rrhh/anotaciones']
-        
-        const allowedRoutes = isGerente 
-          ? [...empleadoRoutes, ...gerenteRoutes]
-          : empleadoRoutes
-        
-        const hasAccess = allowedRoutes.some(route => currentPath.startsWith(route))
 
-        console.debug('Auth redirect check', { rol: empleado.rol, currentPath, isGerente, hasAccess })
-        
+        const hasAccess = empleadoRoutes.some(route => currentPath.startsWith(route))
+
         if (!hasAccess) {
           navigate('/mi-dashboard')
         }
       }
+
 
     } catch (error) {
       console.error('Error verificando autenticación:', error)
@@ -215,6 +227,34 @@ export default function UnifiedLayout() {
         onPasswordChanged={() => navigate('/preview-panel-encargado')}
         standalone
       />
+    )
+  }
+
+  // Gerentes: vista limitada, sin sidebar ni buscador ni dashboard personal
+  if (isGerenteUser) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex flex-col">
+        <header className="sticky top-0 z-40 h-14 border-b bg-background flex items-center justify-between px-3 md:px-6 gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/preview-panel-encargado')}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Panel
+          </Button>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline text-sm font-medium">
+              {userInfo?.nombre} {userInfo?.apellido}
+            </span>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline text-sm">Salir</span>
+            </Button>
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto">
+          <div className="py-4 md:py-6">
+            <Outlet context={{ userInfo }} />
+          </div>
+        </main>
+      </div>
     )
   }
 
