@@ -96,7 +96,7 @@ export default function UnifiedLayout() {
       // Verificar que el empleado existe en la base de datos
       const { data: empleado, error } = await supabase
         .from('empleados')
-        .select('id, nombre, apellido, email, rol, sucursal_id, grupo_id, avatar_url')
+        .select('id, nombre, apellido, email, rol, sucursal_id, grupo_id, avatar_url, debe_cambiar_password')
         .eq('user_id', user.id)
         .maybeSingle()
 
