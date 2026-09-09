@@ -205,6 +205,19 @@ export default function UnifiedLayout() {
     )
   }
 
+  // Para gerentes de sucursal en primer acceso: forzar cambio de contraseña
+  // sin mostrar sidebar, solo el recuadro del formulario
+  if (userInfo?.rol === 'gerente_sucursal' && debeCambiarPassword) {
+    return (
+      <ForcedPasswordChange
+        empleadoId={userInfo.id}
+        empleadoEmail={userInfo.email}
+        onPasswordChanged={() => navigate('/preview-panel-encargado')}
+        standalone
+      />
+    )
+  }
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
