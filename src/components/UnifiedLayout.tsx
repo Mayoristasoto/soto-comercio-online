@@ -12,12 +12,14 @@ import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { NotificationCenter, useNotifications } from "@/components/ui/notification-center"
 import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
+import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [debeCambiarPassword, setDebeCambiarPassword] = useState(false)
   const [userInfo, setUserInfo] = useState<{
     id: string
     nombre: string
@@ -94,7 +96,7 @@ export default function UnifiedLayout() {
       // Verificar que el empleado existe en la base de datos
       const { data: empleado, error } = await supabase
         .from('empleados')
-        .select('id, nombre, apellido, email, rol, sucursal_id, grupo_id, avatar_url')
+        .select('id, nombre, apellido, email, rol, sucursal_id, grupo_id, avatar_url, debe_cambiar_password')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -133,6 +135,7 @@ export default function UnifiedLayout() {
         grupo_id: empleado.grupo_id,
         avatar_url: empleado.avatar_url
       })
+      setDebeCambiarPassword(empleado.debe_cambiar_password || false)
 
       // Redirección y control de acceso basado en rol
       if (empleado.rol === 'empleado' || empleado.rol === 'gerente_sucursal') {
@@ -199,6 +202,19 @@ export default function UnifiedLayout() {
           <p className="text-muted-foreground">Cargando perfil...</p>
         </div>
       </div>
+    )
+  }
+
+  // Para gerentes de sucursal en primer acceso: forzar cambio de contraseña
+  // sin mostrar sidebar, solo el recuadro del formulario
+  if (userInfo?.rol === 'gerente_sucursal' && debeCambiarPassword) {
+    return (
+      <ForcedPasswordChange
+        empleadoId={userInfo.id}
+        empleadoEmail={userInfo.email}
+        onPasswordChanged={() => navigate('/preview-panel-encargado')}
+        standalone
+      />
     )
   }
 
