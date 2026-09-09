@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom"
+import { Outlet, useOutletContext } from "react-router-dom"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AdminSidebar } from "./AdminSidebar"
 import { Bell, Search, User } from "lucide-react"
@@ -19,6 +19,19 @@ import { useToast } from "@/hooks/use-toast"
 export function AdminLayout() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const ctx = useOutletContext<{ userInfo?: { rol?: string } } | null>()
+  const esGerente = ctx?.userInfo?.rol === 'gerente_sucursal'
+
+  // Gerentes: sin menú lateral ni header administrativo, solo el contenido
+  if (esGerente) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="p-4 md:p-6">
+          <Outlet context={ctx} />
+        </main>
+      </div>
+    )
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
