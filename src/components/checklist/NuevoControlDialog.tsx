@@ -73,7 +73,6 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
     })();
   }, [open]);
 
-  const empleadosSucursal = empleados.filter((e) => !sucursalId || e.sucursal_id === sucursalId);
 
   const crear = async () => {
     if (!sucursalId) {
@@ -142,7 +141,7 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Nuevo control</DialogTitle>
           <DialogDescription>
-            Definí la sucursal, el momento del control y los encargados de turno presentes.
+            Definí la sucursal, el momento del control y el personal de turno presente.
           </DialogDescription>
         </DialogHeader>
 
@@ -197,12 +196,12 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
           </div>
 
           <div className="space-y-1">
-            <Label>Encargados de turno</Label>
+            <Label>Personal de turno</Label>
             <ScrollArea className="h-36 rounded-md border p-2">
-              {empleadosSucursal.length === 0 ? (
-                <p className="p-2 text-xs text-muted-foreground">Seleccioná una sucursal para ver su personal.</p>
+              {empleados.length === 0 ? (
+                <p className="p-2 text-xs text-muted-foreground">No hay empleados activos disponibles.</p>
               ) : (
-                empleadosSucursal.map((e) => (
+                empleados.map((e) => (
                   <label key={e.id} className="flex items-center gap-2 py-1 text-sm">
                     <Checkbox
                       checked={encargados.includes(e.id)}
