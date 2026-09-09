@@ -229,9 +229,9 @@ export default function Dashboard() {
     return <Navigate to="/centro-accesos" replace />
   }
 
-  // Dashboard simplificado para encargados/gerentes de sucursal
+  // Panel simplificado (solo lectura) para encargados/gerentes de sucursal
   if (isGerente) {
-    return <DashboardEncargado nombre={userInfo?.nombre} />
+    return <Navigate to="/preview-panel-encargado" replace />
   }
 
 
