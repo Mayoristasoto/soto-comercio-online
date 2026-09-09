@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
   Boxes,
@@ -29,7 +30,7 @@ import {
   Settings2,
   type LucideIcon,
 } from "lucide-react";
-import { CATALOGO_CONTROLES } from "@/lib/controlesCatalogo";
+import { CATALOGO_CONTROLES, getPanelBase } from "@/lib/controlesCatalogo";
 import { usePanelControles } from "@/hooks/usePanelControles";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -43,10 +44,13 @@ const ICONS: Record<string, LucideIcon> = {
   FileText,
   LayoutDashboard,
   Boxes,
+  Activity,
 };
 
 export default function ControlesDashboard() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const base = getPanelBase(pathname);
   const [userId, setUserId] = useState<string | null>(null);
   const [abierto, setAbierto] = useState(false);
 
@@ -139,7 +143,7 @@ export default function ControlesDashboard() {
               <Card
                 key={s.clave}
                 className="cursor-pointer transition-shadow hover:shadow-lg"
-                onClick={() => navigate(s.url)}
+                onClick={() => navigate(`${base}/${s.path}`)}
               >
                 <CardContent className="flex items-start gap-4 p-6">
                   <div className="rounded-lg bg-primary/10 p-3">

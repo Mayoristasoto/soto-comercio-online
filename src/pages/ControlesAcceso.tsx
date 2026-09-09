@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { getPanelBase } from "@/lib/controlesCatalogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,8 @@ interface Sesion {
 
 export default function ControlesAcceso() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const base = getPanelBase(pathname);
   const [verificando, setVerificando] = useState(true);
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [email, setEmail] = useState("");
@@ -88,7 +91,7 @@ export default function ControlesAcceso() {
     await supabase.auth.signOut();
     setSesion(null);
     toast.success("Sesión cerrada");
-    navigate("/controles", { replace: true });
+    navigate(base, { replace: true });
   };
 
   if (verificando) {
@@ -162,11 +165,11 @@ export default function ControlesAcceso() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
           <button
             type="button"
-            onClick={() => navigate("/controles")}
+            onClick={() => navigate(base)}
             className="flex items-center gap-2 font-semibold hover:opacity-80"
           >
             <ClipboardCheck className="h-5 w-5 text-primary" />
-            Mi panel
+            {base === "/controles" ? "Controles de sucursal" : "Mi panel"}
           </button>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">

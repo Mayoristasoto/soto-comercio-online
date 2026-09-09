@@ -119,12 +119,23 @@ const App = () => (
           {/* Autenticación unificada */}
           <Route path="/auth" element={<UnifiedAuth />} />
           
-          {/* Acceso independiente a Controles (login propio, sin menú lateral) */}
+          {/* Página única de Controles (login propio, solo checklist) */}
           <Route path="/controles" element={<ControlesAcceso />}>
+            <Route index element={<ChecklistControles />} />
+            <Route path="checklist" element={<Navigate to="/controles" replace />} />
+            <Route path="checklist/plantillas" element={<ChecklistPlantillas />} />
+            <Route path="checklist/:id" element={<ChecklistControlDetalle />} />
+            {/* Compatibilidad con enlaces antiguos */}
+            <Route path="plantillas" element={<Navigate to="/controles/checklist/plantillas" replace />} />
+          </Route>
+
+          {/* Panel personalizado para admin_rrhh (login propio, sin menú lateral) */}
+          <Route path="/panel" element={<ControlesAcceso />}>
             <Route index element={<ControlesDashboard />} />
             <Route path="checklist" element={<ChecklistControles />} />
             <Route path="checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="checklist/:id" element={<ChecklistControlDetalle />} />
+            <Route path="performance" element={<PerformanceIndividual />} />
             <Route path="insumos" element={<ControlInsumos />} />
             <Route path="incidencias" element={<ListadoIncidencias />} />
             <Route path="resumen-mes" element={<ResumenMes />} />
@@ -133,8 +144,6 @@ const App = () => (
             <Route path="anotaciones" element={<Anotaciones />} />
             <Route path="tablero" element={<TableroProyectos />} />
             <Route path="entregas" element={<EntregasEmpleados />} />
-            {/* Compatibilidad con enlaces antiguos */}
-            <Route path="plantillas" element={<Navigate to="/controles/checklist/plantillas" replace />} />
           </Route>
 
           {/* Instalación PWA */}
