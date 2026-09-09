@@ -92,6 +92,7 @@ import PerformanceIndividual from "./pages/PerformanceIndividual";
 import IndiceAusentismo from "./pages/IndiceAusentismo";
 import UbicacionesFichaje from "./pages/UbicacionesFichaje";
 import ChecklistControles from "./pages/ChecklistControles";
+import EncuestasClientes from "./pages/EncuestasClientes";
 import ControlesAcceso from "./pages/ControlesAcceso";
 import ChecklistControlDetalle from "./pages/ChecklistControlDetalle";
 import ChecklistPlantillas from "./pages/ChecklistPlantillas";
@@ -192,6 +193,7 @@ const App = () => (
             <Route path="rrhh/checklist" element={<ChecklistControles />} />
             <Route path="rrhh/checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="rrhh/checklist/:id" element={<ChecklistControlDetalle />} />
+            <Route path="rrhh/encuestas" element={<EncuestasClientes />} />
             <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
