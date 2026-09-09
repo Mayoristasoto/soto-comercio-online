@@ -142,7 +142,7 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Nuevo control</DialogTitle>
           <DialogDescription>
-            Definí la sucursal, el momento del control y los encargados de turno presentes.
+            Definí la sucursal, el momento del control y el personal de turno presente.
           </DialogDescription>
         </DialogHeader>
 
