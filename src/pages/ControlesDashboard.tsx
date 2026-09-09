@@ -143,7 +143,7 @@ export default function ControlesDashboard() {
               <Card
                 key={s.clave}
                 className="cursor-pointer transition-shadow hover:shadow-lg"
-                onClick={() => navigate(s.url)}
+                onClick={() => navigate(`${base}/${s.path}`)}
               >
                 <CardContent className="flex items-start gap-4 p-6">
                   <div className="rounded-lg bg-primary/10 p-3">
