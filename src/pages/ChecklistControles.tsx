@@ -258,9 +258,12 @@ export default function ChecklistControles() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`${base}/${c.id}`}>Abrir</Link>
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link to={`${base}/${c.id}`}>Abrir</Link>
+                            </Button>
+                            {isAdmin() && <EliminarControlBoton onConfirm={() => eliminarControl(c.id)} />}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
