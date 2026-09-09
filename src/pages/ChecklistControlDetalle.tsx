@@ -51,6 +51,7 @@ export default function ChecklistControlDetalle() {
   const [nuevoItem, setNuevoItem] = useState("");
   const [obsGeneral, setObsGeneral] = useState("");
   const isMobile = useIsMobile();
+  const { isAdmin } = usePermissions();
   const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
   const guiadoActivo = modoGuiado ?? isMobile;
 
@@ -261,6 +262,28 @@ export default function ChecklistControlDetalle() {
             {readOnly ? <Unlock className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
             {readOnly ? "Reabrir" : "Cerrar control"}
           </Button>
+          {isAdmin() && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar este control?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Se borran también sus ítems, fotos y registros de actividad. No se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={eliminarControl}>Eliminar</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </header>
 
