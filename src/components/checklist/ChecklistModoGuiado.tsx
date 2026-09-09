@@ -376,6 +376,10 @@ export function ChecklistModoGuiado({
               </Card>
             )}
 
+            {controlId && (
+              <ActividadesPersonalCard controlId={controlId} readOnly={readOnly} compacto />
+            )}
+
             <div className="space-y-2">
               <p className="text-sm font-medium">Observaciones generales</p>
               {readOnly ? (
