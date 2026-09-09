@@ -296,3 +296,28 @@ export default function ChecklistControles() {
     </div>
   );
 }
+
+function EliminarControlBoton({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-destructive">
+          <Trash2 className="h-4 w-4" />
+          <span className="ml-1 md:hidden">Eliminar</span>
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar este control?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se borran también sus ítems, fotos y registros de actividad. No se puede deshacer.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Eliminar</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
