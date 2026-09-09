@@ -30,7 +30,7 @@ import {
   Settings2,
   type LucideIcon,
 } from "lucide-react";
-import { CATALOGO_CONTROLES } from "@/lib/controlesCatalogo";
+import { CATALOGO_CONTROLES, getPanelBase } from "@/lib/controlesCatalogo";
 import { usePanelControles } from "@/hooks/usePanelControles";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -44,10 +44,13 @@ const ICONS: Record<string, LucideIcon> = {
   FileText,
   LayoutDashboard,
   Boxes,
+  Activity,
 };
 
 export default function ControlesDashboard() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const base = getPanelBase(pathname);
   const [userId, setUserId] = useState<string | null>(null);
   const [abierto, setAbierto] = useState(false);
 
