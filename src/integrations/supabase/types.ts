@@ -1690,6 +1690,118 @@ export type Database = {
           },
         ]
       }
+      checklist_control_actividades: {
+        Row: {
+          actividad: string
+          asignado_por_id: string | null
+          asignado_por_nombre: string | null
+          control_id: string
+          created_at: string
+          empleado_id: string | null
+          empleado_nombre: string | null
+          id: string
+          observaciones: string | null
+          origen_asignacion: string
+          registrado_at: string
+          registrado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          actividad: string
+          asignado_por_id?: string | null
+          asignado_por_nombre?: string | null
+          control_id: string
+          created_at?: string
+          empleado_id?: string | null
+          empleado_nombre?: string | null
+          id?: string
+          observaciones?: string | null
+          origen_asignacion?: string
+          registrado_at?: string
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actividad?: string
+          asignado_por_id?: string | null
+          asignado_por_nombre?: string | null
+          control_id?: string
+          created_at?: string
+          empleado_id?: string | null
+          empleado_nombre?: string | null
+          id?: string
+          observaciones?: string | null
+          origen_asignacion?: string
+          registrado_at?: string
+          registrado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_control_actividades_asignado_por_id_fkey"
+            columns: ["asignado_por_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_asignado_por_id_fkey"
+            columns: ["asignado_por_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_asignado_por_id_fkey"
+            columns: ["asignado_por_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_asignado_por_id_fkey"
+            columns: ["asignado_por_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_control_encargados: {
         Row: {
           control_id: string
