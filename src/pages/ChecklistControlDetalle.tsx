@@ -27,6 +27,7 @@ import { getChecklistBase } from "@/lib/checklistBase";
 import { ResumenChecklist } from "@/components/checklist/ResumenChecklist";
 import { ChecklistItemRow } from "@/components/checklist/ChecklistItemRow";
 import { ChecklistModoGuiado } from "@/components/checklist/ChecklistModoGuiado";
+import { EncuestaClienteDialog } from "@/components/encuestas/EncuestaClienteDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   ChecklistControl,
