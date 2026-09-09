@@ -392,6 +392,13 @@ export default function ChecklistControlDetalle() {
           )}
         </CardContent>
       </Card>
+
+      <EncuestaClienteDialog
+        open={encuestaOpen}
+        onOpenChange={setEncuestaOpen}
+        sucursalId={control?.sucursal_id ?? null}
+        controlId={control?.id ?? null}
+      />
     </div>
   );
 }
