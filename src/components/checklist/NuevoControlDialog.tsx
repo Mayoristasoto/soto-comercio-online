@@ -197,12 +197,12 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
           </div>
 
           <div className="space-y-1">
-            <Label>Encargados de turno</Label>
+            <Label>Personal de turno</Label>
             <ScrollArea className="h-36 rounded-md border p-2">
-              {empleadosSucursal.length === 0 ? (
-                <p className="p-2 text-xs text-muted-foreground">Seleccioná una sucursal para ver su personal.</p>
+              {empleados.length === 0 ? (
+                <p className="p-2 text-xs text-muted-foreground">No hay empleados activos disponibles.</p>
               ) : (
-                empleadosSucursal.map((e) => (
+                empleados.map((e) => (
                   <label key={e.id} className="flex items-center gap-2 py-1 text-sm">
                     <Checkbox
                       checked={encargados.includes(e.id)}
