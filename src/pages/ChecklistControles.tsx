@@ -50,6 +50,18 @@ export default function ChecklistControles() {
   const [filtroSucursal, setFiltroSucursal] = useState(TODAS);
   const [filtroEstado, setFiltroEstado] = useState(TODAS);
   const [busqueda, setBusqueda] = useState("");
+  const { isAdmin } = usePermissions();
+
+  const eliminarControl = async (controlId: string) => {
+    const db = supabase as any;
+    const { error } = await db.from("checklist_controles").delete().eq("id", controlId);
+    if (error) {
+      toast.error("No se pudo eliminar: " + error.message);
+      return;
+    }
+    setControles((prev) => prev.filter((c) => c.id !== controlId));
+    toast.success("Control eliminado");
+  };
 
   const cargar = async () => {
     setLoading(true);
@@ -190,26 +202,29 @@ export default function ChecklistControles() {
               {/* Móvil: tarjetas apiladas */}
               <div className="space-y-2 md:hidden">
                 {filtrados.map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`${base}/${c.id}`}
-                    className="block rounded-lg border p-3 active:bg-accent/50"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{c.sucursal_nombre ?? "—"}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {formatArgentinaDateTime(c.fecha_hora)}
-                        </p>
+                  <div key={c.id} className="rounded-lg border p-3">
+                    <Link to={`${base}/${c.id}`} className="block active:opacity-70">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{c.sucursal_nombre ?? "—"}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {formatArgentinaDateTime(c.fecha_hora)}
+                          </p>
+                        </div>
+                        <Badge variant={c.estado === "cerrado" ? "secondary" : "outline"}>
+                          {c.estado === "cerrado" ? "Cerrado" : "Borrador"}
+                        </Badge>
                       </div>
-                      <Badge variant={c.estado === "cerrado" ? "secondary" : "outline"}>
-                        {c.estado === "cerrado" ? "Cerrado" : "Borrador"}
-                      </Badge>
-                    </div>
-                    <div className="mt-2">
-                      <ResumenChecklist items={c.items} compacto />
-                    </div>
-                  </Link>
+                      <div className="mt-2">
+                        <ResumenChecklist items={c.items} compacto />
+                      </div>
+                    </Link>
+                    {isAdmin() && (
+                      <div className="mt-2 flex justify-end">
+                        <EliminarControlBoton onConfirm={() => eliminarControl(c.id)} />
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
 
