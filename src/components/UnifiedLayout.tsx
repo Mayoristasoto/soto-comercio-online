@@ -157,13 +157,14 @@ export default function UnifiedLayout() {
       })
       setDebeCambiarPassword(empleado.debe_cambiar_password || false)
 
-      // Redirección y control de acceso basado en rol
-      if (empleado.rol === 'empleado' || empleado.rol === 'gerente_sucursal') {
+      // Gerentes: acceso restringido a las tarjetas de su panel (manejado en efecto aparte)
+      if (empleado.rol === 'gerente_sucursal') {
+        // no-op aquí
+      } else if (empleado.rol === 'empleado') {
         const currentPath = location.pathname
-        
-        // Rutas base permitidas para empleados
+
         const empleadoRoutes = [
-          '/mi-dashboard', 
+          '/mi-dashboard',
           '/reconoce/premios',
           '/rrhh/vacaciones',
           '/vacaciones', // redirect legacy
@@ -179,23 +180,14 @@ export default function UnifiedLayout() {
           '/insignias',
           '/premios'
         ]
-        
-        // Gerentes tienen acceso a rutas administrativas adicionales
-        const isGerente = empleado.rol === 'gerente_sucursal'
-        const gerenteRoutes = ['/evaluaciones', '/rrhh/evaluaciones', '/solicitudes', '/rrhh/solicitudes', '/anotaciones', '/rrhh/anotaciones']
-        
-        const allowedRoutes = isGerente 
-          ? [...empleadoRoutes, ...gerenteRoutes]
-          : empleadoRoutes
-        
-        const hasAccess = allowedRoutes.some(route => currentPath.startsWith(route))
 
-        console.debug('Auth redirect check', { rol: empleado.rol, currentPath, isGerente, hasAccess })
-        
+        const hasAccess = empleadoRoutes.some(route => currentPath.startsWith(route))
+
         if (!hasAccess) {
           navigate('/mi-dashboard')
         }
       }
+
 
     } catch (error) {
       console.error('Error verificando autenticación:', error)
