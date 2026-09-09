@@ -92,6 +92,7 @@ import PerformanceIndividual from "./pages/PerformanceIndividual";
 import IndiceAusentismo from "./pages/IndiceAusentismo";
 import UbicacionesFichaje from "./pages/UbicacionesFichaje";
 import ChecklistControles from "./pages/ChecklistControles";
+import EncuestasClientes from "./pages/EncuestasClientes";
 import ControlesAcceso from "./pages/ControlesAcceso";
 import ChecklistControlDetalle from "./pages/ChecklistControlDetalle";
 import ChecklistPlantillas from "./pages/ChecklistPlantillas";
@@ -125,6 +126,7 @@ const App = () => (
             <Route path="checklist" element={<Navigate to="/controles" replace />} />
             <Route path="checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="checklist/:id" element={<ChecklistControlDetalle />} />
+            <Route path="encuestas" element={<EncuestasClientes />} />
             {/* Compatibilidad con enlaces antiguos */}
             <Route path="plantillas" element={<Navigate to="/controles/checklist/plantillas" replace />} />
           </Route>
@@ -136,6 +138,7 @@ const App = () => (
             <Route path="checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="checklist/:id" element={<ChecklistControlDetalle />} />
             <Route path="performance" element={<PerformanceIndividual />} />
+            <Route path="encuestas" element={<EncuestasClientes />} />
             <Route path="insumos" element={<ControlInsumos />} />
             <Route path="incidencias" element={<ListadoIncidencias />} />
             <Route path="resumen-mes" element={<ResumenMes />} />
@@ -192,6 +195,7 @@ const App = () => (
             <Route path="rrhh/checklist" element={<ChecklistControles />} />
             <Route path="rrhh/checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="rrhh/checklist/:id" element={<ChecklistControlDetalle />} />
+            <Route path="rrhh/encuestas" element={<EncuestasClientes />} />
             <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
