@@ -126,6 +126,7 @@ const App = () => (
             <Route path="checklist" element={<Navigate to="/controles" replace />} />
             <Route path="checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="checklist/:id" element={<ChecklistControlDetalle />} />
+            <Route path="encuestas" element={<EncuestasClientes />} />
             {/* Compatibilidad con enlaces antiguos */}
             <Route path="plantillas" element={<Navigate to="/controles/checklist/plantillas" replace />} />
           </Route>
@@ -137,6 +138,7 @@ const App = () => (
             <Route path="checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="checklist/:id" element={<ChecklistControlDetalle />} />
             <Route path="performance" element={<PerformanceIndividual />} />
+            <Route path="encuestas" element={<EncuestasClientes />} />
             <Route path="insumos" element={<ControlInsumos />} />
             <Route path="incidencias" element={<ListadoIncidencias />} />
             <Route path="resumen-mes" element={<ResumenMes />} />
