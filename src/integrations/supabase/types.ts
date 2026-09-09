@@ -3904,6 +3904,168 @@ export type Database = {
         }
         Relationships: []
       }
+      encuesta_config: {
+        Row: {
+          agradecimiento: string
+          bienvenida: string
+          codigo_prefijo: string
+          created_at: string
+          descuento_texto: string
+          descuento_vigencia_dias: number
+          id: string
+          pide_email: boolean
+          pide_telefono: boolean
+          singleton: boolean
+          telefono_obligatorio: boolean
+          titulo: string
+          updated_at: string
+          whatsapp_activo: boolean
+          whatsapp_api_url: string
+          whatsapp_mensaje: string
+        }
+        Insert: {
+          agradecimiento?: string
+          bienvenida?: string
+          codigo_prefijo?: string
+          created_at?: string
+          descuento_texto?: string
+          descuento_vigencia_dias?: number
+          id?: string
+          pide_email?: boolean
+          pide_telefono?: boolean
+          singleton?: boolean
+          telefono_obligatorio?: boolean
+          titulo?: string
+          updated_at?: string
+          whatsapp_activo?: boolean
+          whatsapp_api_url?: string
+          whatsapp_mensaje?: string
+        }
+        Update: {
+          agradecimiento?: string
+          bienvenida?: string
+          codigo_prefijo?: string
+          created_at?: string
+          descuento_texto?: string
+          descuento_vigencia_dias?: number
+          id?: string
+          pide_email?: boolean
+          pide_telefono?: boolean
+          singleton?: boolean
+          telefono_obligatorio?: boolean
+          titulo?: string
+          updated_at?: string
+          whatsapp_activo?: boolean
+          whatsapp_api_url?: string
+          whatsapp_mensaje?: string
+        }
+        Relationships: []
+      }
+      encuesta_preguntas: {
+        Row: {
+          activa: boolean
+          created_at: string
+          id: string
+          obligatoria: boolean
+          opciones: Json
+          orden: number
+          texto: string
+          tipo: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          obligatoria?: boolean
+          opciones?: Json
+          orden?: number
+          texto: string
+          tipo?: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          obligatoria?: boolean
+          opciones?: Json
+          orden?: number
+          texto?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      encuesta_respuestas: {
+        Row: {
+          cliente_email: string | null
+          cliente_nombre: string
+          cliente_telefono: string | null
+          codigo_descuento: string | null
+          comentario: string | null
+          control_id: string | null
+          created_at: string
+          descuento_texto: string | null
+          descuento_vence: string | null
+          id: string
+          promedio_estrellas: number | null
+          registrado_por: string | null
+          respuestas: Json
+          sucursal_id: string | null
+          whatsapp_estado: string
+          whatsapp_respuesta: Json | null
+        }
+        Insert: {
+          cliente_email?: string | null
+          cliente_nombre: string
+          cliente_telefono?: string | null
+          codigo_descuento?: string | null
+          comentario?: string | null
+          control_id?: string | null
+          created_at?: string
+          descuento_texto?: string | null
+          descuento_vence?: string | null
+          id?: string
+          promedio_estrellas?: number | null
+          registrado_por?: string | null
+          respuestas?: Json
+          sucursal_id?: string | null
+          whatsapp_estado?: string
+          whatsapp_respuesta?: Json | null
+        }
+        Update: {
+          cliente_email?: string | null
+          cliente_nombre?: string
+          cliente_telefono?: string | null
+          codigo_descuento?: string | null
+          comentario?: string | null
+          control_id?: string | null
+          created_at?: string
+          descuento_texto?: string | null
+          descuento_vence?: string | null
+          id?: string
+          promedio_estrellas?: number | null
+          registrado_por?: string | null
+          respuestas?: Json
+          sucursal_id?: string | null
+          whatsapp_estado?: string
+          whatsapp_respuesta?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encuesta_respuestas_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encuesta_respuestas_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entregas_elementos: {
         Row: {
           cantidad: number
