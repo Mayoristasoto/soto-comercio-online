@@ -135,6 +135,7 @@ export default function UnifiedLayout() {
         grupo_id: empleado.grupo_id,
         avatar_url: empleado.avatar_url
       })
+      setDebeCambiarPassword(empleado.debe_cambiar_password || false)
 
       // Redirección y control de acceso basado en rol
       if (empleado.rol === 'empleado' || empleado.rol === 'gerente_sucursal') {
