@@ -12,6 +12,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { NotificationCenter, useNotifications } from "@/components/ui/notification-center"
 import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
+import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()

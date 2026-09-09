@@ -15,9 +15,10 @@ interface ForcedPasswordChangeProps {
   empleadoId: string
   empleadoEmail: string
   onPasswordChanged: () => void
+  standalone?: boolean
 }
 
-export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChanged }: ForcedPasswordChangeProps) => {
+export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChanged, standalone }: ForcedPasswordChangeProps) => {
   const { toast } = useToast()
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -91,6 +92,101 @@ export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChan
     }
   }
 
+  const alertBox = (
+    <Alert variant="default" className="border-orange-500/50 bg-orange-50">
+      <AlertCircle className="h-4 w-4 text-orange-600" />
+      <AlertDescription className="text-orange-800">
+        <strong>Importante:</strong> No podrás acceder al sistema hasta que cambies tu contraseña inicial.
+      </AlertDescription>
+    </Alert>
+  )
+
+  const formCard = (
+    <Card>
+      <CardContent className="pt-6 space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Correo Electrónico</Label>
+          <Input
+            id="email"
+            type="email"
+            value={empleadoEmail}
+            disabled
+            className="bg-muted"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="newPassword">Nueva Contraseña</Label>
+          <div className="relative">
+            <Input
+              id="newPassword"
+              type={showPassword ? "text" : "password"}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Ingresa tu nueva contraseña"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirma tu nueva contraseña"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <PasswordStrengthIndicator password={newPassword} />
+
+        <Button
+          onClick={handlePasswordChange}
+          disabled={isUpdating || !validatePassword(newPassword).isValid || newPassword !== confirmPassword}
+          className="w-full"
+        >
+          {isUpdating ? "Cambiando Contraseña..." : "Cambiar Contraseña"}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+
+  if (standalone) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="space-y-2 text-center">
+            <h1 className="text-2xl font-semibold flex items-center justify-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Cambio de Contraseña Obligatorio
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Por seguridad, debes cambiar tu contraseña en el primer acceso
+            </p>
+          </div>
+          {alertBox}
+          {formCard}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <Dialog open={true}>
@@ -104,78 +200,8 @@ export const ForcedPasswordChange = ({ empleadoId, empleadoEmail, onPasswordChan
             Por seguridad, debes cambiar tu contraseña en el primer acceso
           </DialogDescription>
         </DialogHeader>
-
-        <Alert variant="default" className="border-orange-500/50 bg-orange-50">
-          <AlertCircle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-800">
-            <strong>Importante:</strong> No podrás acceder al sistema hasta que cambies tu contraseña inicial.
-          </AlertDescription>
-        </Alert>
-
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                value={empleadoEmail}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">Nueva Contraseña</Label>
-              <div className="relative">
-                <Input
-                  id="newPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Ingresa tu nueva contraseña"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirma tu nueva contraseña"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <PasswordStrengthIndicator password={newPassword} />
-
-            <Button
-              onClick={handlePasswordChange}
-              disabled={isUpdating || !validatePassword(newPassword).isValid || newPassword !== confirmPassword}
-              className="w-full"
-            >
-              {isUpdating ? "Cambiando Contraseña..." : "Cambiar Contraseña"}
-            </Button>
-          </CardContent>
-        </Card>
+        {alertBox}
+        {formCard}
       </DialogContent>
     </Dialog>
   )
