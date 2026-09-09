@@ -230,6 +230,34 @@ export default function UnifiedLayout() {
     )
   }
 
+  // Gerentes: vista limitada, sin sidebar ni buscador ni dashboard personal
+  if (isGerenteUser) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex flex-col">
+        <header className="sticky top-0 z-40 h-14 border-b bg-background flex items-center justify-between px-3 md:px-6 gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/preview-panel-encargado')}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Panel
+          </Button>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline text-sm font-medium">
+              {userInfo?.nombre} {userInfo?.apellido}
+            </span>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline text-sm">Salir</span>
+            </Button>
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto">
+          <div className="py-4 md:py-6">
+            <Outlet context={{ userInfo }} />
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
