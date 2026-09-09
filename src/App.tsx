@@ -100,6 +100,7 @@ import EntregasEmpleados from "./pages/EntregasEmpleados";
 import PlanillaDescansos from "./pages/PlanillaDescansos";
 import HorariosMasivos from "./pages/HorariosMasivos";
 import OptimizadorHorarios from "./pages/OptimizadorHorarios";
+import ControlesDashboard from "./pages/ControlesDashboard";
 
 const queryClient = new QueryClient();
 
@@ -120,9 +121,20 @@ const App = () => (
           
           {/* Acceso independiente a Controles (login propio, sin menú lateral) */}
           <Route path="/controles" element={<ControlesAcceso />}>
-            <Route index element={<ChecklistControles />} />
-            <Route path="plantillas" element={<ChecklistPlantillas />} />
-            <Route path=":id" element={<ChecklistControlDetalle />} />
+            <Route index element={<ControlesDashboard />} />
+            <Route path="checklist" element={<ChecklistControles />} />
+            <Route path="checklist/plantillas" element={<ChecklistPlantillas />} />
+            <Route path="checklist/:id" element={<ChecklistControlDetalle />} />
+            <Route path="insumos" element={<ControlInsumos />} />
+            <Route path="incidencias" element={<ListadoIncidencias />} />
+            <Route path="resumen-mes" element={<ResumenMes />} />
+            <Route path="vacaciones" element={<Vacaciones />} />
+            <Route path="planificacion-semanal" element={<EncargadoPlanificacionSemanal />} />
+            <Route path="anotaciones" element={<Anotaciones />} />
+            <Route path="tablero" element={<TableroProyectos />} />
+            <Route path="entregas" element={<EntregasEmpleados />} />
+            {/* Compatibilidad con enlaces antiguos */}
+            <Route path="plantillas" element={<Navigate to="/controles/checklist/plantillas" replace />} />
           </Route>
 
           {/* Instalación PWA */}
