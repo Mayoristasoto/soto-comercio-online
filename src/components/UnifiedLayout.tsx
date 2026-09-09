@@ -13,6 +13,8 @@ import { NotificationCenter, useNotifications } from "@/components/ui/notificati
 import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
+import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
+import { ArrowLeft } from "lucide-react"
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
