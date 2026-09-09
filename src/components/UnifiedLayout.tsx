@@ -33,6 +33,24 @@ export default function UnifiedLayout() {
     avatar_url?: string
   } | null>(null)
 
+  const isGerenteUser = userInfo?.rol === 'gerente_sucursal'
+  const { accesos, loading: loadingAccesos } = useEncargadoAccesos()
+
+  // Los gerentes solo pueden navegar a los destinos de las tarjetas de su panel
+  useEffect(() => {
+    if (!isGerenteUser || loadingAccesos) return
+    const permitidas = [
+      '/preview-panel-encargado',
+      ...accesos.filter(a => a.activo).map(a => a.url.split('#')[0].split('?')[0]),
+    ]
+    const path = location.pathname
+    const permitido = permitidas.some(r => path === r || path.startsWith(r + '/'))
+    if (!permitido) {
+      navigate('/preview-panel-encargado', { replace: true })
+    }
+  }, [isGerenteUser, loadingAccesos, accesos, location.pathname, navigate])
+
+
   // Notificaciones
   const {
     notifications,
