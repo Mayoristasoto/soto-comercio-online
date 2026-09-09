@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Trash2, Unlock } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Smile, Trash2, Unlock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +55,8 @@ export default function ChecklistControlDetalle() {
   const { isAdmin } = usePermissions();
   const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
   const guiadoActivo = modoGuiado ?? isMobile;
+  const [encuestaOpen, setEncuestaOpen] = useState(false);
+
 
   const readOnly = control?.estado === "cerrado";
 
@@ -271,6 +273,11 @@ export default function ChecklistControlDetalle() {
             <Smartphone className="mr-2 h-4 w-4" />
             Modo control
           </Button>
+          <Button variant="outline" onClick={() => setEncuestaOpen(true)}>
+            <Smile className="mr-2 h-4 w-4" />
+            Encuesta a cliente
+          </Button>
+
           <Button variant={readOnly ? "outline" : "default"} onClick={() => cambiarEstado(!readOnly)}>
             {readOnly ? <Unlock className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
             {readOnly ? "Reabrir" : "Cerrar control"}
