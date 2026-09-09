@@ -73,7 +73,6 @@ export function NuevoControlDialog({ open, onOpenChange }: Props) {
     })();
   }, [open]);
 
-  const empleadosSucursal = empleados.filter((e) => !sucursalId || e.sucursal_id === sucursalId);
 
   const crear = async () => {
     if (!sucursalId) {
