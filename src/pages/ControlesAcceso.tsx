@@ -160,10 +160,14 @@ export default function ControlesAcceso() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
-          <span className="flex items-center gap-2 font-semibold">
+          <button
+            type="button"
+            onClick={() => navigate("/controles")}
+            className="flex items-center gap-2 font-semibold hover:opacity-80"
+          >
             <ClipboardCheck className="h-5 w-5 text-primary" />
-            Controles
-          </span>
+            Mi panel
+          </button>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {sesion.nombre} {sesion.apellido}
