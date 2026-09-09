@@ -169,7 +169,7 @@ export default function ControlesAcceso() {
             className="flex items-center gap-2 font-semibold hover:opacity-80"
           >
             <ClipboardCheck className="h-5 w-5 text-primary" />
-            Mi panel
+            {base === "/controles" ? "Controles de sucursal" : "Mi panel"}
           </button>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">
