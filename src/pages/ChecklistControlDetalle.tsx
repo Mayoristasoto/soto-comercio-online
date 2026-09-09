@@ -357,6 +357,8 @@ export default function ChecklistControlDetalle() {
         </CardContent>
       </Card>
 
+      {control && <ActividadesPersonalCard controlId={control.id} readOnly={readOnly} />}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Observaciones generales</CardTitle>

@@ -8,7 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ClipboardCheck, Loader2, Plus, Search, LayoutList } from "lucide-react";
+import { ClipboardCheck, Loader2, Plus, Search, LayoutList, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { usePermissions } from "@/hooks/usePermissions";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import { getChecklistBase } from "@/lib/checklistBase";
 import { NuevoControlDialog } from "@/components/checklist/NuevoControlDialog";
