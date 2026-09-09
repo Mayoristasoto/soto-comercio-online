@@ -8,7 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Unlock } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Trash2, Unlock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ActividadesPersonalCard } from "@/components/checklist/ActividadesPersonalCard";
+import { usePermissions } from "@/hooks/usePermissions";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import { getChecklistBase } from "@/lib/checklistBase";
 import { ResumenChecklist } from "@/components/checklist/ResumenChecklist";
@@ -206,6 +219,7 @@ export default function ChecklistControlDetalle() {
 
         onSalir={() => setModoGuiado(false)}
         sucursalId={control.sucursal_id}
+        controlId={control.id}
       />
     );
   }
