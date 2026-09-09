@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -24,6 +24,21 @@ export default function UnifiedAuth() {
   // Obtener el módulo de destino de los parámetros de URL
   const redirectTo = searchParams.get('redirect') || '/dashboard'
 
+  const navigateAfterLogin = useCallback(async (userId: string) => {
+    const { data: empleado } = await supabase
+      .from('empleados')
+      .select('rol')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (empleado?.rol === 'gerente_sucursal') {
+      navigate('/preview-panel-encargado', { replace: true })
+      return
+    }
+
+    navigate(redirectTo, { replace: true })
+  }, [navigate, redirectTo])
+
   useEffect(() => {
     // Verificar si ya está autenticado
     const checkAuth = async () => {
@@ -34,7 +49,7 @@ export default function UnifiedAuth() {
           return
         }
         if (user) {
-          navigate(redirectTo)
+          await navigateAfterLogin(user.id)
         }
       } catch (error) {
         console.error('Error checking auth:', error)
@@ -48,13 +63,13 @@ export default function UnifiedAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session) {
-          navigate(redirectTo)
+          void navigateAfterLogin(session.user.id)
         }
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [navigate, redirectTo])
+  }, [navigateAfterLogin])
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -113,7 +128,7 @@ export default function UnifiedAuth() {
                   title: "Bienvenido",
                   description: "Primer acceso exitoso. Deberás cambiar tu contraseña.",
                 });
-                navigate(redirectTo);
+                await navigateAfterLogin(verifyData.user.id);
                 return;
               }
             }
@@ -166,7 +181,7 @@ export default function UnifiedAuth() {
           title: "Bienvenido",
           description: "Has iniciado sesión correctamente",
         })
-        navigate(redirectTo)
+        await navigateAfterLogin(data.user.id)
       }
     } catch (error) {
       console.error('💥 [UnifiedAuth.tsx] Error inesperado en login:', error)
