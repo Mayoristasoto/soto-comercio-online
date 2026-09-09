@@ -169,6 +169,18 @@ export default function ChecklistControlDetalle() {
     await db.from("checklist_controles").update({ observaciones_generales: obsGeneral }).eq("id", id);
   };
 
+  const eliminarControl = async () => {
+    if (!id) return;
+    const db = supabase as any;
+    const { error } = await db.from("checklist_controles").delete().eq("id", id);
+    if (error) {
+      toast.error("No se pudo eliminar el control: " + error.message);
+      return;
+    }
+    toast.success("Control eliminado");
+    navigate(base);
+  };
+
   const cambiarEstado = async (cerrar: boolean) => {
     if (!id) return;
     const db = supabase as any;
