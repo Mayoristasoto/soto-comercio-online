@@ -156,6 +156,56 @@ export default function ControlInsumos() {
     cargar()
   }, [sucursalId, fecha])
 
+  // Aviso a Admin RRHH cuando un encargado ingresa al control de insumos
+  const [ingresoAvisado, setIngresoAvisado] = useState(false)
+  useEffect(() => {
+    if (loading || esAdmin || !sucursalId || ingresoAvisado) return
+    setIngresoAvisado(true)
+    ;(supabase as any)
+      .rpc("registrar_actividad_insumos", {
+        p_sucursal_id: sucursalId,
+        p_accion: "ingreso",
+        p_detalle: null,
+      })
+      .then(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, esAdmin, sucursalId, ingresoAvisado])
+
+  const cargarActividad = async () => {
+    setCargandoActividad(true)
+    try {
+      const { data } = await (supabase as any)
+        .from("insumos_actividad")
+        .select("id, accion, detalle, created_at, sucursal_id, empleado_id")
+        .order("created_at", { ascending: false })
+        .limit(100)
+      const rows = (data as any[]) ?? []
+      const empIds = Array.from(new Set(rows.map((r) => r.empleado_id).filter(Boolean)))
+      let nombres: Record<string, string> = {}
+      if (empIds.length) {
+        const { data: emps } = await (supabase as any)
+          .from("empleados")
+          .select("id, nombre, apellido")
+          .in("id", empIds)
+        for (const e of (emps as any[]) ?? []) nombres[e.id] = `${e.apellido}, ${e.nombre}`
+      }
+      setActividad(
+        rows.map((r) => ({
+          ...r,
+          persona: nombres[r.empleado_id] ?? "Usuario",
+          sucursal: sucursales.find((s) => s.id === r.sucursal_id)?.nombre ?? "—",
+        }))
+      )
+    } finally {
+      setCargandoActividad(false)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "seguimiento") cargarActividad()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sucursales])
+
   const cargarResumen = async () => {
     if (!sucursales.length) return
     setCargandoResumen(true)
