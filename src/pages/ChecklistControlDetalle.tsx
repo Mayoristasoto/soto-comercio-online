@@ -339,9 +339,9 @@ export default function ChecklistControlDetalle() {
               <Collapsible key={seccion} defaultOpen={!esSeccion} className="space-y-2">
                 {esSeccion && (
                   <CollapsibleTrigger asChild>
-                    <div className="flex cursor-pointer items-center justify-between gap-2 border-b pb-1">
+                    <div className="group flex cursor-pointer items-center justify-between gap-2 border-b pb-1">
                       <div className="flex items-center gap-2">
-                        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-90" />
+                        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
                         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{seccion}</h2>
                       </div>
                       <ResumenChecklist items={secItems} compacto />
