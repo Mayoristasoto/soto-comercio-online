@@ -155,9 +155,24 @@ export default function ControlInsumos() {
         }
       }
       setRegistros(map)
+      setItemsPrevios(Object.keys(map).length)
     }
     cargar()
   }, [sucursalId, fecha])
+
+  // Un gerente retoma un control ya iniciado: queda registrado para Admin RRHH
+  const continuarControl = async (sucursal: string, fechaControl: string) => {
+    setSucursalId(sucursal)
+    setFecha(fechaControl)
+    setTab("carga")
+    if (!esAdmin) {
+      await (supabase as any).rpc("registrar_actividad_insumos", {
+        p_sucursal_id: sucursal,
+        p_accion: "continuacion",
+        p_detalle: `Retomó el control del ${fechaControl}`,
+      })
+    }
+  }
 
   // Aviso a Admin RRHH cuando un encargado ingresa al control de insumos
   const [ingresoAvisado, setIngresoAvisado] = useState(false)
