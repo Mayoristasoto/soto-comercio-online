@@ -8,7 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Smile, Trash2, Unlock } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  ArrowLeft,
+  ChevronRight,
+  ClipboardCheck,
+  Loader2,
+  Lock,
+  Plus,
+  Smartphone,
+  Smile,
+  Trash2,
+  Unlock,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -321,29 +333,39 @@ export default function ChecklistControlDetalle() {
             <p className="text-sm text-muted-foreground">Todavía no hay ítems. Agregá el primero abajo.</p>
           )}
 
-          {secciones.map(([seccion, secItems]) => (
-            <div key={seccion} className="space-y-2">
-              {seccion !== SIN_SECCION && (
-                <div className="flex items-center justify-between gap-2 border-b pb-1">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{seccion}</h2>
-                  <ResumenChecklist items={secItems} compacto />
-                </div>
-              )}
-              {secItems.map((item) => (
-                <ChecklistItemRow
-                  key={item.id}
-                  item={item}
-                  fotos={fotos.filter((f) => f.item_id === item.id)}
-                  readOnly={readOnly}
-                  onEstado={(estado: ChecklistEstadoItem | null) => actualizarItem(item.id, { estado })}
-                  onObservaciones={(observaciones) => actualizarItem(item.id, { observaciones })}
-                  onEliminar={readOnly ? undefined : () => eliminarItem(item.id)}
-                  onFotosChange={recargarFotos}
-                  sucursalId={control?.sucursal_id}
-                />
-              ))}
-            </div>
-          ))}
+          {secciones.map(([seccion, secItems]) => {
+            const esSeccion = seccion !== SIN_SECCION;
+            return (
+              <Collapsible key={seccion} defaultOpen={!esSeccion} className="space-y-2">
+                {esSeccion && (
+                  <CollapsibleTrigger asChild>
+                    <div className="group flex cursor-pointer items-center justify-between gap-2 border-b pb-1">
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{seccion}</h2>
+                      </div>
+                      <ResumenChecklist items={secItems} compacto />
+                    </div>
+                  </CollapsibleTrigger>
+                )}
+                <CollapsibleContent className="space-y-2">
+                  {secItems.map((item) => (
+                    <ChecklistItemRow
+                      key={item.id}
+                      item={item}
+                      fotos={fotos.filter((f) => f.item_id === item.id)}
+                      readOnly={readOnly}
+                      onEstado={(estado: ChecklistEstadoItem | null) => actualizarItem(item.id, { estado })}
+                      onObservaciones={(observaciones) => actualizarItem(item.id, { observaciones })}
+                      onEliminar={readOnly ? undefined : () => eliminarItem(item.id)}
+                      onFotosChange={recargarFotos}
+                      sucursalId={control?.sucursal_id}
+                    />
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
 
           {!readOnly && (
             <div className="flex flex-col gap-2 pt-2 sm:flex-row">
