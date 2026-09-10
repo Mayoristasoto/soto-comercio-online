@@ -665,6 +665,64 @@ export default function ControlInsumos() {
             </Card>
           </TabsContent>
         )}
+
+        <TabsContent value="historial" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Clock className="h-5 w-5 text-primary" />
+                Historial de controles (últimos 45 días)
+                {cargandoHistorial && <Loader2 className="h-4 w-4 animate-spin" />}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {historial.map((h) => (
+                <details key={h.key} className="rounded-lg border p-3">
+                  <summary className="cursor-pointer flex flex-wrap items-center gap-2 text-sm font-medium">
+                    {h.fecha}
+                    <Badge variant="outline">{h.sucursal}</Badge>
+                    <Badge variant="secondary">{h.items.length} ítems</Badge>
+                    {h.aReponer > 0 && <Badge variant="destructive">{h.aReponer} a reponer</Badge>}
+                    {h.responsables.length > 0 && (
+                      <span className="text-xs text-muted-foreground font-normal">
+                        {h.responsables.join(" · ")}
+                      </span>
+                    )}
+                    {h.ultima && (
+                      <span className="text-xs text-muted-foreground font-normal">
+                        Últ. {horaAr(h.ultima)}
+                      </span>
+                    )}
+                  </summary>
+                  <div className="mt-3 space-y-1">
+                    {h.items.map((i: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm border-t pt-2"
+                      >
+                        <span className="font-medium">{i.nombre}</span>
+                        <span className="text-muted-foreground">
+                          {i.cantidad != null ? `Cant.: ${i.cantidad}` : "Sin cantidad"}
+                        </span>
+                        <span>
+                          <Badge variant={ESTADO_VARIANT[i.estado] ?? "outline"}>
+                            {ESTADOS.find((e) => e.value === i.estado)?.label ?? i.estado}
+                          </Badge>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {i.observaciones || ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ))}
+              {historial.length === 0 && !cargandoHistorial && (
+                <p className="text-sm text-muted-foreground">Todavía no hay controles guardados.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   )
