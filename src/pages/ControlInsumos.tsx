@@ -96,6 +96,8 @@ export default function ControlInsumos() {
   const [tab, setTab] = useState("carga")
   const [actividad, setActividad] = useState<any[]>([])
   const [cargandoActividad, setCargandoActividad] = useState(false)
+  const [historial, setHistorial] = useState<any[]>([])
+  const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
   const esAdmin = rol === "admin_rrhh"
   const bloqueado = !esAdmin && !!miSucursal
@@ -205,6 +207,84 @@ export default function ControlInsumos() {
     if (tab === "seguimiento") cargarActividad()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, sucursales])
+
+  const cargarHistorial = async () => {
+    setCargandoHistorial(true)
+    try {
+      const desde = new Date()
+      desde.setDate(desde.getDate() - 45)
+      let q = (supabase as any)
+        .from("insumos_control")
+        .select(
+          "id, fecha, sucursal_id, insumo_id, cantidad, estado, necesita_reposicion, observaciones, registrado_por, updated_at, created_at"
+        )
+        .gte("fecha", desde.toISOString().slice(0, 10))
+        .order("fecha", { ascending: false })
+        .limit(2000)
+      if (!esAdmin && miSucursal) q = q.eq("sucursal_id", miSucursal)
+      const { data } = await q
+      const rows = (data as any[]) ?? []
+
+      const empIds = Array.from(new Set(rows.map((r) => r.registrado_por).filter(Boolean)))
+      let nombres: Record<string, string> = {}
+      if (empIds.length) {
+        const { data: emps } = await (supabase as any)
+          .from("empleados")
+          .select("id, nombre, apellido")
+          .in("id", empIds)
+        for (const e of (emps as any[]) ?? []) nombres[e.id] = `${e.apellido}, ${e.nombre}`
+      }
+      const nombreInsumo: Record<string, string> = {}
+      for (const i of insumos) nombreInsumo[i.id] = i.nombre
+
+      const grupos = new Map<string, any>()
+      for (const r of rows) {
+        const key = `${r.fecha}|${r.sucursal_id}`
+        if (!grupos.has(key)) {
+          grupos.set(key, {
+            key,
+            fecha: r.fecha,
+            sucursal_id: r.sucursal_id,
+            sucursal: sucursales.find((s) => s.id === r.sucursal_id)?.nombre ?? "—",
+            items: [] as any[],
+            responsables: new Set<string>(),
+            ultima: null as string | null,
+          })
+        }
+        const g = grupos.get(key)
+        g.items.push({
+          nombre: nombreInsumo[r.insumo_id] ?? "Insumo",
+          cantidad: r.cantidad,
+          estado: r.estado,
+          necesita_reposicion: r.necesita_reposicion,
+          observaciones: r.observaciones,
+        })
+        if (nombres[r.registrado_por]) g.responsables.add(nombres[r.registrado_por])
+        const ts = r.updated_at || r.created_at
+        if (ts && (!g.ultima || ts > g.ultima)) g.ultima = ts
+      }
+
+      setHistorial(
+        Array.from(grupos.values())
+          .map((g) => ({
+            ...g,
+            responsables: Array.from(g.responsables) as string[],
+            aReponer: g.items.filter(
+              (i: any) =>
+                i.necesita_reposicion || i.estado === "sin_stock" || i.estado === "a_reponer"
+            ).length,
+          }))
+          .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0))
+      )
+    } finally {
+      setCargandoHistorial(false)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "historial") cargarHistorial()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sucursales, insumos, miSucursal, esAdmin])
 
   const cargarResumen = async () => {
     if (!sucursales.length) return
@@ -389,6 +469,7 @@ export default function ControlInsumos() {
         <TabsList>
           <TabsTrigger value="carga">Carga {sucursalNombre && `— ${sucursalNombre}`}</TabsTrigger>
           <TabsTrigger value="resumen">Comparativo por sucursal</TabsTrigger>
+          <TabsTrigger value="historial">Historial</TabsTrigger>
           {esAdmin && <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>}
         </TabsList>
 
@@ -584,6 +665,64 @@ export default function ControlInsumos() {
             </Card>
           </TabsContent>
         )}
+
+        <TabsContent value="historial" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Clock className="h-5 w-5 text-primary" />
+                Historial de controles (últimos 45 días)
+                {cargandoHistorial && <Loader2 className="h-4 w-4 animate-spin" />}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {historial.map((h) => (
+                <details key={h.key} className="rounded-lg border p-3">
+                  <summary className="cursor-pointer flex flex-wrap items-center gap-2 text-sm font-medium">
+                    {h.fecha}
+                    <Badge variant="outline">{h.sucursal}</Badge>
+                    <Badge variant="secondary">{h.items.length} ítems</Badge>
+                    {h.aReponer > 0 && <Badge variant="destructive">{h.aReponer} a reponer</Badge>}
+                    {h.responsables.length > 0 && (
+                      <span className="text-xs text-muted-foreground font-normal">
+                        {h.responsables.join(" · ")}
+                      </span>
+                    )}
+                    {h.ultima && (
+                      <span className="text-xs text-muted-foreground font-normal">
+                        Últ. {horaAr(h.ultima)}
+                      </span>
+                    )}
+                  </summary>
+                  <div className="mt-3 space-y-1">
+                    {h.items.map((i: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm border-t pt-2"
+                      >
+                        <span className="font-medium">{i.nombre}</span>
+                        <span className="text-muted-foreground">
+                          {i.cantidad != null ? `Cant.: ${i.cantidad}` : "Sin cantidad"}
+                        </span>
+                        <span>
+                          <Badge variant={ESTADO_VARIANT[i.estado] ?? "outline"}>
+                            {ESTADOS.find((e) => e.value === i.estado)?.label ?? i.estado}
+                          </Badge>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {i.observaciones || ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ))}
+              {historial.length === 0 && !cargandoHistorial && (
+                <p className="text-sm text-muted-foreground">Todavía no hay controles guardados.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   )
