@@ -309,6 +309,13 @@ export default function ControlInsumos() {
         .from("insumos_control")
         .upsert(rows, { onConflict: "sucursal_id,insumo_id,fecha" })
       if (error) throw error
+      if (!esAdmin) {
+        await (supabase as any).rpc("registrar_actividad_insumos", {
+          p_sucursal_id: sucursalId,
+          p_accion: "guardado",
+          p_detalle: `${rows.length} ítems · ${pendientes} a reponer · ${fecha}`,
+        })
+      }
       toast.success(`Control guardado para ${sucursalNombre}`)
     } catch (e: any) {
       toast.error(e?.message || "No se pudo guardar")
