@@ -208,6 +208,84 @@ export default function ControlInsumos() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, sucursales])
 
+  const cargarHistorial = async () => {
+    setCargandoHistorial(true)
+    try {
+      const desde = new Date()
+      desde.setDate(desde.getDate() - 45)
+      let q = (supabase as any)
+        .from("insumos_control")
+        .select(
+          "id, fecha, sucursal_id, insumo_id, cantidad, estado, necesita_reposicion, observaciones, registrado_por, updated_at, created_at"
+        )
+        .gte("fecha", desde.toISOString().slice(0, 10))
+        .order("fecha", { ascending: false })
+        .limit(2000)
+      if (!esAdmin && miSucursal) q = q.eq("sucursal_id", miSucursal)
+      const { data } = await q
+      const rows = (data as any[]) ?? []
+
+      const empIds = Array.from(new Set(rows.map((r) => r.registrado_por).filter(Boolean)))
+      let nombres: Record<string, string> = {}
+      if (empIds.length) {
+        const { data: emps } = await (supabase as any)
+          .from("empleados")
+          .select("id, nombre, apellido")
+          .in("id", empIds)
+        for (const e of (emps as any[]) ?? []) nombres[e.id] = `${e.apellido}, ${e.nombre}`
+      }
+      const nombreInsumo: Record<string, string> = {}
+      for (const i of insumos) nombreInsumo[i.id] = i.nombre
+
+      const grupos = new Map<string, any>()
+      for (const r of rows) {
+        const key = `${r.fecha}|${r.sucursal_id}`
+        if (!grupos.has(key)) {
+          grupos.set(key, {
+            key,
+            fecha: r.fecha,
+            sucursal_id: r.sucursal_id,
+            sucursal: sucursales.find((s) => s.id === r.sucursal_id)?.nombre ?? "—",
+            items: [] as any[],
+            responsables: new Set<string>(),
+            ultima: null as string | null,
+          })
+        }
+        const g = grupos.get(key)
+        g.items.push({
+          nombre: nombreInsumo[r.insumo_id] ?? "Insumo",
+          cantidad: r.cantidad,
+          estado: r.estado,
+          necesita_reposicion: r.necesita_reposicion,
+          observaciones: r.observaciones,
+        })
+        if (nombres[r.registrado_por]) g.responsables.add(nombres[r.registrado_por])
+        const ts = r.updated_at || r.created_at
+        if (ts && (!g.ultima || ts > g.ultima)) g.ultima = ts
+      }
+
+      setHistorial(
+        Array.from(grupos.values())
+          .map((g) => ({
+            ...g,
+            responsables: Array.from(g.responsables) as string[],
+            aReponer: g.items.filter(
+              (i: any) =>
+                i.necesita_reposicion || i.estado === "sin_stock" || i.estado === "a_reponer"
+            ).length,
+          }))
+          .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0))
+      )
+    } finally {
+      setCargandoHistorial(false)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "historial") cargarHistorial()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sucursales, insumos, miSucursal, esAdmin])
+
   const cargarResumen = async () => {
     if (!sucursales.length) return
     setCargandoResumen(true)
