@@ -723,6 +723,16 @@ export default function ControlInsumos() {
                         Últ. {horaAr(h.ultima)}
                       </span>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        continuarControl(h.sucursal_id, h.fecha)
+                      }}
+                    >
+                      Continuar control
+                    </Button>
                   </summary>
                   <div className="mt-3 space-y-1">
                     {h.items.map((i: any, idx: number) => (
