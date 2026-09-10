@@ -538,6 +538,52 @@ export default function ControlInsumos() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {esAdmin && (
+          <TabsContent value="seguimiento" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Actividad de encargados
+                  {cargandoActividad && <Loader2 className="h-4 w-4 animate-spin" />}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {actividad.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex flex-col md:flex-row md:items-center gap-2 justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      {a.accion === "guardado" ? (
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      {a.persona}
+                      <Badge variant="outline">{a.sucursal}</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <Badge variant={a.accion === "guardado" ? "secondary" : "outline"}>
+                        {a.accion === "guardado" ? "Guardó control" : "Ingresó"}
+                      </Badge>
+                      {a.detalle && (
+                        <span className="text-xs text-muted-foreground">{a.detalle}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {horaAr(a.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {actividad.length === 0 && !cargandoActividad && (
+                  <p className="text-sm text-muted-foreground">Sin actividad registrada aún.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
