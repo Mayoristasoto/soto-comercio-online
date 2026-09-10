@@ -94,6 +94,8 @@ export default function ControlInsumos() {
   const [resumen, setResumen] = useState<ResumenSucursal[]>([])
   const [cargandoResumen, setCargandoResumen] = useState(false)
   const [tab, setTab] = useState("carga")
+  const [actividad, setActividad] = useState<any[]>([])
+  const [cargandoActividad, setCargandoActividad] = useState(false)
 
   const esAdmin = rol === "admin_rrhh"
   const bloqueado = !esAdmin && !!miSucursal
