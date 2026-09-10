@@ -670,8 +670,14 @@ export default function ControlInsumos() {
                       <Badge variant="outline">{a.sucursal}</Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <Badge variant={a.accion === "guardado" ? "secondary" : "outline"}>
-                        {a.accion === "guardado" ? "Guardó control" : "Ingresó"}
+                      <Badge variant={a.accion === "ingreso" ? "outline" : "secondary"}>
+                        {a.accion === "guardado"
+                          ? "Guardó control"
+                          : a.accion === "actualizado"
+                          ? "Actualizó control"
+                          : a.accion === "continuacion"
+                          ? "Retomó control"
+                          : "Ingresó"}
                       </Badge>
                       {a.detalle && (
                         <span className="text-xs text-muted-foreground">{a.detalle}</span>
