@@ -114,7 +114,7 @@ export default function ControlInsumos() {
           (supabase as any)
             .from("sucursales")
             .select("id, nombre")
-            .eq("activo", true)
+            .eq("activa", true)
             .order("nombre"),
           supabase.rpc("current_user_role"),
           supabase.rpc("current_user_sucursal_id"),
