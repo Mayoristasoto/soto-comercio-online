@@ -389,6 +389,7 @@ export default function ControlInsumos() {
         <TabsList>
           <TabsTrigger value="carga">Carga {sucursalNombre && `— ${sucursalNombre}`}</TabsTrigger>
           <TabsTrigger value="resumen">Comparativo por sucursal</TabsTrigger>
+          {esAdmin && <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="carga" className="space-y-6 mt-4">
