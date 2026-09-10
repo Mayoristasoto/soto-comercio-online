@@ -98,6 +98,7 @@ export default function ControlInsumos() {
   const [cargandoActividad, setCargandoActividad] = useState(false)
   const [historial, setHistorial] = useState<any[]>([])
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
+  const [itemsPrevios, setItemsPrevios] = useState(0)
 
   const esAdmin = rol === "admin_rrhh"
   const bloqueado = !esAdmin && !!miSucursal
@@ -154,9 +155,24 @@ export default function ControlInsumos() {
         }
       }
       setRegistros(map)
+      setItemsPrevios(Object.keys(map).length)
     }
     cargar()
   }, [sucursalId, fecha])
+
+  // Un gerente retoma un control ya iniciado: queda registrado para Admin RRHH
+  const continuarControl = async (sucursal: string, fechaControl: string) => {
+    setSucursalId(sucursal)
+    setFecha(fechaControl)
+    setTab("carga")
+    if (!esAdmin) {
+      await (supabase as any).rpc("registrar_actividad_insumos", {
+        p_sucursal_id: sucursal,
+        p_accion: "continuacion",
+        p_detalle: `Retomó el control del ${fechaControl}`,
+      })
+    }
+  }
 
   // Aviso a Admin RRHH cuando un encargado ingresa al control de insumos
   const [ingresoAvisado, setIngresoAvisado] = useState(false)
@@ -389,14 +405,22 @@ export default function ControlInsumos() {
         .from("insumos_control")
         .upsert(rows, { onConflict: "sucursal_id,insumo_id,fecha" })
       if (error) throw error
+      const esActualizacion = itemsPrevios > 0
       if (!esAdmin) {
         await (supabase as any).rpc("registrar_actividad_insumos", {
           p_sucursal_id: sucursalId,
-          p_accion: "guardado",
-          p_detalle: `${rows.length} ítems · ${pendientes} a reponer · ${fecha}`,
+          p_accion: esActualizacion ? "actualizado" : "guardado",
+          p_detalle: `${rows.length} ítems · ${pendientes} a reponer · ${fecha}${
+            esActualizacion ? ` (continuación, antes ${itemsPrevios} ítems)` : ""
+          }`,
         })
       }
-      toast.success(`Control guardado para ${sucursalNombre}`)
+      setItemsPrevios(rows.length)
+      toast.success(
+        esActualizacion
+          ? `Control actualizado para ${sucursalNombre}`
+          : `Control guardado para ${sucursalNombre}`
+      )
     } catch (e: any) {
       toast.error(e?.message || "No se pudo guardar")
     } finally {
@@ -646,8 +670,14 @@ export default function ControlInsumos() {
                       <Badge variant="outline">{a.sucursal}</Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <Badge variant={a.accion === "guardado" ? "secondary" : "outline"}>
-                        {a.accion === "guardado" ? "Guardó control" : "Ingresó"}
+                      <Badge variant={a.accion === "ingreso" ? "outline" : "secondary"}>
+                        {a.accion === "guardado"
+                          ? "Guardó control"
+                          : a.accion === "actualizado"
+                          ? "Actualizó control"
+                          : a.accion === "continuacion"
+                          ? "Retomó control"
+                          : "Ingresó"}
                       </Badge>
                       {a.detalle && (
                         <span className="text-xs text-muted-foreground">{a.detalle}</span>
@@ -693,6 +723,16 @@ export default function ControlInsumos() {
                         Últ. {horaAr(h.ultima)}
                       </span>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        continuarControl(h.sucursal_id, h.fecha)
+                      }}
+                    >
+                      Continuar control
+                    </Button>
                   </summary>
                   <div className="mt-3 space-y-1">
                     {h.items.map((i: any, idx: number) => (
