@@ -8,7 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ClipboardCheck, Loader2, Lock, Plus, Smartphone, Smile, Trash2, Unlock } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  ArrowLeft,
+  ChevronRight,
+  ClipboardCheck,
+  Loader2,
+  Lock,
+  Plus,
+  Smartphone,
+  Smile,
+  Trash2,
+  Unlock,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
