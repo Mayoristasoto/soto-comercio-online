@@ -94,6 +94,8 @@ export default function ControlInsumos() {
   const [resumen, setResumen] = useState<ResumenSucursal[]>([])
   const [cargandoResumen, setCargandoResumen] = useState(false)
   const [tab, setTab] = useState("carga")
+  const [actividad, setActividad] = useState<any[]>([])
+  const [cargandoActividad, setCargandoActividad] = useState(false)
 
   const esAdmin = rol === "admin_rrhh"
   const bloqueado = !esAdmin && !!miSucursal
@@ -153,6 +155,56 @@ export default function ControlInsumos() {
     }
     cargar()
   }, [sucursalId, fecha])
+
+  // Aviso a Admin RRHH cuando un encargado ingresa al control de insumos
+  const [ingresoAvisado, setIngresoAvisado] = useState(false)
+  useEffect(() => {
+    if (loading || esAdmin || !sucursalId || ingresoAvisado) return
+    setIngresoAvisado(true)
+    ;(supabase as any)
+      .rpc("registrar_actividad_insumos", {
+        p_sucursal_id: sucursalId,
+        p_accion: "ingreso",
+        p_detalle: null,
+      })
+      .then(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, esAdmin, sucursalId, ingresoAvisado])
+
+  const cargarActividad = async () => {
+    setCargandoActividad(true)
+    try {
+      const { data } = await (supabase as any)
+        .from("insumos_actividad")
+        .select("id, accion, detalle, created_at, sucursal_id, empleado_id")
+        .order("created_at", { ascending: false })
+        .limit(100)
+      const rows = (data as any[]) ?? []
+      const empIds = Array.from(new Set(rows.map((r) => r.empleado_id).filter(Boolean)))
+      let nombres: Record<string, string> = {}
+      if (empIds.length) {
+        const { data: emps } = await (supabase as any)
+          .from("empleados")
+          .select("id, nombre, apellido")
+          .in("id", empIds)
+        for (const e of (emps as any[]) ?? []) nombres[e.id] = `${e.apellido}, ${e.nombre}`
+      }
+      setActividad(
+        rows.map((r) => ({
+          ...r,
+          persona: nombres[r.empleado_id] ?? "Usuario",
+          sucursal: sucursales.find((s) => s.id === r.sucursal_id)?.nombre ?? "—",
+        }))
+      )
+    } finally {
+      setCargandoActividad(false)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "seguimiento") cargarActividad()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sucursales])
 
   const cargarResumen = async () => {
     if (!sucursales.length) return
@@ -257,6 +309,13 @@ export default function ControlInsumos() {
         .from("insumos_control")
         .upsert(rows, { onConflict: "sucursal_id,insumo_id,fecha" })
       if (error) throw error
+      if (!esAdmin) {
+        await (supabase as any).rpc("registrar_actividad_insumos", {
+          p_sucursal_id: sucursalId,
+          p_accion: "guardado",
+          p_detalle: `${rows.length} ítems · ${pendientes} a reponer · ${fecha}`,
+        })
+      }
       toast.success(`Control guardado para ${sucursalNombre}`)
     } catch (e: any) {
       toast.error(e?.message || "No se pudo guardar")
@@ -330,6 +389,7 @@ export default function ControlInsumos() {
         <TabsList>
           <TabsTrigger value="carga">Carga {sucursalNombre && `— ${sucursalNombre}`}</TabsTrigger>
           <TabsTrigger value="resumen">Comparativo por sucursal</TabsTrigger>
+          {esAdmin && <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="carga" className="space-y-6 mt-4">
@@ -478,6 +538,52 @@ export default function ControlInsumos() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {esAdmin && (
+          <TabsContent value="seguimiento" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Actividad de encargados
+                  {cargandoActividad && <Loader2 className="h-4 w-4 animate-spin" />}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {actividad.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex flex-col md:flex-row md:items-center gap-2 justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      {a.accion === "guardado" ? (
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      {a.persona}
+                      <Badge variant="outline">{a.sucursal}</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <Badge variant={a.accion === "guardado" ? "secondary" : "outline"}>
+                        {a.accion === "guardado" ? "Guardó control" : "Ingresó"}
+                      </Badge>
+                      {a.detalle && (
+                        <span className="text-xs text-muted-foreground">{a.detalle}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {horaAr(a.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {actividad.length === 0 && !cargandoActividad && (
+                  <p className="text-sm text-muted-foreground">Sin actividad registrada aún.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

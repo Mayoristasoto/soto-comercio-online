@@ -6534,6 +6534,47 @@ export type Database = {
         }
         Relationships: []
       }
+      insumos_actividad: {
+        Row: {
+          accion: string
+          created_at: string
+          detalle: string | null
+          empleado_id: string | null
+          fecha: string
+          id: string
+          sucursal_id: string | null
+          user_id: string
+        }
+        Insert: {
+          accion: string
+          created_at?: string
+          detalle?: string | null
+          empleado_id?: string | null
+          fecha?: string
+          id?: string
+          sucursal_id?: string | null
+          user_id?: string
+        }
+        Update: {
+          accion?: string
+          created_at?: string
+          detalle?: string | null
+          empleado_id?: string | null
+          fecha?: string
+          id?: string
+          sucursal_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insumos_actividad_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insumos_catalogo: {
         Row: {
           activo: boolean
@@ -11567,6 +11608,10 @@ export type Database = {
           empleado_id: string
           nombre: string
         }[]
+      }
+      registrar_actividad_insumos: {
+        Args: { p_accion: string; p_detalle?: string; p_sucursal_id: string }
+        Returns: string
       }
       registrar_delegacion_tarea: {
         Args: {
