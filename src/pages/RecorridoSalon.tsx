@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Map, Plus, Upload, Trash2, Settings2 } from "lucide-react";
+import { Map as MapIcon, Plus, Upload, Trash2, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
 import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
