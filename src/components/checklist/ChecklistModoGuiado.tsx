@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ArrowLeft,
   ArrowRight,
@@ -170,50 +171,62 @@ export function ChecklistModoGuiado({
             </SheetTrigger>
             <SheetContent side="right" className="w-[88vw] max-w-sm overflow-y-auto">
               <SheetHeader>
-                <SheetTitle>Secciones</SheetTitle>
+                <SheetTitle>Elegir punto a controlar</SheetTitle>
               </SheetHeader>
-              <div className="mt-4 space-y-4">
+              <div className="mt-4 space-y-2">
                 {secciones.map(([nombre, secItems]) => {
                   const r = resumirItems(secItems);
                   return (
-                    <div key={nombre} className="space-y-1">
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between gap-2 rounded-md border p-3 text-left"
-                        onClick={() => {
-                          const idx = items.findIndex((i) => i.id === secItems[0].id);
-                          irA(idx);
-                          setIndiceAbierto(false);
-                        }}
-                      >
-                        <span className="text-sm font-medium">{nombre}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {r.evaluados}/{r.total}
-                        </span>
-                      </button>
-                      <div className="flex flex-wrap gap-1 px-1">
+                    <Collapsible key={nombre} defaultOpen={nombre === seccionActual} className="overflow-hidden rounded-md border">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="group h-auto w-full justify-between rounded-none px-3 py-3 text-left"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold">{nombre}</span>
+                            <span className="block text-xs font-normal text-muted-foreground">
+                              {r.evaluados} de {r.total} evaluados
+                            </span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="border-t bg-muted/20 p-1">
                         {secItems.map((si) => {
                           const idx = items.findIndex((i) => i.id === si.id);
                           return (
-                            <button
+                            <Button
                               key={si.id}
                               type="button"
+                              variant="ghost"
                               onClick={() => {
                                 irA(idx);
                                 setIndiceAbierto(false);
                               }}
                               className={cn(
-                                "h-7 w-7 rounded-md border text-xs",
-                                si.estado ? ESTADO_SOFT_CLASSES[si.estado] : "text-muted-foreground",
-                                idx === indice && "ring-2 ring-primary"
+                                "mb-1 h-auto w-full justify-start gap-3 whitespace-normal rounded-md px-2 py-2 text-left last:mb-0",
+                                idx === indice && "bg-accent ring-1 ring-primary"
                               )}
                             >
-                              {idx + 1}
-                            </button>
+                              <span
+                                className={cn(
+                                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-xs",
+                                  si.estado ? ESTADO_SOFT_CLASSES[si.estado] : "text-muted-foreground"
+                                )}
+                              >
+                                {idx + 1}
+                              </span>
+                              <span className="min-w-0 flex-1 text-sm leading-snug">{si.texto}</span>
+                              {si.estado && (
+                                <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", ESTADO_CLASSES[si.estado].split(" ")[0])} />
+                              )}
+                            </Button>
                           );
                         })}
-                      </div>
-                    </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   );
                 })}
                 <Button variant="outline" className="w-full" onClick={() => { setPantalla("cierre"); setIndiceAbierto(false); }}>
