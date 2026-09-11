@@ -1,0 +1,1 @@
+ALTER TABLE public.recorrido_planos ADD COLUMN IF NOT EXISTS fondo_gondolas JSONB;
