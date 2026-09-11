@@ -1,0 +1,1 @@
+ALTER TABLE public.recorrido_planos ADD COLUMN IF NOT EXISTS imagen_path text;
