@@ -153,7 +153,7 @@ const RecorridoSalon = () => {
     <div className="container mx-auto p-4 space-y-4 max-w-6xl">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Map className="h-6 w-6" /> Recorrido de Salón</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><MapIcon className="h-6 w-6" /> Recorrido de Salón</h1>
           <p className="text-sm text-muted-foreground">Recorré el plano pasillo por pasillo y evaluá criterios como limpieza, precios y rotación.</p>
         </div>
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4 mr-1" /> Nuevo recorrido</Button>
