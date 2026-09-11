@@ -102,6 +102,8 @@ import PlanillaDescansos from "./pages/PlanillaDescansos";
 import HorariosMasivos from "./pages/HorariosMasivos";
 import OptimizadorHorarios from "./pages/OptimizadorHorarios";
 import ControlesDashboard from "./pages/ControlesDashboard";
+import RecorridoSalon from "./pages/RecorridoSalon";
+import RecorridoDetalle from "./pages/RecorridoDetalle";
 
 const queryClient = new QueryClient();
 
@@ -195,7 +197,9 @@ const App = () => (
             <Route path="rrhh/checklist" element={<ChecklistControles />} />
             <Route path="rrhh/checklist/plantillas" element={<ChecklistPlantillas />} />
             <Route path="rrhh/checklist/:id" element={<ChecklistControlDetalle />} />
-            <Route path="rrhh/encuestas" element={<EncuestasClientes />} />
+             <Route path="rrhh/encuestas" element={<EncuestasClientes />} />
+             <Route path="rrhh/recorrido" element={<RecorridoSalon />} />
+             <Route path="rrhh/recorrido/:id" element={<RecorridoDetalle />} />
             <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
