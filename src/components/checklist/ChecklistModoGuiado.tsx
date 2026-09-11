@@ -86,7 +86,7 @@ export function ChecklistModoGuiado({
   const [pantalla, setPantalla] = useState<Pantalla>(items.length ? "item" : "cierre");
   const [mostrarObs, setMostrarObs] = useState(false);
   const [mostrarFotos, setMostrarFotos] = useState(false);
-  const [indiceAbierto, setIndiceAbierto] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(true);
 
   const resumen = resumirItems(items);
   const item = items[indice];
