@@ -9078,6 +9078,7 @@ export type Database = {
           alto: number
           ancho: number
           created_at: string
+          fondo_gondolas: Json | null
           id: string
           nombre: string
           sucursal_id: string
@@ -9089,6 +9090,7 @@ export type Database = {
           alto?: number
           ancho?: number
           created_at?: string
+          fondo_gondolas?: Json | null
           id?: string
           nombre: string
           sucursal_id: string
@@ -9100,6 +9102,7 @@ export type Database = {
           alto?: number
           ancho?: number
           created_at?: string
+          fondo_gondolas?: Json | null
           id?: string
           nombre?: string
           sucursal_id?: string
