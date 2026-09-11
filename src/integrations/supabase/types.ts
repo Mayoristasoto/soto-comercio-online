@@ -8940,6 +8940,320 @@ export type Database = {
           },
         ]
       }
+      recorrido_criterios: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          obligatorio: boolean
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          obligatorio?: boolean
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          obligatorio?: boolean
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recorrido_hallazgo_fotos: {
+        Row: {
+          created_at: string
+          hallazgo_id: string
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          hallazgo_id: string
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          hallazgo_id?: string
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorrido_hallazgo_fotos_hallazgo_id_fkey"
+            columns: ["hallazgo_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_hallazgos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorrido_hallazgos: {
+        Row: {
+          created_at: string
+          criterio_id: string | null
+          criterio_nombre: string | null
+          estado: Database["public"]["Enums"]["checklist_estado_item"] | null
+          id: string
+          observaciones: string | null
+          orden: number
+          punto_x: number | null
+          punto_y: number | null
+          recorrido_id: string
+          updated_at: string
+          zona_id: string | null
+          zona_nombre: string | null
+        }
+        Insert: {
+          created_at?: string
+          criterio_id?: string | null
+          criterio_nombre?: string | null
+          estado?: Database["public"]["Enums"]["checklist_estado_item"] | null
+          id?: string
+          observaciones?: string | null
+          orden?: number
+          punto_x?: number | null
+          punto_y?: number | null
+          recorrido_id: string
+          updated_at?: string
+          zona_id?: string | null
+          zona_nombre?: string | null
+        }
+        Update: {
+          created_at?: string
+          criterio_id?: string | null
+          criterio_nombre?: string | null
+          estado?: Database["public"]["Enums"]["checklist_estado_item"] | null
+          id?: string
+          observaciones?: string | null
+          orden?: number
+          punto_x?: number | null
+          punto_y?: number | null
+          recorrido_id?: string
+          updated_at?: string
+          zona_id?: string | null
+          zona_nombre?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorrido_hallazgos_criterio_id_fkey"
+            columns: ["criterio_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_criterios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorrido_hallazgos_recorrido_id_fkey"
+            columns: ["recorrido_id"]
+            isOneToOne: false
+            referencedRelation: "recorridos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorrido_hallazgos_zona_id_fkey"
+            columns: ["zona_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_zonas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorrido_planos: {
+        Row: {
+          activo: boolean
+          alto: number
+          ancho: number
+          created_at: string
+          id: string
+          nombre: string
+          sucursal_id: string
+          updated_at: string
+          usa_gondolas: boolean
+        }
+        Insert: {
+          activo?: boolean
+          alto?: number
+          ancho?: number
+          created_at?: string
+          id?: string
+          nombre: string
+          sucursal_id: string
+          updated_at?: string
+          usa_gondolas?: boolean
+        }
+        Update: {
+          activo?: boolean
+          alto?: number
+          ancho?: number
+          created_at?: string
+          id?: string
+          nombre?: string
+          sucursal_id?: string
+          updated_at?: string
+          usa_gondolas?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorrido_planos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorrido_zonas: {
+        Row: {
+          created_at: string
+          height: number
+          id: string
+          nombre: string
+          orden: number
+          plano_id: string
+          updated_at: string
+          width: number
+          x: number
+          y: number
+        }
+        Insert: {
+          created_at?: string
+          height?: number
+          id?: string
+          nombre: string
+          orden?: number
+          plano_id: string
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+        }
+        Update: {
+          created_at?: string
+          height?: number
+          id?: string
+          nombre?: string
+          orden?: number
+          plano_id?: string
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorrido_zonas_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorridos: {
+        Row: {
+          cerrado_at: string | null
+          cerrado_por: string | null
+          created_at: string
+          created_by: string | null
+          estado: string
+          fecha_hora: string
+          id: string
+          observaciones_generales: string | null
+          plano_id: string | null
+          responsable_id: string | null
+          sucursal_id: string
+          titulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          estado?: string
+          fecha_hora?: string
+          id?: string
+          observaciones_generales?: string | null
+          plano_id?: string | null
+          responsable_id?: string | null
+          sucursal_id: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          estado?: string
+          fecha_hora?: string
+          id?: string
+          observaciones_generales?: string | null
+          plano_id?: string | null
+          responsable_id?: string | null
+          sucursal_id?: string
+          titulo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorridos_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorridos_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorridos_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorridos_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorridos_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorridos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_change_audit: {
         Row: {
           changed_at: string | null
