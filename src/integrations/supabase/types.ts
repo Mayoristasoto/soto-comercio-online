@@ -9080,6 +9080,7 @@ export type Database = {
           created_at: string
           fondo_gondolas: Json | null
           id: string
+          imagen_path: string | null
           nombre: string
           sucursal_id: string
           updated_at: string
@@ -9092,6 +9093,7 @@ export type Database = {
           created_at?: string
           fondo_gondolas?: Json | null
           id?: string
+          imagen_path?: string | null
           nombre: string
           sucursal_id: string
           updated_at?: string
@@ -9104,6 +9106,7 @@ export type Database = {
           created_at?: string
           fondo_gondolas?: Json | null
           id?: string
+          imagen_path?: string | null
           nombre?: string
           sucursal_id?: string
           updated_at?: string
