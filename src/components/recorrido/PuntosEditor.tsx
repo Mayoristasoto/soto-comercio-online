@@ -12,18 +12,19 @@ import type { RecorridoPunto, RecorridoZona } from "./recorridoTypes";
 interface Props {
   zonas: RecorridoZona[];
   usaGondolas: boolean;
+  sucursalId?: string | null;
   onChange?: () => void;
 }
 
 /** Editor de puntos controlables (góndolas) dentro de cada zona/pasillo */
-export function PuntosEditor({ zonas, usaGondolas, onChange }: Props) {
+export function PuntosEditor({ zonas, usaGondolas, sucursalId, onChange }: Props) {
   const [zonaId, setZonaId] = useState<string>("");
   const [puntos, setPuntos] = useState<RecorridoPunto[]>([]);
   const [nuevo, setNuevo] = useState("");
   const [editando, setEditando] = useState<RecorridoPunto | null>(null);
   const [editNombre, setEditNombre] = useState("");
   const [generando, setGenerando] = useState(false);
-  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas);
+  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas, sucursalId);
 
   const zona = zonas.find((z) => z.id === zonaId) ?? null;
 
