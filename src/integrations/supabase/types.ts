@@ -756,6 +756,36 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_partners_v2: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       calendario_compartidos: {
         Row: {
           calendario_id: string
@@ -5788,7 +5818,139 @@ export type Database = {
         }
         Relationships: []
       }
+      gondolas_v2: {
+        Row: {
+          brand: string | null
+          category: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          notes: string | null
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          created_at?: string | null
+          end_date?: string | null
+          id: string
+          image_url?: string | null
+          notes?: string | null
+          position_height: number
+          position_width: number
+          position_x: number
+          position_y: number
+          section: string
+          status: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          position_height?: number
+          position_width?: number
+          position_x?: number
+          position_y?: number
+          section?: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       graphic_elements: {
+        Row: {
+          color: string | null
+          created_at: string
+          fill_color: string | null
+          font_family: string | null
+          font_size: number | null
+          font_style: string | null
+          font_weight: string | null
+          height: number | null
+          id: string
+          is_visible: boolean | null
+          opacity: number | null
+          position_x: number
+          position_y: number
+          rotation: number | null
+          stroke_color: string | null
+          stroke_width: number | null
+          text_align: string | null
+          text_content: string | null
+          text_decoration: string | null
+          type: string
+          updated_at: string
+          width: number | null
+          z_index: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          fill_color?: string | null
+          font_family?: string | null
+          font_size?: number | null
+          font_style?: string | null
+          font_weight?: string | null
+          height?: number | null
+          id?: string
+          is_visible?: boolean | null
+          opacity?: number | null
+          position_x: number
+          position_y: number
+          rotation?: number | null
+          stroke_color?: string | null
+          stroke_width?: number | null
+          text_align?: string | null
+          text_content?: string | null
+          text_decoration?: string | null
+          type: string
+          updated_at?: string
+          width?: number | null
+          z_index?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          fill_color?: string | null
+          font_family?: string | null
+          font_size?: number | null
+          font_style?: string | null
+          font_weight?: string | null
+          height?: number | null
+          id?: string
+          is_visible?: boolean | null
+          opacity?: number | null
+          position_x?: number
+          position_y?: number
+          rotation?: number | null
+          stroke_color?: string | null
+          stroke_width?: number | null
+          text_align?: string | null
+          text_content?: string | null
+          text_decoration?: string | null
+          type?: string
+          updated_at?: string
+          width?: number | null
+          z_index?: number | null
+        }
+        Relationships: []
+      }
+      graphic_elements_v2: {
         Row: {
           color: string | null
           created_at: string
@@ -6879,6 +7041,42 @@ export type Database = {
         Relationships: []
       }
       layout_viewport: {
+        Row: {
+          created_at: string
+          height: number
+          id: string
+          is_active: boolean
+          updated_at: string
+          width: number
+          x: number
+          y: number
+          zoom: number
+        }
+        Insert: {
+          created_at?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zoom?: number
+        }
+        Update: {
+          created_at?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zoom?: number
+        }
+        Relationships: []
+      }
+      layout_viewport_v2: {
         Row: {
           created_at: string
           height: number
