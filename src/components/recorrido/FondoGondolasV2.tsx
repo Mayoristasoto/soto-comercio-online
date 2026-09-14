@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fondoDe } from "./planosFondo";
 
 export interface GondolaV2 {
   id: string;
@@ -33,11 +34,13 @@ export const gondolaAPorcentaje = (g: GondolaV2, b: BBox) => ({
   height: (g.height / b.height) * 100,
 });
 
-export const cargarGondolasV2 = async (): Promise<GondolaV2[]> => {
-  const { data } = await supabase
+export const cargarGondolasV2 = async (sucursalId?: string | null): Promise<GondolaV2[]> => {
+  let q = supabase
     .from("gondolas_v2")
     .select("id, type, section, status, position_x, position_y, position_width, position_height")
     .order("created_at", { ascending: true });
+  if (sucursalId) q = q.eq("sucursal_id", sucursalId);
+  const { data } = await q;
   return (data ?? []).map((d: any) => ({
     id: d.id,
     type: d.type,
@@ -50,19 +53,19 @@ export const cargarGondolasV2 = async (): Promise<GondolaV2[]> => {
   }));
 };
 
-/** Carga el layout de góndolas (copia v2) para usarlo como fondo del recorrido */
-export function useFondoGondolasV2(activo: boolean) {
+/** Carga el layout de góndolas (copia v2) de una sucursal para usarlo como fondo del recorrido */
+export function useFondoGondolasV2(activo: boolean, sucursalId?: string | null) {
   const [gondolas, setGondolas] = useState<GondolaV2[]>([]);
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
     if (!activo) return;
     setCargando(true);
-    cargarGondolasV2().then((gs) => {
+    cargarGondolasV2(sucursalId).then((gs) => {
       setGondolas(gs);
       setCargando(false);
     });
-  }, [activo]);
+  }, [activo, sucursalId]);
 
   return { gondolas, bbox: bboxDe(gondolas), cargando };
 }
@@ -74,7 +77,16 @@ const colorEstado = (status: string) =>
     : { fill: "#86efac", stroke: "#16a34a" };
 
 /** Dibujo del layout de góndolas como fondo estático (no edita nada del editor original) */
-export function FondoGondolasV2({ gondolas, bbox }: { gondolas: GondolaV2[]; bbox: BBox }) {
+export function FondoGondolasV2({
+  gondolas,
+  bbox,
+  sucursalId,
+}: {
+  gondolas: GondolaV2[];
+  bbox: BBox;
+  sucursalId?: string | null;
+}) {
+  const fondo = fondoDe(sucursalId);
   return (
     <svg
       viewBox={`${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`}
@@ -82,16 +94,19 @@ export function FondoGondolasV2({ gondolas, bbox }: { gondolas: GondolaV2[]; bbo
       className="absolute inset-0 w-full h-full"
     >
       <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill="#f8fafc" />
-      {/* Plano del salón (mismo fondo que el editor de layout) */}
-      <image
-        href="/lovable-uploads/d3b32fd2-a19d-44d5-a8e2-b167fe688726.png"
-        x={0}
-        y={0}
-        width={1000}
-        height={700}
-        opacity={0.35}
-        preserveAspectRatio="xMidYMid meet"
-      />
+      {/* Plano del salón de la sucursal */}
+      {fondo.url && (
+        <image
+          href={fondo.url}
+          x={0}
+          y={0}
+          width={fondo.width}
+          height={fondo.height}
+          opacity={0.35}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      )}
+
       {gondolas.map((g) => {
         const c = colorEstado(g.status);
         return (

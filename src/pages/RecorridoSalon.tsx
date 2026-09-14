@@ -26,6 +26,7 @@ import {
   type TipoEspacio,
 } from "@/components/recorrido/recorridoTypes";
 import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
+import { fondoDe } from "@/components/recorrido/planosFondo";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
 import { bboxDe, cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
 
@@ -153,18 +154,22 @@ const RecorridoSalon = () => {
     if (!confirm(`Se van a borrar los pasillos y góndolas cargados de ${nombreSuc} y se vuelven a crear desde el layout. ¿Seguir?`)) return;
     setRegenerando(true);
     try {
-      const gondolas = await cargarGondolasV2();
+      const gondolas = await cargarGondolasV2(sucursalSel);
       if (!gondolas.length) throw new Error("El layout no tiene góndolas todavía");
       const bbox = bboxDe(gondolas);
 
       // plano de la sucursal (usa el layout como fondo)
+      const fondo = fondoDe(sucursalSel);
       let planoId = planos.find((p) => p.sucursal_id === sucursalSel)?.id ?? null;
       if (planoId) {
-        await supabase.from("recorrido_planos").update({ usa_gondolas: true, ancho: 1000, alto: 700 }).eq("id", planoId);
+        await supabase
+          .from("recorrido_planos")
+          .update({ usa_gondolas: true, ancho: fondo.width, alto: fondo.height })
+          .eq("id", planoId);
       } else {
         const { data, error } = await supabase
           .from("recorrido_planos")
-          .insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: 1000, alto: 700, usa_gondolas: true })
+          .insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: fondo.width, alto: fondo.height, usa_gondolas: true })
           .select("id")
           .single();
         if (error || !data) throw error ?? new Error("plano");
@@ -392,7 +397,7 @@ const RecorridoSalon = () => {
                   {planoActual.usa_gondolas && (
                     <div className="border-t pt-4">
                       <h3 className="font-semibold mb-2">Mapa de espacios (góndolas, punteras, exhibidores y carteles)</h3>
-                      <EspaciosEditor onChange={() => cargarPlanos()} />
+                      <EspaciosEditor sucursalId={sucursalSel} onChange={() => cargarPlanos()} />
                     </div>
                   )}
                   <div className="border-t pt-4">
@@ -401,7 +406,7 @@ const RecorridoSalon = () => {
                   </div>
                   <div className="border-t pt-4">
                     <h3 className="font-semibold mb-2">Góndolas dentro de cada pasillo</h3>
-                    <PuntosEditor zonas={zonas} usaGondolas={!!planoActual.usa_gondolas} />
+                    <PuntosEditor zonas={zonas} usaGondolas={!!planoActual.usa_gondolas} sucursalId={sucursalSel} />
                   </div>
                 </>
               )}

@@ -10,9 +10,7 @@ import { Copy, Grid3X3, ListOrdered, MousePointer2, Pencil, PlusSquare, Trash2 }
 import { toast } from "sonner";
 import { cargarGondolasV2, type BBox, type GondolaV2 } from "./FondoGondolasV2";
 import { TIPO_ESPACIO_LABEL, TIPOS_ESPACIO, type TipoEspacio } from "./recorridoTypes";
-
-/** Lienzo fijo: mismas unidades que el plano del editor de layout */
-const LIENZO: BBox = { x: 0, y: 0, width: 1000, height: 700 };
+import { fondoDe } from "./planosFondo";
 
 const colorEstado = (status: string) =>
   status === "occupied"
@@ -20,6 +18,8 @@ const colorEstado = (status: string) =>
     : "bg-emerald-300/70 border-emerald-600";
 
 interface Props {
+  /** Sucursal cuyo mapa se está editando */
+  sucursalId?: string | null;
   /** Se llama cuando cambió el mapa (para refrescar el plano del recorrido) */
   onChange?: () => void;
 }
@@ -27,8 +27,11 @@ interface Props {
 interface Draft { x: number; y: number; width: number; height: number }
 
 /** Editor del mapa de espacios sobre la copia v2 del layout (gondolas_v2) */
-export function EspaciosEditor({ onChange }: Props) {
+export function EspaciosEditor({ sucursalId, onChange }: Props) {
   const contRef = useRef<HTMLDivElement>(null);
+  const fondo = fondoDe(sucursalId);
+  /** Lienzo: mismas unidades que el plano del editor de layout */
+  const LIENZO: BBox = { x: 0, y: 0, width: fondo.width, height: fondo.height };
   const [espacios, setEspacios] = useState<GondolaV2[]>([]);
   const [cargando, setCargando] = useState(true);
   const [modo, setModo] = useState<"dibujar" | "mover">("dibujar");
@@ -57,10 +60,10 @@ export function EspaciosEditor({ onChange }: Props) {
 
   const cargar = useCallback(async () => {
     setCargando(true);
-    const gs = await cargarGondolasV2();
+    const gs = await cargarGondolasV2(sucursalId);
     setEspacios(gs);
     setCargando(false);
-  }, []);
+  }, [sucursalId]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -177,6 +180,7 @@ export function EspaciosEditor({ onChange }: Props) {
       position_y: d.y,
       position_width: d.width,
       position_height: d.height,
+      sucursal_id: sucursalId ?? null,
     };
     const { error } = await supabase.from("gondolas_v2").insert(fila);
     if (error) return toast.error("No se pudo crear el espacio");
@@ -197,6 +201,7 @@ export function EspaciosEditor({ onChange }: Props) {
       position_y: sel.y,
       position_width: sel.width,
       position_height: sel.height,
+      sucursal_id: sucursalId ?? null,
     };
     const { error } = await supabase.from("gondolas_v2").insert(fila);
     if (error) return toast.error("No se pudo duplicar");
@@ -249,6 +254,7 @@ export function EspaciosEditor({ onChange }: Props) {
       position_y: sel.y + dy * (i + 1),
       position_width: sel.width,
       position_height: sel.height,
+      sucursal_id: sucursalId ?? null,
     }));
     setGuardando(true);
     const { error } = await supabase.from("gondolas_v2").insert(filas);
@@ -332,12 +338,14 @@ export function EspaciosEditor({ onChange }: Props) {
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
       >
-        <img
-          src="/lovable-uploads/d3b32fd2-a19d-44d5-a8e2-b167fe688726.png"
-          alt="Plano del salón"
-          className="absolute inset-0 w-full h-full object-contain opacity-40 pointer-events-none"
-          draggable={false}
-        />
+        {fondo.url && (
+          <img
+            src={fondo.url}
+            alt="Plano del salón"
+            className="absolute inset-0 w-full h-full object-contain opacity-40 pointer-events-none"
+            draggable={false}
+          />
+        )}
         {espacios.map((g) => {
           const arrastrando = dragRef.current?.id === g.id && draft;
           const box = arrastrando ? (draft as Draft) : { x: g.x, y: g.y, width: g.width, height: g.height };

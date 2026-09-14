@@ -43,7 +43,7 @@ export function PlanoCanvas({
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const usaGondolas = !!plano.usa_gondolas;
-  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas);
+  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas, plano.sucursal_id);
 
   useEffect(() => {
     let revoke: string | null = null;
@@ -149,7 +149,7 @@ export function PlanoCanvas({
           style={{ aspectRatio: `${bbox.width} / ${bbox.height}` }}
           onClick={handleClick}
         >
-          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} />
+          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} sucursalId={plano.sucursal_id} />
           {overlay}
         </div>
       </div>

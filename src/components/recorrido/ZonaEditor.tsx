@@ -29,7 +29,7 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
   const [generando, setGenerando] = useState(false);
 
   const usaGondolas = !!plano.usa_gondolas;
-  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas);
+  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas, plano.sucursal_id);
 
   useEffect(() => {
     let revoke: string | null = null;
@@ -162,7 +162,7 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
         onPointerUp={onPointerUp}
       >
         {usaGondolas ? (
-          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} />
+          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} sucursalId={plano.sucursal_id} />
         ) : (
           <img src={imgUrl!} alt={plano.nombre} className="w-full h-auto block pointer-events-none" draggable={false} />
         )}
