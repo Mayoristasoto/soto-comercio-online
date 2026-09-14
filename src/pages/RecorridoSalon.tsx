@@ -158,13 +158,17 @@ const RecorridoSalon = () => {
       const bbox = bboxDe(gondolas);
 
       // plano de la sucursal (usa el layout como fondo)
+      const fondo = fondoDe(sucursalSel);
       let planoId = planos.find((p) => p.sucursal_id === sucursalSel)?.id ?? null;
       if (planoId) {
-        await supabase.from("recorrido_planos").update({ usa_gondolas: true, ancho: 1000, alto: 700 }).eq("id", planoId);
+        await supabase
+          .from("recorrido_planos")
+          .update({ usa_gondolas: true, ancho: fondo.width, alto: fondo.height })
+          .eq("id", planoId);
       } else {
         const { data, error } = await supabase
           .from("recorrido_planos")
-          .insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: 1000, alto: 700, usa_gondolas: true })
+          .insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: fondo.width, alto: fondo.height, usa_gondolas: true })
           .select("id")
           .single();
         if (error || !data) throw error ?? new Error("plano");
