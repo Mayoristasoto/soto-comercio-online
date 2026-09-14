@@ -1007,7 +1007,9 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
                   <InteractiveMap
                     gondolas={gondolas}
                     onGondolaHover={setHoveredGondola}
-                    onGondolaSelect={setSelectedGondola}
+                    onGondolaSelect={(g) => { setSelectedIds([]); setSelectedGondola(g); }}
+                    onGondolaMultiSelect={handleMultiSelect}
+                    multiSelectedIds={selectedIds}
                     onGondolaUpdate={updateGondola}
                     onGondolaAdd={(newGondola) => {
                       addGondola(newGondola);
