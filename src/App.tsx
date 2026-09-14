@@ -50,6 +50,7 @@ import ConfiguracionUsuario from "./pages/ConfiguracionUsuario";
 import CentroAccesos from "./pages/CentroAccesos";
 
 import GondolasEdit from "./pages/GondolasEdit";
+import GondolasEditV2 from "./pages/GondolasEditV2";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import KioscoCheckIn from "./pages/KioscoCheckIn";
@@ -262,6 +263,7 @@ const App = () => (
               <Route path="gondolas" element={<Gondolas />} />
               <Route path="insumos" element={<ControlInsumos />} />
               <Route path="gondolasedit" element={<GondolasEdit />} />
+              <Route path="gondolasedit-v2" element={<GondolasEditV2 />} />
               <Route path="configuracion" element={<ConfiguracionAdmin />} />
               <Route path="auth-logs" element={<AdminAuthLogs />} />
               <Route path="seguridad" element={<AdminSeguridad />} />
