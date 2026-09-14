@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronRight, Image, MessageSquareText, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { HistorialPunto } from "@/components/recorrido/HistorialPunto";
 import { EvidenciaUploader } from "./EvidenciaUploader";
 import {
   ESTADO_CLASSES,
