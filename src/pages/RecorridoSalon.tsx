@@ -397,7 +397,7 @@ const RecorridoSalon = () => {
                   {planoActual.usa_gondolas && (
                     <div className="border-t pt-4">
                       <h3 className="font-semibold mb-2">Mapa de espacios (góndolas, punteras, exhibidores y carteles)</h3>
-                      <EspaciosEditor onChange={() => cargarPlanos()} />
+                      <EspaciosEditor sucursalId={sucursalSel} onChange={() => cargarPlanos()} />
                     </div>
                   )}
                   <div className="border-t pt-4">
