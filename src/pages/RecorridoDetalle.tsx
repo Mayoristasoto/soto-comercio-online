@@ -246,12 +246,15 @@ const RecorridoDetalle = () => {
 
   const progreso = (z: RecorridoZona) => {
     const hechos = hallazgos.filter((h) => h.zona_id === z.id).length;
-    const objetivo = criterios.length * Math.max(1, puntosDeZona(z.id).length);
+    const pts = puntosDeZona(z.id);
+    const objetivo = pts.length
+      ? pts.reduce((acc, p) => acc + criteriosPara(p).length, 0)
+      : criteriosPara(null).length;
     return `${hechos}/${objetivo}`;
   };
 
   const renderCriterios = (zona: RecorridoZona, punto: RecorridoPunto | null) =>
-    criterios.map((c) => {
+    criteriosPara(punto).map((c) => {
       const h = hallazgoDe(zona.id, c.id, punto?.id ?? null);
       return (
         <div key={`${punto?.id ?? zona.id}-${c.id}`} className="rounded-md border p-3 space-y-2">
