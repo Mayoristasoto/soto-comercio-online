@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET_PLANOS, type RecorridoPlano, type RecorridoZona } from "./recorridoTypes";
+import { FondoGondolasV2, gondolaAPorcentaje, useFondoGondolasV2 } from "./FondoGondolasV2";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash2, ImageOff, Pencil } from "lucide-react";
+import { Trash2, ImageOff, Pencil, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface RectTmp { x: number; y: number; width: number; height: number }
@@ -15,7 +16,7 @@ interface Props {
   onZonasChange: () => void;
 }
 
-/** Editor de zonas (pasillos) sobre la imagen estática del plano: arrastrar para dibujar, clic para seleccionar. */
+/** Editor de zonas (góndolas y pasillos) sobre el plano: arrastrar para dibujar, clic para seleccionar. */
 export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
   const contRef = useRef<HTMLDivElement>(null);
   const [imgUrl, setImgUrl] = useState<string | null>(null);
@@ -25,11 +26,15 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [editando, setEditando] = useState<RecorridoZona | null>(null);
   const [editNombre, setEditNombre] = useState("");
+  const [generando, setGenerando] = useState(false);
+
+  const usaGondolas = !!plano.usa_gondolas;
+  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas);
 
   useEffect(() => {
     let revoke: string | null = null;
     (async () => {
-      if (!plano.imagen_path) return;
+      if (usaGondolas || !plano.imagen_path) return;
       const { data: blob } = await supabase.storage.from(BUCKET_PLANOS).download(plano.imagen_path);
       if (blob) {
         revoke = URL.createObjectURL(blob);
@@ -37,7 +42,7 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
       }
     })();
     return () => { if (revoke) URL.revokeObjectURL(revoke); };
-  }, [plano.imagen_path]);
+  }, [plano.imagen_path, usaGondolas]);
 
   const toPct = (e: React.PointerEvent) => {
     const rect = contRef.current!.getBoundingClientRect();
@@ -48,7 +53,6 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!imgUrl) return;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     const p = toPct(e);
     inicioRef.current = p;
@@ -68,7 +72,7 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
   const onPointerUp = () => {
     if (dibujando && dibujando.width > 2 && dibujando.height > 2) {
       setNuevaRect(dibujando);
-      setNuevoNombre(`Zona ${zonas.length + 1}`);
+      setNuevoNombre(`Pasillo ${zonas.length + 1}`);
     }
     setDibujando(null);
     inicioRef.current = null;
@@ -91,6 +95,28 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
     onZonasChange();
   };
 
+  /** Crea una zona por cada góndola/puntera del layout, para controlar una por una */
+  const generarDesdeGondolas = async () => {
+    if (!gondolas.length) return toast.error("No hay góndolas cargadas en el layout");
+    setGenerando(true);
+    const existentes = new Set(zonas.map((z) => z.nombre.toLowerCase()));
+    const filas = gondolas
+      .filter((g) => !existentes.has(g.section.toLowerCase()))
+      .map((g, i) => {
+        const p = gondolaAPorcentaje(g, bbox);
+        return { plano_id: plano.id, nombre: g.section, orden: zonas.length + i, ...p };
+      });
+    if (!filas.length) {
+      setGenerando(false);
+      return toast.info("Ya están creadas todas las zonas de góndolas");
+    }
+    const { error } = await supabase.from("recorrido_zonas").insert(filas);
+    setGenerando(false);
+    if (error) return toast.error("No se pudieron generar las zonas");
+    toast.success(`${filas.length} zonas generadas desde el layout`);
+    onZonasChange();
+  };
+
   const renombrarZona = async () => {
     if (!editando || !editNombre.trim()) return;
     const { error } = await supabase.from("recorrido_zonas").update({ nombre: editNombre.trim() }).eq("id", editando.id);
@@ -106,28 +132,40 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
     onZonasChange();
   };
 
-  if (!imgUrl) {
+  if (!usaGondolas && !imgUrl) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-muted/20 py-16 text-muted-foreground">
         <ImageOff className="h-8 w-8" />
-        <p className="text-sm">Primero subí la imagen del plano de la sucursal</p>
+        <p className="text-sm">Subí la imagen del plano o activá el plano de góndolas</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Arrastrá sobre la imagen para dibujar un pasillo o zona. Tocá una zona existente para renombrarla o eliminarla.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          Arrastrá sobre el plano para dibujar una góndola o pasillo. Tocá una zona existente para renombrarla o eliminarla.
+        </p>
+        {usaGondolas && (
+          <Button variant="outline" size="sm" onClick={generarDesdeGondolas} disabled={generando}>
+            <Wand2 className="h-4 w-4 mr-1" /> Generar zonas desde góndolas
+          </Button>
+        )}
+      </div>
       <div
         ref={contRef}
         className="relative w-full overflow-hidden rounded-md border bg-muted/30 select-none touch-none cursor-crosshair"
+        style={usaGondolas ? { aspectRatio: `${bbox.width} / ${bbox.height}` } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
-        <img src={imgUrl} alt={plano.nombre} className="w-full h-auto block pointer-events-none" draggable={false} />
+        {usaGondolas ? (
+          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} />
+        ) : (
+          <img src={imgUrl!} alt={plano.nombre} className="w-full h-auto block pointer-events-none" draggable={false} />
+        )}
         {zonas.map((z) => (
           <div
             key={z.id}
