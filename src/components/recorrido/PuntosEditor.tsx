@@ -76,6 +76,7 @@ export function PuntosEditor({ zonas, usaGondolas, onChange }: Props) {
         zona_id: zona.id,
         nombre: g.section,
         gondola_ref: g.id,
+        tipo_espacio: g.type,
         orden: puntos.length + i,
         ...p,
       }));
