@@ -60,10 +60,10 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
 
   const cargar = useCallback(async () => {
     setCargando(true);
-    const gs = await cargarGondolasV2();
+    const gs = await cargarGondolasV2(sucursalId);
     setEspacios(gs);
     setCargando(false);
-  }, []);
+  }, [sucursalId]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
