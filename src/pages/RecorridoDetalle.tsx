@@ -121,6 +121,57 @@ const RecorridoDetalle = () => {
     }
   };
 
+  // Marca todos los criterios de una góndola (o pasillo) de una sola vez
+  const marcarGrupo = async (zona: RecorridoZona, punto: RecorridoPunto | null, estado: EstadoHallazgo) => {
+    if (soloLectura) return;
+    const existentes = criterios
+      .map((c) => hallazgoDe(zona.id, c.id, punto?.id ?? null))
+      .filter(Boolean) as RecorridoHallazgo[];
+    const faltantes = criterios.filter((c) => !hallazgoDe(zona.id, c.id, punto?.id ?? null));
+
+    if (existentes.length) {
+      const ids = existentes.map((h) => h.id);
+      const { error } = await supabase.from("recorrido_hallazgos").update({ estado }).in("id", ids);
+      if (error) return toast.error("No se pudo actualizar");
+      setHallazgos((prev) => prev.map((h) => (ids.includes(h.id) ? { ...h, estado } : h)));
+    }
+
+    if (faltantes.length) {
+      const filas = faltantes.map((c, i) => ({
+        recorrido_id: id,
+        zona_id: zona.id,
+        zona_nombre: zona.nombre,
+        punto_id: punto?.id ?? null,
+        punto_nombre: punto?.nombre ?? null,
+        sucursal_id: recorrido?.sucursal_id ?? null,
+        criterio_id: c.id,
+        criterio_nombre: c.nombre,
+        estado,
+        punto_x: punto ? punto.x + punto.width / 2 : null,
+        punto_y: punto ? punto.y + punto.height / 2 : null,
+        orden: hallazgos.length + i,
+      }));
+      const { data, error } = await supabase.from("recorrido_hallazgos").insert(filas).select("*");
+      if (error) return toast.error("No se pudo guardar");
+      setHallazgos((prev) => [...prev, ...((data as RecorridoHallazgo[]) ?? [])]);
+    }
+  };
+
+  const marcarTodo = async (estado: EstadoHallazgo) => {
+    if (soloLectura) return;
+    setMarcandoTodo(true);
+    for (const z of zonas) {
+      const pts = puntosDeZona(z.id);
+      if (pts.length) {
+        for (const p of pts) await marcarGrupo(z, p, estado);
+      } else {
+        await marcarGrupo(z, null, estado);
+      }
+    }
+    setMarcandoTodo(false);
+    toast.success("Se completaron todos los controles");
+  };
+
   const guardarObs = async (h: RecorridoHallazgo, obs: string) => {
     await supabase.from("recorrido_hallazgos").update({ observaciones: obs }).eq("id", h.id);
     setHallazgos((prev) => prev.map((x) => (x.id === h.id ? { ...x, observaciones: obs } : x)));
