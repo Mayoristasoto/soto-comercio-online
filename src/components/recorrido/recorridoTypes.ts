@@ -83,7 +83,16 @@ export interface RecorridoCriterio {
   orden: number;
   obligatorio: boolean;
   activo: boolean;
+  /** tipos de espacio donde aplica el criterio */
+  tipos_aplica?: string[] | null;
 }
+
+/** ¿El criterio aplica a este tipo de espacio? (sin tipos definidos = aplica a todo) */
+export const criterioAplica = (c: RecorridoCriterio, tipo?: string | null) => {
+  if (!c.tipos_aplica || c.tipos_aplica.length === 0) return true;
+  if (!tipo) return true;
+  return c.tipos_aplica.includes(tipo);
+};
 
 export interface Recorrido {
   id: string;
