@@ -43,6 +43,7 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showProfile, setShowProfile] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -391,6 +392,77 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
     setSelectedGondola(duplicated);
   };
 
+  // Genera el próximo id libre para un tipo, evitando los ya usados
+  const generateIdForType = (type: Gondola['type'], used: Set<string>) => {
+    const prefix = ({ gondola: 'g', puntera: 'p', cartel_exterior: 'c', exhibidor_impulso: 'e' } as const)[type] ?? 'x';
+    let n = 1;
+    while (used.has(`${prefix}${n}`)) n++;
+    return `${prefix}${n}`;
+  };
+
+  // Alternar un elemento en la selección múltiple (Ctrl/Cmd/Shift + clic)
+  const handleMultiSelect = (gondola: Gondola) => {
+    setSelectedGondola(null);
+    setSelectedIds(prev =>
+      prev.includes(gondola.id) ? prev.filter(id => id !== gondola.id) : [...prev, gondola.id]
+    );
+  };
+
+  // Duplicar todos los seleccionados de una sola vez
+  const duplicateMany = async (ids: string[]) => {
+    const targets = gondolas.filter(g => ids.includes(g.id));
+    if (targets.length === 0) return;
+    const used = new Set(gondolas.map(g => g.id));
+    const nuevos: Gondola[] = targets.map(g => {
+      const newId = generateIdForType(g.type, used);
+      used.add(newId);
+      return {
+        ...g,
+        id: newId,
+        position: { ...g.position, x: g.position.x + 20, y: g.position.y + 20 },
+        section: newId.toUpperCase(),
+        status: 'available' as const,
+        brand: null,
+        category: 'Disponible',
+        endDate: undefined,
+        notes: undefined,
+      };
+    });
+    try {
+      for (const n of nuevos) {
+        await saveGondolaToDb(n);
+      }
+      setGondolas(prev => [...prev, ...nuevos]);
+      setSelectedIds(nuevos.map(n => n.id));
+      setSelectedGondola(null);
+      toast(`${nuevos.length} elemento(s) duplicados`);
+    } catch (error) {
+      console.error('Error duplicando selección:', error);
+      toast("Error al duplicar la selección");
+    }
+  };
+
+  // Eliminar todos los seleccionados de una sola vez
+  const deleteMany = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    try {
+      const { error } = await supabase
+        .from('gondolas_v2')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      setGondolas(prev => prev.filter(g => !ids.includes(g.id)));
+      setSelectedIds([]);
+      setSelectedGondola(null);
+      toast(`${ids.length} elemento(s) eliminados`);
+    } catch (error) {
+      console.error('Error eliminando selección:', error);
+      toast("Error al eliminar la selección");
+    }
+  };
+
   const resetToOriginal = async () => {
     try {
       // Delete all existing gondolas
@@ -567,30 +639,33 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!selectedGondola) return;
-      
+      const targetIds = selectedIds.length > 0
+        ? selectedIds
+        : (selectedGondola ? [selectedGondola.id] : []);
+      if (targetIds.length === 0) return;
+
       // Don't trigger shortcuts if user is typing in an input field
       const activeElement = document.activeElement;
-      const isTyping = activeElement?.tagName === 'INPUT' || 
-                      activeElement?.tagName === 'TEXTAREA' || 
+      const isTyping = activeElement?.tagName === 'INPUT' ||
+                      activeElement?.tagName === 'TEXTAREA' ||
                       activeElement?.getAttribute('contenteditable') === 'true';
-      
+
       if (isTyping) return;
-      
+
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
-        deleteGondola(selectedGondola.id);
+        deleteMany(targetIds);
       }
-      
+
       if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
         event.preventDefault();
-        duplicateGondola(selectedGondola);
+        duplicateMany(targetIds);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedGondola, gondolas]);
+  }, [selectedGondola, selectedIds, gondolas]);
 
   const handleSignOut = async () => {
     try {
@@ -827,7 +902,7 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
                     <div>
                       <h2 className="text-xl font-semibold">Editor del Layout</h2>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Arrastra, redimensiona y crea góndolas • Usa ← → ↑ ↓ para mover • Ctrl + flechas para redimensionar
+                        Arrastra, redimensiona y crea góndolas • Usa ← → ↑ ↓ para mover • Ctrl + flechas para redimensionar • Ctrl + clic para selección múltiple
                       </p>
                     </div>
                     
@@ -872,7 +947,39 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
                         </Button>
                       </div>
 
-                      {selectedGondola && (
+                      {selectedIds.length > 0 && (
+                        <div className="flex gap-2 items-center">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {selectedIds.length} seleccionados
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => duplicateMany(selectedIds)}
+                            className="flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Duplicar ({selectedIds.length})
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteMany(selectedIds)}
+                            className="flex items-center gap-2"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedIds([])}
+                          >
+                            Limpiar
+                          </Button>
+                        </div>
+                      )}
+                      {selectedIds.length === 0 && selectedGondola && (
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
@@ -900,7 +1007,9 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
                   <InteractiveMap
                     gondolas={gondolas}
                     onGondolaHover={setHoveredGondola}
-                    onGondolaSelect={setSelectedGondola}
+                    onGondolaSelect={(g) => { setSelectedIds([]); setSelectedGondola(g); }}
+                    onGondolaMultiSelect={handleMultiSelect}
+                    multiSelectedIds={selectedIds}
                     onGondolaUpdate={updateGondola}
                     onGondolaAdd={(newGondola) => {
                       addGondola(newGondola);
@@ -919,8 +1028,42 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
               </div>
 
               <div className="lg:col-span-1">
-                {selectedGondola ? (
-                  <EditPanel 
+                {selectedIds.length > 1 ? (
+                  <Card className="h-fit">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">{selectedIds.length} elementos seleccionados</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Ctrl + clic para agregar o quitar elementos de la selección.
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center gap-2"
+                        onClick={() => duplicateMany(selectedIds)}
+                      >
+                        <Copy className="h-4 w-4" />
+                        Duplicar selección
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="w-full flex items-center gap-2"
+                        onClick={() => deleteMany(selectedIds)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Eliminar selección
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full"
+                        onClick={() => setSelectedIds([])}
+                      >
+                        Limpiar selección
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : selectedGondola ? (
+                  <EditPanel
                     gondola={selectedGondola}
                     onUpdate={updateGondola}
                     onDelete={deleteGondola}
