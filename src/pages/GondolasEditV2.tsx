@@ -1028,8 +1028,42 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
               </div>
 
               <div className="lg:col-span-1">
-                {selectedGondola ? (
-                  <EditPanel 
+                {selectedIds.length > 1 ? (
+                  <Card className="h-fit">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">{selectedIds.length} elementos seleccionados</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Ctrl + clic para agregar o quitar elementos de la selección.
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center gap-2"
+                        onClick={() => duplicateMany(selectedIds)}
+                      >
+                        <Copy className="h-4 w-4" />
+                        Duplicar selección
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="w-full flex items-center gap-2"
+                        onClick={() => deleteMany(selectedIds)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Eliminar selección
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full"
+                        onClick={() => setSelectedIds([])}
+                      >
+                        Limpiar selección
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : selectedGondola ? (
+                  <EditPanel
                     gondola={selectedGondola}
                     onUpdate={updateGondola}
                     onDelete={deleteGondola}
