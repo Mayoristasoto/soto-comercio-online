@@ -406,7 +406,7 @@ const RecorridoSalon = () => {
                   </div>
                   <div className="border-t pt-4">
                     <h3 className="font-semibold mb-2">Góndolas dentro de cada pasillo</h3>
-                    <PuntosEditor zonas={zonas} usaGondolas={!!planoActual.usa_gondolas} />
+                    <PuntosEditor zonas={zonas} usaGondolas={!!planoActual.usa_gondolas} sucursalId={sucursalSel} />
                   </div>
                 </>
               )}
