@@ -36,6 +36,8 @@ const RecorridoDetalle = () => {
   const [pinTmp, setPinTmp] = useState<{ x: number; y: number } | null>(null);
   const [sucursalNombre, setSucursalNombre] = useState("");
   const [cerrando, setCerrando] = useState(false);
+  const [marcandoTodo, setMarcandoTodo] = useState(false);
+  const [vistaCompleta, setVistaCompleta] = useState(false);
 
   const soloLectura = recorrido?.estado === "completado";
 
@@ -121,6 +123,57 @@ const RecorridoDetalle = () => {
     }
   };
 
+  // Marca todos los criterios de una góndola (o pasillo) de una sola vez
+  const marcarGrupo = async (zona: RecorridoZona, punto: RecorridoPunto | null, estado: EstadoHallazgo) => {
+    if (soloLectura) return;
+    const existentes = criterios
+      .map((c) => hallazgoDe(zona.id, c.id, punto?.id ?? null))
+      .filter(Boolean) as RecorridoHallazgo[];
+    const faltantes = criterios.filter((c) => !hallazgoDe(zona.id, c.id, punto?.id ?? null));
+
+    if (existentes.length) {
+      const ids = existentes.map((h) => h.id);
+      const { error } = await supabase.from("recorrido_hallazgos").update({ estado }).in("id", ids);
+      if (error) return toast.error("No se pudo actualizar");
+      setHallazgos((prev) => prev.map((h) => (ids.includes(h.id) ? { ...h, estado } : h)));
+    }
+
+    if (faltantes.length) {
+      const filas = faltantes.map((c, i) => ({
+        recorrido_id: id,
+        zona_id: zona.id,
+        zona_nombre: zona.nombre,
+        punto_id: punto?.id ?? null,
+        punto_nombre: punto?.nombre ?? null,
+        sucursal_id: recorrido?.sucursal_id ?? null,
+        criterio_id: c.id,
+        criterio_nombre: c.nombre,
+        estado,
+        punto_x: punto ? punto.x + punto.width / 2 : null,
+        punto_y: punto ? punto.y + punto.height / 2 : null,
+        orden: hallazgos.length + i,
+      }));
+      const { data, error } = await supabase.from("recorrido_hallazgos").insert(filas).select("*");
+      if (error) return toast.error("No se pudo guardar");
+      setHallazgos((prev) => [...prev, ...((data as RecorridoHallazgo[]) ?? [])]);
+    }
+  };
+
+  const marcarTodo = async (estado: EstadoHallazgo) => {
+    if (soloLectura) return;
+    setMarcandoTodo(true);
+    for (const z of zonas) {
+      const pts = puntosDeZona(z.id);
+      if (pts.length) {
+        for (const p of pts) await marcarGrupo(z, p, estado);
+      } else {
+        await marcarGrupo(z, null, estado);
+      }
+    }
+    setMarcandoTodo(false);
+    toast.success("Se completaron todos los controles");
+  };
+
   const guardarObs = async (h: RecorridoHallazgo, obs: string) => {
     await supabase.from("recorrido_hallazgos").update({ observaciones: obs }).eq("id", h.id);
     setHallazgos((prev) => prev.map((x) => (x.id === h.id ? { ...x, observaciones: obs } : x)));
@@ -189,6 +242,64 @@ const RecorridoDetalle = () => {
     return `${hechos}/${objetivo}`;
   };
 
+  const renderCriterios = (zona: RecorridoZona, punto: RecorridoPunto | null) =>
+    criterios.map((c) => {
+      const h = hallazgoDe(zona.id, c.id, punto?.id ?? null);
+      return (
+        <div key={`${punto?.id ?? zona.id}-${c.id}`} className="rounded-md border p-3 space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="font-medium">{c.nombre}</span>
+            <div className="flex gap-1">
+              {(["cumple", "parcial", "no_cumple"] as EstadoHallazgo[]).map((est) => (
+                <Button
+                  key={est}
+                  size="sm"
+                  variant={h?.estado === est ? "default" : "outline"}
+                  className={
+                    h?.estado === est
+                      ? est === "cumple"
+                        ? "bg-emerald-600 hover:bg-emerald-600"
+                        : est === "parcial"
+                          ? "bg-amber-500 hover:bg-amber-500"
+                          : "bg-red-600 hover:bg-red-600"
+                      : ""
+                  }
+                  onClick={() => marcar(zona, punto, c, est)}
+                >
+                  {ESTADO_HALLAZGO_LABEL[est]}
+                </Button>
+              ))}
+            </div>
+          </div>
+          {h && (
+            <>
+              <Textarea
+                placeholder="Observaciones…"
+                defaultValue={h.observaciones ?? ""}
+                readOnly={soloLectura}
+                onBlur={(e) => guardarObs(h, e.target.value)}
+                rows={2}
+              />
+              <HallazgoFotos hallazgoId={h.id} readOnly={soloLectura} />
+            </>
+          )}
+        </div>
+      );
+    });
+
+  const grupos = useMemo(() => {
+    const out: { zona: RecorridoZona; punto: RecorridoPunto | null }[] = [];
+    for (const z of zonas) {
+      const pts = puntos.filter((p) => p.zona_id === z.id);
+      if (pts.length) pts.forEach((p) => out.push({ zona: z, punto: p }));
+      else out.push({ zona: z, punto: null });
+    }
+    return out;
+  }, [zonas, puntos]);
+
+  const totalControles = grupos.length * criterios.length;
+  const hechosControles = hallazgos.length;
+
   if (!recorrido) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -208,17 +319,28 @@ const RecorridoDetalle = () => {
             <p className="text-sm text-muted-foreground">{new Date(recorrido.fecha_hora).toLocaleString("es-AR")}</p>
           </div>
         </div>
-        {soloLectura ? (
-          <div className="flex gap-2 items-center">
-            <Badge>Completado</Badge>
-            <Button variant="outline" size="sm" onClick={reabrir}>Reabrir</Button>
-          </div>
-        ) : (
-          <Button onClick={cerrar} disabled={cerrando}>
-            {cerrando ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
-            Cerrar recorrido
+        <div className="flex gap-2 items-center flex-wrap">
+          <Button variant={vistaCompleta ? "secondary" : "outline"} size="sm" onClick={() => setVistaCompleta((v) => !v)}>
+            {vistaCompleta ? "Ocultar vista completa" : "Ver todas las góndolas"}
           </Button>
-        )}
+          {!soloLectura && (
+            <Button variant="outline" size="sm" onClick={() => marcarTodo("cumple")} disabled={marcandoTodo}>
+              {marcandoTodo && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Marcar todo como cumple
+            </Button>
+          )}
+          {soloLectura ? (
+            <>
+              <Badge>Completado</Badge>
+              <Button variant="outline" size="sm" onClick={reabrir}>Reabrir</Button>
+            </>
+          ) : (
+            <Button onClick={cerrar} disabled={cerrando}>
+              {cerrando ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+              Cerrar recorrido
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -308,52 +430,47 @@ const RecorridoDetalle = () => {
                 Estás evaluando el pasillo completo. Elegí una góndola arriba para marcar algo puntual.
               </p>
             )}
-            {zonaSel && criterios.map((c) => {
-              const h = hallazgoDe(zonaSel.id, c.id, puntoSel?.id ?? null);
-              return (
-                <div key={c.id} className="rounded-md border p-3 space-y-2">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="font-medium">{c.nombre}</span>
-                    <div className="flex gap-1">
-                      {(["cumple", "parcial", "no_cumple"] as EstadoHallazgo[]).map((est) => (
-                        <Button
-                          key={est}
-                          size="sm"
-                          variant={h?.estado === est ? "default" : "outline"}
-                          className={
-                            h?.estado === est
-                              ? est === "cumple"
-                                ? "bg-emerald-600 hover:bg-emerald-600"
-                                : est === "parcial"
-                                  ? "bg-amber-500 hover:bg-amber-500"
-                                  : "bg-red-600 hover:bg-red-600"
-                              : ""
-                          }
-                          onClick={() => marcar(zonaSel, puntoSel, c, est)}
-                        >
-                          {ESTADO_HALLAZGO_LABEL[est]}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  {h && (
-                    <>
-                      <Textarea
-                        placeholder="Observaciones…"
-                        defaultValue={h.observaciones ?? ""}
-                        readOnly={soloLectura}
-                        onBlur={(e) => guardarObs(h, e.target.value)}
-                        rows={2}
-                      />
-                      <HallazgoFotos hallazgoId={h.id} readOnly={soloLectura} />
-                    </>
-                  )}
-                </div>
-              );
-            })}
+            {zonaSel && renderCriterios(zonaSel, puntoSel)}
           </CardContent>
         </Card>
       </div>
+
+      {vistaCompleta && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">
+              Todas las góndolas · {hechosControles}/{totalControles} controles marcados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {grupos.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Todavía no hay góndolas cargadas. Cargalas desde Recorrido de Salón → Plano y zonas.
+              </p>
+            )}
+            {grupos.map(({ zona, punto }) => (
+              <div key={`${zona.id}-${punto?.id ?? "zona"}`} className="rounded-lg border p-3 space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-semibold text-sm">
+                    {zona.nombre}{punto ? ` · ${punto.nombre}` : ""}
+                  </span>
+                  {!soloLectura && (
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={() => marcarGrupo(zona, punto, "cumple")}>
+                        Todo cumple
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => marcarGrupo(zona, punto, "no_cumple")}>
+                        Todo no cumple
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">{renderCriterios(zona, punto)}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
