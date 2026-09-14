@@ -180,6 +180,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
       position_y: d.y,
       position_width: d.width,
       position_height: d.height,
+      sucursal_id: sucursalId ?? null,
     };
     const { error } = await supabase.from("gondolas_v2").insert(fila);
     if (error) return toast.error("No se pudo crear el espacio");
