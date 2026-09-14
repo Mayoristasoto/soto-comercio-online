@@ -57,6 +57,8 @@ export default function ChecklistControlDetalle() {
   const base = getChecklistBase(pathname);
   const [control, setControl] = useState<ChecklistControl | null>(null);
   const [sucursalNombre, setSucursalNombre] = useState<string | null>(null);
+  const [zonasSalon, setZonasSalon] = useState<{ id: string; nombre: string }[]>([]);
+  const [puntosSalon, setPuntosSalon] = useState<{ id: string; zona_id: string; nombre: string }[]>([]);
   const [encargados, setEncargados] = useState<string[]>([]);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
@@ -99,6 +101,7 @@ export default function ChecklistControlDetalle() {
 
       const suc = await db.from("sucursales").select("nombre").eq("id", ctrl.sucursal_id).maybeSingle();
       setSucursalNombre(suc.data?.nombre ?? null);
+      cargarZonasSalon(ctrl.sucursal_id);
 
       const enc = await db
         .from("checklist_control_encargados")
@@ -134,6 +137,28 @@ export default function ChecklistControlDetalle() {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const cargarZonasSalon = async (sucursalId: string) => {
+    const db = supabase as any;
+    const { data: plano } = await db
+      .from("recorrido_planos")
+      .select("id")
+      .eq("sucursal_id", sucursalId)
+      .eq("activo", true)
+      .maybeSingle();
+    if (!plano) return;
+    const { data: zo } = await db.from("recorrido_zonas").select("id, nombre").eq("plano_id", plano.id).order("orden");
+    const lista = (zo || []) as { id: string; nombre: string }[];
+    setZonasSalon(lista);
+    if (lista.length) {
+      const { data: pt } = await db
+        .from("recorrido_puntos")
+        .select("id, zona_id, nombre")
+        .in("zona_id", lista.map((z) => z.id))
+        .order("orden");
+      setPuntosSalon((pt || []) as { id: string; zona_id: string; nombre: string }[]);
+    }
+  };
 
   const recargarFotos = async () => {
     if (!items.length) return;
@@ -360,6 +385,9 @@ export default function ChecklistControlDetalle() {
                       onEliminar={readOnly ? undefined : () => eliminarItem(item.id)}
                       onFotosChange={recargarFotos}
                       sucursalId={control?.sucursal_id}
+                      zonas={zonasSalon}
+                      puntos={puntosSalon}
+                      onVincular={(zona_id, punto_id) => actualizarItem(item.id, { zona_id, punto_id })}
                     />
                   ))}
                 </CollapsibleContent>

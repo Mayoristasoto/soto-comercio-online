@@ -8,6 +8,9 @@ export interface ChecklistItem {
   orden: number;
   estado: ChecklistEstadoItem | null;
   observaciones: string | null;
+  /** Vínculo opcional con el plano del salón (pasillo / góndola) */
+  zona_id?: string | null;
+  punto_id?: string | null;
 }
 
 export interface ChecklistFoto {

@@ -25,6 +25,44 @@ export interface RecorridoZona {
   height: number;
 }
 
+/** Punto controlable dentro de una zona (ej: góndola 3 del pasillo 1) */
+export interface RecorridoPunto {
+  id: string;
+  zona_id: string;
+  nombre: string;
+  gondola_ref: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  orden: number;
+}
+
+export type EstadoSeguimiento = "abierto" | "en_tarea" | "resuelto";
+
+export const ESTADO_SEGUIMIENTO_LABEL: Record<EstadoSeguimiento, string> = {
+  abierto: "Abierto",
+  en_tarea: "Tarea asignada",
+  resuelto: "Resuelto",
+};
+
+export interface HistorialPuntoRow {
+  origen: string;
+  id: string;
+  punto_id: string | null;
+  zona_id: string | null;
+  sucursal_id: string | null;
+  zona_nombre: string | null;
+  punto_nombre: string | null;
+  detalle: string | null;
+  estado: string | null;
+  observaciones: string | null;
+  estado_seguimiento: string | null;
+  fecha: string;
+  responsable_id: string | null;
+  fotos: number;
+}
+
 export interface RecorridoCriterio {
   id: string;
   nombre: string;
@@ -51,12 +89,18 @@ export interface RecorridoHallazgo {
   recorrido_id: string;
   zona_id: string | null;
   zona_nombre: string | null;
+  punto_id: string | null;
+  punto_nombre: string | null;
+  sucursal_id: string | null;
   criterio_id: string | null;
   criterio_nombre: string | null;
   estado: EstadoHallazgo | null;
   punto_x: number | null;
   punto_y: number | null;
   observaciones: string | null;
+  estado_seguimiento: string | null;
+  tarea_id: string | null;
+  resuelto_at: string | null;
   orden: number;
 }
 
