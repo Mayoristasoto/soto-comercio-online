@@ -17,6 +17,7 @@ import { PuntosEditor } from "@/components/recorrido/PuntosEditor";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
 import { BUCKET_PLANOS, type Recorrido, type RecorridoCriterio, type RecorridoPlano, type RecorridoZona } from "@/components/recorrido/recorridoTypes";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
+import { bboxDe, cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
 
 interface Sucursal { id: string; nombre: string }
 interface Empleado { id: string; nombre: string; apellido: string; sucursal_id?: string | null }
@@ -132,6 +133,77 @@ const RecorridoSalon = () => {
     }
     toast.success(activar ? "Usando el layout de góndolas" : "Usando la imagen del plano");
     cargarPlanos();
+  };
+
+  /** Arranca de cero: copia el layout de la sucursal y crea un control por cada góndola */
+  const empezarDeCeroConGondolas = async () => {
+    if (!sucursalSel) return toast.error("Elegí primero la sucursal");
+    const nombreSuc = sucursales.find((s) => s.id === sucursalSel)?.nombre ?? "Plano";
+    if (!confirm(`Se van a borrar los pasillos y góndolas cargados de ${nombreSuc} y se vuelven a crear desde el layout. ¿Seguir?`)) return;
+    setRegenerando(true);
+    try {
+      const gondolas = await cargarGondolasV2();
+      if (!gondolas.length) throw new Error("El layout no tiene góndolas todavía");
+      const bbox = bboxDe(gondolas);
+
+      // plano de la sucursal (usa el layout como fondo)
+      let planoId = planos.find((p) => p.sucursal_id === sucursalSel)?.id ?? null;
+      if (planoId) {
+        await supabase.from("recorrido_planos").update({ usa_gondolas: true, ancho: 1000, alto: 700 }).eq("id", planoId);
+      } else {
+        const { data, error } = await supabase
+          .from("recorrido_planos")
+          .insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: 1000, alto: 700, usa_gondolas: true })
+          .select("id")
+          .single();
+        if (error || !data) throw error ?? new Error("plano");
+        planoId = data.id;
+      }
+
+      // limpiar zonas y puntos anteriores (sin perder los hallazgos históricos)
+      const { data: zonasPrev } = await supabase.from("recorrido_zonas").select("id").eq("plano_id", planoId);
+      const idsZonas = (zonasPrev ?? []).map((z: { id: string }) => z.id);
+      if (idsZonas.length) {
+        const { data: puntosPrev } = await supabase.from("recorrido_puntos").select("id").in("zona_id", idsZonas);
+        const idsPuntos = (puntosPrev ?? []).map((p: { id: string }) => p.id);
+        if (idsPuntos.length) {
+          await supabase.from("recorrido_hallazgos").update({ punto_id: null }).in("punto_id", idsPuntos);
+          await supabase.from("recorrido_puntos").delete().in("id", idsPuntos);
+        }
+        await supabase.from("recorrido_hallazgos").update({ zona_id: null }).in("zona_id", idsZonas);
+        await supabase.from("recorrido_zonas").delete().in("id", idsZonas);
+      }
+
+      // una zona por góndola + su punto de control
+      const filasZonas = gondolas.map((g, i) => ({
+        plano_id: planoId as string,
+        nombre: g.section,
+        orden: i,
+        ...gondolaAPorcentaje(g, bbox),
+      }));
+      const { data: zonasNuevas, error: errZ } = await supabase.from("recorrido_zonas").insert(filasZonas).select("id, nombre");
+      if (errZ || !zonasNuevas) throw errZ ?? new Error("zonas");
+
+      const porNombre = new Map((zonasNuevas as { id: string; nombre: string }[]).map((z) => [z.nombre, z.id]));
+      const filasPuntos = gondolas
+        .filter((g) => porNombre.has(g.section))
+        .map((g, i) => ({
+          zona_id: porNombre.get(g.section) as string,
+          nombre: g.section,
+          gondola_ref: g.id,
+          orden: i,
+          ...gondolaAPorcentaje(g, bbox),
+        }));
+      if (filasPuntos.length) await supabase.from("recorrido_puntos").insert(filasPuntos);
+
+      toast.success(`${gondolas.length} góndolas listas para controlar en ${nombreSuc}`);
+      await cargarPlanos();
+      if (planoId) await cargarZonas(planoId);
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo armar el plano");
+    } finally {
+      setRegenerando(false);
+    }
   };
 
   const crearRecorrido = async () => {
