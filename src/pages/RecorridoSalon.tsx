@@ -15,7 +15,17 @@ import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
 import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
 import { PuntosEditor } from "@/components/recorrido/PuntosEditor";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
-import { BUCKET_PLANOS, type Recorrido, type RecorridoCriterio, type RecorridoPlano, type RecorridoZona } from "@/components/recorrido/recorridoTypes";
+import {
+  BUCKET_PLANOS,
+  TIPOS_ESPACIO,
+  TIPO_ESPACIO_LABEL,
+  type Recorrido,
+  type RecorridoCriterio,
+  type RecorridoPlano,
+  type RecorridoZona,
+  type TipoEspacio,
+} from "@/components/recorrido/recorridoTypes";
+import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
 import { bboxDe, cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
 
@@ -175,29 +185,34 @@ const RecorridoSalon = () => {
         await supabase.from("recorrido_zonas").delete().in("id", idsZonas);
       }
 
-      // una zona por góndola + su punto de control
+      // una zona por espacio del mapa + su punto de control
       const filasZonas = gondolas.map((g, i) => ({
         plano_id: planoId as string,
-        nombre: g.section,
+        nombre: `${TIPO_ESPACIO_LABEL[g.type as TipoEspacio] ?? g.type} ${g.section}`,
         orden: i,
         ...gondolaAPorcentaje(g, bbox),
       }));
-      const { data: zonasNuevas, error: errZ } = await supabase.from("recorrido_zonas").insert(filasZonas).select("id, nombre");
+      const { data: zonasNuevas, error: errZ } = await supabase
+        .from("recorrido_zonas")
+        .insert(filasZonas)
+        .select("id, orden");
       if (errZ || !zonasNuevas) throw errZ ?? new Error("zonas");
 
-      const porNombre = new Map((zonasNuevas as { id: string; nombre: string }[]).map((z) => [z.nombre, z.id]));
+      const porOrden = new Map((zonasNuevas as { id: string; orden: number }[]).map((z) => [z.orden, z.id]));
       const filasPuntos = gondolas
-        .filter((g) => porNombre.has(g.section))
-        .map((g, i) => ({
-          zona_id: porNombre.get(g.section) as string,
+        .map((g, i) => ({ g, i }))
+        .filter(({ i }) => porOrden.has(i))
+        .map(({ g, i }) => ({
+          zona_id: porOrden.get(i) as string,
           nombre: g.section,
           gondola_ref: g.id,
+          tipo_espacio: g.type,
           orden: i,
           ...gondolaAPorcentaje(g, bbox),
         }));
       if (filasPuntos.length) await supabase.from("recorrido_puntos").insert(filasPuntos);
 
-      toast.success(`${gondolas.length} góndolas listas para controlar en ${nombreSuc}`);
+      toast.success(`${gondolas.length} espacios listos para controlar en ${nombreSuc}`);
       await cargarPlanos();
       if (planoId) await cargarZonas(planoId);
     } catch (e: any) {
@@ -237,6 +252,16 @@ const RecorridoSalon = () => {
   const toggleCriterio = async (c: RecorridoCriterio) => {
     await supabase.from("recorrido_criterios").update({ activo: !c.activo }).eq("id", c.id);
     cargarBase();
+  };
+
+  /** Activa o desactiva un tipo de espacio para un criterio */
+  const toggleTipoCriterio = async (c: RecorridoCriterio, tipo: TipoEspacio) => {
+    const actuales = c.tipos_aplica?.length ? c.tipos_aplica : [...TIPOS_ESPACIO];
+    const nuevos = actuales.includes(tipo) ? actuales.filter((t) => t !== tipo) : [...actuales, tipo];
+    if (!nuevos.length) return toast.error("El criterio tiene que aplicar al menos a un tipo");
+    const { error } = await supabase.from("recorrido_criterios").update({ tipos_aplica: nuevos }).eq("id", c.id);
+    if (error) return toast.error("No se pudo guardar");
+    setCriterios((prev) => prev.map((x) => (x.id === c.id ? { ...x, tipos_aplica: nuevos } : x)));
   };
 
   const borrarCriterio = async (c: RecorridoCriterio) => {
@@ -364,6 +389,12 @@ const RecorridoSalon = () => {
               {planoActual && (
                 <>
                   <PlanoCanvas plano={planoActual} zonas={zonas} />
+                  {planoActual.usa_gondolas && (
+                    <div className="border-t pt-4">
+                      <h3 className="font-semibold mb-2">Mapa de espacios (góndolas, punteras, exhibidores y carteles)</h3>
+                      <EspaciosEditor onChange={() => cargarPlanos()} />
+                    </div>
+                  )}
                   <div className="border-t pt-4">
                     <h3 className="font-semibold mb-2">Definir pasillos / zonas</h3>
                     <ZonaEditor plano={planoActual} zonas={zonas} onZonasChange={() => cargarZonas(planoActual.id)} />
@@ -404,13 +435,31 @@ const RecorridoSalon = () => {
               </div>
               <Table>
                 <TableHeader>
-                  <TableRow><TableHead>Criterio</TableHead><TableHead>Descripción</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
+                  <TableRow><TableHead>Criterio</TableHead><TableHead>Descripción</TableHead><TableHead>Dónde se evalúa</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
                 </TableHeader>
                 <TableBody>
                   {criterios.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.nombre}</TableCell>
                       <TableCell className="text-muted-foreground">{c.descripcion}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {TIPOS_ESPACIO.map((t) => {
+                            const activo = !c.tipos_aplica?.length || c.tipos_aplica.includes(t);
+                            return (
+                              <Button
+                                key={t}
+                                size="sm"
+                                variant={activo ? "secondary" : "outline"}
+                                className="h-7 px-2 text-xs"
+                                onClick={() => toggleTipoCriterio(c, t)}
+                              >
+                                {TIPO_ESPACIO_LABEL[t]}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Button size="sm" variant={c.activo ? "default" : "outline"} onClick={() => toggleCriterio(c)}>
                           {c.activo ? "Activo" : "Inactivo"}

@@ -12,8 +12,11 @@ import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
 import { HistorialPunto } from "@/components/recorrido/HistorialPunto";
 import {
   ESTADO_HALLAZGO_LABEL,
+  TIPO_ESPACIO_LABEL,
+  criterioAplica,
   peorEstado,
   type EstadoHallazgo,
+  type TipoEspacio,
   type Recorrido,
   type RecorridoCriterio,
   type RecorridoHallazgo,
@@ -81,6 +84,10 @@ const RecorridoDetalle = () => {
 
   const puntosDeZona = (zonaId: string) => puntos.filter((p) => p.zona_id === zonaId);
 
+  /** Criterios que aplican al tipo de espacio del punto (pasillo completo = todos) */
+  const criteriosPara = (punto: RecorridoPunto | null) =>
+    criterios.filter((c) => criterioAplica(c, punto?.tipo_espacio ?? null));
+
   const hallazgoDe = (zonaId: string, criterioId: string, puntoId: string | null) =>
     hallazgos.find(
       (h) => h.zona_id === zonaId && h.criterio_id === criterioId && (h.punto_id ?? null) === (puntoId ?? null)
@@ -126,10 +133,11 @@ const RecorridoDetalle = () => {
   // Marca todos los criterios de una góndola (o pasillo) de una sola vez
   const marcarGrupo = async (zona: RecorridoZona, punto: RecorridoPunto | null, estado: EstadoHallazgo) => {
     if (soloLectura) return;
-    const existentes = criterios
+    const aplicables = criteriosPara(punto);
+    const existentes = aplicables
       .map((c) => hallazgoDe(zona.id, c.id, punto?.id ?? null))
       .filter(Boolean) as RecorridoHallazgo[];
-    const faltantes = criterios.filter((c) => !hallazgoDe(zona.id, c.id, punto?.id ?? null));
+    const faltantes = aplicables.filter((c) => !hallazgoDe(zona.id, c.id, punto?.id ?? null));
 
     if (existentes.length) {
       const ids = existentes.map((h) => h.id);
@@ -238,12 +246,15 @@ const RecorridoDetalle = () => {
 
   const progreso = (z: RecorridoZona) => {
     const hechos = hallazgos.filter((h) => h.zona_id === z.id).length;
-    const objetivo = criterios.length * Math.max(1, puntosDeZona(z.id).length);
+    const pts = puntosDeZona(z.id);
+    const objetivo = pts.length
+      ? pts.reduce((acc, p) => acc + criteriosPara(p).length, 0)
+      : criteriosPara(null).length;
     return `${hechos}/${objetivo}`;
   };
 
   const renderCriterios = (zona: RecorridoZona, punto: RecorridoPunto | null) =>
-    criterios.map((c) => {
+    criteriosPara(punto).map((c) => {
       const h = hallazgoDe(zona.id, c.id, punto?.id ?? null);
       return (
         <div key={`${punto?.id ?? zona.id}-${c.id}`} className="rounded-md border p-3 space-y-2">
@@ -297,7 +308,7 @@ const RecorridoDetalle = () => {
     return out;
   }, [zonas, puntos]);
 
-  const totalControles = grupos.length * criterios.length;
+  const totalControles = grupos.reduce((acc, g) => acc + criteriosPara(g.punto).length, 0);
   const hechosControles = hallazgos.length;
 
   if (!recorrido) {
@@ -305,9 +316,12 @@ const RecorridoDetalle = () => {
   }
 
   const puntosZona = zonaSel ? puntosDeZona(zonaSel.id) : [];
+  const tipoPunto = puntoSel?.tipo_espacio
+    ? TIPO_ESPACIO_LABEL[puntoSel.tipo_espacio as TipoEspacio] ?? puntoSel.tipo_espacio
+    : null;
   const tituloPanel = zonaSel
-    ? `Controlando: ${zonaSel.nombre}${puntoSel ? ` · ${puntoSel.nombre}` : ""}`
-    : "Elegí un pasillo en el plano";
+    ? `Controlando: ${zonaSel.nombre}${puntoSel ? ` · ${tipoPunto ? `${tipoPunto} ` : ""}${puntoSel.nombre}` : ""}`
+    : "Elegí un espacio en el plano";
 
   return (
     <div className="container mx-auto p-4 space-y-4 max-w-6xl">

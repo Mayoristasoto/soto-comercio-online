@@ -1,6 +1,17 @@
 // Tipos del módulo Recorrido de Salón (independiente de Góndolas)
 export type EstadoHallazgo = "cumple" | "parcial" | "no_cumple";
 
+/** Tipos de espacio del mapa (copia v2 del layout) */
+export const TIPOS_ESPACIO = ["gondola", "puntera", "exhibidor_impulso", "cartel_exterior"] as const;
+export type TipoEspacio = (typeof TIPOS_ESPACIO)[number];
+
+export const TIPO_ESPACIO_LABEL: Record<TipoEspacio, string> = {
+  gondola: "Góndola",
+  puntera: "Puntera",
+  exhibidor_impulso: "Exhibidor de impulso",
+  cartel_exterior: "Cartel",
+};
+
 export interface RecorridoPlano {
   id: string;
   sucursal_id: string;
@@ -36,6 +47,8 @@ export interface RecorridoPunto {
   width: number;
   height: number;
   orden: number;
+  /** tipo del espacio del layout (gondola | puntera | exhibidor_impulso | cartel_exterior) */
+  tipo_espacio?: string | null;
 }
 
 export type EstadoSeguimiento = "abierto" | "en_tarea" | "resuelto";
@@ -70,7 +83,16 @@ export interface RecorridoCriterio {
   orden: number;
   obligatorio: boolean;
   activo: boolean;
+  /** tipos de espacio donde aplica el criterio */
+  tipos_aplica?: string[] | null;
 }
+
+/** ¿El criterio aplica a este tipo de espacio? (sin tipos definidos = aplica a todo) */
+export const criterioAplica = (c: RecorridoCriterio, tipo?: string | null) => {
+  if (!c.tipos_aplica || c.tipos_aplica.length === 0) return true;
+  if (!tipo) return true;
+  return c.tipos_aplica.includes(tipo);
+};
 
 export interface Recorrido {
   id: string;
