@@ -254,6 +254,16 @@ const RecorridoSalon = () => {
     cargarBase();
   };
 
+  /** Activa o desactiva un tipo de espacio para un criterio */
+  const toggleTipoCriterio = async (c: RecorridoCriterio, tipo: TipoEspacio) => {
+    const actuales = c.tipos_aplica?.length ? c.tipos_aplica : [...TIPOS_ESPACIO];
+    const nuevos = actuales.includes(tipo) ? actuales.filter((t) => t !== tipo) : [...actuales, tipo];
+    if (!nuevos.length) return toast.error("El criterio tiene que aplicar al menos a un tipo");
+    const { error } = await supabase.from("recorrido_criterios").update({ tipos_aplica: nuevos }).eq("id", c.id);
+    if (error) return toast.error("No se pudo guardar");
+    setCriterios((prev) => prev.map((x) => (x.id === c.id ? { ...x, tipos_aplica: nuevos } : x)));
+  };
+
   const borrarCriterio = async (c: RecorridoCriterio) => {
     const { error } = await supabase.from("recorrido_criterios").delete().eq("id", c.id);
     if (error) return toast.error("No se pudo eliminar");
