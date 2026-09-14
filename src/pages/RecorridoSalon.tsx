@@ -153,7 +153,7 @@ const RecorridoSalon = () => {
     if (!confirm(`Se van a borrar los pasillos y góndolas cargados de ${nombreSuc} y se vuelven a crear desde el layout. ¿Seguir?`)) return;
     setRegenerando(true);
     try {
-      const gondolas = await cargarGondolasV2();
+      const gondolas = await cargarGondolasV2(sucursalSel);
       if (!gondolas.length) throw new Error("El layout no tiene góndolas todavía");
       const bbox = bboxDe(gondolas);
 
