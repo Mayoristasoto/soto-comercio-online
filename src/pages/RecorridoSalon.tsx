@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Map as MapIcon, Plus, Upload, Trash2, Settings2 } from "lucide-react";
+import { Map as MapIcon, Plus, Upload, Trash2, Settings2, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
 import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
@@ -99,6 +99,28 @@ const RecorridoSalon = () => {
     } catch {
       toast.error("No se pudo subir la imagen");
     }
+  };
+
+  /** Usa la copia del layout de góndolas (v2) como plano de referencia de la sucursal */
+  const usarLayoutGondolas = async (activar: boolean) => {
+    if (!sucursalSel) return toast.error("Elegí primero la sucursal");
+    const existente = planos.find((p) => p.sucursal_id === sucursalSel);
+    const nombreSuc = sucursales.find((s) => s.id === sucursalSel)?.nombre ?? "Plano";
+    if (existente) {
+      const { error } = await supabase.from("recorrido_planos").update({ usa_gondolas: activar }).eq("id", existente.id);
+      if (error) return toast.error("No se pudo actualizar el plano");
+    } else {
+      const { error } = await supabase.from("recorrido_planos").insert({
+        sucursal_id: sucursalSel,
+        nombre: `Plano ${nombreSuc}`,
+        ancho: 1000,
+        alto: 700,
+        usa_gondolas: activar,
+      });
+      if (error) return toast.error("No se pudo crear el plano");
+    }
+    toast.success(activar ? "Usando el layout de góndolas" : "Usando la imagen del plano");
+    cargarPlanos();
   };
 
   const crearRecorrido = async () => {
@@ -232,7 +254,21 @@ const RecorridoSalon = () => {
                     </Button>
                   </label>
                 )}
+                {sucursalSel && (
+                  <Button
+                    variant={planoActual?.usa_gondolas ? "default" : "outline"}
+                    onClick={() => usarLayoutGondolas(!planoActual?.usa_gondolas)}
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    {planoActual?.usa_gondolas ? "Usando layout de góndolas" : "Usar layout de góndolas"}
+                  </Button>
+                )}
               </div>
+              {planoActual?.usa_gondolas && (
+                <p className="text-xs text-muted-foreground">
+                  El plano muestra una copia visual del layout de góndolas. Podés generar una zona por góndola y además dibujar los pasillos.
+                </p>
+              )}
               {planoActual && (
                 <>
                   <PlanoCanvas plano={planoActual} zonas={zonas} />
