@@ -10,9 +10,7 @@ import { Copy, Grid3X3, ListOrdered, MousePointer2, Pencil, PlusSquare, Trash2 }
 import { toast } from "sonner";
 import { cargarGondolasV2, type BBox, type GondolaV2 } from "./FondoGondolasV2";
 import { TIPO_ESPACIO_LABEL, TIPOS_ESPACIO, type TipoEspacio } from "./recorridoTypes";
-
-/** Lienzo fijo: mismas unidades que el plano del editor de layout */
-const LIENZO: BBox = { x: 0, y: 0, width: 1000, height: 700 };
+import { fondoDe } from "./planosFondo";
 
 const colorEstado = (status: string) =>
   status === "occupied"
