@@ -8,6 +8,8 @@ export interface RecorridoPlano {
   ancho: number;
   alto: number;
   imagen_path: string | null;
+  /** true = usa el layout de góndolas (copia v2) como fondo en lugar de una imagen */
+  usa_gondolas?: boolean | null;
   activo: boolean;
 }
 
