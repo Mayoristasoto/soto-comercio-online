@@ -83,7 +83,7 @@ export function FondoGondolasV2({ gondolas, bbox }: { gondolas: GondolaV2[]; bbo
     >
       <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill="#f8fafc" />
       {gondolas.map((g) => {
-        const c = colorTipo(g.type);
+        const c = colorEstado(g.status);
         return (
           <g key={g.id}>
             <rect
