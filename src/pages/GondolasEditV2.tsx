@@ -639,30 +639,33 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!selectedGondola) return;
-      
+      const targetIds = selectedIds.length > 0
+        ? selectedIds
+        : (selectedGondola ? [selectedGondola.id] : []);
+      if (targetIds.length === 0) return;
+
       // Don't trigger shortcuts if user is typing in an input field
       const activeElement = document.activeElement;
-      const isTyping = activeElement?.tagName === 'INPUT' || 
-                      activeElement?.tagName === 'TEXTAREA' || 
+      const isTyping = activeElement?.tagName === 'INPUT' ||
+                      activeElement?.tagName === 'TEXTAREA' ||
                       activeElement?.getAttribute('contenteditable') === 'true';
-      
+
       if (isTyping) return;
-      
+
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
-        deleteGondola(selectedGondola.id);
+        deleteMany(targetIds);
       }
-      
+
       if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
         event.preventDefault();
-        duplicateGondola(selectedGondola);
+        duplicateMany(targetIds);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedGondola, gondolas]);
+  }, [selectedGondola, selectedIds, gondolas]);
 
   const handleSignOut = async () => {
     try {
