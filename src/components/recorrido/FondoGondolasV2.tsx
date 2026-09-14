@@ -82,6 +82,16 @@ export function FondoGondolasV2({ gondolas, bbox }: { gondolas: GondolaV2[]; bbo
       className="absolute inset-0 w-full h-full"
     >
       <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill="#f8fafc" />
+      {/* Plano del salón (mismo fondo que el editor de layout) */}
+      <image
+        href="/lovable-uploads/d3b32fd2-a19d-44d5-a8e2-b167fe688726.png"
+        x={0}
+        y={0}
+        width={1000}
+        height={700}
+        opacity={0.35}
+        preserveAspectRatio="xMidYMid meet"
+      />
       {gondolas.map((g) => {
         const c = colorEstado(g.status);
         return (
