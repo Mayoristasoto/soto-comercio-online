@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
 import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
 import { BUCKET_PLANOS, type Recorrido, type RecorridoCriterio, type RecorridoPlano, type RecorridoZona } from "@/components/recorrido/recorridoTypes";
+import GondolasEditV2 from "@/pages/GondolasEditV2";
 
 interface Sucursal { id: string; nombre: string }
 interface Empleado { id: string; nombre: string; apellido: string }
@@ -186,6 +187,7 @@ const RecorridoSalon = () => {
           <TabsTrigger value="recorridos">Recorridos</TabsTrigger>
           <TabsTrigger value="plano"><Settings2 className="h-4 w-4 mr-1" /> Plano y zonas</TabsTrigger>
           <TabsTrigger value="criterios">Criterios</TabsTrigger>
+          <TabsTrigger value="editor"><LayoutGrid className="h-4 w-4 mr-1" /> Editor de layout</TabsTrigger>
         </TabsList>
 
         <TabsContent value="recorridos">
@@ -316,6 +318,19 @@ const RecorridoSalon = () => {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="editor">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" /> Editor del layout (copia independiente)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <GondolasEditV2 embedded />
             </CardContent>
           </Card>
         </TabsContent>

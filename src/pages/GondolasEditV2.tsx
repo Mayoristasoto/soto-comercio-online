@@ -33,7 +33,7 @@ export interface Gondola {
   image_url?: string | null; // URL de la imagen subida
 }
 
-const GondolasEditV2 = () => {
+const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -609,7 +609,7 @@ const GondolasEditV2 = () => {
   };
 
   // Mostrar prompt de autenticación si no hay usuario
-  if (!user && showAuthPrompt) {
+  if (!user && showAuthPrompt && !embedded) {
     return (
       <AuthPrompt 
         onAuthSuccess={() => {
@@ -636,8 +636,9 @@ const GondolasEditV2 = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <main className="container mx-auto">
+    <div className={embedded ? "" : "min-h-screen bg-background p-4"}>
+      <main className={embedded ? "" : "container mx-auto"}>
+        {!embedded && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -730,6 +731,7 @@ const GondolasEditV2 = () => {
             Gestiona la ocupación y configuración de góndolas y punteras • Los cambios se guardan automáticamente
           </p>
         </div>
+        )}
 
         {/* Perfil de usuario seguro */}
         {showProfile && user && (
