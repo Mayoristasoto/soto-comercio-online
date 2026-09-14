@@ -9,15 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Map as MapIcon, Plus, Upload, Trash2, Settings2, LayoutGrid } from "lucide-react";
+import { Map as MapIcon, Plus, Upload, Trash2, Settings2, LayoutGrid, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
 import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
+import { PuntosEditor } from "@/components/recorrido/PuntosEditor";
+import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
 import { BUCKET_PLANOS, type Recorrido, type RecorridoCriterio, type RecorridoPlano, type RecorridoZona } from "@/components/recorrido/recorridoTypes";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
 
 interface Sucursal { id: string; nombre: string }
-interface Empleado { id: string; nombre: string; apellido: string }
+interface Empleado { id: string; nombre: string; apellido: string; sucursal_id?: string | null }
 
 const RecorridoSalon = () => {
   const navigate = useNavigate();
@@ -38,11 +40,19 @@ const RecorridoSalon = () => {
 
   // nuevo criterio
   const [nuevoCriterio, setNuevoCriterio] = useState("");
+  const [esAdmin, setEsAdmin] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: (await supabase.auth.getUser()).data.user?.id ?? "", _role: "admin_rrhh" });
+      setEsAdmin(Boolean(data));
+    })();
+  }, []);
 
   const cargarBase = async () => {
     const [{ data: suc }, { data: emp }, { data: cri }] = await Promise.all([
       supabase.from("sucursales").select("id, nombre").eq("activa", true).order("nombre"),
-      supabase.from("empleados").select("id, nombre, apellido").eq("activo", true).order("apellido"),
+      supabase.from("empleados").select("id, nombre, apellido, sucursal_id").eq("activo", true).order("apellido"),
       supabase.from("recorrido_criterios").select("*").order("orden"),
     ]);
     setSucursales((suc as Sucursal[]) ?? []);
@@ -186,6 +196,7 @@ const RecorridoSalon = () => {
         <TabsList>
           <TabsTrigger value="recorridos">Recorridos</TabsTrigger>
           <TabsTrigger value="plano"><Settings2 className="h-4 w-4 mr-1" /> Plano y zonas</TabsTrigger>
+          <TabsTrigger value="hallazgos"><AlertTriangle className="h-4 w-4 mr-1" /> Hallazgos</TabsTrigger>
           <TabsTrigger value="criterios">Criterios</TabsTrigger>
           <TabsTrigger value="editor"><LayoutGrid className="h-4 w-4 mr-1" /> Editor de layout</TabsTrigger>
         </TabsList>
@@ -278,11 +289,28 @@ const RecorridoSalon = () => {
                     <h3 className="font-semibold mb-2">Definir pasillos / zonas</h3>
                     <ZonaEditor plano={planoActual} zonas={zonas} onZonasChange={() => cargarZonas(planoActual.id)} />
                   </div>
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold mb-2">Góndolas dentro de cada pasillo</h3>
+                    <PuntosEditor zonas={zonas} usaGondolas={!!planoActual.usa_gondolas} />
+                  </div>
                 </>
               )}
               {sucursalSel && !planoActual && (
                 <p className="text-sm text-muted-foreground">Subí la imagen del plano para poder marcar las zonas.</p>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="hallazgos">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" /> Hallazgos detectados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <HallazgosAbiertos sucursales={sucursales} empleados={empleados.map((e) => ({ ...e, sucursal_id: e.sucursal_id ?? null }))} esAdmin={esAdmin} />
             </CardContent>
           </Card>
         </TabsContent>
