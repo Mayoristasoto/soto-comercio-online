@@ -1897,9 +1897,11 @@ export type Database = {
           id: string
           observaciones: string | null
           orden: number
+          punto_id: string | null
           seccion: string | null
           texto: string
           updated_at: string
+          zona_id: string | null
         }
         Insert: {
           control_id: string
@@ -1908,9 +1910,11 @@ export type Database = {
           id?: string
           observaciones?: string | null
           orden?: number
+          punto_id?: string | null
           seccion?: string | null
           texto: string
           updated_at?: string
+          zona_id?: string | null
         }
         Update: {
           control_id?: string
@@ -1919,9 +1923,11 @@ export type Database = {
           id?: string
           observaciones?: string | null
           orden?: number
+          punto_id?: string | null
           seccion?: string | null
           texto?: string
           updated_at?: string
+          zona_id?: string | null
         }
         Relationships: [
           {
@@ -1929,6 +1935,20 @@ export type Database = {
             columns: ["control_id"]
             isOneToOne: false
             referencedRelation: "checklist_controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_items_punto_id_fkey"
+            columns: ["punto_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_puntos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_items_zona_id_fkey"
+            columns: ["zona_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_zonas"
             referencedColumns: ["id"]
           },
         ]
@@ -9206,12 +9226,18 @@ export type Database = {
           criterio_id: string | null
           criterio_nombre: string | null
           estado: Database["public"]["Enums"]["checklist_estado_item"] | null
+          estado_seguimiento: string
           id: string
           observaciones: string | null
           orden: number
+          punto_id: string | null
+          punto_nombre: string | null
           punto_x: number | null
           punto_y: number | null
           recorrido_id: string
+          resuelto_at: string | null
+          sucursal_id: string | null
+          tarea_id: string | null
           updated_at: string
           zona_id: string | null
           zona_nombre: string | null
@@ -9221,12 +9247,18 @@ export type Database = {
           criterio_id?: string | null
           criterio_nombre?: string | null
           estado?: Database["public"]["Enums"]["checklist_estado_item"] | null
+          estado_seguimiento?: string
           id?: string
           observaciones?: string | null
           orden?: number
+          punto_id?: string | null
+          punto_nombre?: string | null
           punto_x?: number | null
           punto_y?: number | null
           recorrido_id: string
+          resuelto_at?: string | null
+          sucursal_id?: string | null
+          tarea_id?: string | null
           updated_at?: string
           zona_id?: string | null
           zona_nombre?: string | null
@@ -9236,12 +9268,18 @@ export type Database = {
           criterio_id?: string | null
           criterio_nombre?: string | null
           estado?: Database["public"]["Enums"]["checklist_estado_item"] | null
+          estado_seguimiento?: string
           id?: string
           observaciones?: string | null
           orden?: number
+          punto_id?: string | null
+          punto_nombre?: string | null
           punto_x?: number | null
           punto_y?: number | null
           recorrido_id?: string
+          resuelto_at?: string | null
+          sucursal_id?: string | null
+          tarea_id?: string | null
           updated_at?: string
           zona_id?: string | null
           zona_nombre?: string | null
@@ -9255,10 +9293,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "recorrido_hallazgos_punto_id_fkey"
+            columns: ["punto_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_puntos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "recorrido_hallazgos_recorrido_id_fkey"
             columns: ["recorrido_id"]
             isOneToOne: false
             referencedRelation: "recorridos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorrido_hallazgos_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
             referencedColumns: ["id"]
           },
           {
@@ -9316,6 +9368,56 @@ export type Database = {
             columns: ["sucursal_id"]
             isOneToOne: false
             referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorrido_puntos: {
+        Row: {
+          created_at: string
+          gondola_ref: string | null
+          height: number
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+          width: number
+          x: number
+          y: number
+          zona_id: string
+        }
+        Insert: {
+          created_at?: string
+          gondola_ref?: string | null
+          height?: number
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zona_id: string
+        }
+        Update: {
+          created_at?: string
+          gondola_ref?: string | null
+          height?: number
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zona_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorrido_puntos_zona_id_fkey"
+            columns: ["zona_id"]
+            isOneToOne: false
+            referencedRelation: "recorrido_zonas"
             referencedColumns: ["id"]
           },
         ]
@@ -11273,6 +11375,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      historial_hallazgos_punto: {
+        Row: {
+          detalle: string | null
+          estado: string | null
+          estado_seguimiento: string | null
+          fecha: string | null
+          fotos: number | null
+          id: string | null
+          observaciones: string | null
+          origen: string | null
+          punto_id: string | null
+          punto_nombre: string | null
+          responsable_id: string | null
+          sucursal_id: string | null
+          zona_id: string | null
+          zona_nombre: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
