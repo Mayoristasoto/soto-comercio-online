@@ -15,7 +15,17 @@ import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
 import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
 import { PuntosEditor } from "@/components/recorrido/PuntosEditor";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
-import { BUCKET_PLANOS, type Recorrido, type RecorridoCriterio, type RecorridoPlano, type RecorridoZona } from "@/components/recorrido/recorridoTypes";
+import {
+  BUCKET_PLANOS,
+  TIPOS_ESPACIO,
+  TIPO_ESPACIO_LABEL,
+  type Recorrido,
+  type RecorridoCriterio,
+  type RecorridoPlano,
+  type RecorridoZona,
+  type TipoEspacio,
+} from "@/components/recorrido/recorridoTypes";
+import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
 import { bboxDe, cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
 
