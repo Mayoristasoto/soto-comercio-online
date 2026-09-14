@@ -12,8 +12,11 @@ import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
 import { HistorialPunto } from "@/components/recorrido/HistorialPunto";
 import {
   ESTADO_HALLAZGO_LABEL,
+  TIPO_ESPACIO_LABEL,
+  criterioAplica,
   peorEstado,
   type EstadoHallazgo,
+  type TipoEspacio,
   type Recorrido,
   type RecorridoCriterio,
   type RecorridoHallazgo,
