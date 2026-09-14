@@ -43,6 +43,7 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredGondola, setHoveredGondola] = useState<Gondola | null>(null);
   const [selectedGondola, setSelectedGondola] = useState<Gondola | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showProfile, setShowProfile] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [realtimeConnected, setRealtimeConnected] = useState(false);
