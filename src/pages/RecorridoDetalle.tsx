@@ -36,6 +36,8 @@ const RecorridoDetalle = () => {
   const [pinTmp, setPinTmp] = useState<{ x: number; y: number } | null>(null);
   const [sucursalNombre, setSucursalNombre] = useState("");
   const [cerrando, setCerrando] = useState(false);
+  const [marcandoTodo, setMarcandoTodo] = useState(false);
+  const [vistaCompleta, setVistaCompleta] = useState(false);
 
   const soloLectura = recorrido?.estado === "completado";
 
