@@ -902,7 +902,7 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
                     <div>
                       <h2 className="text-xl font-semibold">Editor del Layout</h2>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Arrastra, redimensiona y crea góndolas • Usa ← → ↑ ↓ para mover • Ctrl + flechas para redimensionar
+                        Arrastra, redimensiona y crea góndolas • Usa ← → ↑ ↓ para mover • Ctrl + flechas para redimensionar • Ctrl + clic para selección múltiple
                       </p>
                     </div>
                     
@@ -947,7 +947,39 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
                         </Button>
                       </div>
 
-                      {selectedGondola && (
+                      {selectedIds.length > 0 && (
+                        <div className="flex gap-2 items-center">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {selectedIds.length} seleccionados
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => duplicateMany(selectedIds)}
+                            className="flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Duplicar ({selectedIds.length})
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteMany(selectedIds)}
+                            className="flex items-center gap-2"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedIds([])}
+                          >
+                            Limpiar
+                          </Button>
+                        </div>
+                      )}
+                      {selectedIds.length === 0 && selectedGondola && (
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
