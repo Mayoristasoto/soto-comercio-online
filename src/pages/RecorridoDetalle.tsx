@@ -84,6 +84,10 @@ const RecorridoDetalle = () => {
 
   const puntosDeZona = (zonaId: string) => puntos.filter((p) => p.zona_id === zonaId);
 
+  /** Criterios que aplican al tipo de espacio del punto (pasillo completo = todos) */
+  const criteriosPara = (punto: RecorridoPunto | null) =>
+    criterios.filter((c) => criterioAplica(c, punto?.tipo_espacio ?? null));
+
   const hallazgoDe = (zonaId: string, criterioId: string, puntoId: string | null) =>
     hallazgos.find(
       (h) => h.zona_id === zonaId && h.criterio_id === criterioId && (h.punto_id ?? null) === (puntoId ?? null)
