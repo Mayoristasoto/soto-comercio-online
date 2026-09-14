@@ -57,6 +57,8 @@ export default function ChecklistControlDetalle() {
   const base = getChecklistBase(pathname);
   const [control, setControl] = useState<ChecklistControl | null>(null);
   const [sucursalNombre, setSucursalNombre] = useState<string | null>(null);
+  const [zonasSalon, setZonasSalon] = useState<{ id: string; nombre: string }[]>([]);
+  const [puntosSalon, setPuntosSalon] = useState<{ id: string; zona_id: string; nombre: string }[]>([]);
   const [encargados, setEncargados] = useState<string[]>([]);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [fotos, setFotos] = useState<ChecklistFoto[]>([]);
