@@ -242,6 +242,64 @@ const RecorridoDetalle = () => {
     return `${hechos}/${objetivo}`;
   };
 
+  const renderCriterios = (zona: RecorridoZona, punto: RecorridoPunto | null) =>
+    criterios.map((c) => {
+      const h = hallazgoDe(zona.id, c.id, punto?.id ?? null);
+      return (
+        <div key={`${punto?.id ?? zona.id}-${c.id}`} className="rounded-md border p-3 space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="font-medium">{c.nombre}</span>
+            <div className="flex gap-1">
+              {(["cumple", "parcial", "no_cumple"] as EstadoHallazgo[]).map((est) => (
+                <Button
+                  key={est}
+                  size="sm"
+                  variant={h?.estado === est ? "default" : "outline"}
+                  className={
+                    h?.estado === est
+                      ? est === "cumple"
+                        ? "bg-emerald-600 hover:bg-emerald-600"
+                        : est === "parcial"
+                          ? "bg-amber-500 hover:bg-amber-500"
+                          : "bg-red-600 hover:bg-red-600"
+                      : ""
+                  }
+                  onClick={() => marcar(zona, punto, c, est)}
+                >
+                  {ESTADO_HALLAZGO_LABEL[est]}
+                </Button>
+              ))}
+            </div>
+          </div>
+          {h && (
+            <>
+              <Textarea
+                placeholder="Observaciones…"
+                defaultValue={h.observaciones ?? ""}
+                readOnly={soloLectura}
+                onBlur={(e) => guardarObs(h, e.target.value)}
+                rows={2}
+              />
+              <HallazgoFotos hallazgoId={h.id} readOnly={soloLectura} />
+            </>
+          )}
+        </div>
+      );
+    });
+
+  const grupos = useMemo(() => {
+    const out: { zona: RecorridoZona; punto: RecorridoPunto | null }[] = [];
+    for (const z of zonas) {
+      const pts = puntos.filter((p) => p.zona_id === z.id);
+      if (pts.length) pts.forEach((p) => out.push({ zona: z, punto: p }));
+      else out.push({ zona: z, punto: null });
+    }
+    return out;
+  }, [zonas, puntos]);
+
+  const totalControles = grupos.length * criterios.length;
+  const hechosControles = hallazgos.length;
+
   if (!recorrido) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
