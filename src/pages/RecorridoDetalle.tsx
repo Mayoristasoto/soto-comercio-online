@@ -316,9 +316,12 @@ const RecorridoDetalle = () => {
   }
 
   const puntosZona = zonaSel ? puntosDeZona(zonaSel.id) : [];
+  const tipoPunto = puntoSel?.tipo_espacio
+    ? TIPO_ESPACIO_LABEL[puntoSel.tipo_espacio as TipoEspacio] ?? puntoSel.tipo_espacio
+    : null;
   const tituloPanel = zonaSel
-    ? `Controlando: ${zonaSel.nombre}${puntoSel ? ` · ${puntoSel.nombre}` : ""}`
-    : "Elegí un pasillo en el plano";
+    ? `Controlando: ${zonaSel.nombre}${puntoSel ? ` · ${tipoPunto ? `${tipoPunto} ` : ""}${puntoSel.nombre}` : ""}`
+    : "Elegí un espacio en el plano";
 
   return (
     <div className="container mx-auto p-4 space-y-4 max-w-6xl">
