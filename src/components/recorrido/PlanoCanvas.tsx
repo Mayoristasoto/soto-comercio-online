@@ -43,7 +43,7 @@ export function PlanoCanvas({
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const usaGondolas = !!plano.usa_gondolas;
-  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas);
+  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas, plano.sucursal_id);
 
   useEffect(() => {
     let revoke: string | null = null;
