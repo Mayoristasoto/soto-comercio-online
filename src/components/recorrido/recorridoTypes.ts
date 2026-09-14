@@ -47,6 +47,8 @@ export interface RecorridoPunto {
   width: number;
   height: number;
   orden: number;
+  /** tipo del espacio del layout (gondola | puntera | exhibidor_impulso | cartel_exterior) */
+  tipo_espacio?: string | null;
 }
 
 export type EstadoSeguimiento = "abierto" | "en_tarea" | "resuelto";
