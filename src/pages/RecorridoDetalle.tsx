@@ -419,52 +419,47 @@ const RecorridoDetalle = () => {
                 Estás evaluando el pasillo completo. Elegí una góndola arriba para marcar algo puntual.
               </p>
             )}
-            {zonaSel && criterios.map((c) => {
-              const h = hallazgoDe(zonaSel.id, c.id, puntoSel?.id ?? null);
-              return (
-                <div key={c.id} className="rounded-md border p-3 space-y-2">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="font-medium">{c.nombre}</span>
-                    <div className="flex gap-1">
-                      {(["cumple", "parcial", "no_cumple"] as EstadoHallazgo[]).map((est) => (
-                        <Button
-                          key={est}
-                          size="sm"
-                          variant={h?.estado === est ? "default" : "outline"}
-                          className={
-                            h?.estado === est
-                              ? est === "cumple"
-                                ? "bg-emerald-600 hover:bg-emerald-600"
-                                : est === "parcial"
-                                  ? "bg-amber-500 hover:bg-amber-500"
-                                  : "bg-red-600 hover:bg-red-600"
-                              : ""
-                          }
-                          onClick={() => marcar(zonaSel, puntoSel, c, est)}
-                        >
-                          {ESTADO_HALLAZGO_LABEL[est]}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  {h && (
-                    <>
-                      <Textarea
-                        placeholder="Observaciones…"
-                        defaultValue={h.observaciones ?? ""}
-                        readOnly={soloLectura}
-                        onBlur={(e) => guardarObs(h, e.target.value)}
-                        rows={2}
-                      />
-                      <HallazgoFotos hallazgoId={h.id} readOnly={soloLectura} />
-                    </>
-                  )}
-                </div>
-              );
-            })}
+            {zonaSel && renderCriterios(zonaSel, puntoSel)}
           </CardContent>
         </Card>
       </div>
+
+      {vistaCompleta && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">
+              Todas las góndolas · {hechosControles}/{totalControles} controles marcados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {grupos.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Todavía no hay góndolas cargadas. Cargalas desde Recorrido de Salón → Plano y zonas.
+              </p>
+            )}
+            {grupos.map(({ zona, punto }) => (
+              <div key={`${zona.id}-${punto?.id ?? "zona"}`} className="rounded-lg border p-3 space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-semibold text-sm">
+                    {zona.nombre}{punto ? ` · ${punto.nombre}` : ""}
+                  </span>
+                  {!soloLectura && (
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={() => marcarGrupo(zona, punto, "cumple")}>
+                        Todo cumple
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => marcarGrupo(zona, punto, "no_cumple")}>
+                        Todo no cumple
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">{renderCriterios(zona, punto)}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
