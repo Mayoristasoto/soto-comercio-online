@@ -319,6 +319,19 @@ const RecorridoSalon = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="editor">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" /> Editor del layout (copia independiente)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <GondolasEditV2 embedded />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       <Dialog open={nuevoOpen} onOpenChange={setNuevoOpen}>
