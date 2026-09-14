@@ -338,12 +338,14 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
       >
-        <img
-          src="/lovable-uploads/d3b32fd2-a19d-44d5-a8e2-b167fe688726.png"
-          alt="Plano del salón"
-          className="absolute inset-0 w-full h-full object-contain opacity-40 pointer-events-none"
-          draggable={false}
-        />
+        {fondo.url && (
+          <img
+            src={fondo.url}
+            alt="Plano del salón"
+            className="absolute inset-0 w-full h-full object-contain opacity-40 pointer-events-none"
+            draggable={false}
+          />
+        )}
         {espacios.map((g) => {
           const arrastrando = dragRef.current?.id === g.id && draft;
           const box = arrastrando ? (draft as Draft) : { x: g.x, y: g.y, width: g.width, height: g.height };
