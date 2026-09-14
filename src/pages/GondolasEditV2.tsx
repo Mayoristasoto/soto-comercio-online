@@ -392,6 +392,77 @@ const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
     setSelectedGondola(duplicated);
   };
 
+  // Genera el próximo id libre para un tipo, evitando los ya usados
+  const generateIdForType = (type: Gondola['type'], used: Set<string>) => {
+    const prefix = ({ gondola: 'g', puntera: 'p', cartel_exterior: 'c', exhibidor_impulso: 'e' } as const)[type] ?? 'x';
+    let n = 1;
+    while (used.has(`${prefix}${n}`)) n++;
+    return `${prefix}${n}`;
+  };
+
+  // Alternar un elemento en la selección múltiple (Ctrl/Cmd/Shift + clic)
+  const handleMultiSelect = (gondola: Gondola) => {
+    setSelectedGondola(null);
+    setSelectedIds(prev =>
+      prev.includes(gondola.id) ? prev.filter(id => id !== gondola.id) : [...prev, gondola.id]
+    );
+  };
+
+  // Duplicar todos los seleccionados de una sola vez
+  const duplicateMany = async (ids: string[]) => {
+    const targets = gondolas.filter(g => ids.includes(g.id));
+    if (targets.length === 0) return;
+    const used = new Set(gondolas.map(g => g.id));
+    const nuevos: Gondola[] = targets.map(g => {
+      const newId = generateIdForType(g.type, used);
+      used.add(newId);
+      return {
+        ...g,
+        id: newId,
+        position: { ...g.position, x: g.position.x + 20, y: g.position.y + 20 },
+        section: newId.toUpperCase(),
+        status: 'available' as const,
+        brand: null,
+        category: 'Disponible',
+        endDate: undefined,
+        notes: undefined,
+      };
+    });
+    try {
+      for (const n of nuevos) {
+        await saveGondolaToDb(n);
+      }
+      setGondolas(prev => [...prev, ...nuevos]);
+      setSelectedIds(nuevos.map(n => n.id));
+      setSelectedGondola(null);
+      toast(`${nuevos.length} elemento(s) duplicados`);
+    } catch (error) {
+      console.error('Error duplicando selección:', error);
+      toast("Error al duplicar la selección");
+    }
+  };
+
+  // Eliminar todos los seleccionados de una sola vez
+  const deleteMany = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    try {
+      const { error } = await supabase
+        .from('gondolas_v2')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      setGondolas(prev => prev.filter(g => !ids.includes(g.id)));
+      setSelectedIds([]);
+      setSelectedGondola(null);
+      toast(`${ids.length} elemento(s) eliminados`);
+    } catch (error) {
+      console.error('Error eliminando selección:', error);
+      toast("Error al eliminar la selección");
+    }
+  };
+
   const resetToOriginal = async () => {
     try {
       // Delete all existing gondolas
