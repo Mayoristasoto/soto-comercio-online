@@ -52,6 +52,8 @@ interface InteractiveMapProps {
   onViewportChange?: (viewport: ViewportSettings) => void;
   isCreating?: 'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso' | null;
   onZoomChange?: (zoom: number, onZoomIn: () => void, onZoomOut: () => void, minZoom: number, maxZoom: number) => void;
+  onGondolaMultiSelect?: (gondola: Gondola) => void;
+  multiSelectedIds?: string[];
 }
 
 export const InteractiveMap = ({ 
@@ -70,7 +72,9 @@ export const InteractiveMap = ({
   isViewportSelecting = false,
   onViewportChange,
   isCreating = null,
-  onZoomChange
+  onZoomChange,
+  onGondolaMultiSelect,
+  multiSelectedIds = []
 }: InteractiveMapProps) => {
   const isMobile = useMobileDetection();
   
@@ -239,6 +243,12 @@ export const InteractiveMap = ({
     
     console.log('handleClick triggered for:', gondola.id, 'currently selected:', selectedGondola);
     
+    // Selección múltiple con Ctrl/Cmd/Shift + clic
+    if (!isDragging && !isResizing && onGondolaMultiSelect && (event.ctrlKey || event.metaKey || event.shiftKey)) {
+      onGondolaMultiSelect(gondola);
+      return;
+    }
+
     // Solo manejar selección si no estamos arrastrando o redimensionando
     if (!isDragging && !isResizing && selectedGondola !== gondola.id) {
       console.log('Selecting gondola:', gondola.id);
@@ -940,7 +950,7 @@ export const InteractiveMap = ({
 
         {/* Gondolas and Punteras */}
         {gondolas.map((gondola) => {
-          const isSelected = selectedGondola === gondola.id && isEditMode;
+          const isSelected = (selectedGondola === gondola.id || multiSelectedIds.includes(gondola.id)) && isEditMode;
           const isOccupied = gondola.status === 'occupied';
           
           return (
