@@ -149,7 +149,7 @@ export function PlanoCanvas({
           style={{ aspectRatio: `${bbox.width} / ${bbox.height}` }}
           onClick={handleClick}
         >
-          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} />
+          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} sucursalId={plano.sucursal_id} />
           {overlay}
         </div>
       </div>
