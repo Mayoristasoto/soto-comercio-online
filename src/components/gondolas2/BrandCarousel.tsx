@@ -47,7 +47,7 @@ export const BrandCarousel = () => {
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'brand_partners'
+        table: 'brand_partners_v2'
       }, () => {
         loadBrands();
       })

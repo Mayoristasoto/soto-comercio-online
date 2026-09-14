@@ -33,7 +33,7 @@ export interface Gondola {
   image_url?: string | null; // URL de la imagen subida
 }
 
-const GondolasEdit = () => {
+const GondolasEditV2 = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -1027,4 +1027,4 @@ const GondolasEdit = () => {
   );
 };
 
-export default GondolasEdit;
+export default GondolasEditV2;
