@@ -5853,6 +5853,7 @@ export type Database = {
           position_y: number
           section: string
           status: string
+          sucursal_id: string | null
           type: string
           updated_at: string | null
         }
@@ -5870,6 +5871,7 @@ export type Database = {
           position_y: number
           section: string
           status: string
+          sucursal_id?: string | null
           type: string
           updated_at?: string | null
         }
@@ -5887,10 +5889,19 @@ export type Database = {
           position_y?: number
           section?: string
           status?: string
+          sucursal_id?: string | null
           type?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "gondolas_v2_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       graphic_elements: {
         Row: {
