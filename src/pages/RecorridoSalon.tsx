@@ -26,6 +26,7 @@ import {
   type TipoEspacio,
 } from "@/components/recorrido/recorridoTypes";
 import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
+import { fondoDe } from "@/components/recorrido/planosFondo";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
 import { bboxDe, cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
 
