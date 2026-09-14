@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Map as MapIcon, Plus, Upload, Trash2, Settings2, LayoutGrid, AlertTriangle } from "lucide-react";
+import { Map as MapIcon, Plus, Upload, Trash2, Settings2, LayoutGrid, AlertTriangle, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
 import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
@@ -347,6 +347,12 @@ const RecorridoSalon = () => {
                   >
                     <LayoutGrid className="h-4 w-4 mr-1" />
                     {planoActual?.usa_gondolas ? "Usando layout de góndolas" : "Usar layout de góndolas"}
+                  </Button>
+                )}
+                {sucursalSel && (
+                  <Button variant="secondary" onClick={empezarDeCeroConGondolas} disabled={regenerando}>
+                    <Wand2 className="h-4 w-4 mr-1" />
+                    {regenerando ? "Armando…" : "Empezar de cero con las góndolas"}
                   </Button>
                 )}
               </div>
