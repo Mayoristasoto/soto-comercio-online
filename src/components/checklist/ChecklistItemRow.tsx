@@ -27,6 +27,9 @@ interface Props {
   onEliminar?: () => void;
   onFotosChange: () => void;
   sucursalId?: string | null;
+  zonas?: { id: string; nombre: string }[];
+  puntos?: { id: string; zona_id: string; nombre: string }[];
+  onVincular?: (zonaId: string | null, puntoId: string | null) => void;
 }
 
 export function ChecklistItemRow({
@@ -38,6 +41,9 @@ export function ChecklistItemRow({
   onEliminar,
   onFotosChange,
   sucursalId,
+  zonas = [],
+  puntos = [],
+  onVincular,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -127,6 +133,49 @@ export function ChecklistItemRow({
                 maxLength={2000}
                 className="text-sm"
               />
+            )}
+
+            {zonas.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed p-2">
+                <span className="text-xs text-muted-foreground">Ubicación en el salón</span>
+                <Select
+                  value={item.zona_id ?? "none"}
+                  disabled={readOnly}
+                  onValueChange={(v) => onVincular?.(v === "none" ? null : v, null)}
+                >
+                  <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Pasillo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin pasillo</SelectItem>
+                    {zonas.map((z) => <SelectItem key={z.id} value={z.id}>{z.nombre}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {item.zona_id && (
+                  <Select
+                    value={item.punto_id ?? "none"}
+                    disabled={readOnly}
+                    onValueChange={(v) => onVincular?.(item.zona_id ?? null, v === "none" ? null : v)}
+                  >
+                    <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Góndola" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Todo el pasillo</SelectItem>
+                      {puntos.filter((p) => p.zona_id === item.zona_id).map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {(item.zona_id || item.punto_id) && (
+                  <HistorialPunto
+                    puntoId={item.punto_id ?? null}
+                    zonaId={item.punto_id ? null : item.zona_id ?? null}
+                    titulo={
+                      puntos.find((p) => p.id === item.punto_id)?.nombre ??
+                      zonas.find((z) => z.id === item.zona_id)?.nombre ??
+                      item.texto
+                    }
+                  />
+                )}
+              </div>
             )}
 
             <EvidenciaUploader
