@@ -175,29 +175,34 @@ const RecorridoSalon = () => {
         await supabase.from("recorrido_zonas").delete().in("id", idsZonas);
       }
 
-      // una zona por góndola + su punto de control
+      // una zona por espacio del mapa + su punto de control
       const filasZonas = gondolas.map((g, i) => ({
         plano_id: planoId as string,
-        nombre: g.section,
+        nombre: `${TIPO_ESPACIO_LABEL[g.type as TipoEspacio] ?? g.type} ${g.section}`,
         orden: i,
         ...gondolaAPorcentaje(g, bbox),
       }));
-      const { data: zonasNuevas, error: errZ } = await supabase.from("recorrido_zonas").insert(filasZonas).select("id, nombre");
+      const { data: zonasNuevas, error: errZ } = await supabase
+        .from("recorrido_zonas")
+        .insert(filasZonas)
+        .select("id, orden");
       if (errZ || !zonasNuevas) throw errZ ?? new Error("zonas");
 
-      const porNombre = new Map((zonasNuevas as { id: string; nombre: string }[]).map((z) => [z.nombre, z.id]));
+      const porOrden = new Map((zonasNuevas as { id: string; orden: number }[]).map((z) => [z.orden, z.id]));
       const filasPuntos = gondolas
-        .filter((g) => porNombre.has(g.section))
-        .map((g, i) => ({
-          zona_id: porNombre.get(g.section) as string,
+        .map((g, i) => ({ g, i }))
+        .filter(({ i }) => porOrden.has(i))
+        .map(({ g, i }) => ({
+          zona_id: porOrden.get(i) as string,
           nombre: g.section,
           gondola_ref: g.id,
+          tipo_espacio: g.type,
           orden: i,
           ...gondolaAPorcentaje(g, bbox),
         }));
       if (filasPuntos.length) await supabase.from("recorrido_puntos").insert(filasPuntos);
 
-      toast.success(`${gondolas.length} góndolas listas para controlar en ${nombreSuc}`);
+      toast.success(`${gondolas.length} espacios listos para controlar en ${nombreSuc}`);
       await cargarPlanos();
       if (planoId) await cargarZonas(planoId);
     } catch (e: any) {
