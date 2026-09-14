@@ -201,6 +201,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
       position_y: sel.y,
       position_width: sel.width,
       position_height: sel.height,
+      sucursal_id: sucursalId ?? null,
     };
     const { error } = await supabase.from("gondolas_v2").insert(fila);
     if (error) return toast.error("No se pudo duplicar");
