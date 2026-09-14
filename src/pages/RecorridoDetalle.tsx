@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { PlanoCanvas, type PinPunto } from "@/components/recorrido/PlanoCanvas";
 import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
+import { HistorialPunto } from "@/components/recorrido/HistorialPunto";
 import {
   ESTADO_HALLAZGO_LABEL,
   peorEstado,
@@ -17,6 +18,7 @@ import {
   type RecorridoCriterio,
   type RecorridoHallazgo,
   type RecorridoPlano,
+  type RecorridoPunto,
   type RecorridoZona,
 } from "@/components/recorrido/recorridoTypes";
 
@@ -26,9 +28,11 @@ const RecorridoDetalle = () => {
   const [recorrido, setRecorrido] = useState<Recorrido | null>(null);
   const [plano, setPlano] = useState<RecorridoPlano | null>(null);
   const [zonas, setZonas] = useState<RecorridoZona[]>([]);
+  const [puntos, setPuntos] = useState<RecorridoPunto[]>([]);
   const [criterios, setCriterios] = useState<RecorridoCriterio[]>([]);
   const [hallazgos, setHallazgos] = useState<RecorridoHallazgo[]>([]);
   const [zonaSel, setZonaSel] = useState<RecorridoZona | null>(null);
+  const [puntoSel, setPuntoSel] = useState<RecorridoPunto | null>(null);
   const [pinTmp, setPinTmp] = useState<{ x: number; y: number } | null>(null);
   const [sucursalNombre, setSucursalNombre] = useState("");
   const [cerrando, setCerrando] = useState(false);
@@ -56,18 +60,38 @@ const RecorridoDetalle = () => {
     if (pl) {
       setPlano(pl as RecorridoPlano);
       const { data: zo } = await supabase.from("recorrido_zonas").select("*").eq("plano_id", pl.id).order("orden");
-      setZonas((zo as RecorridoZona[]) ?? []);
+      const listaZonas = (zo as RecorridoZona[]) ?? [];
+      setZonas(listaZonas);
+      if (listaZonas.length) {
+        const { data: pt } = await supabase
+          .from("recorrido_puntos")
+          .select("*")
+          .in("zona_id", listaZonas.map((z) => z.id))
+          .order("orden");
+        setPuntos((pt as RecorridoPunto[]) ?? []);
+      } else {
+        setPuntos([]);
+      }
     }
   };
 
   useEffect(() => { cargar(); }, [id]);
 
-  const hallazgoDe = (zonaId: string, criterioId: string) =>
-    hallazgos.find((h) => h.zona_id === zonaId && h.criterio_id === criterioId);
+  const puntosDeZona = (zonaId: string) => puntos.filter((p) => p.zona_id === zonaId);
 
-  const marcar = async (zona: RecorridoZona, criterio: RecorridoCriterio, estado: EstadoHallazgo) => {
+  const hallazgoDe = (zonaId: string, criterioId: string, puntoId: string | null) =>
+    hallazgos.find(
+      (h) => h.zona_id === zonaId && h.criterio_id === criterioId && (h.punto_id ?? null) === (puntoId ?? null)
+    );
+
+  const marcar = async (
+    zona: RecorridoZona,
+    punto: RecorridoPunto | null,
+    criterio: RecorridoCriterio,
+    estado: EstadoHallazgo
+  ) => {
     if (soloLectura) return;
-    const existente = hallazgoDe(zona.id, criterio.id);
+    const existente = hallazgoDe(zona.id, criterio.id, punto?.id ?? null);
     if (existente) {
       const { error } = await supabase.from("recorrido_hallazgos").update({ estado }).eq("id", existente.id);
       if (error) return toast.error("No se pudo actualizar");
@@ -79,11 +103,14 @@ const RecorridoDetalle = () => {
           recorrido_id: id,
           zona_id: zona.id,
           zona_nombre: zona.nombre,
+          punto_id: punto?.id ?? null,
+          punto_nombre: punto?.nombre ?? null,
+          sucursal_id: recorrido?.sucursal_id ?? null,
           criterio_id: criterio.id,
           criterio_nombre: criterio.nombre,
           estado,
-          punto_x: pinTmp?.x ?? null,
-          punto_y: pinTmp?.y ?? null,
+          punto_x: pinTmp?.x ?? (punto ? punto.x + punto.width / 2 : null),
+          punto_y: pinTmp?.y ?? (punto ? punto.y + punto.height / 2 : null),
           orden: hallazgos.length,
         })
         .select("*")
@@ -107,18 +134,31 @@ const RecorridoDetalle = () => {
     return m;
   }, [zonas, hallazgos]);
 
+  const puntoEstados = useMemo(() => {
+    const m: Record<string, EstadoHallazgo | null> = {};
+    for (const p of puntos) {
+      m[p.id] = peorEstado(hallazgos.filter((h) => h.punto_id === p.id).map((h) => h.estado));
+    }
+    return m;
+  }, [puntos, hallazgos]);
+
   const pins: PinPunto[] = useMemo(
     () =>
       hallazgos
-        .filter((h) => h.punto_x != null && h.punto_y != null)
+        .filter((h) => h.punto_x != null && h.punto_y != null && !h.punto_id)
         .map((h) => ({ x: h.punto_x!, y: h.punto_y!, estado: h.estado, label: `${h.zona_nombre} · ${h.criterio_nombre}` })),
     [hallazgos]
   );
 
+  const elegirZona = (z: RecorridoZona) => {
+    setZonaSel(z);
+    setPuntoSel(null);
+  };
+
   const onCanvasClick = (x: number, y: number, zona: RecorridoZona | null) => {
     if (soloLectura) return;
     if (zona) {
-      setZonaSel(zona);
+      elegirZona(zona);
     } else {
       setPinTmp({ x, y });
       toast.info("Punto marcado. Elegí la zona y criterio para asociarlo.", { duration: 2500 });
@@ -144,13 +184,19 @@ const RecorridoDetalle = () => {
   };
 
   const progreso = (z: RecorridoZona) => {
-    const hechos = criterios.filter((c) => hallazgoDe(z.id, c.id)).length;
-    return `${hechos}/${criterios.length}`;
+    const hechos = hallazgos.filter((h) => h.zona_id === z.id).length;
+    const objetivo = criterios.length * Math.max(1, puntosDeZona(z.id).length);
+    return `${hechos}/${objetivo}`;
   };
 
   if (!recorrido) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
+
+  const puntosZona = zonaSel ? puntosDeZona(zonaSel.id) : [];
+  const tituloPanel = zonaSel
+    ? `Controlando: ${zonaSel.nombre}${puntoSel ? ` · ${puntoSel.nombre}` : ""}`
+    : "Elegí un pasillo en el plano";
 
   return (
     <div className="container mx-auto p-4 space-y-4 max-w-6xl">
@@ -178,7 +224,7 @@ const RecorridoDetalle = () => {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2"><MapPin className="h-4 w-4" /> Plano — tocá la zona que estás controlando</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><MapPin className="h-4 w-4" /> Plano — tocá el pasillo y después la góndola</CardTitle>
           </CardHeader>
           <CardContent>
             {plano ? (
@@ -187,8 +233,12 @@ const RecorridoDetalle = () => {
                 zonas={zonas}
                 zonaSeleccionadaId={zonaSel?.id}
                 zonaEstados={zonaEstados}
+                puntos={zonaSel ? puntosZona : []}
+                puntoSeleccionadoId={puntoSel?.id}
+                puntoEstados={puntoEstados}
                 pins={pinTmp ? [...pins, { x: pinTmp.x, y: pinTmp.y }] : pins}
-                onZonaClick={setZonaSel}
+                onZonaClick={elegirZona}
+                onPuntoClick={setPuntoSel}
                 onCanvasClick={onCanvasClick}
               />
             ) : (
@@ -201,11 +251,38 @@ const RecorridoDetalle = () => {
                     key={z.id}
                     size="sm"
                     variant={zonaSel?.id === z.id ? "default" : "outline"}
-                    onClick={() => setZonaSel(z)}
+                    onClick={() => elegirZona(z)}
                   >
                     {z.nombre} <span className="ml-1 text-xs opacity-70">{progreso(z)}</span>
                   </Button>
                 ))}
+              </div>
+            )}
+            {zonaSel && puntosZona.length > 0 && (
+              <div className="mt-3 space-y-1">
+                <p className="text-xs text-muted-foreground">Góndolas de {zonaSel.nombre}</p>
+                <div className="flex flex-wrap gap-1">
+                  <Button size="sm" variant={!puntoSel ? "secondary" : "outline"} onClick={() => setPuntoSel(null)}>
+                    Todo el pasillo
+                  </Button>
+                  {puntosZona.map((p) => (
+                    <Button
+                      key={p.id}
+                      size="sm"
+                      variant={puntoSel?.id === p.id ? "default" : "outline"}
+                      className={
+                        puntoEstados[p.id] === "no_cumple"
+                          ? "border-destructive text-destructive"
+                          : puntoEstados[p.id] === "parcial"
+                            ? "border-warning text-warning"
+                            : ""
+                      }
+                      onClick={() => setPuntoSel(p)}
+                    >
+                      {p.nombre}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>
@@ -213,14 +290,26 @@ const RecorridoDetalle = () => {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">
-              {zonaSel ? `Controlando: ${zonaSel.nombre}` : "Elegí una zona en el plano"}
+            <CardTitle className="text-base flex items-center justify-between gap-2">
+              <span>{tituloPanel}</span>
+              {zonaSel && (
+                <HistorialPunto
+                  puntoId={puntoSel?.id ?? null}
+                  zonaId={puntoSel ? null : zonaSel.id}
+                  titulo={`${zonaSel.nombre}${puntoSel ? ` · ${puntoSel.nombre}` : ""}`}
+                />
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!zonaSel && <p className="text-sm text-muted-foreground">Tocá un pasillo del plano para evaluar los criterios.</p>}
+            {zonaSel && puntosZona.length > 0 && !puntoSel && (
+              <p className="text-xs text-muted-foreground">
+                Estás evaluando el pasillo completo. Elegí una góndola arriba para marcar algo puntual.
+              </p>
+            )}
             {zonaSel && criterios.map((c) => {
-              const h = hallazgoDe(zonaSel.id, c.id);
+              const h = hallazgoDe(zonaSel.id, c.id, puntoSel?.id ?? null);
               return (
                 <div key={c.id} className="rounded-md border p-3 space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -240,7 +329,7 @@ const RecorridoDetalle = () => {
                                   : "bg-red-600 hover:bg-red-600"
                               : ""
                           }
-                          onClick={() => marcar(zonaSel, c, est)}
+                          onClick={() => marcar(zonaSel, puntoSel, c, est)}
                         >
                           {ESTADO_HALLAZGO_LABEL[est]}
                         </Button>
