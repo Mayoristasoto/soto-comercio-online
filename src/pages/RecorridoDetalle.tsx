@@ -319,17 +319,28 @@ const RecorridoDetalle = () => {
             <p className="text-sm text-muted-foreground">{new Date(recorrido.fecha_hora).toLocaleString("es-AR")}</p>
           </div>
         </div>
-        {soloLectura ? (
-          <div className="flex gap-2 items-center">
-            <Badge>Completado</Badge>
-            <Button variant="outline" size="sm" onClick={reabrir}>Reabrir</Button>
-          </div>
-        ) : (
-          <Button onClick={cerrar} disabled={cerrando}>
-            {cerrando ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
-            Cerrar recorrido
+        <div className="flex gap-2 items-center flex-wrap">
+          <Button variant={vistaCompleta ? "secondary" : "outline"} size="sm" onClick={() => setVistaCompleta((v) => !v)}>
+            {vistaCompleta ? "Ocultar vista completa" : "Ver todas las góndolas"}
           </Button>
-        )}
+          {!soloLectura && (
+            <Button variant="outline" size="sm" onClick={() => marcarTodo("cumple")} disabled={marcandoTodo}>
+              {marcandoTodo && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Marcar todo como cumple
+            </Button>
+          )}
+          {soloLectura ? (
+            <>
+              <Badge>Completado</Badge>
+              <Button variant="outline" size="sm" onClick={reabrir}>Reabrir</Button>
+            </>
+          ) : (
+            <Button onClick={cerrar} disabled={cerrando}>
+              {cerrando ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+              Cerrar recorrido
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
