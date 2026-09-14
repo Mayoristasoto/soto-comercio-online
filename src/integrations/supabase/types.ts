@@ -9167,6 +9167,7 @@ export type Database = {
           nombre: string
           obligatorio: boolean
           orden: number
+          tipos_aplica: string[]
           updated_at: string
         }
         Insert: {
@@ -9177,6 +9178,7 @@ export type Database = {
           nombre: string
           obligatorio?: boolean
           orden?: number
+          tipos_aplica?: string[]
           updated_at?: string
         }
         Update: {
@@ -9187,6 +9189,7 @@ export type Database = {
           nombre?: string
           obligatorio?: boolean
           orden?: number
+          tipos_aplica?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -9380,6 +9383,7 @@ export type Database = {
           id: string
           nombre: string
           orden: number
+          tipo_espacio: string | null
           updated_at: string
           width: number
           x: number
@@ -9393,6 +9397,7 @@ export type Database = {
           id?: string
           nombre: string
           orden?: number
+          tipo_espacio?: string | null
           updated_at?: string
           width?: number
           x?: number
@@ -9406,6 +9411,7 @@ export type Database = {
           id?: string
           nombre?: string
           orden?: number
+          tipo_espacio?: string | null
           updated_at?: string
           width?: number
           x?: number
