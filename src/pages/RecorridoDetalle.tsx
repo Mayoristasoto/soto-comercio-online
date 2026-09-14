@@ -308,7 +308,7 @@ const RecorridoDetalle = () => {
     return out;
   }, [zonas, puntos]);
 
-  const totalControles = grupos.length * criterios.length;
+  const totalControles = grupos.reduce((acc, g) => acc + criteriosPara(g.punto).length, 0);
   const hechosControles = hallazgos.length;
 
   if (!recorrido) {
