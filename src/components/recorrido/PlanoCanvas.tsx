@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BUCKET_PLANOS, ESTADO_HALLAZGO_DOT, type EstadoHallazgo, type RecorridoPlano, type RecorridoZona } from "./recorridoTypes";
+import { BUCKET_PLANOS, ESTADO_HALLAZGO_DOT, type EstadoHallazgo, type RecorridoPlano, type RecorridoPunto, type RecorridoZona } from "./recorridoTypes";
 import { FondoGondolasV2, useFondoGondolasV2 } from "./FondoGondolasV2";
 import { ImageOff } from "lucide-react";
 
@@ -16,13 +16,29 @@ interface Props {
   zonas: RecorridoZona[];
   zonaSeleccionadaId?: string | null;
   zonaEstados?: Record<string, EstadoHallazgo | null>;
+  puntos?: RecorridoPunto[];
+  puntoSeleccionadoId?: string | null;
+  puntoEstados?: Record<string, EstadoHallazgo | null>;
   pins?: PinPunto[];
   onZonaClick?: (zona: RecorridoZona) => void;
+  onPuntoClick?: (punto: RecorridoPunto) => void;
   onCanvasClick?: (xPct: number, yPct: number, zona: RecorridoZona | null) => void;
 }
 
 /** Plano estático: imagen de referencia o layout de góndolas (copia v2) con zonas rectangulares clickeables. */
-export function PlanoCanvas({ plano, zonas, zonaSeleccionadaId, zonaEstados = {}, pins = [], onZonaClick, onCanvasClick }: Props) {
+export function PlanoCanvas({
+  plano,
+  zonas,
+  zonaSeleccionadaId,
+  zonaEstados = {},
+  puntos = [],
+  puntoSeleccionadoId,
+  puntoEstados = {},
+  pins = [],
+  onZonaClick,
+  onPuntoClick,
+  onCanvasClick,
+}: Props) {
   const contRef = useRef<HTMLDivElement>(null);
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
@@ -93,6 +109,26 @@ export function PlanoCanvas({ plano, zonas, zonaSeleccionadaId, zonaEstados = {}
           </span>
         </div>
       ))}
+      {puntos.map((p) => {
+        const est = puntoEstados[p.id];
+        const base =
+          est === "no_cumple"
+            ? "bg-red-500/45 border-red-600"
+            : est === "parcial"
+              ? "bg-amber-400/45 border-amber-500"
+              : est === "cumple"
+                ? "bg-emerald-500/45 border-emerald-600"
+                : "bg-slate-400/25 border-slate-500";
+        return (
+          <div
+            key={p.id}
+            className={`absolute border rounded-sm cursor-pointer ${base} ${p.id === puntoSeleccionadoId ? "ring-2 ring-primary" : ""}`}
+            style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.width}%`, height: `${p.height}%` }}
+            title={p.nombre}
+            onClick={(e) => { e.stopPropagation(); onPuntoClick?.(p); }}
+          />
+        );
+      })}
       {pins.map((p, i) => (
         <div
           key={i}
