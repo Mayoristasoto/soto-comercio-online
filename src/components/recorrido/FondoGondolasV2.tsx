@@ -67,14 +67,11 @@ export function useFondoGondolasV2(activo: boolean) {
   return { gondolas, bbox: bboxDe(gondolas), cargando };
 }
 
-const colorTipo = (t: string) => {
-  switch (t) {
-    case "puntera": return { fill: "#fde68a", stroke: "#d97706" };
-    case "cartel_exterior": return { fill: "#bfdbfe", stroke: "#2563eb" };
-    case "exhibidor_impulso": return { fill: "#ddd6fe", stroke: "#7c3aed" };
-    default: return { fill: "#e2e8f0", stroke: "#64748b" };
-  }
-};
+/** Mismos colores que el editor de layout: verde = libre, rojo = ocupada */
+const colorEstado = (status: string) =>
+  status === "occupied"
+    ? { fill: "#fca5a5", stroke: "#dc2626" }
+    : { fill: "#86efac", stroke: "#16a34a" };
 
 /** Dibujo del layout de góndolas como fondo estático (no edita nada del editor original) */
 export function FondoGondolasV2({ gondolas, bbox }: { gondolas: GondolaV2[]; bbox: BBox }) {
