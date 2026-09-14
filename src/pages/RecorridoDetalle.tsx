@@ -133,10 +133,11 @@ const RecorridoDetalle = () => {
   // Marca todos los criterios de una góndola (o pasillo) de una sola vez
   const marcarGrupo = async (zona: RecorridoZona, punto: RecorridoPunto | null, estado: EstadoHallazgo) => {
     if (soloLectura) return;
-    const existentes = criterios
+    const aplicables = criteriosPara(punto);
+    const existentes = aplicables
       .map((c) => hallazgoDe(zona.id, c.id, punto?.id ?? null))
       .filter(Boolean) as RecorridoHallazgo[];
-    const faltantes = criterios.filter((c) => !hallazgoDe(zona.id, c.id, punto?.id ?? null));
+    const faltantes = aplicables.filter((c) => !hallazgoDe(zona.id, c.id, punto?.id ?? null));
 
     if (existentes.length) {
       const ids = existentes.map((h) => h.id);
