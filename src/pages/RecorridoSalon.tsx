@@ -42,6 +42,7 @@ const RecorridoSalon = () => {
   // nuevo criterio
   const [nuevoCriterio, setNuevoCriterio] = useState("");
   const [esAdmin, setEsAdmin] = useState(false);
+  const [regenerando, setRegenerando] = useState(false);
 
   useEffect(() => {
     (async () => {
