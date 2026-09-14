@@ -18,6 +18,8 @@ const colorEstado = (status: string) =>
     : "bg-emerald-300/70 border-emerald-600";
 
 interface Props {
+  /** Sucursal cuyo mapa se está editando */
+  sucursalId?: string | null;
   /** Se llama cuando cambió el mapa (para refrescar el plano del recorrido) */
   onChange?: () => void;
 }
@@ -25,8 +27,11 @@ interface Props {
 interface Draft { x: number; y: number; width: number; height: number }
 
 /** Editor del mapa de espacios sobre la copia v2 del layout (gondolas_v2) */
-export function EspaciosEditor({ onChange }: Props) {
+export function EspaciosEditor({ sucursalId, onChange }: Props) {
   const contRef = useRef<HTMLDivElement>(null);
+  const fondo = fondoDe(sucursalId);
+  /** Lienzo: mismas unidades que el plano del editor de layout */
+  const LIENZO: BBox = { x: 0, y: 0, width: fondo.width, height: fondo.height };
   const [espacios, setEspacios] = useState<GondolaV2[]>([]);
   const [cargando, setCargando] = useState(true);
   const [modo, setModo] = useState<"dibujar" | "mover">("dibujar");
