@@ -29,7 +29,7 @@ export function ZonaEditor({ plano, zonas, onZonasChange }: Props) {
   const [generando, setGenerando] = useState(false);
 
   const usaGondolas = !!plano.usa_gondolas;
-  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas);
+  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas, plano.sucursal_id);
 
   useEffect(() => {
     let revoke: string | null = null;
