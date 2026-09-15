@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Grid3X3, ListOrdered, MousePointer2, Pencil, PlusSquare, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, Grid3X3, ListOrdered, MousePointer2, Pencil, PlusSquare, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cargarGondolasV2, type BBox, type GondolaV2 } from "./FondoGondolasV2";
 import { TIPO_ESPACIO_LABEL, TIPOS_ESPACIO, type TipoEspacio } from "./recorridoTypes";
@@ -220,6 +220,40 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
     onChange?.();
   };
 
+  const moverConFlecha = useCallback(async (dx: number, dy: number) => {
+    if (!sel) return;
+    const x = Math.max(LIENZO.x, Math.min(LIENZO.width - sel.width, sel.x + dx));
+    const y = Math.max(LIENZO.y, Math.min(LIENZO.height - sel.height, sel.y + dy));
+    const { error } = await supabase
+      .from("gondolas_v2")
+      .update({ position_x: x, position_y: y })
+      .eq("id", sel.id);
+    if (error) return toast.error("No se pudo mover la góndola");
+    setEspacios((prev) => prev.map((g) => (g.id === sel.id ? { ...g, x, y } : g)));
+    onChange?.();
+  }, [LIENZO.height, LIENZO.width, LIENZO.x, LIENZO.y, onChange, sel]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!sel) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [role='dialog'], [contenteditable='true']")) return;
+      const paso = event.shiftKey ? 5 : 1;
+      const movimientos: Record<string, [number, number]> = {
+        ArrowUp: [0, -paso],
+        ArrowDown: [0, paso],
+        ArrowLeft: [-paso, 0],
+        ArrowRight: [paso, 0],
+      };
+      const movimiento = movimientos[event.key];
+      if (!movimiento) return;
+      event.preventDefault();
+      void moverConFlecha(...movimiento);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [moverConFlecha, sel]);
+
   const abrirEdicion = (g: GondolaV2) => {
     setEditando(g);
     setEditNombre(g.section);
@@ -369,10 +403,24 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
       </div>
 
       {sel && (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border p-2">
+        <div className="flex flex-wrap items-center gap-3 rounded-md border p-2">
           <span className="text-sm font-medium">
             {TIPO_ESPACIO_LABEL[(sel.type as TipoEspacio)] ?? sel.type} {sel.section}
           </span>
+          <div className="grid grid-cols-3 grid-rows-2 gap-1" aria-label="Mover góndola">
+            <Button className="col-start-2" size="icon" variant="outline" onClick={() => moverConFlecha(0, -1)} title="Mover arriba">
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+            <Button className="col-start-1 row-start-2" size="icon" variant="outline" onClick={() => moverConFlecha(-1, 0)} title="Mover a la izquierda">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Button className="col-start-2 row-start-2" size="icon" variant="outline" onClick={() => moverConFlecha(0, 1)} title="Mover abajo">
+              <ArrowDown className="h-4 w-4" />
+            </Button>
+            <Button className="col-start-3 row-start-2" size="icon" variant="outline" onClick={() => moverConFlecha(1, 0)} title="Mover a la derecha">
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
           <Button size="sm" variant="outline" onClick={() => abrirEdicion(sel)}><Pencil className="h-4 w-4 mr-1" /> Editar</Button>
           <Button size="sm" variant="outline" onClick={duplicar}><Copy className="h-4 w-4 mr-1" /> Duplicar</Button>
           <Button size="sm" variant="outline" className="text-destructive" onClick={() => borrar(sel)}>
