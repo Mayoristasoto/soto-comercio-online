@@ -101,10 +101,13 @@ export function PlanoCanvas({
       {zonas.map((z) => (
         <div
           key={z.id}
-          className={`absolute border-2 rounded-sm transition-colors ${colorZona(z)}`}
+          className={`absolute border-2 rounded-sm flex items-start justify-start transition-colors ${colorZona(z)}`}
           style={{ left: `${z.x}%`, top: `${z.y}%`, width: `${z.width}%`, height: `${z.height}%` }}
-          title={z.nombre}
-        />
+        >
+          <span className="text-[10px] font-semibold bg-background/85 rounded px-1 m-0.5 leading-tight">
+            {z.nombre}
+          </span>
+        </div>
       ))}
       {puntos.map((p) => {
         const est = puntoEstados[p.id];

@@ -12,6 +12,11 @@ import { cargarGondolasV2, type BBox, type GondolaV2 } from "./FondoGondolasV2";
 import { TIPO_ESPACIO_LABEL, TIPOS_ESPACIO, type TipoEspacio } from "./recorridoTypes";
 import { fondoDe } from "./planosFondo";
 
+const colorEstado = (status: string) =>
+  status === "occupied"
+    ? "bg-red-300/70 border-red-600"
+    : "bg-emerald-300/70 border-emerald-600";
+
 interface Props {
   /** Sucursal cuyo mapa se está editando */
   sucursalId?: string | null;
@@ -39,6 +44,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
   const [editando, setEditando] = useState<GondolaV2 | null>(null);
   const [editNombre, setEditNombre] = useState("");
   const [editTipo, setEditTipo] = useState<TipoEspacio>("gondola");
+  const [editStatus, setEditStatus] = useState("available");
 
   // bloque
   const [bloqueOpen, setBloqueOpen] = useState(false);
@@ -252,13 +258,14 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
     setEditando(g);
     setEditNombre(g.section);
     setEditTipo((TIPOS_ESPACIO as readonly string[]).includes(g.type) ? (g.type as TipoEspacio) : "gondola");
+    setEditStatus(g.status);
   };
 
   const guardarEdicion = async () => {
     if (!editando) return;
     const { error } = await supabase
       .from("gondolas_v2")
-      .update({ section: editNombre.trim() || editando.section, type: editTipo })
+      .update({ section: editNombre.trim() || editando.section, type: editTipo, status: editStatus })
       .eq("id", editando.id);
     if (error) return toast.error("No se pudo guardar");
     setEditando(null);
@@ -374,7 +381,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
           return (
             <div
               key={g.id}
-              className={`absolute border-2 rounded-sm border-primary bg-primary/20 ${selId === g.id ? "ring-2 ring-primary bg-primary/30" : ""}`}
+              className={`absolute border-2 rounded-sm flex items-center justify-center text-[10px] font-semibold text-slate-700 ${colorEstado(g.status)} ${selId === g.id ? "ring-2 ring-primary" : ""}`}
               style={aPct(box)}
               onPointerDown={(e) => onPointerDownEspacio(e, g)}
               onDoubleClick={(e) => { e.stopPropagation(); abrirEdicion(g); }}
@@ -429,6 +436,16 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
             <div className="space-y-1">
               <Label>Número / nombre</Label>
               <Input value={editNombre} onChange={(e) => setEditNombre(e.target.value)} autoFocus />
+            </div>
+            <div className="space-y-1">
+              <Label>Estado comercial</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="available">Libre (verde)</SelectItem>
+                  <SelectItem value="occupied">Ocupado (rojo)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button className="w-full" onClick={guardarEdicion}>Guardar</Button>
           </div>
