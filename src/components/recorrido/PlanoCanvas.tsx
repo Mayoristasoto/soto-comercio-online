@@ -87,13 +87,13 @@ export function PlanoCanvas({
     const sel = z.id === zonaSeleccionadaId;
     const base =
       est === "no_cumple"
-        ? "bg-red-500/30 border-red-500"
+        ? "bg-destructive/55 border-destructive"
         : est === "parcial"
-          ? "bg-amber-400/30 border-amber-400"
+          ? "bg-warning/55 border-warning"
           : est === "cumple"
-            ? "bg-emerald-500/30 border-emerald-500"
-            : "bg-sky-400/20 border-sky-500";
-    return `${base} ${sel ? "ring-2 ring-primary border-primary" : ""}`;
+            ? "bg-success/55 border-success"
+            : "bg-info/45 border-info";
+    return `${base} ${sel ? "ring-2 ring-foreground ring-offset-1" : ""}`;
   };
 
   const overlay = (
@@ -101,13 +101,10 @@ export function PlanoCanvas({
       {zonas.map((z) => (
         <div
           key={z.id}
-          className={`absolute border-2 rounded-sm flex items-start justify-start transition-colors ${colorZona(z)}`}
+          className={`absolute border-2 rounded-sm cursor-pointer transition-colors ${colorZona(z)}`}
           style={{ left: `${z.x}%`, top: `${z.y}%`, width: `${z.width}%`, height: `${z.height}%` }}
-        >
-          <span className="text-[10px] font-semibold bg-background/85 rounded px-1 m-0.5 leading-tight">
-            {z.nombre}
-          </span>
-        </div>
+          title={z.nombre}
+        />
       ))}
       {puntos.map((p) => {
         const est = puntoEstados[p.id];
@@ -149,7 +146,7 @@ export function PlanoCanvas({
           style={{ aspectRatio: `${bbox.width} / ${bbox.height}` }}
           onClick={handleClick}
         >
-          <FondoGondolasV2 gondolas={gondolas} bbox={bbox} sucursalId={plano.sucursal_id} />
+          <FondoGondolasV2 gondolas={[]} bbox={bbox} sucursalId={plano.sucursal_id} />
           {overlay}
         </div>
       </div>
