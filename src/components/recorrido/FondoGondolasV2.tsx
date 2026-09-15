@@ -70,12 +70,6 @@ export function useFondoGondolasV2(activo: boolean, sucursalId?: string | null) 
   return { gondolas, bbox: bboxDe(gondolas), cargando };
 }
 
-/** Mismos colores que el editor de layout: verde = libre, rojo = ocupada */
-const colorEstado = (status: string) =>
-  status === "occupied"
-    ? { fill: "#fca5a5", stroke: "#dc2626" }
-    : { fill: "#86efac", stroke: "#16a34a" };
-
 /** Dibujo del layout de góndolas como fondo estático (no edita nada del editor original) */
 export function FondoGondolasV2({
   gondolas,
@@ -93,7 +87,7 @@ export function FondoGondolasV2({
       preserveAspectRatio="none"
       className="absolute inset-0 w-full h-full"
     >
-      <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill="#f8fafc" />
+      <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill="hsl(var(--background))" />
       {/* Plano del salón de la sucursal */}
       {fondo.url && (
         <image
@@ -107,22 +101,19 @@ export function FondoGondolasV2({
         />
       )}
 
-      {gondolas.map((g) => {
-        const c = colorEstado(g.status);
-        return (
-          <rect
-            key={g.id}
-            x={g.x}
-            y={g.y}
-            width={g.width}
-            height={g.height}
-            fill={c.fill}
-            stroke={c.stroke}
-            strokeWidth={2}
-            rx={4}
-          />
-        );
-      })}
+      {gondolas.map((g) => (
+        <rect
+          key={g.id}
+          x={g.x}
+          y={g.y}
+          width={g.width}
+          height={g.height}
+          fill="hsl(var(--muted))"
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+          rx={4}
+        />
+      ))}
     </svg>
   );
 }
