@@ -110,29 +110,17 @@ export function FondoGondolasV2({
       {gondolas.map((g) => {
         const c = colorEstado(g.status);
         return (
-          <g key={g.id}>
-            <rect
-              x={g.x}
-              y={g.y}
-              width={g.width}
-              height={g.height}
-              fill={c.fill}
-              stroke={c.stroke}
-              strokeWidth={2}
-              rx={4}
-            />
-            <text
-              x={g.x + g.width / 2}
-              y={g.y + g.height / 2}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fontSize={Math.max(10, Math.min(g.width, g.height) * 0.35)}
-              fill="#334155"
-              fontWeight="600"
-            >
-              {g.section}
-            </text>
-          </g>
+          <rect
+            key={g.id}
+            x={g.x}
+            y={g.y}
+            width={g.width}
+            height={g.height}
+            fill={c.fill}
+            stroke={c.stroke}
+            strokeWidth={2}
+            rx={4}
+          />
         );
       })}
     </svg>

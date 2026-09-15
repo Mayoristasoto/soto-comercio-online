@@ -358,7 +358,6 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
               onDoubleClick={(e) => { e.stopPropagation(); abrirEdicion(g); }}
               title={`${TIPO_ESPACIO_LABEL[(g.type as TipoEspacio)] ?? g.type} ${g.section}`}
             >
-              <span className="pointer-events-none truncate px-0.5">{g.section}</span>
               {selId === g.id && (
                 <span
                   className="absolute -right-1 -bottom-1 h-3 w-3 rounded-sm bg-primary cursor-se-resize"
