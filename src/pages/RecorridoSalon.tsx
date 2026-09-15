@@ -13,13 +13,11 @@ import { Map as MapIcon, Plus, Trash2, Settings2, LayoutGrid, AlertTriangle, Wan
 import { toast } from "sonner";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
 import {
-  BUCKET_PLANOS,
   TIPOS_ESPACIO,
   TIPO_ESPACIO_LABEL,
   type Recorrido,
   type RecorridoCriterio,
   type RecorridoPlano,
-  type RecorridoZona,
   type TipoEspacio,
 } from "@/components/recorrido/recorridoTypes";
 import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
@@ -36,10 +34,8 @@ const RecorridoSalon = () => {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [recorridos, setRecorridos] = useState<(Recorrido & { sucursal_nombre?: string })[]>([]);
   const [planos, setPlanos] = useState<RecorridoPlano[]>([]);
-  const [zonas, setZonas] = useState<RecorridoZona[]>([]);
   const [criterios, setCriterios] = useState<RecorridoCriterio[]>([]);
   const [sucursalSel, setSucursalSel] = useState<string>("");
-  const [planoSel, setPlanoSel] = useState<RecorridoPlano | null>(null);
 
   // nuevo recorrido
   const [nuevoOpen, setNuevoOpen] = useState(false);
@@ -82,67 +78,8 @@ const RecorridoSalon = () => {
     setPlanos((data as RecorridoPlano[]) ?? []);
   };
 
-  const cargarZonas = async (planoId: string) => {
-    const { data } = await supabase.from("recorrido_zonas").select("*").eq("plano_id", planoId).order("orden");
-    setZonas((data as RecorridoZona[]) ?? []);
-  };
-
   useEffect(() => { cargarBase(); cargarPlanos(); }, []);
   useEffect(() => { if (sucursales.length) cargarRecorridos(); }, [sucursales]);
-  useEffect(() => {
-    const p = planos.find((x) => x.sucursal_id === sucursalSel) ?? null;
-    setPlanoSel(p);
-    if (p) cargarZonas(p.id);
-    else setZonas([]);
-  }, [sucursalSel, planos]);
-
-  const subirPlano = async (file: File) => {
-    if (!sucursalSel) return toast.error("Elegí primero la sucursal");
-    try {
-      const dims = await new Promise<{ w: number; h: number }>((res) => {
-        const img = new Image();
-        img.onload = () => { res({ w: img.naturalWidth, h: img.naturalHeight }); URL.revokeObjectURL(img.src); };
-        img.onerror = () => res({ w: 1000, h: 700 });
-        img.src = URL.createObjectURL(file);
-      });
-      const path = `${sucursalSel}/${crypto.randomUUID()}.jpg`;
-      const { error: upErr } = await supabase.storage.from(BUCKET_PLANOS).upload(path, file);
-      if (upErr) throw upErr;
-      const existente = planos.find((p) => p.sucursal_id === sucursalSel);
-      const nombreSuc = sucursales.find((s) => s.id === sucursalSel)?.nombre ?? "Plano";
-      if (existente) {
-        await supabase.from("recorrido_planos").update({ imagen_path: path, ancho: dims.w, alto: dims.h }).eq("id", existente.id);
-      } else {
-        await supabase.from("recorrido_planos").insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: dims.w, alto: dims.h, imagen_path: path });
-      }
-      toast.success("Imagen del plano guardada");
-      cargarPlanos();
-    } catch {
-      toast.error("No se pudo subir la imagen");
-    }
-  };
-
-  /** Usa la copia del layout de góndolas (v2) como plano de referencia de la sucursal */
-  const usarLayoutGondolas = async (activar: boolean) => {
-    if (!sucursalSel) return toast.error("Elegí primero la sucursal");
-    const existente = planos.find((p) => p.sucursal_id === sucursalSel);
-    const nombreSuc = sucursales.find((s) => s.id === sucursalSel)?.nombre ?? "Plano";
-    if (existente) {
-      const { error } = await supabase.from("recorrido_planos").update({ usa_gondolas: activar }).eq("id", existente.id);
-      if (error) return toast.error("No se pudo actualizar el plano");
-    } else {
-      const { error } = await supabase.from("recorrido_planos").insert({
-        sucursal_id: sucursalSel,
-        nombre: `Plano ${nombreSuc}`,
-        ancho: 1000,
-        alto: 700,
-        usa_gondolas: activar,
-      });
-      if (error) return toast.error("No se pudo crear el plano");
-    }
-    toast.success(activar ? "Usando el layout de góndolas" : "Usando la imagen del plano");
-    cargarPlanos();
-  };
 
   /** Arranca de cero: copia el layout de la sucursal y crea un control por cada góndola */
   const empezarDeCeroConGondolas = async () => {
@@ -216,7 +153,6 @@ const RecorridoSalon = () => {
 
       toast.success(`${gondolas.length} espacios listos para controlar en ${nombreSuc}`);
       await cargarPlanos();
-      if (planoId) await cargarZonas(planoId);
     } catch (e: any) {
       toast.error(e?.message ?? "No se pudo armar el plano");
     } finally {
