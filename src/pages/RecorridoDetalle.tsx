@@ -213,7 +213,7 @@ const RecorridoDetalle = () => {
 
   const elegirZona = (z: RecorridoZona) => {
     setZonaSel(z);
-    setPuntoSel(null);
+    setPuntoSel(puntosDeZona(z.id)[0] ?? null);
   };
 
   const onCanvasClick = (x: number, y: number, zona: RecorridoZona | null) => {
@@ -360,7 +360,7 @@ const RecorridoDetalle = () => {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2"><MapPin className="h-4 w-4" /> Plano — tocá el pasillo y después la góndola</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><MapPin className="h-4 w-4" /> Plano — tocá una góndola para controlarla</CardTitle>
           </CardHeader>
           <CardContent>
             {plano ? (
@@ -369,7 +369,7 @@ const RecorridoDetalle = () => {
                 zonas={zonas}
                 zonaSeleccionadaId={zonaSel?.id}
                 zonaEstados={zonaEstados}
-                puntos={zonaSel ? puntosZona : []}
+                puntos={[]}
                 puntoSeleccionadoId={puntoSel?.id}
                 puntoEstados={puntoEstados}
                 pins={pinTmp ? [...pins, { x: pinTmp.x, y: pinTmp.y }] : pins}
@@ -379,47 +379,6 @@ const RecorridoDetalle = () => {
               />
             ) : (
               <p className="text-sm text-muted-foreground">Esta sucursal no tiene plano cargado. Cargalo desde Recorrido de Salón → Plano y zonas.</p>
-            )}
-            {zonas.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-3">
-                {zonas.map((z) => (
-                  <Button
-                    key={z.id}
-                    size="sm"
-                    variant={zonaSel?.id === z.id ? "default" : "outline"}
-                    onClick={() => elegirZona(z)}
-                  >
-                    {z.nombre} <span className="ml-1 text-xs opacity-70">{progreso(z)}</span>
-                  </Button>
-                ))}
-              </div>
-            )}
-            {zonaSel && puntosZona.length > 0 && (
-              <div className="mt-3 space-y-1">
-                <p className="text-xs text-muted-foreground">Góndolas de {zonaSel.nombre}</p>
-                <div className="flex flex-wrap gap-1">
-                  <Button size="sm" variant={!puntoSel ? "secondary" : "outline"} onClick={() => setPuntoSel(null)}>
-                    Todo el pasillo
-                  </Button>
-                  {puntosZona.map((p) => (
-                    <Button
-                      key={p.id}
-                      size="sm"
-                      variant={puntoSel?.id === p.id ? "default" : "outline"}
-                      className={
-                        puntoEstados[p.id] === "no_cumple"
-                          ? "border-destructive text-destructive"
-                          : puntoEstados[p.id] === "parcial"
-                            ? "border-warning text-warning"
-                            : ""
-                      }
-                      onClick={() => setPuntoSel(p)}
-                    >
-                      {p.nombre}
-                    </Button>
-                  ))}
-                </div>
-              </div>
             )}
           </CardContent>
         </Card>
@@ -438,12 +397,7 @@ const RecorridoDetalle = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!zonaSel && <p className="text-sm text-muted-foreground">Tocá un pasillo del plano para evaluar los criterios.</p>}
-            {zonaSel && puntosZona.length > 0 && !puntoSel && (
-              <p className="text-xs text-muted-foreground">
-                Estás evaluando el pasillo completo. Elegí una góndola arriba para marcar algo puntual.
-              </p>
-            )}
+            {!zonaSel && <p className="text-sm text-muted-foreground">Tocá una góndola azul del plano para evaluar sus criterios.</p>}
             {zonaSel && renderCriterios(zonaSel, puntoSel)}
           </CardContent>
         </Card>
