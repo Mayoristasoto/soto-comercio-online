@@ -9,20 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Map as MapIcon, Plus, Upload, Trash2, Settings2, LayoutGrid, AlertTriangle, Wand2 } from "lucide-react";
+import { Map as MapIcon, Plus, Trash2, Settings2, LayoutGrid, AlertTriangle, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
-import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
-import { PuntosEditor } from "@/components/recorrido/PuntosEditor";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
 import {
-  BUCKET_PLANOS,
-  TIPOS_ESPACIO,
   TIPO_ESPACIO_LABEL,
   type Recorrido,
   type RecorridoCriterio,
   type RecorridoPlano,
-  type RecorridoZona,
   type TipoEspacio,
 } from "@/components/recorrido/recorridoTypes";
 import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
@@ -39,10 +33,8 @@ const RecorridoSalon = () => {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [recorridos, setRecorridos] = useState<(Recorrido & { sucursal_nombre?: string })[]>([]);
   const [planos, setPlanos] = useState<RecorridoPlano[]>([]);
-  const [zonas, setZonas] = useState<RecorridoZona[]>([]);
   const [criterios, setCriterios] = useState<RecorridoCriterio[]>([]);
   const [sucursalSel, setSucursalSel] = useState<string>("");
-  const [planoSel, setPlanoSel] = useState<RecorridoPlano | null>(null);
 
   // nuevo recorrido
   const [nuevoOpen, setNuevoOpen] = useState(false);
@@ -85,67 +77,8 @@ const RecorridoSalon = () => {
     setPlanos((data as RecorridoPlano[]) ?? []);
   };
 
-  const cargarZonas = async (planoId: string) => {
-    const { data } = await supabase.from("recorrido_zonas").select("*").eq("plano_id", planoId).order("orden");
-    setZonas((data as RecorridoZona[]) ?? []);
-  };
-
   useEffect(() => { cargarBase(); cargarPlanos(); }, []);
   useEffect(() => { if (sucursales.length) cargarRecorridos(); }, [sucursales]);
-  useEffect(() => {
-    const p = planos.find((x) => x.sucursal_id === sucursalSel) ?? null;
-    setPlanoSel(p);
-    if (p) cargarZonas(p.id);
-    else setZonas([]);
-  }, [sucursalSel, planos]);
-
-  const subirPlano = async (file: File) => {
-    if (!sucursalSel) return toast.error("Elegí primero la sucursal");
-    try {
-      const dims = await new Promise<{ w: number; h: number }>((res) => {
-        const img = new Image();
-        img.onload = () => { res({ w: img.naturalWidth, h: img.naturalHeight }); URL.revokeObjectURL(img.src); };
-        img.onerror = () => res({ w: 1000, h: 700 });
-        img.src = URL.createObjectURL(file);
-      });
-      const path = `${sucursalSel}/${crypto.randomUUID()}.jpg`;
-      const { error: upErr } = await supabase.storage.from(BUCKET_PLANOS).upload(path, file);
-      if (upErr) throw upErr;
-      const existente = planos.find((p) => p.sucursal_id === sucursalSel);
-      const nombreSuc = sucursales.find((s) => s.id === sucursalSel)?.nombre ?? "Plano";
-      if (existente) {
-        await supabase.from("recorrido_planos").update({ imagen_path: path, ancho: dims.w, alto: dims.h }).eq("id", existente.id);
-      } else {
-        await supabase.from("recorrido_planos").insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: dims.w, alto: dims.h, imagen_path: path });
-      }
-      toast.success("Imagen del plano guardada");
-      cargarPlanos();
-    } catch {
-      toast.error("No se pudo subir la imagen");
-    }
-  };
-
-  /** Usa la copia del layout de góndolas (v2) como plano de referencia de la sucursal */
-  const usarLayoutGondolas = async (activar: boolean) => {
-    if (!sucursalSel) return toast.error("Elegí primero la sucursal");
-    const existente = planos.find((p) => p.sucursal_id === sucursalSel);
-    const nombreSuc = sucursales.find((s) => s.id === sucursalSel)?.nombre ?? "Plano";
-    if (existente) {
-      const { error } = await supabase.from("recorrido_planos").update({ usa_gondolas: activar }).eq("id", existente.id);
-      if (error) return toast.error("No se pudo actualizar el plano");
-    } else {
-      const { error } = await supabase.from("recorrido_planos").insert({
-        sucursal_id: sucursalSel,
-        nombre: `Plano ${nombreSuc}`,
-        ancho: 1000,
-        alto: 700,
-        usa_gondolas: activar,
-      });
-      if (error) return toast.error("No se pudo crear el plano");
-    }
-    toast.success(activar ? "Usando el layout de góndolas" : "Usando la imagen del plano");
-    cargarPlanos();
-  };
 
   /** Arranca de cero: copia el layout de la sucursal y crea un control por cada góndola */
   const empezarDeCeroConGondolas = async () => {
@@ -219,7 +152,6 @@ const RecorridoSalon = () => {
 
       toast.success(`${gondolas.length} espacios listos para controlar en ${nombreSuc}`);
       await cargarPlanos();
-      if (planoId) await cargarZonas(planoId);
     } catch (e: any) {
       toast.error(e?.message ?? "No se pudo armar el plano");
     } finally {
@@ -248,7 +180,11 @@ const RecorridoSalon = () => {
 
   const agregarCriterio = async () => {
     if (!nuevoCriterio.trim()) return;
-    const { error } = await supabase.from("recorrido_criterios").insert({ nombre: nuevoCriterio.trim(), orden: criterios.length + 1 });
+    const { error } = await supabase.from("recorrido_criterios").insert({
+      nombre: nuevoCriterio.trim(),
+      orden: criterios.length + 1,
+      tipos_aplica: ["gondola"],
+    });
     if (error) return toast.error("No se pudo crear el criterio");
     setNuevoCriterio("");
     cargarBase();
@@ -257,16 +193,6 @@ const RecorridoSalon = () => {
   const toggleCriterio = async (c: RecorridoCriterio) => {
     await supabase.from("recorrido_criterios").update({ activo: !c.activo }).eq("id", c.id);
     cargarBase();
-  };
-
-  /** Activa o desactiva un tipo de espacio para un criterio */
-  const toggleTipoCriterio = async (c: RecorridoCriterio, tipo: TipoEspacio) => {
-    const actuales = c.tipos_aplica?.length ? c.tipos_aplica : [...TIPOS_ESPACIO];
-    const nuevos = actuales.includes(tipo) ? actuales.filter((t) => t !== tipo) : [...actuales, tipo];
-    if (!nuevos.length) return toast.error("El criterio tiene que aplicar al menos a un tipo");
-    const { error } = await supabase.from("recorrido_criterios").update({ tipos_aplica: nuevos }).eq("id", c.id);
-    if (error) return toast.error("No se pudo guardar");
-    setCriterios((prev) => prev.map((x) => (x.id === c.id ? { ...x, tipos_aplica: nuevos } : x)));
   };
 
   const borrarCriterio = async (c: RecorridoCriterio) => {
@@ -298,7 +224,7 @@ const RecorridoSalon = () => {
       <Tabs defaultValue="recorridos">
         <TabsList>
           <TabsTrigger value="recorridos">Recorridos</TabsTrigger>
-          <TabsTrigger value="plano"><Settings2 className="h-4 w-4 mr-1" /> Plano y zonas</TabsTrigger>
+          <TabsTrigger value="plano"><Settings2 className="h-4 w-4 mr-1" /> Góndolas</TabsTrigger>
           <TabsTrigger value="hallazgos"><AlertTriangle className="h-4 w-4 mr-1" /> Hallazgos</TabsTrigger>
           <TabsTrigger value="criterios">Criterios</TabsTrigger>
           <TabsTrigger value="editor"><LayoutGrid className="h-4 w-4 mr-1" /> Editor de layout</TabsTrigger>
@@ -347,7 +273,7 @@ const RecorridoSalon = () => {
         <TabsContent value="plano">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Plano de referencia por sucursal</CardTitle>
+              <CardTitle className="text-base">Góndolas por sucursal</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2 items-center">
@@ -358,61 +284,18 @@ const RecorridoSalon = () => {
                   </SelectContent>
                 </Select>
                 {sucursalSel && (
-                  <label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && subirPlano(e.target.files[0])}
-                    />
-                    <Button variant="outline" asChild>
-                      <span><Upload className="h-4 w-4 mr-1" /> {planoActual?.imagen_path ? "Reemplazar imagen" : "Subir imagen del plano"}</span>
-                    </Button>
-                  </label>
-                )}
-                {sucursalSel && (
-                  <Button
-                    variant={planoActual?.usa_gondolas ? "default" : "outline"}
-                    onClick={() => usarLayoutGondolas(!planoActual?.usa_gondolas)}
-                  >
-                    <LayoutGrid className="h-4 w-4 mr-1" />
-                    {planoActual?.usa_gondolas ? "Usando layout de góndolas" : "Usar layout de góndolas"}
-                  </Button>
-                )}
-                {sucursalSel && (
                   <Button variant="secondary" onClick={empezarDeCeroConGondolas} disabled={regenerando}>
                     <Wand2 className="h-4 w-4 mr-1" />
-                    {regenerando ? "Armando…" : "Empezar de cero con las góndolas"}
+                    {regenerando ? "Preparando…" : "Preparar controles"}
                   </Button>
                 )}
               </div>
-              {planoActual?.usa_gondolas && (
-                <p className="text-xs text-muted-foreground">
-                  El plano muestra una copia visual del layout de góndolas. Podés generar una zona por góndola y además dibujar los pasillos.
-                </p>
+              {sucursalSel && (
+                <div className="border-t pt-4">
+                  <EspaciosEditor sucursalId={sucursalSel} onChange={() => cargarPlanos()} />
+                </div>
               )}
-              {planoActual && (
-                <>
-                  <PlanoCanvas plano={planoActual} zonas={zonas} />
-                  {planoActual.usa_gondolas && (
-                    <div className="border-t pt-4">
-                      <h3 className="font-semibold mb-2">Mapa de espacios (góndolas, punteras, exhibidores y carteles)</h3>
-                      <EspaciosEditor sucursalId={sucursalSel} onChange={() => cargarPlanos()} />
-                    </div>
-                  )}
-                  <div className="border-t pt-4">
-                    <h3 className="font-semibold mb-2">Definir pasillos / zonas</h3>
-                    <ZonaEditor plano={planoActual} zonas={zonas} onZonasChange={() => cargarZonas(planoActual.id)} />
-                  </div>
-                  <div className="border-t pt-4">
-                    <h3 className="font-semibold mb-2">Góndolas dentro de cada pasillo</h3>
-                    <PuntosEditor zonas={zonas} usaGondolas={!!planoActual.usa_gondolas} sucursalId={sucursalSel} />
-                  </div>
-                </>
-              )}
-              {sucursalSel && !planoActual && (
-                <p className="text-sm text-muted-foreground">Subí la imagen del plano para poder marcar las zonas.</p>
-              )}
+              {!sucursalSel && <p className="text-sm text-muted-foreground">Elegí una sucursal para ver sus góndolas.</p>}
             </CardContent>
           </Card>
         </TabsContent>
@@ -440,31 +323,13 @@ const RecorridoSalon = () => {
               </div>
               <Table>
                 <TableHeader>
-                  <TableRow><TableHead>Criterio</TableHead><TableHead>Descripción</TableHead><TableHead>Dónde se evalúa</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
+                  <TableRow><TableHead>Criterio</TableHead><TableHead>Descripción</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
                 </TableHeader>
                 <TableBody>
                   {criterios.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.nombre}</TableCell>
                       <TableCell className="text-muted-foreground">{c.descripcion}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {TIPOS_ESPACIO.map((t) => {
-                            const activo = !c.tipos_aplica?.length || c.tipos_aplica.includes(t);
-                            return (
-                              <Button
-                                key={t}
-                                size="sm"
-                                variant={activo ? "secondary" : "outline"}
-                                className="h-7 px-2 text-xs"
-                                onClick={() => toggleTipoCriterio(c, t)}
-                              >
-                                {TIPO_ESPACIO_LABEL[t]}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </TableCell>
                       <TableCell>
                         <Button size="sm" variant={c.activo ? "default" : "outline"} onClick={() => toggleCriterio(c)}>
                           {c.activo ? "Activo" : "Inactivo"}
