@@ -22,7 +22,7 @@ import {
 import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
 import { fondoDe } from "@/components/recorrido/planosFondo";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
-import { bboxDe, cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
+import { cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
 
 interface Sucursal { id: string; nombre: string }
 interface Empleado { id: string; nombre: string; apellido: string; sucursal_id?: string | null }
@@ -89,10 +89,10 @@ const RecorridoSalon = () => {
     try {
       const gondolas = await cargarGondolasV2(sucursalSel);
       if (!gondolas.length) throw new Error("El layout no tiene góndolas todavía");
-      const bbox = bboxDe(gondolas);
-
       // plano de la sucursal (usa el layout como fondo)
       const fondo = fondoDe(sucursalSel);
+      // El recorrido conserva exactamente el encuadre completo del editor.
+      const bbox = { x: 0, y: 0, width: fondo.width, height: fondo.height };
       let planoId = planos.find((p) => p.sucursal_id === sucursalSel)?.id ?? null;
       if (planoId) {
         await supabase

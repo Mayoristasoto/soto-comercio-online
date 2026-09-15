@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET_PLANOS, ESTADO_HALLAZGO_DOT, type EstadoHallazgo, type RecorridoPlano, type RecorridoPunto, type RecorridoZona } from "./recorridoTypes";
-import { FondoGondolasV2, useFondoGondolasV2 } from "./FondoGondolasV2";
+import { FondoGondolasV2 } from "./FondoGondolasV2";
+import { fondoDe } from "./planosFondo";
 import { ImageOff } from "lucide-react";
 
 export interface PinPunto {
@@ -43,7 +44,8 @@ export function PlanoCanvas({
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const usaGondolas = !!plano.usa_gondolas;
-  const { gondolas, bbox } = useFondoGondolasV2(usaGondolas, plano.sucursal_id);
+  const fondo = fondoDe(plano.sucursal_id);
+  const bbox = { x: 0, y: 0, width: fondo.width, height: fondo.height };
 
   useEffect(() => {
     let revoke: string | null = null;
