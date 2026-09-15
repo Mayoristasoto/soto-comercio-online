@@ -67,6 +67,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const gondolas = useMemo(() => espacios.filter((e) => e.type === "gondola"), [espacios]);
   const sel = useMemo(() => espacios.find((e) => e.id === selId) ?? null, [espacios, selId]);
 
   const aPct = (d: Draft) => ({
@@ -269,8 +270,8 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
   /** Orden de recorrido: por bandas horizontales (arriba → abajo) y dentro de cada banda de izquierda a derecha */
   const ordenados = useMemo(() => {
     const banda = (g: GondolaV2) => Math.round((g.y + g.height / 2) / 30);
-    return [...espacios].sort((a, b) => banda(a) - banda(b) || a.x - b.x);
-  }, [espacios]);
+    return [...gondolas].sort((a, b) => banda(a) - banda(b) || a.x - b.x);
+  }, [gondolas]);
 
   const previewRenum = useMemo(() => {
     const contadores: Record<string, number> = {};
@@ -309,19 +310,13 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
         <Button size="sm" variant={modo === "mover" ? "default" : "outline"} onClick={() => setModo("mover")}>
           <MousePointer2 className="h-4 w-4 mr-1" /> Mover
         </Button>
-        <Select value={tipoNuevo} onValueChange={(v) => setTipoNuevo(v as TipoEspacio)}>
-          <SelectTrigger className="w-44 h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {TIPOS_ESPACIO.map((t) => <SelectItem key={t} value={t}>{TIPO_ESPACIO_LABEL[t]}</SelectItem>)}
-          </SelectContent>
-        </Select>
         <Button size="sm" variant="secondary" onClick={() => setBloqueOpen(true)} disabled={!sel}>
           <Grid3X3 className="h-4 w-4 mr-1" /> Generar en bloque
         </Button>
         <Button size="sm" variant="secondary" onClick={() => setRenumOpen(true)}>
           <ListOrdered className="h-4 w-4 mr-1" /> Renumerar espacios
         </Button>
-        <Badge variant="outline">{espacios.length} espacios</Badge>
+        <Badge variant="outline">{gondolas.length} góndolas</Badge>
       </div>
 
       <p className="text-xs text-muted-foreground">
@@ -346,7 +341,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
             draggable={false}
           />
         )}
-        {espacios.map((g) => {
+        {gondolas.map((g) => {
           const arrastrando = dragRef.current?.id === g.id && draft;
           const box = arrastrando ? (draft as Draft) : { x: g.x, y: g.y, width: g.width, height: g.height };
           return (
@@ -393,15 +388,6 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
             <div className="space-y-1">
               <Label>Número / nombre</Label>
               <Input value={editNombre} onChange={(e) => setEditNombre(e.target.value)} autoFocus />
-            </div>
-            <div className="space-y-1">
-              <Label>Tipo</Label>
-              <Select value={editTipo} onValueChange={(v) => setEditTipo(v as TipoEspacio)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {TIPOS_ESPACIO.map((t) => <SelectItem key={t} value={t}>{TIPO_ESPACIO_LABEL[t]}</SelectItem>)}
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-1">
               <Label>Estado comercial</Label>

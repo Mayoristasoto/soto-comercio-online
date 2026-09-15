@@ -181,7 +181,11 @@ const RecorridoSalon = () => {
 
   const agregarCriterio = async () => {
     if (!nuevoCriterio.trim()) return;
-    const { error } = await supabase.from("recorrido_criterios").insert({ nombre: nuevoCriterio.trim(), orden: criterios.length + 1 });
+    const { error } = await supabase.from("recorrido_criterios").insert({
+      nombre: nuevoCriterio.trim(),
+      orden: criterios.length + 1,
+      tipos_aplica: ["gondola"],
+    });
     if (error) return toast.error("No se pudo crear el criterio");
     setNuevoCriterio("");
     cargarBase();
@@ -330,31 +334,13 @@ const RecorridoSalon = () => {
               </div>
               <Table>
                 <TableHeader>
-                  <TableRow><TableHead>Criterio</TableHead><TableHead>Descripción</TableHead><TableHead>Dónde se evalúa</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
+                  <TableRow><TableHead>Criterio</TableHead><TableHead>Descripción</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
                 </TableHeader>
                 <TableBody>
                   {criterios.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.nombre}</TableCell>
                       <TableCell className="text-muted-foreground">{c.descripcion}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {TIPOS_ESPACIO.map((t) => {
-                            const activo = !c.tipos_aplica?.length || c.tipos_aplica.includes(t);
-                            return (
-                              <Button
-                                key={t}
-                                size="sm"
-                                variant={activo ? "secondary" : "outline"}
-                                className="h-7 px-2 text-xs"
-                                onClick={() => toggleTipoCriterio(c, t)}
-                              >
-                                {TIPO_ESPACIO_LABEL[t]}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </TableCell>
                       <TableCell>
                         <Button size="sm" variant={c.activo ? "default" : "outline"} onClick={() => toggleCriterio(c)}>
                           {c.activo ? "Activo" : "Inactivo"}
