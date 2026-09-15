@@ -1,9 +1,4 @@
 # Roadmap
-
-## Recorrido de salón sobre el plano
-- [x] Tablas de planos, zonas, criterios, recorridos, hallazgos y fotos
-- [ ] Plano propio del módulo: copia estática del layout actual como referencia (NO vinculado al editor de góndolas, que queda intacto)
-- [ ] Configuración: dibujar pasillos + criterios editables
-- [ ] Recorrido móvil: zonas coloreadas, criterios, pines en el mapa, fotos
-- [ ] Historial y cierre de recorridos
-- [ ] Rutas y accesos en sidebar
+- [ ] Agregar fotos por criterio al Recorrido basado en Góndolas V2.
+- [ ] Registrar usuario, fecha y cambios en una línea de tiempo compartida del Recorrido V2.
+- [ ] Mantener intactos Checklist, Góndolas original y demás controles anteriores.
