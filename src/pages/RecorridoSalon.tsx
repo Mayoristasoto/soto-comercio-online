@@ -9,11 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Map as MapIcon, Plus, Upload, Trash2, Settings2, LayoutGrid, AlertTriangle, Wand2 } from "lucide-react";
+import { Map as MapIcon, Plus, Trash2, Settings2, LayoutGrid, AlertTriangle, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { ZonaEditor } from "@/components/recorrido/ZonaEditor";
-import { PlanoCanvas } from "@/components/recorrido/PlanoCanvas";
-import { PuntosEditor } from "@/components/recorrido/PuntosEditor";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
 import {
   BUCKET_PLANOS,
@@ -298,7 +295,7 @@ const RecorridoSalon = () => {
       <Tabs defaultValue="recorridos">
         <TabsList>
           <TabsTrigger value="recorridos">Recorridos</TabsTrigger>
-          <TabsTrigger value="plano"><Settings2 className="h-4 w-4 mr-1" /> Plano y zonas</TabsTrigger>
+          <TabsTrigger value="plano"><Settings2 className="h-4 w-4 mr-1" /> Góndolas</TabsTrigger>
           <TabsTrigger value="hallazgos"><AlertTriangle className="h-4 w-4 mr-1" /> Hallazgos</TabsTrigger>
           <TabsTrigger value="criterios">Criterios</TabsTrigger>
           <TabsTrigger value="editor"><LayoutGrid className="h-4 w-4 mr-1" /> Editor de layout</TabsTrigger>
@@ -347,7 +344,7 @@ const RecorridoSalon = () => {
         <TabsContent value="plano">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Plano de referencia por sucursal</CardTitle>
+              <CardTitle className="text-base">Góndolas por sucursal</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2 items-center">
@@ -358,61 +355,18 @@ const RecorridoSalon = () => {
                   </SelectContent>
                 </Select>
                 {sucursalSel && (
-                  <label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && subirPlano(e.target.files[0])}
-                    />
-                    <Button variant="outline" asChild>
-                      <span><Upload className="h-4 w-4 mr-1" /> {planoActual?.imagen_path ? "Reemplazar imagen" : "Subir imagen del plano"}</span>
-                    </Button>
-                  </label>
-                )}
-                {sucursalSel && (
-                  <Button
-                    variant={planoActual?.usa_gondolas ? "default" : "outline"}
-                    onClick={() => usarLayoutGondolas(!planoActual?.usa_gondolas)}
-                  >
-                    <LayoutGrid className="h-4 w-4 mr-1" />
-                    {planoActual?.usa_gondolas ? "Usando layout de góndolas" : "Usar layout de góndolas"}
-                  </Button>
-                )}
-                {sucursalSel && (
                   <Button variant="secondary" onClick={empezarDeCeroConGondolas} disabled={regenerando}>
                     <Wand2 className="h-4 w-4 mr-1" />
-                    {regenerando ? "Armando…" : "Empezar de cero con las góndolas"}
+                    {regenerando ? "Preparando…" : "Preparar controles"}
                   </Button>
                 )}
               </div>
-              {planoActual?.usa_gondolas && (
-                <p className="text-xs text-muted-foreground">
-                  El plano muestra una copia visual del layout de góndolas. Podés generar una zona por góndola y además dibujar los pasillos.
-                </p>
+              {sucursalSel && (
+                <div className="border-t pt-4">
+                  <EspaciosEditor sucursalId={sucursalSel} onChange={() => cargarPlanos()} />
+                </div>
               )}
-              {planoActual && (
-                <>
-                  <PlanoCanvas plano={planoActual} zonas={zonas} />
-                  {planoActual.usa_gondolas && (
-                    <div className="border-t pt-4">
-                      <h3 className="font-semibold mb-2">Mapa de espacios (góndolas, punteras, exhibidores y carteles)</h3>
-                      <EspaciosEditor sucursalId={sucursalSel} onChange={() => cargarPlanos()} />
-                    </div>
-                  )}
-                  <div className="border-t pt-4">
-                    <h3 className="font-semibold mb-2">Definir pasillos / zonas</h3>
-                    <ZonaEditor plano={planoActual} zonas={zonas} onZonasChange={() => cargarZonas(planoActual.id)} />
-                  </div>
-                  <div className="border-t pt-4">
-                    <h3 className="font-semibold mb-2">Góndolas dentro de cada pasillo</h3>
-                    <PuntosEditor zonas={zonas} usaGondolas={!!planoActual.usa_gondolas} sucursalId={sucursalSel} />
-                  </div>
-                </>
-              )}
-              {sucursalSel && !planoActual && (
-                <p className="text-sm text-muted-foreground">Subí la imagen del plano para poder marcar las zonas.</p>
-              )}
+              {!sucursalSel && <p className="text-sm text-muted-foreground">Elegí una sucursal para ver sus góndolas.</p>}
             </CardContent>
           </Card>
         </TabsContent>
