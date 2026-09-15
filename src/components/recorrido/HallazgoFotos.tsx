@@ -66,7 +66,7 @@ export function HallazgoFotos({ hallazgoId, readOnly }: Props) {
       for (const file of Array.from(files).slice(0, 5)) {
         if (file.size > 25 * 1024 * 1024) { toast.error(`${file.name}: supera 25 MB`); continue; }
         const blob = await comprimir(file);
-        const path = `recorridos/${hallazgoId}/${crypto.randomUUID()}.jpg`;
+        const path = `recorridos-v2/${hallazgoId}/${crypto.randomUUID()}.jpg`;
         const { error: upErr } = await supabase.storage.from(BUCKET_EVIDENCIAS).upload(path, blob, { contentType: "image/jpeg" });
         if (upErr) throw upErr;
         const { error: dbErr } = await supabase.from("recorrido_hallazgo_fotos").insert({ hallazgo_id: hallazgoId, storage_path: path });

@@ -9,7 +9,7 @@ import { ArrowLeft, CheckCircle2, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { PlanoCanvas, type PinPunto } from "@/components/recorrido/PlanoCanvas";
 import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
-import { HistorialPunto } from "@/components/recorrido/HistorialPunto";
+import { HistorialRecorridoV2 } from "@/components/recorrido/HistorialRecorridoV2";
 import {
   ESTADO_HALLAZGO_LABEL,
   TIPO_ESPACIO_LABEL,
@@ -388,7 +388,7 @@ const RecorridoDetalle = () => {
             <CardTitle className="text-base flex items-center justify-between gap-2">
               <span>{tituloPanel}</span>
               {zonaSel && (
-                <HistorialPunto
+                <HistorialRecorridoV2
                   puntoId={puntoSel?.id ?? null}
                   zonaId={puntoSel ? null : zonaSel.id}
                   titulo={`${zonaSel.nombre}${puntoSel ? ` · ${puntoSel.nombre}` : ""}`}
