@@ -281,16 +281,52 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <div>
-            <CardTitle>Días y horarios</CardTitle>
-            <CardDescription>Cada día puede tener su propio horario.</CardDescription>
+        <CardHeader>
+          <CardTitle>Abrir horarios semana por semana</CardTitle>
+          <CardDescription>
+            Elegí una semana y abrí solo esa. Las semanas que no abras quedan sin horarios para reservar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setSemanaRef(addDays(semanaRef, -7))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-56 text-center font-medium">
+              {format(semanaRef, "d 'de' MMMM", { locale: es })} al{" "}
+              {format(addDays(semanaRef, 6), "d 'de' MMMM", { locale: es })}
+            </div>
+            <Button variant="outline" size="icon" onClick={() => setSemanaRef(addDays(semanaRef, 7))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setSemanaRef(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+            >
+              Esta semana
+            </Button>
           </div>
           {!soloLectura && (
-            <Button onClick={generarHorarios} className="gap-2">
-              <RefreshCw className="h-4 w-4" /> Generar horarios
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={generarHorarios} className="gap-2">
+                <RefreshCw className="h-4 w-4" /> Abrir esta semana
+              </Button>
+              <Button variant="outline" onClick={borrarHorariosSemana} className="gap-2">
+                <Trash2 className="h-4 w-4" /> Cerrar esta semana
+              </Button>
+            </div>
           )}
+          <p className="text-xs text-muted-foreground">
+            "Abrir" usa los días y horarios de abajo. "Cerrar" borra los horarios libres de esa semana; los ya
+            reservados no se tocan.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Días y horarios</CardTitle>
+          <CardDescription>Cada día puede tener su propio horario.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {DIAS_SEMANA.map((d) => {
