@@ -10,9 +10,20 @@ import InvitacionesPendientes from "@/components/entrevistas/InvitacionesPendien
 export default function Entrevistas() {
   const { esRRHH, loading } = useEsRRHH();
   const [refrescar, setRefrescar] = useState(0);
-  const soloLectura = !esRRHH;
+  const soloLectura = false;
 
   const recargar = () => setRefrescar((n) => n + 1);
+
+  if (loading)
+    return <p className="p-6 text-muted-foreground">Cargando…</p>;
+
+  if (!esRRHH)
+    return (
+      <div className="container mx-auto p-6">
+        <h1 className="text-xl font-bold">Sección no disponible</h1>
+        <p className="text-muted-foreground">Esta sección es de uso exclusivo de Recursos Humanos.</p>
+      </div>
+    );
 
   return (
     <div className="container mx-auto space-y-6 p-4 md:p-6">
