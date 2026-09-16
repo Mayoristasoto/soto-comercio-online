@@ -131,15 +131,31 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
 
   const generarHorarios = async () => {
     if (!config) return;
-    const desde = format(new Date(), "yyyy-MM-dd");
-    const hasta = format(addDays(new Date(), 56), "yyyy-MM-dd");
+    const hoy = format(new Date(), "yyyy-MM-dd");
+    const desde = semanaInicio < hoy ? hoy : semanaInicio;
+    const hasta = semanaFin;
     const { error } = await db.rpc("entrevistas_generar_slots", {
       _config_id: config.id,
       _desde: desde,
       _hasta: hasta,
     });
     if (error) return toast.error("No se pudieron generar los horarios: " + error.message);
-    toast.success("Horarios generados para las próximas 8 semanas");
+    toast.success("Horarios abiertos para la semana elegida");
+    cargar();
+    onCambio?.();
+  };
+
+  const borrarHorariosSemana = async () => {
+    if (!config) return;
+    const { error } = await db
+      .from("entrevistas_slots")
+      .delete()
+      .eq("config_id", config.id)
+      .neq("estado", "reservado")
+      .gte("fecha", semanaInicio)
+      .lte("fecha", semanaFin);
+    if (error) return toast.error("No se pudieron borrar: " + error.message);
+    toast.success("Horarios de esa semana cerrados");
     cargar();
     onCambio?.();
   };
