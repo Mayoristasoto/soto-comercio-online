@@ -357,7 +357,7 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
             );
           })}
           <p className="text-xs text-muted-foreground">
-            Después de cambiar días u horarios, tocá "Generar horarios" para actualizar la agenda.
+            Después de cambiar días u horarios, elegí la semana arriba y tocá "Abrir esta semana".
           </p>
         </CardContent>
       </Card>
