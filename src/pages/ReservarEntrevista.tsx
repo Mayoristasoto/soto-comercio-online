@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarCheck, CheckCircle2, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
