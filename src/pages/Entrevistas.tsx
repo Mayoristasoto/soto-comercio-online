@@ -33,7 +33,6 @@ export default function Entrevistas() {
         </h1>
         <p className="text-muted-foreground">
           Agenda de entrevistas, disponibilidad e invitaciones a candidatos.
-          {!loading && soloLectura && " Estás viendo la agenda en modo consulta."}
         </p>
       </header>
 
