@@ -226,7 +226,7 @@ export default function ReservarEntrevista() {
         <Encabezado />
         <Card className="mb-4">
           <CardContent className="space-y-2 py-6">
-            <p className="font-semibold">Hola {datos.nombre}.</p>
+            <p className="font-semibold">{datos.nombre ? `Hola ${datos.nombre}.` : "¡Hola!"}</p>
             <p className="text-muted-foreground">
               Seleccioná el día y horario que te resulte más cómodo para realizar tu entrevista.
             </p>
