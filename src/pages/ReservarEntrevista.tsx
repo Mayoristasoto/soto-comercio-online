@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarCheck, CheckCircle2, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -28,6 +30,8 @@ export default function ReservarEntrevista() {
   const [confirmada, setConfirmada] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [reservando, setReservando] = useState(false);
+  const [puestos, setPuestos] = useState<{ id: string; nombre: string }[]>([]);
+  const [form, setForm] = useState({ nombre: "", apellido: "", telefono: "", puesto_id: "" });
 
   const cargar = useCallback(async () => {
     if (!token) return;
@@ -38,6 +42,10 @@ export default function ReservarEntrevista() {
       if (info?.valido && !info?.reservada) {
         const { data: libres } = await db.rpc("entrevista_slots_publicos", { _token: token });
         setSlots(libres || []);
+        if (info?.tipo === "abierta") {
+          const { data: ps } = await db.rpc("entrevista_puestos_publicos", { _token: token });
+          setPuestos(ps || []);
+        }
       }
     } finally {
       setCargando(false);
@@ -48,11 +56,24 @@ export default function ReservarEntrevista() {
     cargar();
   }, [cargar]);
 
+  const abierta = datos?.tipo === "abierta";
+
   const reservar = async () => {
     if (!elegido || !token) return;
+    if (abierta && (!form.nombre.trim() || !form.telefono.trim())) {
+      toast.error("Completá tu nombre y tu teléfono");
+      return;
+    }
     setReservando(true);
     try {
-      const { data, error } = await db.rpc("entrevista_reservar", { _token: token, _slot_id: elegido.slot_id });
+      const { data, error } = await db.rpc("entrevista_reservar_abierta", {
+        _token: token,
+        _slot_id: elegido.slot_id,
+        _nombre: abierta ? form.nombre : datos?.nombre || "Candidato",
+        _apellido: abierta ? form.apellido : "",
+        _telefono: abierta ? form.telefono : "",
+        _puesto_id: abierta && form.puesto_id ? form.puesto_id : null,
+      });
       if (error) throw error;
       if (!data?.ok) {
         if (data?.motivo === "slot_ocupado") {
@@ -145,7 +166,43 @@ export default function ReservarEntrevista() {
               <p className="flex items-center justify-center gap-1 text-lg font-semibold">
                 <Clock className="h-4 w-4" /> {hhmm(elegido.hora_inicio)} a {hhmm(elegido.hora_fin)}
               </p>
-              <p className="text-muted-foreground">¿Querés reservar este horario?</p>
+              {abierta ? (
+                <div className="space-y-2 text-left">
+                  <p className="text-center text-muted-foreground">Dejanos tus datos para confirmar:</p>
+                  <Input
+                    placeholder="Nombre"
+                    value={form.nombre}
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Apellido"
+                    value={form.apellido}
+                    onChange={(e) => setForm({ ...form, apellido: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Teléfono"
+                    inputMode="tel"
+                    value={form.telefono}
+                    onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                  />
+                  {puestos.length > 0 && (
+                    <Select value={form.puesto_id} onValueChange={(v) => setForm({ ...form, puesto_id: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="¿Para qué puesto te postulás?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {puestos.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">¿Querés reservar este horario?</p>
+              )}
               <Button className="w-full" size="lg" onClick={reservar} disabled={reservando}>
                 {reservando ? "Reservando…" : "Confirmar entrevista"}
               </Button>
@@ -169,7 +226,7 @@ export default function ReservarEntrevista() {
         <Encabezado />
         <Card className="mb-4">
           <CardContent className="space-y-2 py-6">
-            <p className="font-semibold">Hola {datos.nombre}.</p>
+            <p className="font-semibold">{datos.nombre ? `Hola ${datos.nombre}.` : "¡Hola!"}</p>
             <p className="text-muted-foreground">
               Seleccioná el día y horario que te resulte más cómodo para realizar tu entrevista.
             </p>

@@ -63,11 +63,39 @@ export default function InvitacionesPendientes({
     toast.success(aviso);
   };
 
+  const generarEnlacePublico = async () => {
+    try {
+      const { data: cfgs } = await db.from("entrevistas_config").select("id").order("created_at").limit(1);
+      const { data: nuevoToken, error: errToken } = await db.rpc("entrevista_generar_token");
+      if (errToken) throw errToken;
+      const { data: user } = await supabase.auth.getUser();
+      const { error } = await db.from("entrevistas_invitaciones").insert({
+        config_id: cfgs?.[0]?.id ?? null,
+        token: nuevoToken,
+        tipo: "abierta",
+        creado_por: user?.user?.id ?? null,
+      });
+      if (error) throw error;
+      await navigator.clipboard.writeText(enlaceReserva(nuevoToken as string));
+      toast.success("Enlace público copiado. Sirve para una sola reserva.");
+      cargar();
+    } catch (e: any) {
+      toast.error("No se pudo generar el enlace: " + (e.message || e));
+    }
+  };
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Invitaciones</CardTitle>
-        <CardDescription>Enlaces generados y su estado de reserva.</CardDescription>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+        <div>
+          <CardTitle>Invitaciones</CardTitle>
+          <CardDescription>Enlaces generados y su estado de reserva.</CardDescription>
+        </div>
+        {!soloLectura && (
+          <Button onClick={generarEnlacePublico} className="gap-2">
+            <Link2 className="h-4 w-4" /> Generar enlace público (un solo uso)
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <div className="overflow-auto rounded-md border">
@@ -99,7 +127,9 @@ export default function InvitacionesPendientes({
                   return (
                     <TableRow key={i.id}>
                       <TableCell className="font-medium">
-                        {i.candidatos?.nombre} {i.candidatos?.apellido ?? ""}
+                        {i.candidatos?.nombre
+                          ? `${i.candidatos.nombre} ${i.candidatos.apellido ?? ""}`
+                          : "Enlace público (sin asignar)"}
                         {i.candidatos?.telefono && (
                           <div className="text-xs text-muted-foreground">{i.candidatos.telefono}</div>
                         )}

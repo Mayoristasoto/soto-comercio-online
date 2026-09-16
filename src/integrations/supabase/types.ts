@@ -4661,43 +4661,49 @@ export type Database = {
       entrevistas_invitaciones: {
         Row: {
           booked_at: string | null
-          candidato_id: string
+          candidato_id: string | null
           config_id: string | null
           creado_por: string | null
           created_at: string
           entrevista_id: string | null
           estado: string
+          etiqueta: string | null
           expira_at: string
           id: string
           invited_at: string
+          tipo: string
           token: string
           updated_at: string
         }
         Insert: {
           booked_at?: string | null
-          candidato_id: string
+          candidato_id?: string | null
           config_id?: string | null
           creado_por?: string | null
           created_at?: string
           entrevista_id?: string | null
           estado?: string
+          etiqueta?: string | null
           expira_at?: string
           id?: string
           invited_at?: string
+          tipo?: string
           token: string
           updated_at?: string
         }
         Update: {
           booked_at?: string | null
-          candidato_id?: string
+          candidato_id?: string | null
           config_id?: string | null
           creado_por?: string | null
           created_at?: string
           entrevista_id?: string | null
           estado?: string
+          etiqueta?: string | null
           expira_at?: string
           id?: string
           invited_at?: string
+          tipo?: string
           token?: string
           updated_at?: string
         }
@@ -12089,8 +12095,26 @@ export type Database = {
         Args: { _entrevista_id: string }
         Returns: boolean
       }
+      entrevista_puestos_publicos: {
+        Args: { _token: string }
+        Returns: {
+          id: string
+          nombre: string
+        }[]
+      }
       entrevista_reservar: {
         Args: { _slot_id: string; _token: string }
+        Returns: Json
+      }
+      entrevista_reservar_abierta: {
+        Args: {
+          _apellido: string
+          _nombre: string
+          _puesto_id?: string
+          _slot_id: string
+          _telefono: string
+          _token: string
+        }
         Returns: Json
       }
       entrevista_slots_publicos: {
