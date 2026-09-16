@@ -192,16 +192,27 @@ export default function CalendarioEntrevistas({ refrescar, onSeleccionar }: Prop
                         </div>
                       ))}
 
-                      {ents.map((e) => (
+                      {ents.map((e) => {
+                        // Entrevistas al mismo horario: se reparten el ancho del día
+                        const simultaneas = ents.filter(
+                          (o) =>
+                            minutos(o.hora_inicio) < minutos(e.hora_fin) &&
+                            minutos(o.hora_fin) > minutos(e.hora_inicio)
+                        );
+                        const total = simultaneas.length;
+                        const idx = simultaneas.findIndex((o) => o.id === e.id);
+                        return (
                         <button
                           key={e.id}
                           onClick={() => onSeleccionar?.(e)}
                           className={
-                            "absolute left-1 right-1 overflow-hidden rounded border px-1 text-left text-[11px] leading-tight shadow-sm " +
+                            "absolute overflow-hidden rounded border px-1 text-left text-[11px] leading-tight shadow-sm " +
                             colorEstado(e.estado)
                           }
                           style={{
                             top: top(minutos(e.hora_inicio)),
+                            left: `calc(${(idx / total) * 100}% + 2px)`,
+                            width: `calc(${100 / total}% - 4px)`,
                             height: Math.max(
                               18,
                               (minutos(e.hora_fin) - minutos(e.hora_inicio)) * PX_POR_MIN - 2
