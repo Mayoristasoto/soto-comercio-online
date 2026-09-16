@@ -185,20 +185,6 @@ export default function ReservarEntrevista() {
                     value={form.telefono}
                     onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                   />
-                  {puestos.length > 0 && (
-                    <Select value={form.puesto_id} onValueChange={(v) => setForm({ ...form, puesto_id: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="¿Para qué puesto te postulás?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {puestos.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
                 </div>
               ) : (
                 <p className="text-muted-foreground">¿Querés reservar este horario?</p>
