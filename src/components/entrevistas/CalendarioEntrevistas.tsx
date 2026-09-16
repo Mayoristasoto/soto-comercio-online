@@ -224,7 +224,8 @@ export default function CalendarioEntrevistas({ refrescar, onSeleccionar }: Prop
                           </span>
                           <span className="block truncate opacity-80">{hhmm(e.hora_inicio)}</span>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })}
