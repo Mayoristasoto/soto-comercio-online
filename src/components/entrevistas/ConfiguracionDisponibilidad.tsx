@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { CalendarClock, Lock, LockOpen, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { addDays, format } from "date-fns";
+import { addDays, format, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   DIAS_SEMANA,
