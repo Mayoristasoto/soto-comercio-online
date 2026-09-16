@@ -460,7 +460,7 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
         <CardContent className="space-y-4">
           {Object.keys(slotsPorFecha).length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Todavía no hay horarios. Configurá los días y tocá "Generar horarios".
+              Esta semana no tiene horarios abiertos. Tocá "Abrir esta semana" si querés habilitarla.
             </p>
           ) : (
             Object.entries(slotsPorFecha).map(([fecha, lista]) => (
