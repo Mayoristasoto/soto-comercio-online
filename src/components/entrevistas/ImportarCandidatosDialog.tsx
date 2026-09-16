@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { PuestoReclutamiento } from "./entrevistasTypes";
 
 const db = supabase as any;
@@ -98,6 +98,17 @@ export default function ImportarCandidatosDialog({
     }
   };
 
+  const descargarPlantilla = () => {
+    const hoja = XLSX.utils.aoa_to_sheet([
+      ["Nombre", "Apellido", "Telefono", "Email", "Puesto"],
+      ["María", "Gómez", "1123456789", "maria@mail.com", puestos[0]?.nombre || "Cajera"],
+    ]);
+    hoja["!cols"] = [{ wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 24 }, { wch: 16 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, hoja, "Candidatos");
+    XLSX.writeFile(wb, "plantilla_candidatos.xlsx");
+  };
+
   return (
     <Dialog open={abierto} onOpenChange={setAbierto}>
       <DialogTrigger asChild>
@@ -114,6 +125,9 @@ export default function ImportarCandidatosDialog({
         </DialogHeader>
 
         <div className="space-y-3">
+          <Button variant="ghost" size="sm" className="gap-2" onClick={descargarPlantilla}>
+            <Download className="h-4 w-4" /> Descargar plantilla para completar
+          </Button>
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Archivo</Label>
