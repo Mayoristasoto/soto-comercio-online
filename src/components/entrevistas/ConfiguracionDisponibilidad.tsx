@@ -8,8 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarClock, Lock, LockOpen, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { addDays, format } from "date-fns";
+import { CalendarClock, ChevronLeft, ChevronRight, Lock, LockOpen, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { addDays, format, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   DIAS_SEMANA,
@@ -34,6 +34,7 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
   const [excepciones, setExcepciones] = useState<Excepcion[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [semanaRef, setSemanaRef] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [nuevaExc, setNuevaExc] = useState({
     fecha: "",
     tipo: "bloqueo_dia" as Excepcion["tipo"],
@@ -129,17 +130,36 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
     if (error) toast.error(error.message);
   };
 
+  const semanaInicio = format(semanaRef, "yyyy-MM-dd");
+  const semanaFin = format(addDays(semanaRef, 6), "yyyy-MM-dd");
+
   const generarHorarios = async () => {
     if (!config) return;
-    const desde = format(new Date(), "yyyy-MM-dd");
-    const hasta = format(addDays(new Date(), 56), "yyyy-MM-dd");
+    const hoy = format(new Date(), "yyyy-MM-dd");
+    const desde = semanaInicio < hoy ? hoy : semanaInicio;
+    const hasta = semanaFin;
     const { error } = await db.rpc("entrevistas_generar_slots", {
       _config_id: config.id,
       _desde: desde,
       _hasta: hasta,
     });
     if (error) return toast.error("No se pudieron generar los horarios: " + error.message);
-    toast.success("Horarios generados para las próximas 8 semanas");
+    toast.success("Horarios abiertos para la semana elegida");
+    cargar();
+    onCambio?.();
+  };
+
+  const borrarHorariosSemana = async () => {
+    if (!config) return;
+    const { error } = await db
+      .from("entrevistas_slots")
+      .delete()
+      .eq("config_id", config.id)
+      .neq("estado", "reservado")
+      .gte("fecha", semanaInicio)
+      .lte("fecha", semanaFin);
+    if (error) return toast.error("No se pudieron borrar: " + error.message);
+    toast.success("Horarios de esa semana cerrados");
     cargar();
     onCambio?.();
   };
@@ -180,10 +200,12 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
   if (!config)
     return <p className="text-muted-foreground p-4">No hay una configuración de entrevistas disponible.</p>;
 
-  const slotsPorFecha = slots.reduce<Record<string, Slot[]>>((acc, s) => {
-    (acc[s.fecha] = acc[s.fecha] || []).push(s);
-    return acc;
-  }, {});
+  const slotsPorFecha = slots
+    .filter((s) => s.fecha >= semanaInicio && s.fecha <= semanaFin)
+    .reduce<Record<string, Slot[]>>((acc, s) => {
+      (acc[s.fecha] = acc[s.fecha] || []).push(s);
+      return acc;
+    }, {});
 
   return (
     <div className="space-y-4">
@@ -261,16 +283,52 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <div>
-            <CardTitle>Días y horarios</CardTitle>
-            <CardDescription>Cada día puede tener su propio horario.</CardDescription>
+        <CardHeader>
+          <CardTitle>Abrir horarios semana por semana</CardTitle>
+          <CardDescription>
+            Elegí una semana y abrí solo esa. Las semanas que no abras quedan sin horarios para reservar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setSemanaRef(addDays(semanaRef, -7))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-56 text-center font-medium">
+              {format(semanaRef, "d 'de' MMMM", { locale: es })} al{" "}
+              {format(addDays(semanaRef, 6), "d 'de' MMMM", { locale: es })}
+            </div>
+            <Button variant="outline" size="icon" onClick={() => setSemanaRef(addDays(semanaRef, 7))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setSemanaRef(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+            >
+              Esta semana
+            </Button>
           </div>
           {!soloLectura && (
-            <Button onClick={generarHorarios} className="gap-2">
-              <RefreshCw className="h-4 w-4" /> Generar horarios
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={generarHorarios} className="gap-2">
+                <RefreshCw className="h-4 w-4" /> Abrir esta semana
+              </Button>
+              <Button variant="outline" onClick={borrarHorariosSemana} className="gap-2">
+                <Trash2 className="h-4 w-4" /> Cerrar esta semana
+              </Button>
+            </div>
           )}
+          <p className="text-xs text-muted-foreground">
+            "Abrir" usa los días y horarios de abajo. "Cerrar" borra los horarios libres de esa semana; los ya
+            reservados no se tocan.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Días y horarios</CardTitle>
+          <CardDescription>Cada día puede tener su propio horario.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {DIAS_SEMANA.map((d) => {
@@ -299,7 +357,7 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
             );
           })}
           <p className="text-xs text-muted-foreground">
-            Después de cambiar días u horarios, tocá "Generar horarios" para actualizar la agenda.
+            Después de cambiar días u horarios, elegí la semana arriba y tocá "Abrir esta semana".
           </p>
         </CardContent>
       </Card>
@@ -402,7 +460,7 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
         <CardContent className="space-y-4">
           {Object.keys(slotsPorFecha).length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Todavía no hay horarios. Configurá los días y tocá "Generar horarios".
+              Esta semana no tiene horarios abiertos. Tocá "Abrir esta semana" si querés habilitarla.
             </p>
           ) : (
             Object.entries(slotsPorFecha).map(([fecha, lista]) => (
