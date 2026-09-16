@@ -28,6 +28,7 @@ import EventCalendar from "@/components/dashboard/EventCalendar"
 import { EstadoPersonalHoy } from "@/components/dashboard/EstadoPersonalHoy"
 import { CoberturaSucursales } from "@/components/dashboard/CoberturaSucursales"
 import { IncidenciasHoy } from "@/components/dashboard/IncidenciasHoy"
+import { AgendaEntrevistasResumen } from "@/components/dashboard/AgendaEntrevistasResumen"
 import { DashboardEncargado } from "@/components/dashboard/DashboardEncargado"
 import { PWAInstallPrompt, PWAUpdatePrompt } from "@/components/PWAInstall"
 
@@ -293,6 +294,11 @@ export default function Dashboard() {
       {/* Incidencias de hoy */}
       {(isAdmin || isGerente) && (
         <IncidenciasHoy />
+      )}
+
+      {/* Agenda resumida de entrevistas */}
+      {isAdmin && (
+        <AgendaEntrevistasResumen />
       )}
 
       {/* Cobertura horaria por sucursal */}
