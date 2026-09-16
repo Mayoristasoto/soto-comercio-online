@@ -295,6 +295,11 @@ export default function Dashboard() {
         <IncidenciasHoy />
       )}
 
+      {/* Agenda resumida de entrevistas */}
+      {isAdmin && (
+        <AgendaEntrevistasResumen />
+      )}
+
       {/* Cobertura horaria por sucursal */}
       {(isAdmin || isGerente) && (
         <CoberturaSucursales />
