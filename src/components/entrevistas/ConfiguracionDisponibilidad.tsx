@@ -34,6 +34,7 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
   const [excepciones, setExcepciones] = useState<Excepcion[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [semanaRef, setSemanaRef] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [nuevaExc, setNuevaExc] = useState({
     fecha: "",
     tipo: "bloqueo_dia" as Excepcion["tipo"],
