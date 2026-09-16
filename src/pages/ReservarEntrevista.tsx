@@ -164,7 +164,43 @@ export default function ReservarEntrevista() {
               <p className="flex items-center justify-center gap-1 text-lg font-semibold">
                 <Clock className="h-4 w-4" /> {hhmm(elegido.hora_inicio)} a {hhmm(elegido.hora_fin)}
               </p>
-              <p className="text-muted-foreground">¿Querés reservar este horario?</p>
+              {abierta ? (
+                <div className="space-y-2 text-left">
+                  <p className="text-center text-muted-foreground">Dejanos tus datos para confirmar:</p>
+                  <Input
+                    placeholder="Nombre"
+                    value={form.nombre}
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Apellido"
+                    value={form.apellido}
+                    onChange={(e) => setForm({ ...form, apellido: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Teléfono"
+                    inputMode="tel"
+                    value={form.telefono}
+                    onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                  />
+                  {puestos.length > 0 && (
+                    <Select value={form.puesto_id} onValueChange={(v) => setForm({ ...form, puesto_id: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="¿Para qué puesto te postulás?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {puestos.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">¿Querés reservar este horario?</p>
+              )}
               <Button className="w-full" size="lg" onClick={reservar} disabled={reservando}>
                 {reservando ? "Reservando…" : "Confirmar entrevista"}
               </Button>
