@@ -77,6 +77,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
       { title: "Checklist de Control", url: "/rrhh/checklist", icon: FileText },
       { title: "Recorrido de Salón", url: "/rrhh/recorrido", icon: MapPin },
+      { title: "Entrevistas", url: "/rrhh/entrevistas", icon: CalendarDays },
     ]
   },
   {
