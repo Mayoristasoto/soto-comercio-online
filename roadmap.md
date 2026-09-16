@@ -1,4 +1,14 @@
 # Roadmap
-- [x] Agregar fotos por criterio al Recorrido basado en Góndolas V2 usando el bucket existente de Checklist, en carpeta separada.
-- [x] Registrar usuario, fecha y cambios en una línea de tiempo compartida del Recorrido V2.
-- [x] Mantener intactos Checklist, Góndolas original y demás controles anteriores.
+
+## Recorrido de Salón (V2)
+- [x] Fotos por criterio usando el bucket existente de Checklist, en carpeta separada.
+- [x] Línea de tiempo compartida con usuario, fecha y cambios.
+- [x] Checklist, Góndolas original y controles anteriores intactos.
+
+## Reclutamiento — Entrevistas (MVP)
+- [x] Base de datos: puestos, candidatos, disponibilidad, horarios, entrevistas e invitaciones con reserva atómica.
+- [x] RRHH > Entrevistas con Agenda, Disponibilidad, Candidatos e Invitaciones.
+- [x] Invitación con enlace único + mensaje de WhatsApp copiable.
+- [x] Página pública móvil de autoreserva sin login.
+- [x] Cancelar / marcar realizada / no asistió, liberando el horario.
+- [ ] Etapas siguientes: formulario público "Trabajá con nosotros", carga de CV, preguntas de preselección, scoring/ranking y envío automático por WhatsApp.
