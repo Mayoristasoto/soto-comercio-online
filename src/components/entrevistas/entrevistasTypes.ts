@@ -145,9 +145,9 @@ export const mensajeWhatsapp = (
   const link = enlaceReserva(token);
   if (plantilla) {
     return plantilla
-      .replaceAll("[Nombre]", nombre)
-      .replaceAll("[Puesto]", puesto)
-      .replaceAll("[LINK_UNICO]", link);
+      .replace(/\[Nombre\]/g, nombre)
+      .replace(/\[Puesto\]/g, puesto)
+      .replace(/\[LINK_UNICO\]/g, link);
   }
   return `Hola ${nombre}, ¿cómo estás?
 
