@@ -200,7 +200,9 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
   if (!config)
     return <p className="text-muted-foreground p-4">No hay una configuración de entrevistas disponible.</p>;
 
-  const slotsPorFecha = slots.reduce<Record<string, Slot[]>>((acc, s) => {
+  const slotsPorFecha = slots
+    .filter((s) => s.fecha >= semanaInicio && s.fecha <= semanaFin)
+    .reduce<Record<string, Slot[]>>((acc, s) => {
     (acc[s.fecha] = acc[s.fecha] || []).push(s);
     return acc;
   }, {});
