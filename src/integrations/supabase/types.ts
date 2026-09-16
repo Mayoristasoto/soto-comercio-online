@@ -1537,6 +1537,68 @@ export type Database = {
           },
         ]
       }
+      candidatos: {
+        Row: {
+          apellido: string | null
+          creado_por: string | null
+          created_at: string
+          cv_url: string | null
+          datos_extraidos: Json | null
+          email: string | null
+          estado: Database["public"]["Enums"]["candidato_estado"]
+          id: string
+          nombre: string
+          notas: string | null
+          origen: string
+          puesto_id: string | null
+          scoring: number | null
+          telefono: string | null
+          updated_at: string
+        }
+        Insert: {
+          apellido?: string | null
+          creado_por?: string | null
+          created_at?: string
+          cv_url?: string | null
+          datos_extraidos?: Json | null
+          email?: string | null
+          estado?: Database["public"]["Enums"]["candidato_estado"]
+          id?: string
+          nombre: string
+          notas?: string | null
+          origen?: string
+          puesto_id?: string | null
+          scoring?: number | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Update: {
+          apellido?: string | null
+          creado_por?: string | null
+          created_at?: string
+          cv_url?: string | null
+          datos_extraidos?: Json | null
+          email?: string | null
+          estado?: Database["public"]["Enums"]["candidato_estado"]
+          id?: string
+          nombre?: string
+          notas?: string | null
+          origen?: string
+          puesto_id?: string | null
+          scoring?: number | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidatos_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "reclutamiento_puestos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capacitaciones: {
         Row: {
           activa: boolean
@@ -4380,6 +4442,336 @@ export type Database = {
             columns: ["plantilla_id"]
             isOneToOne: false
             referencedRelation: "plantillas_elementos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrevistas: {
+        Row: {
+          candidato_id: string
+          creado_por: string | null
+          created_at: string
+          direccion: string | null
+          estado: Database["public"]["Enums"]["entrevista_estado"]
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          notas: string | null
+          puesto_id: string | null
+          reservado_at: string | null
+          slot_id: string | null
+          sucursal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          candidato_id: string
+          creado_por?: string | null
+          created_at?: string
+          direccion?: string | null
+          estado?: Database["public"]["Enums"]["entrevista_estado"]
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          notas?: string | null
+          puesto_id?: string | null
+          reservado_at?: string | null
+          slot_id?: string | null
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          candidato_id?: string
+          creado_por?: string | null
+          created_at?: string
+          direccion?: string | null
+          estado?: Database["public"]["Enums"]["entrevista_estado"]
+          fecha?: string
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          notas?: string | null
+          puesto_id?: string | null
+          reservado_at?: string | null
+          slot_id?: string | null
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrevistas_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrevistas_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "reclutamiento_puestos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrevistas_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrevistas_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrevistas_config: {
+        Row: {
+          activo: boolean
+          created_at: string
+          direccion: string | null
+          duracion_minutos: number
+          id: string
+          mensaje_whatsapp: string | null
+          nombre: string
+          sucursal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          direccion?: string | null
+          duracion_minutos?: number
+          id?: string
+          mensaje_whatsapp?: string | null
+          nombre?: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          direccion?: string | null
+          duracion_minutos?: number
+          id?: string
+          mensaje_whatsapp?: string | null
+          nombre?: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrevistas_config_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrevistas_disponibilidad: {
+        Row: {
+          activo: boolean
+          config_id: string
+          created_at: string
+          dia_semana: number
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          config_id: string
+          created_at?: string
+          dia_semana: number
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          config_id?: string
+          created_at?: string
+          dia_semana?: number
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrevistas_disponibilidad_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrevistas_excepciones: {
+        Row: {
+          config_id: string
+          created_at: string
+          fecha: string
+          hora_fin: string | null
+          hora_inicio: string | null
+          id: string
+          motivo: string | null
+          tipo: Database["public"]["Enums"]["disponibilidad_excepcion_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          config_id: string
+          created_at?: string
+          fecha: string
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          id?: string
+          motivo?: string | null
+          tipo: Database["public"]["Enums"]["disponibilidad_excepcion_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          config_id?: string
+          created_at?: string
+          fecha?: string
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          id?: string
+          motivo?: string | null
+          tipo?: Database["public"]["Enums"]["disponibilidad_excepcion_tipo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrevistas_excepciones_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrevistas_invitaciones: {
+        Row: {
+          booked_at: string | null
+          candidato_id: string
+          config_id: string | null
+          creado_por: string | null
+          created_at: string
+          entrevista_id: string | null
+          estado: string
+          expira_at: string
+          id: string
+          invited_at: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          booked_at?: string | null
+          candidato_id: string
+          config_id?: string | null
+          creado_por?: string | null
+          created_at?: string
+          entrevista_id?: string | null
+          estado?: string
+          expira_at?: string
+          id?: string
+          invited_at?: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          booked_at?: string | null
+          candidato_id?: string
+          config_id?: string | null
+          creado_por?: string | null
+          created_at?: string
+          entrevista_id?: string | null
+          estado?: string
+          expira_at?: string
+          id?: string
+          invited_at?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrevistas_invitaciones_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrevistas_invitaciones_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrevistas_invitaciones_entrevista_id_fkey"
+            columns: ["entrevista_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrevistas_slots: {
+        Row: {
+          config_id: string
+          created_at: string
+          entrevista_id: string | null
+          estado: Database["public"]["Enums"]["slot_estado"]
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_id: string
+          created_at?: string
+          entrevista_id?: string | null
+          estado?: Database["public"]["Enums"]["slot_estado"]
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_id?: string
+          created_at?: string
+          entrevista_id?: string | null
+          estado?: Database["public"]["Enums"]["slot_estado"]
+          fecha?: string
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrevistas_slots_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_slot_entrevista"
+            columns: ["entrevista_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas"
             referencedColumns: ["id"]
           },
         ]
@@ -9169,6 +9561,33 @@ export type Database = {
           },
         ]
       }
+      reclutamiento_puestos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recorrido_criterios: {
         Row: {
           activo: boolean
@@ -11664,6 +12083,29 @@ export type Database = {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
+      entrevista_datos_invitacion: { Args: { _token: string }; Returns: Json }
+      entrevista_generar_token: { Args: never; Returns: string }
+      entrevista_liberar_slot: {
+        Args: { _entrevista_id: string }
+        Returns: boolean
+      }
+      entrevista_reservar: {
+        Args: { _slot_id: string; _token: string }
+        Returns: Json
+      }
+      entrevista_slots_publicos: {
+        Args: { _token: string }
+        Returns: {
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          slot_id: string
+        }[]
+      }
+      entrevistas_generar_slots: {
+        Args: { _config_id: string; _desde: string; _hasta: string }
+        Returns: number
+      }
       enviar_planificacion_a_validacion: {
         Args: { p_planificacion_id: string }
         Returns: undefined
@@ -12454,6 +12896,17 @@ export type Database = {
         | "otro"
       asignacion_estado: "pendiente" | "entregado"
       beneficiario_tipo: "empleado" | "grupo"
+      candidato_estado:
+        | "nuevo"
+        | "preseleccionado"
+        | "seleccionado_entrevista"
+        | "invitacion_generada"
+        | "pendiente_reserva"
+        | "entrevista_confirmada"
+        | "entrevistado"
+        | "no_asistio"
+        | "descartado"
+        | "seleccionado"
       centro_costo_tipo:
         | "operativo"
         | "ventas"
@@ -12465,6 +12918,13 @@ export type Database = {
       concepto_tipo: "remunerativo" | "no_remunerativo" | "deduccion"
       desafio_estado: "borrador" | "activo" | "finalizado"
       desafio_tipo_periodo: "semanal" | "mensual" | "semestral" | "anual"
+      disponibilidad_excepcion_tipo: "bloqueo_dia" | "disponibilidad_extra"
+      entrevista_estado:
+        | "pendiente"
+        | "confirmada"
+        | "realizada"
+        | "no_asistio"
+        | "cancelada"
       fichaje_estado: "valido" | "pendiente" | "rechazado" | "corregido"
       fichaje_metodo: "facial" | "manual" | "automatico" | "pin"
       fichaje_tipo: "entrada" | "salida" | "pausa_inicio" | "pausa_fin"
@@ -12492,6 +12952,7 @@ export type Database = {
         | "descuento"
         | "reconocimiento"
       recibo_concepto_tipo: "haber" | "descuento" | "contribucion"
+      slot_estado: "disponible" | "reservado" | "bloqueado"
       solicitud_estado:
         | "pendiente"
         | "aprobada"
@@ -12643,6 +13104,18 @@ export const Constants = {
       ],
       asignacion_estado: ["pendiente", "entregado"],
       beneficiario_tipo: ["empleado", "grupo"],
+      candidato_estado: [
+        "nuevo",
+        "preseleccionado",
+        "seleccionado_entrevista",
+        "invitacion_generada",
+        "pendiente_reserva",
+        "entrevista_confirmada",
+        "entrevistado",
+        "no_asistio",
+        "descartado",
+        "seleccionado",
+      ],
       centro_costo_tipo: [
         "operativo",
         "ventas",
@@ -12655,6 +13128,14 @@ export const Constants = {
       concepto_tipo: ["remunerativo", "no_remunerativo", "deduccion"],
       desafio_estado: ["borrador", "activo", "finalizado"],
       desafio_tipo_periodo: ["semanal", "mensual", "semestral", "anual"],
+      disponibilidad_excepcion_tipo: ["bloqueo_dia", "disponibilidad_extra"],
+      entrevista_estado: [
+        "pendiente",
+        "confirmada",
+        "realizada",
+        "no_asistio",
+        "cancelada",
+      ],
       fichaje_estado: ["valido", "pendiente", "rechazado", "corregido"],
       fichaje_metodo: ["facial", "manual", "automatico", "pin"],
       fichaje_tipo: ["entrada", "salida", "pausa_inicio", "pausa_fin"],
@@ -12685,6 +13166,7 @@ export const Constants = {
         "reconocimiento",
       ],
       recibo_concepto_tipo: ["haber", "descuento", "contribucion"],
+      slot_estado: ["disponible", "reservado", "bloqueado"],
       solicitud_estado: [
         "pendiente",
         "aprobada",
