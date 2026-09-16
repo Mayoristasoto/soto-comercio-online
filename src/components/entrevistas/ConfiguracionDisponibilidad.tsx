@@ -203,9 +203,9 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
   const slotsPorFecha = slots
     .filter((s) => s.fecha >= semanaInicio && s.fecha <= semanaFin)
     .reduce<Record<string, Slot[]>>((acc, s) => {
-    (acc[s.fecha] = acc[s.fecha] || []).push(s);
-    return acc;
-  }, {});
+      (acc[s.fecha] = acc[s.fecha] || []).push(s);
+      return acc;
+    }, {});
 
   return (
     <div className="space-y-4">
