@@ -130,6 +130,9 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
     if (error) toast.error(error.message);
   };
 
+  const semanaInicio = format(semanaRef, "yyyy-MM-dd");
+  const semanaFin = format(addDays(semanaRef, 6), "yyyy-MM-dd");
+
   const generarHorarios = async () => {
     if (!config) return;
     const hoy = format(new Date(), "yyyy-MM-dd");
