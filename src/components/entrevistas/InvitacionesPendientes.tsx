@@ -127,7 +127,9 @@ export default function InvitacionesPendientes({
                   return (
                     <TableRow key={i.id}>
                       <TableCell className="font-medium">
-                        {i.candidatos?.nombre} {i.candidatos?.apellido ?? ""}
+                        {i.candidatos?.nombre
+                          ? `${i.candidatos.nombre} ${i.candidatos.apellido ?? ""}`
+                          : "Enlace público (sin asignar)"}
                         {i.candidatos?.telefono && (
                           <div className="text-xs text-muted-foreground">{i.candidatos.telefono}</div>
                         )}
