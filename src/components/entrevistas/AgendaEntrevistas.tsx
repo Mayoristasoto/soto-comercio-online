@@ -20,6 +20,7 @@ import {
   Slot,
   hhmm,
 } from "./entrevistasTypes";
+import CalendarioEntrevistas from "./CalendarioEntrevistas";
 
 const db = supabase as any;
 
