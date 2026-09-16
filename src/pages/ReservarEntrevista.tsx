@@ -28,6 +28,8 @@ export default function ReservarEntrevista() {
   const [confirmada, setConfirmada] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [reservando, setReservando] = useState(false);
+  const [puestos, setPuestos] = useState<{ id: string; nombre: string }[]>([]);
+  const [form, setForm] = useState({ nombre: "", apellido: "", telefono: "", puesto_id: "" });
 
   const cargar = useCallback(async () => {
     if (!token) return;
@@ -38,6 +40,10 @@ export default function ReservarEntrevista() {
       if (info?.valido && !info?.reservada) {
         const { data: libres } = await db.rpc("entrevista_slots_publicos", { _token: token });
         setSlots(libres || []);
+        if (info?.tipo === "abierta") {
+          const { data: ps } = await db.rpc("entrevista_puestos_publicos", { _token: token });
+          setPuestos(ps || []);
+        }
       }
     } finally {
       setCargando(false);
@@ -48,11 +54,24 @@ export default function ReservarEntrevista() {
     cargar();
   }, [cargar]);
 
+  const abierta = datos?.tipo === "abierta";
+
   const reservar = async () => {
     if (!elegido || !token) return;
+    if (abierta && (!form.nombre.trim() || !form.telefono.trim())) {
+      toast.error("Completá tu nombre y tu teléfono");
+      return;
+    }
     setReservando(true);
     try {
-      const { data, error } = await db.rpc("entrevista_reservar", { _token: token, _slot_id: elegido.slot_id });
+      const { data, error } = await db.rpc("entrevista_reservar_abierta", {
+        _token: token,
+        _slot_id: elegido.slot_id,
+        _nombre: abierta ? form.nombre : datos?.nombre || "Candidato",
+        _apellido: abierta ? form.apellido : "",
+        _telefono: abierta ? form.telefono : "",
+        _puesto_id: abierta && form.puesto_id ? form.puesto_id : null,
+      });
       if (error) throw error;
       if (!data?.ok) {
         if (data?.motivo === "slot_ocupado") {
