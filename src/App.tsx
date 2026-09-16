@@ -105,6 +105,8 @@ import OptimizadorHorarios from "./pages/OptimizadorHorarios";
 import ControlesDashboard from "./pages/ControlesDashboard";
 import RecorridoSalon from "./pages/RecorridoSalon";
 import RecorridoDetalle from "./pages/RecorridoDetalle";
+import Entrevistas from "./pages/Entrevistas";
+import ReservarEntrevista from "./pages/ReservarEntrevista";
 
 const queryClient = new QueryClient();
 
@@ -201,6 +203,7 @@ const App = () => (
              <Route path="rrhh/encuestas" element={<EncuestasClientes />} />
              <Route path="rrhh/recorrido" element={<RecorridoSalon />} />
              <Route path="rrhh/recorrido/:id" element={<RecorridoDetalle />} />
+            <Route path="rrhh/entrevistas" element={<Entrevistas />} />
             <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
@@ -308,6 +311,7 @@ const App = () => (
           <Route path="/reporte-gerentes-tarde" element={<ReporteLlegadasTardeGerentes />} />
           
           {/* Calificación de empleados (página pública) */}
+          <Route path="/entrevista/reservar/:token" element={<ReservarEntrevista />} />
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />
           <Route path="/calificar-v2/:token" element={<CalificarEmpleadoV2 />} />
 
