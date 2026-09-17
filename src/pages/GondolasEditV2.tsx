@@ -916,6 +916,26 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
         </Card>
 
         
+        {!sucursalId && (
+          <Card>
+            <CardContent className="flex flex-wrap items-center gap-3 py-4">
+              <span className="text-sm font-medium">Sucursal del mapa</span>
+              <select
+                className="h-9 rounded-md border bg-background px-3 text-sm"
+                value={sucursalSel ?? ''}
+                onChange={(e) => setSucursalSel(e.target.value)}
+              >
+                {sucursales.map(s => (
+                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                ))}
+              </select>
+              <span className="text-xs text-muted-foreground">
+                Es el mismo mapa que se controla en Recorrido de Salón: lo editás acá y se actualiza allá.
+              </span>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs defaultValue="layout" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="layout">Layout de Góndolas</TabsTrigger>

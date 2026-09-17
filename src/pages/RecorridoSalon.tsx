@@ -294,7 +294,7 @@ const RecorridoSalon = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <GondolasEditV2 embedded />
+              <GondolasEditV2 embedded sucursalId={sucursalSel} />
             </CardContent>
           </Card>
         </TabsContent>
