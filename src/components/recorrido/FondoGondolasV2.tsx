@@ -39,7 +39,7 @@ export const gondolaAPorcentaje = (g: GondolaV2, b: BBox) => ({
 export const cargarGondolasV2 = async (sucursalId?: string | null): Promise<GondolaV2[]> => {
   let q = supabase
     .from("gondolas_v2")
-    .select("id, type, section, status, position_x, position_y, position_width, position_height")
+    .select("id, type, section, status, position_x, position_y, position_width, position_height, rotation")
     .order("created_at", { ascending: true });
   if (sucursalId) q = q.eq("sucursal_id", sucursalId);
   const { data } = await q;
@@ -52,6 +52,7 @@ export const cargarGondolasV2 = async (sucursalId?: string | null): Promise<Gond
     y: Number(d.position_y),
     width: Number(d.position_width),
     height: Number(d.position_height),
+    rotation: Number(d.rotation ?? 0),
   }));
 };
 
@@ -122,6 +123,7 @@ export function FondoGondolasV2({
             stroke={c.stroke}
             strokeWidth={2}
             rx={4}
+            transform={g.rotation ? `rotate(${g.rotation} ${g.x + g.width / 2} ${g.y + g.height / 2})` : undefined}
           />
         );
       })}
