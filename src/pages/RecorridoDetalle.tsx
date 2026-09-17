@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { PlanoCanvas, type PinPunto } from "@/components/recorrido/PlanoCanvas";
 import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
 import { HistorialRecorridoV2 } from "@/components/recorrido/HistorialRecorridoV2";
+import { sincronizarEspaciosDesdeGondolas } from "@/components/recorrido/sincronizarEspacios";
 import {
   ESTADO_HALLAZGO_LABEL,
   TIPO_ESPACIO_LABEL,
