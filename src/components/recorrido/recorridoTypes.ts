@@ -34,6 +34,8 @@ export interface RecorridoZona {
   y: number;
   width: number;
   height: number;
+  /** ángulo en grados del recuadro (igual que en el mapa de góndolas) */
+  rotation?: number | null;
 }
 
 /** Punto controlable dentro de una zona (ej: góndola 3 del pasillo 1) */
@@ -47,6 +49,7 @@ export interface RecorridoPunto {
   width: number;
   height: number;
   orden: number;
+  rotation?: number | null;
   /** tipo del espacio del layout (gondola | puntera | exhibidor_impulso | cartel_exterior) */
   tipo_espacio?: string | null;
 }
