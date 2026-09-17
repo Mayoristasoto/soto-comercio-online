@@ -25,7 +25,9 @@ import {
   History,
   Shield,
   Briefcase,
-  Package
+  Package,
+  Map as MapIcon,
+  X
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
@@ -93,8 +95,21 @@ const iconMap: Record<string, any> = {
   Medal: Award,
   AlertTriangle,
   History,
-  Package
+  Package,
+  Map: MapIcon,
+  Monitor: Building2,
+  Camera: Building2
 }
+
+// Secciones que no están en app_pages pero se pueden fijar como acceso rápido
+const SECCIONES_EXTRA: { path: string; nombre: string; icon: string; grupo?: string }[] = [
+  { path: "/rrhh/recorrido", nombre: "Recorrido de Salón", icon: "Map", grupo: "Operaciones" },
+  { path: "/rrhh/checklist", nombre: "Checklist de Control", icon: "ClipboardCheck", grupo: "Operaciones" },
+  { path: "/rrhh/entrevistas", nombre: "Entrevistas", icon: "Calendar", grupo: "RRHH" },
+  { path: "/controles", nombre: "Controles", icon: "Shield", grupo: "Operaciones" },
+  { path: "/centro-accesos", nombre: "Centro de accesos", icon: "Home", grupo: "Mi cuenta" },
+  { path: "/mi-configuracion", nombre: "Mi Configuración", icon: "Settings", grupo: "Mi cuenta" },
+]
 
 // Mapa de colores para cada icono
 const iconColors: Record<string, string> = {
@@ -142,7 +157,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const { theme, setTheme } = useTheme()
   const { links, loading } = useSidebarLinks(userInfo?.rol || null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
-  const { accesos, toggle: toggleAcceso } = useAccesosRapidos(userInfo?.id)
+  const { accesos, toggle: toggleAcceso, quitar: quitarAcceso } = useAccesosRapidos(userInfo?.id)
   const [dialogAccesos, setDialogAccesos] = useState(false)
 
   // Secciones disponibles (aplanadas) para elegir accesos rápidos
@@ -159,7 +174,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
     }
     walk(links as any[])
     const seen = new Set<string>()
-    return out.filter((s) => (seen.has(s.path) ? false : (seen.add(s.path), true)))
+    return [...out, ...SECCIONES_EXTRA].filter((s) =>
+      seen.has(s.path) ? false : (seen.add(s.path), true)
+    )
   }, [links])
 
   const currentFullPath = `${location.pathname}${location.hash || ''}`
@@ -276,7 +293,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                 const AccesoIcon = getIcon(acceso.icon)
                 const activo = isActive(acceso.path)
                 return (
-                  <SidebarMenuItem key={acceso.path}>
+                  <SidebarMenuItem key={acceso.path} className="group/acceso">
                     <SidebarMenuButton
                       asChild
                       isActive={activo}
@@ -286,9 +303,20 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                       <NavLink to={acceso.path} className="flex items-center gap-2">
                         <AccesoIcon className="h-4 w-4 shrink-0" />
                         <span className="truncate text-sm">{acceso.nombre}</span>
-                        <Star className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+                        <Star className="ml-auto h-3 w-3 shrink-0 text-muted-foreground group-hover/acceso:hidden" />
                       </NavLink>
                     </SidebarMenuButton>
+                    <button
+                      type="button"
+                      title="Quitar acceso"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        quitarAcceso(acceso.path)
+                      }}
+                      className="absolute right-1 top-1/2 hidden -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/acceso:block"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </SidebarMenuItem>
                 )
               })}
