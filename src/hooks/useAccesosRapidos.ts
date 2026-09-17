@@ -12,6 +12,15 @@ const storageKey = (userId?: string | null) => `${STORAGE_PREFIX}:${userId || "a
 
 const DEFAULTS: AccesoRapido[] = [
   { path: "/rrhh/checklist", nombre: "Checklist de Control", icon: "ClipboardCheck" },
+  { path: "/rrhh/recorrido", nombre: "Recorrido de Salón", icon: "Map" },
+];
+
+// Accesos que se agregan una sola vez a usuarios que ya tenían su lista guardada
+const SEEDS: { flag: string; acceso: AccesoRapido }[] = [
+  {
+    flag: "seed_recorrido_v1",
+    acceso: { path: "/rrhh/recorrido", nombre: "Recorrido de Salón", icon: "Map" },
+  },
 ];
 
 export function useAccesosRapidos(userId?: string | null) {
@@ -23,7 +32,20 @@ export function useAccesosRapidos(userId?: string | null) {
       const raw = localStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw);
-        setAccesos(Array.isArray(parsed) ? parsed : DEFAULTS);
+        let lista: AccesoRapido[] = Array.isArray(parsed) ? parsed : DEFAULTS;
+        let cambio = false;
+        for (const { flag, acceso } of SEEDS) {
+          const flagKey = `${key}:${flag}`;
+          if (!localStorage.getItem(flagKey)) {
+            localStorage.setItem(flagKey, "1");
+            if (!lista.some((a) => a.path === acceso.path)) {
+              lista = [...lista, acceso];
+              cambio = true;
+            }
+          }
+        }
+        if (cambio) localStorage.setItem(key, JSON.stringify(lista));
+        setAccesos(lista);
       } else {
         setAccesos(DEFAULTS);
       }
