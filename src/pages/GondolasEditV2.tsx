@@ -33,7 +33,7 @@ export interface Gondola {
   image_url?: string | null; // URL de la imagen subida
 }
 
-const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; sucursalId?: string | null } = {}) => {
+const GondolasEditV2 = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -56,35 +56,6 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
   const [selectedGraphicElement, setSelectedGraphicElement] = useState<GraphicElement | null>(null);
   const [isViewportSelecting, setIsViewportSelecting] = useState(false);
   const [isCreating, setIsCreating] = useState<'gondola' | 'puntera' | 'cartel_exterior' | 'exhibidor_impulso' | null>(null);
-
-  // Sucursal del mapa: un solo set de recuadros por sucursal (mismo que usa el recorrido)
-  const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
-  const [sucursalSel, setSucursalSel] = useState<string | null>(sucursalId ?? localStorage.getItem('gondolas_v2_sucursal'));
-
-  useEffect(() => {
-    if (sucursalId) setSucursalSel(sucursalId);
-  }, [sucursalId]);
-
-  useEffect(() => {
-    supabase
-      .from('sucursales')
-      .select('id, nombre')
-      .eq('activa', true)
-      .order('nombre')
-      .then(({ data }) => {
-        const lista = data ?? [];
-        setSucursales(lista);
-        setSucursalSel(prev => prev ?? lista[0]?.id ?? null);
-      });
-  }, []);
-
-  useEffect(() => {
-    if (!sucursalSel) return;
-    if (!sucursalId) localStorage.setItem('gondolas_v2_sucursal', sucursalSel);
-    setSelectedGondola(null);
-    setSelectedIds([]);
-    loadGondolas(sucursalSel);
-  }, [sucursalSel]);
   
   const occupiedCount = gondolas.filter(g => g.status === 'occupied').length;
   const availableCount = gondolas.filter(g => g.status === 'available').length;
@@ -228,20 +199,18 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
   };
 
   // Load gondolas from Supabase
-  const loadGondolas = async (suc?: string | null) => {
-    const target = suc ?? sucursalSel;
+  const loadGondolas = async () => {
     try {
-      console.log('🔄 [EDITOR] Cargando góndolas desde Supabase...', target);
-      let query = supabase
+      console.log('🔄 [EDITOR] Cargando góndolas desde Supabase...');
+      const { data, error } = await supabase
         .from('gondolas_v2')
         .select('*')
         .order('created_at', { ascending: true });
-      if (target) query = query.eq('sucursal_id', target);
-      const { data, error } = await query;
 
       if (error) {
         console.error('❌ [EDITOR] Error loading gondolas:', error);
-        setGondolas([]);
+        // If no data in Supabase, initialize with default data
+        await initializeDefaultData();
         return;
       }
 
@@ -267,8 +236,8 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
         }));
         setGondolas(formattedGondolas);
       } else {
-        console.log('⚠️ [EDITOR] Esta sucursal todavía no tiene góndolas cargadas');
-        setGondolas([]);
+        console.log('⚠️ [EDITOR] Sin datos en BD, inicializando con datos por defecto');
+        await initializeDefaultData();
       }
     } catch (error) {
       console.error('Error loading gondolas:', error);
@@ -305,8 +274,7 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
         section: gondola.section,
         end_date: gondola.endDate || null,
         notes: gondola.notes || null,
-        image_url: gondola.image_url || null,
-        sucursal_id: sucursalSel
+        image_url: gondola.image_url || null
       };
 
       const { error } = await supabase
@@ -501,7 +469,7 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
       const { error: deleteError } = await supabase
         .from('gondolas_v2')
         .delete()
-        .eq('sucursal_id', sucursalSel ?? ''); // Solo el mapa de esta sucursal
+        .neq('id', ''); // Delete all rows
 
       if (deleteError) {
         console.error('Error deleting gondolas:', deleteError);
@@ -544,7 +512,7 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
             const { error: deleteError } = await supabase
               .from('gondolas_v2')
               .delete()
-              .eq('sucursal_id', sucursalSel ?? '');
+              .neq('id', '');
 
             if (deleteError) {
               console.error('Error deleting gondolas:', deleteError);
@@ -916,26 +884,6 @@ const GondolasEditV2 = ({ embedded = false, sucursalId }: { embedded?: boolean; 
         </Card>
 
         
-        {!sucursalId && (
-          <Card>
-            <CardContent className="flex flex-wrap items-center gap-3 py-4">
-              <span className="text-sm font-medium">Sucursal del mapa</span>
-              <select
-                className="h-9 rounded-md border bg-background px-3 text-sm"
-                value={sucursalSel ?? ''}
-                onChange={(e) => setSucursalSel(e.target.value)}
-              >
-                {sucursales.map(s => (
-                  <option key={s.id} value={s.id}>{s.nombre}</option>
-                ))}
-              </select>
-              <span className="text-xs text-muted-foreground">
-                Es el mismo mapa que se controla en Recorrido de Salón: lo editás acá y se actualiza allá.
-              </span>
-            </CardContent>
-          </Card>
-        )}
-
         <Tabs defaultValue="layout" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="layout">Layout de Góndolas</TabsTrigger>

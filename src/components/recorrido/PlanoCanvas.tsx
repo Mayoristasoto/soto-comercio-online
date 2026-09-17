@@ -104,13 +104,7 @@ export function PlanoCanvas({
         <div
           key={z.id}
           className={`absolute border-2 rounded-sm cursor-pointer transition-colors ${colorZona(z)}`}
-          style={{
-            left: `${z.x}%`,
-            top: `${z.y}%`,
-            width: `${z.width}%`,
-            height: `${z.height}%`,
-            transform: z.rotation ? `rotate(${z.rotation}deg)` : undefined,
-          }}
+          style={{ left: `${z.x}%`, top: `${z.y}%`, width: `${z.width}%`, height: `${z.height}%` }}
           title={z.nombre}
         />
       ))}
@@ -128,13 +122,7 @@ export function PlanoCanvas({
           <div
             key={p.id}
             className={`absolute border rounded-sm cursor-pointer ${base} ${p.id === puntoSeleccionadoId ? "ring-2 ring-primary" : ""}`}
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: `${p.width}%`,
-              height: `${p.height}%`,
-              transform: p.rotation ? `rotate(${p.rotation}deg)` : undefined,
-            }}
+            style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.width}%`, height: `${p.height}%` }}
             title={p.nombre}
             onClick={(e) => { e.stopPropagation(); onPuntoClick?.(p); }}
           />

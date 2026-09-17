@@ -22,7 +22,7 @@ import {
 import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
 import { fondoDe } from "@/components/recorrido/planosFondo";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
-import { sincronizarEspaciosDesdeGondolas } from "@/components/recorrido/sincronizarEspacios";
+import { cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
 
 interface Sucursal { id: string; nombre: string }
 interface Empleado { id: string; nombre: string; apellido: string; sucursal_id?: string | null }
@@ -80,15 +80,77 @@ const RecorridoSalon = () => {
   useEffect(() => { cargarBase(); cargarPlanos(); }, []);
   useEffect(() => { if (sucursales.length) cargarRecorridos(); }, [sucursales]);
 
-  /** Deja el plano del recorrido igual al mapa de góndolas de la sucursal (un solo set de recuadros) */
+  /** Arranca de cero: copia el layout de la sucursal y crea un control por cada góndola */
   const empezarDeCeroConGondolas = async () => {
     if (!sucursalSel) return toast.error("Elegí primero la sucursal");
     const nombreSuc = sucursales.find((s) => s.id === sucursalSel)?.nombre ?? "Plano";
+    if (!confirm(`Se van a borrar los pasillos y góndolas cargados de ${nombreSuc} y se vuelven a crear desde el layout. ¿Seguir?`)) return;
     setRegenerando(true);
     try {
-      const res = await sincronizarEspaciosDesdeGondolas(sucursalSel, nombreSuc);
-      if (!res) throw new Error("El mapa de góndolas de esta sucursal está vacío");
-      toast.success(`${res.total} espacios listos para controlar en ${nombreSuc}`);
+      const gondolas = await cargarGondolasV2(sucursalSel);
+      if (!gondolas.length) throw new Error("El layout no tiene góndolas todavía");
+      // plano de la sucursal (usa el layout como fondo)
+      const fondo = fondoDe(sucursalSel);
+      // El recorrido conserva exactamente el encuadre completo del editor.
+      const bbox = { x: 0, y: 0, width: fondo.width, height: fondo.height };
+      let planoId = planos.find((p) => p.sucursal_id === sucursalSel)?.id ?? null;
+      if (planoId) {
+        await supabase
+          .from("recorrido_planos")
+          .update({ usa_gondolas: true, ancho: fondo.width, alto: fondo.height })
+          .eq("id", planoId);
+      } else {
+        const { data, error } = await supabase
+          .from("recorrido_planos")
+          .insert({ sucursal_id: sucursalSel, nombre: `Plano ${nombreSuc}`, ancho: fondo.width, alto: fondo.height, usa_gondolas: true })
+          .select("id")
+          .single();
+        if (error || !data) throw error ?? new Error("plano");
+        planoId = data.id;
+      }
+
+      // limpiar zonas y puntos anteriores (sin perder los hallazgos históricos)
+      const { data: zonasPrev } = await supabase.from("recorrido_zonas").select("id").eq("plano_id", planoId);
+      const idsZonas = (zonasPrev ?? []).map((z: { id: string }) => z.id);
+      if (idsZonas.length) {
+        const { data: puntosPrev } = await supabase.from("recorrido_puntos").select("id").in("zona_id", idsZonas);
+        const idsPuntos = (puntosPrev ?? []).map((p: { id: string }) => p.id);
+        if (idsPuntos.length) {
+          await supabase.from("recorrido_hallazgos").update({ punto_id: null }).in("punto_id", idsPuntos);
+          await supabase.from("recorrido_puntos").delete().in("id", idsPuntos);
+        }
+        await supabase.from("recorrido_hallazgos").update({ zona_id: null }).in("zona_id", idsZonas);
+        await supabase.from("recorrido_zonas").delete().in("id", idsZonas);
+      }
+
+      // una zona por espacio del mapa + su punto de control
+      const filasZonas = gondolas.map((g, i) => ({
+        plano_id: planoId as string,
+        nombre: `${TIPO_ESPACIO_LABEL[g.type as TipoEspacio] ?? g.type} ${g.section}`,
+        orden: i,
+        ...gondolaAPorcentaje(g, bbox),
+      }));
+      const { data: zonasNuevas, error: errZ } = await supabase
+        .from("recorrido_zonas")
+        .insert(filasZonas)
+        .select("id, orden");
+      if (errZ || !zonasNuevas) throw errZ ?? new Error("zonas");
+
+      const porOrden = new Map((zonasNuevas as { id: string; orden: number }[]).map((z) => [z.orden, z.id]));
+      const filasPuntos = gondolas
+        .map((g, i) => ({ g, i }))
+        .filter(({ i }) => porOrden.has(i))
+        .map(({ g, i }) => ({
+          zona_id: porOrden.get(i) as string,
+          nombre: g.section,
+          gondola_ref: g.id,
+          tipo_espacio: g.type,
+          orden: i,
+          ...gondolaAPorcentaje(g, bbox),
+        }));
+      if (filasPuntos.length) await supabase.from("recorrido_puntos").insert(filasPuntos);
+
+      toast.success(`${gondolas.length} espacios listos para controlar en ${nombreSuc}`);
       await cargarPlanos();
     } catch (e: any) {
       toast.error(e?.message ?? "No se pudo armar el plano");
@@ -294,7 +356,7 @@ const RecorridoSalon = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <GondolasEditV2 embedded sucursalId={sucursalSel} />
+              <GondolasEditV2 embedded />
             </CardContent>
           </Card>
         </TabsContent>
