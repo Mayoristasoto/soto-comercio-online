@@ -1,0 +1,1 @@
+ALTER TABLE public.gondolas_v2 ADD COLUMN IF NOT EXISTS rotation numeric NOT NULL DEFAULT 0;
