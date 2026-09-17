@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, Grid3X3, ListOrdered, MousePointer2, Pencil, PlusSquare, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, Grid3X3, ListOrdered, MousePointer2, Pencil, PlusSquare, RotateCcw, RotateCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cargarGondolasV2, type BBox, type GondolaV2 } from "./FondoGondolasV2";
 import { TIPO_ESPACIO_LABEL, TIPOS_ESPACIO, type TipoEspacio } from "./recorridoTypes";
@@ -219,6 +219,18 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
     if (selId === g.id) setSelId(null);
     onChange?.();
   };
+
+  /** Guarda el ángulo de la góndola seleccionada (0-359 grados) */
+  const aplicarRotacion = useCallback(async (grados: number, absoluto = false) => {
+    if (!sel) return;
+    const actual = Number(sel.rotation ?? 0);
+    let valor = absoluto ? grados : actual + grados;
+    valor = ((Math.round(valor) % 360) + 360) % 360;
+    const { error } = await supabase.from("gondolas_v2").update({ rotation: valor }).eq("id", sel.id);
+    if (error) return toast.error("No se pudo rotar la góndola");
+    setEspacios((prev) => prev.map((g) => (g.id === sel.id ? { ...g, rotation: valor } : g)));
+    onChange?.();
+  }, [onChange, sel]);
 
   const moverConFlecha = useCallback(async (dx: number, dy: number) => {
     if (!sel) return;
