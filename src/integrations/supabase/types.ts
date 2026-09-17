@@ -6249,6 +6249,7 @@ export type Database = {
           position_width: number
           position_x: number
           position_y: number
+          rotation: number
           section: string
           status: string
           sucursal_id: string | null
@@ -6267,6 +6268,7 @@ export type Database = {
           position_width: number
           position_x: number
           position_y: number
+          rotation?: number
           section: string
           status: string
           sucursal_id?: string | null
@@ -6285,6 +6287,7 @@ export type Database = {
           position_width?: number
           position_x?: number
           position_y?: number
+          rotation?: number
           section?: string
           status?: string
           sucursal_id?: string | null
