@@ -58,7 +58,7 @@ export async function sincronizarEspaciosDesdeGondolas(
     `${TIPO_ESPACIO_LABEL[tipo as TipoEspacio] ?? tipo} ${section}`;
 
   // 1) actualizar las que ya existen
-  const nuevas = [] as { ref: string; fila: Record<string, unknown> }[];
+  const nuevas: any[] = [];
   for (let i = 0; i < gondolas.length; i++) {
     const g = gondolas[i];
     const pct = gondolaAPorcentaje(g, bbox);
@@ -86,7 +86,7 @@ export async function sincronizarEspaciosDesdeGondolas(
         await supabase.from("recorrido_puntos").insert({ zona_id: zonaId, ...datosPunto });
       }
     } else {
-      nuevas.push({ ref: g.id, fila: { plano_id: planoId, gondola_ref: g.id, ...datos } });
+      nuevas.push({ plano_id: planoId as string, gondola_ref: g.id, ...datos });
     }
   }
 
@@ -94,7 +94,7 @@ export async function sincronizarEspaciosDesdeGondolas(
   if (nuevas.length) {
     const { data: creadas, error } = await supabase
       .from("recorrido_zonas")
-      .insert(nuevas.map((n) => n.fila))
+      .insert(nuevas)
       .select("id, gondola_ref, orden");
     if (error) throw error;
     const filasPuntos = (creadas ?? []).map((z: any) => {
