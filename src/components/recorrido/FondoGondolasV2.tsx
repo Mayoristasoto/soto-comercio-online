@@ -11,6 +11,8 @@ export interface GondolaV2 {
   y: number;
   width: number;
   height: number;
+  /** Ángulo en grados (0 = sin rotar) */
+  rotation: number;
 }
 
 export interface BBox { x: number; y: number; width: number; height: number }
