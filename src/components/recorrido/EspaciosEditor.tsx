@@ -394,7 +394,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
             <div
               key={g.id}
               className={`absolute border-2 rounded-sm flex items-center justify-center text-[10px] font-semibold text-slate-700 ${colorEstado(g.status)} ${selId === g.id ? "ring-2 ring-primary" : ""}`}
-              style={aPct(box)}
+              style={{ ...aPct(box), transform: g.rotation ? `rotate(${g.rotation}deg)` : undefined }}
               onPointerDown={(e) => onPointerDownEspacio(e, g)}
               onDoubleClick={(e) => { e.stopPropagation(); abrirEdicion(g); }}
               title={`${TIPO_ESPACIO_LABEL[(g.type as TipoEspacio)] ?? g.type} ${g.section}`}
@@ -432,6 +432,24 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
             <Button className="col-start-3 row-start-2" size="icon" variant="outline" onClick={() => moverConFlecha(1, 0)} title="Mover a la derecha">
               <ArrowRight className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="flex items-center gap-1" aria-label="Rotar góndola">
+            <Button size="icon" variant="outline" onClick={() => aplicarRotacion(-15)} title="Rotar 15° a la izquierda">
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+            <Input
+              type="number"
+              className="h-9 w-20"
+              value={Math.round(Number(sel.rotation ?? 0))}
+              onChange={(e) => aplicarRotacion(Number(e.target.value) || 0, true)}
+              title="Ángulo en grados"
+            />
+            <span className="text-xs text-muted-foreground">°</span>
+            <Button size="icon" variant="outline" onClick={() => aplicarRotacion(15)} title="Rotar 15° a la derecha">
+              <RotateCw className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => aplicarRotacion(0, true)} title="Volver a 0°">0°</Button>
+            <Button size="sm" variant="ghost" onClick={() => aplicarRotacion(90, true)} title="Poner a 90°">90°</Button>
           </div>
           <Button size="sm" variant="outline" onClick={() => abrirEdicion(sel)}><Pencil className="h-4 w-4 mr-1" /> Editar</Button>
           <Button size="sm" variant="outline" onClick={duplicar}><Copy className="h-4 w-4 mr-1" /> Duplicar</Button>
