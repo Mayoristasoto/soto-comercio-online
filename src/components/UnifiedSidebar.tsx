@@ -25,7 +25,9 @@ import {
   History,
   Shield,
   Briefcase,
-  Package
+  Package,
+  Map as MapIcon,
+  X
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
