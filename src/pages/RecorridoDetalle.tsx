@@ -57,6 +57,15 @@ const RecorridoDetalle = () => {
     setCriterios((cri as RecorridoCriterio[]) ?? []);
     setHallazgos((hal as RecorridoHallazgo[]) ?? []);
 
+    // El mapa del recorrido siempre refleja el mapa de góndolas de la sucursal
+    if (rec.estado !== "completado") {
+      try {
+        await sincronizarEspaciosDesdeGondolas(rec.sucursal_id, suc?.nombre ?? "Plano");
+      } catch {
+        /* si falla la sincronización, se muestra el plano tal como está guardado */
+      }
+    }
+
     const planoId = rec.plano_id;
     const planoQuery = planoId
       ? supabase.from("recorrido_planos").select("*").eq("id", planoId).maybeSingle()
