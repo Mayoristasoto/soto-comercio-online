@@ -22,7 +22,7 @@ import {
 import { EspaciosEditor } from "@/components/recorrido/EspaciosEditor";
 import { fondoDe } from "@/components/recorrido/planosFondo";
 import GondolasEditV2 from "@/pages/GondolasEditV2";
-import { cargarGondolasV2, gondolaAPorcentaje } from "@/components/recorrido/FondoGondolasV2";
+import { sincronizarEspaciosDesdeGondolas } from "@/components/recorrido/sincronizarEspacios";
 
 interface Sucursal { id: string; nombre: string }
 interface Empleado { id: string; nombre: string; apellido: string; sucursal_id?: string | null }
