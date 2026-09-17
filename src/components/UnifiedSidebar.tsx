@@ -93,8 +93,21 @@ const iconMap: Record<string, any> = {
   Medal: Award,
   AlertTriangle,
   History,
-  Package
+  Package,
+  Map: MapIcon,
+  Monitor: Building2,
+  Camera: Building2
 }
+
+// Secciones que no están en app_pages pero se pueden fijar como acceso rápido
+const SECCIONES_EXTRA: { path: string; nombre: string; icon: string; grupo?: string }[] = [
+  { path: "/rrhh/recorrido", nombre: "Recorrido de Salón", icon: "Map", grupo: "Operaciones" },
+  { path: "/rrhh/checklist", nombre: "Checklist de Control", icon: "ClipboardCheck", grupo: "Operaciones" },
+  { path: "/rrhh/entrevistas", nombre: "Entrevistas", icon: "Calendar", grupo: "RRHH" },
+  { path: "/controles", nombre: "Controles", icon: "Shield", grupo: "Operaciones" },
+  { path: "/centro-accesos", nombre: "Centro de accesos", icon: "Home", grupo: "Mi cuenta" },
+  { path: "/mi-configuracion", nombre: "Mi Configuración", icon: "Settings", grupo: "Mi cuenta" },
+]
 
 // Mapa de colores para cada icono
 const iconColors: Record<string, string> = {
