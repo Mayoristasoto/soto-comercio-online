@@ -9899,6 +9899,7 @@ export type Database = {
           id: string
           nombre: string
           orden: number
+          rotation: number
           tipo_espacio: string | null
           updated_at: string
           width: number
@@ -9913,6 +9914,7 @@ export type Database = {
           id?: string
           nombre: string
           orden?: number
+          rotation?: number
           tipo_espacio?: string | null
           updated_at?: string
           width?: number
@@ -9927,6 +9929,7 @@ export type Database = {
           id?: string
           nombre?: string
           orden?: number
+          rotation?: number
           tipo_espacio?: string | null
           updated_at?: string
           width?: number
@@ -9947,11 +9950,13 @@ export type Database = {
       recorrido_zonas: {
         Row: {
           created_at: string
+          gondola_ref: string | null
           height: number
           id: string
           nombre: string
           orden: number
           plano_id: string
+          rotation: number
           updated_at: string
           width: number
           x: number
@@ -9959,11 +9964,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          gondola_ref?: string | null
           height?: number
           id?: string
           nombre: string
           orden?: number
           plano_id: string
+          rotation?: number
           updated_at?: string
           width?: number
           x?: number
@@ -9971,11 +9978,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          gondola_ref?: string | null
           height?: number
           id?: string
           nombre?: string
           orden?: number
           plano_id?: string
+          rotation?: number
           updated_at?: string
           width?: number
           x?: number
