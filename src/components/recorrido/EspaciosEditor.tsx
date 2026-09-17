@@ -202,6 +202,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
       position_y: sel.y,
       position_width: sel.width,
       position_height: sel.height,
+      rotation: sel.rotation ?? 0,
       sucursal_id: sucursalId ?? null,
     };
     const { error } = await supabase.from("gondolas_v2").insert(fila);
@@ -301,6 +302,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
       position_y: sel.y + dy * (i + 1),
       position_width: sel.width,
       position_height: sel.height,
+      rotation: sel.rotation ?? 0,
       sucursal_id: sucursalId ?? null,
     }));
     setGuardando(true);
