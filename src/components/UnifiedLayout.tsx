@@ -36,7 +36,23 @@ export default function UnifiedLayout() {
     avatar_url?: string
   } | null>(null)
 
-  const isGerenteUser = userInfo?.rol === 'gerente_sucursal'
+  // Vista simulada de rol (solo admin_rrhh): la UI usa el rol efectivo
+  const preview = useRolePreview()
+  useEffect(() => {
+    preview?.setRolReal(userInfo?.rol ?? null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo?.rol])
+
+  const rolEfectivo = preview?.enPreview ? preview.rolEfectivo! : userInfo?.rol ?? null
+  const enPreview = !!preview?.enPreview
+  const userInfoVista = userInfo ? { ...userInfo, rol: rolEfectivo ?? userInfo.rol } : null
+
+  const volverAMiVista = () => {
+    preview?.setRolVista(null)
+    navigate('/dashboard', { replace: true })
+  }
+
+  const isGerenteUser = rolEfectivo === 'gerente_sucursal'
   const { accesos, loading: loadingAccesos } = useEncargadoAccesos()
 
   // Los gerentes solo pueden navegar a los destinos de las tarjetas de su panel
