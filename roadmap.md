@@ -12,3 +12,8 @@
 - [x] Página pública móvil de autoreserva sin login.
 - [x] Cancelar / marcar realizada / no asistió, liberando el horario.
 - [ ] Etapas siguientes: formulario público "Trabajá con nosotros", carga de CV, preguntas de preselección, scoring/ranking y envío automático por WhatsApp.
+
+## Control de insumos
+- [ ] Sucursales limitadas a Olazar 26, Juan B. Justo y José Martí.
+- [ ] Cierre de control: una vez cerrado no se edita; se abre un control nuevo.
+- [ ] Reabrir un control cerrado: solo admin_rrhh.
