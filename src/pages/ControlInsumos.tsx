@@ -674,6 +674,7 @@ export default function ControlInsumos() {
                         <Switch
                           checked={r.necesita_reposicion}
                           onCheckedChange={(v) => set(i.id, { necesita_reposicion: v })}
+                          disabled={cerrado}
                         />
                         <span className="text-xs text-muted-foreground md:hidden">Reponer</span>
                       </div>
