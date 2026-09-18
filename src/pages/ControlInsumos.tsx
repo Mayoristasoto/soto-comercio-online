@@ -127,7 +127,9 @@ export default function ControlInsumos() {
           supabase.rpc("current_user_sucursal_id"),
         ])
       setInsumos((ins as Insumo[]) ?? [])
-      const lista = (suc as { id: string; nombre: string }[]) ?? []
+      const lista = ((suc as { id: string; nombre: string }[]) ?? []).filter((s) =>
+        SUCURSALES_INSUMOS.includes(s.nombre)
+      )
       setSucursales(lista)
       setRol((rolData as any) ?? null)
       const propia = (sucPropia as any) ?? null
