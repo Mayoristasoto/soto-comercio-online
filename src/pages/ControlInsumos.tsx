@@ -54,6 +54,9 @@ const ESTADO_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
   a_reponer: "destructive",
 }
 
+// Sucursales habilitadas para el control de insumos
+const SUCURSALES_INSUMOS = ["Olazar 26", "Juan B. Justo", "José Martí"]
+
 const vacio: RegistroInsumo = {
   cantidad: "",
   estado: "ok",
@@ -99,6 +102,9 @@ export default function ControlInsumos() {
   const [historial, setHistorial] = useState<any[]>([])
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
   const [itemsPrevios, setItemsPrevios] = useState(0)
+  const [controlNro, setControlNro] = useState(1)
+  const [cerrado, setCerrado] = useState(false)
+  const [cerrandoControl, setCerrandoControl] = useState(false)
 
   const esAdmin = rol === "admin_rrhh"
   const bloqueado = !esAdmin && !!miSucursal
@@ -121,7 +127,9 @@ export default function ControlInsumos() {
           supabase.rpc("current_user_sucursal_id"),
         ])
       setInsumos((ins as Insumo[]) ?? [])
-      const lista = (suc as { id: string; nombre: string }[]) ?? []
+      const lista = ((suc as { id: string; nombre: string }[]) ?? []).filter((s) =>
+        SUCURSALES_INSUMOS.includes(s.nombre)
+      )
       setSucursales(lista)
       setRol((rolData as any) ?? null)
       const propia = (sucPropia as any) ?? null
@@ -136,29 +144,95 @@ export default function ControlInsumos() {
     init()
   }, [])
 
+  const cargarControlActual = async (sucursal: string, fechaControl: string, nro?: number) => {
+    const { data } = await (supabase as any)
+      .from("insumos_control")
+      .select("insumo_id, cantidad, estado, necesita_reposicion, observaciones, control_nro, cerrado_at")
+      .eq("sucursal_id", sucursal)
+      .eq("fecha", fechaControl)
+
+    const rows = ((data as any[]) ?? [])
+    const maxNro = rows.length ? Math.max(...rows.map((r) => r.control_nro ?? 1)) : 1
+    const actual = nro ?? maxNro
+    const delControl = rows.filter((r) => (r.control_nro ?? 1) === actual)
+
+    const map: Record<string, RegistroInsumo> = {}
+    for (const r of delControl) {
+      map[r.insumo_id] = {
+        cantidad: r.cantidad != null ? String(r.cantidad) : "",
+        estado: r.estado ?? "ok",
+        necesita_reposicion: !!r.necesita_reposicion,
+        observaciones: r.observaciones ?? "",
+      }
+    }
+    setControlNro(actual)
+    setCerrado(delControl.some((r) => !!r.cerrado_at))
+    setRegistros(map)
+    setItemsPrevios(Object.keys(map).length)
+  }
+
   useEffect(() => {
     if (!sucursalId || !fecha) return
-    const cargar = async () => {
-      const { data } = await (supabase as any)
-        .from("insumos_control")
-        .select("insumo_id, cantidad, estado, necesita_reposicion, observaciones")
-        .eq("sucursal_id", sucursalId)
-        .eq("fecha", fecha)
-
-      const map: Record<string, RegistroInsumo> = {}
-      for (const r of (data as any[]) ?? []) {
-        map[r.insumo_id] = {
-          cantidad: r.cantidad != null ? String(r.cantidad) : "",
-          estado: r.estado ?? "ok",
-          necesita_reposicion: !!r.necesita_reposicion,
-          observaciones: r.observaciones ?? "",
-        }
-      }
-      setRegistros(map)
-      setItemsPrevios(Object.keys(map).length)
-    }
-    cargar()
+    cargarControlActual(sucursalId, fecha)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sucursalId, fecha])
+
+  const cerrarControl = async () => {
+    if (!sucursalId) return
+    if (itemsPrevios === 0) {
+      toast.info("Primero guardá el control")
+      return
+    }
+    setCerrandoControl(true)
+    try {
+      const { error } = await (supabase as any).rpc("insumos_cerrar_control", {
+        p_sucursal_id: sucursalId,
+        p_fecha: fecha,
+        p_control_nro: controlNro,
+      })
+      if (error) throw error
+      setCerrado(true)
+      if (!esAdmin) {
+        await (supabase as any).rpc("registrar_actividad_insumos", {
+          p_sucursal_id: sucursalId,
+          p_accion: "actualizado",
+          p_detalle: `Cerró el control #${controlNro} del ${fecha}`,
+        })
+      }
+      toast.success("Control cerrado. Ya no se puede editar.")
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo cerrar el control")
+    } finally {
+      setCerrandoControl(false)
+    }
+  }
+
+  const reabrirControl = async () => {
+    setCerrandoControl(true)
+    try {
+      const { error } = await (supabase as any).rpc("insumos_reabrir_control", {
+        p_sucursal_id: sucursalId,
+        p_fecha: fecha,
+        p_control_nro: controlNro,
+      })
+      if (error) throw error
+      setCerrado(false)
+      toast.success("Control reabierto")
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo reabrir el control")
+    } finally {
+      setCerrandoControl(false)
+    }
+  }
+
+  const nuevoControl = () => {
+    setControlNro((n) => n + 1)
+    setCerrado(false)
+    setRegistros({})
+    setItemsPrevios(0)
+    setTab("carga")
+    toast.info("Nuevo control iniciado")
+  }
 
   // Un gerente retoma un control ya iniciado: queda registrado para Admin RRHH
   const continuarControl = async (sucursal: string, fechaControl: string) => {
@@ -384,6 +458,10 @@ export default function ControlInsumos() {
 
   const guardar = async () => {
     if (!sucursalId) return
+    if (cerrado) {
+      toast.error("El control está cerrado. Iniciá un control nuevo.")
+      return
+    }
     setGuardando(true)
     try {
       const { data: emp } = await supabase.rpc("current_empleado_id")
@@ -391,6 +469,7 @@ export default function ControlInsumos() {
         sucursal_id: sucursalId,
         insumo_id,
         fecha,
+        control_nro: controlNro,
         cantidad: r.cantidad === "" ? null : Number(r.cantidad),
         estado: r.estado,
         necesita_reposicion: r.necesita_reposicion,
@@ -403,7 +482,7 @@ export default function ControlInsumos() {
       }
       const { error } = await (supabase as any)
         .from("insumos_control")
-        .upsert(rows, { onConflict: "sucursal_id,insumo_id,fecha" })
+        .upsert(rows, { onConflict: "sucursal_id,insumo_id,fecha,control_nro" })
       if (error) throw error
       const esActualizacion = itemsPrevios > 0
       if (!esAdmin) {
@@ -474,12 +553,38 @@ export default function ControlInsumos() {
               className="w-[160px]"
             />
           </div>
-          <Button onClick={guardar} disabled={guardando}>
+          <Button onClick={guardar} disabled={guardando || cerrado}>
             <Save className="h-4 w-4 mr-1" />
             {guardando ? "Guardando..." : "Guardar control"}
           </Button>
+          {!cerrado ? (
+            <Button variant="outline" onClick={cerrarControl} disabled={cerrandoControl}>
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Cerrar control
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={nuevoControl}>
+                Nuevo control
+              </Button>
+              {esAdmin && (
+                <Button variant="ghost" onClick={reabrirControl} disabled={cerrandoControl}>
+                  Reabrir
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
+
+      {cerrado && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
+          <CheckCircle2 className="h-4 w-4 text-primary" />
+          Control #{controlNro} cerrado: no se puede editar.{" "}
+          {esAdmin ? "Podés reabrirlo o iniciar uno nuevo." : "Iniciá un control nuevo para seguir cargando."}
+        </div>
+      )}
+
 
       {bloqueado && (
         <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
@@ -544,10 +649,15 @@ export default function ControlInsumos() {
                           placeholder="—"
                           value={r.cantidad}
                           onChange={(e) => set(i.id, { cantidad: e.target.value })}
+                          disabled={cerrado}
                         />
                       </div>
                       <div className="col-span-2">
-                        <Select value={r.estado} onValueChange={(v) => set(i.id, { estado: v })}>
+                        <Select
+                          value={r.estado}
+                          onValueChange={(v) => set(i.id, { estado: v })}
+                          disabled={cerrado}
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -564,6 +674,7 @@ export default function ControlInsumos() {
                         <Switch
                           checked={r.necesita_reposicion}
                           onCheckedChange={(v) => set(i.id, { necesita_reposicion: v })}
+                          disabled={cerrado}
                         />
                         <span className="text-xs text-muted-foreground md:hidden">Reponer</span>
                       </div>
@@ -572,6 +683,7 @@ export default function ControlInsumos() {
                           placeholder="Observaciones"
                           value={r.observaciones}
                           onChange={(e) => set(i.id, { observaciones: e.target.value })}
+                          disabled={cerrado}
                         />
                       </div>
                     </div>
