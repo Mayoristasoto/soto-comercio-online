@@ -649,10 +649,15 @@ export default function ControlInsumos() {
                           placeholder="—"
                           value={r.cantidad}
                           onChange={(e) => set(i.id, { cantidad: e.target.value })}
+                          disabled={cerrado}
                         />
                       </div>
                       <div className="col-span-2">
-                        <Select value={r.estado} onValueChange={(v) => set(i.id, { estado: v })}>
+                        <Select
+                          value={r.estado}
+                          onValueChange={(v) => set(i.id, { estado: v })}
+                          disabled={cerrado}
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
