@@ -72,11 +72,11 @@ interface Props {
     punto: RecorridoPunto | null,
     criterio: RecorridoCriterio,
     estado: EstadoHallazgo
-  ) => Promise<void> | void;
-  onGrupo: (zona: RecorridoZona, punto: RecorridoPunto | null, estado: EstadoHallazgo) => Promise<void> | void;
-  onObservaciones: (hallazgo: RecorridoHallazgo, observaciones: string) => Promise<void> | void;
-  onCerrar: () => Promise<void> | void;
-  onReabrir: () => Promise<void> | void;
+  ) => Promise<unknown> | unknown;
+  onGrupo: (zona: RecorridoZona, punto: RecorridoPunto | null, estado: EstadoHallazgo) => Promise<unknown> | unknown;
+  onObservaciones: (hallazgo: RecorridoHallazgo, observaciones: string) => Promise<unknown> | unknown;
+  onCerrar: () => Promise<unknown> | unknown;
+  onReabrir: () => Promise<unknown> | unknown;
   onSalir: () => void;
 }
 
@@ -187,11 +187,11 @@ export function RecorridoModoGuiado({
     () =>
       hallazgos
         .filter((h) => h.punto_x != null && h.punto_y != null && !h.punto_id)
-        .map((h) => {
+        .map((h): PinPunto | null => {
           if (h.punto_x == null || h.punto_y == null) return null;
           return { x: h.punto_x, y: h.punto_y, estado: h.estado, label: `${h.zona_nombre} · ${h.criterio_nombre}` };
         })
-        .filter((pin): pin is PinPunto => Boolean(pin)),
+        .filter((pin): pin is PinPunto => pin !== null),
     [hallazgos]
   );
 
