@@ -14,7 +14,10 @@ import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcut
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
 import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Eye } from "lucide-react"
+import { useRolePreview, ROL_LABEL, type RolApp } from "@/contexts/RolePreviewContext"
+import { RoleViewSwitcher } from "@/components/admin/RoleViewSwitcher"
+
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
@@ -33,7 +36,23 @@ export default function UnifiedLayout() {
     avatar_url?: string
   } | null>(null)
 
-  const isGerenteUser = userInfo?.rol === 'gerente_sucursal'
+  // Vista simulada de rol (solo admin_rrhh): la UI usa el rol efectivo
+  const preview = useRolePreview()
+  useEffect(() => {
+    preview?.setRolReal(userInfo?.rol ?? null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo?.rol])
+
+  const rolEfectivo = preview?.enPreview ? preview.rolEfectivo! : userInfo?.rol ?? null
+  const enPreview = !!preview?.enPreview
+  const userInfoVista = userInfo ? { ...userInfo, rol: rolEfectivo ?? userInfo.rol } : null
+
+  const volverAMiVista = () => {
+    preview?.setRolVista(null)
+    navigate('/dashboard', { replace: true })
+  }
+
+  const isGerenteUser = rolEfectivo === 'gerente_sucursal'
   const { accesos, loading: loadingAccesos } = useEncargadoAccesos()
 
   // Los gerentes solo pueden navegar a los destinos de las tarjetas de su panel
@@ -243,8 +262,19 @@ export default function UnifiedLayout() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Volver al panel
         </Button>
+        {enPreview && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="fixed right-3 top-3 z-50 shadow-sm"
+            onClick={volverAMiVista}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Volver a mi vista
+          </Button>
+        )}
         <main className="min-h-screen pt-14">
-          <Outlet context={{ userInfo }} />
+          <Outlet context={{ userInfo: userInfoVista }} />
         </main>
       </div>
     )
@@ -253,7 +283,7 @@ export default function UnifiedLayout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <UnifiedSidebar userInfo={userInfo} />
+        <UnifiedSidebar userInfo={userInfoVista} />
         
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header unificado - Responsive */}
@@ -337,20 +367,22 @@ export default function UnifiedLayout() {
                   <span className="text-sm font-medium">
                     {userInfo.nombre} {userInfo.apellido}
                   </span>
-                  <Badge variant="secondary" className="text-xs">
-                    {userInfo.rol === 'admin_rrhh' ? 'Admin' : 
-                     userInfo.rol === 'gerente_sucursal' ? 'Gerente' : 
-                     userInfo.rol === 'lider_grupo' ? 'Líder' : 'Empleado'}
+                  <Badge variant={enPreview ? "outline" : "secondary"} className="text-xs">
+                    {rolEfectivo === 'admin_rrhh' ? 'Admin' : 
+                     rolEfectivo === 'gerente_sucursal' ? 'Gerente' : 
+                     rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
+                  <RoleViewSwitcher />
                 </div>
                 
                 {/* Tablet: Solo badge */}
-                <div className="hidden md:flex lg:hidden">
-                  <Badge variant="secondary" className="text-xs">
-                    {userInfo.rol === 'admin_rrhh' ? 'Admin' : 
-                     userInfo.rol === 'gerente_sucursal' ? 'Gerente' : 
-                     userInfo.rol === 'lider_grupo' ? 'Líder' : 'Empleado'}
+                <div className="hidden md:flex lg:hidden items-center gap-2">
+                  <Badge variant={enPreview ? "outline" : "secondary"} className="text-xs">
+                    {rolEfectivo === 'admin_rrhh' ? 'Admin' : 
+                     rolEfectivo === 'gerente_sucursal' ? 'Gerente' : 
+                     rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
+                  <RoleViewSwitcher compacto />
                 </div>
                 
                 {/* Botón logout - Adaptativo */}
@@ -368,13 +400,26 @@ export default function UnifiedLayout() {
           </header>
 
           {/* Global Search Dialog */}
-          <GlobalSearch userRole={userInfo?.rol} />
+          <GlobalSearch userRole={rolEfectivo ?? undefined} />
+
+          {enPreview && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/30 bg-primary/10 px-3 py-2 text-sm md:px-6">
+              <span className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-primary" />
+                Estás viendo la app como <strong>{ROL_LABEL[rolEfectivo as RolApp]}</strong>. Los
+                datos siguen siendo los de tu cuenta.
+              </span>
+              <Button variant="secondary" size="sm" onClick={volverAMiVista}>
+                Volver a mi vista
+              </Button>
+            </div>
+          )}
 
           {/* Contenido principal - Responsive */}
           <main className="flex-1 overflow-auto bg-muted/30">
             <div className="py-4 md:py-6">
               <Breadcrumbs />
-              <Outlet context={{ userInfo }} />
+              <Outlet context={{ userInfo: userInfoVista }} />
             </div>
           </main>
         </div>

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Package, Save, AlertTriangle, Loader2, Building2, CheckCircle2, Clock, Lock } from "lucide-react"
 import { toast } from "sonner"
+import { useRolePreview } from "@/contexts/RolePreviewContext"
 
 interface Insumo {
   id: string
@@ -118,9 +119,13 @@ export default function ControlInsumos() {
   const [cerrandoControl, setCerrandoControl] = useState(false)
   const [finalizando, setFinalizando] = useState(false)
 
-  const esAdmin = rol === "admin_rrhh"
+  // Si hay una vista de rol simulada activa, la UI se comporta como ese rol
+  const preview = useRolePreview()
+  const rolVista = preview?.enPreview ? preview.rolVista : null
+  const rolUI = rolVista ?? rol
+  const esAdmin = rolUI === "admin_rrhh"
   // El gerente carga una sola vez: al finalizar, los números quedan fijos
-  const esGerente = !!rol && !esAdmin
+  const esGerente = !!rolUI && !esAdmin
   const bloqueado = !esAdmin && !!miSucursal
 
   useEffect(() => {

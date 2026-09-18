@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { RolePreviewProvider } from "@/contexts/RolePreviewContext";
 import { ThemeLoader } from "./components/ThemeLoader";
 
 // Layout components
@@ -118,6 +119,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+          <RolePreviewProvider>
           <Routes>
           {/* Redirigir raíz a autenticación */}
           <Route path="/" element={<Navigate to="/auth" replace />} />
@@ -334,6 +336,7 @@ const App = () => (
           {/* 404 - debe ir al final */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+          </RolePreviewProvider>
       </BrowserRouter>
     </TooltipProvider>
     </ThemeLoader>
