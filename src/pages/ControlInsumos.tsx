@@ -553,12 +553,38 @@ export default function ControlInsumos() {
               className="w-[160px]"
             />
           </div>
-          <Button onClick={guardar} disabled={guardando}>
+          <Button onClick={guardar} disabled={guardando || cerrado}>
             <Save className="h-4 w-4 mr-1" />
             {guardando ? "Guardando..." : "Guardar control"}
           </Button>
+          {!cerrado ? (
+            <Button variant="outline" onClick={cerrarControl} disabled={cerrandoControl}>
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Cerrar control
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={nuevoControl}>
+                Nuevo control
+              </Button>
+              {esAdmin && (
+                <Button variant="ghost" onClick={reabrirControl} disabled={cerrandoControl}>
+                  Reabrir
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
+
+      {cerrado && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
+          <CheckCircle2 className="h-4 w-4 text-primary" />
+          Control #{controlNro} cerrado: no se puede editar.{" "}
+          {esAdmin ? "Podés reabrirlo o iniciar uno nuevo." : "Iniciá un control nuevo para seguir cargando."}
+        </div>
+      )}
+
 
       {bloqueado && (
         <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
