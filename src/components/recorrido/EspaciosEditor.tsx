@@ -67,7 +67,8 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const gondolas = useMemo(() => espacios.filter((e) => e.type === "gondola"), [espacios]);
+  /** Se muestran TODOS los espacios del plano (góndolas, punteras, exhibidores, carteles) */
+  const gondolas = espacios;
   const sel = useMemo(() => espacios.find((e) => e.id === selId) ?? null, [espacios, selId]);
 
   const aPct = (d: Draft) => ({
