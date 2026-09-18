@@ -118,6 +118,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+          <RolePreviewProvider>
           <Routes>
           {/* Redirigir raíz a autenticación */}
           <Route path="/" element={<Navigate to="/auth" replace />} />
