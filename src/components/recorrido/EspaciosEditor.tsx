@@ -365,7 +365,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
         <Button size="sm" variant="secondary" onClick={() => setRenumOpen(true)}>
           <ListOrdered className="h-4 w-4 mr-1" /> Renumerar espacios
         </Button>
-        <Badge variant="outline">{gondolas.length} góndolas</Badge>
+        <Badge variant="outline">{gondolas.length} espacios</Badge>
       </div>
 
       <p className="text-xs text-muted-foreground">
