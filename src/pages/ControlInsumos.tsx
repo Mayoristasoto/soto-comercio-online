@@ -482,7 +482,7 @@ export default function ControlInsumos() {
       }
       const { error } = await (supabase as any)
         .from("insumos_control")
-        .upsert(rows, { onConflict: "sucursal_id,insumo_id,fecha" })
+        .upsert(rows, { onConflict: "sucursal_id,insumo_id,fecha,control_nro" })
       if (error) throw error
       const esActualizacion = itemsPrevios > 0
       if (!esAdmin) {
