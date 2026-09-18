@@ -5,11 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle2, Loader2, MapPin } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, MapPin, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { PlanoCanvas, type PinPunto } from "@/components/recorrido/PlanoCanvas";
 import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
 import { HistorialRecorridoV2 } from "@/components/recorrido/HistorialRecorridoV2";
+import { RecorridoModoGuiado } from "@/components/recorrido/RecorridoModoGuiado";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import {
   ESTADO_HALLAZGO_LABEL,
   TIPO_ESPACIO_LABEL,
@@ -41,6 +44,9 @@ const RecorridoDetalle = () => {
   const [cerrando, setCerrando] = useState(false);
   const [marcandoTodo, setMarcandoTodo] = useState(false);
   const [vistaCompleta, setVistaCompleta] = useState(false);
+  const isMobile = useIsMobile();
+  const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
+  const guiadoActivo = modoGuiado ?? isMobile;
 
   const soloLectura = recorrido?.estado === "completado";
 
@@ -315,6 +321,29 @@ const RecorridoDetalle = () => {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
+  if (guiadoActivo) {
+    return (
+      <RecorridoModoGuiado
+        recorrido={recorrido}
+        plano={plano}
+        sucursalNombre={sucursalNombre}
+        fechaTexto={formatArgentinaDateTime(recorrido.fecha_hora)}
+        zonas={zonas}
+        puntos={puntos}
+        criterios={criterios}
+        hallazgos={hallazgos}
+        readOnly={soloLectura}
+        cerrando={cerrando}
+        onEstado={marcar}
+        onGrupo={marcarGrupo}
+        onObservaciones={guardarObs}
+        onCerrar={cerrar}
+        onReabrir={reabrir}
+        onSalir={() => setModoGuiado(false)}
+      />
+    );
+  }
+
   const puntosZona = zonaSel ? puntosDeZona(zonaSel.id) : [];
   const tipoPunto = puntoSel?.tipo_espacio
     ? TIPO_ESPACIO_LABEL[puntoSel.tipo_espacio as TipoEspacio] ?? puntoSel.tipo_espacio
@@ -330,10 +359,14 @@ const RecorridoDetalle = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/rrhh/recorrido")}><ArrowLeft className="h-5 w-5" /></Button>
           <div>
             <h1 className="text-xl font-bold">{recorrido.titulo ?? "Recorrido"} — {sucursalNombre}</h1>
-            <p className="text-sm text-muted-foreground">{new Date(recorrido.fecha_hora).toLocaleString("es-AR")}</p>
+            <p className="text-sm text-muted-foreground">{formatArgentinaDateTime(recorrido.fecha_hora)}</p>
           </div>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setModoGuiado(true)}>
+            <Smartphone className="h-4 w-4 mr-1" />
+            Modo control
+          </Button>
           <Button variant={vistaCompleta ? "secondary" : "outline"} size="sm" onClick={() => setVistaCompleta((v) => !v)}>
             {vistaCompleta ? "Ocultar vista completa" : "Ver todas las góndolas"}
           </Button>
