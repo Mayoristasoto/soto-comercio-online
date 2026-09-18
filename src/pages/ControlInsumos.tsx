@@ -469,6 +469,7 @@ export default function ControlInsumos() {
         sucursal_id: sucursalId,
         insumo_id,
         fecha,
+        control_nro: controlNro,
         cantidad: r.cantidad === "" ? null : Number(r.cantidad),
         estado: r.estado,
         necesita_reposicion: r.necesita_reposicion,
