@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Package, Save, AlertTriangle, Loader2, Building2, CheckCircle2, Clock, Lock } from "lucide-react"
 import { toast } from "sonner"
+import { useRolePreview } from "@/contexts/RolePreviewContext"
 
 interface Insumo {
   id: string
