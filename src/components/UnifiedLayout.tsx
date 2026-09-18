@@ -14,7 +14,10 @@ import { ShortcutsHelp, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcut
 import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 import { ForcedPasswordChange } from "@/components/employee/ForcedPasswordChange"
 import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Eye } from "lucide-react"
+import { useRolePreview, ROL_LABEL, type RolApp } from "@/contexts/RolePreviewContext"
+import { RoleViewSwitcher } from "@/components/admin/RoleViewSwitcher"
+
 
 export default function UnifiedLayout() {
   const navigate = useNavigate()
