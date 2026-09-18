@@ -262,8 +262,19 @@ export default function UnifiedLayout() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Volver al panel
         </Button>
+        {enPreview && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="fixed right-3 top-3 z-50 shadow-sm"
+            onClick={volverAMiVista}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Volver a mi vista
+          </Button>
+        )}
         <main className="min-h-screen pt-14">
-          <Outlet context={{ userInfo }} />
+          <Outlet context={{ userInfo: userInfoVista }} />
         </main>
       </div>
     )
@@ -272,7 +283,7 @@ export default function UnifiedLayout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <UnifiedSidebar userInfo={userInfo} />
+        <UnifiedSidebar userInfo={userInfoVista} />
         
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header unificado - Responsive */}
