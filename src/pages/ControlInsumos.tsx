@@ -458,6 +458,10 @@ export default function ControlInsumos() {
 
   const guardar = async () => {
     if (!sucursalId) return
+    if (cerrado) {
+      toast.error("El control está cerrado. Iniciá un control nuevo.")
+      return
+    }
     setGuardando(true)
     try {
       const { data: emp } = await supabase.rpc("current_empleado_id")
