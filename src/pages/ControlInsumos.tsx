@@ -683,6 +683,7 @@ export default function ControlInsumos() {
                           placeholder="Observaciones"
                           value={r.observaciones}
                           onChange={(e) => set(i.id, { observaciones: e.target.value })}
+                          disabled={cerrado}
                         />
                       </div>
                     </div>
