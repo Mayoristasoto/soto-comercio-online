@@ -335,6 +335,7 @@ const App = () => (
           {/* 404 - debe ir al final */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+          </RolePreviewProvider>
       </BrowserRouter>
     </TooltipProvider>
     </ThemeLoader>
