@@ -607,24 +607,52 @@ export default function ControlInsumos() {
               className="w-[160px]"
             />
           </div>
-          <Button onClick={guardar} disabled={guardando || cerrado}>
-            <Save className="h-4 w-4 mr-1" />
-            {guardando ? "Guardando..." : "Guardar control"}
-          </Button>
-          {!cerrado ? (
-            <Button variant="outline" onClick={cerrarControl} disabled={cerrandoControl}>
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Cerrar control
-            </Button>
+          {esGerente ? (
+            !cerrado && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button disabled={guardando || finalizando}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    {finalizando ? "Finalizando..." : "Finalizar control"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Finalizar el control?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Los números quedan fijos y no se pueden editar después. Solo RRHH puede
+                      reabrirlo. Revisá los datos antes de confirmar.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Revisar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => finalizarControl()}>
+                      Finalizar y cerrar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )
           ) : (
             <>
-              <Button variant="outline" onClick={nuevoControl}>
-                Nuevo control
+              <Button onClick={() => guardar()} disabled={guardando || cerrado}>
+                <Save className="h-4 w-4 mr-1" />
+                {guardando ? "Guardando..." : "Guardar control"}
               </Button>
-              {esAdmin && (
-                <Button variant="ghost" onClick={reabrirControl} disabled={cerrandoControl}>
-                  Reabrir
+              {!cerrado ? (
+                <Button variant="outline" onClick={cerrarControl} disabled={cerrandoControl}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Cerrar control
                 </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={nuevoControl}>
+                    Nuevo control
+                  </Button>
+                  <Button variant="ghost" onClick={reabrirControl} disabled={cerrandoControl}>
+                    Reabrir
+                  </Button>
+                </>
               )}
             </>
           )}
@@ -633,11 +661,21 @@ export default function ControlInsumos() {
 
       {cerrado && (
         <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
-          <CheckCircle2 className="h-4 w-4 text-primary" />
-          Control #{controlNro} cerrado: no se puede editar.{" "}
-          {esAdmin ? "Podés reabrirlo o iniciar uno nuevo." : "Iniciá un control nuevo para seguir cargando."}
+          {esGerente ? (
+            <>
+              <Lock className="h-4 w-4 text-primary" />
+              Control #{controlNro} finalizado el {fecha}: los números quedaron fijos. Si hay un
+              error, pedile a RRHH que lo reabra.
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              Control #{controlNro} cerrado: no se puede editar. Podés reabrirlo o iniciar uno nuevo.
+            </>
+          )}
         </div>
       )}
+
 
 
       {bloqueado && (
