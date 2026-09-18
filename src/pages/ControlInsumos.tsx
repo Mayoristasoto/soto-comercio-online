@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Package, Save, AlertTriangle, Loader2, Building2, CheckCircle2, Clock } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Package, Save, AlertTriangle, Loader2, Building2, CheckCircle2, Clock, Lock } from "lucide-react"
 import { toast } from "sonner"
 
 interface Insumo {
@@ -105,8 +116,11 @@ export default function ControlInsumos() {
   const [controlNro, setControlNro] = useState(1)
   const [cerrado, setCerrado] = useState(false)
   const [cerrandoControl, setCerrandoControl] = useState(false)
+  const [finalizando, setFinalizando] = useState(false)
 
   const esAdmin = rol === "admin_rrhh"
+  // El gerente carga una sola vez: al finalizar, los números quedan fijos
+  const esGerente = !!rol && !esAdmin
   const bloqueado = !esAdmin && !!miSucursal
 
   useEffect(() => {
@@ -456,11 +470,12 @@ export default function ControlInsumos() {
 
   const sucursalNombre = sucursales.find((s) => s.id === sucursalId)?.nombre ?? ""
 
-  const guardar = async () => {
-    if (!sucursalId) return
+  const guardar = async (opts?: { silencioso?: boolean }): Promise<boolean> => {
+    const silencioso = !!opts?.silencioso
+    if (!sucursalId) return false
     if (cerrado) {
-      toast.error("El control está cerrado. Iniciá un control nuevo.")
-      return
+      if (!silencioso) toast.error("El control está cerrado. Iniciá un control nuevo.")
+      return false
     }
     setGuardando(true)
     try {
@@ -477,8 +492,8 @@ export default function ControlInsumos() {
         registrado_por: (emp as any) ?? null,
       }))
       if (rows.length === 0) {
-        toast.info("No hay datos para guardar")
-        return
+        if (!silencioso) toast.info("No hay datos para guardar")
+        return false
       }
       const { error } = await (supabase as any)
         .from("insumos_control")
@@ -495,17 +510,93 @@ export default function ControlInsumos() {
         })
       }
       setItemsPrevios(rows.length)
-      toast.success(
-        esActualizacion
-          ? `Control actualizado para ${sucursalNombre}`
-          : `Control guardado para ${sucursalNombre}`
-      )
+      if (!silencioso) {
+        toast.success(
+          esActualizacion
+            ? `Control actualizado para ${sucursalNombre}`
+            : `Control guardado para ${sucursalNombre}`
+        )
+      }
+      return true
     } catch (e: any) {
-      toast.error(e?.message || "No se pudo guardar")
+      if (!silencioso) toast.error(e?.message || "No se pudo guardar")
+      return false
     } finally {
       setGuardando(false)
     }
   }
+
+  // Gerente: guarda y cierra en un solo paso. Los números quedan fijos.
+  const finalizarControl = async () => {
+    if (cerrado) return
+    if (Object.keys(registros).length === 0) {
+      toast.info("Cargá al menos un insumo antes de finalizar")
+      return
+    }
+    setFinalizando(true)
+    const ok = await guardar({ silencioso: true })
+    if (!ok) {
+      setFinalizando(false)
+      toast.error("No se pudo guardar el control")
+      return
+    }
+    try {
+      const { error } = await (supabase as any).rpc("insumos_cerrar_control", {
+        p_sucursal_id: sucursalId,
+        p_fecha: fecha,
+        p_control_nro: controlNro,
+      })
+      if (error) throw error
+      setCerrado(true)
+      await (supabase as any).rpc("registrar_actividad_insumos", {
+        p_sucursal_id: sucursalId,
+        p_accion: "actualizado",
+        p_detalle: `Finalizó y cerró el control #${controlNro} del ${fecha}`,
+      })
+      toast.success("Control finalizado. Los números quedaron fijos.")
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo finalizar el control")
+    } finally {
+      setFinalizando(false)
+    }
+  }
+
+  // Si el gerente se va con datos cargados sin finalizar, el control se cierra igual:
+  // nada queda editable después de salir.
+  const cierreAlSalirRef = useRef<() => void>(() => {})
+  cierreAlSalirRef.current = () => {
+    if (!esGerente || cerrado || !sucursalId) return
+    if (Object.keys(registros).length === 0) return
+    const payload = { sucursalId, fecha, controlNro }
+    void (async () => {
+      try {
+        await guardar({ silencioso: true })
+        await (supabase as any).rpc("insumos_cerrar_control", {
+          p_sucursal_id: payload.sucursalId,
+          p_fecha: payload.fecha,
+          p_control_nro: payload.controlNro,
+        })
+        await (supabase as any).rpc("registrar_actividad_insumos", {
+          p_sucursal_id: payload.sucursalId,
+          p_accion: "actualizado",
+          p_detalle: `Control #${payload.controlNro} del ${payload.fecha} cerrado automáticamente al salir`,
+        })
+      } catch {
+        // sin UI: la página ya se está cerrando
+      }
+    })()
+  }
+
+  useEffect(() => {
+    const onUnload = () => cierreAlSalirRef.current()
+    window.addEventListener("beforeunload", onUnload)
+    return () => {
+      window.removeEventListener("beforeunload", onUnload)
+      cierreAlSalirRef.current()
+    }
+  }, [])
+
+
 
   if (loading) {
     return (
@@ -553,24 +644,52 @@ export default function ControlInsumos() {
               className="w-[160px]"
             />
           </div>
-          <Button onClick={guardar} disabled={guardando || cerrado}>
-            <Save className="h-4 w-4 mr-1" />
-            {guardando ? "Guardando..." : "Guardar control"}
-          </Button>
-          {!cerrado ? (
-            <Button variant="outline" onClick={cerrarControl} disabled={cerrandoControl}>
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Cerrar control
-            </Button>
+          {esGerente ? (
+            !cerrado && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button disabled={guardando || finalizando}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    {finalizando ? "Finalizando..." : "Finalizar control"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Finalizar el control?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Los números quedan fijos y no se pueden editar después. Solo RRHH puede
+                      reabrirlo. Revisá los datos antes de confirmar.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Revisar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => finalizarControl()}>
+                      Finalizar y cerrar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )
           ) : (
             <>
-              <Button variant="outline" onClick={nuevoControl}>
-                Nuevo control
+              <Button onClick={() => guardar()} disabled={guardando || cerrado}>
+                <Save className="h-4 w-4 mr-1" />
+                {guardando ? "Guardando..." : "Guardar control"}
               </Button>
-              {esAdmin && (
-                <Button variant="ghost" onClick={reabrirControl} disabled={cerrandoControl}>
-                  Reabrir
+              {!cerrado ? (
+                <Button variant="outline" onClick={cerrarControl} disabled={cerrandoControl}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Cerrar control
                 </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={nuevoControl}>
+                    Nuevo control
+                  </Button>
+                  <Button variant="ghost" onClick={reabrirControl} disabled={cerrandoControl}>
+                    Reabrir
+                  </Button>
+                </>
               )}
             </>
           )}
@@ -579,11 +698,21 @@ export default function ControlInsumos() {
 
       {cerrado && (
         <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
-          <CheckCircle2 className="h-4 w-4 text-primary" />
-          Control #{controlNro} cerrado: no se puede editar.{" "}
-          {esAdmin ? "Podés reabrirlo o iniciar uno nuevo." : "Iniciá un control nuevo para seguir cargando."}
+          {esGerente ? (
+            <>
+              <Lock className="h-4 w-4 text-primary" />
+              Control #{controlNro} finalizado el {fecha}: los números quedaron fijos. Si hay un
+              error, pedile a RRHH que lo reabra.
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              Control #{controlNro} cerrado: no se puede editar. Podés reabrirlo o iniciar uno nuevo.
+            </>
+          )}
         </div>
       )}
+
 
 
       {bloqueado && (
