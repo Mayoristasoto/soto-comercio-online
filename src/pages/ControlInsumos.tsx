@@ -561,6 +561,43 @@ export default function ControlInsumos() {
     }
   }
 
+  // Si el gerente se va con datos cargados sin finalizar, el control se cierra igual:
+  // nada queda editable después de salir.
+  const cierreAlSalirRef = useRef<() => void>(() => {})
+  cierreAlSalirRef.current = () => {
+    if (!esGerente || cerrado || !sucursalId) return
+    if (Object.keys(registros).length === 0) return
+    const payload = { sucursalId, fecha, controlNro }
+    void (async () => {
+      try {
+        await guardar({ silencioso: true })
+        await (supabase as any).rpc("insumos_cerrar_control", {
+          p_sucursal_id: payload.sucursalId,
+          p_fecha: payload.fecha,
+          p_control_nro: payload.controlNro,
+        })
+        await (supabase as any).rpc("registrar_actividad_insumos", {
+          p_sucursal_id: payload.sucursalId,
+          p_accion: "actualizado",
+          p_detalle: `Control #${payload.controlNro} del ${payload.fecha} cerrado automáticamente al salir`,
+        })
+      } catch {
+        // sin UI: la página ya se está cerrando
+      }
+    })()
+  }
+
+  useEffect(() => {
+    const onUnload = () => cierreAlSalirRef.current()
+    window.addEventListener("beforeunload", onUnload)
+    return () => {
+      window.removeEventListener("beforeunload", onUnload)
+      cierreAlSalirRef.current()
+    }
+  }, [])
+
+
+
   if (loading) {
     return (
       <div className="p-6 flex items-center gap-2 text-muted-foreground">
