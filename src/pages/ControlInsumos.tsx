@@ -144,29 +144,95 @@ export default function ControlInsumos() {
     init()
   }, [])
 
+  const cargarControlActual = async (sucursal: string, fechaControl: string, nro?: number) => {
+    const { data } = await (supabase as any)
+      .from("insumos_control")
+      .select("insumo_id, cantidad, estado, necesita_reposicion, observaciones, control_nro, cerrado_at")
+      .eq("sucursal_id", sucursal)
+      .eq("fecha", fechaControl)
+
+    const rows = ((data as any[]) ?? [])
+    const maxNro = rows.length ? Math.max(...rows.map((r) => r.control_nro ?? 1)) : 1
+    const actual = nro ?? maxNro
+    const delControl = rows.filter((r) => (r.control_nro ?? 1) === actual)
+
+    const map: Record<string, RegistroInsumo> = {}
+    for (const r of delControl) {
+      map[r.insumo_id] = {
+        cantidad: r.cantidad != null ? String(r.cantidad) : "",
+        estado: r.estado ?? "ok",
+        necesita_reposicion: !!r.necesita_reposicion,
+        observaciones: r.observaciones ?? "",
+      }
+    }
+    setControlNro(actual)
+    setCerrado(delControl.some((r) => !!r.cerrado_at))
+    setRegistros(map)
+    setItemsPrevios(Object.keys(map).length)
+  }
+
   useEffect(() => {
     if (!sucursalId || !fecha) return
-    const cargar = async () => {
-      const { data } = await (supabase as any)
-        .from("insumos_control")
-        .select("insumo_id, cantidad, estado, necesita_reposicion, observaciones")
-        .eq("sucursal_id", sucursalId)
-        .eq("fecha", fecha)
-
-      const map: Record<string, RegistroInsumo> = {}
-      for (const r of (data as any[]) ?? []) {
-        map[r.insumo_id] = {
-          cantidad: r.cantidad != null ? String(r.cantidad) : "",
-          estado: r.estado ?? "ok",
-          necesita_reposicion: !!r.necesita_reposicion,
-          observaciones: r.observaciones ?? "",
-        }
-      }
-      setRegistros(map)
-      setItemsPrevios(Object.keys(map).length)
-    }
-    cargar()
+    cargarControlActual(sucursalId, fecha)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sucursalId, fecha])
+
+  const cerrarControl = async () => {
+    if (!sucursalId) return
+    if (itemsPrevios === 0) {
+      toast.info("Primero guardá el control")
+      return
+    }
+    setCerrandoControl(true)
+    try {
+      const { error } = await (supabase as any).rpc("insumos_cerrar_control", {
+        p_sucursal_id: sucursalId,
+        p_fecha: fecha,
+        p_control_nro: controlNro,
+      })
+      if (error) throw error
+      setCerrado(true)
+      if (!esAdmin) {
+        await (supabase as any).rpc("registrar_actividad_insumos", {
+          p_sucursal_id: sucursalId,
+          p_accion: "actualizado",
+          p_detalle: `Cerró el control #${controlNro} del ${fecha}`,
+        })
+      }
+      toast.success("Control cerrado. Ya no se puede editar.")
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo cerrar el control")
+    } finally {
+      setCerrandoControl(false)
+    }
+  }
+
+  const reabrirControl = async () => {
+    setCerrandoControl(true)
+    try {
+      const { error } = await (supabase as any).rpc("insumos_reabrir_control", {
+        p_sucursal_id: sucursalId,
+        p_fecha: fecha,
+        p_control_nro: controlNro,
+      })
+      if (error) throw error
+      setCerrado(false)
+      toast.success("Control reabierto")
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo reabrir el control")
+    } finally {
+      setCerrandoControl(false)
+    }
+  }
+
+  const nuevoControl = () => {
+    setControlNro((n) => n + 1)
+    setCerrado(false)
+    setRegistros({})
+    setItemsPrevios(0)
+    setTab("carga")
+    toast.info("Nuevo control iniciado")
+  }
 
   // Un gerente retoma un control ya iniciado: queda registrado para Admin RRHH
   const continuarControl = async (sucursal: string, fechaControl: string) => {
