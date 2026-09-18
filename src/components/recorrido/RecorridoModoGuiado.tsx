@@ -112,6 +112,7 @@ export function RecorridoModoGuiado({
   const [indiceAbierto, setIndiceAbierto] = useState(false);
   const [resumenAbierto, setResumenAbierto] = useState(false);
   const [obsAbiertas, setObsAbiertas] = useState<Record<string, boolean>>({});
+  const [obsCriteriosAbiertas, setObsCriteriosAbiertas] = useState<Record<string, boolean>>({});
   const [fotosAbiertas, setFotosAbiertas] = useState<Record<string, boolean>>({});
 
   const grupos = useMemo<GrupoControl[]>(() => {
@@ -227,6 +228,8 @@ export function RecorridoModoGuiado({
 
   const estadoSeleccionado = grupoActivo ? estadoGrupo(grupoActivo) : null;
 
+  const criterioKey = (grupo: GrupoControl, criterioId: string) => `${grupo.key}::${criterioId}`;
+
   return (
     <div className="fixed inset-0 z-50 flex min-h-[100dvh] flex-col bg-background">
       <header className="sticky top-0 z-20 border-b bg-card px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
@@ -325,7 +328,9 @@ export function RecorridoModoGuiado({
                   {criteriosActivos.map((criterio) => {
                     const hallazgo = hallazgoDe(grupoActivo, criterio.id);
                     const estado = hallazgo?.estado ?? null;
-                    const obsVisible = hallazgo ? obsAbiertas[hallazgo.id] || Boolean(hallazgo.observaciones) : false;
+                    const obsVisible = hallazgo
+                      ? obsAbiertas[hallazgo.id] || obsCriteriosAbiertas[criterioKey(grupoActivo, criterio.id)] || Boolean(hallazgo.observaciones)
+                      : false;
                     const fotosVisible = hallazgo ? fotosAbiertas[hallazgo.id] : false;
                     return (
                       <div key={criterio.id} className="space-y-2 rounded-md border p-3">
@@ -358,10 +363,7 @@ export function RecorridoModoGuiado({
                                 onClick={() => {
                                   void onEstado(grupoActivo.zona, grupoActivo.punto, criterio, est);
                                   if (est === "parcial" || est === "no_cumple") {
-                                    setTimeout(() => {
-                                      const actualizado = hallazgoDe(grupoActivo, criterio.id);
-                                      if (actualizado) setObsAbiertas((prev) => ({ ...prev, [actualizado.id]: true }));
-                                    }, 100);
+                                    setObsCriteriosAbiertas((prev) => ({ ...prev, [criterioKey(grupoActivo, criterio.id)]: true }));
                                   }
                                 }}
                               >
