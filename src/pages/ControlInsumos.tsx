@@ -102,6 +102,9 @@ export default function ControlInsumos() {
   const [historial, setHistorial] = useState<any[]>([])
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
   const [itemsPrevios, setItemsPrevios] = useState(0)
+  const [controlNro, setControlNro] = useState(1)
+  const [cerrado, setCerrado] = useState(false)
+  const [cerrandoControl, setCerrandoControl] = useState(false)
 
   const esAdmin = rol === "admin_rrhh"
   const bloqueado = !esAdmin && !!miSucursal
