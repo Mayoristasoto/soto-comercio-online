@@ -67,7 +67,8 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const gondolas = useMemo(() => espacios.filter((e) => e.type === "gondola"), [espacios]);
+  /** Se muestran TODOS los espacios del plano (góndolas, punteras, exhibidores, carteles) */
+  const gondolas = espacios;
   const sel = useMemo(() => espacios.find((e) => e.id === selId) ?? null, [espacios, selId]);
 
   const aPct = (d: Draft) => ({
@@ -364,7 +365,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
         <Button size="sm" variant="secondary" onClick={() => setRenumOpen(true)}>
           <ListOrdered className="h-4 w-4 mr-1" /> Renumerar espacios
         </Button>
-        <Badge variant="outline">{gondolas.length} góndolas</Badge>
+        <Badge variant="outline">{gondolas.length} espacios</Badge>
       </div>
 
       <p className="text-xs text-muted-foreground">
