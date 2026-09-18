@@ -470,11 +470,12 @@ export default function ControlInsumos() {
 
   const sucursalNombre = sucursales.find((s) => s.id === sucursalId)?.nombre ?? ""
 
-  const guardar = async () => {
-    if (!sucursalId) return
+  const guardar = async (opts?: { silencioso?: boolean }): Promise<boolean> => {
+    const silencioso = !!opts?.silencioso
+    if (!sucursalId) return false
     if (cerrado) {
-      toast.error("El control está cerrado. Iniciá un control nuevo.")
-      return
+      if (!silencioso) toast.error("El control está cerrado. Iniciá un control nuevo.")
+      return false
     }
     setGuardando(true)
     try {
@@ -491,8 +492,8 @@ export default function ControlInsumos() {
         registrado_por: (emp as any) ?? null,
       }))
       if (rows.length === 0) {
-        toast.info("No hay datos para guardar")
-        return
+        if (!silencioso) toast.info("No hay datos para guardar")
+        return false
       }
       const { error } = await (supabase as any)
         .from("insumos_control")
@@ -509,15 +510,54 @@ export default function ControlInsumos() {
         })
       }
       setItemsPrevios(rows.length)
-      toast.success(
-        esActualizacion
-          ? `Control actualizado para ${sucursalNombre}`
-          : `Control guardado para ${sucursalNombre}`
-      )
+      if (!silencioso) {
+        toast.success(
+          esActualizacion
+            ? `Control actualizado para ${sucursalNombre}`
+            : `Control guardado para ${sucursalNombre}`
+        )
+      }
+      return true
     } catch (e: any) {
-      toast.error(e?.message || "No se pudo guardar")
+      if (!silencioso) toast.error(e?.message || "No se pudo guardar")
+      return false
     } finally {
       setGuardando(false)
+    }
+  }
+
+  // Gerente: guarda y cierra en un solo paso. Los números quedan fijos.
+  const finalizarControl = async () => {
+    if (cerrado) return
+    if (Object.keys(registros).length === 0) {
+      toast.info("Cargá al menos un insumo antes de finalizar")
+      return
+    }
+    setFinalizando(true)
+    const ok = await guardar({ silencioso: true })
+    if (!ok) {
+      setFinalizando(false)
+      toast.error("No se pudo guardar el control")
+      return
+    }
+    try {
+      const { error } = await (supabase as any).rpc("insumos_cerrar_control", {
+        p_sucursal_id: sucursalId,
+        p_fecha: fecha,
+        p_control_nro: controlNro,
+      })
+      if (error) throw error
+      setCerrado(true)
+      await (supabase as any).rpc("registrar_actividad_insumos", {
+        p_sucursal_id: sucursalId,
+        p_accion: "actualizado",
+        p_detalle: `Finalizó y cerró el control #${controlNro} del ${fecha}`,
+      })
+      toast.success("Control finalizado. Los números quedaron fijos.")
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo finalizar el control")
+    } finally {
+      setFinalizando(false)
     }
   }
 
