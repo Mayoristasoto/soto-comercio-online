@@ -12,6 +12,7 @@ import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
 import { HistorialRecorridoV2 } from "@/components/recorrido/HistorialRecorridoV2";
 import { RecorridoModoGuiado } from "@/components/recorrido/RecorridoModoGuiado";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatArgentinaDateTime } from "@/lib/dateUtils";
 import {
   ESTADO_HALLAZGO_LABEL,
   TIPO_ESPACIO_LABEL,
@@ -326,7 +327,7 @@ const RecorridoDetalle = () => {
         recorrido={recorrido}
         plano={plano}
         sucursalNombre={sucursalNombre}
-        fechaTexto={new Date(recorrido.fecha_hora).toLocaleString("es-AR")}
+        fechaTexto={formatArgentinaDateTime(recorrido.fecha_hora)}
         zonas={zonas}
         puntos={puntos}
         criterios={criterios}
@@ -358,7 +359,7 @@ const RecorridoDetalle = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/rrhh/recorrido")}><ArrowLeft className="h-5 w-5" /></Button>
           <div>
             <h1 className="text-xl font-bold">{recorrido.titulo ?? "Recorrido"} — {sucursalNombre}</h1>
-            <p className="text-sm text-muted-foreground">{new Date(recorrido.fecha_hora).toLocaleString("es-AR")}</p>
+            <p className="text-sm text-muted-foreground">{formatArgentinaDateTime(recorrido.fecha_hora)}</p>
           </div>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
