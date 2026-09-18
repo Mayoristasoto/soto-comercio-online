@@ -7205,6 +7205,9 @@ export type Database = {
       insumos_control: {
         Row: {
           cantidad: number | null
+          cerrado_at: string | null
+          cerrado_por: string | null
+          control_nro: number
           created_at: string
           estado: string
           fecha: string
@@ -7218,6 +7221,9 @@ export type Database = {
         }
         Insert: {
           cantidad?: number | null
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          control_nro?: number
           created_at?: string
           estado?: string
           fecha?: string
@@ -7231,6 +7237,9 @@ export type Database = {
         }
         Update: {
           cantidad?: number | null
+          cerrado_at?: string | null
+          cerrado_por?: string | null
+          control_nro?: number
           created_at?: string
           estado?: string
           fecha?: string
@@ -12497,6 +12506,14 @@ export type Database = {
           p_tabla_afectada: string
         }
         Returns: string
+      }
+      insumos_cerrar_control: {
+        Args: { p_control_nro: number; p_fecha: string; p_sucursal_id: string }
+        Returns: number
+      }
+      insumos_reabrir_control: {
+        Args: { p_control_nro: number; p_fecha: string; p_sucursal_id: string }
+        Returns: number
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_manager: { Args: never; Returns: boolean }
