@@ -22,7 +22,6 @@ import {
   type RecorridoZona,
 } from "./recorridoTypes";
 import {
-  ArrowLeft,
   ArrowRight,
   Camera,
   CheckCircle2,
