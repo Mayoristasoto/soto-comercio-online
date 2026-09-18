@@ -116,8 +116,11 @@ export default function ControlInsumos() {
   const [controlNro, setControlNro] = useState(1)
   const [cerrado, setCerrado] = useState(false)
   const [cerrandoControl, setCerrandoControl] = useState(false)
+  const [finalizando, setFinalizando] = useState(false)
 
   const esAdmin = rol === "admin_rrhh"
+  // El gerente carga una sola vez: al finalizar, los números quedan fijos
+  const esGerente = !!rol && !esAdmin
   const bloqueado = !esAdmin && !!miSucursal
 
   useEffect(() => {
