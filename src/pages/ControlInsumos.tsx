@@ -54,6 +54,9 @@ const ESTADO_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
   a_reponer: "destructive",
 }
 
+// Sucursales habilitadas para el control de insumos
+const SUCURSALES_INSUMOS = ["Olazar 26", "Juan B. Justo", "José Martí"]
+
 const vacio: RegistroInsumo = {
   cantidad: "",
   estado: "ok",
