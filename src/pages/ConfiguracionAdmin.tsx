@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor, Key, FileSignature } from "lucide-react"
+import { Settings, Brain, FileText, DollarSign, Layout, Sparkles, Eye, Monitor, Key, FileSignature, ShieldCheck } from "lucide-react"
 import { PlantillasDocumentosManager } from "@/components/admin/PlantillasDocumentosManager"
 import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
@@ -87,7 +87,7 @@ export default function Configuracion() {
       </div>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearchParams({ tab: v }); }} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="fichero" className="gap-2">
             <Settings className="h-4 w-4" />
             Fichero
@@ -123,6 +123,10 @@ export default function Configuracion() {
           <TabsTrigger value="plantillas" className="gap-2">
             <FileSignature className="h-4 w-4" />
             Plantillas Doc.
+          </TabsTrigger>
+          <TabsTrigger value="accesos-rol" className="gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            Accesos por rol
           </TabsTrigger>
           <TabsTrigger value="roles" className="gap-2">
             <Eye className="h-4 w-4" />
@@ -184,6 +188,12 @@ export default function Configuracion() {
         <TabsContent value="plantillas" className="space-y-6">
           <Card className="p-6">
             <PlantillasDocumentosManager />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="accesos-rol" className="space-y-6">
+          <Card className="p-6">
+            <AccesosPorRolManager />
           </Card>
         </TabsContent>
 
