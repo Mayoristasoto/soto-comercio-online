@@ -6,11 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, X, Calendar } from "lucide-react";
+import { Loader2, Check, X, Calendar, ClipboardList, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { generarComprobanteVacacionesPDF } from "@/utils/comprobanteVacacionesPDF";
 import { imprimirConstanciaVacaciones } from "@/utils/constanciaVacacionesPDF";
+import {
+  CoberturaVacacionesDialog,
+  COBERTURA_ESTADO_LABEL,
+  COBERTURA_TIPO_LABEL,
+} from "./CoberturaVacacionesDialog";
 
 interface AprobacionVacacionesProps {
   rol: string;
@@ -23,6 +28,7 @@ interface Solicitud {
   fecha_fin: string;
   motivo: string;
   estado: string;
+  empleado_sucursal_id?: string | null;
   empleado: {
     nombre: string;
     apellido: string;
@@ -30,11 +36,27 @@ interface Solicitud {
   };
 }
 
+interface CoberturaResumen {
+  estado: string;
+  comentario_encargado: string | null;
+  comentario_rrhh: string | null;
+  dias: {
+    fecha: string;
+    tipo: string;
+    hora_entrada: string | null;
+    hora_salida: string | null;
+    empleados?: { nombre: string; apellido: string } | null;
+  }[];
+}
+
 export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesProps) {
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [loading, setLoading] = useState(true);
   const [comentarios, setComentarios] = useState<Record<string, string>>({});
+  const [coberturas, setCoberturas] = useState<Record<string, CoberturaResumen>>({});
+  const [coberturaAbierta, setCoberturaAbierta] = useState<Solicitud | null>(null);
   const { toast } = useToast();
+  const esAdmin = rol === "admin_rrhh";
 
   useEffect(() => {
     fetchSolicitudes();
