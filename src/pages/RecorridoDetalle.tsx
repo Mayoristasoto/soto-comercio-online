@@ -13,6 +13,8 @@ import { HistorialRecorridoV2 } from "@/components/recorrido/HistorialRecorridoV
 import { RecorridoModoGuiado } from "@/components/recorrido/RecorridoModoGuiado";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
+import { ActividadesPersonalCard } from "@/components/checklist/ActividadesPersonalCard";
+import { EncuestaClienteDialog } from "@/components/encuestas/EncuestaClienteDialog";
 import {
   ESTADO_HALLAZGO_LABEL,
   TIPO_ESPACIO_LABEL,
