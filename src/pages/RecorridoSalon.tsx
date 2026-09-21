@@ -183,10 +183,21 @@ const RecorridoSalon = () => {
     const { error } = await supabase.from("recorrido_criterios").insert({
       nombre: nuevoCriterio.trim(),
       orden: criterios.length + 1,
-      tipos_aplica: ["gondola"],
+      tipos_aplica: nuevoTipos.length ? nuevoTipos : ["gondola"],
     });
     if (error) return toast.error("No se pudo crear el criterio");
     setNuevoCriterio("");
+    setNuevoTipos(["gondola"]);
+    cargarBase();
+  };
+
+  /** Activa o quita un tipo de espacio para un criterio (ej: sólo heladeras) */
+  const alternarTipoCriterio = async (c: RecorridoCriterio, tipo: TipoEspacio) => {
+    const actuales = c.tipos_aplica && c.tipos_aplica.length ? c.tipos_aplica : [...TIPOS_ESPACIO];
+    const nuevos = actuales.includes(tipo) ? actuales.filter((t) => t !== tipo) : [...actuales, tipo];
+    if (!nuevos.length) return toast.error("El criterio tiene que aplicar a algún tipo");
+    const { error } = await supabase.from("recorrido_criterios").update({ tipos_aplica: nuevos }).eq("id", c.id);
+    if (error) return toast.error("No se pudo actualizar");
     cargarBase();
   };
 
