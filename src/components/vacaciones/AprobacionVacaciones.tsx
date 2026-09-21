@@ -62,6 +62,31 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
     fetchSolicitudes();
   }, [rol, sucursalId]);
 
+  const fetchCoberturas = async (ids: string[]) => {
+    if (!ids.length) {
+      setCoberturas({});
+      return;
+    }
+    const { data } = await (supabase as any)
+      .from("vacaciones_cobertura")
+      .select(
+        "id, solicitud_id, estado, comentario_encargado, comentario_rrhh, vacaciones_cobertura_dias(fecha, tipo, hora_entrada, hora_salida, empleados:empleado_cobertura_id(nombre, apellido))"
+      )
+      .in("solicitud_id", ids);
+    const map: Record<string, CoberturaResumen> = {};
+    for (const c of (data || []) as any[]) {
+      map[c.solicitud_id] = {
+        estado: c.estado,
+        comentario_encargado: c.comentario_encargado,
+        comentario_rrhh: c.comentario_rrhh,
+        dias: (c.vacaciones_cobertura_dias || []).sort((a: any, b: any) =>
+          a.fecha < b.fecha ? -1 : 1
+        ),
+      };
+    }
+    setCoberturas(map);
+  };
+
   const fetchSolicitudes = async () => {
     try {
       setLoading(true);
