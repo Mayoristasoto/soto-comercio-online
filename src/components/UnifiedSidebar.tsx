@@ -27,7 +27,8 @@ import {
   Briefcase,
   Package,
   Map as MapIcon,
-  X
+  X,
+  Pencil
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
@@ -159,6 +160,38 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const { accesos, toggle: toggleAcceso, quitar: quitarAcceso } = useAccesosRapidos(userInfo?.id)
   const [dialogAccesos, setDialogAccesos] = useState(false)
+  const [modoEditar, setModoEditar] = useState(false)
+  const esAdmin = userInfo?.rol === 'admin_rrhh'
+
+  // Oculta una sección del menú para TODOS los roles (app_pages.mostrar_en_sidebar = false).
+  // Se vuelve a activar desde Configuración > Accesos por rol.
+  const ocultarLink = async (id: string, nombre: string) => {
+    const { error } = await supabase
+      .from("app_pages")
+      .update({ mostrar_en_sidebar: false })
+      .eq("id", id)
+    if (error) {
+      toast.error("No se pudo ocultar: " + error.message)
+      return
+    }
+    toast.success(`"${nombre}" se ocultó del menú`)
+  }
+
+  const BotonOcultar = ({ id, nombre, right = "right-1" }: { id: string; nombre: string; right?: string }) => (
+    <button
+      type="button"
+      title={`Ocultar "${nombre}" del menú`}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        ocultarLink(id, nombre)
+      }}
+      className={`absolute ${right} top-1/2 z-10 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive`}
+    >
+      <X className="h-3.5 w-3.5" />
+    </button>
+  )
+
 
   // Secciones disponibles (aplanadas) para elegir accesos rápidos
   const seccionesDisponibles = useMemo(() => {
@@ -342,7 +375,20 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
             {/* Renderizar links dinámicamente desde la base de datos */}
             {links.length > 0 && (
               <SidebarGroup>
-                <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+                <SidebarGroupLabel className="flex items-center justify-between">
+                  <span>Navegación</span>
+                  {esAdmin && (
+                    <Button
+                      variant={modoEditar ? "secondary" : "ghost"}
+                      size="icon"
+                      className="h-6 w-6"
+                      title={modoEditar ? "Salir del modo editar" : "Editar menú (ocultar secciones)"}
+                      onClick={() => setModoEditar((v) => !v)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {links.map((link) => {
@@ -427,6 +473,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 </NavLink>
                               </SidebarMenuButton>
                             )}
+                            {modoEditar && esAdmin && (
+                              <BotonOcultar id={link.id} nombre={link.nombre} right={hasChildren ? "right-8" : "right-1"} />
+                            )}
                           </SidebarMenuItem>
                           
                           {/* Renderizar hijos si existen */}
@@ -450,8 +499,8 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                    if (childHasChildren) {
                                      const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
                                       return (
-                                         <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
-                                          <SidebarMenuSubItem>
+                                          <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
+                                           <SidebarMenuSubItem className="relative">
                                             <CollapsibleTrigger asChild>
                                               <SidebarMenuSubButton 
                                                 isActive={isChildActive}
@@ -465,10 +514,13 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                               >
                                                 <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
                                                 <span className="text-xs truncate flex-1">{child.nombre}</span>
-                                                <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
-                                              </SidebarMenuSubButton>
-                                            </CollapsibleTrigger>
-                                          </SidebarMenuSubItem>
+                                                 <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
+                                               </SidebarMenuSubButton>
+                                             </CollapsibleTrigger>
+                                             {modoEditar && esAdmin && (
+                                               <BotonOcultar id={child.id} nombre={child.nombre} right="right-8" />
+                                             )}
+                                           </SidebarMenuSubItem>
                                          <CollapsibleContent>
                                            <SidebarMenuSub className="ml-2 border-l border-border/50">
                                              {(child as any).children.map((grand: any) => {
@@ -478,7 +530,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                                  ? currentFullPath === grandPath
                                                  : location.pathname === grandPath
                                                return (
-                                                   <SidebarMenuSubItem key={grand.id}>
+                                                    <SidebarMenuSubItem key={grand.id} className="relative">
                                                       <SidebarMenuSubButton 
                                                         asChild 
                                                         isActive={isGrandActive}
@@ -491,10 +543,13 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                                         `}
                                                       >
                                                         <NavLink to={fixPath(grand.path, grand.nombre)} className="flex items-center gap-2">
-                                                          <GrandIcon className={`h-3.5 w-3.5 shrink-0 ${isGrandActive ? 'text-primary-foreground' : ''}`} />
-                                                          <span className="text-xs truncate">{grand.nombre}</span>
-                                                        </NavLink>
-                                                      </SidebarMenuSubButton>
+                                                           <GrandIcon className={`h-3.5 w-3.5 shrink-0 ${isGrandActive ? 'text-primary-foreground' : ''}`} />
+                                                           <span className="text-xs truncate">{grand.nombre}</span>
+                                                         </NavLink>
+                                                       </SidebarMenuSubButton>
+                                                       {modoEditar && esAdmin && (
+                                                         <BotonOcultar id={grand.id} nombre={grand.nombre} />
+                                                       )}
                                                     </SidebarMenuSubItem>
                                                )
                                             })}
@@ -504,8 +559,8 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                     )
                                   }
 
-                                   return (
-                                     <SidebarMenuSubItem key={child.id}>
+                                    return (
+                                      <SidebarMenuSubItem key={child.id} className="relative">
                                        <SidebarMenuSubButton 
                                          asChild 
                                          isActive={isChildActive}
@@ -517,12 +572,15 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                            }
                                          `}
                                        >
-                                         <NavLink to={fixPath(child.path, child.nombre)} className="flex items-center gap-2">
-                                           <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${isChildActive ? 'text-primary-foreground' : ''}`} />
-                                           <span className="text-xs truncate">{child.nombre}</span>
-                                         </NavLink>
-                                       </SidebarMenuSubButton>
-                                     </SidebarMenuSubItem>
+                                          <NavLink to={fixPath(child.path, child.nombre)} className="flex items-center gap-2">
+                                            <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${isChildActive ? 'text-primary-foreground' : ''}`} />
+                                            <span className="text-xs truncate">{child.nombre}</span>
+                                          </NavLink>
+                                        </SidebarMenuSubButton>
+                                        {modoEditar && esAdmin && (
+                                          <BotonOcultar id={child.id} nombre={child.nombre} />
+                                        )}
+                                      </SidebarMenuSubItem>
                                    )
                                 })}
                               </SidebarMenuSub>
