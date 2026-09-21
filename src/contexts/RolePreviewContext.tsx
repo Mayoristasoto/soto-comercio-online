@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import { supabase } from "@/integrations/supabase/client"
 
 export type RolApp = "admin_rrhh" | "gerente_sucursal" | "lider_grupo" | "empleado"
 
@@ -14,6 +15,9 @@ interface RolePreviewValue {
   /** Rol que la interfaz debe usar */
   rolEfectivo: string | null
   enPreview: boolean
+  /** True cuando el encabezado ya muestra el selector (evita duplicar la barra flotante) */
+  headerSwitcherMontado: boolean
+  registrarHeaderSwitcher: (montado: boolean) => void
 }
 
 const RolePreviewContext = createContext<RolePreviewValue | null>(null)
@@ -30,6 +34,34 @@ function leerStorage(): RolApp | null {
 export function RolePreviewProvider({ children }: { children: React.ReactNode }) {
   const [rolReal, setRolReal] = useState<string | null>(null)
   const [rolVista, setRolVistaState] = useState<RolApp | null>(() => leerStorage())
+  const [headerSwitchers, setHeaderSwitchers] = useState(0)
+
+  // Resolvemos el rol real en el propio provider para que funcione también
+  // en pantallas que no usan el layout con encabezado.
+  useEffect(() => {
+    let cancelado = false
+
+    const resolver = async () => {
+      const { data: sesion } = await supabase.auth.getSession()
+      if (!sesion.session) {
+        if (!cancelado) setRolReal(null)
+        return
+      }
+      const { data, error } = await supabase.rpc("current_user_role")
+      if (!cancelado && !error) setRolReal((data as string | null) ?? null)
+    }
+
+    resolver()
+
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      resolver()
+    })
+
+    return () => {
+      cancelado = true
+      sub.subscription.unsubscribe()
+    }
+  }, [])
 
   // Solo RRHH puede simular: si el rol real no es admin, se descarta la simulación
   useEffect(() => {
@@ -45,7 +77,7 @@ export function RolePreviewProvider({ children }: { children: React.ReactNode })
 
   const setRolVista = useCallback(
     (rol: RolApp | null) => {
-      if (rolReal !== "admin_rrhh") return
+      if (rol && rolReal !== "admin_rrhh") return
       setRolVistaState(rol)
       try {
         if (rol) sessionStorage.setItem(STORAGE_KEY, rol)
@@ -57,6 +89,10 @@ export function RolePreviewProvider({ children }: { children: React.ReactNode })
     [rolReal]
   )
 
+  const registrarHeaderSwitcher = useCallback((montado: boolean) => {
+    setHeaderSwitchers((n) => Math.max(0, n + (montado ? 1 : -1)))
+  }, [])
+
   const value = useMemo<RolePreviewValue>(() => {
     const simulando = rolReal === "admin_rrhh" && !!rolVista && rolVista !== rolReal
     return {
@@ -66,8 +102,10 @@ export function RolePreviewProvider({ children }: { children: React.ReactNode })
       setRolVista,
       rolEfectivo: simulando ? rolVista : rolReal,
       enPreview: simulando,
+      headerSwitcherMontado: headerSwitchers > 0,
+      registrarHeaderSwitcher,
     }
-  }, [rolReal, rolVista, setRolVista])
+  }, [rolReal, rolVista, setRolVista, headerSwitchers, registrarHeaderSwitcher])
 
   return <RolePreviewContext.Provider value={value}>{children}</RolePreviewContext.Provider>
 }

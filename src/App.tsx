@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { RolePreviewProvider } from "@/contexts/RolePreviewContext";
+import { RoleViewFloatingBar } from "@/components/admin/RoleViewFloatingBar";
 import { ThemeLoader } from "./components/ThemeLoader";
 
 // Layout components
@@ -120,6 +121,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <RolePreviewProvider>
+          <RoleViewFloatingBar />
           <Routes>
           {/* Redirigir raíz a autenticación */}
           <Route path="/" element={<Navigate to="/auth" replace />} />

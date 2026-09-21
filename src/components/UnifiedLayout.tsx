@@ -17,6 +17,7 @@ import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
 import { ArrowLeft, Eye } from "lucide-react"
 import { useRolePreview, ROL_LABEL, type RolApp } from "@/contexts/RolePreviewContext"
 import { RoleViewSwitcher } from "@/components/admin/RoleViewSwitcher"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 
 export default function UnifiedLayout() {
@@ -38,8 +39,9 @@ export default function UnifiedLayout() {
 
   // Vista simulada de rol (solo admin_rrhh): la UI usa el rol efectivo
   const preview = useRolePreview()
+  const isMobileLayout = useIsMobile()
   useEffect(() => {
-    preview?.setRolReal(userInfo?.rol ?? null)
+    if (userInfo?.rol) preview?.setRolReal(userInfo.rol)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo?.rol])
 
@@ -54,6 +56,16 @@ export default function UnifiedLayout() {
 
   const isGerenteUser = rolEfectivo === 'gerente_sucursal'
   const { accesos, loading: loadingAccesos } = useEncargadoAccesos()
+
+  // El selector del encabezado solo se ve en md+ y fuera de la vista de gerente:
+  // mientras está visible, la barra flotante se oculta para no duplicar el control.
+  const headerSwitcherVisible = !!userInfo && !isGerenteUser && !isMobileLayout
+  useEffect(() => {
+    if (!headerSwitcherVisible || !preview) return
+    preview.registrarHeaderSwitcher(true)
+    return () => preview.registrarHeaderSwitcher(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headerSwitcherVisible])
 
   // Los gerentes solo pueden navegar a los destinos de las tarjetas de su panel
   useEffect(() => {
@@ -262,17 +274,6 @@ export default function UnifiedLayout() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Volver al panel
         </Button>
-        {enPreview && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="fixed right-3 top-3 z-50 shadow-sm"
-            onClick={volverAMiVista}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Volver a mi vista
-          </Button>
-        )}
         <main className="min-h-screen pt-14">
           <Outlet context={{ userInfo: userInfoVista }} />
         </main>
