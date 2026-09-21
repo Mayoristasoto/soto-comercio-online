@@ -97,7 +97,8 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
       
       let formattedData = (data || []).map((item: any) => ({
         ...item,
-        empleado: item.empleados
+        empleado: item.empleados,
+        empleado_sucursal_id: item.empleados?.sucursal_id ?? null,
       }));
       
       // Si es gerente, excluir sus propias solicitudes
@@ -106,6 +107,7 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
       }
       
       setSolicitudes(formattedData);
+      await fetchCoberturas(formattedData.map((s: any) => s.id));
     } catch (error: any) {
       console.error('Error fetching solicitudes:', error);
       toast({
