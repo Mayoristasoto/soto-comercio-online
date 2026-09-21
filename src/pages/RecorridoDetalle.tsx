@@ -439,6 +439,33 @@ const RecorridoDetalle = () => {
         </Card>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActividadesPersonalCard recorridoId={recorrido.id} readOnly={soloLectura} />
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" /> Encuesta a clientes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Durante el recorrido podés tomar la opinión de un cliente y darle su código de descuento para la próxima visita.
+            </p>
+            <Button onClick={() => setEncuestaOpen(true)} disabled={soloLectura}>
+              <MessageCircle className="h-4 w-4 mr-1" /> Cargar encuesta de cliente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <EncuestaClienteDialog
+        open={encuestaOpen}
+        onOpenChange={setEncuestaOpen}
+        sucursalId={recorrido.sucursal_id}
+      />
+
+
       {vistaCompleta && (
         <Card>
           <CardHeader className="pb-2">
