@@ -224,6 +224,14 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
         }
       }
 
+      // Dejar la cobertura como aprobada
+      if (coberturas[solicitudId]) {
+        await (supabase as any)
+          .from("vacaciones_cobertura")
+          .update({ estado: "aprobada", resuelto_at: new Date().toISOString() })
+          .eq("solicitud_id", solicitudId);
+      }
+
       // Generar también la constancia de otorgamiento (plantilla editable)
       try {
         await imprimirConstanciaVacaciones("vacaciones_otorgamiento", solicitudId);
