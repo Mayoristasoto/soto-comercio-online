@@ -398,7 +398,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
           return (
             <div
               key={g.id}
-              className={`absolute border-2 rounded-sm flex items-center justify-center text-[10px] font-semibold text-slate-700 ${colorEstado(g.status)} ${selId === g.id ? "ring-2 ring-primary" : ""}`}
+              className={`absolute border-2 rounded-sm flex items-center justify-center text-[10px] font-semibold text-slate-700 ${colorEstado(g.status, g.type)} ${selId === g.id ? "ring-2 ring-primary" : ""}`}
               style={{ ...aPct(box), transform: g.rotation ? `rotate(${g.rotation}deg)` : undefined }}
               onPointerDown={(e) => onPointerDownEspacio(e, g)}
               onDoubleClick={(e) => { e.stopPropagation(); abrirEdicion(g); }}

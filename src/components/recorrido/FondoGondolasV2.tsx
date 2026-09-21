@@ -113,7 +113,7 @@ export function FondoGondolasV2({
       )}
 
       {gondolas.map((g) => {
-        const c = colorEstado(g.status);
+        const c = colorEstado(g.status, g.type);
         return (
           <rect
             key={g.id}
