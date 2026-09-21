@@ -73,9 +73,11 @@ export function useFondoGondolasV2(activo: boolean, sucursalId?: string | null) 
   return { gondolas, bbox: bboxDe(gondolas), cargando };
 }
 
-/** Mismos colores que el editor de layout: verde = libre, rojo = ocupada */
-const colorEstado = (status: string) =>
-  status === "occupied"
+/** Mismos colores que el editor de layout: verde = libre, rojo = ocupada, celeste = heladera (frío) */
+const colorEstado = (status: string, type?: string) =>
+  type === "heladera"
+    ? { fill: "#bae6fd", stroke: "#0284c7" }
+    : status === "occupied"
     ? { fill: "#fca5a5", stroke: "#dc2626" }
     : { fill: "#86efac", stroke: "#16a34a" };
 
@@ -111,7 +113,7 @@ export function FondoGondolasV2({
       )}
 
       {gondolas.map((g) => {
-        const c = colorEstado(g.status);
+        const c = colorEstado(g.status, g.type);
         return (
           <rect
             key={g.id}

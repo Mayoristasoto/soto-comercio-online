@@ -2,11 +2,12 @@
 export type EstadoHallazgo = "cumple" | "parcial" | "no_cumple";
 
 /** Tipos de espacio del mapa (copia v2 del layout) */
-export const TIPOS_ESPACIO = ["gondola", "puntera", "exhibidor_impulso", "cartel_exterior"] as const;
+export const TIPOS_ESPACIO = ["gondola", "heladera", "puntera", "exhibidor_impulso", "cartel_exterior"] as const;
 export type TipoEspacio = (typeof TIPOS_ESPACIO)[number];
 
 export const TIPO_ESPACIO_LABEL: Record<TipoEspacio, string> = {
   gondola: "Góndola",
+  heladera: "Heladera (frío)",
   puntera: "Puntera",
   exhibidor_impulso: "Exhibidor de impulso",
   cartel_exterior: "Cartel",

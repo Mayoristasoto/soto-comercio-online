@@ -12,8 +12,10 @@ import { cargarGondolasV2, type BBox, type GondolaV2 } from "./FondoGondolasV2";
 import { TIPO_ESPACIO_LABEL, TIPOS_ESPACIO, type TipoEspacio } from "./recorridoTypes";
 import { fondoDe } from "./planosFondo";
 
-const colorEstado = (status: string) =>
-  status === "occupied"
+const colorEstado = (status: string, type?: string) =>
+  type === "heladera"
+    ? "bg-sky-300/70 border-sky-600"
+    : status === "occupied"
     ? "bg-red-300/70 border-red-600"
     : "bg-emerald-300/70 border-emerald-600";
 
@@ -396,7 +398,7 @@ export function EspaciosEditor({ sucursalId, onChange }: Props) {
           return (
             <div
               key={g.id}
-              className={`absolute border-2 rounded-sm flex items-center justify-center text-[10px] font-semibold text-slate-700 ${colorEstado(g.status)} ${selId === g.id ? "ring-2 ring-primary" : ""}`}
+              className={`absolute border-2 rounded-sm flex items-center justify-center text-[10px] font-semibold text-slate-700 ${colorEstado(g.status, g.type)} ${selId === g.id ? "ring-2 ring-primary" : ""}`}
               style={{ ...aPct(box), transform: g.rotation ? `rotate(${g.rotation}deg)` : undefined }}
               onPointerDown={(e) => onPointerDownEspacio(e, g)}
               onDoubleClick={(e) => { e.stopPropagation(); abrirEdicion(g); }}
