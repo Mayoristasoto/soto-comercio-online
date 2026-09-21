@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
 import {
   TIPO_ESPACIO_LABEL,
+  TIPOS_ESPACIO,
   type Recorrido,
   type RecorridoCriterio,
   type RecorridoPlano,
@@ -44,6 +45,7 @@ const RecorridoSalon = () => {
 
   // nuevo criterio
   const [nuevoCriterio, setNuevoCriterio] = useState("");
+  const [nuevoTipos, setNuevoTipos] = useState<TipoEspacio[]>(["gondola"]);
   const [esAdmin, setEsAdmin] = useState(false);
   const [regenerando, setRegenerando] = useState(false);
 
