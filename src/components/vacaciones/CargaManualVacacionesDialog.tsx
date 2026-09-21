@@ -20,11 +20,14 @@ interface Props {
   empleados: Empleado[];
   fechaInicial?: Date;
   onSaved?: () => void;
+  /** El encargado solo puede cargarlas como pendientes de aprobación de RRHH */
+  soloPendiente?: boolean;
+  onSavedSolicitud?: (solicitud: { id: string; empleado_id: string; fecha_inicio: string; fecha_fin: string }) => void;
 }
 
 type Estado = "pendiente" | "aprobada" | "gozadas" | "rechazada";
 
-export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fechaInicial, onSaved }: Props) {
+export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fechaInicial, onSaved, soloPendiente, onSavedSolicitud }: Props) {
   const { toast } = useToast();
   const [empleadoId, setEmpleadoId] = useState<string>("");
   const [pickerOpen, setPickerOpen] = useState(false);
