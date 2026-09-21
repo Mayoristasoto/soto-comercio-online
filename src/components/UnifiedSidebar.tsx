@@ -473,6 +473,9 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                 </NavLink>
                               </SidebarMenuButton>
                             )}
+                            {modoEditar && esAdmin && (
+                              <BotonOcultar id={link.id} nombre={link.nombre} right={hasChildren ? "right-8" : "right-1"} />
+                            )}
                           </SidebarMenuItem>
                           
                           {/* Renderizar hijos si existen */}
@@ -496,8 +499,8 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                    if (childHasChildren) {
                                      const open = expandedItems.has(child.id) || isChildActive || childHasActiveGrand
                                       return (
-                                         <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
-                                          <SidebarMenuSubItem>
+                                          <Collapsible key={child.id} open={open} onOpenChange={() => toggleExpanded(child.id)} className="group/collapsible">
+                                           <SidebarMenuSubItem className="relative">
                                             <CollapsibleTrigger asChild>
                                               <SidebarMenuSubButton 
                                                 isActive={isChildActive}
