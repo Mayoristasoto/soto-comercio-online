@@ -6,11 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, X, Calendar } from "lucide-react";
+import { Loader2, Check, X, Calendar, ClipboardList, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { generarComprobanteVacacionesPDF } from "@/utils/comprobanteVacacionesPDF";
 import { imprimirConstanciaVacaciones } from "@/utils/constanciaVacacionesPDF";
+import {
+  CoberturaVacacionesDialog,
+  COBERTURA_ESTADO_LABEL,
+  COBERTURA_TIPO_LABEL,
+} from "./CoberturaVacacionesDialog";
 
 interface AprobacionVacacionesProps {
   rol: string;
@@ -23,6 +28,7 @@ interface Solicitud {
   fecha_fin: string;
   motivo: string;
   estado: string;
+  empleado_sucursal_id?: string | null;
   empleado: {
     nombre: string;
     apellido: string;
@@ -30,15 +36,56 @@ interface Solicitud {
   };
 }
 
+interface CoberturaResumen {
+  estado: string;
+  comentario_encargado: string | null;
+  comentario_rrhh: string | null;
+  dias: {
+    fecha: string;
+    tipo: string;
+    hora_entrada: string | null;
+    hora_salida: string | null;
+    empleados?: { nombre: string; apellido: string } | null;
+  }[];
+}
+
 export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesProps) {
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [loading, setLoading] = useState(true);
   const [comentarios, setComentarios] = useState<Record<string, string>>({});
+  const [coberturas, setCoberturas] = useState<Record<string, CoberturaResumen>>({});
+  const [coberturaAbierta, setCoberturaAbierta] = useState<Solicitud | null>(null);
   const { toast } = useToast();
+  const esAdmin = rol === "admin_rrhh";
 
   useEffect(() => {
     fetchSolicitudes();
   }, [rol, sucursalId]);
+
+  const fetchCoberturas = async (ids: string[]) => {
+    if (!ids.length) {
+      setCoberturas({});
+      return;
+    }
+    const { data } = await (supabase as any)
+      .from("vacaciones_cobertura")
+      .select(
+        "id, solicitud_id, estado, comentario_encargado, comentario_rrhh, vacaciones_cobertura_dias(fecha, tipo, hora_entrada, hora_salida, empleados:empleado_cobertura_id(nombre, apellido))"
+      )
+      .in("solicitud_id", ids);
+    const map: Record<string, CoberturaResumen> = {};
+    for (const c of (data || []) as any[]) {
+      map[c.solicitud_id] = {
+        estado: c.estado,
+        comentario_encargado: c.comentario_encargado,
+        comentario_rrhh: c.comentario_rrhh,
+        dias: (c.vacaciones_cobertura_dias || []).sort((a: any, b: any) =>
+          a.fecha < b.fecha ? -1 : 1
+        ),
+      };
+    }
+    setCoberturas(map);
+  };
 
   const fetchSolicitudes = async () => {
     try {
@@ -75,7 +122,8 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
       
       let formattedData = (data || []).map((item: any) => ({
         ...item,
-        empleado: item.empleados
+        empleado: item.empleados,
+        empleado_sucursal_id: item.empleados?.sucursal_id ?? null,
       }));
       
       // Si es gerente, excluir sus propias solicitudes
@@ -84,6 +132,7 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
       }
       
       setSolicitudes(formattedData);
+      await fetchCoberturas(formattedData.map((s: any) => s.id));
     } catch (error: any) {
       console.error('Error fetching solicitudes:', error);
       toast({
@@ -97,6 +146,16 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
   };
 
   const handleAprobar = async (solicitudId: string) => {
+    const cob = coberturas[solicitudId];
+    if (esAdmin && (!cob || cob.estado === "borrador")) {
+      toast({
+        title: "Falta el plan de cobertura",
+        description:
+          "El encargado todavía no envió cómo va a cubrir esos días. Pedile la cobertura antes de aprobar.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const { data: empleadoAprob } = await supabase
         .from('empleados')
@@ -163,6 +222,14 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
         } catch (pdfErr) {
           console.warn('Error generando comprobante', pdfErr);
         }
+      }
+
+      // Dejar la cobertura como aprobada
+      if (coberturas[solicitudId]) {
+        await (supabase as any)
+          .from("vacaciones_cobertura")
+          .update({ estado: "aprobada", resuelto_at: new Date().toISOString() })
+          .eq("solicitud_id", solicitudId);
       }
 
       // Generar también la constancia de otorgamiento (plantilla editable)
@@ -282,6 +349,74 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
                   <Badge variant="secondary">{solicitud.estado}</Badge>
                 </div>
 
+                {/* Plan de cobertura de la sucursal */}
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    <span className="text-sm font-medium">Cobertura de esos días</span>
+                    {coberturas[solicitud.id] ? (
+                      <Badge
+                        variant={
+                          coberturas[solicitud.id].estado === "aprobada" ? "default" : "secondary"
+                        }
+                      >
+                        {COBERTURA_ESTADO_LABEL[coberturas[solicitud.id].estado] ??
+                          coberturas[solicitud.id].estado}
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Sin cargar
+                      </Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-auto"
+                      onClick={() => setCoberturaAbierta(solicitud)}
+                    >
+                      {esAdmin ? "Ver cobertura" : "Definir cobertura"}
+                    </Button>
+                  </div>
+
+                  {coberturas[solicitud.id]?.dias?.length ? (
+                    <div className="space-y-1">
+                      {coberturas[solicitud.id].dias.map((d) => (
+                        <p key={d.fecha} className="text-xs text-muted-foreground">
+                          <span className="capitalize">
+                            {format(new Date(d.fecha + "T00:00:00"), "EEEE d/MM", { locale: es })}
+                          </span>
+                          {" · "}
+                          {COBERTURA_TIPO_LABEL[d.tipo as keyof typeof COBERTURA_TIPO_LABEL] ?? d.tipo}
+                          {d.empleados ? ` · ${d.empleados.apellido}, ${d.empleados.nombre}` : ""}
+                          {d.hora_entrada && d.hora_salida
+                            ? ` · ${String(d.hora_entrada).slice(0, 5)} a ${String(d.hora_salida).slice(0, 5)}`
+                            : ""}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      {esAdmin
+                        ? "El encargado todavía no indicó cómo cubre esos días."
+                        : "Indicá día por día quién cubre o qué cambio de horario proponés."}
+                    </p>
+                  )}
+
+                  {coberturas[solicitud.id]?.comentario_encargado && (
+                    <p className="text-xs">
+                      <span className="font-medium">Encargado:</span>{" "}
+                      {coberturas[solicitud.id].comentario_encargado}
+                    </p>
+                  )}
+                  {coberturas[solicitud.id]?.comentario_rrhh && (
+                    <p className="text-xs">
+                      <span className="font-medium">RRHH sugirió:</span>{" "}
+                      {coberturas[solicitud.id].comentario_rrhh}
+                    </p>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label>Comentarios</Label>
                   <Textarea
@@ -295,13 +430,21 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
                 </div>
 
                 <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleAprobar(solicitud.id)}
-                    className="flex-1"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Aprobar
-                  </Button>
+                  {esAdmin && (
+                    <Button onClick={() => handleAprobar(solicitud.id)} className="flex-1">
+                      <Check className="h-4 w-4 mr-2" />
+                      Aprobar
+                    </Button>
+                  )}
+                  {!esAdmin && (
+                    <Button
+                      className="flex-1"
+                      onClick={() => setCoberturaAbierta(solicitud)}
+                    >
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                      Cargar cobertura y enviar a RRHH
+                    </Button>
+                  )}
                   <Button
                     onClick={() => handleRechazar(solicitud.id)}
                     variant="destructive"
@@ -315,6 +458,20 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
             ))
           )}
         </div>
+
+        {coberturaAbierta && (
+          <CoberturaVacacionesDialog
+            open={!!coberturaAbierta}
+            onOpenChange={(v) => !v && setCoberturaAbierta(null)}
+            solicitudId={coberturaAbierta.id}
+            empleadoNombre={`${coberturaAbierta.empleado.nombre} ${coberturaAbierta.empleado.apellido}`}
+            fechaInicio={coberturaAbierta.fecha_inicio}
+            fechaFin={coberturaAbierta.fecha_fin}
+            sucursalId={coberturaAbierta.empleado_sucursal_id ?? sucursalId ?? null}
+            modoRRHH={esAdmin}
+            onSaved={fetchSolicitudes}
+          />
+        )}
       </CardContent>
     </Card>
   );

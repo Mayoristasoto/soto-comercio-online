@@ -20,11 +20,14 @@ interface Props {
   empleados: Empleado[];
   fechaInicial?: Date;
   onSaved?: () => void;
+  /** El encargado solo puede cargarlas como pendientes de aprobación de RRHH */
+  soloPendiente?: boolean;
+  onSavedSolicitud?: (solicitud: { id: string; empleado_id: string; fecha_inicio: string; fecha_fin: string }) => void;
 }
 
 type Estado = "pendiente" | "aprobada" | "gozadas" | "rechazada";
 
-export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fechaInicial, onSaved }: Props) {
+export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fechaInicial, onSaved, soloPendiente, onSavedSolicitud }: Props) {
   const { toast } = useToast();
   const [empleadoId, setEmpleadoId] = useState<string>("");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -42,11 +45,11 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
       setFechaInicio(fi);
       setFechaFin(fi);
       setEmpleadoId("");
-      setEstado("aprobada");
+      setEstado(soloPendiente ? "pendiente" : "aprobada");
       setComentario("");
       setPeriodoDevengado(String(base.getFullYear() - 1));
     }
-  }, [open, fechaInicial]);
+  }, [open, fechaInicial, soloPendiente]);
 
   const seleccionado = empleados.find((e) => e.id === empleadoId);
 
@@ -93,7 +96,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin,
         estado,
-        motivo: comentario || "Carga manual por RRHH",
+        motivo: comentario || (soloPendiente ? "Carga del encargado" : "Carga manual por RRHH"),
         periodo_devengado: periodoDevengado ? parseInt(periodoDevengado, 10) : null,
       };
       if (estado !== "pendiente") {
@@ -102,12 +105,18 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
         payload.comentarios_aprobacion = comentario || null;
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("solicitudes_vacaciones")
-        .insert(payload);
+        .insert(payload)
+        .select("id, empleado_id, fecha_inicio, fecha_fin")
+        .single();
       if (error) throw error;
 
-      toast({ title: "Vacaciones cargadas correctamente" });
+      toast({
+        title: "Vacaciones cargadas correctamente",
+        description: soloPendiente ? "Ahora cargá cómo vas a cubrir esos días." : undefined,
+      });
+      if (inserted) onSavedSolicitud?.(inserted as any);
       onSaved?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -123,7 +132,9 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
         <DialogHeader>
           <DialogTitle>Cargar vacaciones manualmente</DialogTitle>
           <DialogDescription>
-            Registrá vacaciones por un empleado y definí el estado inicial.
+            {soloPendiente
+              ? "Registrá las vacaciones de tu equipo. Quedan pendientes de aprobación de RRHH y tenés que indicar la cobertura."
+              : "Registrá vacaciones por un empleado y definí el estado inicial."}
           </DialogDescription>
         </DialogHeader>
 
@@ -174,6 +185,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
             </div>
           </div>
 
+          {!soloPendiente && (
           <div className="space-y-1.5">
             <Label>Estado</Label>
             <Select value={estado} onValueChange={(v) => setEstado(v as Estado)}>
@@ -186,6 +198,7 @@ export function CargaManualVacacionesDialog({ open, onOpenChange, empleados, fec
               </SelectContent>
             </Select>
           </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Período devengado (año LCT)</Label>

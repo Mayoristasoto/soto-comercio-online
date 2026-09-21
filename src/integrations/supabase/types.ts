@@ -11675,6 +11675,239 @@ export type Database = {
           },
         ]
       }
+      vacaciones_cobertura: {
+        Row: {
+          comentario_encargado: string | null
+          comentario_rrhh: string | null
+          creado_por: string | null
+          created_at: string
+          enviado_at: string | null
+          estado: string
+          id: string
+          resuelto_at: string | null
+          solicitud_id: string
+          sucursal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          comentario_encargado?: string | null
+          comentario_rrhh?: string | null
+          creado_por?: string | null
+          created_at?: string
+          enviado_at?: string | null
+          estado?: string
+          id?: string
+          resuelto_at?: string | null
+          solicitud_id: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comentario_encargado?: string | null
+          comentario_rrhh?: string | null
+          creado_por?: string | null
+          created_at?: string
+          enviado_at?: string | null
+          estado?: string
+          id?: string
+          resuelto_at?: string | null
+          solicitud_id?: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacaciones_cobertura_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_solicitud_id_fkey"
+            columns: ["solicitud_id"]
+            isOneToOne: true
+            referencedRelation: "solicitudes_vacaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vacaciones_cobertura_comentarios: {
+        Row: {
+          autor_id: string | null
+          autor_rol: string | null
+          cobertura_id: string
+          created_at: string
+          id: string
+          mensaje: string
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_rol?: string | null
+          cobertura_id: string
+          created_at?: string
+          id?: string
+          mensaje: string
+        }
+        Update: {
+          autor_id?: string | null
+          autor_rol?: string | null
+          cobertura_id?: string
+          created_at?: string
+          id?: string
+          mensaje?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacaciones_cobertura_comentarios_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_comentarios_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_comentarios_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_comentarios_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_comentarios_cobertura_id_fkey"
+            columns: ["cobertura_id"]
+            isOneToOne: false
+            referencedRelation: "vacaciones_cobertura"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vacaciones_cobertura_dias: {
+        Row: {
+          cobertura_id: string
+          created_at: string
+          empleado_cobertura_id: string | null
+          fecha: string
+          hora_entrada: string | null
+          hora_salida: string | null
+          id: string
+          observaciones: string | null
+          sucursal_origen_id: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          cobertura_id: string
+          created_at?: string
+          empleado_cobertura_id?: string | null
+          fecha: string
+          hora_entrada?: string | null
+          hora_salida?: string | null
+          id?: string
+          observaciones?: string | null
+          sucursal_origen_id?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          cobertura_id?: string
+          created_at?: string
+          empleado_cobertura_id?: string | null
+          fecha?: string
+          hora_entrada?: string | null
+          hora_salida?: string | null
+          id?: string
+          observaciones?: string | null
+          sucursal_origen_id?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vacaciones_cobertura_dias_cobertura_id_fkey"
+            columns: ["cobertura_id"]
+            isOneToOne: false
+            referencedRelation: "vacaciones_cobertura"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_dias_empleado_cobertura_id_fkey"
+            columns: ["empleado_cobertura_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_dias_empleado_cobertura_id_fkey"
+            columns: ["empleado_cobertura_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_dias_empleado_cobertura_id_fkey"
+            columns: ["empleado_cobertura_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_dias_empleado_cobertura_id_fkey"
+            columns: ["empleado_cobertura_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacaciones_cobertura_dias_sucursal_origen_id_fkey"
+            columns: ["sucursal_origen_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vacaciones_saldo: {
         Row: {
           anio: number
