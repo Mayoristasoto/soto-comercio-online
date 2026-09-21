@@ -12,8 +12,10 @@ import { cargarGondolasV2, type BBox, type GondolaV2 } from "./FondoGondolasV2";
 import { TIPO_ESPACIO_LABEL, TIPOS_ESPACIO, type TipoEspacio } from "./recorridoTypes";
 import { fondoDe } from "./planosFondo";
 
-const colorEstado = (status: string) =>
-  status === "occupied"
+const colorEstado = (status: string, type?: string) =>
+  type === "heladera"
+    ? "bg-sky-300/70 border-sky-600"
+    : status === "occupied"
     ? "bg-red-300/70 border-red-600"
     : "bg-emerald-300/70 border-emerald-600";
 
