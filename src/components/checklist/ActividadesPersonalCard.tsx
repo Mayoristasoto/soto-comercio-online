@@ -54,12 +54,17 @@ interface EmpleadoOpt {
 }
 
 interface Props {
-  controlId: string;
+  /** Control de checklist al que pertenece la actividad */
+  controlId?: string | null;
+  /** Recorrido de salón al que pertenece la actividad */
+  recorridoId?: string | null;
   readOnly?: boolean;
   compacto?: boolean;
 }
 
-export function ActividadesPersonalCard({ controlId, readOnly = false, compacto = false }: Props) {
+export function ActividadesPersonalCard({ controlId, recorridoId, readOnly = false, compacto = false }: Props) {
+  const campoOrigen = recorridoId ? "recorrido_id" : "control_id";
+  const idOrigen = recorridoId ?? controlId ?? null;
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [empleados, setEmpleados] = useState<EmpleadoOpt[]>([]);
   const [loading, setLoading] = useState(true);
