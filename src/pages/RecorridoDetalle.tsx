@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle2, Loader2, MapPin, Smartphone } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, MapPin, MessageCircle, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { PlanoCanvas, type PinPunto } from "@/components/recorrido/PlanoCanvas";
 import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
