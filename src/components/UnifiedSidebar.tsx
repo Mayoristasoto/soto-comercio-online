@@ -543,10 +543,13 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                                         `}
                                                       >
                                                         <NavLink to={fixPath(grand.path, grand.nombre)} className="flex items-center gap-2">
-                                                          <GrandIcon className={`h-3.5 w-3.5 shrink-0 ${isGrandActive ? 'text-primary-foreground' : ''}`} />
-                                                          <span className="text-xs truncate">{grand.nombre}</span>
-                                                        </NavLink>
-                                                      </SidebarMenuSubButton>
+                                                           <GrandIcon className={`h-3.5 w-3.5 shrink-0 ${isGrandActive ? 'text-primary-foreground' : ''}`} />
+                                                           <span className="text-xs truncate">{grand.nombre}</span>
+                                                         </NavLink>
+                                                       </SidebarMenuSubButton>
+                                                       {modoEditar && esAdmin && (
+                                                         <BotonOcultar id={grand.id} nombre={grand.nombre} />
+                                                       )}
                                                     </SidebarMenuSubItem>
                                                )
                                             })}
@@ -556,8 +559,8 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                     )
                                   }
 
-                                   return (
-                                     <SidebarMenuSubItem key={child.id}>
+                                    return (
+                                      <SidebarMenuSubItem key={child.id} className="relative">
                                        <SidebarMenuSubButton 
                                          asChild 
                                          isActive={isChildActive}
