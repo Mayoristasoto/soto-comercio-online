@@ -274,17 +274,6 @@ export default function UnifiedLayout() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Volver al panel
         </Button>
-        {enPreview && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="fixed right-3 top-3 z-50 shadow-sm"
-            onClick={volverAMiVista}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Volver a mi vista
-          </Button>
-        )}
         <main className="min-h-screen pt-14">
           <Outlet context={{ userInfo: userInfoVista }} />
         </main>
