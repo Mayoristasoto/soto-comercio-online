@@ -15,6 +15,8 @@ import { EmpleadosSinVacaciones } from "@/components/vacaciones/EmpleadosSinVaca
 import { ListadoVacaciones } from "@/components/vacaciones/ListadoVacaciones";
 import { Button } from "@/components/ui/button";
 import { ResumenVacacionesExport } from "@/components/vacaciones/ResumenVacacionesExport";
+import { CargaManualVacacionesDialog } from "@/components/vacaciones/CargaManualVacacionesDialog";
+import { CoberturaVacacionesDialog } from "@/components/vacaciones/CoberturaVacacionesDialog";
 
 interface UserInfo {
   id: string;
@@ -28,6 +30,9 @@ export default function Vacaciones() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [cargaGerenteOpen, setCargaGerenteOpen] = useState(false);
+  const [empleadosSucursal, setEmpleadosSucursal] = useState<{ id: string; nombre: string; apellido: string; dni: string | null }[]>([]);
+  const [coberturaNueva, setCoberturaNueva] = useState<{ id: string; nombre: string; fecha_inicio: string; fecha_fin: string } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -68,6 +73,19 @@ export default function Vacaciones() {
     }
   };
 
+  const abrirCargaGerente = async () => {
+    if (userInfo?.sucursal_id) {
+      const { data } = await supabase
+        .from("empleados")
+        .select("id, nombre, apellido")
+        .eq("activo", true)
+        .eq("sucursal_id", userInfo.sucursal_id)
+        .order("apellido");
+      setEmpleadosSucursal(((data as any[]) || []).map((e) => ({ ...e, dni: null })));
+    }
+    setCargaGerenteOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -101,6 +119,12 @@ export default function Vacaciones() {
             Solicita, gestiona y consulta las vacaciones del personal
           </p>
         </div>
+        {isGerente && (
+          <Button onClick={abrirCargaGerente}>
+            <Calendar className="h-4 w-4 mr-2" />
+            Cargar vacaciones del equipo
+          </Button>
+        )}
         {isAdmin && (
           <div className="flex gap-2">
             <ResumenVacacionesExport />
@@ -203,6 +227,35 @@ export default function Vacaciones() {
           </TabsContent>
         )}
       </Tabs>
+
+      <CargaManualVacacionesDialog
+        open={cargaGerenteOpen}
+        onOpenChange={setCargaGerenteOpen}
+        empleados={empleadosSucursal}
+        soloPendiente
+        onSavedSolicitud={(sol) => {
+          const emp = empleadosSucursal.find((e) => e.id === sol.empleado_id);
+          setCoberturaNueva({
+            id: sol.id,
+            nombre: emp ? `${emp.nombre} ${emp.apellido}` : "Empleado",
+            fecha_inicio: sol.fecha_inicio,
+            fecha_fin: sol.fecha_fin,
+          });
+        }}
+      />
+
+      {coberturaNueva && (
+        <CoberturaVacacionesDialog
+          open={!!coberturaNueva}
+          onOpenChange={(v) => !v && setCoberturaNueva(null)}
+          solicitudId={coberturaNueva.id}
+          empleadoNombre={coberturaNueva.nombre}
+          fechaInicio={coberturaNueva.fecha_inicio}
+          fechaFin={coberturaNueva.fecha_fin}
+          sucursalId={userInfo.sucursal_id ?? null}
+          modoRRHH={false}
+        />
+      )}
 
       <VacacionesImport
         open={importDialogOpen}
