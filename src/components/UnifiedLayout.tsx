@@ -5,7 +5,7 @@ import { UnifiedSidebar } from "@/components/UnifiedSidebar"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
-import { User, LogOut, Search } from "lucide-react"
+import { User, LogOut, Search, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GlobalSearch } from "@/components/GlobalSearch"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
@@ -373,8 +373,17 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'gerente_sucursal' ? 'Gerente' : 
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
-                  <RoleViewSwitcher />
-                </div>
+                   <RoleViewSwitcher />
+                   <Button
+                     variant="ghost"
+                     size="icon"
+                     className="h-8 w-8"
+                     title="Editar accesos por rol"
+                     onClick={() => navigate("/configuracion?tab=accesos-rol")}
+                   >
+                     <Settings className="h-4 w-4" />
+                   </Button>
+                 </div>
                 
                 {/* Tablet: Solo badge */}
                 <div className="hidden md:flex lg:hidden items-center gap-2">
@@ -383,8 +392,17 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'gerente_sucursal' ? 'Gerente' : 
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
-                  <RoleViewSwitcher compacto />
-                </div>
+                   <RoleViewSwitcher compacto />
+                   <Button
+                     variant="ghost"
+                     size="icon"
+                     className="h-8 w-8"
+                     title="Editar accesos por rol"
+                     onClick={() => navigate("/configuracion?tab=accesos-rol")}
+                   >
+                     <Settings className="h-4 w-4" />
+                   </Button>
+                 </div>
                 
                 {/* Botón logout - Adaptativo */}
                 <Button 
