@@ -349,6 +349,74 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
                   <Badge variant="secondary">{solicitud.estado}</Badge>
                 </div>
 
+                {/* Plan de cobertura de la sucursal */}
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    <span className="text-sm font-medium">Cobertura de esos días</span>
+                    {coberturas[solicitud.id] ? (
+                      <Badge
+                        variant={
+                          coberturas[solicitud.id].estado === "aprobada" ? "default" : "secondary"
+                        }
+                      >
+                        {COBERTURA_ESTADO_LABEL[coberturas[solicitud.id].estado] ??
+                          coberturas[solicitud.id].estado}
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Sin cargar
+                      </Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-auto"
+                      onClick={() => setCoberturaAbierta(solicitud)}
+                    >
+                      {esAdmin ? "Ver cobertura" : "Definir cobertura"}
+                    </Button>
+                  </div>
+
+                  {coberturas[solicitud.id]?.dias?.length ? (
+                    <div className="space-y-1">
+                      {coberturas[solicitud.id].dias.map((d) => (
+                        <p key={d.fecha} className="text-xs text-muted-foreground">
+                          <span className="capitalize">
+                            {format(new Date(d.fecha + "T00:00:00"), "EEEE d/MM", { locale: es })}
+                          </span>
+                          {" · "}
+                          {COBERTURA_TIPO_LABEL[d.tipo as keyof typeof COBERTURA_TIPO_LABEL] ?? d.tipo}
+                          {d.empleados ? ` · ${d.empleados.apellido}, ${d.empleados.nombre}` : ""}
+                          {d.hora_entrada && d.hora_salida
+                            ? ` · ${String(d.hora_entrada).slice(0, 5)} a ${String(d.hora_salida).slice(0, 5)}`
+                            : ""}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      {esAdmin
+                        ? "El encargado todavía no indicó cómo cubre esos días."
+                        : "Indicá día por día quién cubre o qué cambio de horario proponés."}
+                    </p>
+                  )}
+
+                  {coberturas[solicitud.id]?.comentario_encargado && (
+                    <p className="text-xs">
+                      <span className="font-medium">Encargado:</span>{" "}
+                      {coberturas[solicitud.id].comentario_encargado}
+                    </p>
+                  )}
+                  {coberturas[solicitud.id]?.comentario_rrhh && (
+                    <p className="text-xs">
+                      <span className="font-medium">RRHH sugirió:</span>{" "}
+                      {coberturas[solicitud.id].comentario_rrhh}
+                    </p>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label>Comentarios</Label>
                   <Textarea
@@ -362,13 +430,21 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
                 </div>
 
                 <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleAprobar(solicitud.id)}
-                    className="flex-1"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Aprobar
-                  </Button>
+                  {esAdmin && (
+                    <Button onClick={() => handleAprobar(solicitud.id)} className="flex-1">
+                      <Check className="h-4 w-4 mr-2" />
+                      Aprobar
+                    </Button>
+                  )}
+                  {!esAdmin && (
+                    <Button
+                      className="flex-1"
+                      onClick={() => setCoberturaAbierta(solicitud)}
+                    >
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                      Cargar cobertura y enviar a RRHH
+                    </Button>
+                  )}
                   <Button
                     onClick={() => handleRechazar(solicitud.id)}
                     variant="destructive"
@@ -382,6 +458,20 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
             ))
           )}
         </div>
+
+        {coberturaAbierta && (
+          <CoberturaVacacionesDialog
+            open={!!coberturaAbierta}
+            onOpenChange={(v) => !v && setCoberturaAbierta(null)}
+            solicitudId={coberturaAbierta.id}
+            empleadoNombre={`${coberturaAbierta.empleado.nombre} ${coberturaAbierta.empleado.apellido}`}
+            fechaInicio={coberturaAbierta.fecha_inicio}
+            fechaFin={coberturaAbierta.fecha_fin}
+            sucursalId={coberturaAbierta.empleado_sucursal_id ?? sucursalId ?? null}
+            modoRRHH={esAdmin}
+            onSaved={fetchSolicitudes}
+          />
+        )}
       </CardContent>
     </Card>
   );
