@@ -514,10 +514,13 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                               >
                                                 <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
                                                 <span className="text-xs truncate flex-1">{child.nombre}</span>
-                                                <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
-                                              </SidebarMenuSubButton>
-                                            </CollapsibleTrigger>
-                                          </SidebarMenuSubItem>
+                                                 <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isChildActive || childHasActiveGrand ? 'text-primary' : ''}`} />
+                                               </SidebarMenuSubButton>
+                                             </CollapsibleTrigger>
+                                             {modoEditar && esAdmin && (
+                                               <BotonOcultar id={child.id} nombre={child.nombre} right="right-8" />
+                                             )}
+                                           </SidebarMenuSubItem>
                                          <CollapsibleContent>
                                            <SidebarMenuSub className="ml-2 border-l border-border/50">
                                              {(child as any).children.map((grand: any) => {
@@ -527,7 +530,7 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                                  ? currentFullPath === grandPath
                                                  : location.pathname === grandPath
                                                return (
-                                                   <SidebarMenuSubItem key={grand.id}>
+                                                    <SidebarMenuSubItem key={grand.id} className="relative">
                                                       <SidebarMenuSubButton 
                                                         asChild 
                                                         isActive={isGrandActive}
