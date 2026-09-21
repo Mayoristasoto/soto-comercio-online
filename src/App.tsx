@@ -120,6 +120,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <RolePreviewProvider>
+          <RoleViewFloatingBar />
           <Routes>
           {/* Redirigir raíz a autenticación */}
           <Route path="/" element={<Navigate to="/auth" replace />} />
