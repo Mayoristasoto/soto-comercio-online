@@ -86,7 +86,7 @@ export function ActividadesPersonalCard({ controlId, recorridoId, readOnly = fal
         db
           .from("checklist_control_actividades")
           .select("*")
-          .eq("control_id", controlId)
+          .eq(campoOrigen, idOrigen)
           .order("registrado_at", { ascending: false }),
         db
           .from("empleados")
@@ -106,7 +106,7 @@ export function ActividadesPersonalCard({ controlId, recorridoId, readOnly = fal
   useEffect(() => {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controlId]);
+  }, [campoOrigen, idOrigen]);
 
   const mapEmpleados = useMemo(
     () => new Map(empleados.map((e) => [e.id, e.nombre])),
@@ -146,7 +146,7 @@ export function ActividadesPersonalCard({ controlId, recorridoId, readOnly = fal
       const { data, error } = await db
         .from("checklist_control_actividades")
         .insert({
-          control_id: controlId,
+          [campoOrigen]: idOrigen,
           empleado_id: empleadoId === OTRA ? null : empleadoId,
           empleado_nombre: empleadoId === OTRA ? nombreLibre : null,
           actividad: actividad.trim(),
