@@ -27,7 +27,8 @@ import {
   Briefcase,
   Package,
   Map as MapIcon,
-  X
+  X,
+  Pencil
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { NavLink, useLocation } from "react-router-dom"
@@ -159,6 +160,38 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const { accesos, toggle: toggleAcceso, quitar: quitarAcceso } = useAccesosRapidos(userInfo?.id)
   const [dialogAccesos, setDialogAccesos] = useState(false)
+  const [modoEditar, setModoEditar] = useState(false)
+  const esAdmin = userInfo?.rol === 'admin_rrhh'
+
+  // Oculta una sección del menú para TODOS los roles (app_pages.mostrar_en_sidebar = false).
+  // Se vuelve a activar desde Configuración > Accesos por rol.
+  const ocultarLink = async (id: string, nombre: string) => {
+    const { error } = await supabase
+      .from("app_pages")
+      .update({ mostrar_en_sidebar: false })
+      .eq("id", id)
+    if (error) {
+      toast.error("No se pudo ocultar: " + error.message)
+      return
+    }
+    toast.success(`"${nombre}" se ocultó del menú`)
+  }
+
+  const BotonOcultar = ({ id, nombre, right = "right-1" }: { id: string; nombre: string; right?: string }) => (
+    <button
+      type="button"
+      title={`Ocultar "${nombre}" del menú`}
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        ocultarLink(id, nombre)
+      }}
+      className={`absolute ${right} top-1/2 z-10 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive`}
+    >
+      <X className="h-3.5 w-3.5" />
+    </button>
+  )
+
 
   // Secciones disponibles (aplanadas) para elegir accesos rápidos
   const seccionesDisponibles = useMemo(() => {
@@ -342,7 +375,20 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
             {/* Renderizar links dinámicamente desde la base de datos */}
             {links.length > 0 && (
               <SidebarGroup>
-                <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+                <SidebarGroupLabel className="flex items-center justify-between">
+                  <span>Navegación</span>
+                  {esAdmin && (
+                    <Button
+                      variant={modoEditar ? "secondary" : "ghost"}
+                      size="icon"
+                      className="h-6 w-6"
+                      title={modoEditar ? "Salir del modo editar" : "Editar menú (ocultar secciones)"}
+                      onClick={() => setModoEditar((v) => !v)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {links.map((link) => {
