@@ -572,12 +572,15 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                            }
                                          `}
                                        >
-                                         <NavLink to={fixPath(child.path, child.nombre)} className="flex items-center gap-2">
-                                           <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${isChildActive ? 'text-primary-foreground' : ''}`} />
-                                           <span className="text-xs truncate">{child.nombre}</span>
-                                         </NavLink>
-                                       </SidebarMenuSubButton>
-                                     </SidebarMenuSubItem>
+                                          <NavLink to={fixPath(child.path, child.nombre)} className="flex items-center gap-2">
+                                            <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${isChildActive ? 'text-primary-foreground' : ''}`} />
+                                            <span className="text-xs truncate">{child.nombre}</span>
+                                          </NavLink>
+                                        </SidebarMenuSubButton>
+                                        {modoEditar && esAdmin && (
+                                          <BotonOcultar id={child.id} nombre={child.nombre} />
+                                        )}
+                                      </SidebarMenuSubItem>
                                    )
                                 })}
                               </SidebarMenuSub>
