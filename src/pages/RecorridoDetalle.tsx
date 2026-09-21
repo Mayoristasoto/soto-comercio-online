@@ -49,6 +49,7 @@ const RecorridoDetalle = () => {
   const isMobile = useIsMobile();
   const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
   const guiadoActivo = modoGuiado ?? isMobile;
+  const [encuestaOpen, setEncuestaOpen] = useState(false);
 
   const soloLectura = recorrido?.estado === "completado";
 
