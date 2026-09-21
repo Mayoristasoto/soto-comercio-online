@@ -146,6 +146,16 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
   };
 
   const handleAprobar = async (solicitudId: string) => {
+    const cob = coberturas[solicitudId];
+    if (esAdmin && (!cob || cob.estado === "borrador")) {
+      toast({
+        title: "Falta el plan de cobertura",
+        description:
+          "El encargado todavía no envió cómo va a cubrir esos días. Pedile la cobertura antes de aprobar.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const { data: empleadoAprob } = await supabase
         .from('empleados')
