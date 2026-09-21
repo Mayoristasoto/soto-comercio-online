@@ -1787,13 +1787,14 @@ export type Database = {
           actividad: string
           asignado_por_id: string | null
           asignado_por_nombre: string | null
-          control_id: string
+          control_id: string | null
           created_at: string
           empleado_id: string | null
           empleado_nombre: string | null
           id: string
           observaciones: string | null
           origen_asignacion: string
+          recorrido_id: string | null
           registrado_at: string
           registrado_por: string | null
           updated_at: string
@@ -1802,13 +1803,14 @@ export type Database = {
           actividad: string
           asignado_por_id?: string | null
           asignado_por_nombre?: string | null
-          control_id: string
+          control_id?: string | null
           created_at?: string
           empleado_id?: string | null
           empleado_nombre?: string | null
           id?: string
           observaciones?: string | null
           origen_asignacion?: string
+          recorrido_id?: string | null
           registrado_at?: string
           registrado_por?: string | null
           updated_at?: string
@@ -1817,13 +1819,14 @@ export type Database = {
           actividad?: string
           asignado_por_id?: string | null
           asignado_por_nombre?: string | null
-          control_id?: string
+          control_id?: string | null
           created_at?: string
           empleado_id?: string | null
           empleado_nombre?: string | null
           id?: string
           observaciones?: string | null
           origen_asignacion?: string
+          recorrido_id?: string | null
           registrado_at?: string
           registrado_por?: string | null
           updated_at?: string
@@ -1890,6 +1893,13 @@ export type Database = {
             columns: ["empleado_id"]
             isOneToOne: false
             referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_control_actividades_recorrido_id_fkey"
+            columns: ["recorrido_id"]
+            isOneToOne: false
+            referencedRelation: "recorridos"
             referencedColumns: ["id"]
           },
         ]

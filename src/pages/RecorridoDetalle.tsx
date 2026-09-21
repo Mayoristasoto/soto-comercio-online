@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle2, Loader2, MapPin, Smartphone } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, MapPin, MessageCircle, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { PlanoCanvas, type PinPunto } from "@/components/recorrido/PlanoCanvas";
 import { HallazgoFotos } from "@/components/recorrido/HallazgoFotos";
@@ -13,6 +13,8 @@ import { HistorialRecorridoV2 } from "@/components/recorrido/HistorialRecorridoV
 import { RecorridoModoGuiado } from "@/components/recorrido/RecorridoModoGuiado";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
+import { ActividadesPersonalCard } from "@/components/checklist/ActividadesPersonalCard";
+import { EncuestaClienteDialog } from "@/components/encuestas/EncuestaClienteDialog";
 import {
   ESTADO_HALLAZGO_LABEL,
   TIPO_ESPACIO_LABEL,
@@ -47,6 +49,7 @@ const RecorridoDetalle = () => {
   const isMobile = useIsMobile();
   const [modoGuiado, setModoGuiado] = useState<boolean | null>(null);
   const guiadoActivo = modoGuiado ?? isMobile;
+  const [encuestaOpen, setEncuestaOpen] = useState(false);
 
   const soloLectura = recorrido?.estado === "completado";
 
@@ -435,6 +438,33 @@ const RecorridoDetalle = () => {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActividadesPersonalCard recorridoId={recorrido.id} readOnly={soloLectura} />
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" /> Encuesta a clientes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Durante el recorrido podés tomar la opinión de un cliente y darle su código de descuento para la próxima visita.
+            </p>
+            <Button onClick={() => setEncuestaOpen(true)} disabled={soloLectura}>
+              <MessageCircle className="h-4 w-4 mr-1" /> Cargar encuesta de cliente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <EncuestaClienteDialog
+        open={encuestaOpen}
+        onOpenChange={setEncuestaOpen}
+        sucursalId={recorrido.sucursal_id}
+      />
+
 
       {vistaCompleta && (
         <Card>
