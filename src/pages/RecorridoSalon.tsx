@@ -330,31 +330,65 @@ const RecorridoSalon = () => {
           <Card>
             <CardHeader><CardTitle className="text-base">Criterios a evaluar</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <Input value={nuevoCriterio} onChange={(e) => setNuevoCriterio(e.target.value)} placeholder="Ej: Orden de góndola" />
-                <Button onClick={agregarCriterio}><Plus className="h-4 w-4 mr-1" /> Agregar</Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input value={nuevoCriterio} onChange={(e) => setNuevoCriterio(e.target.value)} placeholder="Ej: Temperatura de heladera" />
+                  <Button onClick={agregarCriterio}><Plus className="h-4 w-4 mr-1" /> Agregar</Button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {TIPOS_ESPACIO.map((t) => (
+                    <Button
+                      key={t}
+                      size="sm"
+                      variant={nuevoTipos.includes(t) ? "default" : "outline"}
+                      onClick={() => setNuevoTipos((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))}
+                    >
+                      {TIPO_ESPACIO_LABEL[t]}
+                    </Button>
+                  ))}
+                </div>
               </div>
               <Table>
                 <TableHeader>
-                  <TableRow><TableHead>Criterio</TableHead><TableHead>Descripción</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
+                  <TableRow><TableHead>Criterio</TableHead><TableHead>Aplica a</TableHead><TableHead>Estado</TableHead><TableHead /></TableRow>
                 </TableHeader>
                 <TableBody>
-                  {criterios.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.nombre}</TableCell>
-                      <TableCell className="text-muted-foreground">{c.descripcion}</TableCell>
-                      <TableCell>
-                        <Button size="sm" variant={c.activo ? "default" : "outline"} onClick={() => toggleCriterio(c)}>
-                          {c.activo ? "Activo" : "Inactivo"}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => borrarCriterio(c)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {criterios.map((c) => {
+                    const tipos = c.tipos_aplica && c.tipos_aplica.length ? c.tipos_aplica : [...TIPOS_ESPACIO];
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">
+                          {c.nombre}
+                          {c.descripcion && <div className="text-xs text-muted-foreground">{c.descripcion}</div>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {TIPOS_ESPACIO.map((t) => (
+                              <Button
+                                key={t}
+                                size="sm"
+                                variant={tipos.includes(t) ? "secondary" : "ghost"}
+                                className={tipos.includes(t) ? "" : "text-muted-foreground"}
+                                onClick={() => alternarTipoCriterio(c, t)}
+                              >
+                                {TIPO_ESPACIO_LABEL[t]}
+                              </Button>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button size="sm" variant={c.activo ? "default" : "outline"} onClick={() => toggleCriterio(c)}>
+                            {c.activo ? "Activo" : "Inactivo"}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => borrarCriterio(c)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
