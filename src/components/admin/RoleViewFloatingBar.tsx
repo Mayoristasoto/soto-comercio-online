@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { Eye } from "lucide-react"
+import { Eye, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RoleViewSwitcher } from "@/components/admin/RoleViewSwitcher"
 import { ROL_HOME, ROL_LABEL, useRolePreview, type RolApp } from "@/contexts/RolePreviewContext"
@@ -33,6 +33,15 @@ export function RoleViewFloatingBar() {
         </span>
       )}
       <RoleViewSwitcher compacto />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        title="Editar accesos por rol"
+        onClick={() => navigate("/configuracion?tab=accesos-rol")}
+      >
+        <Settings className="h-4 w-4" />
+      </Button>
       {preview.enPreview && (
         <Button variant="secondary" size="sm" className="h-9" onClick={volver}>
           Volver a mi vista
