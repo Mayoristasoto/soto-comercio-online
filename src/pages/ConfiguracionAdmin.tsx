@@ -7,6 +7,7 @@ import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfi
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
 import { PagesManager } from "@/components/admin/PagesManager"
+import { AccesosPorRolManager } from "@/components/admin/AccesosPorRolManager"
 import ConfiguracionModelosIA from "@/components/admin/ConfiguracionModelosIA"
 import { RolePreview } from "@/components/admin/RolePreview"
 import { KioskDeviceManagement } from "@/components/admin/KioskDeviceManagement"
