@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { Eye, ChevronDown, Check } from "lucide-react"
+import { Eye, ChevronDown, Check, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -66,6 +66,14 @@ export function RoleViewSwitcher({ compacto = false }: Props) {
             {rol === "admin_rrhh" ? "Mi vista (Admin RRHH)" : ROL_LABEL[rol]}
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => navigate("/configuracion?tab=accesos-rol")}
+          className="gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          Editar accesos por rol
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <p className="px-2 py-1.5 text-xs text-muted-foreground">
           Simula las pantallas y accesos de cada rol. Los datos siguen siendo los que ve tu
