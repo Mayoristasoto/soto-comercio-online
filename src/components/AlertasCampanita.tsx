@@ -14,6 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { generarAlertasRrhh, marcarAlertaLeida, marcarTodasLeidas, type AlertaRrhh } from "@/lib/alertasRrhh";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
