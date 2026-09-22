@@ -169,6 +169,22 @@ export function MatrizAccesosRol() {
     }
   }
 
+  const aplicarJuegoBase = async () => {
+    setGuardando(true)
+    try {
+      for (const p of paginas) {
+        const nuevos = Object.keys(ACCESOS_BASE).filter((rol) => rolTieneAccesoBase(rol, p.path))
+        const igual =
+          nuevos.length === p.roles_permitidos.length &&
+          nuevos.every((r) => p.roles_permitidos.includes(r))
+        if (!igual) await actualizarRoles(p, nuevos)
+      }
+      toast.success("Juego base aplicado")
+    } finally {
+      setGuardando(false)
+    }
+  }
+
   const huerfanas = useMemo(
     () =>
       paginas.filter((p) => {
