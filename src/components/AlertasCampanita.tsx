@@ -38,21 +38,38 @@ const TIPOS: { tipo: string; label: string }[] = [
 
 const PREF_KEY = "alertas_rrhh_tipos_ocultos";
 
-function leerOcultos(): string[] {
+const PREF_EMPLEADOS_KEY = "alertas_rrhh_empleados_ocultos";
+
+function leerLista(key: string): string[] {
   try {
-    const raw = localStorage.getItem(PREF_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
   }
 }
 
+interface EmpleadoMini {
+  id: string;
+  nombre: string;
+  apellido: string;
+}
+
 export function AlertasCampanita() {
   const navigate = useNavigate();
   const [alertas, setAlertas] = useState<AlertaRrhh[]>([]);
-  const [ocultos, setOcultos] = useState<string[]>(() => leerOcultos());
+  const [ocultos, setOcultos] = useState<string[]>(() => leerLista(PREF_KEY));
+  const [empleadosOcultos, setEmpleadosOcultos] = useState<string[]>(() => leerLista(PREF_EMPLEADOS_KEY));
+  const [empleados, setEmpleados] = useState<EmpleadoMini[]>([]);
+  const [buscar, setBuscar] = useState("");
 
-  const visibles = useMemo(() => alertas.filter((a) => !ocultos.includes(a.tipo)), [alertas, ocultos]);
+  const visibles = useMemo(
+    () =>
+      alertas.filter(
+        (a) => !ocultos.includes(a.tipo) && !empleadosOcultos.some((id) => (a.clave ?? "").includes(id))
+      ),
+    [alertas, ocultos, empleadosOcultos]
+  );
   const noLeidas = useMemo(() => visibles.filter((a) => !a.leida).length, [visibles]);
 
   const toggleTipo = (tipo: string, activo: boolean) => {
@@ -60,6 +77,27 @@ export function AlertasCampanita() {
     setOcultos(nuevos);
     localStorage.setItem(PREF_KEY, JSON.stringify(nuevos));
   };
+
+  const toggleEmpleado = (id: string, activo: boolean) => {
+    const nuevos = activo ? empleadosOcultos.filter((e) => e !== id) : [...empleadosOcultos, id];
+    setEmpleadosOcultos(nuevos);
+    localStorage.setItem(PREF_EMPLEADOS_KEY, JSON.stringify(nuevos));
+  };
+
+  useEffect(() => {
+    supabase
+      .from("empleados")
+      .select("id, nombre, apellido")
+      .eq("activo", true)
+      .order("apellido")
+      .then(({ data }) => setEmpleados((data as EmpleadoMini[]) ?? []));
+  }, []);
+
+  const empleadosFiltrados = useMemo(() => {
+    const q = buscar.trim().toLowerCase();
+    if (!q) return empleados;
+    return empleados.filter((e) => `${e.nombre} ${e.apellido}`.toLowerCase().includes(q));
+  }, [empleados, buscar]);
 
   const cargar = useCallback(async () => {
     const { data } = await supabase
