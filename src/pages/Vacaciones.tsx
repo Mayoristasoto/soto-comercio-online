@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { ResumenVacacionesExport } from "@/components/vacaciones/ResumenVacacionesExport";
 import { CargaManualVacacionesDialog } from "@/components/vacaciones/CargaManualVacacionesDialog";
 import { CoberturaVacacionesDialog } from "@/components/vacaciones/CoberturaVacacionesDialog";
+import { useRolEfectivo } from "@/hooks/useRolEfectivo";
 
 interface UserInfo {
   id: string;
@@ -35,6 +36,7 @@ export default function Vacaciones() {
   const [coberturaNueva, setCoberturaNueva] = useState<{ id: string; nombre: string; fecha_inicio: string; fecha_fin: string } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const rolEfectivo = useRolEfectivo(userInfo?.rol);
 
   useEffect(() => {
     fetchUserInfo();
