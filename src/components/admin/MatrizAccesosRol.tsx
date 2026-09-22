@@ -271,6 +271,29 @@ export function MatrizAccesosRol() {
           )}
           Copiar
         </Button>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="outline" disabled={guardando}>
+              <Wand2 className="mr-2 h-4 w-4" />
+              Aplicar juego base
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Aplicar el juego base de accesos?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Reemplaza los accesos actuales de todos los roles por la configuración
+                recomendada: Empleado ve lo propio, Líder agrega su grupo, Gerente agrega su
+                sucursal y Admin RRHH ve todo. Después podés ajustar lo que quieras.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={aplicarJuegoBase}>Aplicar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="flex flex-wrap gap-2">
