@@ -30,7 +30,6 @@ import TrainingManagement from "@/components/admin/TrainingManagement"
 import PrizeManagement from "@/components/admin/PrizeManagement"
 import StaffOverview from "@/components/admin/StaffOverview"
 import { PuntualidadManager } from "@/components/admin/PuntualidadManager"
-import { SidebarLinksManager } from "@/components/admin/SidebarLinksManager"
 import { SistemaComercialConfig } from "@/components/admin/SistemaComercialConfig"
 import CalificacionesConfig from "@/components/admin/CalificacionesConfig"
 import SorteosParticipantes from "@/components/admin/SorteosParticipantes"
@@ -113,7 +112,6 @@ export default function AdminDashboard() {
       descripcion: 'Ajustes del sistema',
       sections: [
         { id: 'tareas-config', nombre: 'Configuración de Tareas', icon: FileText, component: <TareasConfiguracion /> },
-        { id: 'sidebar', nombre: 'Menú Sidebar', icon: FileText, component: <SidebarLinksManager /> },
         { id: 'activity', nombre: 'Actividad del Sistema', icon: Activity, component: null }
       ]
     }
