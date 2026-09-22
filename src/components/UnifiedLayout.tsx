@@ -17,6 +17,7 @@ import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
 import { ArrowLeft, Eye } from "lucide-react"
 import { useRolePreview, ROL_LABEL, type RolApp } from "@/contexts/RolePreviewContext"
 import { RoleViewSwitcher } from "@/components/admin/RoleViewSwitcher"
+import { AlertasCampanita } from "@/components/AlertasCampanita"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 
@@ -373,8 +374,9 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'gerente_sucursal' ? 'Gerente' : 
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
-                   <RoleViewSwitcher />
-                 </div>
+                    <RoleViewSwitcher />
+                    {preview.rolReal === 'admin_rrhh' && <AlertasCampanita />}
+                  </div>
                 
                 {/* Tablet: Solo badge */}
                 <div className="hidden md:flex lg:hidden items-center gap-2">
@@ -383,8 +385,9 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'gerente_sucursal' ? 'Gerente' : 
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
-                   <RoleViewSwitcher compacto />
-                 </div>
+                    <RoleViewSwitcher compacto />
+                    {preview.rolReal === 'admin_rrhh' && <AlertasCampanita />}
+                  </div>
                 
                 {/* Botón logout - Adaptativo */}
                 <Button 
