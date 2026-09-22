@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, CheckCheck, AlertTriangle, CalendarClock, ClipboardList, Package, Users, FileWarning } from "lucide-react";
+import { Bell, CheckCheck, AlertTriangle, CalendarClock, ClipboardList, Package, Users, FileWarning, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { generarAlertasRrhh, marcarAlertaLeida, marcarTodasLeidas, type AlertaRrhh } from "@/lib/alertasRrhh";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
@@ -24,10 +27,39 @@ const ICONOS: Record<string, typeof Bell> = {
   insumos_cerrado: Package,
 };
 
+const TIPOS: { tipo: string; label: string }[] = [
+  { tipo: "fichaje_faltante", label: "Fichajes faltantes" },
+  { tipo: "vacaciones_pendiente", label: "Vacaciones por aprobar" },
+  { tipo: "solicitud_pendiente", label: "Solicitudes pendientes" },
+  { tipo: "tarea_vencida", label: "Tareas vencidas" },
+  { tipo: "cobertura_pendiente", label: "Coberturas de vacaciones" },
+  { tipo: "insumos_cerrado", label: "Controles de insumos" },
+];
+
+const PREF_KEY = "alertas_rrhh_tipos_ocultos";
+
+function leerOcultos(): string[] {
+  try {
+    const raw = localStorage.getItem(PREF_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function AlertasCampanita() {
   const navigate = useNavigate();
   const [alertas, setAlertas] = useState<AlertaRrhh[]>([]);
-  const [noLeidas, setNoLeidas] = useState(0);
+  const [ocultos, setOcultos] = useState<string[]>(() => leerOcultos());
+
+  const visibles = useMemo(() => alertas.filter((a) => !ocultos.includes(a.tipo)), [alertas, ocultos]);
+  const noLeidas = useMemo(() => visibles.filter((a) => !a.leida).length, [visibles]);
+
+  const toggleTipo = (tipo: string, activo: boolean) => {
+    const nuevos = activo ? ocultos.filter((t) => t !== tipo) : [...ocultos, tipo];
+    setOcultos(nuevos);
+    localStorage.setItem(PREF_KEY, JSON.stringify(nuevos));
+  };
 
   const cargar = useCallback(async () => {
     const { data } = await supabase
