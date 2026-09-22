@@ -81,7 +81,7 @@ export default function Indicadores() {
         factRes,
         vacRes,
       ] = await Promise.all([
-        supabase.from("empleados").select("id, dni, telefono, sucursal_id").eq("activo", true),
+        supabase.from("empleados").select("id, dni, cuil, sucursal_id").eq("activo", true),
         supabase.rpc("get_indice_ausentismo" as any, {
           p_desde: desde,
           p_hasta: hasta,
@@ -99,7 +99,7 @@ export default function Indicadores() {
         supabase.from("solicitudes_vacaciones").select("id", { count: "exact", head: true }).eq("estado", "pendiente"),
       ]);
 
-      const empleados = (empRes.data ?? []) as { id: string; dni: string | null; telefono: string | null; sucursal_id: string | null }[];
+      const empleados = (empRes.data ?? []) as { id: string; dni: string | null; cuil: string | null; sucursal_id: string | null }[];
       const empFiltrados = filtroSuc ? empleados.filter((e) => e.sucursal_id === filtroSuc) : empleados;
       const empIds = new Set(empFiltrados.map((e) => e.id));
 
@@ -120,7 +120,7 @@ export default function Indicadores() {
 
       setM({
         empleadosActivos: empFiltrados.length,
-        datosIncompletos: empFiltrados.filter((e) => !e.dni || !e.telefono).length,
+        datosIncompletos: empFiltrados.filter((e) => !e.dni || !e.cuil).length,
         indiceAusentismo: indice,
         llegadasTarde: tardeRes.count ?? 0,
         pausasExcedidas: pausasRes.count ?? 0,
@@ -143,7 +143,7 @@ export default function Indicadores() {
     titulo: string; valor: string; detalle?: string; icono: typeof Users; enlace: string; alerta?: boolean;
   }[] = m ? [
     { titulo: "Empleados activos", valor: String(m.empleadosActivos), icono: Users, enlace: "/rrhh/nomina" },
-    { titulo: "Datos incompletos", valor: String(m.datosIncompletos), detalle: "Sin DNI o teléfono", icono: FileWarning, enlace: "/rrhh/nomina", alerta: m.datosIncompletos > 0 },
+    { titulo: "Datos incompletos", valor: String(m.datosIncompletos), detalle: "Sin DNI o CUIL", icono: FileWarning, enlace: "/rrhh/nomina", alerta: m.datosIncompletos > 0 },
     { titulo: "Ausentismo del mes", valor: m.indiceAusentismo === null ? "Sin datos" : `${m.indiceAusentismo.toFixed(1)}%`, icono: UserX, enlace: "/rrhh/indice-ausentismo" },
     { titulo: "Llegadas tarde", valor: String(m.llegadasTarde), icono: Clock, enlace: "/fichero#estadisticas", alerta: m.llegadasTarde > 0 },
     { titulo: "Pausas excedidas", valor: String(m.pausasExcedidas), icono: Timer, enlace: "/fichero#estadisticas", alerta: m.pausasExcedidas > 0 },
