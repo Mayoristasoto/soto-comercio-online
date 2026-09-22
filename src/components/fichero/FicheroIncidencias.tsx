@@ -31,6 +31,7 @@ import { isAdminRole } from "@/lib/authSecurity"
 import { Separator } from "@/components/ui/separator"
 import { ExportButton } from "@/components/ui/export-button"
 import { generarReporteLlegadasTarde } from "@/utils/reporteLlegadasTardePDF"
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 interface FicheroIncidenciasProps {
   empleado: {
@@ -130,7 +131,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
         .single()
 
       if (error) throw error
-      setUserRole(data?.rol || '')
+      setUserRole(rolConPreview(data?.rol) || '')
     } catch (error) {
       console.error('Error cargando rol:', error)
     }

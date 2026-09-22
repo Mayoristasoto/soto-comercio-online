@@ -35,6 +35,7 @@ import CalificacionesConfig from "@/components/admin/CalificacionesConfig"
 import SorteosParticipantes from "@/components/admin/SorteosParticipantes"
 import { TareasConfiguracion } from "@/components/admin/TareasConfiguracion"
 import { DesafiosTVConfig } from "@/components/admin/DesafiosTVConfig"
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 export default function AdminDashboard() {
   const { toast } = useToast()
@@ -161,7 +162,7 @@ export default function AdminDashboard() {
         .eq('user_id', user.id)
         .single()
 
-      if (empleado?.rol !== 'admin_rrhh') {
+      if (rolConPreview(empleado?.rol) !== 'admin_rrhh') {
         toast({
           title: "Acceso denegado",
           description: "No tienes permisos para acceder al panel de administración",

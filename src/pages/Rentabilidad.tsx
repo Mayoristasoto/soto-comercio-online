@@ -14,6 +14,7 @@ import ImportadorF931 from "@/components/rentabilidad/ImportadorF931";
 import DashboardRentabilidad from "@/components/rentabilidad/DashboardRentabilidad";
 import CierrePeriodo from "@/components/rentabilidad/CierrePeriodo";
 import MetricasProductividad from "@/components/rentabilidad/MetricasProductividad";
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 const tabs = [
   { id: "periodos", label: "Períodos", icon: Calendar },
@@ -45,7 +46,7 @@ export default function Rentabilidad() {
           .select("rol, activo")
           .eq("user_id", user.id)
           .single();
-        if (!emp || !emp.activo || emp.rol !== "admin_rrhh") { navigate("/dashboard"); return; }
+        if (!emp || !emp.activo || rolConPreview(emp.rol) !== "admin_rrhh") { navigate("/dashboard"); return; }
         setLoading(false);
       } catch { navigate("/auth"); }
     })();

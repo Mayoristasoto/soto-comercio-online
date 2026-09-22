@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { rolConPreview } from "@/lib/rolEfectivo"
 interface EmpleadoRanking {
   empleado_id: string;
   nombre: string;
@@ -83,7 +84,7 @@ export default function RankingIncidencias() {
         .eq('user_id', user.id)
         .single();
 
-      if (!empleado || !empleado.activo || empleado.rol !== 'admin_rrhh') {
+      if (!empleado || !empleado.activo || rolConPreview(empleado.rol) !== 'admin_rrhh') {
         navigate('/dashboard');
         return;
       }

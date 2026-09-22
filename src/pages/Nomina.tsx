@@ -55,6 +55,7 @@ import { EntregaElementos } from "@/components/admin/EntregaElementos"
 import { CrucesRojasDemo } from "@/components/admin/CrucesRojasDemo"
 import { ReporteDatosIncompletos } from "@/components/admin/ReporteDatosIncompletos"
 import ReporteHorasExtras from "@/components/admin/payroll/ReporteHorasExtras"
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 interface Employee {
   id: string
@@ -155,7 +156,7 @@ export default function Nomina() {
         .eq('user_id', user.id)
         .maybeSingle()
 
-      if (empleado?.rol !== 'admin_rrhh') {
+      if (rolConPreview(empleado?.rol) !== 'admin_rrhh') {
         toast({
           title: "Acceso denegado",
           description: "Solo el Administrador de RRHH puede acceder al módulo de nómina",

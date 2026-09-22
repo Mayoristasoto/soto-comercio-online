@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "@/integrations/supabase/client"
 import FichajeMetricasDashboard from "@/components/admin/FichajeMetricasDashboard"
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 export default function FichajeMetricas() {
   const navigate = useNavigate()
@@ -26,7 +27,7 @@ export default function FichajeMetricas() {
         .eq('user_id', user.id)
         .single()
 
-      if (!empleado || !empleado.activo || empleado.rol !== 'admin_rrhh') {
+      if (!empleado || !empleado.activo || rolConPreview(empleado.rol) !== 'admin_rrhh') {
         navigate('/dashboard')
         return
       }

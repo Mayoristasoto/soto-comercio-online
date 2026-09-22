@@ -32,6 +32,7 @@ import Evaluaciones from "./pages/Evaluaciones";
 import PreviewEvaluacion from "./pages/PreviewEvaluacion";
 import MockupKioscoGerente from "./pages/MockupKioscoGerente";
 import Vacaciones from "./pages/Vacaciones";
+import Indicadores from "./pages/Indicadores";
 import Calendarios from "./pages/Calendarios";
 import Solicitudes from "./pages/Solicitudes";
 import Anotaciones from "./pages/Anotaciones";
@@ -186,6 +187,7 @@ const App = () => (
             <Route path="preview-evaluacion" element={<PreviewEvaluacion />} />
             <Route path="mockup-kiosco-gerente" element={<MockupKioscoGerente />} />
             <Route path="rrhh/vacaciones" element={<Vacaciones />} />
+            <Route path="rrhh/indicadores" element={<Indicadores />} />
             <Route path="rrhh/calendarios" element={<Calendarios />} />
             <Route path="rrhh/solicitudes" element={<Solicitudes />} />
             <Route path="rrhh/anotaciones" element={<Anotaciones />} />

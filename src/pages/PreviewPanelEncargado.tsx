@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { LogOut } from "lucide-react"
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 export default function PreviewPanelEncargado() {
   const navigate = useNavigate()
@@ -57,7 +58,7 @@ export default function PreviewPanelEncargado() {
         .maybeSingle()
       if (cancelado) return
       setNombreUsuario(empleado?.nombre || "")
-      setPuedeEditar(empleado?.rol === "admin_rrhh")
+      setPuedeEditar(rolConPreview(empleado?.rol) === "admin_rrhh")
       setCargandoRol(false)
     }
     cargar()

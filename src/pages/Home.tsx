@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 interface EmpleadoHome {
   id: string
@@ -339,11 +340,11 @@ export default function Home() {
               <CardTitle className="flex items-center space-x-2">
                 <Shield className="h-5 w-5" />
                 <span>
-                  {empleado.rol === 'admin_rrhh' ? 'Panel Administrador' : 'Panel de Usuario'}
+                  {rolConPreview(empleado.rol) === 'admin_rrhh' ? 'Panel Administrador' : 'Panel de Usuario'}
                 </span>
               </CardTitle>
               <CardDescription>
-                {empleado.rol === 'admin_rrhh' 
+                {rolConPreview(empleado.rol) === 'admin_rrhh' 
                   ? 'Accede al panel de administración completo del sistema'
                   : 'Accede a las funciones administrativas disponibles'
                 }
@@ -351,11 +352,11 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <Button 
-                variant={empleado.rol === 'admin_rrhh' ? 'default' : 'outline'}
+                variant={rolConPreview(empleado.rol) === 'admin_rrhh' ? 'default' : 'outline'}
                 className="w-full"
                 onClick={() => window.location.href = '/reconoce/admin'}
               >
-                {empleado.rol === 'admin_rrhh' ? 'Administrar Sistema' : 'Ver Panel'}
+                {rolConPreview(empleado.rol) === 'admin_rrhh' ? 'Administrar Sistema' : 'Ver Panel'}
               </Button>
             </CardContent>
           </Card>
