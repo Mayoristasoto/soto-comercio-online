@@ -439,16 +439,17 @@ export function UnifiedSidebar({ userInfo }: UnifiedSidebarProps) {
                                   tooltip={link.descripcion || link.nombre}
                                   isActive={isCurrentPath || hasActiveChild}
                                   className={`
-                                    font-semibold text-base transition-colors my-1 rounded-md px-3 py-3
-                                    border-l-4
-                                    ${isCurrentPath || hasActiveChild 
-                                      ? 'bg-primary/20 border-primary hover:bg-primary/25' 
-                                      : 'bg-accent/60 border-transparent hover:bg-accent/80'
+                                    h-auto min-h-0 items-center gap-2 rounded-md px-2 py-1.5 mt-3 mb-0.5
+                                    text-[11px] font-semibold uppercase tracking-wide
+                                    transition-colors
+                                    ${isCurrentPath || hasActiveChild
+                                      ? 'text-primary hover:bg-accent/60'
+                                      : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
                                     }
                                   `}
                                 >
-                                  <Icon className={`h-5 w-5 shrink-0 ${isCurrentPath || hasActiveChild ? 'text-primary' : 'text-muted-foreground'}`} />
-                                  <span>{link.nombre}</span>
+                                  <Icon className={`h-4 w-4 shrink-0 ${isCurrentPath || hasActiveChild ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <span className="truncate">{link.nombre}</span>
                                   <ChevronDown 
                                     className={`ml-auto h-4 w-4 transition-transform duration-200 ${isCurrentPath || hasActiveChild ? 'text-primary' : 'text-muted-foreground'}`}
                                   />
