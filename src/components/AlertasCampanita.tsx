@@ -169,7 +169,7 @@ export function AlertasCampanita() {
                   <Settings2 className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+              <PopoverContent align="end" className="w-72" onClick={(e) => e.stopPropagation()}>
                 <p className="mb-2 text-sm font-medium">¿Qué avisos querés recibir?</p>
                 <div className="space-y-2">
                   {TIPOS.map((t) => (
@@ -185,6 +185,36 @@ export function AlertasCampanita() {
                     </div>
                   ))}
                 </div>
+                <DropdownMenuSeparator className="my-3" />
+                <p className="mb-1 text-sm font-medium">Empleados</p>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Apagá los que no querés que generen avisos.
+                </p>
+                <Input
+                  value={buscar}
+                  onChange={(e) => setBuscar(e.target.value)}
+                  placeholder="Buscar empleado…"
+                  className="mb-2 h-8"
+                />
+                <ScrollArea className="h-56 pr-3">
+                  <div className="space-y-2">
+                    {empleadosFiltrados.map((e) => (
+                      <div key={e.id} className="flex items-center justify-between gap-2">
+                        <Label htmlFor={`emp-${e.id}`} className="text-sm font-normal">
+                          {e.apellido}, {e.nombre}
+                        </Label>
+                        <Switch
+                          id={`emp-${e.id}`}
+                          checked={!empleadosOcultos.includes(e.id)}
+                          onCheckedChange={(v) => toggleEmpleado(e.id, v)}
+                        />
+                      </div>
+                    ))}
+                    {empleadosFiltrados.length === 0 && (
+                      <p className="text-xs text-muted-foreground">Sin resultados.</p>
+                    )}
+                  </div>
+                </ScrollArea>
               </PopoverContent>
             </Popover>
           </span>
