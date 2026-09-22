@@ -46,6 +46,7 @@ import { toArgentinaTime, getArgentinaStartOfDay, getArgentinaTimeString } from 
 import { format } from "date-fns"
 import { guardarFotoVerificacion } from "@/lib/verificacionFotosService"
 import { debeOmitirControles } from "@/lib/diasEspecialesService"
+import { useRolEfectivo } from "@/hooks/useRolEfectivo"
 
 interface Empleado {
   id: string
@@ -74,6 +75,7 @@ export default function Fichero() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const [empleado, setEmpleado] = useState<Empleado | null>(null)
+  const rolFichero = useRolEfectivo(empleado?.rol)
   const [loading, setLoading] = useState(true)
   const [ubicacion, setUbicacion] = useState<UbicacionFichado | null>(null)
   const [fichajes, setFichajes] = useState<Fichaje[]>([])
@@ -800,19 +802,19 @@ export default function Fichero() {
           {[
             { key: 'fichaje', label: 'Fichaje', icon: Clock },
             { key: 'misfichadas', label: 'Informe', icon: FileText },
-            ...(['gerente_sucursal', 'admin_rrhh'].includes(empleado.rol) ? [{ key: 'estado-animo', label: 'Estado Ánimo', icon: User }] : []),
+            ...(['gerente_sucursal', 'admin_rrhh'].includes(rolFichero ?? '') ? [{ key: 'estado-animo', label: 'Estado Ánimo', icon: User }] : []),
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'balance-diario', label: 'Balance Diario', icon: BarChart3 }] : []),
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'balance-mensual', label: 'Balance Mensual', icon: BarChart3 }] : []),
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'horas-extras', label: 'Horas Extras', icon: Clock }] : []),
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'reporte-diario', label: 'Reporte Diario', icon: AlertTriangle }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'balance-diario', label: 'Balance Diario', icon: BarChart3 }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'balance-mensual', label: 'Balance Mensual', icon: BarChart3 }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'horas-extras', label: 'Horas Extras', icon: Clock }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'reporte-diario', label: 'Reporte Diario', icon: AlertTriangle }] : []),
             { key: 'horarios', label: 'Horarios', icon: Settings },
-            ...(['gerente_sucursal', 'admin_rrhh'].includes(empleado.rol) ? [{ key: 'cambios', label: 'Cambios Horario', icon: ArrowLeftRight }] : []),
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'feriados', label: 'Feriados', icon: Calendar }] : []),
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'config', label: 'Configuración', icon: Settings }] : []),
-            ...(empleado.rol === 'admin_rrhh' ? [{ key: 'admin', label: 'Administrar', icon: Shield }] : []),
+            ...(['gerente_sucursal', 'admin_rrhh'].includes(rolFichero ?? '') ? [{ key: 'cambios', label: 'Cambios Horario', icon: ArrowLeftRight }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'feriados', label: 'Feriados', icon: Calendar }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'config', label: 'Configuración', icon: Settings }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'admin', label: 'Administrar', icon: Shield }] : []),
           ].map(({ key, label, icon: Icon }) => (
             <Button
               key={key}
@@ -844,14 +846,14 @@ export default function Fichero() {
                     <span>Fichaje con Reconocimiento Facial</span>
                   </CardTitle>
                   <CardDescription>
-                    {empleado.rol === 'admin_rrhh' 
+                    {rolFichero === 'admin_rrhh' 
                       ? 'Use su rostro para registrar entrada, salida o pausas'
                       : 'Los fichajes deben realizarse desde el kiosco'
                     }
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {empleado.rol === 'admin_rrhh' ? (
+                  {rolFichero === 'admin_rrhh' ? (
                     <FicheroFacialAuth
                       empleado={empleado}
                       tipoFichaje={obtenerTipoFichajeSiguiente()}
@@ -931,7 +933,7 @@ export default function Fichero() {
             </div>
 
             {/* Registro Manual - Solo para administradores */}
-            {empleado.rol === 'admin_rrhh' && (
+            {rolFichero === 'admin_rrhh' && (
               <FicheroManual onFichajeCreated={loadFichajes} />
             )}
           </div>
@@ -947,7 +949,7 @@ export default function Fichero() {
 
         {activeTab === 'incidencias' && (
           <div className="space-y-4">
-            {empleado?.rol === 'admin_rrhh' && (
+            {rolFichero === 'admin_rrhh' && (
               <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -974,11 +976,11 @@ export default function Fichero() {
           </div>
         )}
 
-        {activeTab === 'historial' && empleado?.rol === 'admin_rrhh' && (
+        {activeTab === 'historial' && rolFichero === 'admin_rrhh' && (
           <FicheroHistorial />
         )}
 
-        {activeTab === 'horarios' && empleado?.rol === 'admin_rrhh' && (
+        {activeTab === 'horarios' && rolFichero === 'admin_rrhh' && (
           <FicheroHorarios />
         )}
 
@@ -990,7 +992,7 @@ export default function Fichero() {
           <EstadoAnimoEmpleado />
         )}
 
-        {activeTab === 'feriados' && empleado?.rol === 'admin_rrhh' && (
+        {activeTab === 'feriados' && rolFichero === 'admin_rrhh' && (
           <FeriadosConfig />
         )}
 
@@ -998,24 +1000,24 @@ export default function Fichero() {
           <CambioHorarioGerente />
         )}
 
-        {activeTab === 'reporte-diario' && empleado?.rol === 'admin_rrhh' && (
+        {activeTab === 'reporte-diario' && rolFichero === 'admin_rrhh' && (
           <ReporteDiarioAsistencia />
         )}
 
-        {activeTab === 'balance-diario' && empleado?.rol === 'admin_rrhh' && (
+        {activeTab === 'balance-diario' && rolFichero === 'admin_rrhh' && (
           <BalanceDiarioHoras />
         )}
 
-        {activeTab === 'balance-mensual' && empleado?.rol === 'admin_rrhh' && (
+        {activeTab === 'balance-mensual' && rolFichero === 'admin_rrhh' && (
           <BalanceMensualHoras />
         )}
 
-        {activeTab === 'horas-extras' && empleado?.rol === 'admin_rrhh' && (
+        {activeTab === 'horas-extras' && rolFichero === 'admin_rrhh' && (
           <ReporteHorasExtras />
         )}
         
         {/* Vista de administrador */}
-        {empleado.rol === 'admin_rrhh' && activeTab === 'admin' && (
+        {rolFichero === 'admin_rrhh' && activeTab === 'admin' && (
           <AttendanceReports />
         )}
       </div>
