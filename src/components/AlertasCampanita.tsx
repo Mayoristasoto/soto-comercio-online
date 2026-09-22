@@ -221,7 +221,7 @@ export function AlertasCampanita() {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="h-80 pr-2">
           {visibles.length === 0 && (
             <p className="p-4 text-center text-sm text-muted-foreground">No hay avisos por ahora.</p>
           )}
