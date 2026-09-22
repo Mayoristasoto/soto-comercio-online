@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, CheckCheck, AlertTriangle, CalendarClock, ClipboardList, Package, Users, FileWarning } from "lucide-react";
+import { Bell, CheckCheck, AlertTriangle, CalendarClock, ClipboardList, Package, Users, FileWarning, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { generarAlertasRrhh, marcarAlertaLeida, marcarTodasLeidas, type AlertaRrhh } from "@/lib/alertasRrhh";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
@@ -24,10 +27,39 @@ const ICONOS: Record<string, typeof Bell> = {
   insumos_cerrado: Package,
 };
 
+const TIPOS: { tipo: string; label: string }[] = [
+  { tipo: "fichaje_faltante", label: "Fichajes faltantes" },
+  { tipo: "vacaciones_pendiente", label: "Vacaciones por aprobar" },
+  { tipo: "solicitud_pendiente", label: "Solicitudes pendientes" },
+  { tipo: "tarea_vencida", label: "Tareas vencidas" },
+  { tipo: "cobertura_pendiente", label: "Coberturas de vacaciones" },
+  { tipo: "insumos_cerrado", label: "Controles de insumos" },
+];
+
+const PREF_KEY = "alertas_rrhh_tipos_ocultos";
+
+function leerOcultos(): string[] {
+  try {
+    const raw = localStorage.getItem(PREF_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function AlertasCampanita() {
   const navigate = useNavigate();
   const [alertas, setAlertas] = useState<AlertaRrhh[]>([]);
-  const [noLeidas, setNoLeidas] = useState(0);
+  const [ocultos, setOcultos] = useState<string[]>(() => leerOcultos());
+
+  const visibles = useMemo(() => alertas.filter((a) => !ocultos.includes(a.tipo)), [alertas, ocultos]);
+  const noLeidas = useMemo(() => visibles.filter((a) => !a.leida).length, [visibles]);
+
+  const toggleTipo = (tipo: string, activo: boolean) => {
+    const nuevos = activo ? ocultos.filter((t) => t !== tipo) : [...ocultos, tipo];
+    setOcultos(nuevos);
+    localStorage.setItem(PREF_KEY, JSON.stringify(nuevos));
+  };
 
   const cargar = useCallback(async () => {
     const { data } = await supabase
@@ -37,7 +69,6 @@ export function AlertasCampanita() {
       .limit(30);
     const lista = (data as AlertaRrhh[]) ?? [];
     setAlertas(lista);
-    setNoLeidas(lista.filter((a) => !a.leida).length);
   }, []);
 
   useEffect(() => {
@@ -72,28 +103,60 @@ export function AlertasCampanita() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center justify-between">
+        <DropdownMenuLabel className="flex items-center justify-between gap-1">
           <span>Avisos</span>
-          {noLeidas > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={async () => {
-                await marcarTodasLeidas();
-                cargar();
-              }}
-            >
-              <CheckCheck className="mr-1 h-3 w-3" /> Marcar todas leídas
-            </Button>
-          )}
+          <span className="flex items-center gap-1">
+            {noLeidas > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={async () => {
+                  await marcarTodasLeidas();
+                  cargar();
+                }}
+              >
+                <CheckCheck className="mr-1 h-3 w-3" /> Marcar leídas
+              </Button>
+            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  title="Elegir qué avisos recibir"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+                <p className="mb-2 text-sm font-medium">¿Qué avisos querés recibir?</p>
+                <div className="space-y-2">
+                  {TIPOS.map((t) => (
+                    <div key={t.tipo} className="flex items-center justify-between gap-2">
+                      <Label htmlFor={`pref-${t.tipo}`} className="text-sm font-normal">
+                        {t.label}
+                      </Label>
+                      <Switch
+                        id={`pref-${t.tipo}`}
+                        checked={!ocultos.includes(t.tipo)}
+                        onCheckedChange={(v) => toggleTipo(t.tipo, v)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <ScrollArea className="max-h-80">
-          {alertas.length === 0 && (
+          {visibles.length === 0 && (
             <p className="p-4 text-center text-sm text-muted-foreground">No hay avisos por ahora.</p>
           )}
-          {alertas.map((a) => {
+          {visibles.map((a) => {
             const Icono = ICONOS[a.tipo] ?? Bell;
             return (
               <DropdownMenuItem
