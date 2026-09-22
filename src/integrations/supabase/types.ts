@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      alertas_rrhh: {
+        Row: {
+          clave: string
+          created_at: string
+          detalle: string | null
+          enlace: string | null
+          id: string
+          leida: boolean
+          leida_at: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          clave: string
+          created_at?: string
+          detalle?: string | null
+          enlace?: string | null
+          id?: string
+          leida?: boolean
+          leida_at?: string | null
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          clave?: string
+          created_at?: string
+          detalle?: string | null
+          enlace?: string | null
+          id?: string
+          leida?: boolean
+          leida_at?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       api_logs: {
         Row: {
           created_at: string
