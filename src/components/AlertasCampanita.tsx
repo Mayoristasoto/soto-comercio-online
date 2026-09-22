@@ -14,6 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { generarAlertasRrhh, marcarAlertaLeida, marcarTodasLeidas, type AlertaRrhh } from "@/lib/alertasRrhh";
 import { formatArgentinaDateTime } from "@/lib/dateUtils";
@@ -38,21 +39,38 @@ const TIPOS: { tipo: string; label: string }[] = [
 
 const PREF_KEY = "alertas_rrhh_tipos_ocultos";
 
-function leerOcultos(): string[] {
+const PREF_EMPLEADOS_KEY = "alertas_rrhh_empleados_ocultos";
+
+function leerLista(key: string): string[] {
   try {
-    const raw = localStorage.getItem(PREF_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
   }
 }
 
+interface EmpleadoMini {
+  id: string;
+  nombre: string;
+  apellido: string;
+}
+
 export function AlertasCampanita() {
   const navigate = useNavigate();
   const [alertas, setAlertas] = useState<AlertaRrhh[]>([]);
-  const [ocultos, setOcultos] = useState<string[]>(() => leerOcultos());
+  const [ocultos, setOcultos] = useState<string[]>(() => leerLista(PREF_KEY));
+  const [empleadosOcultos, setEmpleadosOcultos] = useState<string[]>(() => leerLista(PREF_EMPLEADOS_KEY));
+  const [empleados, setEmpleados] = useState<EmpleadoMini[]>([]);
+  const [buscar, setBuscar] = useState("");
 
-  const visibles = useMemo(() => alertas.filter((a) => !ocultos.includes(a.tipo)), [alertas, ocultos]);
+  const visibles = useMemo(
+    () =>
+      alertas.filter(
+        (a) => !ocultos.includes(a.tipo) && !empleadosOcultos.some((id) => (a.clave ?? "").includes(id))
+      ),
+    [alertas, ocultos, empleadosOcultos]
+  );
   const noLeidas = useMemo(() => visibles.filter((a) => !a.leida).length, [visibles]);
 
   const toggleTipo = (tipo: string, activo: boolean) => {
@@ -60,6 +78,27 @@ export function AlertasCampanita() {
     setOcultos(nuevos);
     localStorage.setItem(PREF_KEY, JSON.stringify(nuevos));
   };
+
+  const toggleEmpleado = (id: string, activo: boolean) => {
+    const nuevos = activo ? empleadosOcultos.filter((e) => e !== id) : [...empleadosOcultos, id];
+    setEmpleadosOcultos(nuevos);
+    localStorage.setItem(PREF_EMPLEADOS_KEY, JSON.stringify(nuevos));
+  };
+
+  useEffect(() => {
+    supabase
+      .from("empleados")
+      .select("id, nombre, apellido")
+      .eq("activo", true)
+      .order("apellido")
+      .then(({ data }) => setEmpleados((data as EmpleadoMini[]) ?? []));
+  }, []);
+
+  const empleadosFiltrados = useMemo(() => {
+    const q = buscar.trim().toLowerCase();
+    if (!q) return empleados;
+    return empleados.filter((e) => `${e.nombre} ${e.apellido}`.toLowerCase().includes(q));
+  }, [empleados, buscar]);
 
   const cargar = useCallback(async () => {
     const { data } = await supabase
@@ -131,7 +170,7 @@ export function AlertasCampanita() {
                   <Settings2 className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+              <PopoverContent align="end" className="w-72" onClick={(e) => e.stopPropagation()}>
                 <p className="mb-2 text-sm font-medium">¿Qué avisos querés recibir?</p>
                 <div className="space-y-2">
                   {TIPOS.map((t) => (
@@ -147,12 +186,42 @@ export function AlertasCampanita() {
                     </div>
                   ))}
                 </div>
+                <DropdownMenuSeparator className="my-3" />
+                <p className="mb-1 text-sm font-medium">Empleados</p>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Apagá los que no querés que generen avisos.
+                </p>
+                <Input
+                  value={buscar}
+                  onChange={(e) => setBuscar(e.target.value)}
+                  placeholder="Buscar empleado…"
+                  className="mb-2 h-8"
+                />
+                <ScrollArea className="h-56 pr-3">
+                  <div className="space-y-2">
+                    {empleadosFiltrados.map((e) => (
+                      <div key={e.id} className="flex items-center justify-between gap-2">
+                        <Label htmlFor={`emp-${e.id}`} className="text-sm font-normal">
+                          {e.apellido}, {e.nombre}
+                        </Label>
+                        <Switch
+                          id={`emp-${e.id}`}
+                          checked={!empleadosOcultos.includes(e.id)}
+                          onCheckedChange={(v) => toggleEmpleado(e.id, v)}
+                        />
+                      </div>
+                    ))}
+                    {empleadosFiltrados.length === 0 && (
+                      <p className="text-xs text-muted-foreground">Sin resultados.</p>
+                    )}
+                  </div>
+                </ScrollArea>
               </PopoverContent>
             </Popover>
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="h-80 pr-2">
           {visibles.length === 0 && (
             <p className="p-4 text-center text-sm text-muted-foreground">No hay avisos por ahora.</p>
           )}
