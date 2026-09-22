@@ -17,3 +17,9 @@
 - [x] Sucursales limitadas a Olazar 26, Juan B. Justo y José Martí.
 - [x] Cierre de control: una vez cerrado no se edita; se abre un control nuevo.
 - [x] Reabrir un control cerrado: solo admin_rrhh.
+
+## Reorganización del sistema
+- [x] Menú en 7 grupos, roles normalizados y Recorrido de Salón agregado.
+- [x] Juego base de accesos por rol + botón "Aplicar juego base" en la matriz.
+- [x] Pantallas clave (Vacaciones, Solicitudes, Fichero) respetan la vista simulada "Ver como".
+- [x] Eliminada la lista de menú vieja (sidebar_links) y su editor.
