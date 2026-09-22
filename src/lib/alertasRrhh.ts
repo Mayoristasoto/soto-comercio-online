@@ -69,12 +69,12 @@ export async function generarAlertasRrhh() {
     // 3) Solicitudes generales pendientes
     const { data: solPend } = await supabase
       .from("solicitudes_generales")
-      .select("id, tipo")
+      .select("id, tipo_solicitud")
       .eq("estado", "pendiente");
     for (const s of solPend ?? []) {
       inserts.push({
         tipo: "solicitud_pendiente",
-        titulo: `Solicitud pendiente: ${s.tipo}`,
+        titulo: `Solicitud pendiente: ${s.tipo_solicitud}`,
         enlace: "/solicitudes",
         clave: `sol:${s.id}`,
       });
