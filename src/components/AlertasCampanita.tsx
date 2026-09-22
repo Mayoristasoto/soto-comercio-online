@@ -103,28 +103,60 @@ export function AlertasCampanita() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center justify-between">
+        <DropdownMenuLabel className="flex items-center justify-between gap-1">
           <span>Avisos</span>
-          {noLeidas > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={async () => {
-                await marcarTodasLeidas();
-                cargar();
-              }}
-            >
-              <CheckCheck className="mr-1 h-3 w-3" /> Marcar todas leídas
-            </Button>
-          )}
+          <span className="flex items-center gap-1">
+            {noLeidas > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={async () => {
+                  await marcarTodasLeidas();
+                  cargar();
+                }}
+              >
+                <CheckCheck className="mr-1 h-3 w-3" /> Marcar leídas
+              </Button>
+            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  title="Elegir qué avisos recibir"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+                <p className="mb-2 text-sm font-medium">¿Qué avisos querés recibir?</p>
+                <div className="space-y-2">
+                  {TIPOS.map((t) => (
+                    <div key={t.tipo} className="flex items-center justify-between gap-2">
+                      <Label htmlFor={`pref-${t.tipo}`} className="text-sm font-normal">
+                        {t.label}
+                      </Label>
+                      <Switch
+                        id={`pref-${t.tipo}`}
+                        checked={!ocultos.includes(t.tipo)}
+                        onCheckedChange={(v) => toggleTipo(t.tipo, v)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <ScrollArea className="max-h-80">
-          {alertas.length === 0 && (
+          {visibles.length === 0 && (
             <p className="p-4 text-center text-sm text-muted-foreground">No hay avisos por ahora.</p>
           )}
-          {alertas.map((a) => {
+          {visibles.map((a) => {
             const Icono = ICONOS[a.tipo] ?? Bell;
             return (
               <DropdownMenuItem
