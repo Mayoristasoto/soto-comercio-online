@@ -12,8 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Search, Info, Loader2, Copy, AlertTriangle, Eye } from "lucide-react"
+import { Search, Info, Loader2, Copy, AlertTriangle, Eye, Wand2 } from "lucide-react"
+import { ACCESOS_BASE, rolTieneAccesoBase } from "@/lib/accesosBase"
 
 interface Pagina {
   id: string
@@ -157,6 +169,22 @@ export function MatrizAccesosRol() {
     }
   }
 
+  const aplicarJuegoBase = async () => {
+    setGuardando(true)
+    try {
+      for (const p of paginas) {
+        const nuevos = Object.keys(ACCESOS_BASE).filter((rol) => rolTieneAccesoBase(rol, p.path))
+        const igual =
+          nuevos.length === p.roles_permitidos.length &&
+          nuevos.every((r) => p.roles_permitidos.includes(r))
+        if (!igual) await actualizarRoles(p, nuevos)
+      }
+      toast.success("Juego base aplicado")
+    } finally {
+      setGuardando(false)
+    }
+  }
+
   const huerfanas = useMemo(
     () =>
       paginas.filter((p) => {
@@ -243,6 +271,29 @@ export function MatrizAccesosRol() {
           )}
           Copiar
         </Button>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="outline" disabled={guardando}>
+              <Wand2 className="mr-2 h-4 w-4" />
+              Aplicar juego base
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Aplicar el juego base de accesos?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Reemplaza los accesos actuales de todos los roles por la configuración
+                recomendada: Empleado ve lo propio, Líder agrega su grupo, Gerente agrega su
+                sucursal y Admin RRHH ve todo. Después podés ajustar lo que quieras.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={aplicarJuegoBase}>Aplicar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="flex flex-wrap gap-2">
