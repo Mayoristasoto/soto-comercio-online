@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ClipboardCheck, Loader2, LogOut, Lock, Mail } from "lucide-react";
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 interface Sesion {
   nombre: string;
@@ -41,7 +42,7 @@ export default function ControlesAcceso() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (!empleado || !empleado.activo || empleado.rol !== "admin_rrhh") {
+      if (!empleado || !empleado.activo || rolConPreview(empleado.rol) !== "admin_rrhh") {
         setSesion(null);
         setError("Esta cuenta no tiene permiso para acceder a los controles.");
         await supabase.auth.signOut();
