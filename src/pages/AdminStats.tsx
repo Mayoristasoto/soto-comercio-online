@@ -22,6 +22,7 @@ import {
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { useNavigate } from "react-router-dom"
+import { rolConPreview } from "@/lib/rolEfectivo"
 
 interface DashboardStats {
   total_empleados: number
@@ -88,7 +89,7 @@ export default function AdminStats() {
         .eq('user_id', user.id)
         .single()
 
-      if (empleado?.rol !== 'admin_rrhh') {
+      if (rolConPreview(empleado?.rol) !== 'admin_rrhh') {
         toast({
           title: "Acceso denegado",
           description: "No tienes permisos para acceder al panel de administración",

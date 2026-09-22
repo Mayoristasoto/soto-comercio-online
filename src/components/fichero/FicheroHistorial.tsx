@@ -53,7 +53,7 @@ import {
 import { format, parseISO, differenceInMinutes } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-import { 
+import { rolConPreview } from "@/lib/rolEfectivo"
   formatArgentinaDate, 
   formatArgentinaTime, 
   getArgentinaStartOfDay, 
@@ -128,7 +128,7 @@ export default function FicheroHistorial() {
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single()
 
-      setEsAdmin(empleado?.rol === 'admin_rrhh')
+      setEsAdmin(rolConPreview(empleado?.rol) === 'admin_rrhh')
     } catch (error) {
       console.error('Error verificando permisos:', error)
     }
