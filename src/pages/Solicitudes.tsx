@@ -9,6 +9,7 @@ import { MisSolicitudes } from "@/components/solicitudes/MisSolicitudes";
 import { NuevaSolicitud } from "@/components/solicitudes/NuevaSolicitud";
 import { AprobacionSolicitudes } from "@/components/solicitudes/AprobacionSolicitudes";
 import { ConfiguracionSolicitudes } from "@/components/solicitudes/ConfiguracionSolicitudes";
+import { useRolEfectivo } from "@/hooks/useRolEfectivo";
 
 interface UserInfo {
   id: string;
@@ -22,6 +23,7 @@ export default function Solicitudes() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const rolEfectivo = useRolEfectivo(userInfo?.rol);
 
   useEffect(() => {
     fetchUserInfo();
@@ -82,7 +84,7 @@ export default function Solicitudes() {
     );
   }
 
-  const isAdmin = userInfo.rol === 'admin_rrhh';
+  const isAdmin = rolEfectivo === 'admin_rrhh';
 
   return (
     <div className="container mx-auto p-6 space-y-6">

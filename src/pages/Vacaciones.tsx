@@ -109,8 +109,8 @@ export default function Vacaciones() {
     );
   }
 
-  const isAdmin = userInfo.rol === 'admin_rrhh';
-  const isGerente = userInfo.rol === 'gerente_sucursal';
+  const isAdmin = rolEfectivo === 'admin_rrhh';
+  const isGerente = rolEfectivo === 'gerente_sucursal';
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -186,12 +186,12 @@ export default function Vacaciones() {
         </TabsList>
 
         <TabsContent value="mis-vacaciones" className="space-y-4">
-          <MisVacaciones empleadoId={userInfo.id} rol={userInfo.rol} />
+          <MisVacaciones empleadoId={userInfo.id} rol={rolEfectivo ?? userInfo.rol} />
         </TabsContent>
 
         <TabsContent value="calendario" className="space-y-4">
           <CalendarioVacaciones 
-            rol={userInfo.rol} 
+            rol={rolEfectivo ?? userInfo.rol} 
             sucursalId={userInfo.sucursal_id}
           />
         </TabsContent>
@@ -199,7 +199,7 @@ export default function Vacaciones() {
         {(isGerente || isAdmin) && (
           <TabsContent value="aprobaciones" className="space-y-4">
             <AprobacionVacaciones 
-              rol={userInfo.rol}
+              rol={rolEfectivo ?? userInfo.rol}
               sucursalId={userInfo.sucursal_id}
             />
           </TabsContent>
