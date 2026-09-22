@@ -69,7 +69,6 @@ export function AlertasCampanita() {
       .limit(30);
     const lista = (data as AlertaRrhh[]) ?? [];
     setAlertas(lista);
-    setNoLeidas(lista.filter((a) => !a.leida).length);
   }, []);
 
   useEffect(() => {
