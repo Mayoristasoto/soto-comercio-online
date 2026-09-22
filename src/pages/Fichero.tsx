@@ -996,7 +996,7 @@ export default function Fichero() {
           <FeriadosConfig />
         )}
 
-        {activeTab === 'cambios' && ['gerente_sucursal', 'admin_rrhh'].includes(empleado?.rol || '') && (
+        {activeTab === 'cambios' && ['gerente_sucursal', 'admin_rrhh'].includes(rolFichero ?? '') && (
           <CambioHorarioGerente />
         )}
 
