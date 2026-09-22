@@ -54,7 +54,8 @@ import { format, parseISO, differenceInMinutes } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { rolConPreview } from "@/lib/rolEfectivo"
-  formatArgentinaDate, 
+import {
+  formatArgentinaDate,
   formatArgentinaTime, 
   getArgentinaStartOfDay, 
   getArgentinaEndOfDay 
