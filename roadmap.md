@@ -23,3 +23,8 @@
 - [x] Juego base de accesos por rol + botón "Aplicar juego base" en la matriz.
 - [x] Pantallas clave (Vacaciones, Solicitudes, Fichero) respetan la vista simulada "Ver como".
 - [x] Eliminada la lista de menú vieja (sidebar_links) y su editor.
+
+## Plan: Ver como completo + Indicadores + Alertas (2026-09-22)
+- [x] Vista simulada aplicada en todas las pantallas que bloquean por rol (Nómina, Admin, Stats, Controles, Rentabilidad, Fichaje, Ranking, Historial/Incidencias, Home, Panel Encargado, Góndolas V2)
+- [x] Tablero de indicadores `/rrhh/indicadores` (solo admin_rrhh): ausentismo, tardíos, pausas, horas, extras, facturación, personal, vacaciones pendientes; filtro mes + sucursal; tarjetas enlazan al detalle
+- [x] Alertas RRHH: tabla `alertas_rrhh` (RLS admin), generador idempotente por clave, campanita en encabezado con contador, marcar leídas, realtime habilitado
