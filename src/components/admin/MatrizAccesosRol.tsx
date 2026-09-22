@@ -12,8 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Search, Info, Loader2, Copy, AlertTriangle, Eye } from "lucide-react"
+import { Search, Info, Loader2, Copy, AlertTriangle, Eye, Wand2 } from "lucide-react"
+import { ACCESOS_BASE, rolTieneAccesoBase } from "@/lib/accesosBase"
 
 interface Pagina {
   id: string
