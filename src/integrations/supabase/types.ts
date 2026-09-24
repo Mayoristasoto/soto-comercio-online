@@ -1818,6 +1818,84 @@ export type Database = {
           },
         ]
       }
+      charlas_rrhh: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          estado: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          motivo: string | null
+          notas_rrhh: string | null
+          slot_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          motivo?: string | null
+          notas_rrhh?: string | null
+          slot_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          fecha?: string
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          motivo?: string | null
+          notas_rrhh?: string | null
+          slot_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charlas_rrhh_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "charlas_rrhh_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "charlas_rrhh_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "charlas_rrhh_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "charlas_rrhh_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "entrevistas_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_control_actividades: {
         Row: {
           actividad: string
@@ -4920,6 +4998,7 @@ export type Database = {
           hora_inicio: string
           id: string
           updated_at: string
+          uso: string
         }
         Insert: {
           config_id: string
@@ -4931,6 +5010,7 @@ export type Database = {
           hora_inicio: string
           id?: string
           updated_at?: string
+          uso?: string
         }
         Update: {
           config_id?: string
@@ -4942,6 +5022,7 @@ export type Database = {
           hora_inicio?: string
           id?: string
           updated_at?: string
+          uso?: string
         }
         Relationships: [
           {
@@ -10610,14 +10691,18 @@ export type Database = {
       }
       solicitudes_generales: {
         Row: {
+          aprobado_gerente_por: string | null
           aprobado_por: string | null
           archivo_adjunto: string | null
+          comentario_gerente: string | null
           comentarios_aprobacion: string | null
           created_at: string
           descripcion: string | null
           empleado_id: string
           estado: string
+          etapa: string
           fecha_aprobacion: string | null
+          fecha_aprobacion_gerente: string | null
           fecha_solicitud: string
           id: string
           monto: number | null
@@ -10625,14 +10710,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aprobado_gerente_por?: string | null
           aprobado_por?: string | null
           archivo_adjunto?: string | null
+          comentario_gerente?: string | null
           comentarios_aprobacion?: string | null
           created_at?: string
           descripcion?: string | null
           empleado_id: string
           estado?: string
+          etapa?: string
           fecha_aprobacion?: string | null
+          fecha_aprobacion_gerente?: string | null
           fecha_solicitud: string
           id?: string
           monto?: number | null
@@ -10640,14 +10729,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aprobado_gerente_por?: string | null
           aprobado_por?: string | null
           archivo_adjunto?: string | null
+          comentario_gerente?: string | null
           comentarios_aprobacion?: string | null
           created_at?: string
           descripcion?: string | null
           empleado_id?: string
           estado?: string
+          etapa?: string
           fecha_aprobacion?: string | null
+          fecha_aprobacion_gerente?: string | null
           fecha_solicitud?: string
           id?: string
           monto?: number | null
@@ -10715,12 +10808,16 @@ export type Database = {
       }
       solicitudes_vacaciones: {
         Row: {
+          aprobado_gerente_por: string | null
           aprobado_por: string | null
+          comentario_gerente: string | null
           comentarios_aprobacion: string | null
           created_at: string
           empleado_id: string
           estado: Database["public"]["Enums"]["solicitud_estado"]
+          etapa: string
           fecha_aprobacion: string | null
+          fecha_aprobacion_gerente: string | null
           fecha_fin: string
           fecha_inicio: string
           id: string
@@ -10729,12 +10826,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aprobado_gerente_por?: string | null
           aprobado_por?: string | null
+          comentario_gerente?: string | null
           comentarios_aprobacion?: string | null
           created_at?: string
           empleado_id: string
           estado?: Database["public"]["Enums"]["solicitud_estado"]
+          etapa?: string
           fecha_aprobacion?: string | null
+          fecha_aprobacion_gerente?: string | null
           fecha_fin: string
           fecha_inicio: string
           id?: string
@@ -10743,12 +10844,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aprobado_gerente_por?: string | null
           aprobado_por?: string | null
+          comentario_gerente?: string | null
           comentarios_aprobacion?: string | null
           created_at?: string
           empleado_id?: string
           estado?: Database["public"]["Enums"]["solicitud_estado"]
+          etapa?: string
           fecha_aprobacion?: string | null
+          fecha_aprobacion_gerente?: string | null
           fecha_fin?: string
           fecha_inicio?: string
           id?: string
@@ -12569,6 +12674,15 @@ export type Database = {
         Args: { p_desde?: string; p_hasta?: string }
         Returns: number
       }
+      gerente_resolver_solicitud: {
+        Args: {
+          p_aprobar: boolean
+          p_comentario?: string
+          p_id: string
+          p_tipo: string
+        }
+        Returns: Json
+      }
       get_clusters_fichajes_gps: {
         Args: { p_desde: string; p_hasta: string }
         Returns: {
@@ -13096,6 +13210,18 @@ export type Database = {
         Args: { p_empleado_id: string; p_novedad_id: string }
         Returns: undefined
       }
+      kiosk_mis_pedidos: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          comentario: string
+          created_at: string
+          detalle: string
+          estado: string
+          etapa: string
+          id: string
+          tipo: string
+        }[]
+      }
       kiosk_preparar_pausa_excedida_test: {
         Args: { p_empleado_id: string; p_minutos_pausa?: number }
         Returns: Json
@@ -13129,11 +13255,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      kiosk_reservar_charla: {
+        Args: { p_empleado_id: string; p_motivo?: string; p_slot_id: string }
+        Returns: Json
+      }
       kiosk_revertir_fichaje_sin_foto: {
         Args: { p_fichaje_id: string; p_motivo?: string }
         Returns: {
           mensaje: string
           success: boolean
+        }[]
+      }
+      kiosk_slots_charla: {
+        Args: never
+        Returns: {
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          slot_id: string
         }[]
       }
       kiosk_solicitar_vacaciones: {
