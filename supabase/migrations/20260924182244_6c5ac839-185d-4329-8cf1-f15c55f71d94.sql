@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.calcular_distribucion_costos(date, date) FROM PUBLIC, anon;
