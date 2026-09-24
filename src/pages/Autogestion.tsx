@@ -211,17 +211,11 @@ export default function Autogestion() {
     setSolicitandoAdelanto(true)
     try {
       // Insertar solicitud de adelanto en el sistema nuevo
-      const { error } = await supabase
-        .from('solicitudes_generales')
-        .insert({
-          empleado_id: empleadoId,
-          tipo_solicitud: 'adelanto_sueldo',
-          fecha_solicitud: new Date().toISOString().split('T')[0],
-          monto: monto,
-          descripcion: `Solicitud de adelanto de $${monto.toLocaleString('es-AR')}`,
-          estado: 'pendiente'
-        })
-
+      const { data: res, error } = await (supabase as any).rpc('kiosk_solicitar_adelanto', {
+        p_empleado_id: empleadoId,
+        p_monto: monto,
+      })
+      if (!error && !res?.ok) throw new Error(res?.error || 'No se pudo enviar')
       if (error) throw error
 
       toast({
