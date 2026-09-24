@@ -13275,6 +13275,10 @@ export type Database = {
           slot_id: string
         }[]
       }
+      kiosk_solicitar_adelanto: {
+        Args: { p_empleado_id: string; p_monto: number }
+        Returns: Json
+      }
       kiosk_solicitar_vacaciones: {
         Args: {
           p_empleado_id: string
