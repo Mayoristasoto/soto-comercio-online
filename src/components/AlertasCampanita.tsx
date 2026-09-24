@@ -25,6 +25,7 @@ const ICONOS: Record<string, typeof Bell> = {
   solicitud_pendiente: ClipboardList,
   tarea_vencida: AlertTriangle,
   cobertura_pendiente: Users,
+  charla_reservada: Users,
   insumos_cerrado: Package,
 };
 
@@ -34,6 +35,7 @@ const TIPOS: { tipo: string; label: string }[] = [
   { tipo: "solicitud_pendiente", label: "Solicitudes pendientes" },
   { tipo: "tarea_vencida", label: "Tareas vencidas" },
   { tipo: "cobertura_pendiente", label: "Coberturas de vacaciones" },
+  { tipo: "charla_reservada", label: "Charlas con empleados" },
   { tipo: "insumos_cerrado", label: "Controles de insumos" },
 ];
 

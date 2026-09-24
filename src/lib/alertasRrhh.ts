@@ -54,7 +54,8 @@ export async function generarAlertasRrhh() {
     const { data: vacPend } = await supabase
       .from("solicitudes_vacaciones")
       .select("id, empleados(nombre, apellido)")
-      .eq("estado", "pendiente");
+      .eq("estado", "pendiente")
+      .eq("etapa" as any, "rrhh");
     for (const s of vacPend ?? []) {
       const emp = (s as any).empleados;
       inserts.push({
@@ -70,7 +71,8 @@ export async function generarAlertasRrhh() {
     const { data: solPend } = await supabase
       .from("solicitudes_generales")
       .select("id, tipo_solicitud")
-      .eq("estado", "pendiente");
+      .eq("estado", "pendiente")
+      .eq("etapa" as any, "rrhh");
     for (const s of solPend ?? []) {
       inserts.push({
         tipo: "solicitud_pendiente",
@@ -123,6 +125,22 @@ export async function generarAlertasRrhh() {
         detalle: suc ? `Sucursal ${suc.nombre}` : undefined,
         enlace: "/controles",
         clave: `insumo:${i.id}`,
+      });
+    }
+
+    // Charlas con RRHH reservadas desde el kiosco
+    const { data: charlas } = await (supabase as any)
+      .from("charlas_rrhh")
+      .select("id, fecha, hora_inicio, empleados(nombre, apellido)")
+      .eq("estado", "confirmada")
+      .gte("fecha", new Date().toISOString().slice(0, 10));
+    for (const c of charlas ?? []) {
+      inserts.push({
+        tipo: "charla_reservada",
+        titulo: "Un empleado reservó una charla con RRHH",
+        detalle: `${c.empleados?.nombre ?? ""} ${c.empleados?.apellido ?? ""} · ${c.fecha} ${String(c.hora_inicio).slice(0, 5)}`,
+        enlace: "/rrhh/entrevistas",
+        clave: `charla:${c.id}`,
       });
     }
 
