@@ -19,6 +19,7 @@ import {
   Slot,
   hhmm,
 } from "./entrevistasTypes";
+import AbrirDiasPuntuales from "./AbrirDiasPuntuales";
 
 const db = supabase as any;
 
@@ -295,6 +296,17 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
           </div>
         </CardContent>
       </Card>
+
+      {!soloLectura && (
+        <AbrirDiasPuntuales
+          configId={config.id}
+          duracionDefault={config.duracion_minutos}
+          onCambio={() => {
+            cargar();
+            onCambio?.();
+          }}
+        />
+      )}
 
       <Card>
         <CardHeader>
