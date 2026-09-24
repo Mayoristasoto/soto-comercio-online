@@ -226,7 +226,7 @@ export default function Autogestion() {
 
       toast({
         title: "✅ Solicitud enviada",
-        description: `Se solicitó un adelanto de $${monto.toLocaleString('es-AR')}. La revisa tu gerente y después RRHH.`,
+        description: `Se solicitó un adelanto de $${monto.toLocaleString('es-AR')}. Será revisada por RRHH.`,
         duration: 5000
       })
 
