@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Clock, AlertTriangle, FileWarning, XCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
@@ -26,6 +27,14 @@ export function LlegadaTardeAlert({
 }: LlegadaTardeAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos);
   const [isShaking, setIsShaking] = useState(true);
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+  const dismissedRef = useRef(false);
+  const dismiss = () => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    onDismissRef.current();
+  };
 
   useEffect(() => {
     // Animación de shake inicial
@@ -36,7 +45,7 @@ export function LlegadaTardeAlert({
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          onDismiss();
+          setTimeout(dismiss, 0);
           return 0;
         }
         return prev - 1;
@@ -47,7 +56,8 @@ export function LlegadaTardeAlert({
       clearTimeout(shakeTimer);
       clearInterval(countdownInterval);
     };
-  }, [onDismiss]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
@@ -154,6 +164,7 @@ export function LlegadaTardeAlert({
           <p className="text-sm sm:text-base md:text-xl font-semibold text-red-600">
             Continuando en {countdown} segundo{countdown !== 1 ? 's' : ''}...
           </p>
+          <Button size="lg" className="mt-3" onClick={dismiss}>Continuar</Button>
         </div>
       </Card>
 
