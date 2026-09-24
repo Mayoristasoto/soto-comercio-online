@@ -51,11 +51,11 @@ export async function generarAlertasRrhh() {
     }
 
     // 2) Solicitudes de vacaciones pendientes
-    const { data: vacPend } = await supabase
+    const { data: vacPend } = await (supabase as any)
       .from("solicitudes_vacaciones")
       .select("id, empleados(nombre, apellido)")
       .eq("estado", "pendiente")
-      .eq("etapa" as any, "rrhh");
+      .eq("etapa", "rrhh");
     for (const s of vacPend ?? []) {
       const emp = (s as any).empleados;
       inserts.push({
@@ -68,11 +68,11 @@ export async function generarAlertasRrhh() {
     }
 
     // 3) Solicitudes generales pendientes
-    const { data: solPend } = await supabase
+    const { data: solPend } = await (supabase as any)
       .from("solicitudes_generales")
       .select("id, tipo_solicitud")
       .eq("estado", "pendiente")
-      .eq("etapa" as any, "rrhh");
+      .eq("etapa", "rrhh");
     for (const s of solPend ?? []) {
       inserts.push({
         tipo: "solicitud_pendiente",
