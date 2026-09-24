@@ -1,3 +1,4 @@
+import CharlasRRHHLista from "./CharlasRRHHLista";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -174,11 +175,15 @@ export default function AgendaEntrevistas({ soloLectura, refrescar }: Props) {
           <TabsTrigger value="semana">Semana</TabsTrigger>
           <TabsTrigger value="proximas">Próximas</TabsTrigger>
           <TabsTrigger value="calendario">Calendario</TabsTrigger>
+          <TabsTrigger value="charlas">Charlas con empleados</TabsTrigger>
         </TabsList>
+        <TabsContent value="charlas" className="mt-4">
+          <CharlasRRHHLista refrescar={refrescar} />
+        </TabsContent>
         <TabsContent value="calendario" className="mt-4">
           <CalendarioEntrevistas refrescar={refrescar} onSeleccionar={setDetalle} />
         </TabsContent>
-        <TabsContent value={vista === "calendario" ? "__none" : vista} className="mt-4 space-y-4">
+        <TabsContent value={vista === "calendario" || vista === "charlas" ? "__none" : vista} className="mt-4 space-y-4">
           {cargando ? (
             <p className="text-muted-foreground">Cargando…</p>
           ) : fechas.length === 0 ? (

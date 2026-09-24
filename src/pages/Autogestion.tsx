@@ -63,6 +63,9 @@ const validarReglasVacaciones = (inicio: Date, fin: Date): { valid: boolean; mes
   return { valid: true, message: '' }
 }
 
+import AutogestionMisPedidos from "@/components/kiosko/AutogestionMisPedidos"
+import AutogestionCharlaRRHH from "@/components/kiosko/AutogestionCharlaRRHH"
+
 export default function Autogestion() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -73,7 +76,7 @@ export default function Autogestion() {
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
   const [loading, setLoading] = useState(true)
   const [solicitandoAdelanto, setSolicitandoAdelanto] = useState(false)
-  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo' | 'vacaciones'>('menu')
+  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo' | 'vacaciones' | 'mis_pedidos' | 'charla'>('menu')
   const [consultandoSaldo, setConsultandoSaldo] = useState(false)
   const [saldoCuentaCorriente, setSaldoCuentaCorriente] = useState<any>(null)
   const [completandoTarea, setCompletandoTarea] = useState<string | null>(null)
@@ -223,7 +226,7 @@ export default function Autogestion() {
 
       toast({
         title: "✅ Solicitud enviada",
-        description: `Se solicitó un adelanto de $${monto.toLocaleString('es-AR')}. Será revisada por RRHH.`,
+        description: `Se solicitó un adelanto de $${monto.toLocaleString('es-AR')}. La revisa tu gerente y después RRHH.`,
         duration: 5000
       })
 
@@ -535,6 +538,40 @@ export default function Autogestion() {
           </div>
         )}
 
+
+        {vistaActual === 'menu' && (
+          <div className="grid grid-cols-1 gap-4 mt-4">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setVistaActual('mis_pedidos')}>
+              <CardContent className="p-8">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-muted p-4 rounded-full"><ListChecks className="h-8 w-8 text-primary" /></div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold">Mis pedidos</h3>
+                    <p className="text-muted-foreground mt-1">Ver en qué estado están tus vacaciones y adelantos</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setVistaActual('charla')}>
+              <CardContent className="p-8">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-muted p-4 rounded-full"><MessageCircle className="h-8 w-8 text-accent" /></div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold">Hablar con RRHH</h3>
+                    <p className="text-muted-foreground mt-1">Reservá un horario para charlar con Recursos Humanos</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {vistaActual === 'mis_pedidos' && empleadoId && (
+          <AutogestionMisPedidos empleadoId={empleadoId} onVolver={() => setVistaActual('menu')} />
+        )}
+        {vistaActual === 'charla' && empleadoId && (
+          <AutogestionCharlaRRHH empleadoId={empleadoId} onVolver={() => setVistaActual('menu')} />
+        )}
 
         {vistaActual === 'saldo' && (
           <Card>
