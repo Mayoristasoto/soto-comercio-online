@@ -8706,6 +8706,36 @@ export type Database = {
           },
         ]
       }
+      pin_eventos: {
+        Row: {
+          created_at: string
+          detalle: string | null
+          empleado_id: string
+          evento: string
+          id: string
+          intentos_fallidos: number | null
+          realizado_por: string | null
+        }
+        Insert: {
+          created_at?: string
+          detalle?: string | null
+          empleado_id: string
+          evento: string
+          id?: string
+          intentos_fallidos?: number | null
+          realizado_por?: string | null
+        }
+        Update: {
+          created_at?: string
+          detalle?: string | null
+          empleado_id?: string
+          evento?: string
+          id?: string
+          intentos_fallidos?: number | null
+          realizado_por?: string | null
+        }
+        Relationships: []
+      }
       planificacion_semanal: {
         Row: {
           aplicada_at: string | null

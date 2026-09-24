@@ -21,6 +21,7 @@ import ConfiguracionModelosIA from "@/components/admin/ConfiguracionModelosIA"
 import { KioskDeviceManagement } from "@/components/admin/KioskDeviceManagement"
 import { KioskAlertConfig } from "@/components/admin/KioskAlertConfig"
 import PinManagement from "@/components/admin/PinManagement"
+import PinEventosLog from "@/components/admin/PinEventosLog"
 import KioskSettingsConfig from "@/components/admin/KioskSettingsConfig"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
@@ -191,9 +192,12 @@ export default function Configuracion() {
           {tab === "facial" && <FacialRecognitionConfig />}
 
           {tab === "pins" && (
-            <Card className="p-6">
-              <PinManagement />
-            </Card>
+            <>
+              <Card className="p-6">
+                <PinManagement />
+              </Card>
+              <PinEventosLog />
+            </>
           )}
 
           {tab === "kiosk" && (
