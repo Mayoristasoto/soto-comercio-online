@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, XCircle, Clock, Coffee } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
@@ -60,6 +60,9 @@ export function CrucesRojasKioscoAlert({
   const [countdown, setCountdown] = useState(duracionSegundos);
   const [isShaking, setIsShaking] = useState(true);
 
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
   useEffect(() => {
     // Animación de shake inicial
     const shakeTimer = setTimeout(() => setIsShaking(false), 1000);
@@ -69,7 +72,7 @@ export function CrucesRojasKioscoAlert({
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          onDismiss();
+          setTimeout(() => onDismissRef.current(), 0);
           return 0;
         }
         return prev - 1;
@@ -80,7 +83,8 @@ export function CrucesRojasKioscoAlert({
       clearTimeout(shakeTimer);
       clearInterval(countdownInterval);
     };
-  }, [onDismiss]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">

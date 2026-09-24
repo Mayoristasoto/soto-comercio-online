@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Coffee, AlertTriangle, FileWarning, XCircle, Clock } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
@@ -36,13 +36,16 @@ export function DescansoFueraFranjaAlert({
   const [countdown, setCountdown] = useState(duracionSegundos);
   const [isShaking, setIsShaking] = useState(true);
 
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
   useEffect(() => {
     const shakeTimer = setTimeout(() => setIsShaking(false), 1000);
     const interval = setInterval(() => {
       setCountdown((p) => {
         if (p <= 1) {
           clearInterval(interval);
-          onDismiss();
+          setTimeout(() => onDismissRef.current(), 0);
           return 0;
         }
         return p - 1;
@@ -52,7 +55,8 @@ export function DescansoFueraFranjaAlert({
       clearTimeout(shakeTimer);
       clearInterval(interval);
     };
-  }, [onDismiss]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const esSinTurno = motivo === 'sin_turno';
 
