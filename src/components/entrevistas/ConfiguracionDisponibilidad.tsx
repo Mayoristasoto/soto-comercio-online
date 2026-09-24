@@ -296,6 +296,17 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
         </CardContent>
       </Card>
 
+      {!soloLectura && (
+        <AbrirDiasPuntuales
+          configId={config.id}
+          duracionDefault={config.duracion_minutos}
+          onCambio={() => {
+            cargar();
+            onCambio?.();
+          }}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Abrir horarios semana por semana</CardTitle>
