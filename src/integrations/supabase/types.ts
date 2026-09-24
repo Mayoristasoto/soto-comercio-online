@@ -2657,6 +2657,81 @@ export type Database = {
         }
         Relationships: []
       }
+      distribucion_costos_empleado: {
+        Row: {
+          centro_costo_id: string
+          confirmado_por: string | null
+          created_at: string
+          empleado_id: string
+          horas: number
+          id: string
+          origen: string
+          periodo: string
+          porcentaje: number
+          updated_at: string
+        }
+        Insert: {
+          centro_costo_id: string
+          confirmado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          horas?: number
+          id?: string
+          origen?: string
+          periodo: string
+          porcentaje?: number
+          updated_at?: string
+        }
+        Update: {
+          centro_costo_id?: string
+          confirmado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          horas?: number
+          id?: string
+          origen?: string
+          periodo?: string
+          porcentaje?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribucion_costos_empleado_centro_costo_id_fkey"
+            columns: ["centro_costo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_costo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribucion_costos_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribucion_costos_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribucion_costos_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribucion_costos_empleado_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos_firmas: {
         Row: {
           created_at: string
@@ -2798,6 +2873,63 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      empleado_centro_costo_fijo: {
+        Row: {
+          centro_costo_id: string
+          created_at: string
+          empleado_id: string
+          updated_at: string
+        }
+        Insert: {
+          centro_costo_id: string
+          created_at?: string
+          empleado_id: string
+          updated_at?: string
+        }
+        Update: {
+          centro_costo_id?: string
+          created_at?: string
+          empleado_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_centro_costo_fijo_centro_costo_id_fkey"
+            columns: ["centro_costo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_costo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_centro_costo_fijo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_centro_costo_fijo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_centro_costo_fijo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_centro_costo_fijo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: true
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       empleado_cruces_rojas: {
         Row: {
@@ -12259,6 +12391,16 @@ export type Database = {
       calcular_dias_laborales_antes: {
         Args: { dias_laborales: number; fecha_objetivo: string }
         Returns: string
+      }
+      calcular_distribucion_costos: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          centro_costo_id: string
+          empleado_id: string
+          horas: number
+          tramos: number
+          tramos_sin_ubicacion: number
+        }[]
       }
       calcular_horas_mes: {
         Args: { p_empleado_id: string; p_periodo: string }
