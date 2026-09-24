@@ -108,6 +108,8 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
           fecha_fin,
           motivo,
           estado,
+          etapa,
+          comentario_gerente,
           empleados!solicitudes_vacaciones_empleado_id_fkey(nombre, apellido, email, sucursal_id)
         `)
         .eq('estado', 'pendiente')
@@ -255,7 +257,25 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
     }
   };
 
+  const resolverGerente = async (solicitudId: string, aprobar: boolean) => {
+    if (!aprobar && !comentarios[solicitudId]) {
+      toast({ title: "Comentario requerido", description: "Indicá el motivo del rechazo", variant: "destructive" });
+      return;
+    }
+    const { data, error } = await (supabase as any).rpc("gerente_resolver_solicitud", {
+      p_tipo: "vacaciones", p_id: solicitudId, p_aprobar: aprobar, p_comentario: comentarios[solicitudId] || null,
+    });
+    if (error || !data?.ok) {
+      toast({ title: "Error", description: data?.error || error?.message || "No se pudo guardar", variant: "destructive" });
+      return;
+    }
+    toast({ title: aprobar ? "Enviada a RRHH" : "Solicitud rechazada" });
+    fetchSolicitudes();
+  };
+
   const handleRechazar = async (solicitudId: string) => {
+    const solR: any = solicitudes.find((x) => x.id === solicitudId);
+    if (!esAdmin && solR?.etapa === "gerente") return resolverGerente(solicitudId, false);
     if (!comentarios[solicitudId]) {
       toast({
         title: "Comentario requerido",
@@ -346,7 +366,14 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
                       </p>
                     )}
                   </div>
-                  <Badge variant="secondary">{solicitud.estado}</Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant="secondary">{solicitud.estado}</Badge>
+                    {(solicitud as any).etapa === "gerente" && <Badge variant="outline">Esperando gerente</Badge>}
+                    {(solicitud as any).etapa === "rrhh" && <Badge variant="outline">Esperando RRHH</Badge>}
+                    {(solicitud as any).comentario_gerente && (
+                      <p className="text-xs text-muted-foreground max-w-[220px] text-right">Gerente: {(solicitud as any).comentario_gerente}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Plan de cobertura de la sucursal */}
@@ -436,13 +463,30 @@ export function AprobacionVacaciones({ rol, sucursalId }: AprobacionVacacionesPr
                       Aprobar
                     </Button>
                   )}
-                  {!esAdmin && (
-                    <Button
-                      className="flex-1"
-                      onClick={() => setCoberturaAbierta(solicitud)}
-                    >
+                  {!esAdmin && (solicitud as any).etapa === "gerente" && (
+                    <>
+                      <Button variant="outline" className="flex-1" onClick={() => setCoberturaAbierta(solicitud)}>
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                        Cobertura
+                      </Button>
+                      <Button className="flex-1" onClick={() => {
+                        const c = coberturas[solicitud.id];
+                        if (!c || c.estado === "borrador") {
+                          toast({ title: "Falta la cobertura", description: "Cargá y enviá cómo vas a cubrir esos días antes de aprobar.", variant: "destructive" });
+                          setCoberturaAbierta(solicitud);
+                          return;
+                        }
+                        resolverGerente(solicitud.id, true);
+                      }}>
+                        <Check className="h-4 w-4 mr-2" />
+                        Aprobar y enviar a RRHH
+                      </Button>
+                    </>
+                  )}
+                  {!esAdmin && (solicitud as any).etapa !== "gerente" && (
+                    <Button variant="outline" className="flex-1" onClick={() => setCoberturaAbierta(solicitud)}>
                       <ClipboardList className="h-4 w-4 mr-2" />
-                      Cargar cobertura y enviar a RRHH
+                      Ver / editar cobertura
                     </Button>
                   )}
                   <Button

@@ -164,6 +164,20 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
     onCambio?.();
   };
 
+  const cambiarUsoSemana = async (uso: string) => {
+    if (!config) return;
+    const { error } = await db
+      .from("entrevistas_slots")
+      .update({ uso })
+      .eq("config_id", config.id)
+      .gte("fecha", semanaInicio)
+      .lte("fecha", semanaFin);
+    if (error) return toast.error(error.message);
+    toast.success("Uso de los horarios actualizado");
+    cargar();
+    onCambio?.();
+  };
+
   const cambiarEstadoSlot = async (slot: Slot, estado: "disponible" | "bloqueado") => {
     const { error } = await db.from("entrevistas_slots").update({ estado }).eq("id", slot.id);
     if (error) return toast.error(error.message);
@@ -316,6 +330,16 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
               <Button variant="outline" onClick={borrarHorariosSemana} className="gap-2">
                 <Trash2 className="h-4 w-4" /> Cerrar esta semana
               </Button>
+              <Select onValueChange={(v) => cambiarUsoSemana(v)}>
+                <SelectTrigger className="w-[260px]">
+                  <SelectValue placeholder="Uso de los horarios de la semana" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ambos">Entrevistas y charlas con empleados</SelectItem>
+                  <SelectItem value="entrevista">Solo entrevistas</SelectItem>
+                  <SelectItem value="charla">Solo charlas con empleados</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
           <p className="text-xs text-muted-foreground">
@@ -475,6 +499,9 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
                       className="flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
                     >
                       <span>{hhmm(s.hora_inicio)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {(s as any).uso === "entrevista" ? "Entrev." : (s as any).uso === "charla" ? "Charla" : "Ambos"}
+                      </span>
                       <Badge
                         variant={
                           s.estado === "reservado"

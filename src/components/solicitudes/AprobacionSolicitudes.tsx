@@ -35,6 +35,24 @@ export function AprobacionSolicitudes() {
   const [loading, setLoading] = useState(true);
   const [comentarios, setComentarios] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const [rol, setRol] = useState<string>("");
+  const esAdmin = rol === "admin_rrhh";
+
+  const resolverGerente = async (solicitudId: string, aprobar: boolean) => {
+    if (!aprobar && !comentarios[solicitudId]) {
+      toast({ title: "Comentario requerido", description: "Indicá el motivo del rechazo", variant: "destructive" });
+      return;
+    }
+    const { data, error } = await (supabase as any).rpc("gerente_resolver_solicitud", {
+      p_tipo: "general", p_id: solicitudId, p_aprobar: aprobar, p_comentario: comentarios[solicitudId] || null,
+    });
+    if (error || !data?.ok) {
+      toast({ title: "Error", description: data?.error || error?.message || "No se pudo guardar", variant: "destructive" });
+      return;
+    }
+    toast({ title: aprobar ? "Enviada a RRHH" : "Solicitud rechazada" });
+    fetchSolicitudes();
+  };
 
   useEffect(() => {
     fetchSolicitudes();
@@ -52,17 +70,26 @@ export function AprobacionSolicitudes() {
           monto,
           descripcion,
           estado,
-          empleados!solicitudes_generales_empleado_id_fkey(nombre, apellido, email)
+          etapa,
+          comentario_gerente,
+          empleados!solicitudes_generales_empleado_id_fkey(nombre, apellido, email, sucursal_id)
         `)
         .eq('estado', 'pendiente')
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const formattedData = (data || []).map((item: any) => ({
+      const { data: rolData } = await supabase.rpc('current_user_role');
+      const r = String(rolData ?? '');
+      setRol(r);
+      let formattedData = (data || []).map((item: any) => ({
         ...item,
         empleado: item.empleados
       }));
+      if (r === 'gerente_sucursal') {
+        const { data: suc } = await supabase.rpc('current_user_sucursal_id');
+        formattedData = formattedData.filter((x: any) => x.empleados?.sucursal_id === suc);
+      }
 
       setSolicitudes(formattedData);
     } catch (error: any) {
@@ -78,6 +105,12 @@ export function AprobacionSolicitudes() {
   };
 
   const handleAprobar = async (solicitudId: string) => {
+    const solA: any = solicitudes.find((x) => x.id === solicitudId);
+    if (!esAdmin) {
+      if (solA?.etapa === 'gerente') return resolverGerente(solicitudId, true);
+      toast({ title: "Ya está en RRHH", description: "Esta solicitud espera la aprobación de RRHH." });
+      return;
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: empleado } = await supabase
@@ -117,6 +150,12 @@ export function AprobacionSolicitudes() {
   };
 
   const handleRechazar = async (solicitudId: string) => {
+    const solR: any = solicitudes.find((x) => x.id === solicitudId);
+    if (!esAdmin) {
+      if (solR?.etapa === 'gerente') return resolverGerente(solicitudId, false);
+      toast({ title: "Ya está en RRHH", description: "Esta solicitud espera la decisión de RRHH." });
+      return;
+    }
     if (!comentarios[solicitudId]) {
       toast({
         title: "Comentario requerido",
@@ -200,6 +239,9 @@ export function AprobacionSolicitudes() {
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge>{TIPO_LABELS[solicitud.tipo_solicitud]}</Badge>
+                      {(solicitud as any).etapa === 'gerente' && <Badge variant="outline">Esperando gerente</Badge>}
+                      {(solicitud as any).etapa === 'rrhh' && <Badge variant="outline">Esperando RRHH</Badge>}
+                      {(solicitud as any).comentario_gerente && <span className="text-xs text-muted-foreground">Gerente: {(solicitud as any).comentario_gerente}</span>}
                       <span className="text-sm text-muted-foreground">
                         {format(new Date(solicitud.fecha_solicitud), "d 'de' MMMM, yyyy", { locale: es })}
                       </span>
