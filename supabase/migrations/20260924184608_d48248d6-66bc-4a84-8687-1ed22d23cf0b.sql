@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.set_etapa_inicial_solicitud(), public.charla_liberar_slot() FROM public, anon, authenticated;
