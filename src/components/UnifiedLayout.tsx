@@ -27,6 +27,14 @@ export default function UnifiedLayout() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [debeCambiarPassword, setDebeCambiarPassword] = useState(false)
+  const [soloReporte, setSoloReporte] = useState(false)
+
+  // Usuarios "solo reporte rápido": nunca salen de esa pantalla
+  useEffect(() => {
+    if (soloReporte && location.pathname !== '/reporte-rapido') {
+      navigate('/reporte-rapido', { replace: true })
+    }
+  }, [soloReporte, location.pathname, navigate])
   const [userInfo, setUserInfo] = useState<{
     id: string
     nombre: string
@@ -148,7 +156,7 @@ export default function UnifiedLayout() {
       // Verificar que el empleado existe en la base de datos
       const { data: empleado, error } = await supabase
         .from('empleados')
-        .select('id, nombre, apellido, email, rol, sucursal_id, grupo_id, avatar_url, debe_cambiar_password')
+        .select('id, nombre, apellido, email, rol, sucursal_id, grupo_id, avatar_url, debe_cambiar_password, solo_reporte_rapido')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -188,9 +196,13 @@ export default function UnifiedLayout() {
         avatar_url: empleado.avatar_url
       })
       setDebeCambiarPassword(empleado.debe_cambiar_password || false)
+      const soloReporte = !!(empleado as any).solo_reporte_rapido
+      setSoloReporte(soloReporte)
 
       // Gerentes: acceso restringido a las tarjetas de su panel (manejado en efecto aparte)
-      if (empleado.rol === 'gerente_sucursal') {
+      if (soloReporte) {
+        if (location.pathname !== '/reporte-rapido') navigate('/reporte-rapido', { replace: true })
+      } else if (empleado.rol === 'gerente_sucursal') {
         // no-op aquí
       } else if (empleado.rol === 'empleado') {
         const currentPath = location.pathname
@@ -259,6 +271,23 @@ export default function UnifiedLayout() {
         onPasswordChanged={() => navigate('/preview-panel-encargado')}
         standalone
       />
+    )
+  }
+
+  // Solo reporte rápido: pantalla única, sin menú, con botón para salir.
+  if (soloReporte) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-background px-3">
+          <span className="text-sm font-medium">{userInfo?.nombre} {userInfo?.apellido}</span>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-1" /> Salir
+          </Button>
+        </header>
+        <main>
+          <Outlet context={{ userInfo: userInfoVista }} />
+        </main>
+      </div>
     )
   }
 
