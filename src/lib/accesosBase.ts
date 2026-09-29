@@ -14,6 +14,7 @@ const EMPLEADO = [
   "#operaciones",
   "/tareas",
   "/instructivo/delegacion-tareas",
+  "/reporte-rapido",
   "#personal",
   "/evaluaciones",
 ]

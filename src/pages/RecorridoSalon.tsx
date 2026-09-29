@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Map as MapIcon, Plus, Trash2, Settings2, LayoutGrid, AlertTriangle, Wand2 } from "lucide-react";
+import { Map as MapIcon, Plus, Trash2, Settings2, LayoutGrid, AlertTriangle, Wand2, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { HallazgosAbiertos } from "@/components/recorrido/HallazgosAbiertos";
+import { ReportesRapidosLista } from "@/components/recorrido/ReportesRapidosLista";
 import {
   TIPO_ESPACIO_LABEL,
   TIPOS_ESPACIO,
@@ -239,6 +240,7 @@ const RecorridoSalon = () => {
           <TabsTrigger value="recorridos">Recorridos</TabsTrigger>
           <TabsTrigger value="plano"><Settings2 className="h-4 w-4 mr-1" /> Góndolas</TabsTrigger>
           <TabsTrigger value="hallazgos"><AlertTriangle className="h-4 w-4 mr-1" /> Hallazgos</TabsTrigger>
+          <TabsTrigger value="reportes"><Camera className="h-4 w-4 mr-1" /> Reportes rápidos</TabsTrigger>
           <TabsTrigger value="criterios">Criterios</TabsTrigger>
           <TabsTrigger value="editor"><LayoutGrid className="h-4 w-4 mr-1" /> Editor de layout</TabsTrigger>
         </TabsList>
@@ -324,6 +326,10 @@ const RecorridoSalon = () => {
               <HallazgosAbiertos sucursales={sucursales} empleados={empleados.map((e) => ({ ...e, sucursal_id: e.sucursal_id ?? null }))} esAdmin={esAdmin} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="reportes">
+          <ReportesRapidosLista esAdmin={esAdmin} />
         </TabsContent>
 
         <TabsContent value="criterios">
