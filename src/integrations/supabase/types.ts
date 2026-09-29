@@ -10389,6 +10389,75 @@ export type Database = {
           },
         ]
       }
+      reportes_rapidos: {
+        Row: {
+          comentario: string | null
+          created_at: string
+          empleado_id: string
+          estado: string
+          id: string
+          storage_path: string
+          sucursal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          comentario?: string | null
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          id?: string
+          storage_path: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comentario?: string | null
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          id?: string
+          storage_path?: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reportes_rapidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reportes_rapidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reportes_rapidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reportes_rapidos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reportes_rapidos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_change_audit: {
         Row: {
           changed_at: string | null
