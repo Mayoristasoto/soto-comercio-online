@@ -3498,6 +3498,7 @@ export type Database = {
           retener_fotos_recientes: boolean
           retener_ubicaciones_recientes: boolean
           rol: Database["public"]["Enums"]["user_role"]
+          solo_reporte_rapido: boolean
           sucursal_id: string | null
           tipo_jornada: string
           updated_at: string
@@ -3535,6 +3536,7 @@ export type Database = {
           retener_fotos_recientes?: boolean
           retener_ubicaciones_recientes?: boolean
           rol?: Database["public"]["Enums"]["user_role"]
+          solo_reporte_rapido?: boolean
           sucursal_id?: string | null
           tipo_jornada?: string
           updated_at?: string
@@ -3572,6 +3574,7 @@ export type Database = {
           retener_fotos_recientes?: boolean
           retener_ubicaciones_recientes?: boolean
           rol?: Database["public"]["Enums"]["user_role"]
+          solo_reporte_rapido?: boolean
           sucursal_id?: string | null
           tipo_jornada?: string
           updated_at?: string
