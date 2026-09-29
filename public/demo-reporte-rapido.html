@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Demo · Reporte rápido</title>
+<style>
+  :root {
+    --primary: #4b0d6d;
+    --primary-soft: #f3eaf9;
+    --border: #e4e0e8;
+    --muted: #6b6570;
+    --bg: #f7f5f9;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(140deg, #efe8f4 0%, #e5dcee 100%);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    color: #26202b;
+  }
+  .frame {
+    width: 390px; background: var(--bg);
+    border-radius: 28px; border: 10px solid #1c1620;
+    box-shadow: 0 30px 60px rgba(40, 10, 60, .35);
+    overflow: hidden; height: 780px; display: flex; flex-direction: column;
+    position: relative;
+  }
+  .notch {
+    height: 26px; background: #1c1620; display:flex; align-items:center; justify-content:center;
+  }
+  .notch::after { content:""; width:110px; height:8px; border-radius:6px; background:#3a3142; }
+  .screen { padding: 16px 16px 24px; overflow-y: auto; flex: 1; }
+  h1 {
+    font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    margin-bottom: 14px;
+  }
+  h1 svg { color: var(--primary); }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+    box-shadow: 0 1px 2px rgba(30,10,50,.05);
+  }
+  label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; }
+  .select {
+    border: 1px solid var(--border); border-radius: 10px; background: #fff;
+    padding: 11px 12px; font-size: 14px; display: flex; justify-content: space-between; align-items: center;
+    color: #26202b;
+  }
+  .select span.chev { color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bigbtn {
+    border: 1px dashed #c9bfd2; border-radius: 12px; background: #faf8fc;
+    height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; font-size: 14px; font-weight: 500; cursor: pointer; color: #3c3544;
+    transition: background .15s;
+  }
+  .bigbtn:hover { background: var(--primary-soft); border-color: var(--primary); }
+  .bigbtn svg { width: 24px; height: 24px; color: var(--primary); }
+  .preview { position: relative; display: none; }
+  .preview.on { display: block; }
+  .preview img { width: 100%; border-radius: 12px; display: block; }
+  .cambiar {
+    position: absolute; top: 8px; right: 8px; background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px;
+    font-size: 14px; font-family: inherit; resize: none; background: #fff; color: #26202b;
+  }
+  textarea::placeholder { color: #a49dae; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .enviar {
+    width: 100%; height: 50px; border: none; border-radius: 12px; background: var(--primary);
+    color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; gap: 8px; margin-top: 2px;
+  }
+  .enviar:hover { background: #5d1387; }
+  .sec-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 4px 0 8px; }
+  .rep { display: flex; gap: 12px; align-items: center; }
+  .thumb {
+    width: 58px; height: 58px; border-radius: 8px; overflow: hidden; flex-shrink: 0;
+    border: 1px solid var(--border); background: #ddd;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .rep .txt { flex: 1; min-width: 0; }
+  .rep .hora { font-size: 12px; color: var(--muted); }
+  .rep .com { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .del {
+    border: none; background: none; cursor: pointer; color: #c0392b; padding: 8px;
+  }
+  .badge-demo {
+    position: absolute; top: 34px; right: 14px; background: #e04403; color: #fff;
+    font-size: 11px; font-weight: 700; letter-spacing: .4px; padding: 5px 10px; border-radius: 999px;
+    z-index: 5;
+  }
+  .note {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(28,22,32,.9); color: #fff; font-size: 12.5px; padding: 8px 16px;
+    border-radius: 999px; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <div class="notch"></div>
+  <div class="badge-demo">DEMO</div>
+  <div class="screen">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      Reportar algo
+    </h1>
+
+    <div class="card">
+      <label>Sucursal</label>
+      <div class="select">José Martí <span class="chev">▾</span></div>
+
+      <div style="height:16px"></div>
+
+      <div id="elegir" class="grid2">
+        <div class="bigbtn" onclick="verFoto()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          Tomar foto
+        </div>
+        <div class="bigbtn" onclick="verFoto()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+          Galería
+        </div>
+      </div>
+
+      <div id="preview" class="preview">
+        <img alt="Foto elegida" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='440'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23c9b8d8'/%3E%3Cstop offset='1' stop-color='%238e7aa6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='700' height='440' fill='url(%23g)'/%3E%3Crect x='120' y='140' width='460' height='180' rx='10' fill='%23ffffff' opacity='.35'/%3E%3Crect x='150' y='170' width='120' height='120' rx='6' fill='%23ffffff' opacity='.55'/%3E%3Crect x='290' y='170' width='120' height='120' rx='6' fill='%23ffffff' opacity='.4'/%3E%3Crect x='430' y='170' width='120' height='120' rx='6' fill='%23ffffff' opacity='.5'/%3E%3Ctext x='350' y='420' font-family='sans-serif' font-size='22' fill='%23ffffff' text-anchor='middle' opacity='.9'%3EFoto de ejemplo (góndola 3)%3C/text%3E%3C/svg%3E" />
+        <button class="cambiar" onclick="quitarFoto()">Cambiar</button>
+      </div>
+
+      <div style="height:16px"></div>
+
+      <label>Comentario (opcional)</label>
+      <textarea rows="3" placeholder="Ej: heladera 2 sin precios, faltante en góndola 3...">Faltante en góndola 3, sección alfajores</textarea>
+      <div class="hint">El comentario es opcional: con la foto alcanza.</div>
+
+      <div style="height:14px"></div>
+      <button class="enviar" onclick="enviado()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        Enviar reporte
+      </button>
+    </div>
+
+    <div class="sec-title">Mis reportes de hoy</div>
+    <div class="card">
+      <div class="rep">
+        <div class="thumb"><img alt="reporte" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23a895bf'/%3E%3Crect x='25' y='35' width='70' height='50' rx='5' fill='%23ffffff' opacity='.5'/%3E%3C/svg%3E" /></div>
+        <div class="txt">
+          <div class="hora">16:12</div>
+          <div class="com">Faltante en góndola 3, sección alfajores</div>
+        </div>
+        <button class="del" title="Borrar">🗑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">Tocá “Tomar foto” o “Galería” para ver cómo queda con la foto cargada</div>
+
+<script>
+  function verFoto() {
+    document.getElementById('elegir').style.display = 'none';
+    document.getElementById('preview').classList.add('on');
+  }
+  function quitarFoto() {
+    document.getElementById('elegir').style.display = '';
+    document.getElementById('preview').classList.remove('on');
+  }
+  function enviado() {
+    const b = document.querySelector('.enviar');
+    b.textContent = '✔ Reporte enviado';
+    b.style.background = '#2e7d32';
+    setTimeout(() => { b.innerHTML = b.innerHTML; }, 1);
+  }
+</script>
+</body>
+</html>
