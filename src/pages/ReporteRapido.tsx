@@ -4,17 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, ImagePlus, Loader2, Trash2, Send } from "lucide-react";
+import { Camera, ImagePlus, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { BUCKET_EVIDENCIAS } from "@/components/recorrido/recorridoTypes";
 
 interface Sucursal { id: string; nombre: string }
-interface Reporte {
-  id: string;
-  comentario: string | null;
-  storage_path: string;
-  created_at: string;
-}
 
 const comprimir = (file: File): Promise<Blob> =>
   new Promise((resolve) => {
@@ -42,8 +36,6 @@ const ReporteRapido = () => {
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [reportes, setReportes] = useState<Reporte[]>([]);
-  const [urls, setUrls] = useState<Record<string, string>>({});
   const camRef = useRef<HTMLInputElement>(null);
   const galRef = useRef<HTMLInputElement>(null);
 
@@ -63,32 +55,6 @@ const ReporteRapido = () => {
       setSucursales((suc as Sucursal[]) ?? []);
     })();
   }, []);
-
-  const cargarReportes = async () => {
-    if (!empleadoId) return;
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const { data } = await supabase
-      .from("reportes_rapidos")
-      .select("id, comentario, storage_path, created_at")
-      .eq("empleado_id", empleadoId)
-      .gte("created_at", hoy.toISOString())
-      .order("created_at", { ascending: false });
-    const lista = (data as Reporte[]) ?? [];
-    setReportes(lista);
-    const map: Record<string, string> = {};
-    for (const r of lista) {
-      const { data: blob } = await supabase.storage.from(BUCKET_EVIDENCIAS).download(r.storage_path);
-      if (blob) map[r.id] = URL.createObjectURL(blob);
-    }
-    setUrls(map);
-  };
-
-  useEffect(() => {
-    cargarReportes();
-    return () => { Object.values(urls).forEach((u) => URL.revokeObjectURL(u)); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [empleadoId]);
 
   const elegirFoto = (files: FileList | null) => {
     const f = files?.[0];
@@ -115,11 +81,10 @@ const ReporteRapido = () => {
         storage_path: path,
       });
       if (dbErr) throw dbErr;
-      toast.success("Reporte enviado");
+      toast.success("Enviado ✓");
       setFoto(null);
       setPreview(null);
       setComentario("");
-      await cargarReportes();
     } catch {
       toast.error("No se pudo enviar el reporte");
     } finally {
@@ -129,102 +94,63 @@ const ReporteRapido = () => {
     }
   };
 
-  const borrar = async (r: Reporte) => {
-    await supabase.storage.from(BUCKET_EVIDENCIAS).remove([r.storage_path]);
-    await supabase.from("reportes_rapidos").delete().eq("id", r.id);
-    cargarReportes();
-  };
-
   return (
-    <div className="mx-auto max-w-md p-4 space-y-4">
-      <h1 className="text-xl font-bold flex items-center gap-2">
-        <Camera className="h-5 w-5" /> Reportar algo
-      </h1>
-
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Sucursal</label>
-            <Select value={sucursalId} onValueChange={setSucursalId}>
-              <SelectTrigger><SelectValue placeholder="Elegí la sucursal" /></SelectTrigger>
-              <SelectContent>
-                {sucursales.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {preview ? (
-            <div className="relative">
-              <img src={preview} alt="Foto a enviar" className="w-full rounded-lg" />
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="absolute top-2 right-2"
-                onClick={() => { setFoto(null); setPreview(null); }}
-              >
-                Cambiar
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <Button type="button" variant="outline" className="h-20 flex-col gap-1" onClick={() => camRef.current?.click()}>
-                <Camera className="h-6 w-6" /> Tomar foto
-              </Button>
-              <Button type="button" variant="outline" className="h-20 flex-col gap-1" onClick={() => galRef.current?.click()}>
-                <ImagePlus className="h-6 w-6" /> Galería
-              </Button>
-            </div>
-          )}
-          <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => elegirFoto(e.target.files)} />
-          <input ref={galRef} type="file" accept="image/*" className="hidden" onChange={(e) => elegirFoto(e.target.files)} />
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Comentario (opcional)</label>
+    <div className="mx-auto max-w-md p-4">
+      {!preview ? (
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            {!sucursalId && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Sucursal</label>
+                <Select value={sucursalId} onValueChange={setSucursalId}>
+                  <SelectTrigger><SelectValue placeholder="Elegí la sucursal" /></SelectTrigger>
+                  <SelectContent>
+                    {sucursales.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <Button type="button" className="w-full h-28 text-lg flex-col gap-2" onClick={() => camRef.current?.click()}>
+              <Camera className="h-8 w-8" /> Tomar foto
+            </Button>
+            <button
+              type="button"
+              className="w-full text-sm text-muted-foreground flex items-center justify-center gap-1 hover:text-foreground"
+              onClick={() => galRef.current?.click()}
+            >
+              <ImagePlus className="h-4 w-4" /> o elegir de la galería
+            </button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <img src={preview} alt="Foto a enviar" className="w-full rounded-lg" />
             <Textarea
-              placeholder="Ej: heladera 2 sin precios, faltante en góndola 3..."
+              placeholder="Comentario (opcional)"
               value={comentario}
               onChange={(e) => setComentario(e.target.value)}
               rows={3}
             />
-          </div>
-
-          <Button type="button" className="w-full h-12 text-base" disabled={enviando || !foto} onClick={enviar}>
-            {enviando ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Send className="h-5 w-5 mr-2" />}
-            Enviar reporte
-          </Button>
-        </CardContent>
-      </Card>
-
-      {reportes.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground">Mis reportes de hoy</h2>
-          {reportes.map((r) => (
-            <Card key={r.id}>
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="h-14 w-14 rounded border overflow-hidden bg-muted shrink-0">
-                  {urls[r.id] ? (
-                    <img src={urls[r.id]} alt="reporte" className="h-full w-full object-cover" />
-                  ) : (
-                    <Loader2 className="h-4 w-4 animate-spin m-auto mt-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(r.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                  </div>
-                  <div className="text-sm truncate">{r.comentario || "Sin comentario"}</div>
-                </div>
-                <Button type="button" size="icon" variant="ghost" onClick={() => borrar(r)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+            <Button type="button" className="w-full h-14 text-lg" disabled={enviando} onClick={enviar}>
+              {enviando ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Send className="h-5 w-5 mr-2" />}
+              Enviar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full"
+              onClick={() => { setFoto(null); setPreview(null); setComentario(""); }}
+            >
+              Descartar y sacar otra
+            </Button>
+          </CardContent>
+        </Card>
       )}
+      <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => elegirFoto(e.target.files)} />
+      <input ref={galRef} type="file" accept="image/*" className="hidden" onChange={(e) => elegirFoto(e.target.files)} />
     </div>
   );
 };
