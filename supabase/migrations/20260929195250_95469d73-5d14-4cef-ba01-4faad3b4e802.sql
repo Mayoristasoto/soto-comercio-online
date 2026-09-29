@@ -1,0 +1,1 @@
+ALTER TABLE public.empleados ADD COLUMN IF NOT EXISTS solo_reporte_rapido boolean NOT NULL DEFAULT false;
