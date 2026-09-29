@@ -328,6 +328,10 @@ const RecorridoSalon = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="reportes">
+          <ReportesRapidosLista esAdmin={esAdmin} />
+        </TabsContent>
+
         <TabsContent value="criterios">
           <Card>
             <CardHeader><CardTitle className="text-base">Criterios a evaluar</CardTitle></CardHeader>
