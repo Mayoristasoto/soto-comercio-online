@@ -12685,6 +12685,7 @@ export type Database = {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
+      empleado_activo_por_texto: { Args: { p_id: string }; Returns: boolean }
       entrevista_datos_invitacion: { Args: { _token: string }; Returns: Json }
       entrevista_generar_token: { Args: never; Returns: string }
       entrevista_liberar_slot: {
