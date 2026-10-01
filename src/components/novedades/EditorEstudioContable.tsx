@@ -167,11 +167,12 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
             <Button size="sm" variant={modo === "grilla" ? "default" : "ghost"} className="h-7" onClick={() => setModo("grilla")}>Vista grilla</Button>
           </div>
           <Button size="sm" onClick={descargar}><Download className="h-4 w-4 mr-1" /> Descargar Excel</Button>
+          {archivoPath && <Button size="sm" variant="outline" onClick={descargarOriginal}><Download className="h-4 w-4 mr-1" /> Archivo original</Button>}
           {!cerrado && <Button size="sm" variant="outline" onClick={agregarFila}><Plus className="h-4 w-4 mr-1" /> Agregar fila</Button>}
-          {!cerrado && <Button size="sm" variant="outline" onClick={recalcular}><RotateCcw className="h-4 w-4 mr-1" /> Recalcular desde el sistema</Button>}
-          {cerrado
-            ? <Button size="sm" variant="outline" onClick={() => cambiarEstado("borrador")}><LockOpen className="h-4 w-4 mr-1" /> Reabrir</Button>
-            : <Button size="sm" variant="outline" onClick={() => cambiarEstado("cerrado")}><Lock className="h-4 w-4 mr-1" /> Cerrar</Button>}
+          {!cerrado && origen === "sistema" && <Button size="sm" variant="outline" onClick={recalcular}><RotateCcw className="h-4 w-4 mr-1" /> Recalcular desde el sistema</Button>}
+          {estado === "cerrado" && <Button size="sm" variant="outline" onClick={() => cambiarEstado("borrador")}><LockOpen className="h-4 w-4 mr-1" /> Reabrir</Button>}
+          {estado === "borrador" && <Button size="sm" variant="outline" onClick={() => cambiarEstado("cerrado")}><Lock className="h-4 w-4 mr-1" /> Cerrar</Button>}
+          {estado !== "enviada" && <Button size="sm" variant="secondary" onClick={marcarEnviada}><Send className="h-4 w-4 mr-1" /> Marcar como enviada</Button>}
           <span className="text-xs text-muted-foreground self-center">Las celdas resaltadas fueron editadas a mano.</span>
         </div>
 
