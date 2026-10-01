@@ -87,17 +87,39 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
 
   const cerrado = estado !== "borrador";
 
+  // Notas rápidas de RRHH del período (solo se fusionan mientras es borrador)
+  const [notas, setNotas] = useState<{ empleado_id: string; texto: string; destino: string }[]>([]);
+  useEffect(() => {
+    if (!open || !periodo) return;
+    (supabase as any).from("novedades_estudio_notas").select("empleado_id,texto,destino").eq("periodo", periodo).order("created_at")
+      .then(({ data }: any) => setNotas(data || []));
+  }, [open, periodo]);
+  const usarNotas = estado === "borrador" && origen === "sistema";
+  const notasObs = useMemo(() => {
+    const m = new Map<string, string[]>();
+    if (usarNotas) for (const n of notas) if (n.destino !== "general") m.set(n.empleado_id, [...(m.get(n.empleado_id) || []), n.texto]);
+    return m;
+  }, [notas, usarNotas]);
+
   const filas = useMemo(() => {
     const base = filasSistema.map(f => {
       const o = overrides[f.id] || {};
-      return { ...f, ...o } as FilaEstudio;
+      const fila = { ...f, ...o } as FilaEstudio;
+      const extra = notasObs.get(f.id);
+      if (extra?.length) fila.obs = [fila.obs, ...extra].filter(Boolean).join(" - ");
+      return fila;
     });
     return [...base, ...manuales.map(m => ({ ...m, manual: origen !== "importada" }))];
-  }, [filasSistema, overrides, manuales]);
+  }, [filasSistema, overrides, manuales, notasObs, origen]);
 
   const visibles = filas.filter(f => !ocultos.includes(f.id));
   const anotSistema = anotacionesDeFilas(visibles);
-  const anotFinal = [...anotSistema.filter(a => !ocultos.includes("anot:" + a)), ...extras.filter(Boolean)];
+  const nombrePorId = new Map(filas.map(f => [f.id, String(f.nombre)]));
+  const anotNotas = usarNotas
+    ? notas.filter(n => n.destino !== "obs").map(n => `${nombrePorId.get(n.empleado_id) ?? ""} ${n.texto}`.trim())
+    : [];
+  const anotFinal = [...anotSistema.filter(a => !ocultos.includes("anot:" + a)), ...anotNotas, ...extras.filter(Boolean)];
+  const esNotaObs = (id: string, col: string) => col === "obs" && notasObs.has(id);
 
   const setCelda = (f: FilaEstudio, col: ColEstudio, val: string) => {
     if (f.manual || origen === "importada") {
