@@ -25,7 +25,6 @@ export const COLUMNAS_ESTUDIO = [
   { key: "gremio", label: "Dia Gremio", num: true },
   { key: "enf", label: "Lic Enfermedad", num: true },
   { key: "enfFam", label: "Lic. Enf. Familiar", num: true },
-  { key: "inas", label: "Inasistencias", num: true },
   { key: "vacDias", label: "Ds Vacaciones", num: true },
   { key: "vacFechas", label: "Fechas Vac", num: false },
   { key: "obs", label: "Observaciones", num: false },
@@ -66,7 +65,6 @@ export function anotacionesDeFilas(filas: FilaEstudio[]): string[] {
     if (num(f.enf)) out.push(`${n} ${num(f.enf)} DIAS ENFERMEDAD`);
     if (num(f.enfFam)) out.push(`${n} ${num(f.enfFam)} DIAS ENFERMEDAD FAMILIAR`);
     if (num(f.gremio)) out.push(`${n} ${num(f.gremio)} DIA/S GREMIO`);
-    if (num(f.inas)) out.push(`${n} ${num(f.inas)} Inasistencias`);
     const m = String(f.obs || "").match(/ADELANTO \$[\d.]+/);
     if (m) out.push(`${n} ${m[0]}`);
   }
@@ -122,7 +120,6 @@ export function construirFilasEstudio(
       gremio: gremio || "",
       enf: enf || "",
       enfFam: enfFam || "",
-      inas: inas || "",
       vacDias: vac?.dias || "",
       vacFechas: vac?.rangos.join(" / ") || "",
       obs: `RECIBO POR ${e.horas_jornada_estandar ?? 8}HS` + (adelanto > 0 ? ` - ADELANTO ${money(adelanto)}` : ""),
