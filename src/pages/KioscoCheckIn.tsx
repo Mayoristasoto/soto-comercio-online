@@ -2603,6 +2603,7 @@ export default function KioscoCheckIn() {
       {showCrucesRojasAlert && crucesRojas && (
         <CrucesRojasKioscoAlert
           empleadoNombre={`${recognizedEmployee?.data.nombre} ${recognizedEmployee?.data.apellido}`}
+          empleadoId={recognizedEmployee?.id}
           totalCruces={crucesRojas.total_cruces_rojas}
           llegadasTarde={crucesRojas.llegadas_tarde}
           salidasTempranas={crucesRojas.salidas_tempranas}
