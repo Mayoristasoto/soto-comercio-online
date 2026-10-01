@@ -250,7 +250,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
                       let bg: string | undefined;
                       if (["feriados", "gremio", "enf", "enfFam", "vacDias", "vacFechas"].includes(c.key) && has) bg = XL.verde;
                       if (c.key === "obs" && /ADELANTO/.test(String(v))) bg = XL.verde;
-                      if (c.key === "inas" && has) bg = XL.rojo;
+                      if ((c.key as string) === "inas" && has) bg = XL.rojo;
                       if ((c.key === "legajo" || c.key === "obraSocial") && !has) bg = XL.rojo;
                       if (editado) bg = XL.amarillo;
                       return (
