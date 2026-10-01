@@ -13,6 +13,9 @@ import {
 
 type Overrides = Record<string, Partial<Record<ColEstudio, string>>>;
 
+// Colores idénticos a los del Excel exportado (réplica del documento)
+const XL = { verde: "#C6E0B4", rojo: "#FF7C80", gris: "#D9D9D9", amarillo: "#FFF2CC" };
+
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -31,6 +34,9 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
   const [info, setInfo] = useState<string>("");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
   const listo = useRef(false);
+  const [modo, setModo] = useState<"excel" | "grilla">("excel");
+  const refFecha = new Date(desde + "T00:00:00");
+  const titulo = `Novedades SOTO ${refFecha.toLocaleDateString("es-AR", { month: "long" }).toLocaleUpperCase("es-AR")} ${refFecha.getFullYear()}`;
 
   useEffect(() => {
     if (!open) return;
@@ -145,6 +151,10 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
         </DialogHeader>
 
         <div className="flex flex-wrap gap-2">
+          <div className="inline-flex rounded-md border p-0.5">
+            <Button size="sm" variant={modo === "excel" ? "default" : "ghost"} className="h-7" onClick={() => setModo("excel")}>Vista Excel</Button>
+            <Button size="sm" variant={modo === "grilla" ? "default" : "ghost"} className="h-7" onClick={() => setModo("grilla")}>Vista grilla</Button>
+          </div>
           <Button size="sm" onClick={descargar}><Download className="h-4 w-4 mr-1" /> Descargar Excel</Button>
           {!cerrado && <Button size="sm" variant="outline" onClick={agregarFila}><Plus className="h-4 w-4 mr-1" /> Agregar fila</Button>}
           {!cerrado && <Button size="sm" variant="outline" onClick={recalcular}><RotateCcw className="h-4 w-4 mr-1" /> Recalcular desde el sistema</Button>}
@@ -156,6 +166,69 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
 
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : modo === "excel" ? (
+          <div className="overflow-auto flex-1 border rounded-md bg-background p-2">
+            <table className="text-xs border-collapse" style={{ fontFamily: "Arial, sans-serif" }}>
+              <colgroup>{[60, 240, 180, 64, 70, 90, 100, 90, 90, 150, 300].map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+              <tbody>
+                <tr><td colSpan={11} className="border border-border text-center font-bold text-base py-1.5">{titulo}</td></tr>
+                <tr><td colSpan={11} className="h-4" /></tr>
+                <tr>
+                  {COLUMNAS_ESTUDIO.map(c => <td key={c.key} className="border border-border text-center font-bold p-1" style={{ background: XL.gris }}>{c.label}</td>)}
+                </tr>
+                {visibles.map(f => (
+                  <tr key={f.id}>
+                    {COLUMNAS_ESTUDIO.map(c => {
+                      const v = f[c.key];
+                      const has = v !== "" && v != null && v !== 0 && v !== "0";
+                      const editado = f.manual || overrides[f.id]?.[c.key] !== undefined;
+                      let bg: string | undefined;
+                      if (["feriados", "gremio", "enf", "enfFam", "vacDias", "vacFechas"].includes(c.key) && has) bg = XL.verde;
+                      if (c.key === "obs" && /ADELANTO/.test(String(v))) bg = XL.verde;
+                      if (c.key === "inas" && has) bg = XL.rojo;
+                      if ((c.key === "legajo" || c.key === "obraSocial") && !has) bg = XL.rojo;
+                      if (editado) bg = XL.amarillo;
+                      return (
+                        <td key={c.key} className="border border-border p-0" style={{ background: bg }}>
+                          <input
+                            value={String(v ?? "")}
+                            disabled={cerrado}
+                            onChange={e => setCelda(f, c.key, e.target.value)}
+                            className={`w-full bg-transparent px-1 py-1 outline-none focus:ring-2 focus:ring-primary ${c.num ? "text-center" : ""}`}
+                            style={{ color: "#000" }}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                <tr><td colSpan={11} className="h-4" /></tr>
+                <tr><td colSpan={11} className="border border-border text-center font-bold p-1" style={{ background: XL.gris }}>ANOTACIONES GENERALES</td></tr>
+                {anotFinal.map((a, i) => (
+                  <tr key={i}>
+                    <td className="border border-border text-center">{i + 1}</td>
+                    <td colSpan={10} className="border border-border px-1 py-1" style={{ background: /inasistencia/i.test(a) ? XL.rojo : XL.verde, color: "#000" }}>{a}</td>
+                  </tr>
+                ))}
+                {!cerrado && (
+                  <tr>
+                    <td className="border border-border text-center">{anotFinal.length + 1}</td>
+                    <td colSpan={10} className="border border-border p-0">
+                      <input
+                        placeholder="Escribí una anotación y presioná Enter…"
+                        className="w-full bg-transparent px-1 py-1 outline-none focus:ring-2 focus:ring-primary"
+                        onKeyDown={e => {
+                          const t = e.currentTarget;
+                          if (e.key === "Enter" && t.value.trim()) { setExtras(x => [...x, t.value.trim()]); t.value = ""; }
+                        }}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <p className="text-[11px] text-muted-foreground mt-2">Hacé clic en cualquier celda para escribir. Para quitar anotaciones u ocultar empleados usá la "Vista grilla".</p>
+          </div>
         ) : (
           <div className="overflow-auto flex-1 border rounded-md">
             <table className="text-xs w-full border-collapse">
