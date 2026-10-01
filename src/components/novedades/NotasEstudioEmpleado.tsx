@@ -18,7 +18,7 @@ export default function NotasEstudioEmpleado({ empleadoId }: { empleadoId: strin
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
   const [texto, setTexto] = useState("");
   const [destino, setDestino] = useState("obs");
-  const [periodo, setPeriodo] = useState<string>(() => { try { return (periodoSugerido as any)(); } catch { return new Date().toISOString().slice(0, 7); } });
+  const [periodo, setPeriodo] = useState<string>(() => periodoSugerido(new Date(), new Set()));
 
   const cargar = async () => {
     const sb = supabase as any;
