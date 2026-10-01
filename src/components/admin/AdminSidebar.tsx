@@ -73,6 +73,7 @@ const navigationGroups: NavGroup[] = [
       { title: "Novedades Liquidación", url: "/rrhh/novedades-liquidacion", icon: FileText },
       { title: "Resumen Mes", url: "/rrhh/resumen-mes", icon: CalendarDays },
       { title: "Índice de Ausentismo", url: "/rrhh/indice-ausentismo", icon: Activity },
+      { title: "Informe de Puntualidad", url: "/rrhh/informe-puntualidad", icon: Clock },
       { title: "Ubicaciones de Fichaje", url: "/rrhh/ubicaciones-fichaje", icon: MapPin },
       { title: "Puntualidad", url: "/admin#puntualidad", icon: Clock },
       { title: "Checklist de Control", url: "/rrhh/checklist", icon: FileText },

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, XCircle, Clock, Coffee } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CruzRojaDetalle {
   tipo: 'llegada_tarde' | 'salida_temprana' | 'pausa_excedida';
@@ -19,6 +20,7 @@ interface CrucesRojasAlertProps {
   detalles: CruzRojaDetalle[];
   onDismiss: () => void;
   duracionSegundos?: number;
+  empleadoId?: string;
 }
 
 const getTipoIcon = (tipo: string) => {
@@ -55,9 +57,16 @@ export function CrucesRojasKioscoAlert({
   pausasExcedidas,
   detalles,
   onDismiss,
-  duracionSegundos = 2
+  duracionSegundos = 2,
+  empleadoId,
 }: CrucesRojasAlertProps) {
   const [countdown, setCountdown] = useState(duracionSegundos);
+  const [mes, setMes] = useState<{ tardes: number; descansos: number } | null>(null);
+  useEffect(() => {
+    if (!empleadoId) return;
+    (supabase as any).rpc('kiosk_contador_exigencia', { p_empleado_id: empleadoId })
+      .then(({ data }: any) => data && setMes(data));
+  }, [empleadoId]);
   const [isShaking, setIsShaking] = useState(true);
 
   const onDismissRef = useRef(onDismiss);
@@ -109,6 +118,11 @@ export function CrucesRojasKioscoAlert({
           <AlertDescription className="text-sm sm:text-base md:text-xl text-center text-foreground">
             Tienes <span className="font-bold text-destructive">{totalCruces} cruz{totalCruces > 1 ? 'es' : ''} roja{totalCruces > 1 ? 's' : ''}</span> esta semana
           </AlertDescription>
+          {mes && (mes.tardes > 0 || mes.descansos > 0) && (
+            <AlertDescription className="text-sm sm:text-base md:text-lg text-center font-semibold mt-2">
+              Este mes llevás {mes.tardes} llegada{mes.tardes === 1 ? '' : 's'} tarde y {mes.descansos} exceso{mes.descansos === 1 ? '' : 's'} de descanso. A la 3ra se registra un llamado de atención en tu legajo.
+            </AlertDescription>
+          )}
         </Alert>
 
         {/* Resumen de infracciones */}
