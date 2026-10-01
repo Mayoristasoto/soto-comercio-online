@@ -8360,11 +8360,16 @@ export type Database = {
       novedades_estudio_borradores: {
         Row: {
           anotaciones: Json
+          archivo_path: string | null
           created_at: string
+          enviada_at: string | null
+          enviada_por: string | null
           estado: string
           filas_manuales: Json
           id: string
+          nombre: string
           ocultos: Json
+          origen: string
           overrides: Json
           periodo: string
           updated_at: string
@@ -8372,11 +8377,16 @@ export type Database = {
         }
         Insert: {
           anotaciones?: Json
+          archivo_path?: string | null
           created_at?: string
+          enviada_at?: string | null
+          enviada_por?: string | null
           estado?: string
           filas_manuales?: Json
           id?: string
+          nombre?: string
           ocultos?: Json
+          origen?: string
           overrides?: Json
           periodo: string
           updated_at?: string
@@ -8384,11 +8394,16 @@ export type Database = {
         }
         Update: {
           anotaciones?: Json
+          archivo_path?: string | null
           created_at?: string
+          enviada_at?: string | null
+          enviada_por?: string | null
           estado?: string
           filas_manuales?: Json
           id?: string
+          nombre?: string
           ocultos?: Json
+          origen?: string
           overrides?: Json
           periodo?: string
           updated_at?: string
