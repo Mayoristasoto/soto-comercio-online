@@ -23,7 +23,8 @@ import { AdelantosNovedadesTable, type AdelantoNovedadRow } from "@/components/n
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
 import { exportNovedadesEstudioXLSX, construirFilasEstudio, type EmpleadoEstudio } from "@/utils/novedadesEstudioXLSX";
-import { EditorEstudioContable } from "@/components/novedades/EditorEstudioContable";
+import { HistorialEstudio } from "@/components/novedades/HistorialEstudio";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pencil } from "lucide-react";
 
 export interface NovedadRow {
@@ -232,6 +233,7 @@ export default function NovedadesLiquidacion() {
 
   // Empleados que van a la planilla del estudio contable (activos, según filtros de sucursal/grupo)
   const [editorOpen, setEditorOpen] = useState(false);
+  const filasEstudioRef = { current: null as any };
   const empleadosEstudio = useMemo<EmpleadoEstudio[]>(() => {
     return empleados
       .filter(e => e.activo)
@@ -350,12 +352,12 @@ export default function NovedadesLiquidacion() {
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel Estudio Contable
             </Button>
-            <EditorEstudioContable
-              open={editorOpen}
-              onOpenChange={setEditorOpen}
-              desde={desde}
-              filasSistema={construirFilasEstudio(empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos)}
-            />
+            <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader><DialogTitle>Versiones de la planilla — {desde.slice(0, 7)}</DialogTitle></DialogHeader>
+                <HistorialEstudio periodo={desde.slice(0, 7)} desde={desde} filasSistema={filasEstudio} />
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" size="sm" onClick={() => exportNovedadesXLSX(resumen, desde, hasta, feriadosFiltrados, { vacaciones, horasExtras, adelantos })} disabled={!resumen.length}>
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
@@ -374,6 +376,7 @@ export default function NovedadesLiquidacion() {
               <TabsTrigger value="vacaciones">Vacaciones ({vacaciones.length})</TabsTrigger>
               <TabsTrigger value="extras">Horas extras ({horasExtras.length})</TabsTrigger>
               <TabsTrigger value="adelantos">Adelantos ({adelantos.length})</TabsTrigger>
+              <TabsTrigger value="historial-estudio">Historial Estudio</TabsTrigger>
             </TabsList>
 
             <TabsContent value="resumen">
@@ -448,6 +451,10 @@ export default function NovedadesLiquidacion() {
               ) : (
                 <HorasExtrasNovedadesTable rows={horasExtras} />
               )}
+            </TabsContent>
+
+            <TabsContent value="historial-estudio">
+              <HistorialEstudio desde={desde} filasSistema={filasEstudio} />
             </TabsContent>
 
             <TabsContent value="adelantos">

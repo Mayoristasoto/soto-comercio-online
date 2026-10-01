@@ -92,7 +92,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
       const o = overrides[f.id] || {};
       return { ...f, ...o } as FilaEstudio;
     });
-    return [...base, ...manuales.map(m => ({ ...m, manual: true }))];
+    return [...base, ...manuales.map(m => ({ ...m, manual: origen !== "importada" }))];
   }, [filasSistema, overrides, manuales]);
 
   const visibles = filas.filter(f => !ocultos.includes(f.id));
@@ -100,7 +100,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
   const anotFinal = [...anotSistema.filter(a => !ocultos.includes("anot:" + a)), ...extras.filter(Boolean)];
 
   const setCelda = (f: FilaEstudio, col: ColEstudio, val: string) => {
-    if (f.manual) {
+    if (f.manual || origen === "importada") {
       setManuales(ms => ms.map(m => m.id === f.id ? { ...m, [col]: val } : m));
       return;
     }
