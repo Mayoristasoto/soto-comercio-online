@@ -181,7 +181,6 @@ export async function exportarEstudioDesdeFilas(
       const has = v !== "" && v != null && v !== 0;
       if (["feriados", "gremio", "enf", "enfFam", "vacDias", "vacFechas"].includes(col.key) && has) fill(cell, VERDE);
       if (col.key === "obs" && /ADELANTO/.test(String(v))) fill(cell, VERDE);
-      if (col.key === "inas" && has) fill(cell, ROJO);
       if ((col.key === "legajo" || col.key === "obraSocial") && !has) fill(cell, ROJO);
       if (manuales.has(`${f.id}:${col.key}`) || f.manual) fill(cell, AMARILLO);
     });
