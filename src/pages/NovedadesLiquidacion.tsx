@@ -233,7 +233,6 @@ export default function NovedadesLiquidacion() {
 
   // Empleados que van a la planilla del estudio contable (activos, según filtros de sucursal/grupo)
   const [editorOpen, setEditorOpen] = useState(false);
-  const filasEstudioRef = { current: null as any };
   const empleadosEstudio = useMemo<EmpleadoEstudio[]>(() => {
     return empleados
       .filter(e => e.activo)
@@ -247,6 +246,7 @@ export default function NovedadesLiquidacion() {
         exento_fichaje: e.exento_fichaje ?? false,
       }));
   }, [empleados, sucursalSel, empleadosSel]);
+  const filasEstudio = useMemo(() => construirFilasEstudio(empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos), [empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos]);
 
   // Mostrar SIEMPRE a todos los empleados que tienen fichaje en un feriado,
   // independientemente de si tienen turno asignado o pasan otros filtros.
