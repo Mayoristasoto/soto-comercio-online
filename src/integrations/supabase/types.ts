@@ -12751,6 +12751,7 @@ export type Database = {
       }
       can_manage_payroll: { Args: never; Returns: boolean }
       can_view_calendario: { Args: { _cal: string }; Returns: boolean }
+      cfg_num: { Args: { _clave: string; _def: number }; Returns: number }
       check_facial_auth_rate_limit: {
         Args: {
           p_block_minutes?: number
@@ -13194,6 +13195,22 @@ export type Database = {
         Returns: boolean
       }
       hash_pin: { Args: { p_pin: string }; Returns: string }
+      informe_puntualidad: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          apellido: string
+          empleado_id: string
+          fecha: string
+          justificado: boolean
+          minutos: number
+          nombre: string
+          programada: string
+          real_fin: string
+          real_inicio: string
+          sucursal_id: string
+          tipo: string
+        }[]
+      }
       insert_demo_cruces_rojas: {
         Args: { p_empleado_id: string }
         Returns: undefined
@@ -13257,6 +13274,10 @@ export type Database = {
           p_fecha_fin: string
           p_fecha_inicio: string
         }
+        Returns: Json
+      }
+      kiosk_contador_exigencia: {
+        Args: { p_empleado_id: string }
         Returns: Json
       }
       kiosk_es_primer_checkin_del_dia: {
