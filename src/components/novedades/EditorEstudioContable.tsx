@@ -142,10 +142,36 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
 
   const cambiarEstado = async (e: "borrador" | "cerrado") => { setEstado(e); await guardar({ estado: e }); };
 
-  const descargar = () => {
+  const manualesSet = () => {
     const set = new Set<string>();
     for (const [id, cols] of Object.entries(overrides)) for (const c of Object.keys(cols)) set.add(`${id}:${c}`);
-    exportarEstudioDesdeFilas(visibles, anotFinal, desde, set);
+    return set;
+  };
+
+  const descargar = () => { exportarEstudioDesdeFilas(visibles, anotFinal, desde, manualesSet()); };
+
+  const descargarOriginal = async () => {
+    if (!archivoPath) return;
+    const { data, error } = await supabase.storage.from("estudio-contable").createSignedUrl(archivoPath, 60);
+    if (error || !data) return toast.error("No se pudo descargar");
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const marcarEnviada = async () => {
+    if (!borradorId) return;
+    if (!confirm("¿Marcar esta versión como enviada al estudio? Quedará en solo lectura.")) return;
+    const blob = await exportarEstudioDesdeFilas(visibles, anotFinal, desde, manualesSet(), false);
+    let path = archivoPath;
+    if (!path) {
+      path = `${periodo}/${borradorId}.xlsx`;
+      const { error } = await supabase.storage.from("estudio-contable").upload(path, blob, { upsert: true });
+      if (error) return toast.error("No se pudo guardar el archivo: " + error.message);
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    setEstado("enviada");
+    setArchivoPath(path);
+    await guardar({ estado: "enviada", enviada_at: new Date().toISOString(), enviada_por: user?.id ?? null, archivo_path: path });
+    toast.success("Versión marcada como enviada y archivada");
   };
 
   return (
@@ -153,8 +179,9 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
       <DialogContent className="max-w-[95vw] max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
-            Planilla Estudio Contable — {periodo}
-            <Badge variant={cerrado ? "secondary" : "outline"}>{cerrado ? "Cerrado" : "Borrador"}</Badge>
+            {nombre || "Planilla Estudio Contable"} — {periodo}
+            <Badge variant={cerrado ? "secondary" : "outline"}>{estado === "enviada" ? "Enviada" : estado === "cerrado" ? "Cerrado" : "Borrador"}</Badge>
+            {origen === "importada" && <Badge variant="outline">Subida</Badge>}
             <span className="text-xs font-normal text-muted-foreground">
               {saving === "saving" ? "Guardando…" : saving === "saved" ? "Guardado" : ""} {info}
             </span>
