@@ -142,7 +142,8 @@ export async function exportarEstudioDesdeFilas(
   anotaciones: string[],
   desde: string,
   manuales: Set<string> = new Set(),
-) {
+  descargar = true,
+): Promise<Blob> {
   const ref = new Date(desde + "T00:00:00");
   const mes = up(format(ref, "MMMM", { locale: es }));
   const anio = ref.getFullYear();
@@ -236,12 +237,69 @@ export async function exportarEstudioDesdeFilas(
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  if (!descargar) return blob;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = `Novedades_SOTO_${mes}_${anio}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
+  return blob;
+}
+
+/** Lee un Excel "Novedades SOTO" ya enviado y devuelve filas + anotaciones */
+export async function leerPlanillaEstudio(file: File): Promise<{ periodo: string | null; filas: FilaEstudio[]; anotaciones: string[] }> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(await file.arrayBuffer());
+  const ws = wb.worksheets[0];
+  const txt = (v: any): string => {
+    if (v == null) return "";
+    if (typeof v === "object") {
+      if ("richText" in v) return v.richText.map((t: any) => t.text).join("");
+      if ("result" in v) return String(v.result ?? "");
+      if ("text" in v) return String(v.text);
+      if (v instanceof Date) return format(v, "dd/MM/yyyy");
+    }
+    return String(v);
+  };
+  const MESES = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
+  let periodo: string | null = null;
+  let headerRow = -1;
+  let colMap: number[] = [];
+  const filas: FilaEstudio[] = [];
+  const anotaciones: string[] = [];
+  let enAnot = false;
+  ws.eachRow({ includeEmpty: false }, (row, rn) => {
+    const vals: string[] = [];
+    for (let c = 1; c <= Math.max(row.cellCount, 11); c++) vals.push(txt(row.getCell(c).value).trim());
+    const linea = vals.join(" ").toUpperCase();
+    if (!periodo && linea.includes("NOVEDADES")) {
+      const mi = MESES.findIndex(m => linea.includes(m));
+      const y = linea.match(/20\d{2}/);
+      if (mi >= 0 && y) periodo = `${y[0]}-${String(mi + 1).padStart(2, "0")}`;
+    }
+    if (headerRow < 0 && vals.some(v => /^legajo$/i.test(v))) {
+      headerRow = rn;
+      colMap = COLUMNAS_ESTUDIO.map(col => {
+        const i = vals.findIndex(v => v.toLowerCase().replace(/\s+/g, " ") === col.label.toLowerCase());
+        return i;
+      });
+      COLUMNAS_ESTUDIO.forEach((_, k) => { if (colMap[k] < 0) colMap[k] = k; });
+      return;
+    }
+    if (linea.includes("ANOTACIONES GENERALES")) { enAnot = true; return; }
+    if (enAnot) {
+      const t = vals.slice(1).filter(Boolean).join(" ").trim();
+      if (t) anotaciones.push(t);
+      return;
+    }
+    if (headerRow > 0) {
+      const f: any = { id: "imp-" + rn + "-" + Math.random().toString(36).slice(2, 8), manual: false };
+      COLUMNAS_ESTUDIO.forEach((col, k) => { f[col.key] = vals[colMap[k]] ?? ""; });
+      if (f.nombre || f.legajo) filas.push(f);
+    }
+  });
+  return { periodo, filas, anotaciones };
 }
 
 export async function exportNovedadesEstudioXLSX(

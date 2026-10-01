@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, EyeOff, Eye, Lock, LockOpen, Plus, RotateCcw, Trash2, Loader2 } from "lucide-react";
+import { Download, EyeOff, Eye, Lock, LockOpen, Plus, RotateCcw, Trash2, Loader2, Send } from "lucide-react";
 import {
   COLUMNAS_ESTUDIO, anotacionesDeFilas, exportarEstudioDesdeFilas,
   type ColEstudio, type FilaEstudio,
@@ -21,12 +21,18 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   desde: string;
   filasSistema: FilaEstudio[];
+  borradorId: string | null;
 }
 
-export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema }: Props) {
-  const periodo = desde.slice(0, 7);
+export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, filasSistema: filasSistemaProp, borradorId }: Props) {
+  const [periodo, setPeriodo] = useState(desdeProp.slice(0, 7));
+  const desde = periodo + "-01";
+  const [nombre, setNombre] = useState("");
+  const [origen, setOrigen] = useState<"sistema" | "importada">("sistema");
+  const [archivoPath, setArchivoPath] = useState<string | null>(null);
+  const filasSistema = origen === "importada" ? [] : filasSistemaProp;
   const [loading, setLoading] = useState(true);
-  const [estado, setEstado] = useState<"borrador" | "cerrado">("borrador");
+  const [estado, setEstado] = useState<"borrador" | "cerrado" | "enviada">("borrador");
   const [overrides, setOverrides] = useState<Overrides>({});
   const [manuales, setManuales] = useState<FilaEstudio[]>([]);
   const [ocultos, setOcultos] = useState<string[]>([]);
@@ -39,11 +45,15 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
   const titulo = `Novedades SOTO ${refFecha.toLocaleDateString("es-AR", { month: "long" }).toLocaleUpperCase("es-AR")} ${refFecha.getFullYear()}`;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !borradorId) return;
     listo.current = false;
     setLoading(true);
     (async () => {
-      const { data } = await (supabase as any).from("novedades_estudio_borradores").select("*").eq("periodo", periodo).maybeSingle();
+      const { data } = await (supabase as any).from("novedades_estudio_borradores").select("*").eq("id", borradorId).maybeSingle();
+      setPeriodo(data?.periodo ?? desdeProp.slice(0, 7));
+      setNombre(data?.nombre ?? "");
+      setOrigen(data?.origen ?? "sistema");
+      setArchivoPath(data?.archivo_path ?? null);
       setEstado(data?.estado ?? "borrador");
       setOverrides(data?.overrides ?? {});
       setManuales(data?.filas_manuales ?? []);
@@ -53,15 +63,16 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
       setLoading(false);
       setTimeout(() => { listo.current = true; }, 0);
     })();
-  }, [open, periodo]);
+  }, [open, borradorId, desdeProp]);
 
   const guardar = async (extra: Record<string, any> = {}) => {
+    if (!borradorId) return;
     setSaving("saving");
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await (supabase as any).from("novedades_estudio_borradores").upsert({
-      periodo, estado, overrides, filas_manuales: manuales, ocultos, anotaciones: extras,
+    const { error } = await (supabase as any).from("novedades_estudio_borradores").update({
+      overrides, filas_manuales: manuales, ocultos, anotaciones: extras,
       updated_by: user?.id ?? null, ...extra,
-    }, { onConflict: "periodo" });
+    }).eq("id", borradorId);
     if (error) { toast.error("No se pudo guardar: " + error.message); setSaving("idle"); return; }
     setSaving("saved");
     setInfo(`Última edición ${new Date().toLocaleString("es-AR")}`);
@@ -74,14 +85,14 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrides, manuales, ocultos, extras]);
 
-  const cerrado = estado === "cerrado";
+  const cerrado = estado !== "borrador";
 
   const filas = useMemo(() => {
     const base = filasSistema.map(f => {
       const o = overrides[f.id] || {};
       return { ...f, ...o } as FilaEstudio;
     });
-    return [...base, ...manuales.map(m => ({ ...m, manual: true }))];
+    return [...base, ...manuales.map(m => ({ ...m, manual: origen !== "importada" }))];
   }, [filasSistema, overrides, manuales]);
 
   const visibles = filas.filter(f => !ocultos.includes(f.id));
@@ -89,7 +100,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
   const anotFinal = [...anotSistema.filter(a => !ocultos.includes("anot:" + a)), ...extras.filter(Boolean)];
 
   const setCelda = (f: FilaEstudio, col: ColEstudio, val: string) => {
-    if (f.manual) {
+    if (f.manual || origen === "importada") {
       setManuales(ms => ms.map(m => m.id === f.id ? { ...m, [col]: val } : m));
       return;
     }
@@ -131,10 +142,36 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
 
   const cambiarEstado = async (e: "borrador" | "cerrado") => { setEstado(e); await guardar({ estado: e }); };
 
-  const descargar = () => {
+  const manualesSet = () => {
     const set = new Set<string>();
     for (const [id, cols] of Object.entries(overrides)) for (const c of Object.keys(cols)) set.add(`${id}:${c}`);
-    exportarEstudioDesdeFilas(visibles, anotFinal, desde, set);
+    return set;
+  };
+
+  const descargar = () => { exportarEstudioDesdeFilas(visibles, anotFinal, desde, manualesSet()); };
+
+  const descargarOriginal = async () => {
+    if (!archivoPath) return;
+    const { data, error } = await supabase.storage.from("estudio-contable").createSignedUrl(archivoPath, 60);
+    if (error || !data) return toast.error("No se pudo descargar");
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const marcarEnviada = async () => {
+    if (!borradorId) return;
+    if (!confirm("¿Marcar esta versión como enviada al estudio? Quedará en solo lectura.")) return;
+    const blob = await exportarEstudioDesdeFilas(visibles, anotFinal, desde, manualesSet(), false);
+    let path = archivoPath;
+    if (!path) {
+      path = `${periodo}/${borradorId}.xlsx`;
+      const { error } = await supabase.storage.from("estudio-contable").upload(path, blob, { upsert: true });
+      if (error) return toast.error("No se pudo guardar el archivo: " + error.message);
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    setEstado("enviada");
+    setArchivoPath(path);
+    await guardar({ estado: "enviada", enviada_at: new Date().toISOString(), enviada_por: user?.id ?? null, archivo_path: path });
+    toast.success("Versión marcada como enviada y archivada");
   };
 
   return (
@@ -142,8 +179,9 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
       <DialogContent className="max-w-[95vw] max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
-            Planilla Estudio Contable — {periodo}
-            <Badge variant={cerrado ? "secondary" : "outline"}>{cerrado ? "Cerrado" : "Borrador"}</Badge>
+            {nombre || "Planilla Estudio Contable"} — {periodo}
+            <Badge variant={cerrado ? "secondary" : "outline"}>{estado === "enviada" ? "Enviada" : estado === "cerrado" ? "Cerrado" : "Borrador"}</Badge>
+            {origen === "importada" && <Badge variant="outline">Subida</Badge>}
             <span className="text-xs font-normal text-muted-foreground">
               {saving === "saving" ? "Guardando…" : saving === "saved" ? "Guardado" : ""} {info}
             </span>
@@ -156,11 +194,12 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
             <Button size="sm" variant={modo === "grilla" ? "default" : "ghost"} className="h-7" onClick={() => setModo("grilla")}>Vista grilla</Button>
           </div>
           <Button size="sm" onClick={descargar}><Download className="h-4 w-4 mr-1" /> Descargar Excel</Button>
+          {archivoPath && <Button size="sm" variant="outline" onClick={descargarOriginal}><Download className="h-4 w-4 mr-1" /> Archivo original</Button>}
           {!cerrado && <Button size="sm" variant="outline" onClick={agregarFila}><Plus className="h-4 w-4 mr-1" /> Agregar fila</Button>}
-          {!cerrado && <Button size="sm" variant="outline" onClick={recalcular}><RotateCcw className="h-4 w-4 mr-1" /> Recalcular desde el sistema</Button>}
-          {cerrado
-            ? <Button size="sm" variant="outline" onClick={() => cambiarEstado("borrador")}><LockOpen className="h-4 w-4 mr-1" /> Reabrir</Button>
-            : <Button size="sm" variant="outline" onClick={() => cambiarEstado("cerrado")}><Lock className="h-4 w-4 mr-1" /> Cerrar</Button>}
+          {!cerrado && origen === "sistema" && <Button size="sm" variant="outline" onClick={recalcular}><RotateCcw className="h-4 w-4 mr-1" /> Recalcular desde el sistema</Button>}
+          {estado === "cerrado" && <Button size="sm" variant="outline" onClick={() => cambiarEstado("borrador")}><LockOpen className="h-4 w-4 mr-1" /> Reabrir</Button>}
+          {estado === "borrador" && <Button size="sm" variant="outline" onClick={() => cambiarEstado("cerrado")}><Lock className="h-4 w-4 mr-1" /> Cerrar</Button>}
+          {estado !== "enviada" && <Button size="sm" variant="secondary" onClick={marcarEnviada}><Send className="h-4 w-4 mr-1" /> Marcar como enviada</Button>}
           <span className="text-xs text-muted-foreground self-center">Las celdas resaltadas fueron editadas a mano.</span>
         </div>
 
