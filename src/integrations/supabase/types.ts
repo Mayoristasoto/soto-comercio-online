@@ -8357,6 +8357,45 @@ export type Database = {
         }
         Relationships: []
       }
+      novedades_estudio_borradores: {
+        Row: {
+          anotaciones: Json
+          created_at: string
+          estado: string
+          filas_manuales: Json
+          id: string
+          ocultos: Json
+          overrides: Json
+          periodo: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          anotaciones?: Json
+          created_at?: string
+          estado?: string
+          filas_manuales?: Json
+          id?: string
+          ocultos?: Json
+          overrides?: Json
+          periodo: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          anotaciones?: Json
+          created_at?: string
+          estado?: string
+          filas_manuales?: Json
+          id?: string
+          ocultos?: Json
+          overrides?: Json
+          periodo?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       novedades_vistas: {
         Row: {
           created_at: string | null
