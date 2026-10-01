@@ -329,6 +329,9 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
                                   <RotateCcw className="h-3 w-3" />
                                 </button>
                               )}
+                              {esNotaObs(f.id, c.key) && overrides[f.id]?.obs === undefined && (
+                                <Badge variant="outline" className="text-[9px] px-1 whitespace-nowrap border-accent text-accent">nota RRHH</Badge>
+                              )}
                             </div>
                           </td>
                         );
@@ -351,6 +354,12 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
                   </div>
                 );
               })}
+              {anotNotas.map((a, i) => (
+                <div key={"nota" + i} className="flex items-center gap-2 text-xs pl-8">
+                  <span className="bg-accent/20 px-1 rounded">{a}</span>
+                  <Badge variant="outline" className="text-[10px] border-accent text-accent">nota RRHH</Badge>
+                </div>
+              ))}
               {extras.map((a, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <Button size="icon" variant="ghost" className="h-6 w-6" disabled={cerrado} onClick={() => setExtras(x => x.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
