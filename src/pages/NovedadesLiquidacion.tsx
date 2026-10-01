@@ -251,6 +251,7 @@ export default function NovedadesLiquidacion() {
   // independientemente de si tienen turno asignado o pasan otros filtros.
   // Si trabajó, tiene que aparecer para que se le pague.
   const feriadosFiltrados = feriados;
+  const filasEstudio = useMemo(() => construirFilasEstudio(empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos), [empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos]);
 
   return (
     <div className="container py-6 space-y-6">
