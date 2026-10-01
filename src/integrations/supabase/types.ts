@@ -8411,6 +8411,68 @@ export type Database = {
         }
         Relationships: []
       }
+      novedades_estudio_notas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          destino: string
+          empleado_id: string
+          id: string
+          periodo: string
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          destino?: string
+          empleado_id: string
+          id?: string
+          periodo: string
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          destino?: string
+          empleado_id?: string
+          id?: string
+          periodo?: string
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "novedades_estudio_notas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novedades_estudio_notas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novedades_estudio_notas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novedades_estudio_notas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       novedades_vistas: {
         Row: {
           created_at: string | null

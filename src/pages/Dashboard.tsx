@@ -3,6 +3,7 @@ import { useOutletContext, useNavigate, Navigate } from "react-router-dom"
 import { useVistaNavegacion } from "@/hooks/useVistaNavegacion"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { NotasEstudioCard } from "@/components/novedades/NotasEstudioCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { 
@@ -285,6 +286,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {isAdmin && <NotasEstudioCard />}
 
       {/* Estado del personal hoy */}
       {(isAdmin || isGerente) && (
