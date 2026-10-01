@@ -33,6 +33,7 @@ import EmployeeSeguridadTab from "./EmployeeSeguridadTab"
 import CalificacionesEmpleado from "../employee/CalificacionesEmpleado"
 import EmployeeIncidencias from "./EmployeeIncidencias"
 import EmployeeCrucesRojas from "./EmployeeCrucesRojas"
+import NotasEstudioEmpleado from "../novedades/NotasEstudioEmpleado"
 
 interface EmpleadoProfile {
   id: string
@@ -329,7 +330,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
       <CardContent>
         <Tabs defaultValue={defaultTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-10">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             <TabsTrigger value="work">Laboral</TabsTrigger>
             <TabsTrigger value="calificaciones">Calificaciones</TabsTrigger>
@@ -339,6 +340,7 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
             <TabsTrigger value="incidencias">Incidencias</TabsTrigger>
             <TabsTrigger value="cruces-rojas">Cruces Rojas</TabsTrigger>
             <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
+            <TabsTrigger value="notas-estudio">Notas Estudio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal" className="space-y-6">
@@ -730,6 +732,10 @@ export default function EmployeeProfile({ empleado, open, onOpenChange, onEmploy
 
           <TabsContent value="seguridad">
             <EmployeeSeguridadTab empleadoId={empleado.id} />
+          </TabsContent>
+
+          <TabsContent value="notas-estudio">
+            <NotasEstudioEmpleado empleadoId={empleado.id} />
           </TabsContent>
         </Tabs>
       </CardContent>
