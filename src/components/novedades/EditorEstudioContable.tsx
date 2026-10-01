@@ -21,12 +21,18 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   desde: string;
   filasSistema: FilaEstudio[];
+  borradorId: string | null;
 }
 
-export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema }: Props) {
-  const periodo = desde.slice(0, 7);
+export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, filasSistema: filasSistemaProp, borradorId }: Props) {
+  const [periodo, setPeriodo] = useState(desdeProp.slice(0, 7));
+  const desde = periodo + "-01";
+  const [nombre, setNombre] = useState("");
+  const [origen, setOrigen] = useState<"sistema" | "importada">("sistema");
+  const [archivoPath, setArchivoPath] = useState<string | null>(null);
+  const filasSistema = origen === "importada" ? [] : filasSistemaProp;
   const [loading, setLoading] = useState(true);
-  const [estado, setEstado] = useState<"borrador" | "cerrado">("borrador");
+  const [estado, setEstado] = useState<"borrador" | "cerrado" | "enviada">("borrador");
   const [overrides, setOverrides] = useState<Overrides>({});
   const [manuales, setManuales] = useState<FilaEstudio[]>([]);
   const [ocultos, setOcultos] = useState<string[]>([]);
@@ -39,11 +45,15 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
   const titulo = `Novedades SOTO ${refFecha.toLocaleDateString("es-AR", { month: "long" }).toLocaleUpperCase("es-AR")} ${refFecha.getFullYear()}`;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !borradorId) return;
     listo.current = false;
     setLoading(true);
     (async () => {
-      const { data } = await (supabase as any).from("novedades_estudio_borradores").select("*").eq("periodo", periodo).maybeSingle();
+      const { data } = await (supabase as any).from("novedades_estudio_borradores").select("*").eq("id", borradorId).maybeSingle();
+      setPeriodo(data?.periodo ?? desdeProp.slice(0, 7));
+      setNombre(data?.nombre ?? "");
+      setOrigen(data?.origen ?? "sistema");
+      setArchivoPath(data?.archivo_path ?? null);
       setEstado(data?.estado ?? "borrador");
       setOverrides(data?.overrides ?? {});
       setManuales(data?.filas_manuales ?? []);
@@ -53,15 +63,16 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
       setLoading(false);
       setTimeout(() => { listo.current = true; }, 0);
     })();
-  }, [open, periodo]);
+  }, [open, borradorId, desdeProp]);
 
   const guardar = async (extra: Record<string, any> = {}) => {
+    if (!borradorId) return;
     setSaving("saving");
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await (supabase as any).from("novedades_estudio_borradores").upsert({
-      periodo, estado, overrides, filas_manuales: manuales, ocultos, anotaciones: extras,
+    const { error } = await (supabase as any).from("novedades_estudio_borradores").update({
+      overrides, filas_manuales: manuales, ocultos, anotaciones: extras,
       updated_by: user?.id ?? null, ...extra,
-    }, { onConflict: "periodo" });
+    }).eq("id", borradorId);
     if (error) { toast.error("No se pudo guardar: " + error.message); setSaving("idle"); return; }
     setSaving("saved");
     setInfo(`Última edición ${new Date().toLocaleString("es-AR")}`);
@@ -74,7 +85,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde, filasSistema 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrides, manuales, ocultos, extras]);
 
-  const cerrado = estado === "cerrado";
+  const cerrado = estado !== "borrador";
 
   const filas = useMemo(() => {
     const base = filasSistema.map(f => {
