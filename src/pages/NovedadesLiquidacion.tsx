@@ -22,7 +22,9 @@ import { HorasExtrasNovedadesTable, type HoraExtraNovedadRow } from "@/component
 import { AdelantosNovedadesTable, type AdelantoNovedadRow } from "@/components/novedades/AdelantosNovedadesTable";
 import { exportNovedadesXLSX } from "@/utils/novedadesLiquidacionXLSX";
 import { exportNovedadesPDF } from "@/utils/novedadesLiquidacionPDF";
-import { exportNovedadesEstudioXLSX, type EmpleadoEstudio } from "@/utils/novedadesEstudioXLSX";
+import { exportNovedadesEstudioXLSX, construirFilasEstudio, type EmpleadoEstudio } from "@/utils/novedadesEstudioXLSX";
+import { EditorEstudioContable } from "@/components/novedades/EditorEstudioContable";
+import { Pencil } from "lucide-react";
 
 export interface NovedadRow {
   empleado_id: string;
@@ -229,6 +231,7 @@ export default function NovedadesLiquidacion() {
   }, [resumenBase, soloConNovedades, excluirSinFichajes]);
 
   // Empleados que van a la planilla del estudio contable (activos, según filtros de sucursal/grupo)
+  const [editorOpen, setEditorOpen] = useState(false);
   const empleadosEstudio = useMemo<EmpleadoEstudio[]>(() => {
     return empleados
       .filter(e => e.activo)
@@ -337,6 +340,9 @@ export default function NovedadesLiquidacion() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Reporte — {format(new Date(desde + "T00:00:00"), "dd/MM/yyyy")} al {format(new Date(hasta + "T00:00:00"), "dd/MM/yyyy")}</CardTitle>
           <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setEditorOpen(true)} disabled={!empleadosEstudio.length}>
+              <Pencil className="h-4 w-4 mr-2" /> Editar planilla Estudio
+            </Button>
             <Button
               size="sm"
               onClick={() => exportNovedadesEstudioXLSX(empleadosEstudio, resumenBase, desde, hasta, feriadosFiltrados, vacaciones, adelantos)}
@@ -344,6 +350,12 @@ export default function NovedadesLiquidacion() {
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel Estudio Contable
             </Button>
+            <EditorEstudioContable
+              open={editorOpen}
+              onOpenChange={setEditorOpen}
+              desde={desde}
+              filasSistema={construirFilasEstudio(empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos)}
+            />
             <Button variant="outline" size="sm" onClick={() => exportNovedadesXLSX(resumen, desde, hasta, feriadosFiltrados, { vacaciones, horasExtras, adelantos })} disabled={!resumen.length}>
               <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
