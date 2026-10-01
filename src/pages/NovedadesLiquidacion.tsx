@@ -246,7 +246,6 @@ export default function NovedadesLiquidacion() {
         exento_fichaje: e.exento_fichaje ?? false,
       }));
   }, [empleados, sucursalSel, empleadosSel]);
-  const filasEstudio = useMemo(() => construirFilasEstudio(empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos), [empleadosEstudio, resumenBase, feriadosFiltrados, vacaciones, adelantos]);
 
   // Mostrar SIEMPRE a todos los empleados que tienen fichaje en un feriado,
   // independientemente de si tienen turno asignado o pasan otros filtros.

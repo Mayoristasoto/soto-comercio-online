@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, EyeOff, Eye, Lock, LockOpen, Plus, RotateCcw, Trash2, Loader2 } from "lucide-react";
+import { Download, EyeOff, Eye, Lock, LockOpen, Plus, RotateCcw, Trash2, Loader2, Send } from "lucide-react";
 import {
   COLUMNAS_ESTUDIO, anotacionesDeFilas, exportarEstudioDesdeFilas,
   type ColEstudio, type FilaEstudio,
