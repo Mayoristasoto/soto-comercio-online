@@ -106,7 +106,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
       const o = overrides[f.id] || {};
       const fila = { ...f, ...o } as FilaEstudio;
       const extra = notasObs.get(f.id);
-      if (extra?.length) fila.obs = [fila.obs, ...extra].filter(Boolean).join(" - ");
+      if (extra?.length && o.obs === undefined) fila.obs = [fila.obs, ...extra].filter(Boolean).join(" - ");
       return fila;
     });
     return [...base, ...manuales.map(m => ({ ...m, manual: origen !== "importada" }))];
@@ -167,6 +167,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
   const manualesSet = () => {
     const set = new Set<string>();
     for (const [id, cols] of Object.entries(overrides)) for (const c of Object.keys(cols)) set.add(`${id}:${c}`);
+    for (const id of notasObs.keys()) set.add(`${id}:obs`);
     return set;
   };
 
@@ -192,7 +193,10 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
     const { data: { user } } = await supabase.auth.getUser();
     setEstado("enviada");
     setArchivoPath(path);
-    await guardar({ estado: "enviada", enviada_at: new Date().toISOString(), enviada_por: user?.id ?? null, archivo_path: path });
+    // Congela las notas rápidas dentro de la versión
+    const ovCongelado: Overrides = { ...overrides };
+    for (const f of filas) if (notasObs.has(f.id)) ovCongelado[f.id] = { ...(ovCongelado[f.id] || {}), obs: String(f.obs) };
+    await guardar({ overrides: ovCongelado, anotaciones: [...anotNotas, ...extras], estado: "enviada", enviada_at: new Date().toISOString(), enviada_por: user?.id ?? null, archivo_path: path });
     toast.success("Versión marcada como enviada y archivada");
   };
 
@@ -242,7 +246,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
                     {COLUMNAS_ESTUDIO.map(c => {
                       const v = f[c.key];
                       const has = v !== "" && v != null && v !== 0 && v !== "0";
-                      const editado = f.manual || overrides[f.id]?.[c.key] !== undefined;
+                      const editado = f.manual || overrides[f.id]?.[c.key] !== undefined || esNotaObs(f.id, c.key);
                       let bg: string | undefined;
                       if (["feriados", "gremio", "enf", "enfFam", "vacDias", "vacFechas"].includes(c.key) && has) bg = XL.verde;
                       if (c.key === "obs" && /ADELANTO/.test(String(v))) bg = XL.verde;
@@ -310,7 +314,7 @@ export function EditorEstudioContable({ open, onOpenChange, desde: desdeProp, fi
                           : <Button size="icon" variant="ghost" className="h-6 w-6" disabled={cerrado} title={oculto ? "Incluir" : "Ocultar de la exportación"} onClick={() => toggleOculto(f.id)}>{oculto ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}</Button>}
                       </td>
                       {COLUMNAS_ESTUDIO.map(c => {
-                        const editado = f.manual || overrides[f.id]?.[c.key] !== undefined;
+                        const editado = f.manual || overrides[f.id]?.[c.key] !== undefined || esNotaObs(f.id, c.key);
                         return (
                           <td key={c.key} className="p-0.5">
                             <div className="flex items-center gap-0.5">
