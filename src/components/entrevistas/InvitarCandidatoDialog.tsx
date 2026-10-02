@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Copy, Link2, MessageCircle } from "lucide-react";
 import { Candidato, enlaceReserva, mensajeWhatsapp } from "./entrevistasTypes";
+import { enviarWhatsApp } from "@/lib/whatsapp";
 
 const db = supabase as any;
 
@@ -20,6 +21,7 @@ export default function InvitarCandidatoDialog({ candidato, puestoNombre, onClos
   const [token, setToken] = useState<string | null>(null);
   const [plantilla, setPlantilla] = useState<string | null>(null);
   const [generando, setGenerando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
   const generar = async () => {
     if (!candidato) return;
@@ -100,8 +102,21 @@ export default function InvitarCandidatoDialog({ candidato, puestoNombre, onClos
               >
                 <Link2 className="h-4 w-4" /> Copiar enlace
               </Button>
-              <Button variant="secondary" className="gap-2" disabled title="Próximamente">
-                <MessageCircle className="h-4 w-4" /> Enviar por WhatsApp
+              <Button
+                variant="secondary"
+                className="gap-2"
+                disabled={!candidato?.telefono || enviando}
+                title={candidato?.telefono ? "" : "El candidato no tiene teléfono"}
+                onClick={async () => {
+                  setEnviando(true);
+                  const r = await enviarWhatsApp("entrevista", [
+                    { numero: candidato!.telefono!, nombre: candidato!.nombre, texto: mensaje, referencia_id: candidato!.id },
+                  ]);
+                  setEnviando(false);
+                  r.ok ? toast.success("Mensaje enviado por WhatsApp") : toast.error("No se pudo enviar: " + r.error);
+                }}
+              >
+                <MessageCircle className="h-4 w-4" /> {enviando ? "Enviando…" : "Enviar por WhatsApp"}
               </Button>
             </div>
           </div>

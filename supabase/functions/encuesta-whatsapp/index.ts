@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { enviarWhatsApp } from '../_shared/whaticket.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,18 +49,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const { data: config } = await admin.from('encuesta_config').select('*').limit(1).maybeSingle()
     if (!config?.whatsapp_activo) return json({ error: 'El envío de WhatsApp está desactivado' }, 400)
 
-    // Token: secreto WHATSAPP_API_TOKEN o el ya configurado para fichado
-    let apiToken = Deno.env.get('WHATSAPP_API_TOKEN') ?? ''
-    if (!apiToken) {
-      const { data: cfg } = await admin
-        .from('fichado_configuracion')
-        .select('valor')
-        .eq('clave', 'whatsapp_api_token')
-        .maybeSingle()
-      apiToken = cfg?.valor ?? ''
-    }
-    if (!apiToken.trim()) return json({ error: 'Falta configurar el token de la API de WhatsApp' }, 400)
-
     const vence = respuesta.descuento_vence
       ? new Date(`${respuesta.descuento_vence}T00:00:00`).toLocaleDateString('es-AR')
       : ''
@@ -70,28 +59,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .replaceAll('{codigo}', respuesta.codigo_descuento ?? '')
       .replaceAll('{vence}', vence)
 
-    const numero = String(respuesta.cliente_telefono).replace(/[^\d+]/g, '')
-
-    let ok = false
-    let payload: unknown = null
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000)
-      const res = await fetch(config.whatsapp_api_url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ number: numero, body: mensaje }),
-        signal: controller.signal,
-      })
-      clearTimeout(timeout)
-      ok = res.ok
-      payload = (await res.json().catch(() => null)) ?? { status: res.status }
-    } catch (err) {
-      payload = { error: err instanceof Error ? err.message : String(err) }
-    }
+    const [r] = await enviarWhatsApp('encuesta', [{ numero: String(respuesta.cliente_telefono), nombre: respuesta.cliente_nombre ?? undefined, texto: mensaje, referencia_id: respuestaId }])
+    const ok = r.estado === 'enviado'
+    const payload = r
+    const numero = r.numero
 
     await admin
       .from('encuesta_respuestas')
