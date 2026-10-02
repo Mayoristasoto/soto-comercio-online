@@ -46,19 +46,21 @@ export async function enviarWhatsApp(origen: string, destinos: Destino[], enviad
   const sb = adminClient()
   const { data: cfg } = await sb.from('fichado_configuracion').select('valor').eq('clave', 'whaticket_connection_id').maybeSingle()
   let connectionId = cfg?.valor || ''
+  let diag = ''
   if (!connectionId) {
     // Sin conexión elegida: usar la primera conectada
     const r = await whaticketFetch('/whatsapps')
     const lista: any[] = Array.isArray(r.body) ? r.body : (r.body?.whatsapps ?? r.body?.connections ?? r.body?.data ?? [])
     const c = lista.find((x) => String(x.status || '').toUpperCase() === 'CONNECTED') ?? lista[0]
     if (c?.id) connectionId = String(c.id)
+    else diag = ` (Whaticket /whatsapps respondió ${r.status}: ${(typeof r.body === 'string' ? r.body : JSON.stringify(r.body)).slice(0, 300)})`
   }
   const resultados: any[] = []
   for (const d of destinos) {
     const numero = normalizarNumeroAR(d.numero)
     let estado = 'enviado', error: string | null = null, respuesta: any = null
     try {
-      if (!connectionId) throw new Error('No hay conexión de WhatsApp elegida en Configuración')
+      if (!connectionId) throw new Error('No hay conexión de WhatsApp disponible' + diag)
       const r = await whaticketFetch('/messages', {
         method: 'POST',
         body: JSON.stringify({ connectionId, messages: [{ number: numero, name: d.nombre || undefined, body: d.texto }] }),
