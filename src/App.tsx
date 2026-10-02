@@ -95,6 +95,7 @@ import ResumenMes from "./pages/ResumenMes";
 import PerformanceIndividual from "./pages/PerformanceIndividual";
 import IndiceAusentismo from "./pages/IndiceAusentismo";
 import InformePuntualidad from "./pages/InformePuntualidad";
+import WhatsAppEnvios from "./pages/WhatsAppEnvios";
 import UbicacionesFichaje from "./pages/UbicacionesFichaje";
 import ChecklistControles from "./pages/ChecklistControles";
 import EncuestasClientes from "./pages/EncuestasClientes";
@@ -202,6 +203,7 @@ const App = () => (
             <Route path="rrhh/performance" element={<PerformanceIndividual />} />
             <Route path="rrhh/indice-ausentismo" element={<IndiceAusentismo />} />
             <Route path="rrhh/informe-puntualidad" element={<InformePuntualidad />} />
+            <Route path="rrhh/whatsapp" element={<WhatsAppEnvios />} />
             <Route path="rrhh/ubicaciones-fichaje" element={<UbicacionesFichaje />} />
             <Route path="rrhh/informe-asistencia-gerencial" element={<InformeAsistenciaGerencial />} />
             <Route path="rrhh/grupos-empleados" element={<GruposEmpleados />} />
