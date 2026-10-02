@@ -67,3 +67,12 @@ export async function enviarWhatsApp(origen: string, destinos: Destino[], enviad
   }
   return resultados
 }
+
+/** Compatibilidad: reemplaza fetch al proveedor viejo ({number, body}) por Whaticket. */
+export function legacyWhatsAppFetch(origen: string) {
+  return async (_url: string, init: RequestInit = {}): Promise<Response> => {
+    const p = JSON.parse(String(init.body || '{}'))
+    const [r] = await enviarWhatsApp(origen, [{ numero: String(p.number || ''), texto: String(p.body || '') }])
+    return new Response(JSON.stringify(r), { status: r.estado === 'enviado' ? 200 : 502, headers: { 'content-type': 'application/json' } })
+  }
+}

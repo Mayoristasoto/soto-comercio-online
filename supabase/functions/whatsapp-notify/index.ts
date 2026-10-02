@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { legacyWhatsAppFetch } from '../_shared/whaticket.ts'
+const waFetch = legacyWhatsAppFetch('salida_no_fichada')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -110,7 +112,7 @@ serve(async (req: Request): Promise<Response> => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 segundos timeout
 
-        const res = await fetch('https://api.mayoristasoto.online/api/messages/send', {
+        const res = await waFetch('', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiToken}`,
@@ -202,7 +204,7 @@ Saludos,
 Sistema de Control de Asistencia`
 
         // Enviar mensaje via WhatsApp API
-        const whatsappResponse = await fetch('https://api.mayoristasoto.online/api/messages/send', {
+        const whatsappResponse = await waFetch('', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiToken}`,

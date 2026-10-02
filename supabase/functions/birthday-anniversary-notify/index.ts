@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { legacyWhatsAppFetch } from '../_shared/whaticket.ts'
+const waFetch = legacyWhatsAppFetch('cumpleanos')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -108,7 +110,7 @@ serve(async (req: Request): Promise<Response> => {
                 .replace('{edad}', edad.toString())
 
               try {
-                const whatsappResponse = await fetch(apiEndpoint, {
+                const whatsappResponse = await waFetch(apiEndpoint, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Bearer ${apiToken}`,
@@ -169,7 +171,7 @@ serve(async (req: Request): Promise<Response> => {
                 .replace('{años}', aniosServicio.toString())
 
               try {
-                const whatsappResponse = await fetch(apiEndpoint, {
+                const whatsappResponse = await waFetch(apiEndpoint, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Bearer ${apiToken}`,
