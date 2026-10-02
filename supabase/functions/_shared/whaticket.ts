@@ -62,8 +62,9 @@ export async function enviarWhatsApp(origen: string, destinos: Destino[], enviad
   let diag = ''
   if (!connectionId) {
     // Sin conexión elegida: usar la primera conectada
-    const r = await whaticketFetch('/whatsapps')
-    const lista: any[] = Array.isArray(r.body) ? r.body : (r.body?.whatsapps ?? r.body?.connections ?? r.body?.data ?? [])
+    let r: any
+    try { r = await whaticketFetch('/whatsapps') } catch (e) { r = { ok: false, status: 0, body: (e as Error).message } }
+    const lista: any[] = !r.ok ? [] : Array.isArray(r.body) ? r.body : (r.body?.whatsapps ?? r.body?.connections ?? r.body?.data ?? [])
     const c = lista.find((x) => String(x.status || '').toUpperCase() === 'CONNECTED') ?? lista[0]
     if (c?.id) connectionId = String(c.id)
     else diag = ` (Whaticket /whatsapps respondió ${r.status}: ${(typeof r.body === 'string' ? r.body : JSON.stringify(r.body)).slice(0, 300)})`
