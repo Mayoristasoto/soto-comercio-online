@@ -17,6 +17,7 @@ import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
 import { ArrowLeft, Eye } from "lucide-react"
 import { useRolePreview, ROL_LABEL, type RolApp } from "@/contexts/RolePreviewContext"
 import { RoleViewSwitcher } from "@/components/admin/RoleViewSwitcher"
+import { SelectorPerfilVista } from "@/components/navegacion/SelectorPerfilVista"
 import { AlertasCampanita } from "@/components/AlertasCampanita"
 import { useIsMobile } from "@/hooks/use-mobile"
 

@@ -136,6 +136,8 @@ export default function ConfiguracionUsuario() {
         </Card>
       )}
 
+      {/* Perfiles de vista y menú personal */}
+      <PerfilesVistaManager userId={userInfo?.id} userRole={userInfo?.rol} />
 
       {/* Notificaciones */}
       <Card>
