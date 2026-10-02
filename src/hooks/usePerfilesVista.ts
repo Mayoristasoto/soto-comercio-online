@@ -229,7 +229,7 @@ export function usePerfilesVista(userId?: string | null) {
 
   const aplicarPerfil = useCallback(
     async (id: string, opts?: { silencioso?: boolean }) => {
-      if (!userId) return;
+      if (!userId || !authUserId) return;
       const perfil = perfiles.find((p) => p.id === id);
       if (!perfil) return;
       try {
@@ -273,7 +273,7 @@ export function usePerfilesVista(userId?: string | null) {
 
   const actualizarPerfil = useCallback(
     async (id: string) => {
-      if (!userId) return;
+      if (!userId || !authUserId) return;
       if (!authUserId) return;
       const config = await capturarConfigActual(authUserId, userId);
       const { error } = await (supabase as any)
@@ -305,7 +305,7 @@ export function usePerfilesVista(userId?: string | null) {
   const duplicar = useCallback(
     async (id: string) => {
       const perfil = perfiles.find((p) => p.id === id);
-      if (!perfil || !userId) return;
+      if (!perfil || !userId || !authUserId) return;
       const { error } = await (supabase as any)
         .from("perfiles_vista_usuario")
         .insert({ user_id: authUserId, nombre: `${perfil.nombre} (copia)`, config: perfil.config, es_default: false });
@@ -341,7 +341,7 @@ export function usePerfilesVista(userId?: string | null) {
 
   const setDefault = useCallback(
     async (id: string) => {
-      if (!userId) return;
+      if (!userId || !authUserId) return;
       // Quitar default anterior y poner el nuevo
       await (supabase as any)
         .from("perfiles_vista_usuario")
