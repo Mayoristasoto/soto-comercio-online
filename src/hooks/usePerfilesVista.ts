@@ -142,7 +142,7 @@ async function aplicarConfig(authUserId: string, storageUserId: string, config: 
     const { data: emp } = await supabase
       .from("empleados")
       .select("id")
-      .eq("user_id", userId)
+      .eq("user_id", authUserId)
       .eq("activo", true)
       .maybeSingle();
     if (emp) {
