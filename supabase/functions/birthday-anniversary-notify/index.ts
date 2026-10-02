@@ -63,7 +63,7 @@ serve(async (req: Request): Promise<Response> => {
     const mensajeCumpleanos = configMap?.mensaje_cumpleanos || 'Hoy {nombre} {apellido} cumple {edad} años. ¡Feliz cumpleaños! 🎂🎉'
     const mensajeAniversario = configMap?.mensaje_aniversario || 'Hoy {nombre} {apellido} cumple {años} años trabajando con nosotros. ¡Felicidades por su aniversario laboral! 🎊'
 
-    if (!apiToken || !numeroDestino) {
+    if (!numeroDestino) {
       console.log('❌ Configuración incompleta')
       return new Response(
         JSON.stringify({ error: 'Configuración de WhatsApp incompleta' }),
