@@ -12448,6 +12448,48 @@ export type Database = {
           },
         ]
       }
+      whatsapp_envios: {
+        Row: {
+          created_at: string
+          enviado_por: string | null
+          error: string | null
+          estado: string
+          id: string
+          mensaje: string
+          nombre: string | null
+          numero: string
+          origen: string
+          referencia_id: string | null
+          respuesta: Json | null
+        }
+        Insert: {
+          created_at?: string
+          enviado_por?: string | null
+          error?: string | null
+          estado?: string
+          id?: string
+          mensaje: string
+          nombre?: string | null
+          numero: string
+          origen: string
+          referencia_id?: string | null
+          respuesta?: Json | null
+        }
+        Update: {
+          created_at?: string
+          enviado_por?: string | null
+          error?: string | null
+          estado?: string
+          id?: string
+          mensaje?: string
+          nombre?: string | null
+          numero?: string
+          origen?: string
+          referencia_id?: string | null
+          respuesta?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       empleado_cruces_rojas_semana_actual: {
