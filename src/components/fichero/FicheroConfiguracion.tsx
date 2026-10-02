@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/integrations/supabase/client"
+import { enviarWhatsApp } from "@/lib/whatsapp"
 import { useToast } from "@/hooks/use-toast"
 import { 
   Settings, 
@@ -474,30 +475,15 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
 
     setProbandoWhatsApp(true)
     try {
-      const { data, error } = await supabase.functions.invoke('whatsapp-notify', {
-        body: {
-          modo_prueba: true,
-          numero_prueba: numeroTestWhatsApp,
-          mensaje_prueba: mensajeTestWhatsApp,
-        },
-      })
-
-      if (error) {
-        const ctx: any = (error as any)?.context || {}
-        const status = ctx?.response?.status ?? ctx?.status
-        const msg = ctx?.message || (error as any)?.message || 'No se pudo ejecutar la función de WhatsApp'
-
-        toast({
-          title: 'No se pudo enviar',
-          description: status ? `Error ${status}: ${msg}` : msg,
-          variant: 'destructive',
-        })
+      const r = await enviarWhatsApp('prueba', [{ numero: numeroTestWhatsApp, texto: mensajeTestWhatsApp || 'prueba' }])
+      if (!r.ok) {
+        toast({ title: 'No se pudo enviar', description: r.error ?? 'Error desconocido', variant: 'destructive' })
         return
       }
 
       toast({
         title: 'Prueba enviada',
-        description: data?.message || 'Mensaje de prueba enviado correctamente',
+        description: 'Mensaje de prueba enviado por WhatsApp (Whaticket)',
       })
     } catch (e) {
       toast({

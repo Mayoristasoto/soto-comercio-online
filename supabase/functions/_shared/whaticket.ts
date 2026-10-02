@@ -45,7 +45,14 @@ export interface Destino { numero: string; nombre?: string; texto: string; refer
 export async function enviarWhatsApp(origen: string, destinos: Destino[], enviadoPor?: string | null) {
   const sb = adminClient()
   const { data: cfg } = await sb.from('fichado_configuracion').select('valor').eq('clave', 'whaticket_connection_id').maybeSingle()
-  const connectionId = cfg?.valor
+  let connectionId = cfg?.valor || ''
+  if (!connectionId) {
+    // Sin conexión elegida: usar la primera conectada
+    const r = await whaticketFetch('/whatsapps')
+    const lista: any[] = Array.isArray(r.body) ? r.body : (r.body?.whatsapps ?? r.body?.connections ?? r.body?.data ?? [])
+    const c = lista.find((x) => String(x.status || '').toUpperCase() === 'CONNECTED') ?? lista[0]
+    if (c?.id) connectionId = String(c.id)
+  }
   const resultados: any[] = []
   for (const d of destinos) {
     const numero = normalizarNumeroAR(d.numero)
