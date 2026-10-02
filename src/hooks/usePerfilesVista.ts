@@ -169,6 +169,7 @@ export function usePerfilesVista(userId?: string | null) {
   const [perfiles, setPerfiles] = useState<PerfilVista[]>([]);
   const [activoId, setActivoId] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     if (!userId) {
@@ -177,10 +178,19 @@ export function usePerfilesVista(userId?: string | null) {
       return;
     }
     setCargando(true);
+    // La tabla se keya por auth user id (RLS con auth.uid()); el parámetro
+    // userId es el id de empleado y se usa solo para las claves de localStorage.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setPerfiles([]);
+      setCargando(false);
+      return;
+    }
+    setAuthUserId(user.id);
     const { data, error } = await (supabase as any)
       .from("perfiles_vista_usuario")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: true });
     if (error) {
       console.error("Error cargando perfiles de vista", error);
