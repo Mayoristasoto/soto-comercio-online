@@ -17,6 +17,7 @@ import { useEncargadoAccesos } from "@/hooks/useEncargadoAccesos"
 import { ArrowLeft, Eye } from "lucide-react"
 import { useRolePreview, ROL_LABEL, type RolApp } from "@/contexts/RolePreviewContext"
 import { RoleViewSwitcher } from "@/components/admin/RoleViewSwitcher"
+import { SelectorPerfilVista } from "@/components/navegacion/SelectorPerfilVista"
 import { AlertasCampanita } from "@/components/AlertasCampanita"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -404,6 +405,7 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
                     <RoleViewSwitcher />
+                    <SelectorPerfilVista userId={userInfo.id} />
                     {preview.rolReal === 'admin_rrhh' && <AlertasCampanita />}
                   </div>
                 
@@ -415,6 +417,7 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
                     <RoleViewSwitcher compacto />
+                    <SelectorPerfilVista userId={userInfo.id} compacto />
                     {preview.rolReal === 'admin_rrhh' && <AlertasCampanita />}
                   </div>
                 

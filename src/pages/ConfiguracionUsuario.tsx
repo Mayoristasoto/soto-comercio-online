@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useVistaNavegacion } from "@/hooks/useVistaNavegacion"
+import { PerfilesVistaManager } from "@/components/navegacion/PerfilesVistaManager"
 import { useState } from "react"
 
 
@@ -135,6 +136,8 @@ export default function ConfiguracionUsuario() {
         </Card>
       )}
 
+      {/* Perfiles de vista y menú personal */}
+      <PerfilesVistaManager userId={userInfo?.id} userRole={userInfo?.rol} />
 
       {/* Notificaciones */}
       <Card>

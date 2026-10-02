@@ -8823,6 +8823,36 @@ export type Database = {
           },
         ]
       }
+      perfiles_vista_usuario: {
+        Row: {
+          config: Json
+          created_at: string
+          es_default: boolean
+          id: string
+          nombre: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          es_default?: boolean
+          id?: string
+          nombre: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          es_default?: boolean
+          id?: string
+          nombre?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       periodos_contables: {
         Row: {
           cerrado_por: string | null
