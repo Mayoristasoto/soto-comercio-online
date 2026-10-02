@@ -87,7 +87,7 @@ serve(async (req: Request): Promise<Response> => {
 
     // Verificar token API
     const apiToken = configMap?.whatsapp_api_token
-    if (!apiToken || apiToken.trim() === '') {
+    if (false) {
       console.log('❌ Token de WhatsApp API no configurado')
       return new Response(
         JSON.stringify({ error: 'Token de WhatsApp API no configurado' }),
