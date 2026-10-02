@@ -405,6 +405,7 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
                     <RoleViewSwitcher />
+                    <SelectorPerfilVista userId={userInfo.id} />
                     {preview.rolReal === 'admin_rrhh' && <AlertasCampanita />}
                   </div>
                 
@@ -416,6 +417,7 @@ export default function UnifiedLayout() {
                      rolEfectivo === 'lider_grupo' ? 'Líder' : 'Empleado'}
                   </Badge>
                     <RoleViewSwitcher compacto />
+                    <SelectorPerfilVista userId={userInfo.id} compacto />
                     {preview.rolReal === 'admin_rrhh' && <AlertasCampanita />}
                   </div>
                 
