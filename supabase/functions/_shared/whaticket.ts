@@ -16,16 +16,29 @@ export function normalizarNumeroAR(raw: string): string {
   return d.length === 10 ? `549${d}` : (raw || '').replace(/\D/g, '')
 }
 
-function baseUrl() {
-  const b = (Deno.env.get('WHATICKET_BASE_URL') || '').replace(/\/+$/, '').replace(/\/api\/v1$/, '')
+let cfgCache: { url?: string; token?: string } | null = null
+async function cfgPantalla() {
+  if (cfgCache) return cfgCache
+  const { data } = await adminClient().from('fichado_configuracion').select('clave, valor').in('clave', ['whatsapp_api_endpoint', 'whatsapp_api_token'])
+  const m: Record<string, string> = {}
+  for (const r of data ?? []) m[r.clave] = r.valor
+  const url = m.whatsapp_api_endpoint || ''
+  cfgCache = url.includes('whaticket') ? { url, token: m.whatsapp_api_token } : {}
+  return cfgCache
+}
+
+async function baseUrl() {
+  const c = await cfgPantalla()
+  const b = (c.url || Deno.env.get('WHATICKET_BASE_URL') || '').replace(/\/+$/, '').replace(/\/api\/v1$/, '').replace(/\/api\/messages\/send$/, '')
   if (!b) throw new Error('WHATICKET_BASE_URL no configurado')
   return `${b}/api/v1`
 }
 
 export async function whaticketFetch(path: string, init: RequestInit = {}) {
-  const token = Deno.env.get('WHATICKET_TOKEN')
+  const c = await cfgPantalla()
+  const token = c.token || Deno.env.get('WHATICKET_TOKEN')
   if (!token) throw new Error('WHATICKET_TOKEN no configurado')
-  const res = await fetch(`${baseUrl()}${path}`, {
+  const res = await fetch(`${await baseUrl()}${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
   })
@@ -49,8 +62,9 @@ export async function enviarWhatsApp(origen: string, destinos: Destino[], enviad
   let diag = ''
   if (!connectionId) {
     // Sin conexión elegida: usar la primera conectada
-    const r = await whaticketFetch('/whatsapps')
-    const lista: any[] = Array.isArray(r.body) ? r.body : (r.body?.whatsapps ?? r.body?.connections ?? r.body?.data ?? [])
+    let r: any
+    try { r = await whaticketFetch('/whatsapps') } catch (e) { r = { ok: false, status: 0, body: (e as Error).message } }
+    const lista: any[] = !r.ok ? [] : Array.isArray(r.body) ? r.body : (r.body?.whatsapps ?? r.body?.connections ?? r.body?.data ?? [])
     const c = lista.find((x) => String(x.status || '').toUpperCase() === 'CONNECTED') ?? lista[0]
     if (c?.id) connectionId = String(c.id)
     else diag = ` (Whaticket /whatsapps respondió ${r.status}: ${(typeof r.body === 'string' ? r.body : JSON.stringify(r.body)).slice(0, 300)})`

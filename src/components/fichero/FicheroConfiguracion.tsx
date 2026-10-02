@@ -477,7 +477,7 @@ export default function FicheroConfiguracion({ empleado }: FicheroConfiguracionP
     try {
       const r = await enviarWhatsApp('prueba', [{ numero: numeroTestWhatsApp, texto: mensajeTestWhatsApp || 'prueba' }])
       if (!r.ok) {
-        toast({ title: 'No se pudo enviar', description: r.error ?? 'Error desconocido', variant: 'destructive' })
+        toast({ title: 'No se pudo enviar', description: r.error ?? 'Error desconocido', variant: 'destructive', duration: 20000 })
         return
       }
 
