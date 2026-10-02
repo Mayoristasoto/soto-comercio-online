@@ -52,12 +52,12 @@ export function setMenuOcultosStorage(userId: string, paths: string[]) {
   }
 }
 
-async function capturarConfigActual(userId: string): Promise<ConfigPerfilVista> {
+async function capturarConfigActual(authUserId: string, storageUserId: string): Promise<ConfigPerfilVista> {
   const config: ConfigPerfilVista = {};
 
   // Vista de navegación
   try {
-    const v = localStorage.getItem(keyVista(userId));
+    const v = localStorage.getItem(keyVista(storageUserId));
     config.vistaNavegacion = v === "vista2" ? "vista2" : "vista1";
   } catch {
     // ignore
@@ -65,20 +65,20 @@ async function capturarConfigActual(userId: string): Promise<ConfigPerfilVista> 
 
   // Accesos rápidos
   try {
-    const raw = localStorage.getItem(keyAccesos(userId));
+    const raw = localStorage.getItem(keyAccesos(storageUserId));
     config.accesosRapidos = raw ? JSON.parse(raw) : [];
   } catch {
     config.accesosRapidos = [];
   }
 
   // Menú oculto
-  config.menuOcultos = getMenuOcultos(userId);
+  config.menuOcultos = getMenuOcultos(storageUserId);
 
   // Capas del calendario del dashboard
   const { data: prefRow } = await (supabase as any)
     .from("dashboard_calendar_prefs")
     .select("prefs")
-    .eq("user_id", userId)
+    .eq("user_id", authUserId)
     .maybeSingle();
   if (prefRow?.prefs) config.calendarPrefs = prefRow.prefs;
 
@@ -86,7 +86,7 @@ async function capturarConfigActual(userId: string): Promise<ConfigPerfilVista> 
   const { data: emp } = await supabase
     .from("empleados")
     .select("id")
-    .eq("user_id", userId)
+    .eq("user_id", authUserId)
     .eq("activo", true)
     .maybeSingle();
   if (emp) {
@@ -101,18 +101,18 @@ async function capturarConfigActual(userId: string): Promise<ConfigPerfilVista> 
   const { data: tema } = await (supabase as any)
     .from("user_theme_preferences")
     .select("theme_mode, custom_colors, font_size, high_contrast, reduced_motion")
-    .eq("user_id", userId)
+    .eq("user_id", authUserId)
     .maybeSingle();
   if (tema) config.tema = tema;
 
   return config;
 }
 
-async function aplicarConfig(userId: string, config: ConfigPerfilVista) {
+async function aplicarConfig(authUserId: string, storageUserId: string, config: ConfigPerfilVista) {
   // Vista de navegación
   if (config.vistaNavegacion) {
     try {
-      localStorage.setItem(keyVista(userId), config.vistaNavegacion);
+      localStorage.setItem(keyVista(storageUserId), config.vistaNavegacion);
     } catch {
       // ignore
     }
@@ -121,20 +121,20 @@ async function aplicarConfig(userId: string, config: ConfigPerfilVista) {
   // Accesos rápidos
   if (config.accesosRapidos) {
     try {
-      localStorage.setItem(keyAccesos(userId), JSON.stringify(config.accesosRapidos));
+      localStorage.setItem(keyAccesos(storageUserId), JSON.stringify(config.accesosRapidos));
     } catch {
       // ignore
     }
   }
 
   // Menú oculto
-  setMenuOcultosStorage(userId, config.menuOcultos || []);
+  setMenuOcultosStorage(storageUserId, config.menuOcultos || []);
 
   // Capas del calendario
   if (config.calendarPrefs) {
     await (supabase as any)
       .from("dashboard_calendar_prefs")
-      .upsert({ user_id: userId, prefs: config.calendarPrefs }, { onConflict: "user_id" });
+      .upsert({ user_id: authUserId, prefs: config.calendarPrefs }, { onConflict: "user_id" });
   }
 
   // Calendarios externos
@@ -161,7 +161,7 @@ async function aplicarConfig(userId: string, config: ConfigPerfilVista) {
   if (config.tema) {
     await (supabase as any)
       .from("user_theme_preferences")
-      .upsert({ user_id: userId, ...config.tema, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      .upsert({ user_id: authUserId, ...config.tema, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   }
 }
 
@@ -233,7 +233,8 @@ export function usePerfilesVista(userId?: string | null) {
       const perfil = perfiles.find((p) => p.id === id);
       if (!perfil) return;
       try {
-        await aplicarConfig(userId, perfil.config || {});
+        if (!authUserId) return;
+      await aplicarConfig(authUserId, userId, perfil.config || {});
         localStorage.setItem(keyActivo(userId), id);
         setActivoId(id);
         if (!opts?.silencioso) {
@@ -245,16 +246,17 @@ export function usePerfilesVista(userId?: string | null) {
         toast.error("No se pudo aplicar el perfil");
       }
     },
-    [userId, perfiles]
+    [userId, authUserId, perfiles]
   );
 
   const guardarComoPerfil = useCallback(
     async (nombre: string) => {
       if (!userId) return null;
-      const config = await capturarConfigActual(userId);
+      if (!authUserId) return null;
+      const config = await capturarConfigActual(authUserId, userId);
       const { data, error } = await (supabase as any)
         .from("perfiles_vista_usuario")
-        .insert({ user_id: userId, nombre, config, es_default: perfiles.length === 0 })
+        .insert({ user_id: authUserId, nombre, config, es_default: perfiles.length === 0 })
         .select()
         .single();
       if (error) {
@@ -266,13 +268,14 @@ export function usePerfilesVista(userId?: string | null) {
       await cargar();
       return data as PerfilVista;
     },
-    [userId, perfiles.length, cargar]
+    [userId, authUserId, perfiles.length, cargar]
   );
 
   const actualizarPerfil = useCallback(
     async (id: string) => {
       if (!userId) return;
-      const config = await capturarConfigActual(userId);
+      if (!authUserId) return;
+      const config = await capturarConfigActual(authUserId, userId);
       const { error } = await (supabase as any)
         .from("perfiles_vista_usuario")
         .update({ config })
@@ -284,7 +287,7 @@ export function usePerfilesVista(userId?: string | null) {
       toast.success("Perfil actualizado con tu vista actual");
       await cargar();
     },
-    [userId, cargar]
+    [userId, authUserId, cargar]
   );
 
   const renombrar = useCallback(
@@ -305,14 +308,14 @@ export function usePerfilesVista(userId?: string | null) {
       if (!perfil || !userId) return;
       const { error } = await (supabase as any)
         .from("perfiles_vista_usuario")
-        .insert({ user_id: userId, nombre: `${perfil.nombre} (copia)`, config: perfil.config, es_default: false });
+        .insert({ user_id: authUserId, nombre: `${perfil.nombre} (copia)`, config: perfil.config, es_default: false });
       if (error) toast.error("No se pudo duplicar");
       else {
         toast.success("Perfil duplicado");
         await cargar();
       }
     },
-    [perfiles, userId, cargar]
+    [perfiles, userId, authUserId, cargar]
   );
 
   const borrar = useCallback(
@@ -343,7 +346,7 @@ export function usePerfilesVista(userId?: string | null) {
       await (supabase as any)
         .from("perfiles_vista_usuario")
         .update({ es_default: false })
-        .eq("user_id", userId)
+        .eq("user_id", authUserId)
         .eq("es_default", true);
       const { error } = await (supabase as any)
         .from("perfiles_vista_usuario")
@@ -355,7 +358,7 @@ export function usePerfilesVista(userId?: string | null) {
         await cargar();
       }
     },
-    [userId, cargar]
+    [userId, authUserId, cargar]
   );
 
   const activo = useMemo(() => perfiles.find((p) => p.id === activoId) || null, [perfiles, activoId]);
