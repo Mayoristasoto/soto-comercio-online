@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/integrations/supabase/client"
+import { enviarWhatsApp } from "@/lib/whatsapp"
 import { useToast } from "@/hooks/use-toast"
 import { 
   Settings, 
