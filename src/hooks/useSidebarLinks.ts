@@ -56,7 +56,16 @@ export function useSidebarLinks(userRole: string | null) {
 
     try {
       setLoading(true);
-      
+
+      // Ocultos personales del usuario (perfiles de vista)
+      let ocultos: string[] = [];
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) ocultos = getMenuOcultos(user.id);
+      } catch {
+        // ignore
+      }
+
       // Leer de app_pages en vez de sidebar_links
       const { data, error } = await supabase
         .from("app_pages")
