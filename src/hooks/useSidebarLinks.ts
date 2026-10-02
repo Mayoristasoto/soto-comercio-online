@@ -77,18 +77,20 @@ export function useSidebarLinks(userRole: string | null) {
 
       if (error) throw error;
 
-      // Transformar a formato SidebarLink
-      const transformedData = data?.map((page: any) => ({
-        id: page.id,
-        nombre: page.nombre,
-        path: page.path,
-        icon: page.icon,
-        descripcion: page.descripcion,
-        orden: page.orden,
-        visible: page.visible,
-        parent_id: page.parent_id,
-        tipo: page.tipo || 'link'
-      })) || [];
+      // Transformar a formato SidebarLink (filtrando ocultos personales)
+      const transformedData = (data || [])
+        .filter((page: any) => !ocultos.includes(page.path))
+        .map((page: any) => ({
+          id: page.id,
+          nombre: page.nombre,
+          path: page.path,
+          icon: page.icon,
+          descripcion: page.descripcion,
+          orden: page.orden,
+          visible: page.visible,
+          parent_id: page.parent_id,
+          tipo: page.tipo || 'link'
+        }));
 
       // Organizar en estructura jerárquica (soporta múltiples niveles)
       const items: SidebarLinkWithChildren[] = (transformedData as any[])
