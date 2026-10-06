@@ -12690,6 +12690,7 @@ export type Database = {
       }
     }
     Functions: {
+      activar_reglamento_interno: { Args: never; Returns: number }
       actualizar_vacaciones_gozadas: { Args: never; Returns: undefined }
       admin_desbloquear_pin: {
         Args: { p_empleado_id: string }
@@ -12919,6 +12920,15 @@ export type Database = {
       enviar_planificacion_a_validacion: {
         Args: { p_planificacion_id: string }
         Returns: undefined
+      }
+      estado_firmas_reglamento: {
+        Args: never
+        Returns: {
+          empleado_id: string
+          firmado: boolean
+          nombre: string
+          sucursal: string
+        }[]
       }
       evaluar_puntualidad_mensual: { Args: never; Returns: undefined }
       generar_pins_masivo: {
@@ -13537,6 +13547,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      kiosk_reglamento_pendiente: {
+        Args: { p_empleado_id: string }
+        Returns: boolean
+      }
       kiosk_reservar_charla: {
         Args: { p_empleado_id: string; p_motivo?: string; p_slot_id: string }
         Returns: Json
@@ -13610,6 +13624,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mi_puntualidad_mes: { Args: { p_empleado_id: string }; Returns: Json }
       notificar_evento_calendario_a_empleado: {
         Args: { _empleado_id: string; _evento_id: string }
         Returns: undefined
