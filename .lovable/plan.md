@@ -1,6 +1,8 @@
 # Reglamento interno firmado, avisos de incidencias al empleado y alertas por WhatsApp (apagadas)
 
-Orden: primero el reglamento, después lo que ve el empleado y por último WhatsApp.
+Se construye todo, pero **nada queda activado**. En la página de Configuración va a haber un interruptor por parte (Reglamento obligatorio, Mi puntualidad, Avisos en kiosco, WhatsApp), todos en NO. Cuando prendas uno, empieza a funcionar para los empleados. Para probar antes de activar, va a haber un modo "vista previa": solo vos ves cómo queda.
+
+Orden de activación sugerido: primero el reglamento, después lo que ve el empleado y por último WhatsApp.
 
 ## 1. Que todos firmen el Reglamento Interno (primero)
 - Cargar el "Reglamento Interno" como documento obligatorio y asignarlo a **todos los empleados activos**. Tiene que incluir la escala de exigencia: 2da falta del mes = aviso, 3ra = llamado de atención, 5ta = apercibimiento.
