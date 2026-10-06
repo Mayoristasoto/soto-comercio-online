@@ -103,7 +103,7 @@ export default function WhatsAppEnvios() {
                 <span className="text-muted-foreground">{new Date(e.created_at).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })}</span>
                 <Badge variant="outline">{e.origen}</Badge>
                 <span className="font-medium">{e.nombre ?? ""} {e.numero}</span>
-                <Badge variant={e.estado === "enviado" ? "default" : "destructive"}>{e.estado}</Badge>
+                <Badge variant={e.estado === "enviado" ? "default" : e.estado === "desactivado" ? "secondary" : "destructive"}>{e.estado}</Badge>
                 {e.estado !== "enviado" && (
                   <Button size="sm" variant="outline" onClick={async () => {
                     const r = await reintentarEnvio(e.id);
