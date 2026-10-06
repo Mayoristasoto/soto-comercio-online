@@ -52,11 +52,32 @@ export function adminClient() {
   return createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 }
 
+const AVISOS_AUTOMATICOS: Record<string, string> = {
+  tardanza: 'wa_aviso_tardanza_activo', escala: 'wa_aviso_escala_activo',
+  salida_no_fichada: 'wa_aviso_salida_activo', reglamento: 'wa_aviso_reglamento_activo',
+  vacaciones: 'wa_aviso_vacaciones_activo', recibo: 'wa_aviso_recibo_activo',
+}
+
 export interface Destino { numero: string; nombre?: string; texto: string; referencia_id?: string }
 
 /** Envía mensajes y los registra en whatsapp_envios. */
 export async function enviarWhatsApp(origen: string, destinos: Destino[], enviadoPor?: string | null) {
   const sb = adminClient()
+  // Avisos automáticos: si están apagados, solo se registran como "desactivado"
+  const claveAviso = AVISOS_AUTOMATICOS[origen]
+  if (claveAviso) {
+    const { data: flags } = await sb.from('fichado_configuracion').select('clave, valor').in('clave', ['whatsapp_global_activo', claveAviso])
+    const on = (k: string) => (flags ?? []).find((f: any) => f.clave === k)?.valor === 'true'
+    if (!on('whatsapp_global_activo') || !on(claveAviso)) {
+      const res: any[] = []
+      for (const d of destinos) {
+        const numero = normalizarNumeroAR(d.numero)
+        await sb.from('whatsapp_envios').insert({ origen, referencia_id: d.referencia_id ?? null, numero, nombre: d.nombre ?? null, mensaje: d.texto, estado: 'desactivado', error: 'Aviso desactivado: no se envió', enviado_por: enviadoPor ?? null })
+        res.push({ numero, estado: 'desactivado', error: null })
+      }
+      return res
+    }
+  }
   const { data: cfg } = await sb.from('fichado_configuracion').select('valor').eq('clave', 'whaticket_connection_id').maybeSingle()
   let connectionId = cfg?.valor || ''
   let diag = ''
