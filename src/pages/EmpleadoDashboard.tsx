@@ -34,6 +34,7 @@ import { ForcedDocumentSigning } from "@/components/employee/ForcedDocumentSigni
 import { OnboardingDashboard } from "@/components/employee/OnboardingDashboard"
 import { OnboardingDashboardEnhanced } from "@/components/employee/OnboardingDashboardEnhanced"
 import { useOnboarding } from "@/hooks/useOnboarding"
+import { MiPuntualidad } from "@/components/employee/MiPuntualidad"
 
 interface UserInfo {
   id: string
@@ -229,6 +230,8 @@ export default function EmpleadoDashboard() {
         empleadoApellido={userInfo.apellido}
         empleadoEmail={userInfo.email}
       />
+
+      <MiPuntualidad empleadoId={userInfo.id} />
 
       {/* Permisos y Accesos Detallados */}
       <EmpleadoPermisosDemo />

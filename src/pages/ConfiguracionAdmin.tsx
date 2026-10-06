@@ -23,6 +23,7 @@ import { KioskAlertConfig } from "@/components/admin/KioskAlertConfig"
 import PinManagement from "@/components/admin/PinManagement"
 import PinEventosLog from "@/components/admin/PinEventosLog"
 import KioskSettingsConfig from "@/components/admin/KioskSettingsConfig"
+import { ActivacionesPanel } from "@/components/admin/ActivacionesPanel"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate, useSearchParams } from "react-router-dom"
@@ -38,6 +39,7 @@ type TabId =
   | "accesos-rol"
   | "comercial"
   | "ia"
+  | "activaciones"
 
 const GRUPOS: { titulo: string; items: { id: TabId; label: string; icon: any }[] }[] = [
   {
@@ -54,6 +56,7 @@ const GRUPOS: { titulo: string; items: { id: TabId; label: string; icon: any }[]
     items: [
       { id: "solicitudes", label: "Solicitudes", icon: FileText },
       { id: "plantillas", label: "Plantillas de documentos", icon: FileSignature },
+      { id: "activaciones", label: "Activaciones (reglamento, avisos)", icon: ShieldCheck },
     ],
   },
   {
@@ -188,6 +191,8 @@ export default function Configuracion() {
               <FicheroConfiguracion empleado={empleado} />
             </Card>
           )}
+
+          {tab === "activaciones" && <ActivacionesPanel />}
 
           {tab === "facial" && <FacialRecognitionConfig />}
 
