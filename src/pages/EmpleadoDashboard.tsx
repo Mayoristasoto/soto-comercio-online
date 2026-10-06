@@ -35,6 +35,7 @@ import { OnboardingDashboard } from "@/components/employee/OnboardingDashboard"
 import { OnboardingDashboardEnhanced } from "@/components/employee/OnboardingDashboardEnhanced"
 import { useOnboarding } from "@/hooks/useOnboarding"
 import { MiPuntualidad } from "@/components/employee/MiPuntualidad"
+import { MisDocumentosIngreso } from "@/components/employee/MisDocumentosIngreso"
 
 interface UserInfo {
   id: string
@@ -231,6 +232,7 @@ export default function EmpleadoDashboard() {
         empleadoEmail={userInfo.email}
       />
 
+      <MisDocumentosIngreso empleadoId={userInfo.id} />
       <MiPuntualidad empleadoId={userInfo.id} />
 
       {/* Permisos y Accesos Detallados */}

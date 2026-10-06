@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { DocumentosIngresoPanel } from "@/components/admin/DocumentosIngresoPanel"
 import { MiPuntualidad } from "@/components/employee/MiPuntualidad"
 
 const GENERALES = [
-  { clave: "reglamento_obligatorio_activo", label: "Reglamento Interno obligatorio", desc: "Al prender: se asigna a todos los empleados activos y deben firmarlo al entrar. En el kiosco ven un aviso." },
+  { clave: "reglamento_obligatorio_activo", label: "Reglamento Interno obligatorio", desc: "Al prender: se asigna el reglamento y la descripción de su puesto a todos los empleados activos y deben firmarlo al entrar. En el kiosco ven un aviso." },
   { clave: "mi_puntualidad_activo", label: "Mi puntualidad (empleado)", desc: "El empleado ve sus llegadas tarde, descansos de más y en qué paso de la escala está." },
   { clave: "kiosco_avisos_exigencia_activo", label: "Avisos de exigencia en el kiosco", desc: "Al fichar, el aviso con color según riesgo y qué pasa con la próxima falta." },
 ]
@@ -79,16 +80,7 @@ export function ActivacionesPanel() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle>Reglamento Interno: firmas</CardTitle>
-          <CardDescription>{firmados} de {firmas.length} firmaron. El texto es un borrador: revisalo en Documentos obligatorios antes de activar.</CardDescription></CardHeader>
-        <CardContent className="space-y-2">
-          <Input placeholder="Buscar por nombre o sucursal" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
-          <div className="max-h-64 overflow-auto text-sm">
-            {pendientes.map((p) => <div key={p.empleado_id} className="flex justify-between border-b py-1"><span>{p.nombre}</span><span className="text-muted-foreground">{p.sucursal || "-"}</span></div>)}
-          </div>
-        </CardContent>
-      </Card>
+      <DocumentosIngresoPanel />
 
       {previewId && (<div><p className="mb-2 text-sm font-medium">Vista previa de "Mi puntualidad" (con tus datos)</p><MiPuntualidad empleadoId={previewId} vistaPrevia /></div>)}
 
