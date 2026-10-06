@@ -2895,6 +2895,7 @@ export type Database = {
           fecha_vigencia_desde: string | null
           fecha_vigencia_hasta: string | null
           id: string
+          puesto_id: string | null
           tipo_documento: string
           titulo: string
           updated_at: string
@@ -2908,6 +2909,7 @@ export type Database = {
           fecha_vigencia_desde?: string | null
           fecha_vigencia_hasta?: string | null
           id?: string
+          puesto_id?: string | null
           tipo_documento?: string
           titulo: string
           updated_at?: string
@@ -2921,12 +2923,21 @@ export type Database = {
           fecha_vigencia_desde?: string | null
           fecha_vigencia_hasta?: string | null
           id?: string
+          puesto_id?: string | null
           tipo_documento?: string
           titulo?: string
           updated_at?: string
           url_archivo?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documentos_obligatorios_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       empleado_access_log: {
         Row: {
@@ -10607,6 +10618,116 @@ export type Database = {
           },
         ]
       }
+      reuniones_cierre: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empleado_id: string
+          estado: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          informe_entregado: boolean
+          nota: string | null
+          origen: string
+          reglamento_firmado: boolean
+          temas_empleado: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empleado_id: string
+          estado?: string
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          informe_entregado?: boolean
+          nota?: string | null
+          origen?: string
+          reglamento_firmado?: boolean
+          temas_empleado?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empleado_id?: string
+          estado?: string
+          fecha?: string
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          informe_entregado?: boolean
+          nota?: string | null
+          origen?: string
+          reglamento_firmado?: boolean
+          temas_empleado?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reuniones_cierre_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reuniones_cierre_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reuniones_cierre_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reuniones_cierre_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reuniones_disponibilidad: {
+        Row: {
+          created_at: string
+          duracion_min: number
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duracion_min?: number
+          fecha: string
+          hora_fin: string
+          hora_inicio: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duracion_min?: number
+          fecha?: string
+          hora_fin?: string
+          hora_inicio?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_change_audit: {
         Row: {
           changed_at: string | null
@@ -12875,6 +12996,17 @@ export type Database = {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
+      docs_ingreso_empleado: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          contenido: string
+          documento_id: string
+          firmado: boolean
+          tipo: string
+          titulo: string
+          url_archivo: string
+        }[]
+      }
       empleado_activo_por_texto: { Args: { p_id: string }; Returns: boolean }
       entrevista_datos_invitacion: { Args: { _token: string }; Returns: Json }
       entrevista_generar_token: { Args: never; Returns: string }
@@ -12924,10 +13056,13 @@ export type Database = {
       estado_firmas_reglamento: {
         Args: never
         Returns: {
+          descripcion_puesto: boolean
           empleado_id: string
-          firmado: boolean
           nombre: string
+          puesto: string
+          reglamento: boolean
           sucursal: string
+          tiene_descripcion: boolean
         }[]
       }
       evaluar_puntualidad_mensual: { Args: never; Returns: undefined }
@@ -13644,6 +13779,10 @@ export type Database = {
           nombre: string
           sucursal_id: string
         }[]
+      }
+      programar_reuniones_auto: {
+        Args: { p_sucursal_id?: string }
+        Returns: number
       }
       recalcular_fichajes_tardios_empleado: {
         Args: { p_empleado_id: string; p_fecha_desde?: string }
