@@ -1,6 +1,8 @@
-# Flujo de la jornada: desde la entrada hasta la salida
+# Flujo de la jornada y todas las alertas del sistema
 
-Esto es solo una explicación de cómo funciona hoy el sistema. No cambia nada.
+Esto es solo una explicación de cómo funciona hoy. No cambia nada.
+
+## 1. Flujo de la jornada: desde la entrada hasta la salida
 
 ```text
 EMPLEADO LLEGA AL KIOSCO
@@ -17,7 +19,7 @@ EMPLEADO LLEGA AL KIOSCO
       no cuenta llegadas tarde ni descansos de más
     - Domingo o feriado con horario especial -> usa ese horario y esa tolerancia
     - Sábado -> usa el horario de sábado de cada empleado
-      (José Martí: 07:30 o 08:30, jornada de 8 h)
+      (José Martí: 07:30 u 08:30, jornada de 8 h)
     - Lunes a viernes -> horario asignado para ese día
         |
         v
@@ -25,8 +27,6 @@ EMPLEADO LLEGA AL KIOSCO
     - Compara la hora con el horario de entrada
     - Tolerancia: 0 minutos desde el 1/10 (antes era 1 minuto)
     - Si llegó tarde: queda registrada la llegada tarde y suma 1 cruz roja
-      -> en el mes: a la 2da, aviso a RRHH y al encargado en la campanita;
-         a la 3ra, llamado de atención en el legajo; a la 5ta, apercibimiento
     - El kiosco le muestra: cuántas llegadas tarde y descansos de más lleva
       en el mes, novedades del día (una vez por día) y tareas pendientes
         |
@@ -34,7 +34,7 @@ EMPLEADO LLEGA AL KIOSCO
 [4] DURANTE LA JORNADA: DESCANSO
     - Inicio de pausa -> el kiosco marca el tiempo en curso
     - Fin de pausa -> calcula los minutos completos
-    - Más de 40 min -> descanso de más + 1 cruz roja (misma escala que en [3])
+    - Más de 40 min -> descanso de más + 1 cruz roja
     - Descanso fuera de la franja asignada o sin turno -> incidencia
         |
         v
@@ -57,16 +57,68 @@ EMPLEADO LLEGA AL KIOSCO
     - Tareas del día siguiente: se generan a las 03:00 hora argentina
 ```
 
-## Resumen por día
+## 2. Todas las alertas del sistema
 
-| Día | Llegada tarde | Descanso de más | Bloqueo por tareas | Extra |
-|---|---|---|---|---|
-| Lunes a viernes | Sí, con 0 min de tolerancia | Sí, más de 40 min | Tareas del día | — |
-| Sábado | Sí, con el horario de sábado | Sí | Tareas del día y de la semana | Advertencia si lleva 2 o más cruces en la semana |
-| Domingo o feriado | Solo si los controles están prendidos | Solo si los controles están prendidos | Igual | Puede tener horario especial |
+### A. Alertas de asistencia (las del empleado)
+
+| Alerta | Cuándo salta | Dónde se ve | Consecuencia |
+|---|---|---|---|
+| Llegada tarde | Entró después de su horario (tolerancia 0 min desde el 1/10) | Registro + informe de puntualidad | 1 cruz roja |
+| Descanso de más | La pausa superó los 40 min | Registro + informe | 1 cruz roja |
+| Descanso fuera de franja / sin turno | Empezó o terminó la pausa fuera del horario asignado | Incidencias | Incidencia para revisar |
+| No fichó la salida | Terminó el día sin marcar salida | Aviso por WhatsApp + alerta | Aviso automático |
+| Cruces rojas del sábado | 2 o más cruces rojas en la semana | Advertencia en el kiosco el sábado | Solo advertencia visual |
+
+### B. Escala de exigencia (desde el 1/10, tolerancia 0)
+
+Cada llegada tarde o descanso de más suma. Contando lo del mes en curso:
+
+```text
+1ra vez  -> solo queda registrada (cruz roja)
+2da vez  -> aviso en la campanita a RRHH y al encargado de su sucursal
+3ra vez  -> llamado de atención automático en el legajo del empleado
+5ta vez  -> apercibimiento automático en el legajo
+```
+
+Además, el kiosco le muestra al empleado su contador del mes cada vez que ficha.
+
+### C. Alertas para RRHH y encargados (campanita y dashboard)
+
+| Alerta | Cuándo salta |
+|---|---|
+| Aviso de escala (2da falta del mes) | Automático, llega a RRHH y al encargado de la sucursal |
+| Alertas RRHH generales | Se generan solas (una por tema, sin repetir) y llegan a la campanita del encabezado con contador y aviso en tiempo real |
+| Tareas pendientes del equipo | El encargado las ve en su panel |
+| Solicitudes pendientes | Vacaciones, solicitudes generales, justificaciones esperando aprobación |
+| Incidencias del día | Tarjeta en el dashboard |
+| Novedades del día | Se muestran en el kiosco al fichar, una sola vez por día por empleado |
+
+### D. Alertas por WhatsApp (vía Whaticket, en puesta en marcha)
+
+| Mensaje | Cuándo se manda |
+|---|---|
+| Salida no fichada | Al detectar que no marcó la salida |
+| Cumpleaños y aniversarios | El día correspondiente |
+| Encuesta a clientes | Con el link de la encuesta y el descuento |
+| Invitación a entrevista | Link de autoreserva para el candidato |
+
+Todos los envíos quedan en el registro de la página WhatsApp (enviado o fallido, con el motivo). Pendiente de confirmar el primer envío real.
+
+### E. Bloqueos (no son avisos: impiden la acción)
+
+- Tareas obligatorias del día sin terminar: no deja fichar la salida.
+- Sábado con tareas semanales flexibles sin cumplir: no deja fichar la salida.
+- Documentos obligatorios sin firmar: pantalla bloqueante hasta firmar.
+- PIN bloqueado tras varios intentos fallidos: lo desbloquea un admin.
+
+### F. Qué NO genera alerta
+
+- Domingos y feriados con controles apagados: se registra el fichaje pero no cuenta llegadas tarde ni descansos de más.
+- Fichajes corregidos o rechazados: quedan en la auditoría, sin cruz roja.
 
 ## Detalle técnico
-- Funciones `detectar_fichaje_tardio` / `detectar_exceso_pausa` (tolerancia tomada de `fichado_configuracion`), y `aplicar_escala_exigencia` que se dispara después de cada llegada tarde o descanso de más.
-- `debeOmitirControles()` en el archivo `diasEspecialesService`, con datos de `dias_feriados` y `config_dias_especiales`.
-- Horario de sábado definido por día en `fichado_turnos`.
-- Tareas generadas a las 06:00 UTC.
+- `detectar_fichaje_tardio` / `detectar_exceso_pausa` (tolerancia de `fichado_configuracion`); `aplicar_escala_exigencia` se dispara tras cada llegada tarde o descanso de más y escribe en `notificaciones` y `empleados_anotaciones`.
+- `debeOmitirControles()` con `dias_feriados` y `config_dias_especiales`.
+- Alertas RRHH: tabla `alertas_rrhh` (solo admin), campanita con tiempo real.
+- Contador del kiosco: `kiosk_contador_exigencia`; novedades vistas: `novedades_vistas`.
+- WhatsApp: función `whaticket-send` + registro en `whatsapp_envios`.
