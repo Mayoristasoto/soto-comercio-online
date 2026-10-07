@@ -207,6 +207,20 @@ export default function UserCreationForm({ open, onOpenChange, onUserCreated }: 
         throw new Error('Error al crear el perfil del empleado')
       }
 
+      // Guardar DNI también en datos sensibles (lo que usa la nómina)
+      if (formData.dni && empleadoCreated?.id) {
+        const { data: sens } = await supabase
+          .from('empleados_datos_sensibles')
+          .select('id')
+          .eq('empleado_id', empleadoCreated.id)
+          .maybeSingle()
+        if (sens) {
+          await supabase.from('empleados_datos_sensibles').update({ dni: formData.dni }).eq('id', sens.id)
+        } else {
+          await supabase.from('empleados_datos_sensibles').insert({ empleado_id: empleadoCreated.id, dni: formData.dni } as any)
+        }
+      }
+
       toast({
         title: "Usuario creado exitosamente",
         description: `${formData.nombre} ${formData.apellido} ha sido registrado en el sistema`,
