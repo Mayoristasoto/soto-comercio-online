@@ -289,9 +289,9 @@ export default function Dashboard() {
 
       {isAdmin && (
         <div className="flex justify-end">
-          <a href="/kiosco-demo" target="_blank" rel="noreferrer"
+          <a href="/kiosco" target="_blank" rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10">
-            Probar kiosco (modo demo, sin reconocimiento facial)
+            Abrir kiosco (acceso de prueba: llave abajo a la izquierda)
           </a>
         </div>
       )}
