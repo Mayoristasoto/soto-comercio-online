@@ -84,6 +84,7 @@ export default function Autogestion() {
   const [empleado, setEmpleado] = useState<EmpleadoData | null>(null)
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
   const [loading, setLoading] = useState(true)
+  const [tarjetaCustom, setTarjetaCustom] = useState<any>(null)
   const [seccionesMenu, setSeccionesMenu] = useState<{ clave: string; titulo: string; descripcion: string | null; opciones?: any }[]>(SECCIONES_DEFAULT)
   useEffect(() => {
     if (!empleadoId) return
@@ -473,7 +474,7 @@ export default function Autogestion() {
         </div>
 
         {/* Menú Principal */}
-        {vistaActual === 'menu' && (
+        {vistaActual === 'menu' && !tarjetaCustom && (
           <div className="grid grid-cols-1 gap-4">
             {seccionesMenu.map((s) => {
               const meta: Record<string, any> = {
@@ -484,7 +485,11 @@ export default function Autogestion() {
                 pedidos: { icon: ListChecks, bg: 'bg-muted', fg: 'text-primary', go: () => setVistaActual('mis_pedidos') },
                 charla: { icon: MessageCircle, bg: 'bg-muted', fg: 'text-accent', go: () => setVistaActual('charla') },
               }
-              const m = meta[s.clave]; if (!m) return null
+              const m = meta[s.clave] || { icon: Info, bg: 'bg-muted', fg: 'text-primary', go: () => {
+                const o = (s as any).opciones || {}
+                if (o.tipo === 'enlace' && o.url) window.open(o.url, '_blank')
+                else setTarjetaCustom(s)
+              } }
               const Icon = m.icon
               return (
                 <Card key={s.clave} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={m.go}>
@@ -501,6 +506,18 @@ export default function Autogestion() {
               )
             })}
           </div>
+        )}
+
+        {tarjetaCustom && vistaActual === 'menu' && (
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold">{tarjetaCustom.titulo}</h3>
+                <Button variant="outline" onClick={() => setTarjetaCustom(null)}><ArrowLeft className="h-4 w-4 mr-1" />Volver</Button>
+              </div>
+              <p className="whitespace-pre-wrap text-muted-foreground">{tarjetaCustom.opciones?.contenido}</p>
+            </CardContent>
+          </Card>
         )}
 
         {vistaActual === 'mis_pedidos' && empleadoId && (

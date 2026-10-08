@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDown, ArrowUp, RotateCcw, Save } from "lucide-react"
+import { ArrowDown, ArrowUp, RotateCcw, Save, Plus, Trash2 } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 
 type Seccion = { id: string; clave: string; activo: boolean; orden: number; titulo: string; descripcion: string | null; sucursales_ids: string[]; puestos_ids: string[]; opciones: any }
@@ -58,7 +59,19 @@ export default function ConfigAutogestion() {
     const j = i + d; if (j < 0 || j >= secs.length) return
     const n = [...secs]; [n[i], n[j]] = [n[j], n[i]]; setSecs(n.map((x, k) => ({ ...x, orden: k + 1 })))
   }
-  const restablecer = () => setSecs((p) => [...p].sort((a, b) => ORDEN.indexOf(a.clave) - ORDEN.indexOf(b.clave)).map((x, k) => ({
+  const agregar = async () => {
+    const { data, error } = await (supabase as any).from("autogestion_secciones").insert({
+      clave: `custom_${Date.now()}`, orden: secs.length + 1, titulo: "Nueva tarjeta", descripcion: "Descripción", opciones: { tipo: "mensaje", contenido: "" },
+    }).select().single()
+    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" })
+    setSecs((p) => [...p, data])
+  }
+  const borrar = async (s: Seccion) => {
+    if (!confirm(`¿Borrar la tarjeta "${s.titulo}"?`)) return
+    await (supabase as any).from("autogestion_secciones").delete().eq("id", s.id)
+    setSecs((p) => p.filter((x) => x.id !== s.id))
+  }
+  const restablecer = () => setSecs((p) => p.filter((x) => DEFAULTS[x.clave]).sort((a, b) => ORDEN.indexOf(a.clave) - ORDEN.indexOf(b.clave)).map((x, k) => ({
     ...x, orden: k + 1, activo: true, titulo: DEFAULTS[x.clave][0], descripcion: DEFAULTS[x.clave][1], sucursales_ids: [], puestos_ids: [], opciones: {},
   })))
 
@@ -90,6 +103,7 @@ export default function ConfigAutogestion() {
             <CardDescription>Elegí qué tarjetas ve el empleado, en qué orden, con qué texto y para quién.</CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={agregar}><Plus className="h-4 w-4 mr-1" />Agregar tarjeta</Button>
             <Button variant="outline" onClick={restablecer}><RotateCcw className="h-4 w-4 mr-1" />Restablecer</Button>
             <Button onClick={guardar} disabled={saving}><Save className="h-4 w-4 mr-1" />{saving ? "Guardando..." : "Guardar"}</Button>
           </div>
@@ -103,7 +117,8 @@ export default function ConfigAutogestion() {
               <CardContent className="space-y-3 pt-4">
                 <div className="flex items-center gap-2">
                   <Switch checked={s.activo} onCheckedChange={(v) => upd(i, { activo: v })} />
-                  <Badge variant="secondary">{s.clave}</Badge>
+                  <Badge variant="secondary">{DEFAULTS[s.clave] ? s.clave : "personalizada"}</Badge>
+                  {!DEFAULTS[s.clave] && <Button size="icon" variant="ghost" onClick={() => borrar(s)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   <div className="ml-auto flex gap-1">
                     <Button size="icon" variant="ghost" onClick={() => mover(i, -1)} disabled={i === 0}><ArrowUp className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => mover(i, 1)} disabled={i === secs.length - 1}><ArrowDown className="h-4 w-4" /></Button>
@@ -119,6 +134,18 @@ export default function ConfigAutogestion() {
                   <div className="grid gap-2 md:grid-cols-2 rounded-md bg-muted p-3">
                     <div><Label>Monto máximo por mes ($)</Label><Input type="number" value={adelanto.monto_maximo_mes ?? ""} onChange={(e) => setAdelanto({ ...adelanto, monto_maximo_mes: e.target.value ? Number(e.target.value) : null })} /></div>
                     <div><Label>Días de anticipación</Label><Input type="number" value={adelanto.dias_anticipacion} onChange={(e) => setAdelanto({ ...adelanto, dias_anticipacion: Number(e.target.value) || 0 })} /></div>
+                  </div>
+                )}
+                {!DEFAULTS[s.clave] && (
+                  <div className="space-y-2 rounded-md bg-muted p-3">
+                    <div className="flex gap-2">
+                      {[["mensaje", "Mostrar un texto"], ["enlace", "Abrir un enlace"]].map(([v, l]) => (
+                        <Badge key={v} className="cursor-pointer" variant={(s.opciones?.tipo || "mensaje") === v ? "default" : "outline"} onClick={() => upd(i, { opciones: { ...s.opciones, tipo: v } })}>{l}</Badge>
+                      ))}
+                    </div>
+                    {(s.opciones?.tipo || "mensaje") === "mensaje"
+                      ? <div><Label>Texto que ve el empleado</Label><Textarea rows={5} value={s.opciones?.contenido || ""} onChange={(e) => upd(i, { opciones: { ...s.opciones, contenido: e.target.value } })} /></div>
+                      : <div><Label>Enlace (https://...)</Label><Input value={s.opciones?.url || ""} onChange={(e) => upd(i, { opciones: { ...s.opciones, url: e.target.value } })} /></div>}
                   </div>
                 )}
                 {s.clave === "vacaciones" && (
