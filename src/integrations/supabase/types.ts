@@ -1576,6 +1576,7 @@ export type Database = {
           hora_salida_nueva: string | null
           id: string
           justificacion: string
+          origen: string
           planificacion_id: string | null
           solicitado_por: string
           tipo_cambio: string
@@ -1591,6 +1592,7 @@ export type Database = {
           hora_salida_nueva?: string | null
           id?: string
           justificacion: string
+          origen?: string
           planificacion_id?: string | null
           solicitado_por: string
           tipo_cambio: string
@@ -1606,6 +1608,7 @@ export type Database = {
           hora_salida_nueva?: string | null
           id?: string
           justificacion?: string
+          origen?: string
           planificacion_id?: string | null
           solicitado_por?: string
           tipo_cambio?: string
