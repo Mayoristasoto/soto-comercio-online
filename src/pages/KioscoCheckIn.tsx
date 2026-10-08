@@ -28,6 +28,7 @@ import { logCruzRoja } from "@/lib/crucesRojasLogger"
 import { guardarFotoVerificacion } from "@/lib/verificacionFotosService"
 import { debeOmitirControles } from "@/lib/diasEspecialesService"
 import PendingPhotosBanner from "@/components/kiosko/PendingPhotosBanner"
+import KioscoLoginPrueba from "@/components/kiosko/KioscoLoginPrueba"
 
 interface EmpleadoBasico {
   id: string
@@ -2598,6 +2599,7 @@ export default function KioscoCheckIn() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       {/* Banner de fotos pendientes (cola offline) */}
       <PendingPhotosBanner />
+      <KioscoLoginPrueba onIdentificado={(id, data) => procesarFichaje(1, id, data)} />
 
       {/* Alerta de Cruces Rojas (Overlay) */}
       {showCrucesRojasAlert && crucesRojas && (
