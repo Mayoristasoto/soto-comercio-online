@@ -157,6 +157,20 @@ export default function ConfigAutogestion() {
                     <Input type="number" value={s.opciones?.dias_anticipacion ?? 0} onChange={(e) => upd(i, { opciones: { ...s.opciones, dias_anticipacion: Number(e.target.value) || 0 } })} />
                   </div>
                 )}
+                {s.clave === "cambio_horario" && (
+                  <div className="grid gap-2 rounded-md bg-muted p-3 md:grid-cols-2">
+                    <div>
+                      <Label>Días mínimos de anticipación</Label>
+                      <Input type="number" value={s.opciones?.dias_anticipacion ?? 0} onChange={(e) => upd(i, { opciones: { ...s.opciones, dias_anticipacion: Number(e.target.value) || 0 } })} />
+                      <p className="mt-1 text-xs text-muted-foreground">0 = puede pedir para el mismo día</p>
+                    </div>
+                    <div>
+                      <Label>Quién aprueba</Label>
+                      <Input value="Gerente de la sucursal" disabled />
+                      <p className="mt-1 text-xs text-muted-foreground">RRHH recibe un aviso al aprobarse</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

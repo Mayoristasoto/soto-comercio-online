@@ -33,6 +33,7 @@ interface CambioHorario {
   empleado_intercambio_id?: string;
   justificacion: string;
   estado: string;
+  origen?: string;
   created_at: string;
   empleado?: Empleado;
   empleado_intercambio?: Empleado;
@@ -78,14 +79,17 @@ export default function CambioHorarioGerente() {
       if (!currentEmpleado) return;
       setCurrentEmpleadoId(currentEmpleado.id);
 
-      // Cargar empleados de la misma sucursal con rol igual o menor
-      const { data: empleadosData, error: empleadosError } = await supabase
+      // Cargar empleados: admin_rrhh ve todos, gerente solo su sucursal
+      let query = supabase
         .from('empleados')
         .select('id, nombre, apellido, rol, sucursal_id')
         .eq('activo', true)
-        .eq('sucursal_id', currentEmpleado.sucursal_id)
         .in('rol', ['empleado', 'gerente_sucursal'])
         .order('apellido');
+      if (currentEmpleado.rol !== 'admin_rrhh') {
+        query = query.eq('sucursal_id', currentEmpleado.sucursal_id);
+      }
+      const { data: empleadosData, error: empleadosError } = await query;
 
       if (empleadosError) throw empleadosError;
       setEmpleados(empleadosData || []);
@@ -272,17 +276,24 @@ export default function CambioHorarioGerente() {
                         : 'N/A'}
                     </TableCell>
                     <TableCell>
-                      {cambio.tipo_cambio === 'manual' ? (
-                        <Badge variant="outline" className="gap-1">
-                          <Edit className="h-3 w-3" />
-                          Manual
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="gap-1">
-                          <ArrowLeftRight className="h-3 w-3" />
-                          Intercambio
-                        </Badge>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {cambio.tipo_cambio === 'manual' ? (
+                          <Badge variant="outline" className="gap-1">
+                            <Edit className="h-3 w-3" />
+                            Manual
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="gap-1">
+                            <ArrowLeftRight className="h-3 w-3" />
+                            Intercambio
+                          </Badge>
+                        )}
+                        {cambio.origen === 'kiosco' && (
+                          <Badge variant="secondary" className="gap-1">
+                            Pedido en kiosco
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {cambio.tipo_cambio === 'manual' ? (

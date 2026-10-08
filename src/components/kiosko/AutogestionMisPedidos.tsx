@@ -12,6 +12,8 @@ const TIPO: Record<string, string> = {
   dia_medico: "Día médico",
   permiso: "Permiso",
   charla_rrhh: "Charla con RRHH",
+  elemento: "Elemento / uniforme",
+  cambio_horario: "Cambio de horario",
 };
 
 function estadoTexto(p: any) {
