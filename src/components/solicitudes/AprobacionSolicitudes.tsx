@@ -27,7 +27,9 @@ interface Solicitud {
 const TIPO_LABELS: Record<string, string> = {
   dia_medico: 'Día Médico',
   adelanto_sueldo: 'Adelanto de Sueldo',
-  permiso: 'Permiso'
+  permiso: 'Permiso',
+  elemento: 'Pedido de elementos',
+  cambio_horario: 'Cambio de horario'
 };
 
 export function AprobacionSolicitudes() {

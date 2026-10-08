@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
+import { SolicitarElemento, MisMetricas, SolicitarCambioHorario } from "@/components/kiosko/AutogestionExtras"
 import { ArrowLeft, ClipboardList, DollarSign, CheckCircle, Printer, Wallet, Check, CalendarIcon, Sun, Info, Loader2, ListChecks, MessageCircle } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { imprimirTareasDiariasAutomatico } from "@/utils/printManager"
@@ -93,7 +94,7 @@ export default function Autogestion() {
     })
   }, [empleadoId])
   const [solicitandoAdelanto, setSolicitandoAdelanto] = useState(false)
-  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo' | 'vacaciones' | 'mis_pedidos' | 'charla'>('menu')
+  const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo' | 'vacaciones' | 'mis_pedidos' | 'charla' | 'elementos' | 'metricas' | 'cambio_horario'>('menu')
   const [consultandoSaldo, setConsultandoSaldo] = useState(false)
   const [saldoCuentaCorriente, setSaldoCuentaCorriente] = useState<any>(null)
   const [completandoTarea, setCompletandoTarea] = useState<string | null>(null)
@@ -483,6 +484,9 @@ export default function Autogestion() {
                 saldo: { icon: Wallet, bg: 'bg-indigo-100', fg: 'text-indigo-600', go: consultarSaldo },
                 vacaciones: { icon: Sun, bg: 'bg-orange-100', fg: 'text-orange-500', go: () => setVistaActual('vacaciones') },
                 pedidos: { icon: ListChecks, bg: 'bg-muted', fg: 'text-primary', go: () => setVistaActual('mis_pedidos') },
+                elementos: { icon: ClipboardList, bg: 'bg-muted', fg: 'text-primary', go: () => setVistaActual('elementos') },
+                metricas: { icon: ListChecks, bg: 'bg-muted', fg: 'text-accent', go: () => setVistaActual('metricas') },
+                cambio_horario: { icon: CalendarIcon, bg: 'bg-muted', fg: 'text-primary', go: () => setVistaActual('cambio_horario') },
                 charla: { icon: MessageCircle, bg: 'bg-muted', fg: 'text-accent', go: () => setVistaActual('charla') },
               }
               const m = meta[s.clave] || { icon: Info, bg: 'bg-muted', fg: 'text-primary', go: () => {
@@ -519,6 +523,10 @@ export default function Autogestion() {
             </CardContent>
           </Card>
         )}
+
+        {vistaActual === 'elementos' && empleadoId && <SolicitarElemento empleadoId={empleadoId} onVolver={() => setVistaActual('menu')} />}
+        {vistaActual === 'metricas' && empleadoId && <MisMetricas empleadoId={empleadoId} onVolver={() => setVistaActual('menu')} />}
+        {vistaActual === 'cambio_horario' && empleadoId && <SolicitarCambioHorario empleadoId={empleadoId} onVolver={() => setVistaActual('menu')} />}
 
         {vistaActual === 'mis_pedidos' && empleadoId && (
           <AutogestionMisPedidos empleadoId={empleadoId} onVolver={() => setVistaActual('menu')} />
