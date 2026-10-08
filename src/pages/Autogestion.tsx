@@ -84,7 +84,7 @@ export default function Autogestion() {
   const [empleado, setEmpleado] = useState<EmpleadoData | null>(null)
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
   const [loading, setLoading] = useState(true)
-  const [seccionesMenu, setSeccionesMenu] = useState<{ clave: string; titulo: string; descripcion: string | null }[]>(SECCIONES_DEFAULT)
+  const [seccionesMenu, setSeccionesMenu] = useState<{ clave: string; titulo: string; descripcion: string | null; opciones?: any }[]>(SECCIONES_DEFAULT)
   useEffect(() => {
     if (!empleadoId) return
     ;(supabase.rpc as any)('kiosk_get_autogestion_secciones', { p_empleado_id: empleadoId }).then(({ data, error }: any) => {
@@ -161,6 +161,11 @@ export default function Autogestion() {
 
   const solicitarVacaciones = async () => {
     if (!fechaInicioVac || !fechaFinVac) { toast({ title: "Error", description: "Seleccioná las fechas de inicio y fin", variant: "destructive" }); return }
+    {
+      const ant = Number((seccionesMenu.find((x: any) => x.clave === 'vacaciones') as any)?.opciones?.dias_anticipacion || 0)
+      const min = new Date(); min.setHours(0, 0, 0, 0); min.setDate(min.getDate() + ant)
+      if (ant > 0 && fechaInicioVac < min) { toast({ title: "No se puede solicitar", description: `Las vacaciones se piden con al menos ${ant} día(s) de anticipación`, variant: "destructive" }); return }
+    }
     if (fechaFinVac < fechaInicioVac) { toast({ title: "Error", description: "La fecha de fin debe ser posterior a la de inicio", variant: "destructive" }); return }
     const reglas = validarReglasVacaciones(fechaInicioVac, fechaFinVac)
     if (!reglas.valid) { toast({ title: "No se puede solicitar", description: reglas.message, variant: "destructive" }); return }
