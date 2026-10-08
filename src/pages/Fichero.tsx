@@ -26,6 +26,7 @@ import FicheroIncidencias from "@/components/fichero/FicheroIncidencias"
 import FicheroConfiguracion from "@/components/fichero/FicheroConfiguracion"
 import FicheroHorarios from "@/components/fichero/FicheroHorarios"
 import FicheroHistorial from "@/components/fichero/FicheroHistorial"
+import RegistroEntradasSalidas from "@/components/fichero/RegistroEntradasSalidas"
 import AttendanceReports from "@/components/admin/AttendanceReports"
 import EmployeeAttendanceView from "@/components/fichero/EmployeeAttendanceView"
 import EstadoAnimoEmpleado from "@/components/fichero/EstadoAnimoEmpleado"
@@ -82,7 +83,7 @@ export default function Fichero() {
   const [fichajeEnProceso, setFichajeEnProceso] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{lat: number, lng: number} | null>(null)
   const [estadoEmpleado, setEstadoEmpleado] = useState<'fuera' | 'dentro' | 'pausa'>('fuera')
-  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados' | 'cambios' | 'reporte-diario' | 'balance-diario' | 'balance-mensual' | 'horas-extras'>('fichaje')
+  const [activeTab, setActiveTab] = useState<'fichaje' | 'estadisticas' | 'incidencias' | 'historial' | 'horarios' | 'config' | 'admin' | 'misfichadas' | 'estado-animo' | 'feriados' | 'cambios' | 'reporte-diario' | 'balance-diario' | 'balance-mensual' | 'horas-extras' | 'entradas-salidas'>('fichaje')
   const [showConfirmarTareas, setShowConfirmarTareas] = useState(false)
   const [confirmarTareasHabilitado, setConfirmarTareasHabilitado] = useState(false)
   const location = useLocation()
@@ -249,7 +250,7 @@ export default function Fichero() {
     
     // Detectar hash en la URL y activar la pestaña correspondiente
     const hash = window.location.hash.replace('#', '')
-    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario', 'balance-mensual'].includes(hash)) {
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario', 'balance-mensual', 'entradas-salidas'].includes(hash)) {
       setActiveTab(hash as any)
     }
   }, [])
@@ -257,7 +258,7 @@ export default function Fichero() {
   // Sincronizar cambios de hash usando React Router
   useEffect(() => {
     const hash = (location.hash || '').replace('#', '')
-    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario', 'balance-mensual'].includes(hash)) {
+    if (hash && ['fichaje', 'estadisticas', 'incidencias', 'historial', 'horarios', 'config', 'admin', 'misfichadas', 'estado-animo', 'feriados', 'cambios', 'reporte-diario', 'balance-diario', 'balance-mensual', 'entradas-salidas'].includes(hash)) {
       setActiveTab(hash as any)
     }
   }, [location.hash])
@@ -806,6 +807,7 @@ export default function Fichero() {
             { key: 'estadisticas', label: 'Estadísticas', icon: Calendar },
             { key: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
             ...(rolFichero === 'admin_rrhh' ? [{ key: 'historial', label: 'Historial', icon: History }] : []),
+            ...(rolFichero === 'admin_rrhh' ? [{ key: 'entradas-salidas', label: 'Entradas y Salidas', icon: Clock }] : []),
             ...(rolFichero === 'admin_rrhh' ? [{ key: 'balance-diario', label: 'Balance Diario', icon: BarChart3 }] : []),
             ...(rolFichero === 'admin_rrhh' ? [{ key: 'balance-mensual', label: 'Balance Mensual', icon: BarChart3 }] : []),
             ...(rolFichero === 'admin_rrhh' ? [{ key: 'horas-extras', label: 'Horas Extras', icon: Clock }] : []),
@@ -978,6 +980,10 @@ export default function Fichero() {
 
         {activeTab === 'historial' && rolFichero === 'admin_rrhh' && (
           <FicheroHistorial />
+        )}
+
+        {activeTab === 'entradas-salidas' && rolFichero === 'admin_rrhh' && (
+          <RegistroEntradasSalidas />
         )}
 
         {activeTab === 'horarios' && rolFichero === 'admin_rrhh' && (
