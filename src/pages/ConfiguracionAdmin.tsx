@@ -32,6 +32,7 @@ import ConfigAutogestion from "@/components/admin/ConfigAutogestion"
 
 type TabId =
   | "fichero"
+  | "autogestion"
   | "facial"
   | "pins"
   | "kiosk"
