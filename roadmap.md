@@ -29,3 +29,4 @@
 - [x] Tablero de indicadores `/rrhh/indicadores` (solo admin_rrhh): ausentismo, tardíos, pausas, horas, extras, facturación, personal, vacaciones pendientes; filtro mes + sucursal; tarjetas enlazan al detalle
 - [x] Alertas RRHH: tabla `alertas_rrhh` (RLS admin), generador idempotente por clave, campanita en encabezado con contador, marcar leídas, realtime habilitado
 - [x] Kiosco modo prueba para admin_rrhh sin reconocimiento facial (desde dashboard)
+- [ ] Banco de horas: UI RRHH (saldos, ajustes manuales, reglas) — pendiente definir reglas
