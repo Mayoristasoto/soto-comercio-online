@@ -19,8 +19,11 @@ const DEFAULTS: Record<string, [string, string]> = {
   vacaciones: ["Solicitar Vacaciones", "Solicitá tus días de vacaciones"],
   pedidos: ["Mis pedidos", "Ver en qué estado están tus vacaciones y adelantos"],
   charla: ["Hablar con RRHH", "Reservá un horario para charlar con Recursos Humanos"],
+  elementos: ["Solicitar elementos", "Pedí uniforme, calzado u otros elementos"],
+  metricas: ["Mis métricas del mes", "Tus llegadas tarde y excesos de descanso"],
+  cambio_horario: ["Solicitar cambio de horario", "Turno médico, trámite u otro motivo"],
 }
-const ORDEN = ["tareas", "adelanto", "saldo", "vacaciones", "pedidos", "charla"]
+const ORDEN = ["tareas", "adelanto", "saldo", "vacaciones", "pedidos", "charla", "elementos", "metricas", "cambio_horario"]
 
 function Chips({ items, sel, onChange }: { items: { id: string; nombre: string }[]; sel: string[]; onChange: (v: string[]) => void }) {
   return (
