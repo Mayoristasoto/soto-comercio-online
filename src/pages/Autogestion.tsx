@@ -474,7 +474,7 @@ export default function Autogestion() {
         </div>
 
         {/* Menú Principal */}
-        {vistaActual === 'menu' && (
+        {vistaActual === 'menu' && !tarjetaCustom && (
           <div className="grid grid-cols-1 gap-4">
             {seccionesMenu.map((s) => {
               const meta: Record<string, any> = {
@@ -509,11 +509,11 @@ export default function Autogestion() {
         )}
 
         {tarjetaCustom && vistaActual === 'menu' && (
-          <Card className="mt-4">
+          <Card>
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold">{tarjetaCustom.titulo}</h3>
-                <Button variant="outline" onClick={() => setTarjetaCustom(null)}>Cerrar</Button>
+                <Button variant="outline" onClick={() => setTarjetaCustom(null)}><ArrowLeft className="h-4 w-4 mr-1" />Volver</Button>
               </div>
               <p className="whitespace-pre-wrap text-muted-foreground">{tarjetaCustom.opciones?.contenido}</p>
             </CardContent>
