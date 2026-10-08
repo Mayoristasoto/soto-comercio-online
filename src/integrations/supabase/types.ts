@@ -801,6 +801,99 @@ export type Database = {
         }
         Relationships: []
       }
+      banco_horas_movimientos: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          empleado_id: string
+          fecha: string
+          id: string
+          minutos: number
+          motivo: string | null
+          origen: string
+          solicitud_id: string | null
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          empleado_id: string
+          fecha: string
+          id?: string
+          minutos: number
+          motivo?: string | null
+          origen?: string
+          solicitud_id?: string | null
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          empleado_id?: string
+          fecha?: string
+          id?: string
+          minutos?: number
+          motivo?: string | null
+          origen?: string
+          solicitud_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banco_horas_movimientos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_horas_movimientos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_horas_movimientos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_horas_movimientos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_horas_movimientos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_horas_movimientos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_horas_movimientos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_horas_movimientos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_partners: {
         Row: {
           created_at: string
@@ -11075,6 +11168,7 @@ export type Database = {
           comentario_gerente: string | null
           comentarios_aprobacion: string | null
           created_at: string
+          datos: Json
           descripcion: string | null
           empleado_id: string
           estado: string
@@ -11094,6 +11188,7 @@ export type Database = {
           comentario_gerente?: string | null
           comentarios_aprobacion?: string | null
           created_at?: string
+          datos?: Json
           descripcion?: string | null
           empleado_id: string
           estado?: string
@@ -11113,6 +11208,7 @@ export type Database = {
           comentario_gerente?: string | null
           comentarios_aprobacion?: string | null
           created_at?: string
+          datos?: Json
           descripcion?: string | null
           empleado_id?: string
           estado?: string
@@ -13689,6 +13785,12 @@ export type Database = {
         }
         Returns: string
       }
+      kiosk_items_elementos: {
+        Args: never
+        Returns: {
+          nombre: string
+        }[]
+      }
       kiosk_limpiar_fichajes_hoy: {
         Args: { p_empleado_id: string }
         Returns: Json
@@ -13696,6 +13798,10 @@ export type Database = {
       kiosk_marcar_novedad_vista: {
         Args: { p_empleado_id: string; p_novedad_id: string }
         Returns: undefined
+      }
+      kiosk_mis_metricas: {
+        Args: { p_empleado_id: string; p_mes?: string }
+        Returns: Json
       }
       kiosk_mis_pedidos: {
         Args: { p_empleado_id: string }
@@ -13768,6 +13874,28 @@ export type Database = {
       }
       kiosk_solicitar_adelanto: {
         Args: { p_empleado_id: string; p_monto: number }
+        Returns: Json
+      }
+      kiosk_solicitar_cambio_horario: {
+        Args: {
+          p_compensar?: boolean
+          p_detalle: string
+          p_empleado_id: string
+          p_entrada: string
+          p_fecha: string
+          p_motivo: string
+          p_salida: string
+        }
+        Returns: Json
+      }
+      kiosk_solicitar_elemento: {
+        Args: {
+          p_cantidad: number
+          p_elemento: string
+          p_empleado_id: string
+          p_motivo: string
+          p_talle: string
+        }
         Returns: Json
       }
       kiosk_solicitar_vacaciones: {
