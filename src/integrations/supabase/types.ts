@@ -762,6 +762,45 @@ export type Database = {
         }
         Relationships: []
       }
+      autogestion_secciones: {
+        Row: {
+          activo: boolean
+          clave: string
+          descripcion: string | null
+          id: string
+          opciones: Json
+          orden: number
+          puestos_ids: string[]
+          sucursales_ids: string[]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          clave: string
+          descripcion?: string | null
+          id?: string
+          opciones?: Json
+          orden?: number
+          puestos_ids?: string[]
+          sucursales_ids?: string[]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          clave?: string
+          descripcion?: string | null
+          id?: string
+          opciones?: Json
+          orden?: number
+          puestos_ids?: string[]
+          sucursales_ids?: string[]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brand_partners: {
         Row: {
           created_at: string
@@ -13525,6 +13564,27 @@ export type Database = {
         }[]
       }
       kiosk_get_alert_config: { Args: never; Returns: Json }
+      kiosk_get_autogestion_secciones: {
+        Args: { p_empleado_id: string }
+        Returns: {
+          activo: boolean
+          clave: string
+          descripcion: string | null
+          id: string
+          opciones: Json
+          orden: number
+          puestos_ids: string[]
+          sucursales_ids: string[]
+          titulo: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "autogestion_secciones"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       kiosk_get_empleado_flags: {
         Args: { p_empleado_id: string }
         Returns: {

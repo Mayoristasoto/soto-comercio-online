@@ -28,9 +28,11 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { cn } from "@/lib/utils"
+import ConfigAutogestion from "@/components/admin/ConfigAutogestion"
 
 type TabId =
   | "fichero"
+  | "autogestion"
   | "facial"
   | "pins"
   | "kiosk"
@@ -55,6 +57,7 @@ const GRUPOS: { titulo: string; items: { id: TabId; label: string; icon: any }[]
     titulo: "RRHH",
     items: [
       { id: "solicitudes", label: "Solicitudes", icon: FileText },
+      { id: "autogestion", label: "Autogestión del kiosco", icon: Monitor },
       { id: "plantillas", label: "Plantillas de documentos", icon: FileSignature },
       { id: "activaciones", label: "Activaciones (reglamento, avisos)", icon: ShieldCheck },
     ],
@@ -218,6 +221,7 @@ export default function Configuracion() {
           )}
 
           {tab === "solicitudes" && <ConfiguracionSolicitudes />}
+          {tab === "autogestion" && <ConfigAutogestion />}
 
           {tab === "plantillas" && (
             <Card className="p-6">

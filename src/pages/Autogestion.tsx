@@ -66,6 +66,15 @@ const validarReglasVacaciones = (inicio: Date, fin: Date): { valid: boolean; mes
 import AutogestionMisPedidos from "@/components/kiosko/AutogestionMisPedidos"
 import AutogestionCharlaRRHH from "@/components/kiosko/AutogestionCharlaRRHH"
 
+const SECCIONES_DEFAULT = [
+  { clave: 'tareas', titulo: 'Mis Tareas', descripcion: '' },
+  { clave: 'adelanto', titulo: 'Solicitar Adelanto', descripcion: 'Solicita un adelanto de sueldo' },
+  { clave: 'saldo', titulo: 'Consultar Saldo', descripcion: 'Ver saldo de cuenta corriente' },
+  { clave: 'vacaciones', titulo: 'Solicitar Vacaciones', descripcion: 'Solicitá tus días de vacaciones' },
+  { clave: 'pedidos', titulo: 'Mis pedidos', descripcion: 'Ver en qué estado están tus vacaciones y adelantos' },
+  { clave: 'charla', titulo: 'Hablar con RRHH', descripcion: 'Reservá un horario para charlar con Recursos Humanos' },
+]
+
 export default function Autogestion() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -75,6 +84,13 @@ export default function Autogestion() {
   const [empleado, setEmpleado] = useState<EmpleadoData | null>(null)
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
   const [loading, setLoading] = useState(true)
+  const [seccionesMenu, setSeccionesMenu] = useState<{ clave: string; titulo: string; descripcion: string | null; opciones?: any }[]>(SECCIONES_DEFAULT)
+  useEffect(() => {
+    if (!empleadoId) return
+    ;(supabase.rpc as any)('kiosk_get_autogestion_secciones', { p_empleado_id: empleadoId }).then(({ data, error }: any) => {
+      if (!error && Array.isArray(data)) setSeccionesMenu(data)
+    })
+  }, [empleadoId])
   const [solicitandoAdelanto, setSolicitandoAdelanto] = useState(false)
   const [vistaActual, setVistaActual] = useState<'menu' | 'tareas' | 'adelantos' | 'saldo' | 'vacaciones' | 'mis_pedidos' | 'charla'>('menu')
   const [consultandoSaldo, setConsultandoSaldo] = useState(false)
@@ -145,6 +161,11 @@ export default function Autogestion() {
 
   const solicitarVacaciones = async () => {
     if (!fechaInicioVac || !fechaFinVac) { toast({ title: "Error", description: "Seleccioná las fechas de inicio y fin", variant: "destructive" }); return }
+    {
+      const ant = Number((seccionesMenu.find((x: any) => x.clave === 'vacaciones') as any)?.opciones?.dias_anticipacion || 0)
+      const min = new Date(); min.setHours(0, 0, 0, 0); min.setDate(min.getDate() + ant)
+      if (ant > 0 && fechaInicioVac < min) { toast({ title: "No se puede solicitar", description: `Las vacaciones se piden con al menos ${ant} día(s) de anticipación`, variant: "destructive" }); return }
+    }
     if (fechaFinVac < fechaInicioVac) { toast({ title: "Error", description: "La fecha de fin debe ser posterior a la de inicio", variant: "destructive" }); return }
     const reglas = validarReglasVacaciones(fechaInicioVac, fechaFinVac)
     if (!reglas.valid) { toast({ title: "No se puede solicitar", description: reglas.message, variant: "destructive" }); return }
@@ -454,109 +475,31 @@ export default function Autogestion() {
         {/* Menú Principal */}
         {vistaActual === 'menu' && (
           <div className="grid grid-cols-1 gap-4">
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setVistaActual('tareas')}
-            >
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-100 p-4 rounded-full">
-                    <ClipboardList className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">Mis Tareas</h3>
-                    <p className="text-gray-600 mt-1">
-                      {tareasPendientes.length} tareas pendientes
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setVistaActual('adelantos')}
-            >
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-green-100 p-4 rounded-full">
-                    <DollarSign className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">Solicitar Adelanto</h3>
-                    <p className="text-gray-600 mt-1">
-                      Solicita un adelanto de sueldo
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={consultarSaldo}
-            >
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-indigo-100 p-4 rounded-full">
-                    <Wallet className="h-8 w-8 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">Consultar Saldo</h3>
-                    <p className="text-gray-600 mt-1">
-                      Ver saldo de cuenta corriente
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setVistaActual('vacaciones')}
-            >
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-orange-100 p-4 rounded-full">
-                    <Sun className="h-8 w-8 text-orange-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">Solicitar Vacaciones</h3>
-                    <p className="text-gray-600 mt-1">
-                      Solicitá tus días de vacaciones
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-
-        {vistaActual === 'menu' && (
-          <div className="grid grid-cols-1 gap-4 mt-4">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setVistaActual('mis_pedidos')}>
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-muted p-4 rounded-full"><ListChecks className="h-8 w-8 text-primary" /></div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold">Mis pedidos</h3>
-                    <p className="text-muted-foreground mt-1">Ver en qué estado están tus vacaciones y adelantos</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setVistaActual('charla')}>
-              <CardContent className="p-8">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-muted p-4 rounded-full"><MessageCircle className="h-8 w-8 text-accent" /></div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold">Hablar con RRHH</h3>
-                    <p className="text-muted-foreground mt-1">Reservá un horario para charlar con Recursos Humanos</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {seccionesMenu.map((s) => {
+              const meta: Record<string, any> = {
+                tareas: { icon: ClipboardList, bg: 'bg-blue-100', fg: 'text-blue-600', go: () => setVistaActual('tareas') },
+                adelanto: { icon: DollarSign, bg: 'bg-green-100', fg: 'text-green-600', go: () => setVistaActual('adelantos') },
+                saldo: { icon: Wallet, bg: 'bg-indigo-100', fg: 'text-indigo-600', go: consultarSaldo },
+                vacaciones: { icon: Sun, bg: 'bg-orange-100', fg: 'text-orange-500', go: () => setVistaActual('vacaciones') },
+                pedidos: { icon: ListChecks, bg: 'bg-muted', fg: 'text-primary', go: () => setVistaActual('mis_pedidos') },
+                charla: { icon: MessageCircle, bg: 'bg-muted', fg: 'text-accent', go: () => setVistaActual('charla') },
+              }
+              const m = meta[s.clave]; if (!m) return null
+              const Icon = m.icon
+              return (
+                <Card key={s.clave} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={m.go}>
+                  <CardContent className="p-8">
+                    <div className="flex items-center space-x-4">
+                      <div className={`${m.bg} p-4 rounded-full`}><Icon className={`h-8 w-8 ${m.fg}`} /></div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold">{s.titulo}</h3>
+                        <p className="text-muted-foreground mt-1">{s.clave === 'tareas' ? `${tareasPendientes.length} tareas pendientes` : s.descripcion}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         )}
 
