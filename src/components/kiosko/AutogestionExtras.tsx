@@ -110,6 +110,7 @@ export function MisMetricas({ empleadoId, onVolver }: { empleadoId: string; onVo
             <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Banco de horas</p>
               <p className={`text-2xl font-bold ${saldo < 0 ? "text-destructive" : "text-primary"}`}>{saldo < 0 ? "-" : "+"}{String(Math.floor(Math.abs(saldo) / 60)).padStart(2, "0")}:{String(Math.abs(saldo) % 60).padStart(2, "0")}</p></div>
           )}
+          <p className="text-xs text-muted-foreground">Estos números son los mismos que ve RRHH en tu informe de puntualidad. No cuentan las incidencias justificadas.</p>
           {n > 0 && (
             <div className="space-y-1">
               <p className="font-medium">Detalle</p>
