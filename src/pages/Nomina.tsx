@@ -47,6 +47,7 @@ import { EmployeeDocumentView } from "@/components/admin/EmployeeDocumentView"
 import PasswordChange from "@/components/admin/PasswordChange"
 import PuestoManagement from "@/components/admin/PuestoManagement"
 import EmployeeImport from "@/components/admin/EmployeeImport"
+import NominaActualizacionMasiva from "@/components/admin/NominaActualizacionMasiva"
 import UserCreationForm from "@/components/admin/UserCreationForm"
 import Organigrama from "@/components/admin/Organigrama"
 import FacialRecognitionStats from "@/components/admin/FacialRecognitionStats"
@@ -114,6 +115,7 @@ export default function Nomina() {
   const [permissionsOpen, setPermissionsOpen] = useState(false)
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [masivaOpen, setMasivaOpen] = useState(false)
   const [userCreationOpen, setUserCreationOpen] = useState(false)
   const [faceManagementOpen, setFaceManagementOpen] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
@@ -585,6 +587,10 @@ export default function Nomina() {
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Importar Excel
+          </Button>
+          <Button variant="outline" onClick={() => setMasivaOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Actualización masiva
           </Button>
           <Button variant="outline" onClick={handleExportNomina}>
             <Download className="h-4 w-4 mr-2" />
@@ -1271,6 +1277,8 @@ export default function Nomina() {
           onOpenChange={setPasswordChangeOpen}
         />
       )}
+
+      <NominaActualizacionMasiva open={masivaOpen} onOpenChange={setMasivaOpen} onDone={loadNominaData} />
 
       <EmployeeImport
         open={importOpen}

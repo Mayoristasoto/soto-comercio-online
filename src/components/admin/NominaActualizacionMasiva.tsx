@@ -37,7 +37,7 @@ const norm = (s: any) => String(s ?? "").trim().toLowerCase().normalize("NFD").r
 const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 
 const hoy = () => {
-  try { return getArgentinaDateString() } catch { return new Date().toISOString().slice(0, 10) }
+  return getArgentinaDateString(new Date().toISOString())
 }
 
 async function cargarRef(): Promise<Ref> {
