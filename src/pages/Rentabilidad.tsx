@@ -15,6 +15,7 @@ import ImportadorF931 from "@/components/rentabilidad/ImportadorF931";
 import DashboardRentabilidad from "@/components/rentabilidad/DashboardRentabilidad";
 import CierrePeriodo from "@/components/rentabilidad/CierrePeriodo";
 import MetricasProductividad from "@/components/rentabilidad/MetricasProductividad";
+import TicketsSucursal from "@/components/rentabilidad/TicketsSucursal";
 import { rolConPreview } from "@/lib/rolEfectivo"
 
 const tabs = [
@@ -25,6 +26,7 @@ const tabs = [
   { id: "cargas-sociales", label: "Cargas Sociales", icon: FileText },
   { id: "gastos", label: "Gastos", icon: Receipt },
   { id: "facturacion", label: "Facturación", icon: TrendingUp },
+  { id: "tickets", label: "Tickets", icon: Ticket },
   { id: "partes-horas", label: "Partes de Horas", icon: Clock },
   { id: "f931", label: "F931", icon: Upload },
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
