@@ -1,5 +1,10 @@
 # Roadmap
 
+## Reporte de descansos — José Martí
+- [ ] Agregar sección Descansos en Fichero con fechas, sucursal y exportación Excel/PDF.
+- [ ] Entregar reporte de José Martí del 01/09 al 23/10/2026, sin modificar incidencias.
+- [ ] Verificar cálculos, descargas y presentación del informe.
+
 ## Informe de horarios asignados y observados — 23/10/2026
 - [x] Exportar nómina completa y horarios vigentes a Excel.
 - [x] Comparar fichadas de septiembre y octubre por día de semana, con excepciones e historial.
