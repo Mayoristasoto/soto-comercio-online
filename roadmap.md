@@ -1,5 +1,10 @@
 # Roadmap
 
+## Densidad y superposición de descansos — octubre 2026
+- [ ] Agregar mapa diario por sucursal, franjas exactas y empleados superpuestos en Fichero.
+- [ ] Incluir resumen diario, mapa y superposiciones en Excel/PDF y entregar reporte de José Martí.
+- [ ] Probar coincidencias, límites horarios y cruce de medianoche; verificar presentación.
+
 ## Reporte de descansos — José Martí
 - [x] Agregar sección Descansos en Fichero con fechas, sucursal y exportación Excel/PDF.
 - [x] Entregar reporte de José Martí del 01/09 al 23/10/2026, sin modificar incidencias.
