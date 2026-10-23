@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Exportación visual diaria de descansos
-- [ ] Incorporar línea de tiempo por empleado del día y sucursal seleccionados.
-- [ ] Exportar PDF del día y PDF del período, organizado día por día, con franjas y nombres superpuestos.
-- [ ] Verificar descarga y visualización con datos reales en aislamiento; sesión integrada sigue bloqueada por acceso externo.
+- [x] Incorporar línea de tiempo por empleado del día y sucursal seleccionados.
+- [x] Exportar PDF del día y PDF del período, organizado día por día, con franjas y nombres superpuestos.
+- [x] Verificar ambos botones de descarga y PDFs con datos reales en aislamiento; corregir días vacíos y revisar línea de tiempo y primeras páginas.
+- [ ] Verificar desde sesión integrada: acceso externo redirige a /auth; las descargas se probaron por separado.
 
 ## Densidad y superposición de descansos — octubre 2026
 - [x] Agregar mapa diario por sucursal, franjas exactas y empleados superpuestos en Fichero.
