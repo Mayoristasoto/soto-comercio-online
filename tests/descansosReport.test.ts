@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { calcularDescansos } from './descansosReport'
+import { calcularDescansos } from '../src/lib/descansosReport'
 const emp = [{ id: 'e', nombre: 'Ana', apellido: 'Pérez', sucursal_id: 'marti' }, {id:'otro', nombre:'Otro', apellido:'Empleado', sucursal_id:'juanb'}]
 const suc = [{id:'marti', nombre:'José Martí'}, {id:'juanb', nombre:'Juan B. Justo'}]
 const asig = [{ empleado_id:'e',fecha_inicio:'2026-01-01',fecha_fin:null,turno:{dias_semana:[1,2,3,4,5,6,0],duracion_pausa_minutos:40}}]
