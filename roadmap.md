@@ -1,5 +1,10 @@
 # Roadmap
 
+## Exportación visual diaria de descansos
+- [ ] Incorporar línea de tiempo por empleado del día y sucursal seleccionados.
+- [ ] Exportar PDF del día y PDF del período, organizado día por día, con franjas y nombres superpuestos.
+- [ ] Verificar descarga y visualización con datos reales en aislamiento; sesión integrada sigue bloqueada por acceso externo.
+
 ## Densidad y superposición de descansos — octubre 2026
 - [x] Agregar mapa diario por sucursal, franjas exactas y empleados superpuestos en Fichero.
 - [x] Incluir resumen diario, mapa y superposiciones en Excel/PDF y entregar reporte de José Martí del 01/10 al 23/10, día final parcial.
