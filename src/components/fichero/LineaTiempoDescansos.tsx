@@ -4,7 +4,7 @@ import { getArgentinaStartOfDay, formatArgentinaTime } from '@/lib/dateUtils'
 export default function LineaTiempoDescansos({dia}:{dia:DiaDescanso}) {
   const personas=[...new Map(dia.franjas.flatMap(f=>f.empleados.map(p=>[p.id,p] as const))).values()].sort((a,b)=>a.nombre.localeCompare(b.nombre))
   const inicio=Date.parse(getArgentinaStartOfDay(new Date(`${dia.fecha}T00:00:00`)))
-  const min=Math.max(0,Math.floor(Math.min(24,...dia.franjas.map(f=>(Date.parse(f.inicio)-inicio)/3600000))))
+  const min=dia.franjas.length?Math.max(0,Math.floor(Math.min(24,...dia.franjas.map(f=>(Date.parse(f.inicio)-inicio)/3600000)))):0
   const max=Math.min(24,Math.max(min+1,Math.ceil(Math.max(0,...dia.franjas.map(f=>(Date.parse(f.fin)-inicio)/3600000)))))
   const left=260,width=900,step=width/(max-min)
   return <div className="overflow-x-auto" aria-label="Línea de tiempo de descansos por empleado">

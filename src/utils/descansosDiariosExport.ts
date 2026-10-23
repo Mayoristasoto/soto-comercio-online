@@ -15,7 +15,7 @@ export function crearDescansosDiariosPDF(dias: DiaDescanso[]) {
     const personas=[...new Map(dia.franjas.flatMap(f=>f.empleados.map(p=>[p.id,p] as const))).values()].sort((a,b)=>a.nombre.localeCompare(b.nombre))
     const inicio=Date.parse(getArgentinaStartOfDay(new Date(`${dia.fecha}T00:00:00`)))
     // One time axis for all employees, expanded to whole hours around the actual breaks.
-    const min=Math.max(0,Math.floor(Math.min(24,...dia.franjas.map(f=>(Date.parse(f.inicio)-inicio)/3600000))))
+    const min=dia.franjas.length?Math.max(0,Math.floor(Math.min(24,...dia.franjas.map(f=>(Date.parse(f.inicio)-inicio)/3600000)))):0
     const max=Math.min(24,Math.max(min+1,Math.ceil(Math.max(0,...dia.franjas.map(f=>(Date.parse(f.fin)-inicio)/3600000)))))
     const left=100,width=180,step=width/(max-min)
     let y=38
