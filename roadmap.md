@@ -1,5 +1,10 @@
 # Roadmap
 
+## Informe de horarios asignados y observados — 23/10/2026
+- [x] Exportar nómina completa y horarios vigentes a Excel.
+- [x] Comparar fichadas de septiembre y octubre por día de semana, con excepciones e historial.
+- [x] Entregar informe PDF revisado, sin modificar horarios ni incidencias.
+
 ## Recorrido de Salón (V2)
 - [x] Fotos por criterio usando el bucket existente de Checklist, en carpeta separada.
 - [x] Línea de tiempo compartida con usuario, fecha y cambios.
