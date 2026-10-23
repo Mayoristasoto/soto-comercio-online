@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Calendar, DollarSign, FileText, BarChart3, Clock, Receipt, Upload, Lock, TrendingUp, Activity, PieChart } from "lucide-react";
+import { Building2, Calendar, DollarSign, FileText, BarChart3, Clock, Receipt, Upload, Lock, TrendingUp, Activity, PieChart, Ticket } from "lucide-react";
 import PeriodosContables from "@/components/rentabilidad/PeriodosContables";
 import CentrosCosto from "@/components/rentabilidad/CentrosCosto";
 import DistribucionCostos from "@/components/rentabilidad/DistribucionCostos";
@@ -94,6 +94,7 @@ export default function Rentabilidad() {
         <TabsContent value="cargas-sociales"><ParametrosCargasSociales /></TabsContent>
         <TabsContent value="gastos"><GastosSucursal /></TabsContent>
         <TabsContent value="facturacion"><FacturacionSucursal /></TabsContent>
+        <TabsContent value="tickets"><TicketsSucursal /></TabsContent>
         <TabsContent value="partes-horas"><PartesHoras /></TabsContent>
         <TabsContent value="f931"><ImportadorF931 /></TabsContent>
         <TabsContent value="dashboard"><DashboardRentabilidad /></TabsContent>
