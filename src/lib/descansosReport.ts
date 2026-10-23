@@ -1,4 +1,4 @@
-import { formatArgentinaDate, formatArgentinaTime } from './dateUtils'
+import { formatArgentinaDate, formatArgentinaTime, getArgentinaStartOfDay } from './dateUtils'
 
 export interface MarcaDescanso { id: string; empleado_id: string; tipo: string; timestamp_real: string }
 export interface EmpleadoDescanso { id: string; nombre: string; apellido: string; sucursal_id: string | null; puesto?: string | null }
@@ -54,4 +54,53 @@ export function resumirDescansos(rows: FilaDescanso[]): ResumenDescanso[] {
     map.set(f.empleado_id, r)
   }
   return [...map.values()].map(r => ({ ...r, promedio: r.completos ? Math.round(r.total / r.completos) : null })).sort((a,b) => b.minutosExceso - a.minutosExceso || a.empleado.localeCompare(b.empleado))
+}
+
+export interface FranjaDescanso {
+  fecha: string; sucursal: string; sucursal_id: string | null; inicio: string; fin: string;
+  empleados: { id: string; nombre: string }[]; minutos: number;
+}
+export interface DiaDescanso {
+  fecha: string; sucursal: string; sucursal_id: string | null; completos: number; incompletos: number;
+  maximo: number; minutosSuperpuestos: number; empleadosSuperpuestos: string[]; horas: number[]; franjas: FranjaDescanso[];
+}
+
+/** Exact half-open intervals [start, end); never infer the end of incomplete pauses. */
+export function analizarSuperposiciones(rows: FilaDescanso[], desde: string, hasta: string, empleadoId?: string): DiaDescanso[] {
+  if (!desde || !hasta || desde > hasta) return []
+  const sucursales = new Map(rows.map(r => [r.sucursal_id, r.sucursal]))
+  const dias: DiaDescanso[] = []
+  const cursor = new Date(`${desde}T00:00:00`)
+  while (true) {
+    const fecha = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`
+    if (fecha > hasta) break
+    const inicioDia = Date.parse(getArgentinaStartOfDay(cursor))
+    const finDia = inicioDia + 86400000
+    for (const [sucursal_id, sucursal] of sucursales) {
+      const locales = rows.filter(r => r.sucursal_id === sucursal_id)
+      const completas = locales.filter(r => r.inicio && r.fin && Date.parse(r.inicio) < finDia && Date.parse(r.fin) > inicioDia)
+      const limites = [...new Set(completas.flatMap(r => [Math.max(inicioDia, Date.parse(r.inicio ?? '')), Math.min(finDia, Date.parse(r.fin ?? ''))]))].sort((a,b)=>a-b)
+      const franjas: FranjaDescanso[] = []
+      for (let i=0;i<limites.length-1;i++) {
+        const inicio = limites[i], fin = limites[i+1]
+        if (fin <= inicio) continue
+        const activos = completas.filter(r => Date.parse(r.inicio ?? '') <= inicio && Date.parse(r.fin ?? '') > inicio)
+        const personas = [...new Map(activos.map(r => [r.empleado_id, {id:r.empleado_id,nombre:r.empleado}])).values()].sort((a,b)=>a.id.localeCompare(b.id))
+        if (!personas.length || (empleadoId && !personas.some(p=>p.id===empleadoId))) continue
+        const anterior = franjas[franjas.length-1]
+        if (anterior && Date.parse(anterior.fin) === inicio && anterior.empleados.map(p=>p.id).join('|')===personas.map(p=>p.id).join('|')) {
+          anterior.fin = new Date(fin).toISOString(); anterior.minutos = Math.floor((fin-Date.parse(anterior.inicio))/60000)
+        } else franjas.push({fecha,sucursal,sucursal_id,inicio:new Date(inicio).toISOString(),fin:new Date(fin).toISOString(),empleados:personas,minutos:Math.floor((fin-inicio)/60000)})
+      }
+      const superpuestas = franjas.filter(f=>f.empleados.length>1)
+      const horas = Array.from({length:24},(_,h)=>Math.max(0,...franjas.filter(f=>Date.parse(f.inicio)<inicioDia+(h+1)*3600000 && Date.parse(f.fin)>inicioDia+h*3600000).map(f=>f.empleados.length)))
+      dias.push({fecha,sucursal,sucursal_id,completos:completas.filter(r=>!empleadoId||r.empleado_id===empleadoId).length,
+        incompletos:locales.filter(r=>r.fecha===fecha && r.estado!=='Completo' && (!empleadoId||r.empleado_id===empleadoId)).length,
+        maximo:Math.max(0,...franjas.map(f=>f.empleados.length)),horas,franjas,
+        minutosSuperpuestos:Math.floor(superpuestas.reduce((n,f)=>n+Date.parse(f.fin)-Date.parse(f.inicio),0)/60000),
+        empleadosSuperpuestos:[...new Set(superpuestas.flatMap(f=>f.empleados.map(p=>p.nombre)))].sort()})
+    }
+    cursor.setDate(cursor.getDate()+1)
+  }
+  return dias
 }

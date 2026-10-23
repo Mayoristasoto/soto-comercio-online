@@ -2,12 +2,12 @@ import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatArgentinaDate, formatArgentinaTime } from '@/lib/dateUtils'
-import { FilaDescanso, resumirDescansos } from '@/lib/descansosReport'
+import { FilaDescanso, resumirDescansos, analizarSuperposiciones, DiaDescanso } from '@/lib/descansosReport'
 import { PDF_STYLES, COMPANY_INFO } from './pdfStyles'
 
 const fecha = (s: string) => s.split('-').reverse().join('/')
 const hora = (s: string | null) => s ? formatArgentinaDate(s, 'dd/MM HH:mm:ss') : '—'
-export function crearDescansosXLSX(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string) {
+export function crearDescansosXLSX(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string, densidadRows=rows, empleadoId?:string) {
   const wb = XLSX.utils.book_new()
   const detalle = XLSX.utils.aoa_to_sheet([
     ['Fecha','Sucursal','Empleado','Puesto','Inicio','Regreso','Duración (min)','Permitido (min)','Exceso (min)','Estado','Justificado'],
@@ -27,13 +27,33 @@ export function crearDescansosXLSX(rows: FilaDescanso[], desde: string, hasta: s
   hoja['!cols']=[38,20,14,16,18,20,20,22].map(wch=>({wch}))
   XLSX.utils.book_append_sheet(wb,hoja,'Resumen')
   XLSX.utils.book_append_sheet(wb,detalle,'Detalle')
+  const dias=analizarSuperposiciones(densidadRows,desde,hasta,empleadoId)
+  const agregar=(nombre:string,data:unknown[][],anchos:number[])=>{const s=XLSX.utils.aoa_to_sheet(data);s['!cols']=anchos.map(wch=>({wch}));XLSX.utils.book_append_sheet(wb,s,nombre)}
+  agregar('Resumen diario',[['Fecha','Sucursal','Completos','Incompletos','Pico simultáneos','Minutos con 2 o más','Empleados superpuestos'],...dias.map(d=>[fecha(d.fecha),d.sucursal,d.completos,d.incompletos,d.maximo,d.minutosSuperpuestos,d.empleadosSuperpuestos.join(' | ')])],[12,22,14,14,20,24,85])
+  agregar('Mapa densidad',[['Fecha','Sucursal',...Array.from({length:24},(_,h)=>`${String(h).padStart(2,'0')}:00`),'Pico','Min con 2 o más'],...dias.map(d=>[fecha(d.fecha),d.sucursal,...d.horas,d.maximo,d.minutosSuperpuestos])],[12,22,...Array(24).fill(8),8,20])
+  agregar('Superposiciones',[['Fecha','Sucursal','Desde','Hasta','Minutos completos','Simultáneos','Empleados'],...dias.flatMap(d=>d.franjas.filter(f=>f.empleados.length>1).map(f=>[fecha(f.fecha),f.sucursal,hora(f.inicio),hora(f.fin),f.minutos,f.empleados.length,f.empleados.map(p=>p.nombre).join(' | ')]))],[12,22,22,22,20,16,90])
+  agregar('Franjas del día',[['Fecha','Sucursal','Desde','Hasta','Minutos completos','Simultáneos','Empleados'],...dias.flatMap(d=>d.franjas.map(f=>[fecha(f.fecha),f.sucursal,hora(f.inicio),hora(f.fin),f.minutos,f.empleados.length,f.empleados.map(p=>p.nombre).join(' | ')]))],[12,22,22,22,20,16,90])
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Reporte de descansos',COMPANY_INFO.name],['Desde',desde],['Hasta',hasta],['Sucursal',sucursal],['Criterio','Minutos completos entre inicio y regreso. Fichadas rechazadas excluidas.'],['Sin turno','No se presume un descanso permitido: el exceso queda vacío.'],['Exceso observado','Comparación informativa; no equivale a sanción. Incluye justificados.'],['Sucursal','Sucursal actualmente asignada al empleado.'],['Domingos y feriados','Se incluyen descansos efectivamente fichados.'],['Incompletos','No se estima duración cuando falta inicio o regreso.']]),'Criterios')
+  const criterios=wb.Sheets.Criterios
+  XLSX.utils.sheet_add_aoa(criterios,[['Densidad','Máximo de empleados simultáneos en cada hora, no suma de personas que pasaron por esa hora.'],['Superposición','Franjas exactas [inicio, regreso). No mezcla sucursales; coincidencias de menos de un minuto figuran con cero minutos completos.'],['Resumen diario','Minutos con 2 o más: tiempo de reloj sin multiplicar por personas. Días sin marcas no prueban ausencia.'],['Filtros','Mapa y franjas usan todos los descansos de la sucursal, independientemente del filtro de excesos; si se elige empleado, conserva sus compañeros coincidentes.']],{origin:-1})
   return wb
 }
-export function exportDescansosXLSX(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string) {
-  XLSX.writeFile(crearDescansosXLSX(rows,desde,hasta,sucursal),`descansos_${desde}_${hasta}.xlsx`)
+export function exportDescansosXLSX(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string, densidadRows=rows, empleadoId?:string) {
+  XLSX.writeFile(crearDescansosXLSX(rows,desde,hasta,sucursal,densidadRows,empleadoId),`descansos_${desde}_${hasta}.xlsx`)
 }
-export function crearDescansosPDF(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string) {
+export function agregarDensidadPDF(doc:jsPDF,dias:DiaDescanso[]) {
+  const sucursales=[...new Set(dias.map(d=>d.sucursal))]
+  for(const sucursal of sucursales){
+    doc.addPage();doc.setTextColor(PDF_STYLES.colors.text);doc.setFontSize(14);doc.text(`Mapa diario de descansos · ${sucursal}`,14,16)
+    doc.setFontSize(8);doc.text('Hora Argentina · Cada celda indica el máximo simultáneo de la hora · 0 = sin descanso completo registrado',14,23)
+    autoTable(doc,{startY:28,head:[['Día',...Array.from({length:24},(_,h)=>String(h).padStart(2,'0')),'Pico','Min >=2']],body:dias.filter(d=>d.sucursal===sucursal).map(d=>[fecha(d.fecha),...d.horas,d.maximo,d.minutosSuperpuestos]),styles:{fontSize:6,cellPadding:1.4,halign:'center'},columnStyles:{0:{cellWidth:22}},headStyles:{fillColor:PDF_STYLES.colors.primary},margin:{bottom:18},didParseCell:c=>{if(c.section==='body'&&c.column.index>=1&&c.column.index<=24){const n=Number(c.cell.raw);c.cell.styles.fillColor=n===0?PDF_STYLES.colors.background:n===1?'#d1fae5':n===2?'#6ee7b7':n===3?'#34d399':PDF_STYLES.colors.success;c.cell.styles.textColor=PDF_STYLES.colors.text}}})
+  }
+  doc.addPage();doc.setFontSize(14);doc.text('Resumen día por día',14,16)
+  autoTable(doc,{startY:23,head:[['Fecha','Sucursal','Completos','Incompletos','Pico','Min >=2','Empleados que coincidieron']],body:dias.map(d=>[fecha(d.fecha),d.sucursal,d.completos,d.incompletos,d.maximo,d.minutosSuperpuestos,d.empleadosSuperpuestos.join(' · ')||'Sin coincidencias']),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:PDF_STYLES.colors.primary},margin:{bottom:18},columnStyles:{6:{cellWidth:115}}})
+  doc.addPage();doc.setFontSize(14);doc.text('Superposiciones exactas · nombres y franjas',14,16)
+  autoTable(doc,{startY:23,head:[['Fecha','Sucursal','Desde','Hasta','Min','Personas','Empleados']],body:dias.flatMap(d=>d.franjas.filter(f=>f.empleados.length>1).map(f=>[fecha(f.fecha),f.sucursal,formatArgentinaTime(f.inicio),formatArgentinaDate(f.fin,'dd/MM HH:mm:ss'),f.minutos||'<1',f.empleados.length,f.empleados.map(p=>p.nombre).join(' · ')])),styles:{fontSize:7,cellPadding:1.6},columnStyles:{6:{cellWidth:112}},headStyles:{fillColor:PDF_STYLES.colors.secondary},margin:{bottom:18}})
+}
+export function crearDescansosPDF(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string, densidadRows=rows, empleadoId?:string) {
   const doc = new jsPDF({orientation:'landscape'})
   doc.setTextColor(PDF_STYLES.colors.primary); doc.setFontSize(18)
   doc.text(`Descansos · ${sucursal}`,14,17)
@@ -49,9 +69,10 @@ export function crearDescansosPDF(rows: FilaDescanso[], desde: string, hasta: st
   doc.text(doc.splitTextToSize('Criterio: minutos completos entre inicio y regreso. Se excluyen fichadas rechazadas. Se incluyen domingos y feriados con descansos fichados. Excesos observados, incluidos los justificados: no equivalen a sanciones. Sin turno aplicable no se presume duración permitida. Sucursal actualmente asignada. Datos incompletos: no se estima duración. No se modifican horarios ni incidencias.',265),14,y+8)
   doc.addPage(); doc.setFontSize(14); doc.text('Detalle de descansos',14,16)
   autoTable(doc,{startY:22,head:[['Fecha','Empleado','Sucursal','Inicio','Regreso','Min','Permitido','Exceso','Estado']],body:rows.map(f=>[fecha(f.fecha),f.empleado,f.sucursal,hora(f.inicio),hora(f.fin),f.minutos??'—',f.permitido??'Sin turno',f.exceso??'—',f.justificado?'Justificado':f.estado]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:PDF_STYLES.colors.secondary},margin:{bottom:16},didParseCell:d=>{if(d.section==='body'&&d.column.index===7&&Number(d.cell.raw)>0)d.cell.styles.textColor=PDF_STYLES.colors.accent}})
-  for(let i=1;i<=doc.getNumberOfPages();i++){doc.setPage(i);doc.setFontSize(8);doc.text(`${i} / ${doc.getNumberOfPages()} · Documento informativo`,14,201)}
+  agregarDensidadPDF(doc,analizarSuperposiciones(densidadRows,desde,hasta,empleadoId))
+  for(let i=1;i<=doc.getNumberOfPages();i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(PDF_STYLES.colors.textLight);doc.text(`${i} / ${doc.getNumberOfPages()} · Documento informativo · No se estiman descansos incompletos`,14,201)}
   return doc
 }
-export function exportDescansosPDF(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string) {
-  crearDescansosPDF(rows,desde,hasta,sucursal).save(`descansos_${desde}_${hasta}.pdf`)
+export function exportDescansosPDF(rows: FilaDescanso[], desde: string, hasta: string, sucursal: string, densidadRows=rows, empleadoId?:string) {
+  crearDescansosPDF(rows,desde,hasta,sucursal,densidadRows,empleadoId).save(`descansos_${desde}_${hasta}.pdf`)
 }
