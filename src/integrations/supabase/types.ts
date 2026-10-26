@@ -3542,6 +3542,60 @@ export type Database = {
           },
         ]
       }
+      empleado_puestos_habilitados: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          puesto_id: string
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          puesto_id: string
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          puesto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empleado_puestos_habilitados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_puestos_habilitados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_puestos_habilitados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_puestos_habilitados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empleado_puestos_habilitados_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleado_turnos: {
         Row: {
           activo: boolean | null
@@ -6978,6 +7032,438 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      h2_aprobaciones: {
+        Row: {
+          created_at: string
+          decision: string
+          id: string
+          observaciones: string | null
+          plan_id: string
+          usuario_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          id?: string
+          observaciones?: string | null
+          plan_id: string
+          usuario_id: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          id?: string
+          observaciones?: string | null
+          plan_id?: string
+          usuario_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h2_aprobaciones_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "h2_planes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      h2_config: {
+        Row: {
+          clave: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          clave: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          clave?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      h2_historial: {
+        Row: {
+          accion: string
+          created_at: string
+          detalle: Json | null
+          id: string
+          motivo: string | null
+          plan_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          accion: string
+          created_at?: string
+          detalle?: Json | null
+          id?: string
+          motivo?: string | null
+          plan_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          accion?: string
+          created_at?: string
+          detalle?: Json | null
+          id?: string
+          motivo?: string | null
+          plan_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h2_historial_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "h2_planes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      h2_planes: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          estado: string
+          excepcion_motivo: string | null
+          id: string
+          motivo_version: string | null
+          plan_anterior_id: string | null
+          publicado_at: string | null
+          publicado_por: string | null
+          semana_inicio: string
+          sucursal_id: string
+          updated_at: string
+          version: number
+          vigente: boolean
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          excepcion_motivo?: string | null
+          id?: string
+          motivo_version?: string | null
+          plan_anterior_id?: string | null
+          publicado_at?: string | null
+          publicado_por?: string | null
+          semana_inicio: string
+          sucursal_id: string
+          updated_at?: string
+          version?: number
+          vigente?: boolean
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          excepcion_motivo?: string | null
+          id?: string
+          motivo_version?: string | null
+          plan_anterior_id?: string | null
+          publicado_at?: string | null
+          publicado_por?: string | null
+          semana_inicio?: string
+          sucursal_id?: string
+          updated_at?: string
+          version?: number
+          vigente?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h2_planes_plan_anterior_id_fkey"
+            columns: ["plan_anterior_id"]
+            isOneToOne: false
+            referencedRelation: "h2_planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_planes_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      h2_plantilla_items: {
+        Row: {
+          created_at: string
+          descanso_inicio: string | null
+          dia_semana: number
+          empleado_id: string
+          hora_entrada: string
+          hora_salida: string
+          id: string
+          plantilla_id: string
+          puesto_id: string | null
+          semana_n: number
+        }
+        Insert: {
+          created_at?: string
+          descanso_inicio?: string | null
+          dia_semana: number
+          empleado_id: string
+          hora_entrada: string
+          hora_salida: string
+          id?: string
+          plantilla_id: string
+          puesto_id?: string | null
+          semana_n?: number
+        }
+        Update: {
+          created_at?: string
+          descanso_inicio?: string | null
+          dia_semana?: number
+          empleado_id?: string
+          hora_entrada?: string
+          hora_salida?: string
+          id?: string
+          plantilla_id?: string
+          puesto_id?: string | null
+          semana_n?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h2_plantilla_items_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_plantilla_items_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_plantilla_items_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_plantilla_items_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_plantilla_items_plantilla_id_fkey"
+            columns: ["plantilla_id"]
+            isOneToOne: false
+            referencedRelation: "h2_plantillas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_plantilla_items_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      h2_plantillas: {
+        Row: {
+          activa: boolean
+          created_at: string
+          id: string
+          nombre: string
+          semanas: number
+          sucursal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          semanas?: number
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          semanas?: number
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h2_plantillas_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      h2_reglas_cobertura: {
+        Row: {
+          created_at: string
+          critico: boolean
+          desde: string
+          dia_semana: number
+          hasta: string
+          id: string
+          minimo: number
+          puesto_id: string
+          sucursal_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          critico?: boolean
+          desde: string
+          dia_semana: number
+          hasta: string
+          id?: string
+          minimo?: number
+          puesto_id: string
+          sucursal_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          critico?: boolean
+          desde?: string
+          dia_semana?: number
+          hasta?: string
+          id?: string
+          minimo?: number
+          puesto_id?: string
+          sucursal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h2_reglas_cobertura_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_reglas_cobertura_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      h2_turnos: {
+        Row: {
+          created_at: string
+          descanso_fin: string | null
+          descanso_inicio: string | null
+          empleado_id: string
+          fecha: string
+          hora_entrada: string
+          hora_salida: string
+          id: string
+          observaciones: string | null
+          plan_id: string
+          puesto_id: string | null
+          sucursal_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descanso_fin?: string | null
+          descanso_inicio?: string | null
+          empleado_id: string
+          fecha: string
+          hora_entrada: string
+          hora_salida: string
+          id?: string
+          observaciones?: string | null
+          plan_id: string
+          puesto_id?: string | null
+          sucursal_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descanso_fin?: string | null
+          descanso_inicio?: string | null
+          empleado_id?: string
+          fecha?: string
+          hora_entrada?: string
+          hora_salida?: string
+          id?: string
+          observaciones?: string | null
+          plan_id?: string
+          puesto_id?: string | null
+          sucursal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "h2_turnos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_turnos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_turnos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_turnos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_turnos_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "h2_planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_turnos_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "puestos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "h2_turnos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       horarios_excepcionales: {
         Row: {
@@ -13540,6 +14026,43 @@ export type Database = {
           empleado_id: string
           fecha: string
           origen: string
+        }[]
+      }
+      h2_aplicar_plantilla: {
+        Args: { _destino: string; _plantilla: string; _semana_n: number }
+        Returns: number
+      }
+      h2_copiar_semana: {
+        Args: { _destino: string; _origen: string }
+        Returns: number
+      }
+      h2_crear_plan: {
+        Args: { _semana: string; _sucursal: string }
+        Returns: string
+      }
+      h2_enviar: { Args: { _plan: string }; Returns: undefined }
+      h2_es_gerente_de: { Args: { _suc: string }; Returns: boolean }
+      h2_es_rrhh: { Args: never; Returns: boolean }
+      h2_nueva_version: {
+        Args: { _motivo: string; _plan: string }
+        Returns: string
+      }
+      h2_publicar: {
+        Args: { _excepcion?: string; _plan: string }
+        Returns: undefined
+      }
+      h2_resolver: {
+        Args: { _aprobar: boolean; _obs: string; _plan: string }
+        Returns: undefined
+      }
+      h2_turno_publicado: {
+        Args: { _empleado: string; _fecha: string }
+        Returns: {
+          descanso_fin: string
+          descanso_inicio: string
+          hora_entrada: string
+          hora_salida: string
+          sucursal_id: string
         }[]
       }
       has_role: {
