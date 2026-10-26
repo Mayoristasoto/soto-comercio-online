@@ -16,6 +16,8 @@ const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente:
 const CHIPS = ["bg-primary/10 border-primary/30 text-primary", "bg-secondary/10 border-secondary/30 text-secondary", "bg-accent/10 border-accent/30 text-accent", "bg-muted border-border text-foreground"];
 const iniciales = (n: string) => n.split(",").map(s => s.trim()[0] || "").reverse().join("").toUpperCase();
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
+const COLS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))"];
 import { validarTurnos, calcularCobertura, avisosCobertura, finDescanso, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
 const db = supabase as any;
@@ -123,6 +125,12 @@ export default function Horario2() {
           </CardContent></Card>); })}
       </div>
 
+      {!loading && turnos.length > 0 && <Card className="rounded-xl shadow-sm"><CardHeader className="pb-1"><CardTitle className="text-base">Turnos por día y sucursal</CardTitle></CardHeader><CardContent className="h-56">
+        <ResponsiveContainer><BarChart data={Array.from({ length: 7 }, (_, i) => { const f = sumar(semana, i); const row: any = { dia: DIAS[i] }; planes.forEach(p => { const n = sucursales.find(x => x.id === p.sucursal_id)?.nombre || "?"; row[n] = turnos.filter(t => t.plan_id === p.id && t.fecha === f).length; }); return row; })}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="dia" fontSize={12} /><YAxis allowDecimals={false} fontSize={12} /><Tooltip /><Legend />
+          {planes.map((p, i) => { const n = sucursales.find(x => x.id === p.sucursal_id)?.nombre || "?"; return <Bar key={p.id} dataKey={n} stackId="a" fill={COLS[i % COLS.length]} radius={i === planes.length - 1 ? [4, 4, 0, 0] : 0} />; })}
+        </BarChart></ResponsiveContainer></CardContent></Card>}
+
       <Tabs defaultValue="semana">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="semana">Semana</TabsTrigger>
@@ -227,6 +235,9 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
           <div className="md:col-span-2 rounded-xl border bg-card p-3">
             <div className="flex items-center gap-2 mb-2"><span className="font-semibold text-sm">Cobertura por franja de {cfg.franja} min</span>
               <Select value={diaCob} onValueChange={setDiaCob}><SelectTrigger className="h-7 w-32 ml-auto"><SelectValue /></SelectTrigger><SelectContent>{dias.map((d, i) => <SelectItem key={d} value={d}>{DIAS[i]} {d.slice(8)}</SelectItem>)}</SelectContent></Select></div>
+            {cob.length > 0 && (() => { const ps = Array.from(new Set(cob.map(c => c.puesto_id))); const data = Array.from(new Set(cob.map(c => c.desde))).map(d => { const r: any = { franja: d }; ps.forEach(p => { r[nombrePuesto(p)] = cob.find(c => c.desde === d && c.puesto_id === p)?.asignados || 0; }); return r; });
+              return <div className="h-48 mb-2"><ResponsiveContainer><BarChart data={data}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="franja" fontSize={10} interval={1} /><YAxis allowDecimals={false} fontSize={10} /><Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
+                {ps.map((p, i) => <Bar key={p} dataKey={nombrePuesto(p)} stackId="c" fill={COLS[Math.max(0, puestos.findIndex((x: any) => x.id === p)) % COLS.length]} />)}</BarChart></ResponsiveContainer></div>; })()}
             {!cob.length ? <p className="text-xs text-muted-foreground">Sin turnos ese día.</p> :
               <div className="max-h-60 overflow-auto"><table className="w-full text-xs"><thead><tr className="text-muted-foreground"><th className="text-left">Franja</th><th className="text-left">Puesto</th><th>Requeridos</th><th>Asignados</th><th>Diferencia</th></tr></thead>
                 <tbody>{cob.map((c, i) => <tr key={i} className={c.diferencia !== null && c.diferencia < 0 ? "text-destructive font-semibold" : ""}><td>{c.desde}–{c.hasta}</td><td>{nombrePuesto(c.puesto_id)}</td><td className="text-center">{c.requeridos ?? "sin mínimo"}</td><td className="text-center">{c.asignados}</td><td className="text-center">{c.diferencia ?? "—"}</td></tr>)}</tbody></table></div>}
