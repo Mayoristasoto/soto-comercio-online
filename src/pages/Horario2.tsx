@@ -10,7 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
+const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
+const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
+const CHIPS = ["bg-primary/10 border-primary/30 text-primary", "bg-secondary/10 border-secondary/30 text-secondary", "bg-accent/10 border-accent/30 text-accent", "bg-muted border-border text-foreground"];
+const iniciales = (n: string) => n.split(",").map(s => s.trim()[0] || "").reverse().join("").toUpperCase();
 import { toast } from "sonner";
 import { validarTurnos, calcularCobertura, avisosCobertura, finDescanso, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
@@ -95,23 +99,28 @@ export default function Horario2() {
   };
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-bold mr-auto">Horario 2</h1>
-        <Button variant="outline" size="icon" onClick={() => setSemana(sumar(semana, -7))}><ChevronLeft className="h-4 w-4" /></Button>
-        <span className="text-sm font-medium">Semana {semana.split("-").reverse().join("/")} – {sumar(semana, 6).split("-").reverse().join("/")}</span>
-        <Button variant="outline" size="icon" onClick={() => setSemana(sumar(semana, 7))}><ChevronRight className="h-4 w-4" /></Button>
+    <div className="space-y-4 p-4 md:p-6 bg-muted/30 min-h-full">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 shadow-sm">
+        <h1 className="text-2xl font-bold mr-auto text-foreground">Gestión de Turnos <span className="text-sm font-normal text-muted-foreground">· Horario 2</span></h1>
+        <div className="flex items-center gap-1 rounded-lg border px-2 py-1">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium px-1">Semana del {semana.split("-").reverse().join("/")} al {sumar(semana, 6).split("-").reverse().join("/")}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSemana(sumar(semana, -7))}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSemana(sumar(semana, 7))}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
         <Select value={filtroSuc} onValueChange={setFiltroSuc}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="todas">Todas las sucursales</SelectItem>{sucursales.map(s => <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>)}</SelectContent></Select>
         <Select value={filtroEstado} onValueChange={setFiltroEstado}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="todos">Todos los estados</SelectItem><SelectItem value="sin_plan">Sin semana creada</SelectItem>{Object.entries(ESTADOS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent></Select>
-        <Button variant="ghost" size="sm" onClick={() => setCompacta(!compacta)}>{compacta ? "Vista detallada" : "Vista compacta"}</Button>
+        <Button variant="outline" size="sm" onClick={() => setCompacta(!compacta)}>{compacta ? "Vista detallada" : "Vista compacta"}</Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        {Object.entries(ESTADOS).map(([k, v]) => (
-          <Card key={k}><CardContent className="p-3"><div className="text-xs text-muted-foreground">{v.label}</div><div className="text-2xl font-bold">{conteo[k] || 0}</div></CardContent></Card>
-        ))}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {Object.entries(ESTADOS).map(([k, v]) => { const I = ICONOS[k]; return (
+          <Card key={k} className="rounded-xl shadow-sm"><CardContent className="p-4 flex items-center gap-3">
+            <div className={`h-11 w-11 rounded-full flex items-center justify-center ${v.cls}`}><I className="h-5 w-5" /></div>
+            <div><div className="text-sm font-medium">{v.label}</div><div className="text-2xl font-bold leading-tight">{conteo[k] || 0}</div><div className="text-xs text-muted-foreground">{SUB[k]}</div></div>
+          </CardContent></Card>); })}
       </div>
 
       <Tabs defaultValue="semana">
