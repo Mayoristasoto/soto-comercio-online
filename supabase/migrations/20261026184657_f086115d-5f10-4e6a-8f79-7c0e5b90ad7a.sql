@@ -1,0 +1,3 @@
+DO $$ DECLARE f text; BEGIN FOREACH f IN ARRAY ARRAY['h2_es_rrhh()','h2_es_gerente_de(uuid)','h2_crear_plan(uuid,date)','h2_copiar_semana(uuid,uuid)','h2_aplicar_plantilla(uuid,uuid,int)','h2_enviar(uuid)','h2_resolver(uuid,boolean,text)','h2_publicar(uuid,text)','h2_nueva_version(uuid,text)','h2_turno_publicado(uuid,date)','h2_log_turno()'] LOOP
+EXECUTE format('REVOKE EXECUTE ON FUNCTION public.%s FROM PUBLIC, anon', f); END LOOP;
+REVOKE EXECUTE ON FUNCTION public.h2_log_turno() FROM authenticated; END $$;
