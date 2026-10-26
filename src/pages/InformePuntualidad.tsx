@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { format, startOfMonth, subMonths, endOfMonth } from "date-fns";
 import { generarPDFPuntualidad, type Evento, type ResumenEmpleado } from "@/utils/informePuntualidadPDF";
 import JSZip from "jszip";
+import { filtrarOrdenarPuntualidad, type TipoPuntualidad, type OrdenPuntualidad } from "@/lib/puntualidadFiltros";
 
 const fmt = (d: Date) => format(d, "yyyy-MM-dd");
 const TODAS = "todas";
@@ -22,6 +23,9 @@ export default function InformePuntualidad() {
   const [hasta, setHasta] = useState(fmt(endOfMonth(hoy)));
   const [sucursal, setSucursal] = useState(TODAS);
   const [buscar, setBuscar] = useState("");
+  const [tipo, setTipo] = useState<TipoPuntualidad>("todos");
+  const [orden, setOrden] = useState<OrdenPuntualidad>("cantidad");
+  const [direccion, setDireccion] = useState("desc");
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,9 +69,8 @@ export default function InformePuntualidad() {
       r.eventos.sort((a, b) => a.fecha.localeCompare(b.fecha));
     }
     const q = buscar.trim().toLowerCase();
-    return arr.filter(r => !q || r.nombre.toLowerCase().includes(q))
-      .sort((a, b) => total(b) - total(a));
-  }, [eventos, sucursal, buscar]);
+    return filtrarOrdenarPuntualidad(arr.filter(r => !q || r.nombre.toLowerCase().includes(q)), tipo, orden, direccion === "asc");
+  }, [eventos, sucursal, buscar, tipo, orden, direccion]);
 
   const tendencia = (r: ResumenEmpleado) => {
     const v = meses.map(k => (r.porMes[k]?.tardes || 0) + (r.porMes[k]?.descansos || 0));
@@ -116,6 +119,24 @@ export default function InformePuntualidad() {
             </Select>
           </div>
           <div className="w-56"><div className="text-xs mb-1">Empleado</div><Input placeholder="Buscar…" value={buscar} onChange={e => setBuscar(e.target.value)} /></div>
+          <div className="w-48 max-w-full"><div className="text-xs mb-1">Tipo de incidencia</div>
+            <Select value={tipo} onValueChange={v => setTipo(v as TipoPuntualidad)}>
+              <SelectTrigger aria-label="Tipo de incidencia"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="todos">Todas</SelectItem><SelectItem value="tarde">Llegadas tarde</SelectItem><SelectItem value="descanso">Excesos de descanso</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <div className="w-48 max-w-full"><div className="text-xs mb-1">Ordenar por</div>
+            <Select value={orden} onValueChange={v => setOrden(v as OrdenPuntualidad)}>
+              <SelectTrigger aria-label="Ordenar por"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="cantidad">Cantidad de incidencias</SelectItem><SelectItem value="minutos">Minutos acumulados</SelectItem><SelectItem value="nombre">Nombre del empleado</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <div className="w-48 max-w-full"><div className="text-xs mb-1">Orden</div>
+            <Select value={direccion} onValueChange={setDireccion}>
+              <SelectTrigger aria-label="Orden"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="desc">{orden === "nombre" ? "Z a A" : "Mayor a menor"}</SelectItem><SelectItem value="asc">{orden === "nombre" ? "A a Z" : "Menor a mayor"}</SelectItem></SelectContent>
+            </Select>
+          </div>
           <Button onClick={cargar} disabled={loading}>{loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Actualizar</Button>
           <Button variant="outline" onClick={descargarTodos} disabled={!resumen.length}><FileArchive className="h-4 w-4 mr-1" />PDF de todos (ZIP)</Button>
         </CardContent>
@@ -128,7 +149,7 @@ export default function InformePuntualidad() {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-2">Empleado</th>
-                {meses.map(k => <th key={k} className="p-2 text-center whitespace-nowrap">{k}<div className="text-[10px] font-normal text-muted-foreground">tarde / desc.</div></th>)}
+                {meses.map(k => <th key={k} className="p-2 text-center whitespace-nowrap">{k}<div className="text-[10px] font-normal text-muted-foreground">{tipo === "todos" ? "tarde / desc." : tipo === "tarde" ? "llegadas tarde" : "excesos de descanso"}</div></th>)}
                 <th className="p-2">Tendencia</th>
                 <th className="p-2"></th>
               </tr>
@@ -139,7 +160,7 @@ export default function InformePuntualidad() {
                 return (
                   <tr key={r.empleado_id} className="border-b hover:bg-muted/50">
                     <td className="p-2">
-                      <button className="font-medium hover:underline text-left" onClick={() => setDetalle(r)}>{r.nombre}</button>
+                      <Button variant="link" className="h-auto p-0 font-medium text-left whitespace-normal" onClick={() => setDetalle(r)}>{r.nombre}</Button>
                       {r.revisar && <Badge variant="outline" className="ml-2 border-accent text-accent"><AlertTriangle className="h-3 w-3 mr-1" />revisar horario</Badge>}
                     </td>
                     {meses.map(k => {
@@ -147,10 +168,10 @@ export default function InformePuntualidad() {
                       return (
                         <td key={k} className="p-2 text-center whitespace-nowrap">
                           {p ? <>
-                            <span className={p.tardes >= 3 ? "text-destructive font-semibold" : ""}>{p.tardes}</span>
-                            {" / "}
-                            <span className={p.descansos >= 3 ? "text-destructive font-semibold" : ""}>{p.descansos}</span>
-                            <div className="text-[10px] text-muted-foreground">{p.minTarde}′ / {p.minDescanso}′</div>
+                            {tipo !== "descanso" && <span className={p.tardes >= 3 ? "text-destructive font-semibold" : ""}>{p.tardes}</span>}
+                            {tipo === "todos" && " / "}
+                            {tipo !== "tarde" && <span className={p.descansos >= 3 ? "text-destructive font-semibold" : ""}>{p.descansos}</span>}
+                            <div className="text-[10px] text-muted-foreground">{tipo === "todos" ? `${p.minTarde}′ / ${p.minDescanso}′` : `${tipo === "tarde" ? p.minTarde : p.minDescanso}′`}</div>
                           </> : <span className="text-muted-foreground">–</span>}
                         </td>
                       );
@@ -165,6 +186,7 @@ export default function InformePuntualidad() {
                   </tr>
                 );
               })}
+              {!resumen.length && <tr><td colSpan={meses.length + 3} className="p-6 text-center text-muted-foreground">{loading ? "Cargando…" : "No hay incidencias para los filtros seleccionados."}</td></tr>}
             </tbody>
           </table>
         </CardContent>
@@ -204,6 +226,3 @@ export default function InformePuntualidad() {
   );
 }
 
-function total(r: ResumenEmpleado) {
-  return Object.values(r.porMes).reduce((s, p) => s + p.tardes + p.descansos, 0);
-}
