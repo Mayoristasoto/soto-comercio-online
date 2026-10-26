@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, FileArchive, AlertTriangle, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { Loader2, Download, FileArchive, AlertTriangle, TrendingDown, TrendingUp, Users, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, subMonths, endOfMonth } from "date-fns";
 import { generarPDFPuntualidad, type Evento, type ResumenEmpleado } from "@/utils/informePuntualidadPDF";
@@ -143,7 +143,20 @@ export default function InformePuntualidad() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">{resumen.length} empleados con infracciones</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <CardTitle className="text-base">{resumen.length} empleados con infracciones</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDireccion(d => (d === "asc" ? "desc" : "asc"))}
+            disabled={loading || !resumen.length}
+            aria-label="Cambiar sentido del orden"
+            title="Cambiar sentido del orden"
+          >
+            {direccion === "asc" ? <ArrowUp className="h-4 w-4 mr-1" /> : <ArrowDown className="h-4 w-4 mr-1" />}
+            {orden === "nombre" ? (direccion === "asc" ? "A a Z" : "Z a A") : (direccion === "asc" ? "Menor a mayor" : "Mayor a menor")}
+          </Button>
+        </CardHeader>
         <CardContent className="overflow-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
