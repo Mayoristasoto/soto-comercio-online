@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,10 +13,31 @@ import { toast } from "sonner";
 import { format, startOfMonth, subMonths, endOfMonth } from "date-fns";
 import { generarPDFPuntualidad, type Evento, type ResumenEmpleado } from "@/utils/informePuntualidadPDF";
 import JSZip from "jszip";
-import { filtrarOrdenarPuntualidad, type TipoPuntualidad, type OrdenPuntualidad } from "@/lib/puntualidadFiltros";
+import { filtrarOrdenarPuntualidad, tendenciaPuntualidad, columnaDeMes, type TipoPuntualidad, type OrdenPuntualidad } from "@/lib/puntualidadFiltros";
 
 const fmt = (d: Date) => format(d, "yyyy-MM-dd");
 const TODAS = "todas";
+
+function CabeceraOrden({ columna, orden, direccion, onOrdenar, className, sub, children }: {
+  columna: OrdenPuntualidad; orden: OrdenPuntualidad; direccion: string;
+  onOrdenar: (c: OrdenPuntualidad) => void; className?: string; sub?: string; children: ReactNode;
+}) {
+  const activo = orden === columna;
+  return (
+    <th className={cn("p-2", className)}>
+      <button
+        type="button"
+        onClick={() => onOrdenar(columna)}
+        title={activo ? "Cambiar sentido del orden" : "Ordenar por esta columna"}
+        className={cn("inline-flex items-center gap-1 hover:text-primary", activo && "text-primary")}
+      >
+        {children}
+        {activo && (direccion === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
+      </button>
+      {sub && <div className="text-[10px] font-normal text-muted-foreground">{sub}</div>}
+    </th>
+  );
+}
 
 export default function InformePuntualidad() {
   const hoy = new Date();
@@ -69,13 +91,13 @@ export default function InformePuntualidad() {
       r.eventos.sort((a, b) => a.fecha.localeCompare(b.fecha));
     }
     const q = buscar.trim().toLowerCase();
-    return filtrarOrdenarPuntualidad(arr.filter(r => !q || r.nombre.toLowerCase().includes(q)), tipo, orden, direccion === "asc");
-  }, [eventos, sucursal, buscar, tipo, orden, direccion]);
+    return filtrarOrdenarPuntualidad(arr.filter(r => !q || r.nombre.toLowerCase().includes(q)), tipo, orden, direccion === "asc", meses);
+  }, [eventos, sucursal, buscar, tipo, orden, direccion, meses]);
 
-  const tendencia = (r: ResumenEmpleado) => {
-    const v = meses.map(k => (r.porMes[k]?.tardes || 0) + (r.porMes[k]?.descansos || 0));
-    if (v.length < 2) return 0;
-    return v[v.length - 1] - v[v.length - 2];
+  const ordenarPor = (columna: OrdenPuntualidad) => {
+    if (orden === columna) { setDireccion(d => (d === "asc" ? "desc" : "asc")); return; }
+    setOrden(columna);
+    setDireccion(columna === "nombre" ? "asc" : "desc");
   };
 
   const descargar = (r: ResumenEmpleado) => {
@@ -128,7 +150,7 @@ export default function InformePuntualidad() {
           <div className="w-48 max-w-full"><div className="text-xs mb-1">Ordenar por</div>
             <Select value={orden} onValueChange={v => setOrden(v as OrdenPuntualidad)}>
               <SelectTrigger aria-label="Ordenar por"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="cantidad">Cantidad de incidencias</SelectItem><SelectItem value="minutos">Minutos acumulados</SelectItem><SelectItem value="nombre">Nombre del empleado</SelectItem></SelectContent>
+              <SelectContent><SelectItem value="cantidad">Cantidad de incidencias</SelectItem><SelectItem value="minutos">Minutos acumulados</SelectItem><SelectItem value="nombre">Nombre del empleado</SelectItem><SelectItem value="tendencia">Tendencia</SelectItem>{meses.map(k => <SelectItem key={k} value={columnaDeMes(k)}>Incidencias de {k}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="w-48 max-w-full"><div className="text-xs mb-1">Orden</div>
@@ -161,15 +183,20 @@ export default function InformePuntualidad() {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b">
-                <th className="text-left p-2">Empleado</th>
-                {meses.map(k => <th key={k} className="p-2 text-center whitespace-nowrap">{k}<div className="text-[10px] font-normal text-muted-foreground">{tipo === "todos" ? "tarde / desc." : tipo === "tarde" ? "llegadas tarde" : "excesos de descanso"}</div></th>)}
-                <th className="p-2">Tendencia</th>
+                <CabeceraOrden columna="nombre" orden={orden} direccion={direccion} onOrdenar={ordenarPor} className="text-left">Empleado</CabeceraOrden>
+                {meses.map(k => (
+                  <CabeceraOrden key={k} columna={columnaDeMes(k)} orden={orden} direccion={direccion} onOrdenar={ordenarPor}
+                    className="text-center" sub={tipo === "todos" ? "tarde / desc." : tipo === "tarde" ? "llegadas tarde" : "excesos de descanso"}>
+                    {k}
+                  </CabeceraOrden>
+                ))}
+                <CabeceraOrden columna="tendencia" orden={orden} direccion={direccion} onOrdenar={ordenarPor}>Tendencia</CabeceraOrden>
                 <th className="p-2"></th>
               </tr>
             </thead>
             <tbody>
               {resumen.map(r => {
-                const t = tendencia(r);
+                const t = tendenciaPuntualidad(r, meses);
                 return (
                   <tr key={r.empleado_id} className="border-b hover:bg-muted/50">
                     <td className="p-2">
