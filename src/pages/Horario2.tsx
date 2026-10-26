@@ -10,7 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
+const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
+const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
+const CHIPS = ["bg-primary/10 border-primary/30 text-primary", "bg-secondary/10 border-secondary/30 text-secondary", "bg-accent/10 border-accent/30 text-accent", "bg-muted border-border text-foreground"];
+const iniciales = (n: string) => n.split(",").map(s => s.trim()[0] || "").reverse().join("").toUpperCase();
 import { toast } from "sonner";
 import { validarTurnos, calcularCobertura, avisosCobertura, finDescanso, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
@@ -95,23 +99,28 @@ export default function Horario2() {
   };
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-bold mr-auto">Horario 2</h1>
-        <Button variant="outline" size="icon" onClick={() => setSemana(sumar(semana, -7))}><ChevronLeft className="h-4 w-4" /></Button>
-        <span className="text-sm font-medium">Semana {semana.split("-").reverse().join("/")} – {sumar(semana, 6).split("-").reverse().join("/")}</span>
-        <Button variant="outline" size="icon" onClick={() => setSemana(sumar(semana, 7))}><ChevronRight className="h-4 w-4" /></Button>
+    <div className="space-y-4 p-4 md:p-6 bg-muted/30 min-h-full">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 shadow-sm">
+        <h1 className="text-2xl font-bold mr-auto text-foreground">Gestión de Turnos <span className="text-sm font-normal text-muted-foreground">· Horario 2</span></h1>
+        <div className="flex items-center gap-1 rounded-lg border px-2 py-1">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium px-1">Semana del {semana.split("-").reverse().join("/")} al {sumar(semana, 6).split("-").reverse().join("/")}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSemana(sumar(semana, -7))}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSemana(sumar(semana, 7))}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
         <Select value={filtroSuc} onValueChange={setFiltroSuc}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="todas">Todas las sucursales</SelectItem>{sucursales.map(s => <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>)}</SelectContent></Select>
         <Select value={filtroEstado} onValueChange={setFiltroEstado}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="todos">Todos los estados</SelectItem><SelectItem value="sin_plan">Sin semana creada</SelectItem>{Object.entries(ESTADOS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent></Select>
-        <Button variant="ghost" size="sm" onClick={() => setCompacta(!compacta)}>{compacta ? "Vista detallada" : "Vista compacta"}</Button>
+        <Button variant="outline" size="sm" onClick={() => setCompacta(!compacta)}>{compacta ? "Vista detallada" : "Vista compacta"}</Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        {Object.entries(ESTADOS).map(([k, v]) => (
-          <Card key={k}><CardContent className="p-3"><div className="text-xs text-muted-foreground">{v.label}</div><div className="text-2xl font-bold">{conteo[k] || 0}</div></CardContent></Card>
-        ))}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {Object.entries(ESTADOS).map(([k, v]) => { const I = ICONOS[k]; return (
+          <Card key={k} className="rounded-xl shadow-sm"><CardContent className="p-4 flex items-center gap-3">
+            <div className={`h-11 w-11 rounded-full flex items-center justify-center ${v.cls}`}><I className="h-5 w-5" /></div>
+            <div><div className="text-sm font-medium">{v.label}</div><div className="text-2xl font-bold leading-tight">{conteo[k] || 0}</div><div className="text-xs text-muted-foreground">{SUB[k]}</div></div>
+          </CardContent></Card>); })}
       </div>
 
       <Tabs defaultValue="semana">
@@ -169,10 +178,10 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const ausente = (eid: string, f: string) => ausencias.some((a: AusenciaH2) => a.empleado_id === eid && a.desde <= f && f <= a.hasta);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="rounded-xl shadow-sm overflow-hidden">
+      <CardHeader className="pb-2 bg-muted/40 border-b">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-lg mr-2">{sucursal.nombre}</CardTitle>
+          <CardTitle className="text-lg mr-2 flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{sucursal.nombre}</CardTitle>
           {plan ? <Badge className={ESTADOS[plan.estado].cls}>{ESTADOS[plan.estado].label} · v{plan.version}</Badge> : <Badge variant="outline">Sin semana creada</Badge>}
           {plan?.excepcion_motivo && <Badge variant="destructive">Publicado con excepción</Badge>}
           <div className="ml-auto flex flex-wrap gap-2">
@@ -192,16 +201,16 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       {plan && <CardContent className="space-y-3">
         <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
-            <thead><tr className="text-muted-foreground"><th className="text-left p-1 min-w-40">Empleado</th>{dias.map((d, i) => <th key={d} className="p-1 min-w-24">{DIAS[i]} {d.slice(8)}/{d.slice(5, 7)}</th>)}</tr></thead>
+            <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div></th>)}</tr></thead>
             <tbody>{empIds.map((eid: string) => (
               <tr key={eid} className="border-t">
-                <td className="p-1 font-medium">{nombreEmp(eid)}<div className="text-muted-foreground font-normal">{nombrePuesto(empleados.find((e: any) => e.id === eid)?.puesto_id)}</div></td>
+                <td className="p-2"><div className="flex items-center gap-2"><div className="h-8 w-8 shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center font-semibold">{iniciales(nombreEmp(eid))}</div><div><div className="font-medium">{nombreEmp(eid)}</div><div className="text-muted-foreground">{nombrePuesto(empleados.find((e: any) => e.id === eid)?.puesto_id)}</div></div></div></td>
                 {dias.map(f => {
                   const del = tp.filter((t: any) => t.empleado_id === eid && t.fecha === f);
                   const aus = ausente(eid, f);
-                  return <td key={f} className="p-1 align-top">
+                  return <td key={f} className="p-1.5 align-middle">
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
-                    {del.map((t: any) => <button key={t.id} disabled={!editable} onClick={() => setEdit(t)} className="w-full text-left rounded bg-primary/10 hover:bg-primary/20 px-1 py-0.5 mb-1">
+                    {del.map((t: any) => <button key={t.id} disabled={!editable} onClick={() => setEdit(t)} className={`w-full text-center rounded-md border px-1 py-1 mb-1 hover:brightness-95 ${CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]}`}>
                       <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
                       {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
                     </button>)}
@@ -215,14 +224,14 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         </div>
 
         <div className="grid md:grid-cols-3 gap-3">
-          <div className="md:col-span-2 rounded border p-2">
+          <div className="md:col-span-2 rounded-xl border bg-card p-3">
             <div className="flex items-center gap-2 mb-2"><span className="font-semibold text-sm">Cobertura por franja de {cfg.franja} min</span>
               <Select value={diaCob} onValueChange={setDiaCob}><SelectTrigger className="h-7 w-32 ml-auto"><SelectValue /></SelectTrigger><SelectContent>{dias.map((d, i) => <SelectItem key={d} value={d}>{DIAS[i]} {d.slice(8)}</SelectItem>)}</SelectContent></Select></div>
             {!cob.length ? <p className="text-xs text-muted-foreground">Sin turnos ese día.</p> :
               <div className="max-h-60 overflow-auto"><table className="w-full text-xs"><thead><tr className="text-muted-foreground"><th className="text-left">Franja</th><th className="text-left">Puesto</th><th>Requeridos</th><th>Asignados</th><th>Diferencia</th></tr></thead>
                 <tbody>{cob.map((c, i) => <tr key={i} className={c.diferencia !== null && c.diferencia < 0 ? "text-destructive font-semibold" : ""}><td>{c.desde}–{c.hasta}</td><td>{nombrePuesto(c.puesto_id)}</td><td className="text-center">{c.requeridos ?? "sin mínimo"}</td><td className="text-center">{c.asignados}</td><td className="text-center">{c.diferencia ?? "—"}</td></tr>)}</tbody></table></div>}
           </div>
-          <div className="rounded border p-2 space-y-1">
+          <div className="rounded-xl border bg-card p-3 space-y-1">
             <div className="font-semibold text-sm">Advertencias ({lista.length})</div>
             {!lista.length && <p className="text-xs text-muted-foreground">Sin problemas detectados.</p>}
             <div className="max-h-60 overflow-auto space-y-1">{lista.map((a: any, i: number) => <div key={i} className={`text-xs rounded px-1 ${a.critico ? "bg-destructive/10 text-destructive" : "bg-muted"}`}>{a.fecha.slice(8)}/{a.fecha.slice(5, 7)} {a.empleado_id ? nombreEmp(a.empleado_id) + ": " : ""}{a.mensaje}</div>)}</div>
