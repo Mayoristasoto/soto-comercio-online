@@ -178,10 +178,10 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const ausente = (eid: string, f: string) => ausencias.some((a: AusenciaH2) => a.empleado_id === eid && a.desde <= f && f <= a.hasta);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="rounded-xl shadow-sm overflow-hidden">
+      <CardHeader className="pb-2 bg-muted/40 border-b">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-lg mr-2">{sucursal.nombre}</CardTitle>
+          <CardTitle className="text-lg mr-2 flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{sucursal.nombre}</CardTitle>
           {plan ? <Badge className={ESTADOS[plan.estado].cls}>{ESTADOS[plan.estado].label} · v{plan.version}</Badge> : <Badge variant="outline">Sin semana creada</Badge>}
           {plan?.excepcion_motivo && <Badge variant="destructive">Publicado con excepción</Badge>}
           <div className="ml-auto flex flex-wrap gap-2">
@@ -201,16 +201,16 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       {plan && <CardContent className="space-y-3">
         <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
-            <thead><tr className="text-muted-foreground"><th className="text-left p-1 min-w-40">Empleado</th>{dias.map((d, i) => <th key={d} className="p-1 min-w-24">{DIAS[i]} {d.slice(8)}/{d.slice(5, 7)}</th>)}</tr></thead>
+            <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div></th>)}</tr></thead>
             <tbody>{empIds.map((eid: string) => (
               <tr key={eid} className="border-t">
-                <td className="p-1 font-medium">{nombreEmp(eid)}<div className="text-muted-foreground font-normal">{nombrePuesto(empleados.find((e: any) => e.id === eid)?.puesto_id)}</div></td>
+                <td className="p-2"><div className="flex items-center gap-2"><div className="h-8 w-8 shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center font-semibold">{iniciales(nombreEmp(eid))}</div><div><div className="font-medium">{nombreEmp(eid)}</div><div className="text-muted-foreground">{nombrePuesto(empleados.find((e: any) => e.id === eid)?.puesto_id)}</div></div></div></td>
                 {dias.map(f => {
                   const del = tp.filter((t: any) => t.empleado_id === eid && t.fecha === f);
                   const aus = ausente(eid, f);
-                  return <td key={f} className="p-1 align-top">
+                  return <td key={f} className="p-1.5 align-middle">
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
-                    {del.map((t: any) => <button key={t.id} disabled={!editable} onClick={() => setEdit(t)} className="w-full text-left rounded bg-primary/10 hover:bg-primary/20 px-1 py-0.5 mb-1">
+                    {del.map((t: any) => <button key={t.id} disabled={!editable} onClick={() => setEdit(t)} className={`w-full text-center rounded-md border px-1 py-1 mb-1 hover:brightness-95 ${CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]}`}>
                       <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
                       {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
                     </button>)}
@@ -224,14 +224,14 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         </div>
 
         <div className="grid md:grid-cols-3 gap-3">
-          <div className="md:col-span-2 rounded border p-2">
+          <div className="md:col-span-2 rounded-xl border bg-card p-3">
             <div className="flex items-center gap-2 mb-2"><span className="font-semibold text-sm">Cobertura por franja de {cfg.franja} min</span>
               <Select value={diaCob} onValueChange={setDiaCob}><SelectTrigger className="h-7 w-32 ml-auto"><SelectValue /></SelectTrigger><SelectContent>{dias.map((d, i) => <SelectItem key={d} value={d}>{DIAS[i]} {d.slice(8)}</SelectItem>)}</SelectContent></Select></div>
             {!cob.length ? <p className="text-xs text-muted-foreground">Sin turnos ese día.</p> :
               <div className="max-h-60 overflow-auto"><table className="w-full text-xs"><thead><tr className="text-muted-foreground"><th className="text-left">Franja</th><th className="text-left">Puesto</th><th>Requeridos</th><th>Asignados</th><th>Diferencia</th></tr></thead>
                 <tbody>{cob.map((c, i) => <tr key={i} className={c.diferencia !== null && c.diferencia < 0 ? "text-destructive font-semibold" : ""}><td>{c.desde}–{c.hasta}</td><td>{nombrePuesto(c.puesto_id)}</td><td className="text-center">{c.requeridos ?? "sin mínimo"}</td><td className="text-center">{c.asignados}</td><td className="text-center">{c.diferencia ?? "—"}</td></tr>)}</tbody></table></div>}
           </div>
-          <div className="rounded border p-2 space-y-1">
+          <div className="rounded-xl border bg-card p-3 space-y-1">
             <div className="font-semibold text-sm">Advertencias ({lista.length})</div>
             {!lista.length && <p className="text-xs text-muted-foreground">Sin problemas detectados.</p>}
             <div className="max-h-60 overflow-auto space-y-1">{lista.map((a: any, i: number) => <div key={i} className={`text-xs rounded px-1 ${a.critico ? "bg-destructive/10 text-destructive" : "bg-muted"}`}>{a.fecha.slice(8)}/{a.fecha.slice(5, 7)} {a.empleado_id ? nombreEmp(a.empleado_id) + ": " : ""}{a.mensaje}</div>)}</div>
