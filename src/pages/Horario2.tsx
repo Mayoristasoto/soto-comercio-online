@@ -184,10 +184,11 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const [diaCob, setDiaCob] = useState(semana);
   const [busy, setBusy] = useState(false);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
+  const [seleccion, setSeleccion] = useState<string[]>([]);
   const [quitar, setQuitar] = useState<any>(null);
   const [motivoQuitar, setMotivoQuitar] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor));
-  useEffect(() => setDiaCob(semana), [semana]);
+  useEffect(() => { setDiaCob(semana); setSeleccion([]); }, [semana]);
   const tp = plan ? turnos.filter((t: any) => t.plan_id === plan.id) : [];
   const editable = esRRHH && plan && ["borrador", "devuelto"].includes(plan.estado);
   const lista = plan ? avisos(plan) : [];
