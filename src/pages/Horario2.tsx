@@ -377,9 +377,11 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   );
 }
 
-function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, editable, busy, onEdit, onExtender, puedeQuitarImportado, onQuitar }: any) {
+function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, editable, busy, onEdit, onExtender, puedeQuitarImportado, onQuitar, seleccionado, onToggleSeleccion }: any) {
   return <div className="relative group/turno">
-    <TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => onEdit(t)} className={className}>
+    <TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`}
+      onClick={(e: any) => { if (editable && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onToggleSeleccion(); } else onEdit(t); }}
+      className={`${className} ${seleccionado ? "ring-2 ring-primary ring-offset-1 shadow-md" : ""}`}>
       <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
       {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
     </TurnoArrastrable>
