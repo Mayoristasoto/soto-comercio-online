@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { validarTurnos, calcularCobertura, copiarTurnos, finDescanso, TurnoH2 } from "../src/lib/horario2";
+import { validarTurnos, calcularCobertura, copiarTurnos, finDescanso, prepararMovimientoTurno, TurnoH2 } from "../src/lib/horario2";
 
 const S = "suc1", C = "cajero";
 const t = (o: Partial<TurnoH2>): TurnoH2 => ({ empleado_id: "e1", fecha: "2026-10-26", hora_entrada: "07:30", hora_salida: "15:30", puesto_id: C, sucursal_id: S, ...o });
@@ -36,5 +36,30 @@ describe("horario2", () => {
     expect(copia[0].fecha).toBe("2026-11-02");
     expect(orig[0].fecha).toBe("2026-10-26");
     expect((copia[0] as any).id).toBeUndefined();
+  });
+  test("mover entre días y empleados conserva el registro y el descanso", () => {
+    const origen = t({ id: "turno1", descanso_inicio: "11:00", descanso_fin: "11:40" });
+    const resultado = prepararMovimientoTurno([origen], "turno1", "e2", "2026-10-27", { e2: [C] }, []);
+    expect(resultado?.turno).toEqual({ ...origen, empleado_id: "e2", fecha: "2026-10-27" });
+    expect(resultado?.avisos).toEqual([]);
+    expect(origen.empleado_id).toBe("e1");
+    expect(origen.fecha).toBe("2026-10-26");
+  });
+  test("mover no cuenta el turno de origen como superposición", () => {
+    expect(prepararMovimientoTurno([t({ id: "x" })], "x", "e1", "2026-10-27", { e1: [C] }, [])?.avisos).toEqual([]);
+  });
+  test("mover detecta superposición en destino sin reemplazar otro turno", () => {
+    const turnos = [t({ id: "x" }), t({ id: "y", empleado_id: "e2" })];
+    expect(prepararMovimientoTurno(turnos, "x", "e2", "2026-10-26", { e2: [C] }, [])?.avisos.some(a => a.tipo === "superposicion")).toBe(true);
+    expect(turnos[1].id).toBe("y");
+  });
+  test("mover conserva validación de puesto habilitado", () => {
+    expect(prepararMovimientoTurno([t({ id: "x" })], "x", "e2", "2026-10-27", { e2: ["repositor"] }, [])?.avisos.some(a => a.tipo === "puesto_no_habilitado")).toBe(true);
+  });
+  test("mover conserva validación de ausencia aprobada", () => {
+    expect(prepararMovimientoTurno([t({ id: "x" })], "x", "e2", "2026-10-27", { e2: [C] }, [{ empleado_id: "e2", desde: "2026-10-27", hasta: "2026-10-27", motivo: "vacaciones" }])?.avisos.some(a => a.tipo === "ausencia")).toBe(true);
+  });
+  test("soltar en origen no cambia nada", () => {
+    expect(prepararMovimientoTurno([t({ id: "x" })], "x", "e1", "2026-10-26", { e1: [C] }, [])).toBeNull();
   });
 });

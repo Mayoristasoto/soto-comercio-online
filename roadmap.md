@@ -1,5 +1,9 @@
 # Roadmap
 
+## Arrastrar turnos en Horario 2
+- [ ] Mover turnos entre días y empleados de una sucursal, conservando horario y descanso.
+- [ ] Mantener permisos, estados editables y validaciones existentes; probar el movimiento y guardado.
+
 ## Exportación visual diaria de descansos
 - [x] Incorporar línea de tiempo por empleado del día y sucursal seleccionados.
 - [x] Exportar PDF del día y PDF del período, organizado día por día, con franjas y nombres superpuestos.

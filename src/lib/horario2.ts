@@ -88,3 +88,17 @@ export function copiarTurnos(turnos: TurnoH2[], diasDesfase: number, sucursalId:
     return { ...t, fecha: f, sucursal_id: sucursalId };
   });
 }
+
+/** Mueve un registro, sin copiarlo ni cambiar su horario, descanso o puesto. */
+export function prepararMovimientoTurno<T extends TurnoH2>(
+  turnos: T[], id: string, empleadoId: string, fecha: string,
+  habilitados: Record<string, string[]>, ausencias: AusenciaH2[],
+): { turno: T; avisos: Aviso[] } | null {
+  const origen = turnos.find(t => t.id === id);
+  if (!origen || (origen.empleado_id === empleadoId && origen.fecha === fecha)) return null;
+  const turno = { ...origen, empleado_id: empleadoId, fecha };
+  const proyectados = turnos.map(t => t.id === id ? turno : t);
+  const avisos = validarTurnos(proyectados, habilitados, ausencias)
+    .filter(a => a.empleado_id === empleadoId && a.fecha === fecha && a.critico);
+  return { turno, avisos };
+}
