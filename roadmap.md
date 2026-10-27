@@ -1,5 +1,9 @@
 # Roadmap
 
+## Quitar turnos importados aprobados
+- [ ] Habilitar eliminación confirmada para RRHH mediante nueva versión en borrador, conservando la aprobación original.
+- [ ] Verificar permisos, conservación de turnos y controles visibles; guardado con sesión externa sujeto a disponibilidad.
+
 ## Arrastrar turnos en Horario 2
 - [x] Mover turnos entre días y empleados de una sucursal, conservando horario y descanso.
 - [x] Mantener permisos y estados editables; 14 pruebas de lógica y arrastre visual aislado verificados, compilación correcta.
