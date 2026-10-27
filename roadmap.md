@@ -1,8 +1,9 @@
 # Roadmap
 
 ## Quitar turnos importados aprobados
-- [ ] Habilitar eliminación confirmada para RRHH mediante nueva versión en borrador, conservando la aprobación original.
-- [ ] Verificar permisos, conservación de turnos y controles visibles; guardado con sesión externa sujeto a disponibilidad.
+- [x] Habilitar eliminación confirmada para RRHH mediante nueva versión en borrador, conservando la aprobación original.
+- [x] Verificar reglas con 19 pruebas, permisos de la función y compilación correcta.
+- [ ] Verificar eliminación integrada con sesión real: Supabase externo redirige a /auth; no se eliminaron registros durante las pruebas.
 
 ## Arrastrar turnos en Horario 2
 - [x] Mover turnos entre días y empleados de una sucursal, conservando horario y descanso.

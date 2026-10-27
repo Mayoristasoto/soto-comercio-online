@@ -9,3 +9,4 @@
 - Horario 2 schedules live in h2_* tables; state transitions (send, approve, return, publish, new version, copy, template) go only through SECURITY DEFINER h2_* RPCs, and the latest published version wins over fixed shifts when resolving a day's schedule, so the kiosk and lateness checks follow what RRHH published.
 - Horario 2 validations and coverage are computed in the pure module src/lib/horario2.ts shared by grid and panels, so warnings and coverage agree.
 - Horario 2 drag-and-drop moves the existing shift within its branch plan through the same RLS-protected update as the editor, preserving schedule fields and using the shared pure validation before saving, so moves do not bypass planning restrictions.
+- Removing an imported approved Horario 2 shift uses the RRHH-only SECURITY DEFINER RPC to atomically create a draft excluding that shift and preserve the approved original; never widen direct delete policies for approved plans.

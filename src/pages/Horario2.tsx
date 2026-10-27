@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
+import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
 import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
@@ -181,6 +182,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const [diaCob, setDiaCob] = useState(semana);
   const [busy, setBusy] = useState(false);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
+  const [quitar, setQuitar] = useState<any>(null);
+  const [motivoQuitar, setMotivoQuitar] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor));
   useEffect(() => setDiaCob(semana), [semana]);
   const tp = plan ? turnos.filter((t: any) => t.plan_id === plan.id) : [];
@@ -221,6 +224,18 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     } catch (error) { err(error); } finally { setBusy(false); }
   };
   const turnoActivo = tp.find((t: any) => t.id === arrastrando);
+  const quitarAprobado = async () => {
+    if (!quitar || !puedeQuitarImportadoAprobado(esRRHH, plan, quitar) || !motivoQuitar.trim()) return;
+    setBusy(true);
+    try {
+      const { data, error } = await db.rpc("h2_quitar_importado_aprobado", { _turno: quitar.id, _motivo: motivoQuitar.trim() });
+      if (error) return err(error);
+      if (!data) return toast.error("No se pudo quitar el turno. Recargá la semana.");
+      setQuitar(null); setMotivoQuitar("");
+      toast.success("Turno quitado de la nueva versión en borrador; la aprobación original se conservó");
+      await recargar();
+    } catch (error) { err(error); } finally { setBusy(false); }
+  };
 
   return (
     <Card className="rounded-xl shadow-sm overflow-hidden">
@@ -256,10 +271,10 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
                   const aus = ausente(eid, f);
                   return <CeldaTurno key={f} empleadoId={eid} fecha={f} disabled={!editable || busy}>
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
-                    {del.map((t: any) => <TurnoArrastrable key={t.id} id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => setEdit(t)} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]}>
+                    {del.map((t: any) => <div key={t.id}><TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => setEdit(t)} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]}>
                       <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
                       {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
-                    </TurnoArrastrable>)}
+                    </TurnoArrastrable>{puedeQuitarImportadoAprobado(esRRHH, plan, t) && <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" disabled={busy} title="Quitar turno importado" aria-label={`Quitar turno importado de ${nombreEmp(eid)} el ${f}`} onClick={() => { setQuitar(t); setMotivoQuitar(""); }}><Trash2 className="h-4 w-4" /></Button>}</div>)}
                     {!del.length && !aus && (editable ? <Button variant="outline" size="sm" disabled={busy} aria-label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="h-7 w-full border-dashed text-muted-foreground">+</Button> : <span className="text-muted-foreground">—</span>)}
                   </CeldaTurno>;
                 })}
@@ -292,6 +307,17 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       </CardContent>}
 
       {edit && <EditorTurno turno={edit} cfg={cfg} puestos={puestos} sucursales={sucursales} habil={habil} nombreEmp={nombreEmp} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); recargar(); }} />}
+
+      <Dialog open={!!quitar} onOpenChange={o => { if (!o && !busy) setQuitar(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Quitar turno importado aprobado</DialogTitle></DialogHeader>
+          {quitar && <p className="text-sm font-medium">{nombreEmp(quitar.empleado_id)} · {quitar.fecha.split("-").reverse().join("/")} · {hm(quitar.hora_entrada)}–{hm(quitar.hora_salida)}</p>}
+          <p className="text-sm text-muted-foreground">La semana aprobada queda como respaldo. Se crea la versión {plan?.version + 1} en borrador sin este turno y deberá volver a validación.</p>
+          <Label htmlFor={`motivo-quitar-${sucursal.id}`}>Motivo</Label>
+          <Textarea id={`motivo-quitar-${sucursal.id}`} value={motivoQuitar} onChange={e => setMotivoQuitar(e.target.value)} placeholder="Motivo de la eliminación" disabled={busy} />
+          <DialogFooter><Button variant="outline" disabled={busy} onClick={() => setQuitar(null)}>Cancelar</Button><Button variant="destructive" disabled={busy || !motivoQuitar.trim()} onClick={quitarAprobado}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}Quitar turno</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!accion} onOpenChange={o => !o && setAccion(null)}>
         <DialogContent>
