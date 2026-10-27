@@ -14051,6 +14051,10 @@ export type Database = {
         Args: { _excepcion?: string; _plan: string }
         Returns: undefined
       }
+      h2_quitar_importado_aprobado: {
+        Args: { _motivo: string; _turno: string }
+        Returns: string
+      }
       h2_resolver: {
         Args: { _aprobar: boolean; _obs: string; _plan: string }
         Returns: undefined
