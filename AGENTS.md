@@ -10,3 +10,4 @@
 - Horario 2 validations and coverage are computed in the pure module src/lib/horario2.ts shared by grid and panels, so warnings and coverage agree.
 - Horario 2 drag-and-drop moves the existing shift within its branch plan through the same RLS-protected update as the editor, preserving schedule fields and using the shared pure validation before saving, so moves do not bypass planning restrictions.
 - Removing an imported approved Horario 2 shift uses the RRHH-only SECURITY DEFINER RPC to atomically create a draft excluding that shift and preserve the approved original; never widen direct delete policies for approved plans.
+- Consecutive-day extensions project daily copies through the shared shift validations and persist the source plus copies in one RLS-protected upsert, so failures cannot leave partial extensions or overwrite destination shifts.

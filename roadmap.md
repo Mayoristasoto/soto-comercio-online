@@ -1,5 +1,10 @@
 # Roadmap
 
+## Extender turno a días consecutivos
+- [x] Agregar flechas al abrir un turno para abarcar hasta tres días en la misma semana.
+- [x] Guardar sin reemplazar otros turnos, validando ausencias, puestos y superposiciones; 26 pruebas correctas y compilación sin errores.
+- [ ] Verificar guardado integrado con sesión real: Supabase externo no permite restaurar una sesión autenticada.
+
 ## Quitar turnos importados aprobados
 - [x] Habilitar eliminación confirmada para RRHH mediante nueva versión en borrador, conservando la aprobación original.
 - [x] Verificar reglas con 19 pruebas, permisos de la función y compilación correcta.
