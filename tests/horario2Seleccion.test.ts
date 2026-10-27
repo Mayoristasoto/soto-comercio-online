@@ -21,7 +21,7 @@ describe("prepararMovimientoMultiple", () => {
     const base = [turno("a", "e1", "2026-10-26"), turno("b", "e1", "2026-10-27")];
     const r = prepararMovimientoMultiple(base, ["a", "b"], "a", EMP, "e1", "2026-10-28", habil, []);
     expect(r.error).toBeNull();
-    expect(r.turnos.map(t => t.fecha).sort()).toEqual(["2026-10-30", "2026-10-31"]);
+    expect(r.turnos.map(t => t.fecha).sort()).toEqual(["2026-10-28", "2026-10-29"]);
   });
 
   it("rechaza cuando el desplazamiento saca un turno de la grilla", () => {
