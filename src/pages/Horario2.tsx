@@ -237,9 +237,23 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       await recargar();
     } catch (error) { err(error); } finally { setBusy(false); }
   };
+  const extender = async (t: any, dir: -1 | 1) => {
+    if (!editable || busy) return;
+    const extension = prepararExtensionTurno(t, dir === -1 ? 1 : 0, dir === 1 ? 1 : 0, semana, turnos as TurnoH2[], habil, ausencias);
+    if (extension.error) return toast.error(extension.error);
+    const row = { plan_id: t.plan_id, empleado_id: t.empleado_id, fecha: t.fecha, hora_entrada: t.hora_entrada, hora_salida: t.hora_salida, puesto_id: t.puesto_id, sucursal_id: t.sucursal_id, descanso_inicio: t.descanso_inicio, descanso_fin: t.descanso_fin, observaciones: t.observaciones };
+    const filas = extension.turnos.map(copia => ({ ...row, fecha: copia.fecha, id: copia.id || crypto.randomUUID() }));
+    setBusy(true);
+    try {
+      const { data, error } = await db.from("h2_turnos").upsert(filas, { onConflict: "id" }).select("id");
+      if (error) return err(error);
+      if (data?.length !== filas.length) return toast.error("No se pudo extender el turno completo. Recargá la semana.");
+      const destino = (dir === -1 ? sumar(t.fecha, -1) : sumar(t.fecha, 1)).split("-").reverse().join("/");
+      toast.success(`Turno extendido al ${destino}`);
+      await recargar();
+    } catch (error) { err(error); } finally { setBusy(false); }
+  };
 
-  return (
-    <Card className="rounded-xl shadow-sm overflow-hidden">
       <CardHeader className="pb-2 bg-muted/40 border-b">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle className="text-lg mr-2 flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{sucursal.nombre}</CardTitle>
