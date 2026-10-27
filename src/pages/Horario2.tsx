@@ -14,6 +14,7 @@ import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useS
 import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
 import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
 import { prepararExtensionTurno } from "@/lib/horario2Extension";
+import { prepararMovimientoMultiple } from "@/lib/horario2Seleccion";
 import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
@@ -183,10 +184,11 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const [diaCob, setDiaCob] = useState(semana);
   const [busy, setBusy] = useState(false);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
+  const [seleccion, setSeleccion] = useState<string[]>([]);
   const [quitar, setQuitar] = useState<any>(null);
   const [motivoQuitar, setMotivoQuitar] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor));
-  useEffect(() => setDiaCob(semana), [semana]);
+  useEffect(() => { setDiaCob(semana); setSeleccion([]); }, [semana]);
   const tp = plan ? turnos.filter((t: any) => t.plan_id === plan.id) : [];
   const editable = esRRHH && plan && ["borrador", "devuelto"].includes(plan.estado);
   const lista = plan ? avisos(plan) : [];
@@ -210,7 +212,24 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     if (!editable || busy || !over) return;
     const destino = over.data.current;
     if (!destino || !dias.includes(destino.fecha) || !empIds.includes(destino.empleadoId)) return;
-    const movimiento = prepararMovimientoTurno(turnos as TurnoH2[], String(active.id), destino.empleadoId, destino.fecha, habil, ausencias);
+    const anclaId = String(active.id);
+    if (seleccion.length > 1 && seleccion.includes(anclaId)) {
+      const multiple = prepararMovimientoMultiple(turnos as TurnoH2[], seleccion, anclaId, empIds, destino.empleadoId, destino.fecha, habil, ausencias);
+      if (multiple.error) return toast.error(multiple.error);
+      if (!multiple.turnos.every(t => tp.some((x: any) => x.id === t.id))) return;
+      setBusy(true);
+      try {
+        const filas = multiple.turnos.map(t => { const { id, ...resto } = t as any; return { id, empleado_id: resto.empleado_id, fecha: resto.fecha }; });
+        const { data, error } = await db.from("h2_turnos").upsert(filas, { onConflict: "id" }).select("id");
+        if (error) return err(error);
+        if (data?.length !== filas.length) return toast.error("No se pudieron mover todos los turnos. Recargá la semana.");
+        setSeleccion([]);
+        toast.success(`${filas.length} turnos movidos juntos`);
+        await recargar();
+      } catch (error) { err(error); } finally { setBusy(false); }
+      return;
+    }
+    const movimiento = prepararMovimientoTurno(turnos as TurnoH2[], anclaId, destino.empleadoId, destino.fecha, habil, ausencias);
     if (!movimiento || !tp.some((t: any) => t.id === movimiento.turno.id)) return;
     if (movimiento.avisos.length) return toast.error(movimiento.avisos[0].mensaje);
     setBusy(true);
@@ -276,8 +295,15 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         {plan?.motivo_version && <p className="text-xs text-muted-foreground">Versión {plan.version}: {plan.motivo_version}</p>}
       </CardHeader>
       {plan && <CardContent className="space-y-3">
+        {editable && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+          {seleccion.length > 1 ? <>
+            <Badge className="bg-primary/15 text-primary">{seleccion.length} turnos seleccionados</Badge>
+            <span>Arrastrá cualquiera de ellos para moverlos juntos, conservando las distancias.</span>
+            <Button variant="ghost" size="sm" className="h-6 px-2 ml-auto" onClick={() => setSeleccion([])}>Limpiar selección</Button>
+          </> : <span>Tip: con <kbd className="rounded border bg-card px-1 font-semibold">Ctrl</kbd>+clic seleccionás varios turnos y los arrastrás juntos, como en Excel.</span>}
+        </div>}
         <div className="overflow-x-auto">
-          <DndContext sensors={sensors} onDragStart={({ active }) => setArrastrando(String(active.id))} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
+          <DndContext sensors={sensors} onDragStart={({ active }) => { const id = String(active.id); setArrastrando(id); if (!seleccion.includes(id)) setSeleccion([]); }} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
           <table className="w-full text-xs border-collapse">
             <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div></th>)}</tr></thead>
             <tbody>{empIds.map((eid: string) => (
@@ -288,7 +314,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
                   const aus = ausente(eid, f);
                   return <CeldaTurno key={f} empleadoId={eid} fecha={f} disabled={!editable || busy}>
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
-                    {del.map((t: any) => <TurnoCelda key={t.id} t={t} eid={eid} f={f} compacta={compacta} nombreEmp={nombreEmp} nombrePuesto={nombrePuesto} editable={editable} busy={busy} onEdit={setEdit} onExtender={extender} puedeQuitarImportado={puedeQuitarImportadoAprobado(esRRHH, plan, t)} onQuitar={() => { setQuitar(t); setMotivoQuitar(""); }} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]} />)}
+                    {del.map((t: any) => <TurnoCelda key={t.id} t={t} eid={eid} f={f} compacta={compacta} nombreEmp={nombreEmp} nombrePuesto={nombrePuesto} editable={editable} busy={busy} onEdit={setEdit} onExtender={extender} puedeQuitarImportado={puedeQuitarImportadoAprobado(esRRHH, plan, t)} onQuitar={() => { setQuitar(t); setMotivoQuitar(""); }} seleccionado={seleccion.includes(t.id)} onToggleSeleccion={() => setSeleccion(sel => sel.includes(t.id) ? sel.filter(x => x !== t.id) : [...sel, t.id])} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]} />)}
                     {!del.length && !aus && (editable ? <Button variant="outline" size="sm" disabled={busy} aria-label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="h-7 w-full border-dashed text-muted-foreground">+</Button> : <span className="text-muted-foreground">—</span>)}
                   </CeldaTurno>;
                 })}
@@ -351,9 +377,11 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   );
 }
 
-function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, editable, busy, onEdit, onExtender, puedeQuitarImportado, onQuitar }: any) {
+function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, editable, busy, onEdit, onExtender, puedeQuitarImportado, onQuitar, seleccionado, onToggleSeleccion }: any) {
   return <div className="relative group/turno">
-    <TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => onEdit(t)} className={className}>
+    <TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`}
+      onClick={(e: any) => { if (editable && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onToggleSeleccion(); } else onEdit(t); }}
+      className={`${className} ${seleccionado ? "ring-2 ring-primary ring-offset-1 shadow-md" : ""}`}>
       <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
       {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
     </TurnoArrastrable>
