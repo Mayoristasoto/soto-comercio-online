@@ -212,7 +212,24 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     if (!editable || busy || !over) return;
     const destino = over.data.current;
     if (!destino || !dias.includes(destino.fecha) || !empIds.includes(destino.empleadoId)) return;
-    const movimiento = prepararMovimientoTurno(turnos as TurnoH2[], String(active.id), destino.empleadoId, destino.fecha, habil, ausencias);
+    const anclaId = String(active.id);
+    if (seleccion.length > 1 && seleccion.includes(anclaId)) {
+      const multiple = prepararMovimientoMultiple(turnos as TurnoH2[], seleccion, anclaId, empIds, destino.empleadoId, destino.fecha, habil, ausencias);
+      if (multiple.error) return toast.error(multiple.error);
+      if (!multiple.turnos.every(t => tp.some((x: any) => x.id === t.id))) return;
+      setBusy(true);
+      try {
+        const filas = multiple.turnos.map(t => { const { id, ...resto } = t as any; return { id, empleado_id: resto.empleado_id, fecha: resto.fecha }; });
+        const { data, error } = await db.from("h2_turnos").upsert(filas, { onConflict: "id" }).select("id");
+        if (error) return err(error);
+        if (data?.length !== filas.length) return toast.error("No se pudieron mover todos los turnos. Recargá la semana.");
+        setSeleccion([]);
+        toast.success(`${filas.length} turnos movidos juntos`);
+        await recargar();
+      } catch (error) { err(error); } finally { setBusy(false); }
+      return;
+    }
+    const movimiento = prepararMovimientoTurno(turnos as TurnoH2[], anclaId, destino.empleadoId, destino.fecha, habil, ausencias);
     if (!movimiento || !tp.some((t: any) => t.id === movimiento.turno.id)) return;
     if (movimiento.avisos.length) return toast.error(movimiento.avisos[0].mensaje);
     setBusy(true);
