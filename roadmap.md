@@ -1,8 +1,9 @@
 # Roadmap
 
 ## Arrastrar turnos en Horario 2
-- [ ] Mover turnos entre días y empleados de una sucursal, conservando horario y descanso.
-- [ ] Mantener permisos, estados editables y validaciones existentes; probar el movimiento y guardado.
+- [x] Mover turnos entre días y empleados de una sucursal, conservando horario y descanso.
+- [x] Mantener permisos y estados editables; 14 pruebas de lógica y arrastre visual aislado verificados, compilación correcta.
+- [ ] Verificar guardado integrado con sesión real: Supabase externo no permite restaurar una sesión autenticada.
 
 ## Exportación visual diaria de descansos
 - [x] Incorporar línea de tiempo por empleado del día y sucursal seleccionados.
