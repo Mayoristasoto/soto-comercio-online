@@ -295,6 +295,13 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         {plan?.motivo_version && <p className="text-xs text-muted-foreground">Versión {plan.version}: {plan.motivo_version}</p>}
       </CardHeader>
       {plan && <CardContent className="space-y-3">
+        {editable && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+          {seleccion.length > 1 ? <>
+            <Badge className="bg-primary/15 text-primary">{seleccion.length} turnos seleccionados</Badge>
+            <span>Arrastrá cualquiera de ellos para moverlos juntos, conservando las distancias.</span>
+            <Button variant="ghost" size="sm" className="h-6 px-2 ml-auto" onClick={() => setSeleccion([])}>Limpiar selección</Button>
+          </> : <span>Tip: con <kbd className="rounded border bg-card px-1 font-semibold">Ctrl</kbd>+clic seleccionás varios turnos y los arrastrás juntos, como en Excel.</span>}
+        </div>}
         <div className="overflow-x-auto">
           <DndContext sensors={sensors} onDragStart={({ active }) => setArrastrando(String(active.id))} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
           <table className="w-full text-xs border-collapse">
