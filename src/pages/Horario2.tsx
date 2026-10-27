@@ -351,6 +351,23 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   );
 }
 
+function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, editable, busy, onEdit, onExtender, puedeQuitarImportado, onQuitar }: any) {
+  return <div className="relative group/turno">
+    <TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => onEdit(t)} className={className}>
+      <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
+      {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
+    </TurnoArrastrable>
+    {editable && !busy && <>
+      <span className="pointer-events-none absolute -top-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-1.5 py-px text-[9px] font-medium text-primary-foreground opacity-0 shadow-sm transition-opacity group-hover/turno:opacity-100">Extender</span>
+      <button type="button" title="Extender al día anterior" aria-label={`Extender el turno de ${nombreEmp(eid)} al día anterior`} onClick={() => onExtender(t, -1)}
+        className="absolute -left-2 top-1/2 z-20 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-md opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover/turno:opacity-100"><ChevronLeft className="h-3 w-3" /></button>
+      <button type="button" title="Extender al día siguiente" aria-label={`Extender el turno de ${nombreEmp(eid)} al día siguiente`} onClick={() => onExtender(t, 1)}
+        className="absolute -right-2 top-1/2 z-20 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-md opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover/turno:opacity-100"><ChevronRight className="h-3 w-3" /></button>
+    </>}
+    {puedeQuitarImportado && <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" disabled={busy} title="Quitar turno importado" aria-label={`Quitar turno importado de ${nombreEmp(eid)} el ${f}`} onClick={onQuitar}><Trash2 className="h-4 w-4" /></Button>}
+  </div>;
+}
+
 function AgregarEmpleado({ empleados, excluir, onAdd }: any) {
   const [v, setV] = useState("none");
   return <div className="flex gap-2 mt-2"><Select value={v} onValueChange={setV}><SelectTrigger className="h-8 w-64"><SelectValue placeholder="Agregar empleado de otra sucursal" /></SelectTrigger>
