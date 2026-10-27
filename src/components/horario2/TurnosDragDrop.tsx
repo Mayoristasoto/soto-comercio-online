@@ -1,9 +1,9 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 export function TurnoArrastrable({ id, disabled, className, label, onClick, children }: {
-  id: string; disabled: boolean; className: string; label: string; onClick: () => void; children: ReactNode;
+  id: string; disabled: boolean; className: string; label: string; onClick: (e: MouseEvent) => void; children: ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id, disabled });
   return <Button ref={setNodeRef} variant="outline" disabled={disabled} {...attributes} {...listeners}

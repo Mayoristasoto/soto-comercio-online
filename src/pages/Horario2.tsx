@@ -14,6 +14,7 @@ import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useS
 import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
 import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
 import { prepararExtensionTurno } from "@/lib/horario2Extension";
+import { prepararMovimientoMultiple } from "@/lib/horario2Seleccion";
 import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
