@@ -69,3 +69,4 @@
 - [x] Alertas RRHH: tabla `alertas_rrhh` (RLS admin), generador idempotente por clave, campanita en encabezado con contador, marcar leídas, realtime habilitado
 - [x] Kiosco modo prueba para admin_rrhh sin reconocimiento facial (desde dashboard)
 - [ ] Banco de horas: UI RRHH (saldos, ajustes manuales, reglas) — pendiente definir reglas
+- [x] Horario 2: selección múltiple de turnos (Ctrl+clic) y arrastre conjunto estilo Excel vía prepararMovimientoMultiple; pendiente verificar guardado con sesión real.
