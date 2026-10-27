@@ -254,6 +254,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     } catch (error) { err(error); } finally { setBusy(false); }
   };
 
+  return (
+    <Card className="rounded-xl shadow-sm overflow-hidden">
       <CardHeader className="pb-2 bg-muted/40 border-b">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle className="text-lg mr-2 flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{sucursal.nombre}</CardTitle>
