@@ -303,7 +303,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
           </> : <span>Tip: con <kbd className="rounded border bg-card px-1 font-semibold">Ctrl</kbd>+clic seleccionás varios turnos y los arrastrás juntos, como en Excel.</span>}
         </div>}
         <div className="overflow-x-auto">
-          <DndContext sensors={sensors} onDragStart={({ active }) => setArrastrando(String(active.id))} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
+          <DndContext sensors={sensors} onDragStart={({ active }) => { const id = String(active.id); setArrastrando(id); if (!seleccion.includes(id)) setSeleccion([]); }} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
           <table className="w-full text-xs border-collapse">
             <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div></th>)}</tr></thead>
             <tbody>{empIds.map((eid: string) => (
