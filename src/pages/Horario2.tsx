@@ -237,6 +237,22 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       await recargar();
     } catch (error) { err(error); } finally { setBusy(false); }
   };
+  const extender = async (t: any, dir: -1 | 1) => {
+    if (!editable || busy) return;
+    const extension = prepararExtensionTurno(t, dir === -1 ? 1 : 0, dir === 1 ? 1 : 0, semana, turnos as TurnoH2[], habil, ausencias);
+    if (extension.error) return toast.error(extension.error);
+    const row = { plan_id: t.plan_id, empleado_id: t.empleado_id, fecha: t.fecha, hora_entrada: t.hora_entrada, hora_salida: t.hora_salida, puesto_id: t.puesto_id, sucursal_id: t.sucursal_id, descanso_inicio: t.descanso_inicio, descanso_fin: t.descanso_fin, observaciones: t.observaciones };
+    const filas = extension.turnos.map(copia => ({ ...row, fecha: copia.fecha, id: copia.id || crypto.randomUUID() }));
+    setBusy(true);
+    try {
+      const { data, error } = await db.from("h2_turnos").upsert(filas, { onConflict: "id" }).select("id");
+      if (error) return err(error);
+      if (data?.length !== filas.length) return toast.error("No se pudo extender el turno completo. Recargá la semana.");
+      const destino = (dir === -1 ? sumar(t.fecha, -1) : sumar(t.fecha, 1)).split("-").reverse().join("/");
+      toast.success(`Turno extendido al ${destino}`);
+      await recargar();
+    } catch (error) { err(error); } finally { setBusy(false); }
+  };
 
   return (
     <Card className="rounded-xl shadow-sm overflow-hidden">
@@ -272,10 +288,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
                   const aus = ausente(eid, f);
                   return <CeldaTurno key={f} empleadoId={eid} fecha={f} disabled={!editable || busy}>
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
-                    {del.map((t: any) => <div key={t.id}><TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => setEdit(t)} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]}>
-                      <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
-                      {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
-                    </TurnoArrastrable>{puedeQuitarImportadoAprobado(esRRHH, plan, t) && <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" disabled={busy} title="Quitar turno importado" aria-label={`Quitar turno importado de ${nombreEmp(eid)} el ${f}`} onClick={() => { setQuitar(t); setMotivoQuitar(""); }}><Trash2 className="h-4 w-4" /></Button>}</div>)}
+                    {del.map((t: any) => <TurnoCelda key={t.id} t={t} eid={eid} f={f} compacta={compacta} nombreEmp={nombreEmp} nombrePuesto={nombrePuesto} editable={editable} busy={busy} onEdit={setEdit} onExtender={extender} puedeQuitarImportado={puedeQuitarImportadoAprobado(esRRHH, plan, t)} onQuitar={() => { setQuitar(t); setMotivoQuitar(""); }} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]} />)}
                     {!del.length && !aus && (editable ? <Button variant="outline" size="sm" disabled={busy} aria-label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="h-7 w-full border-dashed text-muted-foreground">+</Button> : <span className="text-muted-foreground">—</span>)}
                   </CeldaTurno>;
                 })}
@@ -336,6 +349,23 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       </Dialog>
     </Card>
   );
+}
+
+function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, editable, busy, onEdit, onExtender, puedeQuitarImportado, onQuitar }: any) {
+  return <div className="relative group/turno">
+    <TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => onEdit(t)} className={className}>
+      <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
+      {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
+    </TurnoArrastrable>
+    {editable && !busy && <>
+      <span className="pointer-events-none absolute -top-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-1.5 py-px text-[9px] font-medium text-primary-foreground opacity-0 shadow-sm transition-opacity group-hover/turno:opacity-100">Extender</span>
+      <button type="button" title="Extender al día anterior" aria-label={`Extender el turno de ${nombreEmp(eid)} al día anterior`} onClick={() => onExtender(t, -1)}
+        className="absolute -left-2 top-1/2 z-20 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-md opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover/turno:opacity-100"><ChevronLeft className="h-3 w-3" /></button>
+      <button type="button" title="Extender al día siguiente" aria-label={`Extender el turno de ${nombreEmp(eid)} al día siguiente`} onClick={() => onExtender(t, 1)}
+        className="absolute -right-2 top-1/2 z-20 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-md opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover/turno:opacity-100"><ChevronRight className="h-3 w-3" /></button>
+    </>}
+    {puedeQuitarImportado && <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" disabled={busy} title="Quitar turno importado" aria-label={`Quitar turno importado de ${nombreEmp(eid)} el ${f}`} onClick={onQuitar}><Trash2 className="h-4 w-4" /></Button>}
+  </div>;
 }
 
 function AgregarEmpleado({ empleados, excluir, onAdd }: any) {
