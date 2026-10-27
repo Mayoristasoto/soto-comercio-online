@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
 import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
+import { prepararExtensionTurno } from "@/lib/horario2Extension";
 import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
@@ -306,7 +307,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         </div>
       </CardContent>}
 
-      {edit && <EditorTurno turno={edit} cfg={cfg} puestos={puestos} sucursales={sucursales} habil={habil} nombreEmp={nombreEmp} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); recargar(); }} />}
+      {edit && <EditorTurno turno={edit} semana={semana} turnos={turnos} ausencias={ausencias} cfg={cfg} puestos={puestos} sucursales={sucursales} habil={habil} nombreEmp={nombreEmp} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); recargar(); }} />}
 
       <Dialog open={!!quitar} onOpenChange={o => { if (!o && !busy) setQuitar(null); }}>
         <DialogContent>
@@ -344,24 +345,49 @@ function AgregarEmpleado({ empleados, excluir, onAdd }: any) {
     <Button size="sm" variant="outline" disabled={v === "none"} onClick={() => { onAdd(v); setV("none"); }}>Agregar turno</Button></div>;
 }
 
-function EditorTurno({ turno, cfg, puestos, sucursales, habil, nombreEmp, onClose, onSaved }: any) {
+function EditorTurno({ turno, semana, turnos, ausencias, cfg, puestos, sucursales, habil, nombreEmp, onClose, onSaved }: any) {
   const [t, setT] = useState({ ...turno, hora_entrada: hm(turno.hora_entrada), hora_salida: hm(turno.hora_salida), descanso_inicio: hm(turno.descanso_inicio), puesto_id: turno.puesto_id || "none" });
   const [busy, setBusy] = useState(false);
+  const [antes, setAntes] = useState(0);
+  const [despues, setDespues] = useState(0);
+  const cantidadDias = antes + despues + 1;
   const noHab = t.puesto_id !== "none" && !(habil[t.empleado_id] || []).includes(t.puesto_id);
   const guardar = async () => {
     if (!t.hora_entrada || !t.hora_salida) return toast.error("Completá entrada y salida");
     if (t.hora_entrada === t.hora_salida) return toast.error("La entrada y la salida no pueden ser iguales");
-    setBusy(true);
     const row = { plan_id: t.plan_id, empleado_id: t.empleado_id, fecha: t.fecha, hora_entrada: t.hora_entrada, hora_salida: t.hora_salida, puesto_id: t.puesto_id === "none" ? null : t.puesto_id, sucursal_id: t.sucursal_id,
       descanso_inicio: t.descanso_inicio || null, descanso_fin: t.descanso_inicio ? finDescanso(t.descanso_inicio, cfg.descanso) : null, observaciones: t.observaciones || null };
+    if (cantidadDias > 1) {
+      const extension = prepararExtensionTurno({ ...row, id: t.id }, antes, despues, semana, turnos, habil, ausencias);
+      if (extension.error) return toast.error(extension.error);
+      setBusy(true);
+      try {
+        const filas = extension.turnos.map(copia => ({ ...row, fecha: copia.fecha, id: copia.id || crypto.randomUUID() }));
+        const { data, error } = await db.from("h2_turnos").upsert(filas, { onConflict: "id" }).select("id");
+        if (error) return err(error);
+        if (data?.length !== cantidadDias) return toast.error("No se pudo guardar la extensión completa. Recargá la semana.");
+        toast.success(`Turno guardado en ${cantidadDias} días`); onSaved();
+      } catch (error) { err(error); } finally { setBusy(false); }
+      return;
+    }
+    setBusy(true);
     const { error } = t.id ? await db.from("h2_turnos").update(row).eq("id", t.id) : await db.from("h2_turnos").insert(row);
     setBusy(false); if (error) return err(error); toast.success("Turno guardado"); onSaved();
   };
   const borrar = async () => { setBusy(true); const { error } = await db.from("h2_turnos").delete().eq("id", t.id); setBusy(false); if (error) return err(error); toast.success("Turno quitado"); onSaved(); };
   return <Dialog open onOpenChange={o => !o && onClose()}><DialogContent>
     <DialogHeader><DialogTitle>{nombreEmp(t.empleado_id)} · {t.fecha.split("-").reverse().join("/")}</DialogTitle></DialogHeader>
+    <div className="space-y-2 border-b pb-3">
+      <div className="flex items-center justify-between gap-2"><Label>Días del turno</Label><div className="flex items-center gap-2">
+        <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Extender al día anterior" title="Extender al día anterior" disabled={busy || cantidadDias >= 3 || sumar(t.fecha, -antes - 1) < semana} onClick={() => setAntes(antes + 1)}><ChevronLeft className="h-4 w-4" /></Button>
+        <span className="w-16 text-center text-sm font-medium">{cantidadDias} {cantidadDias === 1 ? "día" : "días"}</span>
+        <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Extender al día siguiente" title="Extender al día siguiente" disabled={busy || cantidadDias >= 3 || sumar(t.fecha, despues + 1) > sumar(semana, 6)} onClick={() => setDespues(despues + 1)}><ChevronRight className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Volver a un día" title="Volver a un día" disabled={busy || cantidadDias === 1} onClick={() => { setAntes(0); setDespues(0); }}><RotateCcw className="h-4 w-4" /></Button>
+      </div></div>
+      <div className="flex flex-wrap gap-2 text-xs text-primary">{Array.from({ length: cantidadDias }, (_, i) => sumar(t.fecha, i - antes)).map(f => <span key={f} className="border-b-2 border-primary pb-1 font-medium">{DIAS[(new Date(f + "T00:00:00").getDay() + 6) % 7]} {f.slice(8)}/{f.slice(5, 7)}</span>)}</div>
+    </div>
     <div className="grid grid-cols-2 gap-3">
-      <div><Label>Fecha</Label><Input type="date" value={t.fecha} onChange={e => setT({ ...t, fecha: e.target.value })} /></div>
+      <div><Label>Fecha</Label><Input type="date" min={semana} max={sumar(semana, 6)} value={t.fecha} onChange={e => { if (!e.target.value) return; setT({ ...t, fecha: e.target.value }); setAntes(0); setDespues(0); }} /></div>
       <div><Label>Sucursal</Label><Select value={t.sucursal_id} onValueChange={v => setT({ ...t, sucursal_id: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{sucursales.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>)}</SelectContent></Select></div>
       <div><Label>Entrada</Label><Input type="time" value={t.hora_entrada} onChange={e => setT({ ...t, hora_entrada: e.target.value })} /></div>
       <div><Label>Salida</Label><Input type="time" value={t.hora_salida} onChange={e => setT({ ...t, hora_salida: e.target.value })} /></div>
@@ -371,7 +397,7 @@ function EditorTurno({ turno, cfg, puestos, sucursales, habil, nombreEmp, onClos
       <div><Label>Fin descanso ({cfg.descanso} min)</Label><Input disabled value={t.descanso_inicio ? finDescanso(t.descanso_inicio, cfg.descanso) : ""} /></div>
       <div className="col-span-2"><Label>Observaciones</Label><Textarea value={t.observaciones || ""} onChange={e => setT({ ...t, observaciones: e.target.value })} /></div>
     </div>
-    <DialogFooter className="gap-2">{t.id && <Button variant="outline" onClick={borrar} disabled={busy}><Trash2 className="h-4 w-4 mr-1" />Quitar</Button>}<Button onClick={guardar} disabled={busy}>Guardar</Button></DialogFooter>
+    <DialogFooter className="gap-2">{t.id && <Button variant="outline" onClick={borrar} disabled={busy}><Trash2 className="h-4 w-4 mr-1" />Quitar</Button>}<Button onClick={guardar} disabled={busy}>{cantidadDias > 1 ? `Guardar en ${cantidadDias} días` : "Guardar"}</Button></DialogFooter>
   </DialogContent></Dialog>;
 }
 

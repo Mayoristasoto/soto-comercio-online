@@ -1,5 +1,9 @@
 # Roadmap
 
+## Extender turno a días consecutivos
+- [ ] Agregar flechas al abrir un turno para abarcar hasta tres días en la misma semana.
+- [ ] Guardar sin reemplazar otros turnos, validando ausencias, puestos y superposiciones; probar la lógica.
+
 ## Quitar turnos importados aprobados
 - [x] Habilitar eliminación confirmada para RRHH mediante nueva versión en borrador, conservando la aprobación original.
 - [x] Verificar reglas con 19 pruebas, permisos de la función y compilación correcta.
