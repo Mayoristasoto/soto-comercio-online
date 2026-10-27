@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
 import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
@@ -20,7 +22,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 const Grad = ({ n }: { n: number }) => <defs>{COLS.map((c, i) => <linearGradient key={i} id={`g${n}-${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity={0.95} /><stop offset="100%" stopColor={c} stopOpacity={0.35} /></linearGradient>)}</defs>;
 const TT = { contentStyle: { borderRadius: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", boxShadow: "0 8px 24px -8px hsl(var(--primary) / 0.35)" } };
 const COLS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))"];
-import { validarTurnos, calcularCobertura, avisosCobertura, finDescanso, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
+import { validarTurnos, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
 const db = supabase as any;
 const ESTADOS: Record<string, { label: string; cls: string }> = {
@@ -178,6 +180,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const [texto, setTexto] = useState("");
   const [diaCob, setDiaCob] = useState(semana);
   const [busy, setBusy] = useState(false);
+  const [arrastrando, setArrastrando] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor));
   useEffect(() => setDiaCob(semana), [semana]);
   const tp = plan ? turnos.filter((t: any) => t.plan_id === plan.id) : [];
   const editable = esRRHH && plan && ["borrador", "devuelto"].includes(plan.estado);
@@ -197,6 +201,26 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     run(() => db.rpc("h2_copiar_semana", { _origen: o.id, _destino: plan.id }), "Semana anterior copiada; la original no cambió");
   };
   const ausente = (eid: string, f: string) => ausencias.some((a: AusenciaH2) => a.empleado_id === eid && a.desde <= f && f <= a.hasta);
+  const mover = async ({ active, over }: DragEndEvent) => {
+    setArrastrando(null);
+    if (!editable || busy || !over) return;
+    const destino = over.data.current;
+    if (!destino || !dias.includes(destino.fecha) || !empIds.includes(destino.empleadoId)) return;
+    const movimiento = prepararMovimientoTurno(turnos as TurnoH2[], String(active.id), destino.empleadoId, destino.fecha, habil, ausencias);
+    if (!movimiento || !tp.some((t: any) => t.id === movimiento.turno.id)) return;
+    if (movimiento.avisos.length) return toast.error(movimiento.avisos[0].mensaje);
+    setBusy(true);
+    try {
+      const { data, error } = await db.from("h2_turnos")
+        .update({ empleado_id: destino.empleadoId, fecha: destino.fecha })
+        .eq("id", movimiento.turno.id).eq("plan_id", plan.id).select("id").single();
+      if (error) return err(error);
+      if (!data) return toast.error("No se pudo mover el turno. Recargá la semana.");
+      toast.success(`Turno movido a ${nombreEmp(destino.empleadoId)} · ${destino.fecha.split("-").reverse().join("/")}`);
+      await recargar();
+    } catch (error) { err(error); } finally { setBusy(false); }
+  };
+  const turnoActivo = tp.find((t: any) => t.id === arrastrando);
 
   return (
     <Card className="rounded-xl shadow-sm overflow-hidden">
@@ -221,6 +245,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       </CardHeader>
       {plan && <CardContent className="space-y-3">
         <div className="overflow-x-auto">
+          <DndContext sensors={sensors} onDragStart={({ active }) => setArrastrando(String(active.id))} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
           <table className="w-full text-xs border-collapse">
             <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div></th>)}</tr></thead>
             <tbody>{empIds.map((eid: string) => (
@@ -229,18 +254,20 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
                 {dias.map(f => {
                   const del = tp.filter((t: any) => t.empleado_id === eid && t.fecha === f);
                   const aus = ausente(eid, f);
-                  return <td key={f} className="p-1.5 align-middle">
+                  return <CeldaTurno key={f} empleadoId={eid} fecha={f} disabled={!editable || busy}>
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
-                    {del.map((t: any) => <button key={t.id} disabled={!editable} onClick={() => setEdit(t)} className={`w-full text-center rounded-md border px-1 py-1 mb-1 hover:brightness-95 ${CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]}`}>
+                    {del.map((t: any) => <TurnoArrastrable key={t.id} id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`} onClick={() => setEdit(t)} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]}>
                       <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
                       {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
-                    </button>)}
-                    {!del.length && !aus && (editable ? <button onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="w-full rounded border border-dashed text-muted-foreground py-1 hover:bg-muted">+</button> : <span className="text-muted-foreground">—</span>)}
-                  </td>;
+                    </TurnoArrastrable>)}
+                    {!del.length && !aus && (editable ? <Button variant="outline" size="sm" disabled={busy} aria-label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="h-7 w-full border-dashed text-muted-foreground">+</Button> : <span className="text-muted-foreground">—</span>)}
+                  </CeldaTurno>;
                 })}
               </tr>))}
             </tbody>
           </table>
+          <DragOverlay>{turnoActivo && <div className="rounded-md border border-primary bg-card px-3 py-2 text-center text-xs text-foreground shadow-lg"><div className="font-semibold">{hm(turnoActivo.hora_entrada)}–{hm(turnoActivo.hora_salida)}</div><div>{nombrePuesto(turnoActivo.puesto_id)}</div></div>}</DragOverlay>
+          </DndContext>
           {editable && <AgregarEmpleado empleados={empleados} excluir={empIds} onAdd={(eid: string) => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: semana, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} />}
         </div>
 
