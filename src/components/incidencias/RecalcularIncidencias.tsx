@@ -41,7 +41,7 @@ export default function RecalcularIncidencias() {
     setHistorial((data as any[]) ?? []);
   };
   useEffect(() => {
-    supabase.from("sucursales").select("id,nombre").eq("activa", true).order("nombre").then(({ data }) => setSucursales(data ?? []));
+    supabase.from("sucursales").select("id,nombre").order("nombre").then(({ data }) => setSucursales(data ?? []));
     cargarHistorial();
   }, []);
 

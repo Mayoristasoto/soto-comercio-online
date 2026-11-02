@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generarReporteLlegadasTarde } from "@/utils/reporteLlegadasTardePDF";
 import { generarResumenSemanalPDF } from "@/utils/resumenSemanalPDF";
+import RecalcularIncidencias from "@/components/incidencias/RecalcularIncidencias";
 
 import {
   AlertDialog,
@@ -42,6 +43,7 @@ interface Incidencia {
 const ListadoIncidencias = () => {
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [verRecalculo, setVerRecalculo] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [incidenciaAEliminar, setIncidenciaAEliminar] = useState<string | null>(null);
   const [motivoAnulacion, setMotivoAnulacion] = useState("");
@@ -299,8 +301,14 @@ const ListadoIncidencias = () => {
             <Download className="h-4 w-4 mr-2" />
             Exportar Excel
           </Button>
+          <Button onClick={() => setVerRecalculo((v) => !v)} variant={verRecalculo ? "default" : "outline"}>
+            <Clock className="h-4 w-4 mr-2" />
+            Recalcular
+          </Button>
         </div>
       </div>
+
+      {verRecalculo && <RecalcularIncidencias />}
 
       <Card>
         <CardHeader>
