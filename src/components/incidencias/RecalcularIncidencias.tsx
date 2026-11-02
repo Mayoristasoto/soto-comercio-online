@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { RefreshCw, CheckCircle2, History } from "lucide-react";
 import {
-  clasificar, resumen, armarDecisiones, type FilaClasificada, type FilaPreview, type AccionRecalculo,
+  clasificar, resumen, armarDecisiones, filtrarFilas, type FilaClasificada, type FilaPreview, type AccionRecalculo,
 } from "@/lib/recalculoIncidencias";
 
 const ETIQUETA: Record<AccionRecalculo, string> = {
@@ -32,6 +32,10 @@ export default function RecalcularIncidencias() {
   const [elegidas, setElegidas] = useState<Set<string>>(new Set());
   const [filtro, setFiltro] = useState<AccionRecalculo | "todas">("todas");
   const [verSinCambios, setVerSinCambios] = useState(false);
+  const [empFiltro, setEmpFiltro] = useState("none");
+  const [tipoFiltro, setTipoFiltro] = useState<"none" | "llegada_tarde" | "pausa_excedida">("none");
+  const [sinSabado, setSinSabado] = useState(false);
+  const [sinDomingo, setSinDomingo] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [aplicando, setAplicando] = useState(false);
   const [historial, setHistorial] = useState<any[]>([]);
@@ -57,19 +61,32 @@ export default function RecalcularIncidencias() {
     setElegidas(new Set(c.filter((f) => f.sugerida).map(clave)));
   };
 
-  const visibles = useMemo(
-    () => (filas ?? []).filter((f) => (verSinCambios || f.accion !== "sin_cambios") && (filtro === "todas" || f.accion === filtro)),
-    [filas, filtro, verSinCambios],
+  const filtradas = useMemo(
+    () => (filas ? filtrarFilas(filas, {
+      empleadoId: empFiltro === "none" ? null : empFiltro,
+      tipo: tipoFiltro === "none" ? null : tipoFiltro,
+      excluirSabado: sinSabado, excluirDomingo: sinDomingo,
+    }) : null),
+    [filas, empFiltro, tipoFiltro, sinSabado, sinDomingo],
   );
-  const res = filas ? resumen(filas) : null;
+  const empleadosOpc = useMemo(() => {
+    const m = new Map<string, string>();
+    (filas ?? []).forEach((f) => m.set(f.empleado_id, f.empleado));
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [filas]);
+  const visibles = useMemo(
+    () => (filtradas ?? []).filter((f) => (verSinCambios || f.accion !== "sin_cambios") && (filtro === "todas" || f.accion === filtro)),
+    [filtradas, filtro, verSinCambios],
+  );
+  const res = filtradas ? resumen(filtradas) : null;
 
   const toggle = (k: string) => setElegidas((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
   const marcarTipo = (a: AccionRecalculo, on: boolean) =>
-    setElegidas((s) => { const n = new Set(s); (filas ?? []).filter((f) => f.accion === a).forEach((f) => (on ? n.add(clave(f)) : n.delete(clave(f)))); return n; });
+    setElegidas((s) => { const n = new Set(s); (filtradas ?? []).filter((f) => f.accion === a).forEach((f) => (on ? n.add(clave(f)) : n.delete(clave(f)))); return n; });
 
   const aplicar = async () => {
-    if (!filas) return;
-    const items = armarDecisiones(filas, elegidas, clave);
+    if (!filtradas) return;
+    const items = armarDecisiones(filtradas, elegidas, clave);
     const n = items.filter((i) => i.decision === "aplicar").length;
     if (!n) return toast.error("No marcaste ninguna fila");
     if (!confirm(`Se van a aplicar ${n} correcciones. ¿Confirmás?`)) return;
@@ -107,6 +124,35 @@ export default function RecalcularIncidencias() {
           </div>
           <Button onClick={recalcular} disabled={cargando}><RefreshCw className="h-4 w-4 mr-2" />{cargando ? "Calculando..." : "Recalcular"}</Button>
         </div>
+
+        {filas && (
+          <div className="flex flex-wrap gap-3 items-end rounded-lg border p-3">
+            <div>
+              <label className="text-xs">Empleado</label>
+              <Select value={empFiltro} onValueChange={setEmpFiltro}>
+                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Todos</SelectItem>
+                  {empleadosOpc.map(([id, n]) => <SelectItem key={id} value={id}>{n}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs">Tipo de incidencia</label>
+              <Select value={tipoFiltro} onValueChange={(v) => setTipoFiltro(v as any)}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Todas</SelectItem>
+                  <SelectItem value="llegada_tarde">Llegada tarde</SelectItem>
+                  <SelectItem value="pausa_excedida">Exceso de descanso</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-center gap-2 text-sm"><Checkbox checked={sinSabado} onCheckedChange={(v) => setSinSabado(!!v)} />Excluir sábados</label>
+            <label className="flex items-center gap-2 text-sm"><Checkbox checked={sinDomingo} onCheckedChange={(v) => setSinDomingo(!!v)} />Excluir domingos</label>
+            <span className="text-xs text-muted-foreground">Solo se aplica lo que queda en el filtro.</span>
+          </div>
+        )}
 
         {res && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
