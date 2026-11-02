@@ -23,11 +23,13 @@ import {
   X,
   Trash2,
   RefreshCw,
-  Printer
+  Printer,
+  History
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { isAdminRole } from "@/lib/authSecurity"
+import RecalcularIncidencias from "@/components/incidencias/RecalcularIncidencias"
 import { Separator } from "@/components/ui/separator"
 import { ExportButton } from "@/components/ui/export-button"
 import { generarReporteLlegadasTarde } from "@/utils/reporteLlegadasTardePDF"
@@ -99,6 +101,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
   const [selectedIncidencias, setSelectedIncidencias] = useState<Array<{id: string, tipo: 'tardio' | 'pausa'}>>([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [isRecalculating, setIsRecalculating] = useState(false)
+  const [verRecalculo, setVerRecalculo] = useState(false)
   const [empleadoReporte, setEmpleadoReporte] = useState('')
   const [generandoReporte, setGenerandoReporte] = useState(false)
   const [fechaDesdeReporte, setFechaDesdeReporte] = useState('')
@@ -628,12 +631,22 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
           />
           {isAdminRole(userRole) && (
             <Button
+              variant={verRecalculo ? "default" : "outline"}
+              onClick={() => setVerRecalculo((v) => !v)}
+              disabled={loading}
+            >
+              <History className="h-4 w-4 mr-2" />
+              Recalcular historial (mes)
+            </Button>
+          )}
+          {isAdminRole(userRole) && (
+            <Button
               variant="outline"
               onClick={recalcularIncidencias}
               disabled={loading}
             >
               <Clock className="h-4 w-4 mr-2" />
-              Recalcular Incidencias
+              Recalcular mis incidencias
             </Button>
           )}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -722,6 +735,8 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
         </div>
       </div>
 
+      {verRecalculo && <RecalcularIncidencias />}
+
       {/* Generar Reporte PDF de Llegadas Tarde */}
       {isAdminRole(userRole) && (
         <Card>
@@ -803,7 +818,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                 className="gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${isRecalculating ? 'animate-spin' : ''}`} />
-                {isRecalculating ? 'Recalculando...' : 'Recalcular Incidencias'}
+                {isRecalculating ? 'Recalculando...' : 'Recalcular mis incidencias'}
               </Button>
             )}
           </div>
