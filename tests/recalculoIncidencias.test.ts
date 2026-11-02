@@ -32,3 +32,17 @@ describe("recálculo de incidencias", () => {
     expect(clasificarFila({ ...base, minutos_despues: null }).accion).toBe("sin_cambios");
   });
 });
+
+import { filtrarFilas } from "../src/lib/recalculoIncidencias";
+describe("filtrarFilas", () => {
+  const b = (empleado_id: string, fecha: string, tipo: any) => ({ empleado_id, fecha, tipo } as any);
+  // 2026-10-31 sábado, 2026-11-01 domingo, 2026-11-02 lunes
+  const rows = [b("a", "2026-10-31", "llegada_tarde"), b("a", "2026-11-01", "pausa_excedida"), b("b", "2026-11-02", "llegada_tarde")];
+  test("excluye sábado", () => expect(filtrarFilas(rows, { excluirSabado: true }).map((r) => r.fecha)).toEqual(["2026-11-01", "2026-11-02"]));
+  test("excluye domingo", () => expect(filtrarFilas(rows, { excluirDomingo: true }).map((r) => r.fecha)).toEqual(["2026-10-31", "2026-11-02"]));
+  test("excluye ambos", () => expect(filtrarFilas(rows, { excluirSabado: true, excluirDomingo: true }).map((r) => r.fecha)).toEqual(["2026-11-02"]));
+  test("empleado y tipo", () => {
+    expect(filtrarFilas(rows, { empleadoId: "a" }).length).toBe(2);
+    expect(filtrarFilas(rows, { tipo: "llegada_tarde" }).map((r) => r.empleado_id)).toEqual(["a", "b"]);
+  });
+});

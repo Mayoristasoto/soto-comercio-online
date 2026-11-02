@@ -79,3 +79,28 @@ export function armarDecisiones(filas: FilaClasificada[], elegidas: Set<string>,
       decision: elegidas.has(clave(f)) ? "aplicar" : "descartar",
     }));
 }
+
+export interface FiltroRecalculo {
+  empleadoId?: string | null;
+  tipo?: FilaPreview["tipo"] | null;
+  excluirSabado?: boolean;
+  excluirDomingo?: boolean;
+}
+
+/** Día de la semana (0=domingo) de una fecha YYYY-MM-DD, sin depender de zona horaria. */
+export function diaSemana(fecha: string): number {
+  const [y, m, d] = fecha.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+/** Proyección pura: filtra filas por empleado, tipo y fines de semana. */
+export function filtrarFilas<T extends FilaPreview>(filas: T[], f: FiltroRecalculo): T[] {
+  return filas.filter((r) => {
+    if (f.empleadoId && r.empleado_id !== f.empleadoId) return false;
+    if (f.tipo && r.tipo !== f.tipo) return false;
+    const dow = diaSemana(r.fecha);
+    if (f.excluirSabado && dow === 6) return false;
+    if (f.excluirDomingo && dow === 0) return false;
+    return true;
+  });
+}
