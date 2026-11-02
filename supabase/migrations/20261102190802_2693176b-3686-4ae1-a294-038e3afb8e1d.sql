@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.resolver_horario_dia(uuid,date) FROM authenticated;
