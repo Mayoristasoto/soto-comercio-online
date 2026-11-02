@@ -10466,6 +10466,104 @@ export type Database = {
           },
         ]
       }
+      recalculo_incidencias: {
+        Row: {
+          aplicadas: number
+          creado_por: string
+          created_at: string
+          descartadas: number
+          empleado_id: string | null
+          id: string
+          mes: string
+          sucursal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          aplicadas?: number
+          creado_por?: string
+          created_at?: string
+          descartadas?: number
+          empleado_id?: string | null
+          id?: string
+          mes: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aplicadas?: number
+          creado_por?: string
+          created_at?: string
+          descartadas?: number
+          empleado_id?: string | null
+          id?: string
+          mes?: string
+          sucursal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recalculo_incidencias_items: {
+        Row: {
+          accion: string
+          created_at: string
+          decision: string
+          empleado_id: string
+          fecha: string
+          fuente: string | null
+          hora_programada_antes: string | null
+          hora_programada_despues: string | null
+          id: string
+          incidencia_id: string | null
+          minutos_antes: number | null
+          minutos_despues: number | null
+          recalculo_id: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          accion: string
+          created_at?: string
+          decision: string
+          empleado_id: string
+          fecha: string
+          fuente?: string | null
+          hora_programada_antes?: string | null
+          hora_programada_despues?: string | null
+          id?: string
+          incidencia_id?: string | null
+          minutos_antes?: number | null
+          minutos_despues?: number | null
+          recalculo_id: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          accion?: string
+          created_at?: string
+          decision?: string
+          empleado_id?: string
+          fecha?: string
+          fuente?: string | null
+          hora_programada_antes?: string | null
+          hora_programada_despues?: string | null
+          id?: string
+          incidencia_id?: string | null
+          minutos_antes?: number | null
+          minutos_despues?: number | null
+          recalculo_id?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recalculo_incidencias_items_recalculo_id_fkey"
+            columns: ["recalculo_id"]
+            isOneToOne: false
+            referencedRelation: "recalculo_incidencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recibo_conceptos: {
         Row: {
           cantidad: number | null
@@ -13490,6 +13588,15 @@ export type Database = {
         Args: { _planificacion_id: string }
         Returns: number
       }
+      aplicar_recalculo_incidencias: {
+        Args: {
+          _empleado: string
+          _items: Json
+          _mes: string
+          _sucursal: string
+        }
+        Returns: string
+      }
       aplicar_redondeo_fichaje: {
         Args: { redondeo_minutos: number; timestamp_real: string }
         Returns: string
@@ -14510,6 +14617,25 @@ export type Database = {
         Args: { p_empleado_id: string; p_fecha_desde?: string }
         Returns: Json
       }
+      recalcular_incidencias_preview: {
+        Args: { _empleado?: string; _mes: string; _sucursal?: string }
+        Returns: {
+          empleado: string
+          empleado_id: string
+          fecha: string
+          fuente: string
+          hora_fin: string
+          hora_programada_antes: string
+          hora_programada_despues: string
+          hora_real: string
+          incidencia_id: string
+          justificado: boolean
+          minutos_antes: number
+          minutos_despues: number
+          omitido: string
+          tipo: string
+        }[]
+      }
       recalcular_pausas_excedidas_empleado: {
         Args: { p_empleado_id: string; p_fecha_desde?: string }
         Returns: undefined
@@ -14588,6 +14714,14 @@ export type Database = {
       resolver_grupo_empleados: {
         Args: { _grupo_id: string }
         Returns: string[]
+      }
+      resolver_horario_dia: {
+        Args: { _empleado: string; _fecha: string }
+        Returns: {
+          fuente: string
+          hora_entrada: string
+          pausa_min: number
+        }[]
       }
       resolver_planificacion: {
         Args: {
