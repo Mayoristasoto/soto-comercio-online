@@ -818,7 +818,7 @@ export default function FicheroIncidencias({ empleado }: FicheroIncidenciasProps
                 className="gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${isRecalculating ? 'animate-spin' : ''}`} />
-                {isRecalculating ? 'Recalculando...' : 'Recalcular Incidencias'}
+                {isRecalculating ? 'Recalculando...' : 'Recalcular mis incidencias'}
               </Button>
             )}
           </div>
