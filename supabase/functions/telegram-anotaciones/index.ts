@@ -99,8 +99,88 @@ Deno.serve(async (req) => {
 
   const text: string = (msg.text ?? '').trim();
   if (!text || text === '/start' || text === '/ayuda' || text === '/help') {
-    await reply('🗓️ <b>Agenda</b>: escribí normal, ej. "mañana a las 10 llamar a Conforti" o "el viernes 15hs reunión, avisame 30 min antes". /agenda muestra lo próximo.\n\n📝 <b>Notas</b>: escribí:\n<code>/nota Apellido texto #etiqueta</code>\no con legajo:\n<code>/nota 108 texto #celular</code>\n\nEtiquetas: ' +
+    await reply('🗓️ <b>Agenda</b>: escribí normal, ej. "mañana a las 10 llamar a Conforti" o "el viernes 15hs reunión, avisame 30 min antes". /agenda muestra lo próximo.\n\n📋 <b>Fichero</b>: <code>/fichero</code> (todos hoy), <code>/fichero Conforti</code>, <code>/fichero 108 ayer</code> o <code>/fichero Conforti 3/11</code>\n\n📝 <b>Notas</b>: escribí:\n<code>/nota Apellido texto #etiqueta</code>\no con legajo:\n<code>/nota 108 texto #celular</code>\n\nEtiquetas: ' +
       Object.keys(TAGS).map((t) => '#' + t).join(' ') + '\nSin etiqueta queda como "Otro". Agregá #critica para marcarla crítica.');
+    return new Response('ok');
+  }
+
+  if (/^\/fichero/i.test(text)) {
+    try {
+      const args = text.replace(/^\/fichero(@\w+)?\s*/i, '').split(/\s+/).filter(Boolean);
+      // Fecha en hora Argentina (UTC-3)
+      const hoyAR = new Date(Date.now() - 3 * 3600000);
+      let fecha = hoyAR.toISOString().slice(0, 10);
+      const rest: string[] = [];
+      for (const a of args) {
+        const m = a.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (/^ayer$/i.test(a)) fecha = new Date(hoyAR.getTime() - 86400000).toISOString().slice(0, 10);
+        else if (/^hoy$/i.test(a)) { /* hoy */ }
+        else if (m) {
+          const y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(hoyAR.getUTCFullYear());
+          fecha = `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        } else rest.push(a);
+      }
+      const busqueda = rest.join(' ');
+      const desde = new Date(`${fecha}T00:00:00-03:00`).toISOString();
+      const hasta = new Date(new Date(`${fecha}T00:00:00-03:00`).getTime() + 86400000).toISOString();
+      const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', hour12: false });
+      const fechaTxt = fecha.split('-').reverse().join('/');
+
+      let q = supabase.from('empleados').select('id, nombre, apellido, legajo').eq('activo', true);
+      if (busqueda) q = /^\d+$/.test(busqueda) ? q.eq('legajo', busqueda) : q.ilike('apellido', `%${busqueda}%`);
+      const { data: emps } = await q.limit(busqueda ? 10 : 500);
+      if (!emps?.length) { await reply(`No encontré empleados activos con "${busqueda}".`); return new Response('ok'); }
+      if (busqueda && emps.length > 1) {
+        await reply(`Hay ${emps.length} coincidencias, usá el legajo:\n` + emps.map((e) => `• ${e.apellido}, ${e.nombre} — legajo ${e.legajo ?? 's/d'}`).join('\n'));
+        return new Response('ok');
+      }
+      const ids = emps.map((e) => e.id);
+      const [{ data: fich }, { data: tard }, { data: paus }] = await Promise.all([
+        supabase.from('fichajes').select('empleado_id, tipo, timestamp_real').in('empleado_id', ids).gte('timestamp_real', desde).lt('timestamp_real', hasta).order('timestamp_real'),
+        supabase.from('fichajes_tardios').select('empleado_id, hora_programada, minutos_retraso, justificado').in('empleado_id', ids).eq('fecha_fichaje', fecha),
+        supabase.from('fichajes_pausas_excedidas').select('empleado_id, duracion_minutos, minutos_exceso, justificado').in('empleado_id', ids).eq('fecha_fichaje', fecha),
+      ]);
+      const ICON: Record<string, string> = { entrada: '🟢 Entrada', salida: '🔴 Salida', pausa_inicio: '☕ Inicio descanso', pausa_fin: '↩️ Fin descanso' };
+
+      if (busqueda) {
+        const e = emps[0];
+        const { data: hor } = await supabase.rpc('resolver_horario_dia', { _empleado: e.id, _fecha: fecha });
+        const h = Array.isArray(hor) ? hor[0] : hor;
+        const lineas = [`📋 <b>${e.apellido}, ${e.nombre}</b> — ${fechaTxt}`];
+        lineas.push(h?.hora_entrada ? `🕘 Horario: entrada ${String(h.hora_entrada).slice(0, 5)}${h.pausa_min ? ` · descanso ${h.pausa_min} min` : ''}` : '🕘 Sin horario asignado ese día');
+        lineas.push('', '<b>Fichadas</b>');
+        lineas.push(...(fich?.length ? fich.map((f) => `${ICON[f.tipo] ?? f.tipo}: ${hhmm(f.timestamp_real)}`) : ['Sin fichadas']));
+        const inc = [
+          ...(tard ?? []).map((t) => `⏰ Llegada tarde: ${t.minutos_retraso} min (programada ${String(t.hora_programada).slice(0, 5)})${t.justificado ? ' · justificada' : ''}`),
+          ...(paus ?? []).map((p) => `☕ Exceso de descanso: ${p.minutos_exceso} min (duró ${p.duracion_minutos})${p.justificado ? ' · justificado' : ''}`),
+        ];
+        lineas.push('', '<b>Incidencias</b>', ...(inc.length ? inc : ['✅ Ninguna']));
+        await reply(lineas.join('\n'));
+        return new Response('ok');
+      }
+
+      // Resumen general del día
+      const porEmp = new Map<string, { ent?: string; sal?: string; t: number; p: number }>();
+      for (const f of fich ?? []) {
+        const r = porEmp.get(f.empleado_id) ?? { t: 0, p: 0 };
+        if (f.tipo === 'entrada' && !r.ent) r.ent = hhmm(f.timestamp_real);
+        if (f.tipo === 'salida') r.sal = hhmm(f.timestamp_real);
+        porEmp.set(f.empleado_id, r);
+      }
+      for (const t of tard ?? []) { if (!t.justificado) { const r = porEmp.get(t.empleado_id) ?? { t: 0, p: 0 }; r.t++; porEmp.set(t.empleado_id, r); } }
+      for (const p of paus ?? []) { if (!p.justificado) { const r = porEmp.get(p.empleado_id) ?? { t: 0, p: 0 }; r.p++; porEmp.set(p.empleado_id, r); } }
+      const filas = emps.filter((e) => porEmp.has(e.id)).sort((a, b) => a.apellido.localeCompare(b.apellido)).map((e) => {
+        const r = porEmp.get(e.id)!;
+        const inc = [r.t ? '⏰ tarde' : '', r.p ? '☕ exceso' : ''].filter(Boolean).join(' ');
+        return `• ${e.apellido}: ${r.ent ?? '—'} → ${r.sal ?? '—'}${inc ? ' ' + inc : ''}`;
+      });
+      await reply(filas.length
+        ? `📋 <b>Fichero ${fechaTxt}</b> (${filas.length} empleados)\n` + filas.join('\n') + '\n\nDetalle: <code>/fichero Apellido</code>'
+        : `No hay fichadas el ${fechaTxt}.`);
+    } catch (err) {
+      console.error(err);
+      await reply('⚠️ No pude leer el fichero, probá de nuevo.');
+    }
     return new Response('ok');
   }
 
