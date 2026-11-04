@@ -1,6 +1,18 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  PERMISOS_TELEGRAM,
+  PERMISOS_POR_DEFECTO,
+  ayudaPara,
+  detectarComando,
+  parsearPermitir,
+  parsearQuitar,
+  permisoFaltante,
+  puedeUsar,
+  resumenPermisos,
+  type PermisosTelegram,
+} from '../_shared/telegramAccesos.ts';
 
-const AUTOR_ID = '96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4'; // Gonzalo Justiniano
+const AUTOR_ID = '96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4'; // Gonzalo Justiniano (chat de configuración)
 const TAGS: Record<string, string> = {
   apercibimiento: 'apercibimiento', llamado: 'llamado_atencion', orden: 'orden_no_acatada',
   uniforme: 'no_uso_uniforme', celular: 'uso_celular', tardanza: 'tardanza', tarde: 'tardanza',
@@ -12,6 +24,13 @@ const NOMBRE_CAT: Record<string, string> = {
   no_uso_uniforme: 'No uso de uniforme', uso_celular: 'Uso de celular', tardanza: 'Tardanza',
   ausencia_injustificada: 'Ausencia injustificada', actitud_positiva: 'Actitud positiva',
   mejora_desempeno: 'Mejora de desempeño', otro: 'Otro',
+};
+
+type Autorizado = PermisosTelegram & {
+  chat_id: string;
+  empleado_id: string;
+  activo: boolean;
+  autorizado_por: string | null;
 };
 
 async function secretFrom(token: string) {
@@ -53,6 +72,8 @@ async function interpretarRecordatorio(texto: string): Promise<{ es_recordatorio
 }
 
 const fmt = (iso: string) => new Date(iso).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const etiquetaPermiso = (clave: keyof PermisosTelegram | null) =>
+  PERMISOS_TELEGRAM.find((p) => p.clave === clave)?.etiqueta ?? 'ese permiso';
 
 Deno.serve(async (req) => {
   const TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
@@ -74,13 +95,19 @@ Deno.serve(async (req) => {
 
   // Envío de recordatorios vencidos (lo llama el programador cada minuto)
   if (url.searchParams.get('cron') === '1') {
-    const { data: pend } = await supabase.from('agenda_personal').select('id, titulo, fecha_hora')
+    const { data: pend } = await supabase.from('agenda_personal').select('id, titulo, fecha_hora, autor_empleado_id')
       .eq('avisado', false).eq('completado', false).lte('avisar_en', new Date().toISOString()).limit(20);
+    let enviados = 0;
     for (const p of pend ?? []) {
-      await api('sendMessage', { chat_id: CHAT.trim(), text: `⏰ Recordatorio: <b>${p.titulo}</b>\n🗓️ ${fmt(p.fecha_hora)}` });
+      // cada recordatorio se manda al chat de su propio autor
+      const { data: dueno } = await supabase.from('telegram_autorizados').select('chat_id')
+        .eq('empleado_id', p.autor_empleado_id).eq('activo', true).maybeSingle();
+      const destino = dueno?.chat_id ?? CHAT.trim();
+      await api('sendMessage', { chat_id: destino, text: `⏰ Recordatorio: <b>${p.titulo}</b>\n🗓️ ${fmt(p.fecha_hora)}` });
       await supabase.from('agenda_personal').update({ avisado: true }).eq('id', p.id);
+      enviados++;
     }
-    return new Response(JSON.stringify({ enviados: pend?.length ?? 0 }), { headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ enviados }), { headers: { 'Content-Type': 'application/json' } });
   }
 
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -89,29 +116,114 @@ Deno.serve(async (req) => {
   const update = await req.json().catch(() => null);
   const msg = update?.message;
   if (!msg?.chat?.id) return new Response('ok');
-  const chatId = msg.chat.id;
+  const chatId = String(msg.chat.id);
   const reply = (text: string) => api('sendMessage', { chat_id: chatId, text, parse_mode: 'HTML' });
 
-  if (String(msg.from?.id) !== CHAT.trim() && String(chatId) !== CHAT.trim()) {
-    await reply('⛔ No estás autorizado para usar este bot.');
+  // ---- quién es esta persona ----
+  const esConfig = chatId === CHAT.trim();
+  let autor: Autorizado | null = null;
+  {
+    const { data } = await supabase.from('telegram_autorizados').select('*').eq('chat_id', chatId).maybeSingle();
+    autor = (data as Autorizado | null) ?? null;
+    if (!autor && esConfig) {
+      // el chat de configuración siempre tiene acceso: se autoregistra
+      const { data: creado } = await supabase.from('telegram_autorizados').insert({
+        chat_id: chatId, empleado_id: AUTOR_ID, autorizado_por: AUTOR_ID,
+        puede_notas: true, puede_fichero: true, puede_vacaciones: true, puede_agenda: true, puede_administrar: true,
+      }).select().maybeSingle();
+      autor = (creado as Autorizado | null) ?? null;
+    }
+    if (autor && esConfig) autor = { ...autor, activo: true, puede_administrar: true };
+  }
+
+  if (!autor || autor.activo === false) {
+    // queda registrado para que RRHH decida
+    const nombre = [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') || null;
+    await supabase.from('telegram_solicitudes').upsert(
+      { chat_id: chatId, nombre, username: msg.from?.username ?? null, visto: false },
+      { onConflict: 'chat_id' },
+    );
+    await reply(`⛔ Todavía no estás autorizado para usar este bot.<br/>Pasale este código a RRHH:<br/><code>${chatId}</code>`);
     return new Response('ok');
   }
 
-  const text: string = (msg.text ?? '').trim();
-  if (!text || text === '/start' || text === '/ayuda' || text === '/help') {
-    await reply('🗓️ <b>Agenda</b>: escribí normal, ej. "mañana a las 10 llamar a Conforti" o "el viernes 15hs reunión, avisame 30 min antes". /agenda muestra lo próximo.\n\n📋 <b>Fichero</b>: <code>/fichero</code> (todos hoy), <code>/fichero Conforti</code>, <code>/fichero 108 ayer</code> o <code>/fichero Conforti 3/11</code>\n\n🏖️ <b>Vacaciones</b>: <code>/vacaciones</code> (quién está hoy + próximas)\n\n🚫 <b>Sin fichar</b>: <code>/noficharon</code> (quién tenía horario hoy y no fichó entrada), <code>/noficharon ayer</code> o <code>/noficharon 3/11</code>\n\n📝 <b>Notas</b>: escribí:\n<code>/nota Apellido texto #etiqueta</code>\no con legajo:\n<code>/nota 108 texto #celular</code>\n\nEtiquetas: ' +
-      Object.keys(TAGS).map((t) => '#' + t).join(' ') + '\nSin etiqueta queda como "Otro". Agregá #critica para marcarla crítica.');
+  const permisos: PermisosTelegram = autor;
+  const texto: string = (msg.text ?? '').trim();
+  const { comando, resto } = detectarComando(texto);
+
+  if (!puedeUsar(permisos, comando)) {
+    await reply(`⛔ No tenés habilitado <b>${etiquetaPermiso(permisoFaltante(comando))}</b>. Pedile a RRHH que te lo active.`);
     return new Response('ok');
   }
 
-  if (/^\/fichero/i.test(text)) {
+  // ---- búsqueda de empleados (apellido o legajo) ----
+  const buscarEmpleados = async (busqueda: string) => {
+    let q = supabase.from('empleados').select('id, nombre, apellido, legajo').eq('activo', true);
+    q = /^\d+$/.test(busqueda) ? q.eq('legajo', busqueda) : q.ilike('apellido', `%${busqueda}%`);
+    const { data, error } = await q.limit(10);
+    return { emps: data ?? [], error };
+  };
+  const listaCoincidencias = (emps: { apellido: string; nombre: string; legajo: string | null }[]) =>
+    emps.map((e) => `• ${e.apellido}, ${e.nombre} — legajo ${e.legajo ?? 's/d'}`).join('\n');
+
+  // ---- ayuda ----
+  if (comando === 'ayuda') {
+    await reply(ayudaPara(permisos).join('\n\n'));
+    return new Response('ok');
+  }
+
+  // ---- administración de accesos ----
+  if (comando === 'permitir') {
+    const p = parsearPermitir(resto);
+    if (!p) { await reply('Falta el código o el empleado. Ej: <code>/permitir 123456789 Conforti</code>'); return new Response('ok'); }
+    const { emps, error } = await buscarEmpleados(p.busqueda);
+    if (error) { await reply('⚠️ Error buscando empleado.'); return new Response('ok'); }
+    if (!emps.length) { await reply(`No encontré empleados activos con "${p.busqueda}".`); return new Response('ok'); }
+    if (emps.length > 1) { await reply(`Hay ${emps.length} coincidencias, usá el legajo:\n${listaCoincidencias(emps)}`); return new Response('ok'); }
+    const { error: insErr } = await supabase.from('telegram_autorizados').insert({
+      chat_id: p.codigo, empleado_id: emps[0].id, autorizado_por: autor.empleado_id, ...PERMISOS_POR_DEFECTO,
+    });
+    if (insErr) {
+      console.error(insErr);
+      await reply(insErr.code === '23505' ? `Ese código ya está autorizado. Usá <code>/quitar ${p.codigo}</code> primero.` : '⚠️ No se pudo autorizar.');
+      return new Response('ok');
+    }
+    await supabase.from('telegram_solicitudes').update({ visto: true }).eq('chat_id', p.codigo);
+    await reply(`✅ Autorizado: <b>${emps[0].apellido}, ${emps[0].nombre}</b>\n🔑 Código <code>${p.codigo}</code>\nPermisos: ${resumenPermisos(PERMISOS_POR_DEFECTO)}\n\nPara ajustar permisos: Configuración → Bot de Telegram.`);
+    return new Response('ok');
+  }
+
+  if (comando === 'quitar') {
+    const codigo = parsearQuitar(resto);
+    if (!codigo) { await reply('Falta el código. Ej: <code>/quitar 123456789</code>'); return new Response('ok'); }
+    const { data: borrada } = await supabase.from('telegram_autorizados').delete().eq('chat_id', codigo).select('chat_id');
+    await reply(borrada?.length ? `✅ Acceso quitado: código <code>${codigo}</code>` : `No había nadie autorizado con el código <code>${codigo}</code>.`);
+    return new Response('ok');
+  }
+
+  if (comando === 'autorizados') {
+    const { data } = await supabase.from('telegram_autorizados')
+      .select('chat_id, activo, puede_notas, puede_fichero, puede_vacaciones, puede_agenda, puede_administrar, empleados!inner(nombre, apellido, legajo)')
+      .order('created_at');
+    const filas = (data ?? []).map((r: any) => {
+      const e = r.empleados as { nombre: string; apellido: string; legajo: string | null };
+      const per = resumenPermisos({
+        puede_notas: r.puede_notas, puede_fichero: r.puede_fichero, puede_vacaciones: r.puede_vacaciones,
+        puede_agenda: r.puede_agenda, puede_administrar: r.puede_administrar,
+      });
+      return `• ${e.apellido}, ${e.nombre} (legajo ${e.legajo ?? 's/d'}) — <code>${r.chat_id}</code>${r.activo ? '' : ' 🔒 inactivo'}\n  ${per}`;
+    });
+    await reply(filas.length ? `🔑 <b>Autorizados</b> (${filas.length})\n${filas.join('\n')}` : 'No hay nadie autorizado todavía.');
+    return new Response('ok');
+  }
+
+  // ---- /fichero ----
+  if (comando === 'fichero') {
     try {
-      const args = text.replace(/^\/fichero(@\w+)?\s*/i, '').split(/\s+/).filter(Boolean);
-      // Fecha en hora Argentina (UTC-3)
       const hoyAR = new Date(Date.now() - 3 * 3600000);
       let fecha = hoyAR.toISOString().slice(0, 10);
       const rest: string[] = [];
-      for (const a of args) {
+      for (const a of resto.split(/\s+/).filter(Boolean)) {
         const m = a.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
         if (/^ayer$/i.test(a)) fecha = new Date(hoyAR.getTime() - 86400000).toISOString().slice(0, 10);
         else if (/^hoy$/i.test(a)) { /* hoy */ }
@@ -126,14 +238,11 @@ Deno.serve(async (req) => {
       const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', hour12: false });
       const fechaTxt = fecha.split('-').reverse().join('/');
 
-      let q = supabase.from('empleados').select('id, nombre, apellido, legajo').eq('activo', true);
-      if (busqueda) q = /^\d+$/.test(busqueda) ? q.eq('legajo', busqueda) : q.ilike('apellido', `%${busqueda}%`);
-      const { data: emps } = await q.limit(busqueda ? 10 : 500);
-      if (!emps?.length) { await reply(`No encontré empleados activos con "${busqueda}".`); return new Response('ok'); }
-      if (busqueda && emps.length > 1) {
-        await reply(`Hay ${emps.length} coincidencias, usá el legajo:\n` + emps.map((e) => `• ${e.apellido}, ${e.nombre} — legajo ${e.legajo ?? 's/d'}`).join('\n'));
-        return new Response('ok');
-      }
+      const { emps, error } = await buscarEmpleados(busqueda);
+      if (error) { await reply('⚠️ Error buscando empleados.'); return new Response('ok'); }
+      if (!emps.length) { await reply(`No encontré empleados activos con "${busqueda}".`); return new Response('ok'); }
+      if (busqueda && emps.length > 1) { await reply(`Hay ${emps.length} coincidencias, usá el legajo:\n${listaCoincidencias(emps)}`); return new Response('ok'); }
+
       const ids = emps.map((e) => e.id);
       const [{ data: fich }, { data: tard }, { data: paus }] = await Promise.all([
         supabase.from('fichajes').select('empleado_id, tipo, timestamp_real').in('empleado_id', ids).gte('timestamp_real', desde).lt('timestamp_real', hasta).order('timestamp_real'),
@@ -159,7 +268,6 @@ Deno.serve(async (req) => {
         return new Response('ok');
       }
 
-      // Resumen general del día
       const porEmp = new Map<string, { ent?: string; sal?: string; t: number; p: number }>();
       for (const f of fich ?? []) {
         const r = porEmp.get(f.empleado_id) ?? { t: 0, p: 0 };
@@ -184,7 +292,8 @@ Deno.serve(async (req) => {
     return new Response('ok');
   }
 
-  if (/^\/vacaciones/i.test(text)) {
+  // ---- /vacaciones ----
+  if (comando === 'vacaciones') {
     try {
       const hoyAR = new Date(Date.now() - 3 * 3600000);
       const hoy = hoyAR.toISOString().slice(0, 10);
@@ -212,21 +321,21 @@ Deno.serve(async (req) => {
     return new Response('ok');
   }
 
-  if (/^\/noficharon/i.test(text)) {
+  // ---- /noficharon ----
+  if (comando === 'noficharon') {
     try {
       const hoyAR = new Date(Date.now() - 3 * 3600000);
       let fecha = hoyAR.toISOString().slice(0, 10);
-      const arg = text.replace(/^\/noficharon(@\w+)?\s*/i, '').trim();
-      if (/^ayer$/i.test(arg)) fecha = new Date(hoyAR.getTime() - 86400000).toISOString().slice(0, 10);
+      if (/^ayer$/i.test(resto)) fecha = new Date(hoyAR.getTime() - 86400000).toISOString().slice(0, 10);
       else {
-        const m = arg.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        const m = resto.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
         if (m) {
           const y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(hoyAR.getUTCFullYear());
           fecha = `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
         }
       }
       const fechaTxt = fecha.split('-').reverse().join('/');
-      const dow = new Date(`${fecha}T12:00:00-03:00`).getDay(); // 0 = domingo
+      const dow = new Date(`${fecha}T12:00:00-03:00`).getDay();
       if (dow === 0) { await reply(`El ${fechaTxt} fue domingo, no se controlan fichadas.`); return new Response('ok'); }
 
       const { data: feriado } = await supabase.from('dias_feriados').select('nombre')
@@ -251,7 +360,7 @@ Deno.serve(async (req) => {
         if (ficharon.has(e.id) || deVac.has(e.id)) continue;
         const { data: hor } = await supabase.rpc('resolver_horario_dia', { _empleado: e.id, _fecha: fecha });
         const h = Array.isArray(hor) ? hor[0] : hor;
-        if (!h?.hora_entrada) continue; // no tenía horario ese día
+        if (!h?.hora_entrada) continue;
         faltantes.push({ apellido: e.apellido, nombre: e.nombre, legajo: e.legajo, entrada: String(h.hora_entrada).slice(0, 5) });
       }
       faltantes.sort((a, b) => a.apellido.localeCompare(b.apellido));
@@ -267,25 +376,27 @@ Deno.serve(async (req) => {
     return new Response('ok');
   }
 
-  if (/^\/agenda/i.test(text)) {
+  // ---- /agenda ----
+  if (comando === 'agenda') {
     const { data: prox } = await supabase.from('agenda_personal').select('titulo, fecha_hora')
-      .eq('autor_empleado_id', AUTOR_ID).eq('completado', false).gte('fecha_hora', new Date().toISOString())
+      .eq('autor_empleado_id', autor.empleado_id).eq('completado', false).gte('fecha_hora', new Date().toISOString())
       .order('fecha_hora').limit(15);
     await reply(prox?.length ? '🗓️ Próximos:\n' + prox.map((p) => `• ${fmt(p.fecha_hora)} — ${p.titulo}`).join('\n') : 'No tenés nada agendado.');
     return new Response('ok');
   }
 
-  if (!/^\/nota/i.test(text)) {
+  // ---- recordatorios (texto libre o /recordar) ----
+  if (comando === 'texto_libre' || comando === 'recordar') {
     try {
-      const r = await interpretarRecordatorio(text.replace(/^\/recordar(@\w+)?\s*/i, ''));
+      const r = await interpretarRecordatorio(resto);
       const fh = new Date(r.fecha_hora);
       if (!r.es_recordatorio || isNaN(fh.getTime())) {
-        await reply('No entendí. Para recordatorios escribí algo como "mañana a las 10 llamar a Conforti". Para notas: /nota Apellido texto. /ayuda para más.');
+        await reply('No entendí. Para recordatorios escribí algo como "mañana a las 10 llamar a Conforti". /ayuda para más.');
         return new Response('ok');
       }
       const avisar = new Date(fh.getTime() - Math.max(0, r.minutos_antes) * 60000);
       const { error } = await supabase.from('agenda_personal').insert({
-        autor_empleado_id: AUTOR_ID, titulo: r.titulo, detalle: text, fecha_hora: fh.toISOString(), avisar_en: avisar.toISOString(),
+        autor_empleado_id: autor.empleado_id, titulo: r.titulo, detalle: texto, fecha_hora: fh.toISOString(), avisar_en: avisar.toISOString(),
       });
       if (error) throw error;
       await reply(`🗓️ Agendado: <b>${r.titulo}</b>\n${fmt(fh.toISOString())}${r.minutos_antes ? `\n⏰ Te aviso ${r.minutos_antes} min antes` : '\n⏰ Te aviso a esa hora'}`);
@@ -296,9 +407,9 @@ Deno.serve(async (req) => {
     return new Response('ok');
   }
 
-  const body = text.replace(/^\/nota(@\w+)?\s*/i, '');
-  const [busqueda, ...resto] = body.split(/\s+/);
-  let descripcion = resto.join(' ');
+  // ---- /nota ----
+  const [busqueda, ...restoNota] = resto.split(/\s+/);
+  let descripcion = restoNota.join(' ');
   if (!busqueda || !descripcion) {
     await reply('Falta el empleado o el texto. Ej: <code>/nota Conforti Se retiró antes #llamado</code>');
     return new Response('ok');
@@ -312,19 +423,14 @@ Deno.serve(async (req) => {
     return '#' + t;
   }).replace(/\s+/g, ' ').trim();
 
-  let q = supabase.from('empleados').select('id, nombre, apellido, legajo').eq('activo', true);
-  q = /^\d+$/.test(busqueda) ? q.eq('legajo', busqueda) : q.ilike('apellido', `%${busqueda}%`);
-  const { data: emps, error } = await q.limit(10);
+  const { emps, error } = await buscarEmpleados(busqueda);
   if (error) { await reply('⚠️ Error buscando empleado.'); console.error(error); return new Response('ok'); }
-  if (!emps?.length) { await reply(`No encontré empleados activos con "${busqueda}".`); return new Response('ok'); }
-  if (emps.length > 1) {
-    await reply(`Hay ${emps.length} coincidencias, usá el legajo:\n` +
-      emps.map((e) => `• ${e.apellido}, ${e.nombre} — legajo ${e.legajo ?? 's/d'}`).join('\n'));
-    return new Response('ok');
-  }
+  if (!emps.length) { await reply(`No encontré empleados activos con "${busqueda}".`); return new Response('ok'); }
+  if (emps.length > 1) { await reply(`Hay ${emps.length} coincidencias, usá el legajo:\n${listaCoincidencias(emps)}`); return new Response('ok'); }
+
   const e = emps[0];
   const { error: insErr } = await supabase.from('empleados_anotaciones').insert({
-    empleado_id: e.id, creado_por: AUTOR_ID, categoria, es_critica: critica,
+    empleado_id: e.id, creado_por: autor.empleado_id, categoria, es_critica: critica,
     titulo: `${NOMBRE_CAT[categoria]} (Telegram)`, descripcion: descripcion || null,
   });
   if (insErr) { console.error(insErr); await reply('⚠️ No se pudo guardar la anotación.'); return new Response('ok'); }
