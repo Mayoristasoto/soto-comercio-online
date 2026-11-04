@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_personal: {
+        Row: {
+          autor_empleado_id: string
+          avisado: boolean
+          avisar_en: string
+          completado: boolean
+          created_at: string
+          detalle: string | null
+          fecha_hora: string
+          google_event_id: string | null
+          id: string
+          origen: string
+          titulo: string
+        }
+        Insert: {
+          autor_empleado_id: string
+          avisado?: boolean
+          avisar_en: string
+          completado?: boolean
+          created_at?: string
+          detalle?: string | null
+          fecha_hora: string
+          google_event_id?: string | null
+          id?: string
+          origen?: string
+          titulo: string
+        }
+        Update: {
+          autor_empleado_id?: string
+          avisado?: boolean
+          avisar_en?: string
+          completado?: boolean
+          created_at?: string
+          detalle?: string | null
+          fecha_hora?: string
+          google_event_id?: string | null
+          id?: string
+          origen?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       alertas_rrhh: {
         Row: {
           clave: string

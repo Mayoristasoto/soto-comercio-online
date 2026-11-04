@@ -19,6 +19,41 @@ async function secretFrom(token: string) {
   return btoa(String.fromCharCode(...new Uint8Array(d))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+async function interpretarRecordatorio(texto: string): Promise<{ es_recordatorio: boolean; titulo: string; fecha_hora: string; minutos_antes: number }> {
+  const key = Deno.env.get('LOVABLE_API_KEY');
+  if (!key) throw new Error('LOVABLE_API_KEY no configurada');
+  const ahora = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'full', timeStyle: 'short' });
+  const r = await fetch('https://ai.gateway.lovable.dev/v1/responses', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Lovable-API-Key': key, Authorization: `Bearer ${key}`, 'X-Lovable-AIG-SDK': 'fetch' },
+    body: JSON.stringify({
+      model: 'openai/gpt-6-astra', stream: true, store: false, reasoning: { effort: 'low' },
+      instructions: `Interpretás pedidos de agenda/recordatorio en español rioplatense. Ahora es ${ahora} (Argentina, UTC-3). Devolvé fecha_hora en ISO 8601 con offset -03:00. Si no dice hora, usá 09:00. minutos_antes: cuánto antes avisar (0 si no lo pide). titulo: breve, sin la fecha. es_recordatorio=false si el texto no es un pedido de agenda.`,
+      input: texto,
+      text: { format: { type: 'json_schema', name: 'recordatorio', strict: true, schema: {
+        type: 'object', additionalProperties: false, required: ['es_recordatorio', 'titulo', 'fecha_hora', 'minutos_antes'],
+        properties: { es_recordatorio: { type: 'boolean' }, titulo: { type: 'string' }, fecha_hora: { type: 'string' }, minutos_antes: { type: 'integer' } },
+      } } },
+    }),
+  });
+  if (!r.ok || !r.body) throw new Error(`IA ${r.status}: ${await r.text()}`);
+  const reader = r.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buf = '', out = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += value;
+    const lines = buf.split('\n'); buf = lines.pop() ?? '';
+    for (const l of lines) {
+      if (!l.startsWith('data:')) continue;
+      try { const ev = JSON.parse(l.slice(5)); if (ev.type === 'response.output_text.delta') out += ev.delta; } catch { /* ignore */ }
+    }
+  }
+  return JSON.parse(out);
+}
+
+const fmt = (iso: string) => new Date(iso).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
 Deno.serve(async (req) => {
   const TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
   const CHAT = Deno.env.get('TELEGRAM_CHAT_ID_AUTORIZADO');
@@ -35,6 +70,19 @@ Deno.serve(async (req) => {
     const r = await api('setWebhook', { url: hook, secret_token: secret, allowed_updates: ['message'] });
     return new Response(JSON.stringify({ ok: r.ok, description: r.description }), { headers: { 'Content-Type': 'application/json' } });
   }
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+  // Envío de recordatorios vencidos (lo llama el programador cada minuto)
+  if (url.searchParams.get('cron') === '1') {
+    const { data: pend } = await supabase.from('agenda_personal').select('id, titulo, fecha_hora')
+      .eq('avisado', false).eq('completado', false).lte('avisar_en', new Date().toISOString()).limit(20);
+    for (const p of pend ?? []) {
+      await api('sendMessage', { chat_id: CHAT.trim(), text: `⏰ Recordatorio: <b>${p.titulo}</b>\n🗓️ ${fmt(p.fecha_hora)}` });
+      await supabase.from('agenda_personal').update({ avisado: true }).eq('id', p.id);
+    }
+    return new Response(JSON.stringify({ enviados: pend?.length ?? 0 }), { headers: { 'Content-Type': 'application/json' } });
+  }
+
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   if (req.headers.get('X-Telegram-Bot-Api-Secret-Token') !== secret) return new Response('Unauthorized', { status: 401 });
 
@@ -51,8 +99,37 @@ Deno.serve(async (req) => {
 
   const text: string = (msg.text ?? '').trim();
   if (!text || text === '/start' || text === '/ayuda' || text === '/help') {
-    await reply('Escribí:\n<code>/nota Apellido texto #etiqueta</code>\no con legajo:\n<code>/nota 108 texto #celular</code>\n\nEtiquetas: ' +
+    await reply('🗓️ <b>Agenda</b>: escribí normal, ej. "mañana a las 10 llamar a Conforti" o "el viernes 15hs reunión, avisame 30 min antes". /agenda muestra lo próximo.\n\n📝 <b>Notas</b>: escribí:\n<code>/nota Apellido texto #etiqueta</code>\no con legajo:\n<code>/nota 108 texto #celular</code>\n\nEtiquetas: ' +
       Object.keys(TAGS).map((t) => '#' + t).join(' ') + '\nSin etiqueta queda como "Otro". Agregá #critica para marcarla crítica.');
+    return new Response('ok');
+  }
+
+  if (/^\/agenda/i.test(text)) {
+    const { data: prox } = await supabase.from('agenda_personal').select('titulo, fecha_hora')
+      .eq('autor_empleado_id', AUTOR_ID).eq('completado', false).gte('fecha_hora', new Date().toISOString())
+      .order('fecha_hora').limit(15);
+    await reply(prox?.length ? '🗓️ Próximos:\n' + prox.map((p) => `• ${fmt(p.fecha_hora)} — ${p.titulo}`).join('\n') : 'No tenés nada agendado.');
+    return new Response('ok');
+  }
+
+  if (!/^\/nota/i.test(text)) {
+    try {
+      const r = await interpretarRecordatorio(text.replace(/^\/recordar(@\w+)?\s*/i, ''));
+      const fh = new Date(r.fecha_hora);
+      if (!r.es_recordatorio || isNaN(fh.getTime())) {
+        await reply('No entendí. Para recordatorios escribí algo como "mañana a las 10 llamar a Conforti". Para notas: /nota Apellido texto. /ayuda para más.');
+        return new Response('ok');
+      }
+      const avisar = new Date(fh.getTime() - Math.max(0, r.minutos_antes) * 60000);
+      const { error } = await supabase.from('agenda_personal').insert({
+        autor_empleado_id: AUTOR_ID, titulo: r.titulo, detalle: text, fecha_hora: fh.toISOString(), avisar_en: avisar.toISOString(),
+      });
+      if (error) throw error;
+      await reply(`🗓️ Agendado: <b>${r.titulo}</b>\n${fmt(fh.toISOString())}${r.minutos_antes ? `\n⏰ Te aviso ${r.minutos_antes} min antes` : '\n⏰ Te aviso a esa hora'}`);
+    } catch (err) {
+      console.error(err);
+      await reply('⚠️ No pude agendarlo, probá de nuevo en un rato.');
+    }
     return new Response('ok');
   }
 
@@ -72,7 +149,6 @@ Deno.serve(async (req) => {
     return '#' + t;
   }).replace(/\s+/g, ' ').trim();
 
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   let q = supabase.from('empleados').select('id, nombre, apellido, legajo').eq('activo', true);
   q = /^\d+$/.test(busqueda) ? q.eq('legajo', busqueda) : q.ilike('apellido', `%${busqueda}%`);
   const { data: emps, error } = await q.limit(10);
