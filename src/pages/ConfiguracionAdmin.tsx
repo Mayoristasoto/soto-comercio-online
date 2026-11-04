@@ -10,6 +10,7 @@ import {
   Key,
   FileSignature,
   ShieldCheck,
+  Send,
 } from "lucide-react"
 import { PlantillasDocumentosManager } from "@/components/admin/PlantillasDocumentosManager"
 import FacialRecognitionConfig from "@/components/admin/FacialRecognitionConfig"
@@ -29,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import ConfigAutogestion from "@/components/admin/ConfigAutogestion"
+import ConfigTelegramAccesos from "@/components/admin/ConfigTelegramAccesos"
 
 type TabId =
   | "fichero"
@@ -42,6 +44,7 @@ type TabId =
   | "comercial"
   | "ia"
   | "activaciones"
+  | "telegram"
 
 const GRUPOS: { titulo: string; items: { id: TabId; label: string; icon: any }[] }[] = [
   {
@@ -64,7 +67,10 @@ const GRUPOS: { titulo: string; items: { id: TabId; label: string; icon: any }[]
   },
   {
     titulo: "Accesos y roles",
-    items: [{ id: "accesos-rol", label: "Accesos y roles", icon: ShieldCheck }],
+    items: [
+      { id: "accesos-rol", label: "Accesos y roles", icon: ShieldCheck },
+      { id: "telegram", label: "Bot de Telegram", icon: Send },
+    ],
   },
   {
     titulo: "Sistema",
@@ -230,6 +236,8 @@ export default function Configuracion() {
           )}
 
           {tab === "accesos-rol" && <AccesosRolesPanel />}
+
+          {tab === "telegram" && <ConfigTelegramAccesos />}
 
           {tab === "comercial" && <SistemaComercialConfig />}
 
