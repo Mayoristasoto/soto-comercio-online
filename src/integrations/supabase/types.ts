@@ -12910,6 +12910,132 @@ export type Database = {
           },
         ]
       }
+      telegram_autorizados: {
+        Row: {
+          activo: boolean
+          autorizado_por: string | null
+          chat_id: string
+          created_at: string
+          empleado_id: string
+          puede_administrar: boolean
+          puede_agenda: boolean
+          puede_fichero: boolean
+          puede_notas: boolean
+          puede_vacaciones: boolean
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          autorizado_por?: string | null
+          chat_id: string
+          created_at?: string
+          empleado_id: string
+          puede_administrar?: boolean
+          puede_agenda?: boolean
+          puede_fichero?: boolean
+          puede_notas?: boolean
+          puede_vacaciones?: boolean
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          autorizado_por?: string | null
+          chat_id?: string
+          created_at?: string
+          empleado_id?: string
+          puede_administrar?: boolean
+          puede_agenda?: boolean
+          puede_fichero?: boolean
+          puede_notas?: boolean
+          puede_vacaciones?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_autorizados_autorizado_por_fkey"
+            columns: ["autorizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_autorizados_autorizado_por_fkey"
+            columns: ["autorizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_autorizados_autorizado_por_fkey"
+            columns: ["autorizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_autorizados_autorizado_por_fkey"
+            columns: ["autorizado_por"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_autorizados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_autorizados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_autorizados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_autorizados_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_solicitudes: {
+        Row: {
+          chat_id: string
+          created_at: string
+          nombre: string | null
+          updated_at: string
+          username: string | null
+          visto: boolean
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          nombre?: string | null
+          updated_at?: string
+          username?: string | null
+          visto?: boolean
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          nombre?: string | null
+          updated_at?: string
+          username?: string | null
+          visto?: boolean
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
