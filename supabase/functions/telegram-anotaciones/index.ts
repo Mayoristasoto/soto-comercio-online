@@ -184,6 +184,89 @@ Deno.serve(async (req) => {
     return new Response('ok');
   }
 
+  if (/^\/vacaciones/i.test(text)) {
+    try {
+      const hoyAR = new Date(Date.now() - 3 * 3600000);
+      const hoy = hoyAR.toISOString().slice(0, 10);
+      const en14 = new Date(hoyAR.getTime() + 14 * 86400000).toISOString().slice(0, 10);
+      const { data: vacs } = await supabase.from('solicitudes_vacaciones')
+        .select('fecha_inicio, fecha_fin, empleados!inner(nombre, apellido, activo)')
+        .eq('estado', 'aprobada').eq('empleados.activo', true)
+        .lte('fecha_inicio', en14).gte('fecha_fin', hoy)
+        .order('fecha_inicio').limit(60);
+      const fd = (d: string) => d.split('-').reverse().slice(0, 2).join('/');
+      const hoyTxt = hoy.split('-').reverse().join('/');
+      const deHoy = (vacs ?? []).filter((v) => v.fecha_inicio <= hoy && v.fecha_fin >= hoy);
+      const proximas = (vacs ?? []).filter((v) => v.fecha_inicio > hoy);
+      const nom = (v: { empleados: { nombre: string; apellido: string } }) => `${v.empleados.apellido}, ${v.empleados.nombre}`;
+      const lineas = [`🏖️ <b>Vacaciones</b> (al ${hoyTxt})`];
+      lineas.push('', '<b>De vacaciones hoy:</b>',
+        ...(deHoy.length ? deHoy.map((v) => `• ${nom(v)} — hasta el ${fd(v.fecha_fin)}`) : ['Nadie']));
+      lineas.push('', '<b>Próximas (14 días):</b>',
+        ...(proximas.length ? proximas.map((v) => `• ${nom(v)} — ${fd(v.fecha_inicio)} al ${fd(v.fecha_fin)}`) : ['Ninguna']));
+      await reply(lineas.join('\n'));
+    } catch (err) {
+      console.error(err);
+      await reply('⚠️ No pude leer las vacaciones, probá de nuevo.');
+    }
+    return new Response('ok');
+  }
+
+  if (/^\/noficharon/i.test(text)) {
+    try {
+      const hoyAR = new Date(Date.now() - 3 * 3600000);
+      let fecha = hoyAR.toISOString().slice(0, 10);
+      const arg = text.replace(/^\/noficharon(@\w+)?\s*/i, '').trim();
+      if (/^ayer$/i.test(arg)) fecha = new Date(hoyAR.getTime() - 86400000).toISOString().slice(0, 10);
+      else {
+        const m = arg.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (m) {
+          const y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(hoyAR.getUTCFullYear());
+          fecha = `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        }
+      }
+      const fechaTxt = fecha.split('-').reverse().join('/');
+      const dow = new Date(`${fecha}T12:00:00-03:00`).getDay(); // 0 = domingo
+      if (dow === 0) { await reply(`El ${fechaTxt} fue domingo, no se controlan fichadas.`); return new Response('ok'); }
+
+      const { data: feriado } = await supabase.from('dias_feriados').select('nombre')
+        .eq('fecha', fecha).eq('activo', true).eq('desactivar_controles', true).limit(1);
+      if (feriado?.length) { await reply(`El ${fechaTxt} fue feriado (${feriado[0].nombre}), no se controlan fichadas.`); return new Response('ok'); }
+
+      const { data: emps } = await supabase.from('empleados').select('id, nombre, apellido, legajo').eq('activo', true).limit(500);
+      if (!emps?.length) { await reply('No hay empleados activos.'); return new Response('ok'); }
+
+      const [{ data: fich }, { data: vacs }] = await Promise.all([
+        supabase.from('fichajes').select('empleado_id').eq('tipo', 'entrada')
+          .gte('timestamp_real', new Date(`${fecha}T00:00:00-03:00`).toISOString())
+          .lt('timestamp_real', new Date(new Date(`${fecha}T00:00:00-03:00`).getTime() + 86400000).toISOString()),
+        supabase.from('solicitudes_vacaciones').select('empleado_id')
+          .eq('estado', 'aprobada').lte('fecha_inicio', fecha).gte('fecha_fin', fecha),
+      ]);
+      const ficharon = new Set((fich ?? []).map((f) => f.empleado_id));
+      const deVac = new Set((vacs ?? []).map((v) => v.empleado_id));
+
+      const faltantes: { apellido: string; nombre: string; legajo: string | null; entrada: string }[] = [];
+      for (const e of emps) {
+        if (ficharon.has(e.id) || deVac.has(e.id)) continue;
+        const { data: hor } = await supabase.rpc('resolver_horario_dia', { _empleado: e.id, _fecha: fecha });
+        const h = Array.isArray(hor) ? hor[0] : hor;
+        if (!h?.hora_entrada) continue; // no tenía horario ese día
+        faltantes.push({ apellido: e.apellido, nombre: e.nombre, legajo: e.legajo, entrada: String(h.hora_entrada).slice(0, 5) });
+      }
+      faltantes.sort((a, b) => a.apellido.localeCompare(b.apellido));
+      await reply(faltantes.length
+        ? `🚫 <b>Sin fichar entrada — ${fechaTxt}</b> (${faltantes.length})\n` +
+          faltantes.map((f) => `• ${f.apellido}, ${f.nombre} (legajo ${f.legajo ?? 's/d'}) — debía entrar ${f.entrada}`).join('\n') +
+          '\n\nNo incluye vacaciones aprobadas ni quienes no tenían horario.'
+        : `✅ El ${fechaTxt} ficharon todos los que tenían horario.`);
+    } catch (err) {
+      console.error(err);
+      await reply('⚠️ No pude revisar las fichadas, probá de nuevo.');
+    }
+    return new Response('ok');
+  }
+
   if (/^\/agenda/i.test(text)) {
     const { data: prox } = await supabase.from('agenda_personal').select('titulo, fecha_hora')
       .eq('autor_empleado_id', AUTOR_ID).eq('completado', false).gte('fecha_hora', new Date().toISOString())
