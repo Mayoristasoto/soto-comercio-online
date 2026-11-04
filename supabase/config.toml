@@ -111,3 +111,5 @@ verify_jwt = false
 
 [functions.ocr-f931]
 verify_jwt = false
+[functions.telegram-anotaciones]
+verify_jwt = false
