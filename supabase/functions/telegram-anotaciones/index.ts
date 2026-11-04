@@ -321,6 +321,40 @@ Deno.serve(async (req) => {
     return new Response('ok');
   }
 
+  // ---- /descansos ----
+  if (comando === 'descansos') {
+    try {
+      const hoyAR = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
+      const desde = new Date(`${hoyAR}T00:00:00-03:00`).toISOString();
+      const { data: fich } = await supabase.from('fichajes')
+        .select('empleado_id, tipo, timestamp_real, empleados!inner(nombre, apellido, legajo, activo, sucursal_id, sucursales(nombre))')
+        .gte('timestamp_real', desde).order('timestamp_real', { ascending: true }).limit(5000);
+      const ultimo = new Map<string, any>();
+      for (const f of fich ?? []) ultimo.set(f.empleado_id, f);
+      const grupos = new Map<string, string[]>();
+      let total = 0;
+      for (const f of ultimo.values()) {
+        if (f.tipo !== 'pausa_inicio') continue;
+        const e: any = f.empleados;
+        if (!e?.activo) continue;
+        const min = Math.floor((Date.now() - new Date(f.timestamp_real).getTime()) / 60000);
+        const hora = new Date(new Date(f.timestamp_real).getTime() - 3 * 3600000).toISOString().slice(11, 16);
+        const suc = e.sucursales?.nombre ?? 'Sin sucursal';
+        if (!grupos.has(suc)) grupos.set(suc, []);
+        grupos.get(suc)!.push(`• ${e.apellido}, ${e.nombre} (legajo ${e.legajo ?? 's/d'}) — desde ${hora}, ${min} min${min > 40 ? ' ⚠️' : ''}`);
+        total++;
+      }
+      if (!total) { await reply('☕ Ahora no hay nadie en descanso.'); return new Response('ok'); }
+      const txt = [...grupos.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([s, l]) => `📍 <b>${s}</b> (${l.length})\n${l.sort().join('\n')}`).join('\n\n');
+      await reply(`☕ <b>En descanso ahora</b> (${total})\n\n${txt}\n\n⚠️ = más de 40 min.`);
+    } catch (err) {
+      console.error(err);
+      await reply('⚠️ No pude revisar los descansos, probá de nuevo.');
+    }
+    return new Response('ok');
+  }
+
   // ---- /noficharon ----
   if (comando === 'noficharon') {
     try {
