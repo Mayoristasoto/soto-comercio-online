@@ -14,6 +14,7 @@ export type ComandoTelegram =
   | 'nota'
   | 'fichero'
   | 'noficharon'
+  | 'descansos'
   | 'vacaciones'
   | 'agenda'
   | 'recordar'
@@ -37,7 +38,7 @@ export const PERMISOS_TELEGRAM: {
   descripcion: string;
 }[] = [
   { clave: 'puede_notas', etiqueta: 'Cargar notas', descripcion: 'Anotaciones al legajo con /nota' },
-  { clave: 'puede_fichero', etiqueta: 'Ver fichajes', descripcion: '/fichero y /noficharon' },
+  { clave: 'puede_fichero', etiqueta: 'Ver fichajes', descripcion: '/fichero, /noficharon y /descansos' },
   { clave: 'puede_vacaciones', etiqueta: 'Ver vacaciones', descripcion: '/vacaciones' },
   { clave: 'puede_agenda', etiqueta: 'Su agenda', descripcion: 'Recordatorios propios y /agenda' },
   { clave: 'puede_administrar', etiqueta: 'Administrar accesos', descripcion: 'Autorizar y quitar personas' },
@@ -47,6 +48,7 @@ const REQUIERE: Record<ComandoTelegram, keyof PermisosTelegram | null> = {
   nota: 'puede_notas',
   fichero: 'puede_fichero',
   noficharon: 'puede_fichero',
+  descansos: 'puede_fichero',
   vacaciones: 'puede_vacaciones',
   agenda: 'puede_agenda',
   recordar: 'puede_agenda',
@@ -61,6 +63,8 @@ const COMANDOS: Record<string, ComandoTelegram> = {
   nota: 'nota',
   fichero: 'fichero',
   noficharon: 'noficharon',
+  descansos: 'descansos',
+  descanso: 'descansos',
   vacaciones: 'vacaciones',
   agenda: 'agenda',
   recordar: 'recordar',
@@ -124,7 +128,7 @@ export function resumenPermisos(permisos: PermisosTelegram): string {
 export function ayudaPara(permisos: PermisosTelegram): string[] {
   const lineas: string[] = [];
   if (permisos.puede_notas) lineas.push('📝 <b>Notas</b>: <code>/nota Apellido texto #etiqueta</code> o <code>/nota 108 texto #celular</code>');
-  if (permisos.puede_fichero) lineas.push('📋 <b>Fichero</b>: <code>/fichero</code>, <code>/fichero Conforti</code>, <code>/fichero 108 ayer</code> · <code>/noficharon</code>');
+  if (permisos.puede_fichero) lineas.push('📋 <b>Fichero</b>: <code>/fichero</code>, <code>/fichero Conforti</code>, <code>/fichero 108 ayer</code> · <code>/noficharon</code> · <code>/descansos</code>');
   if (permisos.puede_vacaciones) lineas.push('🏖️ <b>Vacaciones</b>: <code>/vacaciones</code>');
   if (permisos.puede_agenda) lineas.push('🗓️ <b>Agenda</b>: escribí normal, ej. "mañana a las 10 llamar a Conforti" · <code>/agenda</code> muestra lo próximo');
   if (permisos.puede_administrar) lineas.push('🔑 <b>Accesos</b>: <code>/permitir codigo Apellido</code>, <code>/quitar codigo</code>, <code>/autorizados</code>');
