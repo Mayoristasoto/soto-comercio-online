@@ -58,7 +58,7 @@ export default function ConfigTelegramAccesos() {
       .slice(0, 8)
   }, [empleados, filtro])
 
-  const cambiarPermiso = async (chat_id: string, clave: keyof PermisosTelegram, valor: boolean) => {
+  const cambiarPermiso = async (chat_id: string, clave: keyof PermisosTelegram | "activo", valor: boolean) => {
     setAutorizados((p) => p.map((x) => (x.chat_id === chat_id ? { ...x, [clave]: valor } : x)))
     const { error } = await (supabase as any).from("telegram_autorizados").update({ [clave]: valor }).eq("chat_id", chat_id)
     if (error) toast({ title: "No se pudo guardar", description: error.message, variant: "destructive" })
@@ -219,7 +219,7 @@ export default function ConfigTelegramAccesos() {
           {autorizados.map((a) => (
             <div key={a.chat_id} className={`rounded-md border p-3 ${a.activo ? "" : "opacity-60"}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <Switch checked={a.activo} onCheckedChange={(v) => cambiarPermiso(a.chat_id, "activo" as any, v)} />
+                <Switch checked={a.activo} onCheckedChange={(v) => cambiarPermiso(a.chat_id, "activo", v)} />
                 <div className="min-w-0">
                   <p className="font-medium truncate">
                     {a.empleados ? `${a.empleados.apellido}, ${a.empleados.nombre}` : "Empleado dado de baja"}
