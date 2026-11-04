@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
   const text: string = (msg.text ?? '').trim();
   if (!text || text === '/start' || text === '/ayuda' || text === '/help') {
-    await reply('🗓️ <b>Agenda</b>: escribí normal, ej. "mañana a las 10 llamar a Conforti" o "el viernes 15hs reunión, avisame 30 min antes". /agenda muestra lo próximo.\n\n📋 <b>Fichero</b>: <code>/fichero</code> (todos hoy), <code>/fichero Conforti</code>, <code>/fichero 108 ayer</code> o <code>/fichero Conforti 3/11</code>\n\n📝 <b>Notas</b>: escribí:\n<code>/nota Apellido texto #etiqueta</code>\no con legajo:\n<code>/nota 108 texto #celular</code>\n\nEtiquetas: ' +
+    await reply('🗓️ <b>Agenda</b>: escribí normal, ej. "mañana a las 10 llamar a Conforti" o "el viernes 15hs reunión, avisame 30 min antes". /agenda muestra lo próximo.\n\n📋 <b>Fichero</b>: <code>/fichero</code> (todos hoy), <code>/fichero Conforti</code>, <code>/fichero 108 ayer</code> o <code>/fichero Conforti 3/11</code>\n\n🏖️ <b>Vacaciones</b>: <code>/vacaciones</code> (quién está hoy + próximas)\n\n🚫 <b>Sin fichar</b>: <code>/noficharon</code> (quién tenía horario hoy y no fichó entrada), <code>/noficharon ayer</code> o <code>/noficharon 3/11</code>\n\n📝 <b>Notas</b>: escribí:\n<code>/nota Apellido texto #etiqueta</code>\no con legajo:\n<code>/nota 108 texto #celular</code>\n\nEtiquetas: ' +
       Object.keys(TAGS).map((t) => '#' + t).join(' ') + '\nSin etiqueta queda como "Otro". Agregá #critica para marcarla crítica.');
     return new Response('ok');
   }
