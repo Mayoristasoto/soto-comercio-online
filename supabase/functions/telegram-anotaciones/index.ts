@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
       const hoy = hoyAR.toISOString().slice(0, 10);
       const en14 = new Date(hoyAR.getTime() + 14 * 86400000).toISOString().slice(0, 10);
       const { data: vacs } = await supabase.from('solicitudes_vacaciones')
-        .select('fecha_inicio, fecha_fin, empleados!inner(nombre, apellido, activo)')
+        .select('fecha_inicio, fecha_fin, empleados!solicitudes_vacaciones_empleado_id_fkey!inner(nombre, apellido, activo)')
         .eq('estado', 'aprobada').eq('empleados.activo', true)
         .lte('fecha_inicio', en14).gte('fecha_fin', hoy)
         .order('fecha_inicio').limit(60);
