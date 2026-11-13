@@ -34,3 +34,20 @@ describe("arrastre entre empleados copia", () => {
     expect(r.error).not.toBeNull();
   });
 });
+
+import { conflictosCopia } from "../src/lib/horario2Seleccion";
+describe("copiar encima de otro turno", () => {
+  it("ofrece reemplazar el turno del destino y permite agregar superpuesto", () => {
+    const base = [turno("a", "e1", "2026-11-10", "06:00", "14:00"), turno("b", "e2", "2026-11-10", "06:00", "14:30")];
+    const c = conflictosCopia(base, [{ ...base[0], empleado_id: "e2" }], habil, []);
+    expect(c.reemplazables).toEqual(["b"]);
+    expect(c.errorReemplazando).toBeNull();
+    expect(c.errorAgregando).toBeNull();
+  });
+  it("vacaciones siguen bloqueando aunque se confirme", () => {
+    const base = [turno("a", "e1", "2026-11-10"), turno("b", "e2", "2026-11-10")];
+    const c = conflictosCopia(base, [{ ...base[0], empleado_id: "e2" }], habil, [{ empleado_id: "e2", desde: "2026-11-10", hasta: "2026-11-10", motivo: "vacaciones" }]);
+    expect(c.errorReemplazando).not.toBeNull();
+    expect(c.errorAgregando).not.toBeNull();
+  });
+});

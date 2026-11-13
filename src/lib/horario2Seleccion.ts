@@ -80,3 +80,24 @@ export function prepararCopiaTurnos<T extends TurnoH2>(
     error: aviso ? `${aviso.fecha.split("-").reverse().join("/")}: ${aviso.mensaje}` : null,
   };
 }
+
+/**
+ * Cuando una copia cae sobre turnos existentes: qué turnos del destino se
+ * reemplazarían, si reemplazarlos deja la copia válida, y si agregarla igual
+ * (superpuesta) solo choca por superposición y no por otro motivo crítico.
+ */
+export function conflictosCopia<T extends TurnoH2>(
+  existentes: T[],
+  copias: T[],
+  habilitados: Record<string, string[]>,
+  ausencias: AusenciaH2[],
+): { reemplazables: string[]; errorReemplazando: string | null; errorAgregando: string | null } {
+  const destinos = new Set(copias.map(t => `${t.empleado_id}|${t.fecha}`));
+  const reemplazables = existentes.filter(t => t.id && destinos.has(`${t.empleado_id}|${t.fecha}`)).map(t => t.id as string);
+  const restantes = existentes.filter(t => !reemplazables.includes(t.id as string));
+  const errorReemplazando = prepararCopiaTurnos(restantes, copias, habilitados, ausencias).error;
+  const conId = copias.map((t, i) => ({ ...t, id: `copia-${i}` }));
+  const aviso = validarTurnos([...existentes, ...conId], habilitados, ausencias)
+    .find(a => a.critico && a.tipo !== "superposicion" && destinos.has(`${a.empleado_id}|${a.fecha}`));
+  return { reemplazables, errorReemplazando, errorAgregando: aviso ? aviso.mensaje : null };
+}

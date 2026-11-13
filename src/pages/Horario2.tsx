@@ -15,7 +15,7 @@ import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useS
 import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
 import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
 import { prepararExtensionTurno } from "@/lib/horario2Extension";
-import { prepararMovimientoMultiple, prepararCopiaTurnos, modoArrastre } from "@/lib/horario2Seleccion";
+import { prepararMovimientoMultiple, prepararCopiaTurnos, modoArrastre, conflictosCopia } from "@/lib/horario2Seleccion";
 import { semaforoDia, disponiblesDia, prestadoEn, reemplazosDesdeCobertura } from "@/lib/horario2Refuerzos";
 import { PanelDisponibles } from "@/components/horario2/PanelDisponibles";
 import { Seccion, Chevron } from "@/components/horario2/Seccion";
@@ -202,6 +202,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const [motivoQuitar, setMotivoQuitar] = useState("");
   const [panelDia, setPanelDia] = useState<string | null>(null);
   const [faltaDlg, setFaltaDlg] = useState<any>(null);
+  const [encima, setEncima] = useState<null | { filas: any[]; reemplazables: string[]; errorReemplazando: string | null; errorAgregando: string | null }>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor));
   useEffect(() => { setDiaCob(semana); setSeleccion([]); }, [semana]);
   const tp = plan ? turnos.filter((t: any) => t.plan_id === plan.id) : [];
@@ -265,6 +266,21 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     } catch (e) { err(e); } finally { setBusy(false); }
   };
   const ausente = (eid: string, f: string) => ausencias.some((a: AusenciaH2) => a.empleado_id === eid && a.desde <= f && f <= a.hasta);
+  const guardarCopias = async (filas: any[], reemplazar: string[]) => {
+    setBusy(true);
+    try {
+      const { data, error } = await db.from("h2_turnos").insert(filas).select("id");
+      if (error) return err(error);
+      if (data?.length !== filas.length) return toast.error("No se pudieron copiar todos los turnos. Recargá la semana.");
+      if (reemplazar.length) {
+        const { error: e2 } = await db.from("h2_turnos").delete().in("id", reemplazar).eq("plan_id", plan.id);
+        if (e2) { toast.error("La copia se guardó pero no se pudo quitar el turno anterior; revisalo a mano."); await recargar(); return; }
+      }
+      setSeleccion([]); setEncima(null);
+      toast.success(reemplazar.length ? `Turno reemplazado${filas.length > 1 ? `s (${filas.length})` : ""}` : filas.length > 1 ? `${filas.length} turnos copiados` : `Turno copiado a ${nombreEmp(filas[0].empleado_id)} · ${filas[0].fecha.split("-").reverse().join("/")}`);
+      await recargar();
+    } catch (error) { err(error); } finally { setBusy(false); }
+  };
   const mover = async ({ active, over, activatorEvent }: DragEndEvent) => {
     setArrastrando(null);
     if (!editable || busy || !over) return;
@@ -292,19 +308,17 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         copias = multiple.turnos;
       }
       const copia = prepararCopiaTurnos(turnos as TurnoH2[], copias as TurnoH2[], habil, ausencias);
-      if (copia.error) return toast.error(copia.error);
-      const filas = copia.turnos.map((c: any, i: number) => { const o = origenes[i];
+      const filas = (copias as any[]).map((c: any, i: number) => { const o = origenes[i];
         return { id: crypto.randomUUID(), plan_id: plan.id, empleado_id: c.empleado_id, fecha: c.fecha, hora_entrada: o.hora_entrada, hora_salida: o.hora_salida, puesto_id: o.puesto_id, sucursal_id: o.sucursal_id, descanso_inicio: o.descanso_inicio, descanso_fin: o.descanso_fin,
           observaciones: !o.observaciones || o.observaciones.startsWith("Demo desde fichadas") ? `Copiado de ${nombreEmp(o.empleado_id)}` : o.observaciones }; });
-      setBusy(true);
-      try {
-        const { data, error } = await db.from("h2_turnos").insert(filas).select("id");
-        if (error) return err(error);
-        if (data?.length !== filas.length) return toast.error("No se pudieron copiar todos los turnos. Recargá la semana.");
-        setSeleccion([]);
-        toast.success(filas.length > 1 ? `${filas.length} turnos copiados` : `Turno copiado a ${nombreEmp(destino.empleadoId)} · ${destino.fecha.split("-").reverse().join("/")}`);
-        await recargar();
-      } catch (error) { err(error); } finally { setBusy(false); }
+      if (copia.error) {
+        const c = conflictosCopia(tp as TurnoH2[], copias as TurnoH2[], habil, ausencias);
+        const enDestino = c.reemplazables.length && (!c.errorReemplazando || !c.errorAgregando);
+        if (!enDestino) return toast.error(copia.error);
+        setEncima({ filas, ...c });
+        return;
+      }
+      await guardarCopias(filas, []);
       return;
     }
     if (seleccion.length > 1 && seleccion.includes(anclaId)) {
@@ -471,6 +485,24 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
             </div>; })}
             {!editable && <p className="text-xs text-muted-foreground">Para asignar, la semana tiene que estar en borrador o devuelta.</p>}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!encima} onOpenChange={o => { if (!o && !busy) setEncima(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Ya hay un turno ahí</DialogTitle></DialogHeader>
+          {encima && <div className="space-y-2 text-sm">
+            {encima.reemplazables.map(id => { const x = tp.find((t: any) => t.id === id); return x ? <div key={id} className="rounded-lg border border-l-4 border-l-warning bg-warning/10 px-3 py-2"><span className="font-semibold">{nombreEmp(x.empleado_id)}</span> · {x.fecha.split("-").reverse().join("/")} · <span className="font-bold tabular-nums">{hm(x.hora_entrada)}–{hm(x.hora_salida)}</span></div> : null; })}
+            <p className="text-muted-foreground">¿Qué querés hacer con {encima.filas.length > 1 ? `los ${encima.filas.length} turnos que soltaste` : `el turno ${hm(encima.filas[0].hora_entrada)}–${hm(encima.filas[0].hora_salida)}`}?</p>
+            {encima.errorReemplazando && <p className="text-xs text-destructive">No se puede reemplazar: {encima.errorReemplazando}</p>}
+            {encima.errorAgregando && <p className="text-xs text-destructive">No se puede agregar: {encima.errorAgregando}</p>}
+            {!encima.errorAgregando && <p className="text-xs text-muted-foreground">Si lo agregás igual, quedan dos turnos superpuestos y la semana no se puede enviar a validación hasta corregirlo.</p>}
+          </div>}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" disabled={busy} onClick={() => setEncima(null)}>Cancelar</Button>
+            {encima && !encima.errorAgregando && <Button variant="outline" disabled={busy} onClick={() => guardarCopias(encima.filas, [])}>Agregar igual</Button>}
+            {encima && !encima.errorReemplazando && <Button disabled={busy} onClick={() => guardarCopias(encima.filas, encima.reemplazables)}>{busy && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Reemplazar</Button>}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
