@@ -8,9 +8,9 @@ const turno = (id: string, empleado_id: string, fecha: string, ent = "08:00", sa
 const habil = { e1: ["p1"], e2: ["p1"] };
 
 describe("arrastre entre empleados copia", () => {
-  it("a otra persona copia, en la misma persona mueve", () => {
-    expect(modoArrastre("e1", "e2")).toBe("copiar");
-    expect(modoArrastre("e1", "e1")).toBe("mover");
+  it("soltar sin Shift copia (a otra persona o a otro día); con Shift mueve", () => {
+    expect(modoArrastre(false)).toBe("copiar");
+    expect(modoArrastre(true)).toBe("mover");
   });
 
   it("la copia no quita el original", () => {

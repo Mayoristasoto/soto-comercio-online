@@ -53,9 +53,9 @@ export function prepararMovimientoMultiple<T extends TurnoH2>(
   };
 }
 
-/** Arrastrar a otra persona copia el turno; dentro de la misma persona lo mueve. */
-export function modoArrastre(empleadoOrigen: string, empleadoDestino: string): "copiar" | "mover" {
-  return empleadoOrigen === empleadoDestino ? "mover" : "copiar";
+/** Arrastrar siempre copia el turno (el original queda); solo mueve si se arrastra con Shift apretado. */
+export function modoArrastre(conShift: boolean): "copiar" | "mover" {
+  return conShift ? "mover" : "copiar";
 }
 
 /**

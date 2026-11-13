@@ -265,7 +265,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     } catch (e) { err(e); } finally { setBusy(false); }
   };
   const ausente = (eid: string, f: string) => ausencias.some((a: AusenciaH2) => a.empleado_id === eid && a.desde <= f && f <= a.hasta);
-  const mover = async ({ active, over }: DragEndEvent) => {
+  const mover = async ({ active, over, activatorEvent }: DragEndEvent) => {
     setArrastrando(null);
     if (!editable || busy || !over) return;
     const destino = over.data.current;
@@ -280,7 +280,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     }
     if (!empIds.includes(destino.empleadoId)) return;
     const ancla = tp.find((t: any) => t.id === anclaId);
-    if (ancla && modoArrastre(ancla.empleado_id, destino.empleadoId) === "copiar") {
+    if (ancla && ancla.empleado_id === destino.empleadoId && ancla.fecha === destino.fecha) return;
+    if (ancla && modoArrastre(!!(activatorEvent as any)?.shiftKey) === "copiar") {
       let origenes: any[] = [ancla];
       let copias: any[] = [{ ...ancla, empleado_id: destino.empleadoId, fecha: destino.fecha }];
       if (seleccion.length > 1 && seleccion.includes(anclaId)) {
@@ -397,9 +398,9 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         {editable && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
           {seleccion.length > 1 ? <>
             <Badge className="bg-primary/15 text-primary">{seleccion.length} turnos seleccionados</Badge>
-            <span>Arrastrá cualquiera de ellos: a otra persona se copian; en la misma fila se mueven de día.</span>
+            <span>Arrastrá cualquiera de ellos para copiarlos (con Shift se mueven).</span>
             <Button variant="ghost" size="sm" className="h-6 px-2 ml-auto" onClick={() => setSeleccion([])}>Limpiar selección</Button>
-          </> : <span>Tip: arrastrar un turno a otra persona lo <b>copia</b>; dentro de la misma fila lo mueve de día. Con <kbd className="rounded border bg-card px-1 font-semibold">Ctrl</kbd>+clic seleccionás varios.</span>}
+          </> : <span>Tip: arrastrar y soltar un turno lo <b>copia</b> (el original queda). Para moverlo, arrastrá con <kbd className="rounded border bg-card px-1 font-semibold">Shift</kbd>. Con <kbd className="rounded border bg-card px-1 font-semibold">Ctrl</kbd>+clic seleccionás varios.</span>}
         </div>}
         <div className="overflow-x-auto">
           <DndContext sensors={sensors} onDragStart={({ active }) => { const id = String(active.id); setArrastrando(id); if (!seleccion.includes(id)) setSeleccion([]); }} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
