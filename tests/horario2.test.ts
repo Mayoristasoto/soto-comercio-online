@@ -77,3 +77,18 @@ describe("Encargado Sucursal no requiere habilitación", () => {
     expect(validarH2([t("caja")], h, []).filter(a => a.tipo === "puesto_no_habilitado" && a.critico)).toHaveLength(1);
   });
 });
+
+import { horariosFrecuentes, validarTurnoNuevo } from "../src/lib/horario2";
+describe("turnos rápidos", () => {
+  const b = (e: string, s: string) => ({ empleado_id: "e1", fecha: "2026-11-10", hora_entrada: e, hora_salida: s, puesto_id: null, sucursal_id: "s1" });
+  test("ordena por los horarios más usados y completa con los habituales", () => {
+    const r = horariosFrecuentes([b("10:30:00", "18:30:00"), b("10:30", "18:30"), b("06:00", "14:30")], 4);
+    expect(r[0]).toEqual(["10:30", "18:30"]);
+    expect(r[1]).toEqual(["06:00", "14:30"]);
+    expect(r).toHaveLength(4);
+  });
+  test("rechaza un turno rápido que se superpone con otro del mismo día", () => {
+    expect(validarTurnoNuevo([b("08:00", "16:00")], b("10:00", "18:00"), {}, [])).toContain("superpuestos");
+    expect(validarTurnoNuevo([], b("10:00", "18:00"), {}, [])).toBeNull();
+  });
+});

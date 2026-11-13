@@ -2,13 +2,13 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
 import type { MouseEvent, ReactNode } from "react";
 
-export function TurnoArrastrable({ id, disabled, className, label, onClick, children }: {
-  id: string; disabled: boolean; className: string; label: string; onClick: (e: MouseEvent) => void; children: ReactNode;
+export function TurnoArrastrable({ id, disabled, className, label, titulo, onClick, children }: {
+  id: string; disabled: boolean; className: string; label: string; titulo?: string; onClick: (e: MouseEvent) => void; children: ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id, disabled });
   return <Button ref={setNodeRef} variant="outline" disabled={disabled} {...attributes} {...listeners}
-    aria-label={label} title={label} onClick={onClick}
-    className={`h-auto w-full flex-col gap-0 whitespace-normal px-1 py-1 mb-1 text-xs ${className} ${disabled ? "" : "cursor-grab touch-none active:cursor-grabbing"} ${isDragging ? "opacity-40" : ""}`}>
+    aria-label={label} title={titulo || label} onClick={onClick}
+    className={`h-auto min-h-9 w-full flex-col items-start gap-0 whitespace-normal rounded-lg border border-border border-l-4 px-2 py-1.5 mb-1 text-left text-xs shadow-sm transition-shadow hover:text-foreground hover:shadow-md disabled:opacity-100 ${className} ${disabled ? "" : "cursor-grab touch-none active:cursor-grabbing"} ${isDragging ? "opacity-40" : ""}`}>
     {children}
   </Button>;
 }

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
 import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
@@ -18,17 +19,17 @@ import { prepararMovimientoMultiple, prepararCopiaTurnos, modoArrastre } from "@
 import { semaforoDia, disponiblesDia, prestadoEn, reemplazosDesdeCobertura } from "@/lib/horario2Refuerzos";
 import { PanelDisponibles } from "@/components/horario2/PanelDisponibles";
 import { Seccion, Chevron } from "@/components/horario2/Seccion";
-import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
+import { Coffee, Zap, ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
-const CHIPS = ["bg-primary/10 border-primary/30 text-primary", "bg-secondary/10 border-secondary/30 text-secondary", "bg-accent/10 border-accent/30 text-accent", "bg-muted border-border text-foreground"];
+const CHIPS = ["border-l-primary bg-primary/10 hover:bg-primary/15", "border-l-accent bg-accent/10 hover:bg-accent/15", "border-l-warning bg-warning/10 hover:bg-warning/15", "border-l-info bg-info/10 hover:bg-info/15", "border-l-destructive bg-destructive/10 hover:bg-destructive/15"];
 const iniciales = (n: string) => n.split(",").map(s => s.trim()[0] || "").reverse().join("").toUpperCase();
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 const Grad = ({ n }: { n: number }) => <defs>{COLS.map((c, i) => <linearGradient key={i} id={`g${n}-${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity={0.95} /><stop offset="100%" stopColor={c} stopOpacity={0.35} /></linearGradient>)}</defs>;
 const TT = { contentStyle: { borderRadius: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", boxShadow: "0 8px 24px -8px hsl(var(--primary) / 0.35)" } };
-const COLS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))"];
-import { validarTurnos, habilitadosEfectivos, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
+const COLS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--info))"];
+import { validarTurnos, habilitadosEfectivos, horariosFrecuentes, validarTurnoNuevo, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
 const db = supabase as any;
 const ESTADOS: Record<string, { label: string; cls: string }> = {
@@ -36,7 +37,7 @@ const ESTADOS: Record<string, { label: string; cls: string }> = {
   pendiente: { label: "Pendiente de validación", cls: "bg-accent/15 text-accent" },
   devuelto: { label: "Devuelto", cls: "bg-destructive/15 text-destructive" },
   aprobado: { label: "Aprobado", cls: "bg-primary/15 text-primary" },
-  publicado: { label: "Publicado", cls: "bg-secondary/20 text-secondary" },
+  publicado: { label: "Publicado", cls: "bg-accent/15 text-accent" },
 };
 const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -221,6 +222,20 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     run(() => db.rpc("h2_copiar_semana", { _origen: o.id, _destino: plan.id }), "Semana anterior copiada; la original no cambió");
   };
   const nuevo = (eid: string, f: string, extra: any = {}) => ({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "", ...extra });
+  const rapidos = horariosFrecuentes(tp as TurnoH2[], 4);
+  const agregarRapido = async (eid: string, f: string, entrada: string, salida: string) => {
+    if (!editable || busy) return;
+    const fila = { plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: entrada, hora_salida: salida };
+    const problema = validarTurnoNuevo(turnos as TurnoH2[], fila as TurnoH2, habil, ausencias);
+    if (problema) return toast.error(problema);
+    setBusy(true);
+    try {
+      const { error } = await db.from("h2_turnos").insert(fila);
+      if (error) return err(error);
+      toast.success(`${entrada}–${salida} para ${nombreEmp(eid)}`);
+      await recargar();
+    } catch (e) { err(e); } finally { setBusy(false); }
+  };
   const semaforo = (f: string) => semaforoDia(calcularCobertura(tp, f, sucursal.id, reglas, ausencias, cfg.franja));
   const nombreSuc = (id: string | null) => sucursales.find((x: any) => x.id === id)?.nombre || "otra sucursal";
   const precargarVacaciones = async () => {
@@ -388,8 +403,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         </div>}
         <div className="overflow-x-auto">
           <DndContext sensors={sensors} onDragStart={({ active }) => { const id = String(active.id); setArrastrando(id); if (!seleccion.includes(id)) setSeleccion([]); }} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
-          <table className="w-full text-xs border-collapse">
-            <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => { const sm = semaforo(d); return <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div>
+          <table className="w-full min-w-[980px] table-fixed text-xs border-collapse">
+            <thead><tr className="text-muted-foreground"><th className="text-left p-2 w-52 font-semibold">Empleado</th>{dias.map((d, i) => { const sm = semaforo(d); return <th key={d} className="p-2 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div>
                 {sm.estado === "ok" && <div className="mt-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-2">● Completo</div>}
                 {sm.estado === "falta" && <button type="button" onClick={() => setFaltaDlg({ fecha: d, faltantes: sm.faltantes })} className="mt-1 w-full rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-2 hover:bg-destructive/25">● Falta {sm.faltantes.reduce((a, x) => Math.max(a, x.falta), 0)} · ver</button>}
               </th>; })}</tr></thead>
@@ -403,7 +418,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
                     {!del.length && prestadoEn(turnos as TurnoH2[], eid, f, sucursal.id) && <div className="rounded bg-muted text-muted-foreground px-1 mb-1">En {nombreSuc(prestadoEn(turnos as TurnoH2[], eid, f, sucursal.id))}</div>}
                     {del.map((t: any) => <TurnoCelda key={t.id} t={t} eid={eid} f={f} compacta={compacta} nombreEmp={nombreEmp} nombrePuesto={nombrePuesto} editable={editable} busy={busy} onEdit={setEdit} onExtender={extender} puedeQuitarImportado={puedeQuitarImportadoAprobado(esRRHH, plan, t)} onQuitar={() => { setQuitar(t); setMotivoQuitar(""); }} seleccionado={seleccion.includes(t.id)} onToggleSeleccion={() => setSeleccion(sel => sel.includes(t.id) ? sel.filter(x => x !== t.id) : [...sel, t.id])} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]} />)}
-                    {!del.length && !aus && !prestadoEn(turnos as TurnoH2[], eid, f, sucursal.id) && (editable ? <Button variant="outline" size="sm" disabled={busy} aria-label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="h-7 w-full border-dashed text-muted-foreground">+</Button> : <span className="text-muted-foreground">—</span>)}
+                    {!del.length && !aus && !prestadoEn(turnos as TurnoH2[], eid, f, sucursal.id) && (editable ? <AgregarRapido rapidos={rapidos} disabled={busy} label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onElegir={(e: string, sa: string) => agregarRapido(eid, f, e, sa)} onOtro={() => setEdit(nuevo(eid, f))} /> : <span className="text-muted-foreground">—</span>)}
                   </CeldaTurno>;
                 })}
               </tr>))}
@@ -491,9 +506,11 @@ function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, e
   return <div className="relative group/turno">
     <TurnoArrastrable id={t.id} disabled={!editable || busy} label={`Turno de ${nombreEmp(eid)}, ${f}, ${hm(t.hora_entrada)}–${hm(t.hora_salida)}`}
       onClick={(e: any) => { if (editable && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onToggleSeleccion(); } else onEdit(t); }}
+      titulo={t.observaciones ? `${hm(t.hora_entrada)}–${hm(t.hora_salida)} · ${t.observaciones}` : undefined}
       className={`${className} ${seleccionado ? "ring-2 ring-primary ring-offset-1 shadow-md" : ""}`}>
-      <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
-      {!compacta && <><div>{nombrePuesto(t.puesto_id)}</div>{t.descanso_inicio && <div className="text-secondary">Desc. {hm(t.descanso_inicio)}–{hm(t.descanso_fin)}</div>}{t.observaciones && <div className="italic truncate">{t.observaciones}</div>}</>}
+      <div className="text-sm font-bold tabular-nums text-foreground">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
+      {!compacta && <>{t.puesto_id && <div className="w-full truncate text-[11px] text-muted-foreground">{nombrePuesto(t.puesto_id)}</div>}
+        {t.descanso_inicio && <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Coffee className="h-3 w-3" />{hm(t.descanso_inicio)}</div>}</>}
     </TurnoArrastrable>
     {editable && !busy && <>
       <span className="pointer-events-none absolute -top-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-1.5 py-px text-[9px] font-medium text-primary-foreground opacity-0 shadow-sm transition-opacity group-hover/turno:opacity-100">Extender</span>
@@ -504,6 +521,18 @@ function TurnoCelda({ t, eid, f, compacta, className, nombreEmp, nombrePuesto, e
     </>}
     {puedeQuitarImportado && <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" disabled={busy} title="Quitar turno importado" aria-label={`Quitar turno importado de ${nombreEmp(eid)} el ${f}`} onClick={onQuitar}><Trash2 className="h-4 w-4" /></Button>}
   </div>;
+}
+
+function AgregarRapido({ rapidos, disabled, label, onElegir, onOtro }: any) {
+  const [open, setOpen] = useState(false);
+  return <Popover open={open} onOpenChange={setOpen}>
+    <PopoverTrigger asChild><Button variant="ghost" size="sm" disabled={disabled} aria-label={label} className="h-9 w-full rounded-lg border border-dashed border-border text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary"><Plus className="h-4 w-4" /></Button></PopoverTrigger>
+    <PopoverContent className="w-52 p-2" align="center">
+      <div className="mb-1.5 flex items-center gap-1 px-1 text-xs font-semibold text-muted-foreground"><Zap className="h-3.5 w-3.5 text-warning" />Turno rápido</div>
+      <div className="grid grid-cols-2 gap-1.5">{rapidos.map(([e, s]: [string, string]) => <Button key={e + s} size="sm" variant="outline" className="h-8 px-1 text-xs font-semibold tabular-nums hover:border-primary hover:bg-primary/10 hover:text-primary" onClick={() => { setOpen(false); onElegir(e, s); }}>{e}–{s}</Button>)}</div>
+      <Button size="sm" variant="ghost" className="mt-1.5 h-7 w-full text-xs" onClick={() => { setOpen(false); onOtro(); }}>Otro horario…</Button>
+    </PopoverContent>
+  </Popover>;
 }
 
 function AgregarEmpleado({ empleados, excluir, onAdd }: any) {

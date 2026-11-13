@@ -114,3 +114,19 @@ export function prepararMovimientoTurno<T extends TurnoH2>(
     .filter(a => a.empleado_id === empleadoId && a.fecha === fecha && a.critico);
   return { turno, avisos };
 }
+
+/** Horarios más usados (entrada–salida) para ofrecer como turnos rápidos; completa con valores por defecto. */
+export function horariosFrecuentes(turnos: TurnoH2[], n = 4, porDefecto: [string, string][] = [["07:30", "15:30"], ["08:00", "16:00"], ["10:30", "18:30"]]): [string, string][] {
+  const cuenta = new Map<string, number>();
+  for (const t of turnos) { const k = `${t.hora_entrada.slice(0, 5)}|${t.hora_salida.slice(0, 5)}`; cuenta.set(k, (cuenta.get(k) || 0) + 1); }
+  const top = [...cuenta.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k.split("|") as [string, string]);
+  for (const d of porDefecto) if (!top.some(x => x[0] === d[0] && x[1] === d[1])) top.push(d);
+  return top.slice(0, n);
+}
+
+/** Valida un turno nuevo rápido contra los existentes; devuelve el primer problema crítico de esa celda. */
+export function validarTurnoNuevo(existentes: TurnoH2[], nuevo: TurnoH2, habilitados: Record<string, string[]>, ausencias: AusenciaH2[]): string | null {
+  const a = validarTurnos([...existentes, { ...nuevo, id: "nuevo" }], habilitados, ausencias)
+    .find(x => x.critico && x.empleado_id === nuevo.empleado_id && x.fecha === nuevo.fecha);
+  return a ? a.mensaje : null;
+}
