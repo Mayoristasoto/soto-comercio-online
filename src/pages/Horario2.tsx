@@ -15,6 +15,8 @@ import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDr
 import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
 import { prepararExtensionTurno } from "@/lib/horario2Extension";
 import { prepararMovimientoMultiple } from "@/lib/horario2Seleccion";
+import { semaforoDia, disponiblesDia, prestadoEn, reemplazosDesdeCobertura } from "@/lib/horario2Refuerzos";
+import { PanelDisponibles } from "@/components/horario2/PanelDisponibles";
 import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
@@ -187,6 +189,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
   const [seleccion, setSeleccion] = useState<string[]>([]);
   const [quitar, setQuitar] = useState<any>(null);
   const [motivoQuitar, setMotivoQuitar] = useState("");
+  const [panelDia, setPanelDia] = useState<string | null>(null);
+  const [faltaDlg, setFaltaDlg] = useState<any>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor));
   useEffect(() => { setDiaCob(semana); setSeleccion([]); }, [semana]);
   const tp = plan ? turnos.filter((t: any) => t.plan_id === plan.id) : [];
@@ -206,13 +210,50 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     if (!o) return toast.error("La semana anterior no tiene planificación en esta sucursal");
     run(() => db.rpc("h2_copiar_semana", { _origen: o.id, _destino: plan.id }), "Semana anterior copiada; la original no cambió");
   };
+  const nuevo = (eid: string, f: string, extra: any = {}) => ({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "", ...extra });
+  const semaforo = (f: string) => semaforoDia(calcularCobertura(tp, f, sucursal.id, reglas, ausencias, cfg.franja));
+  const nombreSuc = (id: string | null) => sucursales.find((x: any) => x.id === id)?.nombre || "otra sucursal";
+  const precargarVacaciones = async () => {
+    setBusy(true);
+    try {
+      const fin = sumar(semana, 6);
+      const { data: sol, error: e1 } = await db.from("solicitudes_vacaciones").select("id,empleado_id").in("estado", ["aprobada", "gozadas"]).lte("fecha_inicio", fin).gte("fecha_fin", semana);
+      if (e1) return err(e1);
+      const ausentePor: Record<string, string> = {}; (sol || []).forEach((x: any) => (ausentePor[x.id] = x.empleado_id));
+      const ids = Object.keys(ausentePor);
+      if (!ids.length) return toast.info("No hay vacaciones aprobadas esta semana");
+      const { data: cobs, error: e2 } = await db.from("vacaciones_cobertura").select("id,solicitud_id,sucursal_id,estado").in("solicitud_id", ids).eq("estado", "aprobada");
+      if (e2) return err(e2);
+      const cobIds = (cobs || []).map((c: any) => c.id);
+      if (!cobIds.length) return toast.info("Las vacaciones de esta semana no tienen plan de cobertura aprobado");
+      const { data: dias, error: e3 } = await db.from("vacaciones_cobertura_dias").select("*").in("cobertura_id", cobIds).gte("fecha", semana).lte("fecha", fin);
+      if (e3) return err(e3);
+      const info: Record<string, any> = {}; (cobs || []).forEach((c: any) => (info[c.id] = c));
+      const filas = (dias || []).map((d: any) => { const c = info[d.cobertura_id]; const aus = ausentePor[c.solicitud_id]; return { ...d, ausente_id: aus, sucursal_id: c.sucursal_id || empleados.find((e: any) => e.id === aus)?.sucursal_id }; });
+      const r = reemplazosDesdeCobertura(filas, semana, fin, sucursal.id, turnos as TurnoH2[], habil, ausencias, (id) => empleados.find((e: any) => e.id === id)?.puesto_id || null);
+      if (!r.crear.length) return toast.info(r.omitidos.length ? `Nada para cargar: ${r.omitidos[0].fecha.split("-").reverse().join("/")} ${r.omitidos[0].motivo}` : "No hay reemplazos para esta sucursal");
+      const rows = r.crear.map(t => ({ plan_id: plan.id, empleado_id: t.empleado_id, fecha: t.fecha, hora_entrada: t.hora_entrada, hora_salida: t.hora_salida, puesto_id: t.puesto_id, sucursal_id: sucursal.id, observaciones: `Reemplazo de vacaciones de ${nombreEmp(t.reemplaza)}` }));
+      const { error } = await db.from("h2_turnos").insert(rows);
+      if (error) return err(error);
+      toast.success(`${rows.length} reemplazos cargados${r.omitidos.length ? ` · ${r.omitidos.length} omitidos` : ""}`);
+      await recargar();
+    } catch (e) { err(e); } finally { setBusy(false); }
+  };
   const ausente = (eid: string, f: string) => ausencias.some((a: AusenciaH2) => a.empleado_id === eid && a.desde <= f && f <= a.hasta);
   const mover = async ({ active, over }: DragEndEvent) => {
     setArrastrando(null);
     if (!editable || busy || !over) return;
     const destino = over.data.current;
-    if (!destino || !dias.includes(destino.fecha) || !empIds.includes(destino.empleadoId)) return;
+    if (!destino || !dias.includes(destino.fecha)) return;
     const anclaId = String(active.id);
+    if (anclaId.startsWith("disp:")) {
+      const eid = anclaId.slice(5);
+      if (turnos.some((t: any) => t.empleado_id === eid && t.fecha === destino.fecha)) return toast.error("Ya tiene turno ese día");
+      const ref = tp.find((t: any) => t.empleado_id === destino.empleadoId && t.fecha === destino.fecha);
+      setEdit(nuevo(eid, destino.fecha, ref ? { hora_entrada: hm(ref.hora_entrada), hora_salida: hm(ref.hora_salida), puesto_id: ref.puesto_id } : {}));
+      return;
+    }
+    if (!empIds.includes(destino.empleadoId)) return;
     if (seleccion.length > 1 && seleccion.includes(anclaId)) {
       const multiple = prepararMovimientoMultiple(turnos as TurnoH2[], seleccion, anclaId, empIds, destino.empleadoId, destino.fecha, habil, ausencias);
       if (multiple.error) return toast.error(multiple.error);
@@ -284,6 +325,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
             {!plan && esRRHH && <Button size="sm" onClick={crear} disabled={busy}><Plus className="h-4 w-4 mr-1" />Crear semana</Button>}
             {editable && <><Button size="sm" variant="outline" onClick={copiarAnterior} disabled={busy}><Copy className="h-4 w-4 mr-1" />Copiar semana anterior</Button>
               <AplicarPlantilla plan={plan} recargar={recargar} />
+              <Button size="sm" variant="outline" onClick={precargarVacaciones} disabled={busy}><CalendarDays className="h-4 w-4 mr-1" />Cargar reemplazos de vacaciones</Button>
+              <Button size="sm" variant={panelDia ? "default" : "outline"} onClick={() => setPanelDia(panelDia ? null : semana)}>Personal disponible</Button>
               <Button size="sm" disabled={busy || criticos.length > 0} title={criticos.length ? "Corregí los errores críticos" : ""} onClick={() => run(() => db.rpc("h2_enviar", { _plan: plan.id }), "Enviada a validación")}><Send className="h-4 w-4 mr-1" />Enviar a validación</Button></>}
             {plan?.estado === "pendiente" && <><Button size="sm" disabled={busy} onClick={() => setAccion("aprobar")}><Check className="h-4 w-4 mr-1" />Aprobar</Button>
               <Button size="sm" variant="outline" disabled={busy} onClick={() => setAccion("devolver")}><Undo2 className="h-4 w-4 mr-1" />Devolver</Button></>}
@@ -305,7 +348,10 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         <div className="overflow-x-auto">
           <DndContext sensors={sensors} onDragStart={({ active }) => { const id = String(active.id); setArrastrando(id); if (!seleccion.includes(id)) setSeleccion([]); }} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>
           <table className="w-full text-xs border-collapse">
-            <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div></th>)}</tr></thead>
+            <thead><tr className="text-muted-foreground"><th className="text-left p-2 min-w-48 font-semibold">Empleado</th>{dias.map((d, i) => { const sm = semaforo(d); return <th key={d} className="p-2 min-w-24 font-semibold text-foreground">{DIAS[i]}<div className="font-normal text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</div>
+                {sm.estado === "ok" && <div className="mt-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-2">● Completo</div>}
+                {sm.estado === "falta" && <button type="button" onClick={() => setFaltaDlg({ fecha: d, faltantes: sm.faltantes })} className="mt-1 w-full rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-2 hover:bg-destructive/25">● Falta {sm.faltantes.reduce((a, x) => Math.max(a, x.falta), 0)} · ver</button>}
+              </th>; })}</tr></thead>
             <tbody>{empIds.map((eid: string) => (
               <tr key={eid} className="border-t">
                 <td className="p-2"><div className="flex items-center gap-2"><div className="h-8 w-8 shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center font-semibold">{iniciales(nombreEmp(eid))}</div><div><div className="font-medium">{nombreEmp(eid)}</div><div className="text-muted-foreground">{nombrePuesto(empleados.find((e: any) => e.id === eid)?.puesto_id)}</div></div></div></td>
@@ -314,14 +360,17 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
                   const aus = ausente(eid, f);
                   return <CeldaTurno key={f} empleadoId={eid} fecha={f} disabled={!editable || busy}>
                     {aus && <div className="rounded bg-destructive/10 text-destructive px-1 mb-1">Ausente (vacaciones)</div>}
+                    {!del.length && prestadoEn(turnos as TurnoH2[], eid, f, sucursal.id) && <div className="rounded bg-muted text-muted-foreground px-1 mb-1">En {nombreSuc(prestadoEn(turnos as TurnoH2[], eid, f, sucursal.id))}</div>}
                     {del.map((t: any) => <TurnoCelda key={t.id} t={t} eid={eid} f={f} compacta={compacta} nombreEmp={nombreEmp} nombrePuesto={nombrePuesto} editable={editable} busy={busy} onEdit={setEdit} onExtender={extender} puedeQuitarImportado={puedeQuitarImportadoAprobado(esRRHH, plan, t)} onQuitar={() => { setQuitar(t); setMotivoQuitar(""); }} seleccionado={seleccion.includes(t.id)} onToggleSeleccion={() => setSeleccion(sel => sel.includes(t.id) ? sel.filter(x => x !== t.id) : [...sel, t.id])} className={CHIPS[Math.max(0, puestos.findIndex((p: any) => p.id === t.puesto_id)) % CHIPS.length]} />)}
-                    {!del.length && !aus && (editable ? <Button variant="outline" size="sm" disabled={busy} aria-label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="h-7 w-full border-dashed text-muted-foreground">+</Button> : <span className="text-muted-foreground">—</span>)}
+                    {!del.length && !aus && !prestadoEn(turnos as TurnoH2[], eid, f, sucursal.id) && (editable ? <Button variant="outline" size="sm" disabled={busy} aria-label={`Agregar turno de ${nombreEmp(eid)} el ${f}`} onClick={() => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: f, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} className="h-7 w-full border-dashed text-muted-foreground">+</Button> : <span className="text-muted-foreground">—</span>)}
                   </CeldaTurno>;
                 })}
               </tr>))}
             </tbody>
           </table>
-          <DragOverlay>{turnoActivo && <div className="rounded-md border border-primary bg-card px-3 py-2 text-center text-xs text-foreground shadow-lg"><div className="font-semibold">{hm(turnoActivo.hora_entrada)}–{hm(turnoActivo.hora_salida)}</div><div>{nombrePuesto(turnoActivo.puesto_id)}</div></div>}</DragOverlay>
+          {panelDia && editable && <PanelDisponibles dias={dias} dia={panelDia} onDia={setPanelDia} onClose={() => setPanelDia(null)}
+            lista={disponiblesDia(empleados, turnos as TurnoH2[], ausencias, panelDia, sucursal.id, habil)} nombrePuesto={nombrePuesto} nombreSuc={nombreSuc} disabled={busy} />}
+          <DragOverlay>{arrastrando?.startsWith("disp:") && <div className="rounded-md border border-primary bg-card px-3 py-2 text-xs shadow-lg">{nombreEmp(arrastrando.slice(5))}</div>}{turnoActivo && <div className="rounded-md border border-primary bg-card px-3 py-2 text-center text-xs text-foreground shadow-lg"><div className="font-semibold">{hm(turnoActivo.hora_entrada)}–{hm(turnoActivo.hora_salida)}</div><div>{nombrePuesto(turnoActivo.puesto_id)}</div></div>}</DragOverlay>
           </DndContext>
           {editable && <AgregarEmpleado empleados={empleados} excluir={empIds} onAdd={(eid: string) => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: semana, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} />}
         </div>
@@ -347,6 +396,24 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       </CardContent>}
 
       {edit && <EditorTurno turno={edit} semana={semana} turnos={turnos} ausencias={ausencias} cfg={cfg} puestos={puestos} sucursales={sucursales} habil={habil} nombreEmp={nombreEmp} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); recargar(); }} />}
+
+      <Dialog open={!!faltaDlg} onOpenChange={o => { if (!o) setFaltaDlg(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Faltantes del {faltaDlg?.fecha.split("-").reverse().join("/")} · {sucursal.nombre}</DialogTitle></DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-auto">{faltaDlg?.faltantes.map((x: any, i: number) => {
+            const cand = disponiblesDia(empleados, turnos as TurnoH2[], ausencias, faltaDlg.fecha, sucursal.id, habil, x.puesto_id);
+            return <div key={i} className="rounded-lg border p-2">
+              <div className="text-sm font-semibold text-destructive">Falta {x.falta} en {nombrePuesto(x.puesto_id)} · {x.desde}–{x.hasta}</div>
+              {!cand.length && <p className="text-xs text-muted-foreground mt-1">No hay nadie libre y habilitado para este puesto.</p>}
+              <div className="mt-1 space-y-1">{cand.slice(0, 8).map(c => <div key={c.id} className="flex items-center gap-2 text-xs">
+                <span className="font-medium">{c.apellido}, {c.nombre}</span><span className="text-muted-foreground">{c.otraSucursal ? `de ${nombreSuc(c.sucursal_id)}` : "de esta sucursal"}</span>
+                {editable && <Button size="sm" variant="outline" className="h-6 ml-auto" onClick={() => { setEdit(nuevo(c.id, faltaDlg.fecha, { puesto_id: x.puesto_id, hora_entrada: x.desde, hora_salida: x.hasta })); setFaltaDlg(null); }}>Asignar</Button>}
+              </div>)}</div>
+            </div>; })}
+            {!editable && <p className="text-xs text-muted-foreground">Para asignar, la semana tiene que estar en borrador o devuelta.</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!quitar} onOpenChange={o => { if (!o && !busy) setQuitar(null); }}>
         <DialogContent>
