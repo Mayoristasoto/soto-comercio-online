@@ -14,7 +14,7 @@ import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useS
 import { TurnoArrastrable, CeldaTurno } from "@/components/horario2/TurnosDragDrop";
 import { puedeQuitarImportadoAprobado } from "@/lib/horario2Eliminacion";
 import { prepararExtensionTurno } from "@/lib/horario2Extension";
-import { prepararMovimientoMultiple } from "@/lib/horario2Seleccion";
+import { prepararMovimientoMultiple, prepararCopiaTurnos, modoArrastre } from "@/lib/horario2Seleccion";
 import { semaforoDia, disponiblesDia, prestadoEn, reemplazosDesdeCobertura } from "@/lib/horario2Refuerzos";
 import { PanelDisponibles } from "@/components/horario2/PanelDisponibles";
 import { Seccion, Chevron } from "@/components/horario2/Seccion";
@@ -263,6 +263,33 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       return;
     }
     if (!empIds.includes(destino.empleadoId)) return;
+    const ancla = tp.find((t: any) => t.id === anclaId);
+    if (ancla && modoArrastre(ancla.empleado_id, destino.empleadoId) === "copiar") {
+      let origenes: any[] = [ancla];
+      let copias: any[] = [{ ...ancla, empleado_id: destino.empleadoId, fecha: destino.fecha }];
+      if (seleccion.length > 1 && seleccion.includes(anclaId)) {
+        const multiple = prepararMovimientoMultiple(turnos as TurnoH2[], seleccion, anclaId, empIds, destino.empleadoId, destino.fecha, habil, ausencias);
+        if (multiple.error && !multiple.turnos.length) return toast.error(multiple.error);
+        origenes = multiple.turnos.map(m => tp.find((t: any) => t.id === m.id));
+        if (origenes.some(o => !o)) return;
+        copias = multiple.turnos;
+      }
+      const copia = prepararCopiaTurnos(turnos as TurnoH2[], copias as TurnoH2[], habil, ausencias);
+      if (copia.error) return toast.error(copia.error);
+      const filas = copia.turnos.map((c: any, i: number) => { const o = origenes[i];
+        return { id: crypto.randomUUID(), plan_id: plan.id, empleado_id: c.empleado_id, fecha: c.fecha, hora_entrada: o.hora_entrada, hora_salida: o.hora_salida, puesto_id: o.puesto_id, sucursal_id: o.sucursal_id, descanso_inicio: o.descanso_inicio, descanso_fin: o.descanso_fin,
+          observaciones: !o.observaciones || o.observaciones.startsWith("Demo desde fichadas") ? `Copiado de ${nombreEmp(o.empleado_id)}` : o.observaciones }; });
+      setBusy(true);
+      try {
+        const { data, error } = await db.from("h2_turnos").insert(filas).select("id");
+        if (error) return err(error);
+        if (data?.length !== filas.length) return toast.error("No se pudieron copiar todos los turnos. Recargá la semana.");
+        setSeleccion([]);
+        toast.success(filas.length > 1 ? `${filas.length} turnos copiados` : `Turno copiado a ${nombreEmp(destino.empleadoId)} · ${destino.fecha.split("-").reverse().join("/")}`);
+        await recargar();
+      } catch (error) { err(error); } finally { setBusy(false); }
+      return;
+    }
     if (seleccion.length > 1 && seleccion.includes(anclaId)) {
       const multiple = prepararMovimientoMultiple(turnos as TurnoH2[], seleccion, anclaId, empIds, destino.empleadoId, destino.fecha, habil, ausencias);
       if (multiple.error) return toast.error(multiple.error);
@@ -354,9 +381,9 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
         {editable && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
           {seleccion.length > 1 ? <>
             <Badge className="bg-primary/15 text-primary">{seleccion.length} turnos seleccionados</Badge>
-            <span>Arrastrá cualquiera de ellos para moverlos juntos, conservando las distancias.</span>
+            <span>Arrastrá cualquiera de ellos: a otra persona se copian; en la misma fila se mueven de día.</span>
             <Button variant="ghost" size="sm" className="h-6 px-2 ml-auto" onClick={() => setSeleccion([])}>Limpiar selección</Button>
-          </> : <span>Tip: con <kbd className="rounded border bg-card px-1 font-semibold">Ctrl</kbd>+clic seleccionás varios turnos y los arrastrás juntos, como en Excel.</span>}
+          </> : <span>Tip: arrastrar un turno a otra persona lo <b>copia</b>; dentro de la misma fila lo mueve de día. Con <kbd className="rounded border bg-card px-1 font-semibold">Ctrl</kbd>+clic seleccionás varios.</span>}
         </div>}
         <div className="overflow-x-auto">
           <DndContext sensors={sensors} onDragStart={({ active }) => { const id = String(active.id); setArrastrando(id); if (!seleccion.includes(id)) setSeleccion([]); }} onDragCancel={() => setArrastrando(null)} onDragEnd={mover}>

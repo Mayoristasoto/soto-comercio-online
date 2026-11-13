@@ -52,3 +52,31 @@ export function prepararMovimientoMultiple<T extends TurnoH2>(
     error: aviso ? `${aviso.fecha.split("-").reverse().join("/")}: ${aviso.mensaje}` : null,
   };
 }
+
+/** Arrastrar a otra persona copia el turno; dentro de la misma persona lo mueve. */
+export function modoArrastre(empleadoOrigen: string, empleadoDestino: string): "copiar" | "mover" {
+  return empleadoOrigen === empleadoDestino ? "mover" : "copiar";
+}
+
+/**
+ * Valida copias de turnos: los originales se conservan, así que las copias se
+ * validan junto con todos los turnos existentes (superposición, vacaciones,
+ * puestos habilitados) en sus celdas destino.
+ */
+export function prepararCopiaTurnos<T extends TurnoH2>(
+  existentes: T[],
+  copias: T[],
+  habilitados: Record<string, string[]>,
+  ausencias: AusenciaH2[],
+): { turnos: T[]; error: string | null } {
+  if (!copias.length) return { turnos: [], error: "No hay turnos para copiar" };
+  const conId = copias.map((t, i) => ({ ...t, id: `copia-${i}` }));
+  const destinos = new Set(conId.map(t => `${t.empleado_id}|${t.fecha}`));
+  if (destinos.size !== conId.length) return { turnos: [], error: "Dos copias caen en la misma celda" };
+  const aviso = validarTurnos([...existentes, ...conId], habilitados, ausencias)
+    .find(a => a.critico && destinos.has(`${a.empleado_id}|${a.fecha}`));
+  return {
+    turnos: conId,
+    error: aviso ? `${aviso.fecha.split("-").reverse().join("/")}: ${aviso.mensaje}` : null,
+  };
+}
