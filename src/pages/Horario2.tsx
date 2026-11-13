@@ -28,7 +28,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 const Grad = ({ n }: { n: number }) => <defs>{COLS.map((c, i) => <linearGradient key={i} id={`g${n}-${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity={0.95} /><stop offset="100%" stopColor={c} stopOpacity={0.35} /></linearGradient>)}</defs>;
 const TT = { contentStyle: { borderRadius: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", boxShadow: "0 8px 24px -8px hsl(var(--primary) / 0.35)" } };
 const COLS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))"];
-import { validarTurnos, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
+import { validarTurnos, habilitadosEfectivos, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
 const db = supabase as any;
 const ESTADOS: Record<string, { label: string; cls: string }> = {
@@ -51,7 +51,7 @@ export default function Horario2() {
   const [sucursales, setSucursales] = useState<any[]>([]);
   const [puestos, setPuestos] = useState<any[]>([]);
   const [empleados, setEmpleados] = useState<any[]>([]);
-  const [habil, setHabil] = useState<Record<string, string[]>>({});
+  const [habilBase, setHabil] = useState<Record<string, string[]>>({});
   const [cfg, setCfg] = useState({ franja: 30, descanso: 40 });
   const [planes, setPlanes] = useState<any[]>([]);
   const [turnos, setTurnos] = useState<any[]>([]);
@@ -64,6 +64,7 @@ export default function Horario2() {
   const guardarAbiertas = (m: Record<string, boolean>) => { setAbiertas(m); try { localStorage.setItem("h2:sucursales-abiertas", JSON.stringify(m)); } catch { /* sin almacenamiento */ } };
   const [loading, setLoading] = useState(true);
   const esRRHH = rol === "admin_rrhh";
+  const habil = useMemo(() => habilitadosEfectivos(habilBase, empleados.map((e: any) => e.id), puestos), [habilBase, empleados, puestos]);
 
   const cargarBase = useCallback(async () => {
     const [r, s, p, e, h, c] = await Promise.all([
@@ -181,7 +182,7 @@ export default function Horario2() {
         </TabsContent>
         {esRRHH && <TabsContent value="plantillas"><Plantillas sucursales={sucursales} empleados={empleados} puestos={puestos} nombreEmp={nombreEmp} /></TabsContent>}
         <TabsContent value="cobertura"><ReglasCobertura sucursales={sucursales} puestos={puestos} esRRHH={esRRHH} cfg={cfg} recargar={() => { cargarBase(); cargarSemana(); }} /></TabsContent>
-        {esRRHH && <TabsContent value="habilitados"><Habilitados empleados={empleados} puestos={puestos} habil={habil} recargar={cargarBase} /></TabsContent>}
+        {esRRHH && <TabsContent value="habilitados"><Habilitados empleados={empleados} puestos={puestos} habil={habilBase} recargar={cargarBase} /></TabsContent>}
         <TabsContent value="historial"><Historial planes={planes} sucursales={sucursales} /></TabsContent>
       </Tabs>
     </div>

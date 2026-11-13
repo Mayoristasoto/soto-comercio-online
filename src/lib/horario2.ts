@@ -23,6 +23,18 @@ export function finDescanso(inicio: string, minutos: number) { return aHora((aMi
 /** Lunes=1 ... Domingo=7 */
 export function diaSemana(fecha: string) { const d = new Date(fecha + "T00:00:00").getDay(); return d === 0 ? 7 : d; }
 
+/** Puestos que cualquier empleado puede cubrir sin estar habilitado (no bloquean el envío). */
+export const PUESTOS_SIN_HABILITACION = ["encargado sucursal"];
+
+/** Agrega a cada empleado los puestos libres de habilitación, sin tocar los habilitados guardados. */
+export function habilitadosEfectivos(base: Record<string, string[]>, empleadoIds: string[], puestos: { id: string; nombre: string }[]): Record<string, string[]> {
+  const libres = puestos.filter(p => PUESTOS_SIN_HABILITACION.includes(p.nombre.trim().toLowerCase())).map(p => p.id);
+  if (!libres.length) return base;
+  const out: Record<string, string[]> = { ...base };
+  for (const id of empleadoIds) out[id] = Array.from(new Set([...(base[id] || []), ...libres]));
+  return out;
+}
+
 export function validarTurnos(turnos: TurnoH2[], habilitados: Record<string, string[]>, ausencias: AusenciaH2[]): Aviso[] {
   const avisos: Aviso[] = [];
   const porEmpDia = new Map<string, TurnoH2[]>();
