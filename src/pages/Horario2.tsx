@@ -17,6 +17,7 @@ import { prepararExtensionTurno } from "@/lib/horario2Extension";
 import { prepararMovimientoMultiple } from "@/lib/horario2Seleccion";
 import { semaforoDia, disponiblesDia, prestadoEn, reemplazosDesdeCobertura } from "@/lib/horario2Refuerzos";
 import { PanelDisponibles } from "@/components/horario2/PanelDisponibles";
+import { Seccion, Chevron } from "@/components/horario2/Seccion";
 import { ChevronLeft, ChevronRight, Copy, Send, Check, Undo2, Megaphone, GitBranch, Plus, Trash2, AlertTriangle, Loader2, FileEdit, Clock, CheckCircle2, Globe, RotateCcw, MapPin, CalendarDays } from "lucide-react";
 const ICONOS: Record<string, any> = { borrador: FileEdit, pendiente: Clock, devuelto: RotateCcw, aprobado: CheckCircle2, publicado: Globe };
 const SUB: Record<string, string> = { borrador: "Semana en edición", pendiente: "En revisión por encargados", devuelto: "Con observaciones", aprobado: "Validado por encargados", publicado: "Disponible para empleados" };
@@ -59,6 +60,8 @@ export default function Horario2() {
   const [filtroSuc, setFiltroSuc] = useState("todas");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [compacta, setCompacta] = useState(false);
+  const [abiertas, setAbiertas] = useState<Record<string, boolean>>(() => { try { return JSON.parse(localStorage.getItem("h2:sucursales-abiertas") || "{}"); } catch { return {}; } });
+  const guardarAbiertas = (m: Record<string, boolean>) => { setAbiertas(m); try { localStorage.setItem("h2:sucursales-abiertas", JSON.stringify(m)); } catch { /* sin almacenamiento */ } };
   const [loading, setLoading] = useState(true);
   const esRRHH = rol === "admin_rrhh";
 
@@ -124,7 +127,11 @@ export default function Horario2() {
         <Select value={filtroEstado} onValueChange={setFiltroEstado}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="todos">Todos los estados</SelectItem><SelectItem value="sin_plan">Sin semana creada</SelectItem>{Object.entries(ESTADOS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent></Select>
         <Button variant="outline" size="sm" onClick={() => setCompacta(!compacta)}>{compacta ? "Vista detallada" : "Vista compacta"}</Button>
+        <Button variant="outline" size="sm" onClick={() => { const todas = sucVisibles.every(s => abiertas[s.id]); guardarAbiertas({ ...abiertas, ...Object.fromEntries(sucVisibles.map(s => [s.id, !todas])) }); }}>{sucVisibles.length && sucVisibles.every(s => abiertas[s.id]) ? "Plegar sucursales" : "Desplegar sucursales"}</Button>
       </div>
+
+      <Seccion clave="h2:resumen" titulo="Resumen de la semana" resumen={`${turnos.length} turnos · ${Object.entries(ESTADOS).filter(([k]) => conteo[k]).map(([k, v]) => `${conteo[k]} ${v.label.toLowerCase()}`).join(" · ") || "sin semanas creadas"}`} className="space-y-0">
+      <div className="space-y-3">
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {Object.entries(ESTADOS).map(([k, v]) => { const I = ICONOS[k]; return (
@@ -150,6 +157,8 @@ export default function Horario2() {
           </CardContent></Card>
         </div>;
       })()}
+      </div>
+      </Seccion>
 
       <Tabs defaultValue="semana">
         <TabsList className="flex-wrap h-auto">
@@ -166,7 +175,7 @@ export default function Horario2() {
               <BloqueSucursal key={s.id} sucursal={s} plan={planes.find(p => p.sucursal_id === s.id)} semana={semana} esRRHH={esRRHH}
                 turnos={turnos} empleados={empleados} ausencias={ausencias} reglas={reglas} cfg={cfg} compacta={compacta}
                 nombrePuesto={nombrePuesto} nombreEmp={nombreEmp} puestos={puestos} sucursales={sucursales} habil={habil}
-                avisos={(p: any) => avisosPlan(p)} recargar={cargarSemana} />
+                avisos={(p: any) => avisosPlan(p)} recargar={cargarSemana} abierta={!!abiertas[s.id]} onToggle={() => guardarAbiertas({ ...abiertas, [s.id]: !abiertas[s.id] })} />
             ))}
           {!loading && !sucVisibles.length && <p className="text-muted-foreground text-sm">No hay sucursales para estos filtros.</p>}
         </TabsContent>
@@ -179,7 +188,7 @@ export default function Horario2() {
   );
 }
 
-function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, ausencias, reglas, cfg, compacta, nombrePuesto, nombreEmp, puestos, sucursales, habil, avisos, recargar }: any) {
+function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, ausencias, reglas, cfg, compacta, nombrePuesto, nombreEmp, puestos, sucursales, habil, avisos, recargar, abierta, onToggle }: any) {
   const [edit, setEdit] = useState<any>(null);
   const [accion, setAccion] = useState<null | "devolver" | "excepcion" | "version" | "aprobar">(null);
   const [texto, setTexto] = useState("");
@@ -318,10 +327,14 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     <Card className="rounded-xl shadow-sm overflow-hidden">
       <CardHeader className="pb-2 bg-muted/40 border-b">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-lg mr-2 flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{sucursal.nombre}</CardTitle>
+          <button type="button" aria-expanded={abierta} onClick={onToggle} className="flex items-center gap-2 text-left mr-2">
+            <Chevron abierto={abierta} />
+            <CardTitle className="text-lg flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{sucursal.nombre}</CardTitle>
+          </button>
           {plan ? <Badge className={ESTADOS[plan.estado].cls}>{ESTADOS[plan.estado].label} · v{plan.version}</Badge> : <Badge variant="outline">Sin semana creada</Badge>}
+          {plan && <span className="text-xs text-muted-foreground">{tp.length} turnos · {new Set(tp.map((t: any) => t.empleado_id)).size} personas{lista.length ? ` · ${lista.length} advertencias` : ""}{criticos.length ? ` (${criticos.length} críticas)` : ""}</span>}
           {plan?.excepcion_motivo && <Badge variant="destructive">Publicado con excepción</Badge>}
-          <div className="ml-auto flex flex-wrap gap-2">
+          {abierta && <div className="ml-auto flex flex-wrap gap-2">
             {!plan && esRRHH && <Button size="sm" onClick={crear} disabled={busy}><Plus className="h-4 w-4 mr-1" />Crear semana</Button>}
             {editable && <><Button size="sm" variant="outline" onClick={copiarAnterior} disabled={busy}><Copy className="h-4 w-4 mr-1" />Copiar semana anterior</Button>
               <AplicarPlantilla plan={plan} recargar={recargar} />
@@ -333,11 +346,11 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
             {esRRHH && plan?.estado === "aprobado" && <Button size="sm" disabled={busy} onClick={() => run(() => db.rpc("h2_publicar", { _plan: plan.id, _excepcion: null }), "Publicada: este horario ya manda en el kiosco")}><Megaphone className="h-4 w-4 mr-1" />Publicar</Button>}
             {esRRHH && plan && ["borrador", "pendiente", "devuelto"].includes(plan.estado) && criticos.length > 0 && <Button size="sm" variant="destructive" onClick={() => setAccion("excepcion")}><AlertTriangle className="h-4 w-4 mr-1" />Publicar con excepción</Button>}
             {esRRHH && plan && ["aprobado", "publicado"].includes(plan.estado) && <Button size="sm" variant="outline" onClick={() => setAccion("version")}><GitBranch className="h-4 w-4 mr-1" />Modificar (nueva versión)</Button>}
-          </div>
+          </div>}
         </div>
         {plan?.motivo_version && <p className="text-xs text-muted-foreground">Versión {plan.version}: {plan.motivo_version}</p>}
       </CardHeader>
-      {plan && <CardContent className="space-y-3">
+      {plan && abierta && <CardContent className="space-y-3">
         {editable && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
           {seleccion.length > 1 ? <>
             <Badge className="bg-primary/15 text-primary">{seleccion.length} turnos seleccionados</Badge>
@@ -375,6 +388,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
           {editable && <AgregarEmpleado empleados={empleados} excluir={empIds} onAdd={(eid: string) => setEdit({ plan_id: plan.id, empleado_id: eid, fecha: semana, sucursal_id: sucursal.id, puesto_id: empleados.find((e: any) => e.id === eid)?.puesto_id || null, hora_entrada: "07:30", hora_salida: "15:30", descanso_inicio: "", observaciones: "" })} />}
         </div>
 
+        <Seccion clave={`h2:cob:${sucursal.id}`} titulo="Cobertura y advertencias" resumen={lista.length ? `${lista.length} advertencias${criticos.length ? ` · ${criticos.length} críticas` : ""}` : "sin problemas detectados"}>
         <div className="grid md:grid-cols-3 gap-3">
           <div className="md:col-span-2 rounded-xl border bg-card p-3">
             <div className="flex items-center gap-2 mb-2"><span className="font-semibold text-sm">Cobertura por franja de {cfg.franja} min</span>
@@ -393,6 +407,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
             <Validaciones planId={plan.id} />
           </div>
         </div>
+        </Seccion>
       </CardContent>}
 
       {edit && <EditorTurno turno={edit} semana={semana} turnos={turnos} ausencias={ausencias} cfg={cfg} puestos={puestos} sucursales={sucursales} habil={habil} nombreEmp={nombreEmp} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); recargar(); }} />}

@@ -1,5 +1,10 @@
 # Roadmap
 
+## Horario 2 más liviano + demo desde fichadas
+- [x] Resumen, sucursales y "Cobertura y advertencias" plegables, recordados en el navegador; botón para desplegar/plegar todas.
+- [x] Semanas 2/11 y 9/11 en borrador con 132 turnos armados desde fichadas reales (sin publicar).
+- [ ] Ver la pantalla con sesión real: Supabase externo no permite restaurar la sesión.
+
 ## Extender turno a días consecutivos
 - [x] Agregar flechas al abrir un turno para abarcar hasta tres días en la misma semana.
 - [x] Guardar sin reemplazar otros turnos, validando ausencias, puestos y superposiciones; 26 pruebas correctas y compilación sin errores.
