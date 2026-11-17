@@ -1,3 +1,4 @@
+import { sitioPublico } from "@/lib/ats";
 export type CandidatoEstado =
   | "nuevo"
   | "preseleccionado"
@@ -134,7 +135,7 @@ export interface Invitacion {
 export const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : "");
 
 export const enlaceReserva = (token: string) =>
-  `${window.location.origin}/entrevista/reservar/${token}`;
+  `${sitioPublico(window.location.origin)}/entrevista/reservar/${token}`;
 
 export const mensajeWhatsapp = (
   nombre: string,

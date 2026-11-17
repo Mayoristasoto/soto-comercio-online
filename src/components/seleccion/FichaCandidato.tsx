@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarPlus, Download, Loader2, Sparkles } from "lucide-react";
-import { ESTADOS_POSTULACION } from "@/lib/ats";
+import { CalendarPlus, Download, Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { ESTADOS_POSTULACION, telefonoWhatsApp } from "@/lib/ats";
+import { mensajeWhatsapp } from "@/components/entrevistas/entrevistasTypes";
 import InvitarCandidatoDialog from "@/components/entrevistas/InvitarCandidatoDialog";
 
 const db = supabase as any;
@@ -50,6 +51,33 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
   const cambiarEstado = async (estado: string) => {
     await db.from("ats_postulaciones").update({ estado }).eq("id", p.id); onCambio();
   };
+  const invitarWhatsApp = async () => {
+    const numero = telefonoWhatsApp(p.candidatos?.telefono);
+    if (!numero) {
+      toast.error("El teléfono del postulante no es válido para WhatsApp. Generá el enlace y copialo.");
+      return setInvitar(true);
+    }
+    const ventana = window.open("", "_blank"); // se abre ya para que el navegador no la bloquee
+    try {
+      const { data: cfgs } = await db.from("entrevistas_config").select("id, mensaje_whatsapp").order("created_at").limit(1);
+      const cfg = cfgs?.[0];
+      const { data: token, error: eTok } = await db.rpc("entrevista_generar_token");
+      if (eTok) throw eTok;
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await db.from("entrevistas_invitaciones").insert({ candidato_id: p.candidato_id, config_id: cfg?.id ?? null, token, creado_por: u?.user?.id ?? null });
+      if (error) throw error;
+      await db.from("candidatos").update({ estado: "pendiente_reserva" }).eq("id", p.candidato_id);
+      const texto = mensajeWhatsapp(p.candidatos?.nombre || "", p.ats_busquedas?.titulo || "el puesto", token as string, cfg?.mensaje_whatsapp);
+      const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+      if (ventana) ventana.location.href = url; else window.open(url, "_blank");
+      await db.from("ats_observaciones").insert({ postulacion_id: p.id, nota: "Invitado a entrevista por WhatsApp" });
+      await cambiarEstado("entrevista");
+      cargar();
+    } catch (e: any) {
+      ventana?.close();
+      toast.error("No se pudo generar la invitación: " + (e.message || e));
+    }
+  };
   const agregarNota = async () => {
     if (!nota.trim()) return;
     const { error } = await db.from("ats_observaciones").insert({ postulacion_id: p.id, nota: nota.trim() });
@@ -87,7 +115,8 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
                 {evaluando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />} {ev ? "Re-evaluar con IA" : "Evaluar con IA"}
               </Button>
               {cvUrl && <Button variant="outline" asChild><a href={cvUrl} target="_blank" rel="noreferrer"><Download className="mr-1 h-4 w-4" /> Descargar CV</a></Button>}
-              <Button onClick={() => setInvitar(true)}><CalendarPlus className="mr-1 h-4 w-4" /> Invitar a entrevista</Button>
+              <Button onClick={invitarWhatsApp}><MessageCircle className="mr-1 h-4 w-4" /> Invitar a entrevista por WhatsApp</Button>
+              <Button variant="ghost" size="sm" onClick={() => setInvitar(true)}><CalendarPlus className="mr-1 h-4 w-4" /> Copiar enlace</Button>
             </div>
             {p.mensaje && <p className="mt-3 rounded-md bg-muted p-3 text-sm">"{p.mensaje}"</p>}
 

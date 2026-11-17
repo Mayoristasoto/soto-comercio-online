@@ -75,3 +75,32 @@ export function sugerirCriterios(nombrePuesto: string) {
     { criterio: "Formación", peso: 10, descripcion: "" },
   ];
 }
+
+/**
+ * Convierte un teléfono argentino como lo escribe el postulante al formato de WhatsApp (549 + área + número).
+ * Acepta "0223 15 555-1234", "+54 9 223 5551234", "155551234" (local de Mar del Plata), etc.
+ * Devuelve null si no se puede interpretar.
+ */
+export function telefonoWhatsApp(tel: string | null | undefined, areaPorDefecto = "223"): string | null {
+  let d = (tel || "").replace(/\D/g, "");
+  if (!d) return null;
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.startsWith("54")) {
+    d = d.slice(2);
+    if (d.startsWith("9")) d = d.slice(1);
+  }
+  if (d.startsWith("0")) d = d.slice(1);
+  if (d.length === 12) {
+    const i = [2, 3, 4].find((k) => d.slice(k, k + 2) === "15");
+    if (i == null) return null;
+    d = d.slice(0, i) + d.slice(i + 2);
+  }
+  if (d.length === 9 && d.startsWith("15")) d = d.slice(2);
+  if (d.length === 7) d = areaPorDefecto + d;
+  return d.length === 10 ? `549${d}` : null;
+}
+
+/** Sitio público donde el postulante reserva (en vista previa usa el dominio publicado). */
+export function sitioPublico(origin: string) {
+  return /localhost|id-preview|lovableproject|lovable\.app/.test(origin) ? "https://mayoristasoto.site" : origin;
+}

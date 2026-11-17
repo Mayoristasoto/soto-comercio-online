@@ -17,3 +17,12 @@ describe("ATS", () => {
     expect(r.map((x) => x.id)).toEqual(["c", "b", "a"]);
   });
 });
+
+import { telefonoWhatsApp } from "../src/lib/ats";
+describe("teléfono para WhatsApp", () => {
+  test("con 0 y 15 de Mar del Plata", () => expect(telefonoWhatsApp("0223 15 555-1234")).toBe("5492235551234"));
+  test("internacional con +54 9", () => expect(telefonoWhatsApp("+54 9 223 555 1234")).toBe("5492235551234"));
+  test("Buenos Aires 11 15", () => expect(telefonoWhatsApp("11 15 4444 5555")).toBe("5491144445555"));
+  test("solo el número local asume Mar del Plata", () => expect(telefonoWhatsApp("15 5551234")).toBe("5492235551234"));
+  test("número incompleto devuelve null", () => expect(telefonoWhatsApp("1234")).toBeNull());
+});
