@@ -16,6 +16,7 @@ import { Briefcase, Copy, FileSpreadsheet, Loader2, Search, Upload } from "lucid
 import { ESTADOS_POSTULACION, estadoLabel, nivelPuntaje, ordenarRanking } from "@/lib/ats";
 import Busquedas from "@/components/seleccion/Busquedas";
 import FichaCandidato from "@/components/seleccion/FichaCandidato";
+import PlantillasWhatsapp from "@/components/seleccion/PlantillasWhatsapp";
 
 const db = supabase as any;
 const COLOR: Record<string, string> = { alto: "bg-primary text-primary-foreground", medio: "bg-accent text-accent-foreground", bajo: "bg-muted text-foreground", sin: "bg-muted text-muted-foreground" };
@@ -126,7 +127,7 @@ export default function Seleccion() {
       </div>
 
       <Tabs defaultValue="ranking">
-        <TabsList><TabsTrigger value="ranking">Ranking</TabsTrigger><TabsTrigger value="busquedas">Búsquedas y criterios</TabsTrigger></TabsList>
+        <TabsList><TabsTrigger value="ranking">Ranking</TabsTrigger><TabsTrigger value="busquedas">Búsquedas y criterios</TabsTrigger><TabsTrigger value="plantillas">Plantillas de WhatsApp</TabsTrigger></TabsList>
         <TabsContent value="ranking" className="mt-4 space-y-3">
           <div className="flex flex-wrap items-end gap-2">
             <div className="relative"><Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-56 pl-8" placeholder="Nombre, DNI, localidad" value={q} onChange={(e) => setQ(e.target.value)} /></div>
@@ -168,6 +169,7 @@ export default function Seleccion() {
           </Card>
         </TabsContent>
         <TabsContent value="busquedas" className="mt-4"><Busquedas onCambio={cargar} /></TabsContent>
+        <TabsContent value="plantillas" className="mt-4"><PlantillasWhatsapp /></TabsContent>
       </Tabs>
 
       <Dialog open={carga} onOpenChange={setCarga}>

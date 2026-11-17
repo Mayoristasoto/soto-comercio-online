@@ -843,6 +843,33 @@ export type Database = {
           },
         ]
       }
+      ats_plantillas_whatsapp: {
+        Row: {
+          created_at: string
+          id: string
+          nombre: string
+          predeterminada: boolean
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nombre: string
+          predeterminada?: boolean
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nombre?: string
+          predeterminada?: boolean
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ats_postulaciones: {
         Row: {
           busqueda_id: string | null

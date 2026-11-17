@@ -23,7 +23,6 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
   const [evaluando, setEvaluando] = useState(false);
   const [invitar, setInvitar] = useState(false);
   const [waDialog, setWaDialog] = useState<DatosWhatsapp | null>(null);
-  const [configId, setConfigId] = useState<string | null>(null);
   const p = postulacion;
 
   const cargar = useCallback(async () => {
@@ -61,7 +60,7 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
       return setInvitar(true);
     }
     try {
-      const { data: cfgs } = await db.from("entrevistas_config").select("id, mensaje_whatsapp").order("created_at").limit(1);
+      const { data: cfgs } = await db.from("entrevistas_config").select("id").order("created_at").limit(1);
       const cfg = cfgs?.[0];
       const { data: token, error: eTok } = await db.rpc("entrevista_generar_token");
       if (eTok) throw eTok;
@@ -69,25 +68,16 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
       const { error } = await db.from("entrevistas_invitaciones").insert({ candidato_id: p.candidato_id, config_id: cfg?.id ?? null, token, creado_por: u?.user?.id ?? null });
       if (error) throw error;
       await db.from("candidatos").update({ estado: "pendiente_reserva" }).eq("id", p.candidato_id);
-      setConfigId(cfg?.id ?? null);
       setWaDialog({
         numero,
         link: enlaceReserva(token as string),
         nombre: p.candidatos?.nombre || "",
         apellido: p.candidatos?.apellido || "",
         puesto: p.ats_busquedas?.titulo || "el puesto",
-        plantilla: cfg?.mensaje_whatsapp ?? null,
       });
     } catch (e: any) {
       toast.error("No se pudo generar la invitación: " + (e.message || e));
     }
-  };
-  const guardarPlantilla = async (plantilla: string) => {
-    if (!configId) { toast.error("Primero creá la configuración en Entrevistas → Disponibilidad."); return false; }
-    const { error } = await db.from("entrevistas_config").update({ mensaje_whatsapp: plantilla }).eq("id", configId);
-    if (error) { toast.error("No se pudo guardar la plantilla: " + error.message); return false; }
-    toast.success("Plantilla guardada. Se usará en las próximas invitaciones.");
-    return true;
   };
   const abrirWhatsApp = async (texto: string) => {
     if (!waDialog) return;
@@ -185,7 +175,6 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
               datos={waDialog}
               onClose={() => setWaDialog(null)}
               onEnviar={abrirWhatsApp}
-              onGuardarPlantilla={guardarPlantilla}
             />
             <InvitarCandidatoDialog
               candidato={invitar ? ({ ...c, id: p.candidato_id } as any) : null}
