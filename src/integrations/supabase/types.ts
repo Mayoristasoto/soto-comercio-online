@@ -663,6 +663,246 @@ export type Database = {
           },
         ]
       }
+      ats_busquedas: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          descripcion: string | null
+          estado: string
+          id: string
+          publica: boolean
+          puesto_id: string | null
+          requisitos: string | null
+          sucursal_id: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          id?: string
+          publica?: boolean
+          puesto_id?: string | null
+          requisitos?: string | null
+          sucursal_id?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          id?: string
+          publica?: boolean
+          puesto_id?: string | null
+          requisitos?: string | null
+          sucursal_id?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ats_busquedas_puesto_id_fkey"
+            columns: ["puesto_id"]
+            isOneToOne: false
+            referencedRelation: "reclutamiento_puestos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ats_busquedas_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ats_criterios: {
+        Row: {
+          busqueda_id: string
+          created_at: string
+          criterio: string
+          descripcion: string | null
+          id: string
+          orden: number
+          peso: number
+        }
+        Insert: {
+          busqueda_id: string
+          created_at?: string
+          criterio: string
+          descripcion?: string | null
+          id?: string
+          orden?: number
+          peso?: number
+        }
+        Update: {
+          busqueda_id?: string
+          created_at?: string
+          criterio?: string
+          descripcion?: string | null
+          id?: string
+          orden?: number
+          peso?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ats_criterios_busqueda_id_fkey"
+            columns: ["busqueda_id"]
+            isOneToOne: false
+            referencedRelation: "ats_busquedas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ats_evaluaciones: {
+        Row: {
+          a_verificar: Json
+          created_at: string
+          criterios: Json
+          datos_extraidos: Json | null
+          experiencia: Json
+          fortalezas: Json
+          id: string
+          modelo: string | null
+          postulacion_id: string
+          preguntas: Json
+          resumen: string | null
+          score: number
+        }
+        Insert: {
+          a_verificar?: Json
+          created_at?: string
+          criterios?: Json
+          datos_extraidos?: Json | null
+          experiencia?: Json
+          fortalezas?: Json
+          id?: string
+          modelo?: string | null
+          postulacion_id: string
+          preguntas?: Json
+          resumen?: string | null
+          score: number
+        }
+        Update: {
+          a_verificar?: Json
+          created_at?: string
+          criterios?: Json
+          datos_extraidos?: Json | null
+          experiencia?: Json
+          fortalezas?: Json
+          id?: string
+          modelo?: string | null
+          postulacion_id?: string
+          preguntas?: Json
+          resumen?: string | null
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ats_evaluaciones_postulacion_id_fkey"
+            columns: ["postulacion_id"]
+            isOneToOne: false
+            referencedRelation: "ats_postulaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ats_observaciones: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          id: string
+          nota: string
+          postulacion_id: string
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          nota: string
+          postulacion_id: string
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          nota?: string
+          postulacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ats_observaciones_postulacion_id_fkey"
+            columns: ["postulacion_id"]
+            isOneToOne: false
+            referencedRelation: "ats_postulaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ats_postulaciones: {
+        Row: {
+          busqueda_id: string | null
+          candidato_id: string
+          created_at: string
+          cv_nombre: string | null
+          cv_path: string | null
+          estado: string
+          evaluado_at: string | null
+          id: string
+          mensaje: string | null
+          origen: string
+          score: number | null
+          updated_at: string
+        }
+        Insert: {
+          busqueda_id?: string | null
+          candidato_id: string
+          created_at?: string
+          cv_nombre?: string | null
+          cv_path?: string | null
+          estado?: string
+          evaluado_at?: string | null
+          id?: string
+          mensaje?: string | null
+          origen?: string
+          score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          busqueda_id?: string | null
+          candidato_id?: string
+          created_at?: string
+          cv_nombre?: string | null
+          cv_path?: string | null
+          estado?: string
+          evaluado_at?: string | null
+          id?: string
+          mensaje?: string | null
+          origen?: string
+          score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ats_postulaciones_busqueda_id_fkey"
+            columns: ["busqueda_id"]
+            isOneToOne: false
+            referencedRelation: "ats_busquedas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ats_postulaciones_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ausencias_medicas: {
         Row: {
           certificado_url: string | null
@@ -1753,13 +1993,16 @@ export type Database = {
       candidatos: {
         Row: {
           apellido: string | null
+          consentimiento_at: string | null
           creado_por: string | null
           created_at: string
           cv_url: string | null
           datos_extraidos: Json | null
+          dni: string | null
           email: string | null
           estado: Database["public"]["Enums"]["candidato_estado"]
           id: string
+          localidad: string | null
           nombre: string
           notas: string | null
           origen: string
@@ -1770,13 +2013,16 @@ export type Database = {
         }
         Insert: {
           apellido?: string | null
+          consentimiento_at?: string | null
           creado_por?: string | null
           created_at?: string
           cv_url?: string | null
           datos_extraidos?: Json | null
+          dni?: string | null
           email?: string | null
           estado?: Database["public"]["Enums"]["candidato_estado"]
           id?: string
+          localidad?: string | null
           nombre: string
           notas?: string | null
           origen?: string
@@ -1787,13 +2033,16 @@ export type Database = {
         }
         Update: {
           apellido?: string | null
+          consentimiento_at?: string | null
           creado_por?: string | null
           created_at?: string
           cv_url?: string | null
           datos_extraidos?: Json | null
+          dni?: string | null
           email?: string | null
           estado?: Database["public"]["Enums"]["candidato_estado"]
           id?: string
+          localidad?: string | null
           nombre?: string
           notas?: string | null
           origen?: string
@@ -13768,6 +14017,16 @@ export type Database = {
       aplicar_redondeo_fichaje: {
         Args: { redondeo_minutos: number; timestamp_real: string }
         Returns: string
+      }
+      ats_busquedas_publicas: {
+        Args: never
+        Returns: {
+          descripcion: string
+          id: string
+          requisitos: string
+          sucursal: string
+          titulo: string
+        }[]
       }
       authenticate_face_kiosk: {
         Args: { p_face_descriptor: number[]; p_threshold?: number }
