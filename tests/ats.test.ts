@@ -26,3 +26,22 @@ describe("teléfono para WhatsApp", () => {
   test("solo el número local asume Mar del Plata", () => expect(telefonoWhatsApp("15 5551234")).toBe("5492235551234"));
   test("número incompleto devuelve null", () => expect(telefonoWhatsApp("1234")).toBeNull());
 });
+
+import { PLANTILLA_WHATSAPP_DEFAULT, aplicarPlantillaWhatsapp, plantillaTieneEnlace } from "../src/lib/ats";
+
+describe("Plantilla de WhatsApp", () => {
+  const v = { nombre: "Ana", apellido: "Pérez", puesto: "Cajera", link: "https://mayoristasoto.site/entrevista/reservar/abc" };
+  test("reemplaza todas las variables sin importar mayúsculas", () => {
+    expect(aplicarPlantillaWhatsapp("Hola [nombre] [APELLIDO], [Puesto]: [Link_Unico] [Nombre]", v))
+      .toBe("Hola Ana Pérez, Cajera: https://mayoristasoto.site/entrevista/reservar/abc Ana");
+  });
+  test("sin plantilla guardada usa el mensaje estándar con el enlace", () => {
+    const t = aplicarPlantillaWhatsapp(null, v);
+    expect(t.startsWith("Hola Ana, ¿cómo estás?")).toBe(true);
+    expect(t).toContain(v.link);
+  });
+  test("detecta si la plantilla no tiene el enlace de reserva", () => {
+    expect(plantillaTieneEnlace(PLANTILLA_WHATSAPP_DEFAULT)).toBe(true);
+    expect(plantillaTieneEnlace("Hola [Nombre]")).toBe(false);
+  });
+});

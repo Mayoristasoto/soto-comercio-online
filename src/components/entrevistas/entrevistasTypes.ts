@@ -1,4 +1,4 @@
-import { sitioPublico } from "@/lib/ats";
+import { aplicarPlantillaWhatsapp, sitioPublico } from "@/lib/ats";
 export type CandidatoEstado =
   | "nuevo"
   | "preseleccionado"
@@ -142,26 +142,4 @@ export const mensajeWhatsapp = (
   puesto: string,
   token: string,
   plantilla?: string | null
-) => {
-  const link = enlaceReserva(token);
-  if (plantilla) {
-    return plantilla
-      .replace(/\[Nombre\]/g, nombre)
-      .replace(/\[Puesto\]/g, puesto)
-      .replace(/\[LINK_UNICO\]/g, link);
-  }
-  return `Hola ${nombre}, ¿cómo estás?
-
-Te contactamos de Mayorista Soto por tu postulación para ${puesto}.
-
-Nos gustaría coordinar una entrevista.
-
-Podés elegir directamente el día y horario que te resulte más cómodo desde el siguiente enlace:
-
-${link}
-
-Una vez seleccionado, tu entrevista quedará confirmada.
-
-Gracias.
-Mayorista Soto`;
-};
+) => aplicarPlantillaWhatsapp(plantilla, { nombre, puesto, link: enlaceReserva(token) });

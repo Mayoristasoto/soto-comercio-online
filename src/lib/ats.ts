@@ -104,3 +104,40 @@ export function telefonoWhatsApp(tel: string | null | undefined, areaPorDefecto 
 export function sitioPublico(origin: string) {
   return /localhost|id-preview|lovableproject|lovable\.app/.test(origin) ? "https://mayoristasoto.site" : origin;
 }
+
+/** Variables disponibles en la plantilla de invitación por WhatsApp. */
+export const VARIABLES_WHATSAPP = [
+  { clave: "[Nombre]", etiqueta: "Nombre" },
+  { clave: "[Apellido]", etiqueta: "Apellido" },
+  { clave: "[Puesto]", etiqueta: "Puesto" },
+  { clave: "[LINK_UNICO]", etiqueta: "Enlace de reserva" },
+] as const;
+
+export const PLANTILLA_WHATSAPP_DEFAULT = `Hola [Nombre], ¿cómo estás?
+
+Te contactamos de Mayorista Soto por tu postulación para [Puesto].
+
+Nos gustaría coordinar una entrevista.
+
+Podés elegir directamente el día y horario que te resulte más cómodo desde el siguiente enlace:
+
+[LINK_UNICO]
+
+Una vez seleccionado, tu entrevista quedará confirmada.
+
+Gracias.
+Mayorista Soto`;
+
+export interface ValoresWhatsapp { nombre: string; apellido?: string; puesto: string; link: string }
+
+/** Reemplaza las variables (sin importar mayúsculas) por los valores del postulante. */
+export function aplicarPlantillaWhatsapp(plantilla: string | null | undefined, v: ValoresWhatsapp): string {
+  const base = plantilla && plantilla.trim() ? plantilla : PLANTILLA_WHATSAPP_DEFAULT;
+  return base
+    .replace(/\[nombre\]/gi, v.nombre.trim())
+    .replace(/\[apellido\]/gi, (v.apellido || "").trim())
+    .replace(/\[puesto\]/gi, v.puesto.trim())
+    .replace(/\[link_unico\]/gi, v.link);
+}
+
+export const plantillaTieneEnlace = (plantilla: string) => /\[link_unico\]/i.test(plantilla);

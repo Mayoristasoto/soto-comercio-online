@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CalendarPlus, Download, Loader2, MessageCircle, Sparkles } from "lucide-react";
 import { ESTADOS_POSTULACION, telefonoWhatsApp } from "@/lib/ats";
-import { mensajeWhatsapp } from "@/components/entrevistas/entrevistasTypes";
+import { enlaceReserva } from "@/components/entrevistas/entrevistasTypes";
+import WhatsappPlantillaDialog, { type DatosWhatsapp } from "./WhatsappPlantillaDialog";
 import InvitarCandidatoDialog from "@/components/entrevistas/InvitarCandidatoDialog";
 
 const db = supabase as any;
@@ -22,7 +22,8 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
   const [cvUrl, setCvUrl] = useState<string | null>(null);
   const [evaluando, setEvaluando] = useState(false);
   const [invitar, setInvitar] = useState(false);
-  const [waDialog, setWaDialog] = useState<{ numero: string; texto: string } | null>(null);
+  const [waDialog, setWaDialog] = useState<DatosWhatsapp | null>(null);
+  const [configId, setConfigId] = useState<string | null>(null);
   const p = postulacion;
 
   const cargar = useCallback(async () => {
@@ -68,16 +69,30 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
       const { error } = await db.from("entrevistas_invitaciones").insert({ candidato_id: p.candidato_id, config_id: cfg?.id ?? null, token, creado_por: u?.user?.id ?? null });
       if (error) throw error;
       await db.from("candidatos").update({ estado: "pendiente_reserva" }).eq("id", p.candidato_id);
-      const texto = mensajeWhatsapp(p.candidatos?.nombre || "", p.ats_busquedas?.titulo || "el puesto", token as string, cfg?.mensaje_whatsapp);
-      setWaDialog({ numero, texto });
+      setConfigId(cfg?.id ?? null);
+      setWaDialog({
+        numero,
+        link: enlaceReserva(token as string),
+        nombre: p.candidatos?.nombre || "",
+        apellido: p.candidatos?.apellido || "",
+        puesto: p.ats_busquedas?.titulo || "el puesto",
+        plantilla: cfg?.mensaje_whatsapp ?? null,
+      });
     } catch (e: any) {
       toast.error("No se pudo generar la invitación: " + (e.message || e));
     }
   };
-  const abrirWhatsApp = async () => {
+  const guardarPlantilla = async (plantilla: string) => {
+    if (!configId) { toast.error("Primero creá la configuración en Entrevistas → Disponibilidad."); return false; }
+    const { error } = await db.from("entrevistas_config").update({ mensaje_whatsapp: plantilla }).eq("id", configId);
+    if (error) { toast.error("No se pudo guardar la plantilla: " + error.message); return false; }
+    toast.success("Plantilla guardada. Se usará en las próximas invitaciones.");
+    return true;
+  };
+  const abrirWhatsApp = async (texto: string) => {
     if (!waDialog) return;
     const ventana = window.open("", "_blank"); // se abre ya para que el navegador no la bloquee
-    const url = `https://wa.me/${waDialog.numero}?text=${encodeURIComponent(waDialog.texto)}`;
+    const url = `https://wa.me/${waDialog.numero}?text=${encodeURIComponent(texto)}`;
     if (ventana) ventana.location.href = url; else window.open(url, "_blank");
     await db.from("ats_observaciones").insert({ postulacion_id: p.id, nota: "Invitado a entrevista por WhatsApp" });
     await cambiarEstado("entrevista");
@@ -166,17 +181,12 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
                 {!cvUrl && <p className="text-sm text-muted-foreground">Sin CV adjunto.</p>}
               </div>
             </div>
-            <Dialog open={!!waDialog} onOpenChange={(o) => !o && setWaDialog(null)}>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader><DialogTitle>Mensaje de WhatsApp</DialogTitle></DialogHeader>
-                <p className="text-sm text-muted-foreground">Podés editar el texto antes de abrir WhatsApp. El enlace de reserva ya está incluido; no lo borres.</p>
-                <Textarea rows={10} value={waDialog?.texto || ""} onChange={(e) => setWaDialog((w) => w ? { ...w, texto: e.target.value } : w)} />
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setWaDialog(null)}>Cancelar</Button>
-                  <Button onClick={abrirWhatsApp} disabled={!waDialog?.texto.trim()}><MessageCircle className="mr-1 h-4 w-4" /> Abrir WhatsApp</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <WhatsappPlantillaDialog
+              datos={waDialog}
+              onClose={() => setWaDialog(null)}
+              onEnviar={abrirWhatsApp}
+              onGuardarPlantilla={guardarPlantilla}
+            />
             <InvitarCandidatoDialog
               candidato={invitar ? ({ ...c, id: p.candidato_id } as any) : null}
               puestoNombre={p.ats_busquedas?.titulo || ""}

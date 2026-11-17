@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -283,9 +284,10 @@ export default function ConfiguracionDisponibilidad({ soloLectura, onCambio }: P
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label>Mensaje de WhatsApp (opcional)</Label>
-            <Input
+            <Textarea
+              rows={8}
               value={config.mensaje_whatsapp ?? ""}
-              placeholder="Usá [Nombre], [Puesto] y [LINK_UNICO]"
+              placeholder="Usá [Nombre], [Apellido], [Puesto] y [LINK_UNICO]"
               onChange={(e) => setConfig({ ...config, mensaje_whatsapp: e.target.value })}
               onBlur={(e) => guardarConfig({ mensaje_whatsapp: e.target.value || null })}
               disabled={soloLectura}
