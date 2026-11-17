@@ -118,7 +118,7 @@ export default function PlantillasWhatsapp() {
             </div>
             <div className="space-y-1">
               <Label>Vista previa (con datos de ejemplo)</Label>
-              <div className="whitespace-pre-wrap rounded-md border bg-muted p-3 text-sm">{vista}</div>
+              <div className="whitespace-pre-wrap rounded-md border bg-muted p-3 text-sm [overflow-wrap:anywhere]">{vista}</div>
             </div>
           </CardContent>
         </Card>

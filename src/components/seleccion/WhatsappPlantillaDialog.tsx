@@ -48,7 +48,7 @@ export default function WhatsappPlantillaDialog({ datos, onClose, onEnviar }: Pr
             </SelectContent>
           </Select>
         </div>
-        <div className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted p-3 text-sm">{texto}</div>
+        <div className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted p-3 text-sm [overflow-wrap:anywhere]">{texto}</div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={() => onEnviar(texto)}><MessageCircle className="mr-1 h-4 w-4" /> Enviar por WhatsApp</Button>

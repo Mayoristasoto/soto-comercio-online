@@ -127,7 +127,7 @@ export default function Seleccion() {
       </div>
 
       <Tabs defaultValue="ranking">
-        <TabsList><TabsTrigger value="ranking">Ranking</TabsTrigger><TabsTrigger value="busquedas">Búsquedas y criterios</TabsTrigger><TabsTrigger value="plantillas">Plantillas de WhatsApp</TabsTrigger></TabsList>
+        <TabsList className="h-auto flex-wrap justify-start"><TabsTrigger value="ranking">Ranking</TabsTrigger><TabsTrigger value="busquedas">Búsquedas y criterios</TabsTrigger><TabsTrigger value="plantillas">Plantillas de WhatsApp</TabsTrigger></TabsList>
         <TabsContent value="ranking" className="mt-4 space-y-3">
           <div className="flex flex-wrap items-end gap-2">
             <div className="relative"><Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-56 pl-8" placeholder="Nombre, DNI, localidad" value={q} onChange={(e) => setQ(e.target.value)} /></div>
