@@ -1,0 +1,1 @@
+CREATE POLICY "cvs rrhh" ON storage.objects FOR ALL TO authenticated USING (bucket_id='cvs-candidatos' AND public.h2_es_rrhh()) WITH CHECK (bucket_id='cvs-candidatos' AND public.h2_es_rrhh());

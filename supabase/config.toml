@@ -113,3 +113,9 @@ verify_jwt = false
 verify_jwt = false
 [functions.telegram-anotaciones]
 verify_jwt = false
+
+[functions.ats-postular]
+verify_jwt = false
+
+[functions.ats-evaluar-cv]
+verify_jwt = false
