@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CalendarPlus, Download, Loader2, MessageCircle, Sparkles } from "lucide-react";
 import { ESTADOS_POSTULACION, telefonoWhatsApp } from "@/lib/ats";
@@ -21,6 +22,7 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
   const [cvUrl, setCvUrl] = useState<string | null>(null);
   const [evaluando, setEvaluando] = useState(false);
   const [invitar, setInvitar] = useState(false);
+  const [waDialog, setWaDialog] = useState<{ numero: string; texto: string } | null>(null);
   const p = postulacion;
 
   const cargar = useCallback(async () => {
@@ -57,7 +59,6 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
       toast.error("El teléfono del postulante no es válido para WhatsApp. Generá el enlace y copialo.");
       return setInvitar(true);
     }
-    const ventana = window.open("", "_blank"); // se abre ya para que el navegador no la bloquee
     try {
       const { data: cfgs } = await db.from("entrevistas_config").select("id, mensaje_whatsapp").order("created_at").limit(1);
       const cfg = cfgs?.[0];
@@ -68,15 +69,20 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
       if (error) throw error;
       await db.from("candidatos").update({ estado: "pendiente_reserva" }).eq("id", p.candidato_id);
       const texto = mensajeWhatsapp(p.candidatos?.nombre || "", p.ats_busquedas?.titulo || "el puesto", token as string, cfg?.mensaje_whatsapp);
-      const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
-      if (ventana) ventana.location.href = url; else window.open(url, "_blank");
-      await db.from("ats_observaciones").insert({ postulacion_id: p.id, nota: "Invitado a entrevista por WhatsApp" });
-      await cambiarEstado("entrevista");
-      cargar();
+      setWaDialog({ numero, texto });
     } catch (e: any) {
-      ventana?.close();
       toast.error("No se pudo generar la invitación: " + (e.message || e));
     }
+  };
+  const abrirWhatsApp = async () => {
+    if (!waDialog) return;
+    const ventana = window.open("", "_blank"); // se abre ya para que el navegador no la bloquee
+    const url = `https://wa.me/${waDialog.numero}?text=${encodeURIComponent(waDialog.texto)}`;
+    if (ventana) ventana.location.href = url; else window.open(url, "_blank");
+    await db.from("ats_observaciones").insert({ postulacion_id: p.id, nota: "Invitado a entrevista por WhatsApp" });
+    await cambiarEstado("entrevista");
+    setWaDialog(null);
+    cargar();
   };
   const agregarNota = async () => {
     if (!nota.trim()) return;
@@ -160,6 +166,17 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
                 {!cvUrl && <p className="text-sm text-muted-foreground">Sin CV adjunto.</p>}
               </div>
             </div>
+            <Dialog open={!!waDialog} onOpenChange={(o) => !o && setWaDialog(null)}>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader><DialogTitle>Mensaje de WhatsApp</DialogTitle></DialogHeader>
+                <p className="text-sm text-muted-foreground">Podés editar el texto antes de abrir WhatsApp. El enlace de reserva ya está incluido; no lo borres.</p>
+                <Textarea rows={10} value={waDialog?.texto || ""} onChange={(e) => setWaDialog((w) => w ? { ...w, texto: e.target.value } : w)} />
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setWaDialog(null)}>Cancelar</Button>
+                  <Button onClick={abrirWhatsApp} disabled={!waDialog?.texto.trim()}><MessageCircle className="mr-1 h-4 w-4" /> Abrir WhatsApp</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <InvitarCandidatoDialog
               candidato={invitar ? ({ ...c, id: p.candidato_id } as any) : null}
               puestoNombre={p.ats_busquedas?.titulo || ""}
