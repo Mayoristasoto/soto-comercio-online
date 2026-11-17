@@ -107,6 +107,7 @@ const SECCIONES_EXTRA: { path: string; nombre: string; icon: string; grupo?: str
   { path: "/rrhh/recorrido", nombre: "Recorrido de Salón", icon: "Map", grupo: "Operaciones" },
   { path: "/rrhh/checklist", nombre: "Checklist de Control", icon: "ClipboardCheck", grupo: "Operaciones" },
   { path: "/rrhh/entrevistas", nombre: "Entrevistas", icon: "Calendar", grupo: "RRHH" },
+  { path: "/rrhh/seleccion", nombre: "Selección / ATS", icon: "Briefcase", grupo: "RRHH" },
   { path: "/controles", nombre: "Controles", icon: "Shield", grupo: "Operaciones" },
   { path: "/centro-accesos", nombre: "Centro de accesos", icon: "Home", grupo: "Mi cuenta" },
   { path: "/mi-configuracion", nombre: "Mi Configuración", icon: "Settings", grupo: "Mi cuenta" },

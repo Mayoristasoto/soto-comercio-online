@@ -1,5 +1,5 @@
 // Evaluación de CV con IA para el ATS. Asistencia a RRHH: nunca descarta candidatos.
-import { encodeBase64 } from 'jsr:@std/encode@1/base64'
+import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
 
 type Sb = any
 

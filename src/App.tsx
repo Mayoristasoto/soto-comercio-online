@@ -114,6 +114,8 @@ import RecorridoSalon from "./pages/RecorridoSalon";
 import ReporteRapido from "./pages/ReporteRapido";
 import RecorridoDetalle from "./pages/RecorridoDetalle";
 import Entrevistas from "./pages/Entrevistas";
+import Seleccion from "./pages/Seleccion";
+import Postular from "./pages/Postular";
 import ReservarEntrevista from "./pages/ReservarEntrevista";
 
 const queryClient = new QueryClient();
@@ -220,6 +222,7 @@ const App = () => (
               <Route path="rrhh/recorrido/:id" element={<RecorridoDetalle />} />
               <Route path="reporte-rapido" element={<ReporteRapido />} />
             <Route path="rrhh/entrevistas" element={<Entrevistas />} />
+            <Route path="rrhh/seleccion" element={<Seleccion />} />
             <Route path="rrhh/horarios/optimizador" element={<OptimizadorHorarios />} />
             
             {/* Módulo Operaciones */}
@@ -328,6 +331,8 @@ const App = () => (
           
           {/* Calificación de empleados (página pública) */}
           <Route path="/entrevista/reservar/:token" element={<ReservarEntrevista />} />
+          <Route path="/postular" element={<Postular />} />
+          <Route path="/postular/:busquedaId" element={<Postular />} />
           <Route path="/calificar/:token" element={<CalificarEmpleado />} />
           <Route path="/calificar-v2/:token" element={<CalificarEmpleadoV2 />} />
 
