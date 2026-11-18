@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarPlus, Download, Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { CalendarPlus, Download, FileText, Loader2, MessageCircle, Sparkles } from "lucide-react";
 import { ESTADOS_POSTULACION, telefonoWhatsApp } from "@/lib/ats";
 import { enlaceReserva } from "@/components/entrevistas/entrevistasTypes";
 import WhatsappPlantillaDialog, { type DatosWhatsapp } from "./WhatsappPlantillaDialog";
@@ -96,6 +96,64 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
     setNota(""); cargar();
   };
 
+  const descargarFicha = () => {
+    const ventana = window.open("", "_blank"); // se abre ya para que el navegador no la bloquee
+    if (!ventana) return toast.error("El navegador bloqueó la ventana. Permití ventanas emergentes.");
+    const esc = (s: any) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const items = (xs: string[]) => (xs?.length ? `<ul>${xs.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "<p class='muted'>—</p>");
+    const criterios = (ev?.criterios || []).map((k: any) => `
+      <tr><td>${esc(k.criterio)} <span class="muted">(peso ${esc(k.peso)})</span></td><td class="num"><b>${esc(k.puntaje)}</b></td></tr>
+      <tr><td colspan="2" class="evid">${esc(k.evidencia)}</td></tr>`).join("");
+    const experiencia = (ev?.experiencia || []).map((x: any) =>
+      `<li><b>${esc(x.puesto)}</b>${x.empresa ? ` · ${esc(x.empresa)}` : ""}${x.periodo ? ` (${esc(x.periodo)})` : ""}${x.tareas ? `<br><span class="muted">${esc(x.tareas)}</span>` : ""}</li>`).join("");
+    const notas = obs.map((o) => `<li>${esc(o.nota)} <span class="muted">— ${o.empleados ? `${esc(o.empleados.nombre)} ${esc(o.empleados.apellido)} · ` : ""}${new Date(o.created_at).toLocaleString("es-AR")}</span></li>`).join("");
+    ventana.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Ficha de entrevista — ${esc(c?.nombre)} ${esc(c?.apellido)}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; font-size: 12px; line-height: 1.45; margin: 0; }
+  header { border-bottom: 3px solid #4b0d6d; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; }
+  h1 { font-size: 20px; margin: 0; color: #4b0d6d; }
+  .score { background: #4b0d6d; color: #fff; border-radius: 8px; padding: 6px 14px; font-size: 18px; font-weight: bold; }
+  .datos { color: #444; margin-top: 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #95198d; border-bottom: 1px solid #e5e5e5; padding-bottom: 3px; margin: 16px 0 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { border: 1px solid #ddd; padding: 5px 8px; vertical-align: top; }
+  td.num { width: 60px; text-align: right; }
+  td.evid { border-top: none; font-style: italic; color: #555; font-size: 11px; }
+  ul { margin: 4px 0; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+  .muted { color: #777; }
+  .msg { background: #f4ecf8; border-left: 3px solid #95198d; padding: 6px 10px; font-style: italic; }
+  .nota { border: 1px dashed #bbb; padding: 6px 10px; margin-bottom: 6px; border-radius: 4px; }
+  .firmas { margin-top: 28px; display: flex; gap: 40px; }
+  .firma { flex: 1; border-top: 1px solid #999; padding-top: 4px; text-align: center; color: #666; font-size: 11px; }
+  footer { margin-top: 14px; font-size: 10px; color: #999; }
+  section { break-inside: avoid; }
+</style></head><body>
+<header>
+  <div>
+    <h1>${esc(c?.nombre)} ${esc(c?.apellido)}</h1>
+    <div class="datos">${esc(p.ats_busquedas?.titulo || "Postulación general")} · ${esc(c?.telefono || "sin teléfono")} · ${esc(c?.email || "sin email")}${c?.localidad ? ` · ${esc(c.localidad)}` : ""}${c?.dni ? ` · DNI ${esc(c.dni)}` : ""}</div>
+  </div>
+  ${p.score != null ? `<div class="score">${Math.round(p.score)}/100</div>` : ""}
+</header>
+${p.mensaje ? `<p class="msg">"${esc(p.mensaje)}"</p>` : ""}
+${ev?.resumen ? `<section><h2>Resumen</h2><p>${esc(ev.resumen)}</p></section>` : ""}
+${criterios ? `<section><h2>Puntaje por criterio</h2><table>${criterios}</table></section>` : ""}
+${experiencia ? `<section><h2>Experiencia identificada</h2><ul>${experiencia}</ul></section>` : ""}
+<section><h2>Fortalezas</h2>${items(ev?.fortalezas)}</section>
+<section><h2>Aspectos a verificar</h2>${items(ev?.a_verificar)}</section>
+<section><h2>Preguntas sugeridas para la entrevista</h2>${items(ev?.preguntas)}</section>
+${notas ? `<section><h2>Observaciones internas</h2><ul>${notas}</ul></section>` : ""}
+<section><h2>Anotaciones de la entrevista</h2><div class="nota">&nbsp;</div><div class="nota">&nbsp;</div><div class="nota">&nbsp;</div></section>
+<div class="firmas"><div class="firma">Entrevistador</div><div class="firma">Fecha</div><div class="firma">Resultado</div></div>
+<footer>Generado desde RRHH Mayorista Soto · ${new Date().toLocaleString("es-AR")} · La IA asiste; la decisión es de RRHH.</footer>
+<script>window.onload = () => { window.print(); };</script>
+</body></html>`);
+    ventana.document.close();
+  };
+
   const c = p?.candidatos;
   const esPdf = (p?.cv_nombre || "").toLowerCase().endsWith(".pdf");
   const esImg = /\.(jpe?g|png|webp)$/i.test(p?.cv_nombre || "");
@@ -126,6 +184,7 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
                 {evaluando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />} {ev ? "Re-evaluar con IA" : "Evaluar con IA"}
               </Button>
               {cvUrl && <Button variant="outline" asChild><a href={cvUrl} target="_blank" rel="noreferrer"><Download className="mr-1 h-4 w-4" /> Descargar CV</a></Button>}
+              <Button variant="outline" onClick={descargarFicha}><FileText className="mr-1 h-4 w-4" /> Descargar ficha</Button>
               <Button onClick={invitarWhatsApp}><MessageCircle className="mr-1 h-4 w-4" /> Invitar a entrevista por WhatsApp</Button>
               <Button variant="ghost" size="sm" onClick={() => setInvitar(true)}><CalendarPlus className="mr-1 h-4 w-4" /> Copiar enlace</Button>
             </div>
