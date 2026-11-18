@@ -107,6 +107,23 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
     const experiencia = (ev?.experiencia || []).map((x: any) =>
       `<li><b>${esc(x.puesto)}</b>${x.empresa ? ` · ${esc(x.empresa)}` : ""}${x.periodo ? ` (${esc(x.periodo)})` : ""}${x.tareas ? `<br><span class="muted">${esc(x.tareas)}</span>` : ""}</li>`).join("");
     const notas = obs.map((o) => `<li>${esc(o.nota)} <span class="muted">— ${o.empleados ? `${esc(o.empleados.nombre)} ${esc(o.empleados.apellido)} · ` : ""}${new Date(o.created_at).toLocaleString("es-AR")}</span></li>`).join("");
+    const sn = `<span class="box"></span>Sí<span class="box"></span>No &nbsp; `;
+    const dato = (v: any) => v ? `<span class="pre">${esc(v)}</span> <span class="muted">(del CV — confirmar)</span>` : "";
+    const checklist = ([
+      ["Dirección", dato(c?.direccion || c?.localidad)],
+      ["Teléfono", dato(c?.telefono)],
+      ["Email", dato(c?.email)],
+      ["CUIL", dato(c?.cuil || c?.dni)],
+      ["¿Tiene hijos? ¿Cuántos / edades?", sn],
+      ["¿Estudia actualmente? ¿Qué / horario?", sn],
+      ["¿Trabaja actualmente? ¿Dónde / horario?", sn],
+      ["¿Está en otro proceso de selección?", sn],
+      ["¿Tiene juicios / legales con ex empleador?", sn],
+      ["¿Tiene algún viaje programado? ¿Cuándo?", sn],
+      ["¿Piensa empezar a estudiar? ¿Qué / horario?", sn],
+      ["¿Tiene algún problema de salud a considerar?", sn],
+      ["Disponibilidad horaria (días / franjas)", `<span class="box"></span>Mañana<span class="box"></span>Tarde<span class="box"></span>Sábados<span class="box"></span>Rotativo &nbsp; `],
+    ] as [string, string][]).map(([l, v]) => `<tr><td class="l">${l}</td><td>${v}</td></tr>`).join("");
     ventana.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Ficha de entrevista — ${esc(c?.nombre)} ${esc(c?.apellido)}</title>
 <style>
   @page { size: A4; margin: 14mm; }
@@ -130,6 +147,10 @@ export default function FichaCandidato({ postulacion, onClose, onCambio }: { pos
   .firma { flex: 1; border-top: 1px solid #999; padding-top: 4px; text-align: center; color: #666; font-size: 11px; }
   footer { margin-top: 14px; font-size: 10px; color: #999; }
   section { break-inside: avoid; }
+  .chk td { height: 26px; }
+  .chk td.l { width: 34%; font-weight: bold; }
+  .box { display:inline-block; width:11px; height:11px; border:1px solid #555; margin:0 4px 0 10px; vertical-align:middle; }
+  .pre { color:#4b0d6d; }
 </style></head><body>
 <header>
   <div>
@@ -146,6 +167,7 @@ ${experiencia ? `<section><h2>Experiencia identificada</h2><ul>${experiencia}</u
 <section><h2>Aspectos a verificar</h2>${items(ev?.a_verificar)}</section>
 <section><h2>Preguntas sugeridas para la entrevista</h2>${items(ev?.preguntas)}</section>
 ${notas ? `<section><h2>Observaciones internas</h2><ul>${notas}</ul></section>` : ""}
+<section><h2>Checklist de entrevista</h2><table class="chk">${checklist}</table></section>
 <section><h2>Anotaciones de la entrevista</h2><div class="nota">&nbsp;</div><div class="nota">&nbsp;</div><div class="nota">&nbsp;</div></section>
 <div class="firmas"><div class="firma">Entrevistador</div><div class="firma">Fecha</div><div class="firma">Resultado</div></div>
 <footer>Generado desde RRHH Mayorista Soto · ${new Date().toLocaleString("es-AR")} · La IA asiste; la decisión es de RRHH.</footer>
