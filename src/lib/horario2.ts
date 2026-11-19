@@ -26,9 +26,13 @@ export function diaSemana(fecha: string) { const d = new Date(fecha + "T00:00:00
 /** Puestos que cualquier empleado puede cubrir sin estar habilitado (no bloquean el envío). */
 export const PUESTOS_SIN_HABILITACION = ["encargado sucursal"];
 
+/** Interruptor temporal: en false, cualquier empleado puede cubrir cualquier puesto (los habilitados guardados no se tocan). */
+export const RESTRICCION_PUESTOS_HABILITADOS = false;
+
 /** Agrega a cada empleado los puestos libres de habilitación, sin tocar los habilitados guardados. */
-export function habilitadosEfectivos(base: Record<string, string[]>, empleadoIds: string[], puestos: { id: string; nombre: string }[]): Record<string, string[]> {
-  const libres = puestos.filter(p => PUESTOS_SIN_HABILITACION.includes(p.nombre.trim().toLowerCase())).map(p => p.id);
+export function habilitadosEfectivos(base: Record<string, string[]>, empleadoIds: string[], puestos: { id: string; nombre: string }[],
+  restriccionActiva: boolean = RESTRICCION_PUESTOS_HABILITADOS): Record<string, string[]> {
+  const libres = puestos.filter(p => !restriccionActiva || PUESTOS_SIN_HABILITACION.includes(p.nombre.trim().toLowerCase())).map(p => p.id);
   if (!libres.length) return base;
   const out: Record<string, string[]> = { ...base };
   for (const id of empleadoIds) out[id] = Array.from(new Set([...(base[id] || []), ...libres]));

@@ -69,12 +69,20 @@ describe("Encargado Sucursal no requiere habilitación", () => {
   const puestos = [{ id: "enc", nombre: "Encargado Sucursal" }, { id: "caja", nombre: "Cajero" }];
   const t = (puesto_id: string) => ({ empleado_id: "e1", fecha: "2026-11-10", hora_entrada: "08:00", hora_salida: "16:00", puesto_id, sucursal_id: "s1" });
   test("asignar Encargado Sucursal sin habilitación no genera aviso", () => {
-    const h = habilitadosEfectivos({}, ["e1"], puestos);
+    const h = habilitadosEfectivos({}, ["e1"], puestos, true);
     expect(validarH2([t("enc")], h, []).filter(a => a.tipo === "puesto_no_habilitado")).toHaveLength(0);
   });
   test("otros puestos siguen bloqueando sin habilitación", () => {
-    const h = habilitadosEfectivos({}, ["e1"], puestos);
+    const h = habilitadosEfectivos({}, ["e1"], puestos, true);
     expect(validarH2([t("caja")], h, []).filter(a => a.tipo === "puesto_no_habilitado" && a.critico)).toHaveLength(1);
+  });
+  test("con la restricción apagada, ningún puesto bloquea por habilitación", () => {
+    const h = habilitadosEfectivos({}, ["e1"], puestos, false);
+    expect(validarH2([t("caja")], h, []).filter(a => a.tipo === "puesto_no_habilitado")).toHaveLength(0);
+  });
+  test("la restricción está apagada temporalmente por defecto", () => {
+    const h = habilitadosEfectivos({}, ["e1"], puestos);
+    expect(validarH2([t("caja")], h, []).filter(a => a.tipo === "puesto_no_habilitado")).toHaveLength(0);
   });
 });
 
