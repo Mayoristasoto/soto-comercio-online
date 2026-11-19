@@ -320,8 +320,8 @@ export default function PreviewPanelEncargado2() {
                                     </span>
                                   ) : l.length ? l.map((t, i) => (
                                     <div key={i} className="rounded bg-primary/10 px-1.5 py-1">
-                                      <div className="font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
-                                      {t.descanso_inicio && <div className="flex items-center justify-center gap-0.5 text-[10px] text-muted-foreground"><Coffee className="h-2.5 w-2.5" />{hm(t.descanso_inicio)}{t.descanso_fin ? `–${hm(t.descanso_fin)}` : ""}</div>}
+                                      <div className="whitespace-nowrap font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
+                                      {t.descanso_inicio && <div className="flex items-center justify-center gap-0.5 whitespace-nowrap text-[10px] text-muted-foreground"><Coffee className="h-2.5 w-2.5" />{hm(t.descanso_inicio)}{t.descanso_fin ? `–${hm(t.descanso_fin)}` : ""}</div>}
                                       {t.puesto_id && t.puesto_id !== e.puesto_id && puestos[t.puesto_id] && <div className="truncate text-[10px] text-muted-foreground">{puestos[t.puesto_id]}</div>}
                                       {t.sucursal_id && e.sucursal_id && t.sucursal_id !== e.sucursal_id && <div className="truncate text-[10px] text-secondary">en {nomSuc(t.sucursal_id)}</div>}
                                     </div>
