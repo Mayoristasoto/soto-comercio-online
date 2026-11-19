@@ -4,6 +4,7 @@
 - [x] Copiar o mover un turno a otra persona lleva solo el horario; el puesto es el propio del destino (copia, mover, varios a la vez, panel de disponibles).
 - [x] Corregir los turnos ya copiados a Victor Emanuel Ibañez con puesto equivocado (3 turnos, ahora Auxiliar Depósito).
 - [x] Cargar en la semana actual (16/11–22/11/2026) los horarios del sistema anterior, en borrador (6 sucursales, 125 turnos).
+- [x] Sábado 21/11 ajustado según fichadas de los últimos 4 sábados (6 cambios, resto igual).
 - [ ] Ver la grilla con sesión real: Supabase externo no permite iniciar sesión desde acá.
 
 ## Horario 2 más liviano + demo desde fichadas
