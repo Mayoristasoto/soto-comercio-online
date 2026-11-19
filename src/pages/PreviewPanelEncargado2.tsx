@@ -40,9 +40,13 @@ export default function PreviewPanelEncargado2() {
       if (!user) { navigate("/auth?redirect=/preview-panel-encargado-2", { replace: true }); return }
       const { data: yo } = await supabase.from("empleados").select("nombre").eq("user_id", user.id).maybeSingle()
       setNombre(yo?.nombre || "Encargado")
-      const { data: suc } = await (supabase as any).rpc("current_user_sucursal_id")
+      const [{ data: rol }, { data: suc }] = await Promise.all([
+        (supabase as any).rpc("current_user_role"),
+        (supabase as any).rpc("current_user_sucursal_id"),
+      ])
       let q = supabase.from("empleados").select("id, nombre, apellido").eq("activo", true).order("apellido")
-      if (suc) q = q.eq("sucursal_id", suc as string)
+      // RRHH ve a todos los empleados; el encargado, solo los de su sucursal.
+      if (rol !== "admin_rrhh" && suc) q = q.eq("sucursal_id", suc as string)
       const { data } = await q
       setEmpleados((data as Emp[]) || [])
     })()
