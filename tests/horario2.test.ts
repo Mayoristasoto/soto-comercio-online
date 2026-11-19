@@ -100,3 +100,17 @@ describe("turnos rápidos", () => {
     expect(validarTurnoNuevo([], b("10:00", "18:00"), {}, [])).toBeNull();
   });
 });
+
+import { puestoAlCopiar } from "../src/lib/horario2";
+describe("copiar turno a otra persona lleva solo el horario", () => {
+  const puestoDe = (id: string) => ({ victor: "aux_deposito", sin: null } as Record<string, string | null>)[id];
+  test("a otro empleado toma el puesto propio del destino", () => {
+    expect(puestoAlCopiar("encargado", "washintong", "victor", puestoDe)).toBe("aux_deposito");
+  });
+  test("si el destino no tiene puesto, la copia queda sin puesto", () => {
+    expect(puestoAlCopiar("encargado", "washintong", "sin", puestoDe)).toBeNull();
+  });
+  test("en la misma persona conserva el puesto del turno", () => {
+    expect(puestoAlCopiar("encargado", "victor", "victor", puestoDe)).toBe("encargado");
+  });
+});

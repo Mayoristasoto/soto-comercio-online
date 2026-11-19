@@ -106,6 +106,11 @@ export function copiarTurnos(turnos: TurnoH2[], diasDesfase: number, sucursalId:
 }
 
 /** Mueve un registro, sin copiarlo ni cambiar su horario, descanso o puesto. */
+/** Al copiar o mover un turno a otra persona se lleva solo el horario: el puesto pasa a ser el propio del destino. En la misma persona se conserva. */
+export function puestoAlCopiar(puestoOrigen: string | null | undefined, empleadoOrigen: string, empleadoDestino: string, puestoDe: (empleadoId: string) => string | null | undefined): string | null {
+  return empleadoOrigen === empleadoDestino ? (puestoOrigen ?? null) : (puestoDe(empleadoDestino) ?? null);
+}
+
 export function prepararMovimientoTurno<T extends TurnoH2>(
   turnos: T[], id: string, empleadoId: string, fecha: string,
   habilitados: Record<string, string[]>, ausencias: AusenciaH2[],

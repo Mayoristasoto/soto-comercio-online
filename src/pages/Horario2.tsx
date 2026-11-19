@@ -29,7 +29,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 const Grad = ({ n }: { n: number }) => <defs>{COLS.map((c, i) => <linearGradient key={i} id={`g${n}-${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity={0.95} /><stop offset="100%" stopColor={c} stopOpacity={0.35} /></linearGradient>)}</defs>;
 const TT = { contentStyle: { borderRadius: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", boxShadow: "0 8px 24px -8px hsl(var(--primary) / 0.35)" } };
 const COLS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--info))"];
-import { validarTurnos, habilitadosEfectivos, RESTRICCION_PUESTOS_HABILITADOS, horariosFrecuentes, validarTurnoNuevo, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
+import { validarTurnos, habilitadosEfectivos, RESTRICCION_PUESTOS_HABILITADOS, puestoAlCopiar, horariosFrecuentes, validarTurnoNuevo, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
 const db = supabase as any;
 const ESTADOS: Record<string, { label: string; cls: string }> = {
@@ -291,25 +291,26 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       const eid = anclaId.slice(5);
       if (turnos.some((t: any) => t.empleado_id === eid && t.fecha === destino.fecha)) return toast.error("Ya tiene turno ese día");
       const ref = tp.find((t: any) => t.empleado_id === destino.empleadoId && t.fecha === destino.fecha);
-      setEdit(nuevo(eid, destino.fecha, ref ? { hora_entrada: hm(ref.hora_entrada), hora_salida: hm(ref.hora_salida), puesto_id: ref.puesto_id } : {}));
+      setEdit(nuevo(eid, destino.fecha, ref ? { hora_entrada: hm(ref.hora_entrada), hora_salida: hm(ref.hora_salida) } : {}));
       return;
     }
     if (!empIds.includes(destino.empleadoId)) return;
+    const puestoDe = (id: string) => empleados.find((e: any) => e.id === id)?.puesto_id || null;
     const ancla = tp.find((t: any) => t.id === anclaId);
     if (ancla && ancla.empleado_id === destino.empleadoId && ancla.fecha === destino.fecha) return;
     if (ancla && modoArrastre(!!(activatorEvent as any)?.shiftKey) === "copiar") {
       let origenes: any[] = [ancla];
-      let copias: any[] = [{ ...ancla, empleado_id: destino.empleadoId, fecha: destino.fecha }];
+      let copias: any[] = [{ ...ancla, empleado_id: destino.empleadoId, fecha: destino.fecha, puesto_id: puestoAlCopiar(ancla.puesto_id, ancla.empleado_id, destino.empleadoId, puestoDe) }];
       if (seleccion.length > 1 && seleccion.includes(anclaId)) {
         const multiple = prepararMovimientoMultiple(turnos as TurnoH2[], seleccion, anclaId, empIds, destino.empleadoId, destino.fecha, habil, ausencias);
         if (multiple.error && !multiple.turnos.length) return toast.error(multiple.error);
         origenes = multiple.turnos.map(m => tp.find((t: any) => t.id === m.id));
         if (origenes.some(o => !o)) return;
-        copias = multiple.turnos;
+        copias = multiple.turnos.map((c, i) => ({ ...c, puesto_id: puestoAlCopiar(origenes[i].puesto_id, origenes[i].empleado_id, c.empleado_id, puestoDe) }));
       }
       const copia = prepararCopiaTurnos(turnos as TurnoH2[], copias as TurnoH2[], habil, ausencias);
       const filas = (copias as any[]).map((c: any, i: number) => { const o = origenes[i];
-        return { id: crypto.randomUUID(), plan_id: plan.id, empleado_id: c.empleado_id, fecha: c.fecha, hora_entrada: o.hora_entrada, hora_salida: o.hora_salida, puesto_id: o.puesto_id, sucursal_id: o.sucursal_id, descanso_inicio: o.descanso_inicio, descanso_fin: o.descanso_fin,
+        return { id: crypto.randomUUID(), plan_id: plan.id, empleado_id: c.empleado_id, fecha: c.fecha, hora_entrada: o.hora_entrada, hora_salida: o.hora_salida, puesto_id: c.puesto_id ?? null, sucursal_id: o.sucursal_id, descanso_inicio: o.descanso_inicio, descanso_fin: o.descanso_fin,
           observaciones: !o.observaciones || o.observaciones.startsWith("Demo desde fichadas") ? `Copiado de ${nombreEmp(o.empleado_id)}` : o.observaciones }; });
       if (copia.error) {
         const c = conflictosCopia(tp as TurnoH2[], copias as TurnoH2[], habil, ausencias);
@@ -327,7 +328,8 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
       if (!multiple.turnos.every(t => tp.some((x: any) => x.id === t.id))) return;
       setBusy(true);
       try {
-        const filas = multiple.turnos.map(t => { const { id, ...resto } = t as any; return { id, empleado_id: resto.empleado_id, fecha: resto.fecha }; });
+        const filas = multiple.turnos.map(t => { const { id, ...resto } = t as any; const o = tp.find((x: any) => x.id === id);
+          return { id, empleado_id: resto.empleado_id, fecha: resto.fecha, puesto_id: puestoAlCopiar(o?.puesto_id, o?.empleado_id, resto.empleado_id, puestoDe) }; });
         const { data, error } = await db.from("h2_turnos").upsert(filas, { onConflict: "id" }).select("id");
         if (error) return err(error);
         if (data?.length !== filas.length) return toast.error("No se pudieron mover todos los turnos. Recargá la semana.");
@@ -343,7 +345,7 @@ function BloqueSucursal({ sucursal, plan, semana, esRRHH, turnos, empleados, aus
     setBusy(true);
     try {
       const { data, error } = await db.from("h2_turnos")
-        .update({ empleado_id: destino.empleadoId, fecha: destino.fecha })
+        .update({ empleado_id: destino.empleadoId, fecha: destino.fecha, puesto_id: puestoAlCopiar(movimiento.turno.puesto_id, ancla?.empleado_id ?? destino.empleadoId, destino.empleadoId, puestoDe) })
         .eq("id", movimiento.turno.id).eq("plan_id", plan.id).select("id").single();
       if (error) return err(error);
       if (!data) return toast.error("No se pudo mover el turno. Recargá la semana.");
