@@ -126,6 +126,11 @@ export default function PreviewPanelEncargado() {
               <RotateCcw className="h-4 w-4 mr-1" />
               Restaurar textos
             </Button>
+          ) : null}
+          {puedeEditar ? (
+            <Button variant="secondary" size="sm" onClick={() => navigate("/preview-panel-encargado-2")}>
+              Probar versión 2
+            </Button>
           ) : (
             <Button
               variant="outline"

@@ -41,6 +41,7 @@ import PlanificacionSemanal from "./pages/PlanificacionSemanal";
 import EncargadoPlanificacionSemanal from "./pages/EncargadoPlanificacionSemanal";
 
 import PreviewPanelEncargado from "./pages/PreviewPanelEncargado";
+import PreviewPanelEncargado2 from "./pages/PreviewPanelEncargado2";
 import DesafiosTV from "./pages/DesafiosTV";
 import RankingIncidencias from "./pages/RankingIncidencias";
 import ListadoIncidencias from "./pages/ListadoIncidencias";
@@ -338,6 +339,7 @@ const App = () => (
 
           {/* Preview del panel de encargados (standalone) */}
           <Route path="/preview-panel-encargado" element={<PreviewPanelEncargado />} />
+          <Route path="/preview-panel-encargado-2" element={<PreviewPanelEncargado2 />} />
 
           
           {/* Generador de QR Demo (protegido) */}
