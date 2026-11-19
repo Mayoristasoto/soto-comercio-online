@@ -1,5 +1,10 @@
 # Roadmap
 
+## Horario 2: copias y migración de la semana actual
+- [x] Copiar o mover un turno a otra persona lleva solo el horario; el puesto es el propio del destino (copia, mover, varios a la vez, panel de disponibles).
+- [ ] Corregir los turnos ya copiados a Victor Emanuel Ibañez con puesto equivocado.
+- [ ] Cargar en la semana actual (16/11–22/11/2026) los horarios del sistema anterior, en borrador.
+
 ## Horario 2 más liviano + demo desde fichadas
 - [x] Resumen, sucursales y "Cobertura y advertencias" plegables, recordados en el navegador; botón para desplegar/plegar todas.
 - [x] Semanas 2/11 y 9/11 en borrador con 132 turnos armados desde fichadas reales (sin publicar).
