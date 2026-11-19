@@ -4793,6 +4793,87 @@ export type Database = {
         }
         Relationships: []
       }
+      encargado_equipo: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empleado_id: string
+          gerente_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empleado_id: string
+          gerente_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empleado_id?: string
+          gerente_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encargado_equipo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encargado_equipo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encargado_equipo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encargado_equipo_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encargado_equipo_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encargado_equipo_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encargado_equipo_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encargado_equipo_gerente_id_fkey"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       encuesta_config: {
         Row: {
           agradecimiento: string
@@ -14193,6 +14274,10 @@ export type Database = {
         }[]
       }
       empleado_activo_por_texto: { Args: { p_id: string }; Returns: boolean }
+      encargado_empleados_visibles: {
+        Args: { _gerente: string }
+        Returns: string[]
+      }
       entrevista_datos_invitacion: { Args: { _token: string }; Returns: Json }
       entrevista_generar_token: { Args: never; Returns: string }
       entrevista_liberar_slot: {
@@ -15058,6 +15143,10 @@ export type Database = {
           nombre: string
           sucursal_id: string
         }[]
+      }
+      panel_encargado_semana: {
+        Args: { p_gerente?: string; p_semana: string }
+        Returns: Json
       }
       programar_reuniones_auto: {
         Args: { p_sucursal_id?: string }
