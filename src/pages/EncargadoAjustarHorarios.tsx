@@ -18,7 +18,6 @@ const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 const lunesDe = (d: Date) => { const x = new Date(d); const w = x.getDay() || 7; x.setDate(x.getDate() - w + 1); x.setHours(0, 0, 0, 0); return x; };
 const sumar = (s: string, n: number) => { const d = new Date(s + "T00:00:00"); d.setDate(d.getDate() + n); return fmt(d); };
 const hm = (h?: string | null) => (h ? h.slice(0, 5) : "");
-const PRIORIDAD: Record<string, number> = { publicado: 5, aprobado: 4, pendiente: 3, devuelto: 2, borrador: 1 };
 
 /** Vista acotada para encargados: solo ver horarios asignados a su equipo y pedir ajustes puntuales a RRHH. */
 export default function EncargadoAjustarHorarios() {
@@ -44,49 +43,30 @@ export default function EncargadoAjustarHorarios() {
       const { data: e } = await supabase.rpc("get_current_empleado_safe" as any);
       const emp = Array.isArray(e) ? e[0] : e;
       setYo(emp?.id ?? null);
-      const { data: rol } = await db.rpc("current_user_role");
-      if (rol === "admin_rrhh") {
-        // RRHH ve a todos los empleados activos, sin importar la sucursal asignada.
-        setEsRRHH(true);
-        const [{ data: ss }, { data: es }] = await Promise.all([
-          db.from("sucursales").select("id,nombre").order("nombre"),
-          db.from("empleados").select("id,nombre,apellido,sucursal_id").eq("activo", true).order("apellido"),
-        ]);
-        setSucursales(ss || []);
-        setEmpleados(es || []);
-        setCargando(false);
-        return;
-      }
-      const { data: sucId } = await db.rpc("current_user_sucursal_id");
-      if (sucId) {
-        const { data: s } = await db.from("sucursales").select("id,nombre").eq("id", sucId).maybeSingle();
-        setSucursal(s);
-        const { data: es } = await db.from("empleados").select("id,nombre,apellido,sucursal_id").eq("sucursal_id", sucId).eq("activo", true).order("apellido");
-        setEmpleados(es || []);
-      }
+      const [{ data: rol }, { data: ss }] = await Promise.all([
+        db.rpc("current_user_role"),
+        db.from("sucursales").select("id,nombre").order("nombre"),
+      ]);
+      setEsRRHH(rol === "admin_rrhh");
+      setSucursales(ss || []);
+      setSucursal((ss || []).find((s: any) => s.id === emp?.sucursal_id) || null);
       setCargando(false);
     })();
   }, []);
 
+  // Mismo equipo que el Panel de Encargado: RRHH ve a todos; el encargado, a quienes RRHH le asignó (o su sucursal).
   const cargarSemana = async () => {
-    if (!sucursal && !esRRHH) return;
-    // Una versión por sucursal y semana (la de mayor estado y versión), igual que turnos-dia.
-    let qp = db.from("h2_planes").select("id,sucursal_id,estado,version").eq("semana_inicio", semana);
-    if (!esRRHH && sucursal) qp = qp.eq("sucursal_id", sucursal.id);
-    const { data: pl } = await qp;
-    const mejor: Record<string, any> = {};
-    for (const p of pl || []) {
-      const a = mejor[p.sucursal_id];
-      if (!a || (PRIORIDAD[p.estado] || 0) > (PRIORIDAD[a.estado] || 0) || ((PRIORIDAD[p.estado] || 0) === (PRIORIDAD[a.estado] || 0) && (p.version || 0) > (a.version || 0))) mejor[p.sucursal_id] = p;
-    }
-    const planIds = Object.values(mejor).map((p: any) => p.id);
-    const { data: tu } = planIds.length ? await db.from("h2_turnos").select("*").in("plan_id", planIds) : { data: [] };
-    setTurnos(tu || []);
-    const ids = empleados.map(e => e.id);
+    if (cargando) return;
+    const { data, error } = await db.rpc("panel_encargado_semana", { p_semana: semana, p_gerente: null });
+    if (error) { toast.error(error.message); return; }
+    const emps = data?.empleados || [];
+    setEmpleados(emps);
+    setTurnos(data?.turnos || []);
+    const ids = emps.map((x: any) => x.id);
     const { data: pe } = ids.length ? await db.from("cambios_horario").select("*").in("empleado_id", ids).gte("fecha", semana).lte("fecha", sumar(semana, 6)) : { data: [] };
     setPedidos(pe || []);
   };
-  useEffect(() => { cargarSemana(); }, [sucursal, esRRHH, semana, empleados.length]);
+  useEffect(() => { cargarSemana(); }, [cargando, semana]);
 
   const abrir = (emp: any, fecha: string, turno?: any) => {
     setEdit({ emp, fecha, turno }); setEntrada(hm(turno?.hora_entrada)); setSalida(hm(turno?.hora_salida)); setMotivo("");
@@ -106,30 +86,30 @@ export default function EncargadoAjustarHorarios() {
   };
 
   if (cargando) return <div className="p-6 flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando tu equipo...</div>;
-  if (!sucursal && !esRRHH) return <div className="p-6"><Card><CardContent className="p-6 text-sm text-muted-foreground">No tenés una sucursal asignada. Pedile a RRHH que te la asigne.</CardContent></Card></div>;
 
   const dias = Array.from({ length: 7 }, (_, i) => sumar(semana, i));
   const nombreSuc = (id?: string | null) => sucursales.find(s => s.id === id)?.nombre || "Sin sucursal";
-  const visibles = esRRHH && filtroSuc !== "todas" ? empleados.filter(e => (filtroSuc === "sin" ? !e.sucursal_id : e.sucursal_id === filtroSuc)) : empleados;
+  const variasSuc = new Set(empleados.map(e => e.sucursal_id ?? "sin")).size > 1;
+  const visibles = filtroSuc !== "todas" ? empleados.filter(e => (filtroSuc === "sin" ? !e.sucursal_id : e.sucursal_id === filtroSuc)) : empleados;
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
       <Button variant="ghost" size="sm" onClick={() => navigate("/preview-panel-encargado-2")}><ArrowLeft className="h-4 w-4 mr-1" /> Volver al panel</Button>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> {esRRHH ? "Ajustar horarios de empleados" : "Ajustar horarios de mi equipo"}</CardTitle>
-          <CardDescription>{esRRHH ? `${filtroSuc === "todas" ? "Todas las sucursales" : filtroSuc === "sin" ? "Sin sucursal asignada" : nombreSuc(filtroSuc)} · ${visibles.length} ${visibles.length === 1 ? "empleado" : "empleados"}` : sucursal?.nombre} · Tocá un día para pedir un cambio. RRHH lo revisa antes de aplicarlo.</CardDescription>
+          <CardDescription>{esRRHH || variasSuc ? `${filtroSuc === "todas" ? "Todas las sucursales" : filtroSuc === "sin" ? "Sin sucursal asignada" : nombreSuc(filtroSuc)} · ${visibles.length} ${visibles.length === 1 ? "empleado" : "empleados"}` : sucursal?.nombre} · Tocá un día para pedir un cambio. RRHH lo revisa antes de aplicarlo.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Button size="icon" variant="outline" onClick={() => setSemana(sumar(semana, -7))}><ChevronLeft className="h-4 w-4" /></Button>
             <span className="text-sm font-medium">Semana del {new Date(semana + "T00:00:00").toLocaleDateString("es-AR")}</span>
             <Button size="icon" variant="outline" onClick={() => setSemana(sumar(semana, 7))}><ChevronRight className="h-4 w-4" /></Button>
-            {esRRHH && (
+            {(esRRHH || variasSuc) && (
               <Select value={filtroSuc} onValueChange={setFiltroSuc}>
                 <SelectTrigger className="w-full sm:ml-auto sm:w-56"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas las sucursales</SelectItem>
-                  {sucursales.map(s => <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>)}
+                  {sucursales.filter(s => esRRHH || empleados.some(e => e.sucursal_id === s.id)).map(s => <SelectItem key={s.id} value={s.id}>{s.nombre}</SelectItem>)}
                   <SelectItem value="sin">Sin sucursal asignada</SelectItem>
                 </SelectContent>
               </Select>
@@ -139,9 +119,10 @@ export default function EncargadoAjustarHorarios() {
             <table className="w-full text-xs border-collapse">
               <thead><tr><th className="text-left p-2">Colaborador</th>{dias.map((d, i) => <th key={d} className="p-2">{DIAS[i]} {d.slice(8)}</th>)}</tr></thead>
               <tbody>
+                {visibles.length === 0 && <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">No tenés empleados asignados. Pedile a RRHH que te los asigne.</td></tr>}
                 {visibles.map(emp => (
                   <tr key={emp.id} className="border-t">
-                    <td className="p-2 font-medium whitespace-nowrap">{emp.apellido}, {emp.nombre}{esRRHH && <div className="text-[10px] font-normal text-muted-foreground">{nombreSuc(emp.sucursal_id)}</div>}</td>
+                    <td className="p-2 font-medium whitespace-nowrap">{emp.apellido}, {emp.nombre}{(esRRHH || variasSuc) && <div className="text-[10px] font-normal text-muted-foreground">{nombreSuc(emp.sucursal_id)}</div>}</td>
                     {dias.map(d => {
                       const t = turnos.find(x => x.empleado_id === emp.id && x.fecha === d);
                       const p = pedidos.find(x => x.empleado_id === emp.id && x.fecha === d && x.estado === "pendiente");

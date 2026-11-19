@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { elegirPlanes, resumenDia, resumenPersona, fmtHoras, hm, PlanSem, TurnoSem } from "@/lib/panelEncargadoSemana"
+import { resumenDia, resumenPersona, fmtHoras, hm, PlanSem, TurnoSem, separarAusentes, porSucursal, ausenciaDel } from "@/lib/panelEncargadoSemana"
+import { EquiposEncargadosDialog } from "@/components/encargado/EquiposEncargadosDialog"
 import { toast } from "sonner"
 import { addDays, format, startOfWeek } from "date-fns"
 import { es } from "date-fns/locale"
 import {
-  ArrowLeftRight, Bell, Calendar, CalendarRange, ClipboardList, Clock, Coffee, HeartPulse, Moon, Package, Repeat, Shirt, Sun, TriangleAlert, Users,
+  ArrowLeftRight, Bell, Building2, Eye, Loader2, UserCog, Calendar, CalendarRange, ClipboardList, Clock, Coffee, HeartPulse, Moon, Package, Repeat, Shirt, Sun, TriangleAlert, Users,
 } from "lucide-react"
 
 type Emp = { id: string; nombre: string; apellido: string; sucursal_id: string | null; puesto_id: string | null }
@@ -41,13 +42,19 @@ export default function PreviewPanelEncargado2() {
   const [form, setForm] = useState({ empleado: "none", elemento: "none", talle: "", cantidad: 1, motivo: "none", detalle: "" })
   const [enviando, setEnviando] = useState(false)
   const [esRRHH, setEsRRHH] = useState(false)
-  const [miSuc, setMiSuc] = useState<string | null>(null)
+  const [listo, setListo] = useState(false)
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string }[]>([])
   const [filtroSuc, setFiltroSuc] = useState("todas")
   const [puestos, setPuestos] = useState<Record<string, string>>({})
   const [planes, setPlanes] = useState<PlanSem[]>([])
   const [turnos, setTurnos] = useState<TurnoSem[]>([])
   const [diaAbierto, setDiaAbierto] = useState<string | null>(null)
+  const [gerentes, setGerentes] = useState<Emp[]>([])
+  const [verComo, setVerComo] = useState("none")
+  const [equiposAbierto, setEquiposAbierto] = useState(false)
+  const [cargando, setCargando] = useState(true)
+  const [errorSemana, setErrorSemana] = useState<string | null>(null)
+  const [recarga, setRecarga] = useState(0)
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => format(addDays(semana, i), "yyyy-MM-dd")), [semana])
 
@@ -57,76 +64,59 @@ export default function PreviewPanelEncargado2() {
       if (!user) { navigate("/auth?redirect=/preview-panel-encargado-2", { replace: true }); return }
       const { data: yo } = await supabase.from("empleados").select("nombre").eq("user_id", user.id).maybeSingle()
       setNombre(yo?.nombre || "Encargado")
-      const [{ data: rol }, { data: suc }] = await Promise.all([
-        (supabase as any).rpc("current_user_role"),
-        (supabase as any).rpc("current_user_sucursal_id"),
-      ])
+      const { data: rol } = await (supabase as any).rpc("current_user_role")
       const rrhh = rol === "admin_rrhh"
-      setEsRRHH(rrhh); setMiSuc((suc as string) || null)
-      let q = supabase.from("empleados").select("id, nombre, apellido, sucursal_id, puesto_id").eq("activo", true).order("apellido")
-      // RRHH ve a todos los empleados; el encargado, solo los de su sucursal.
-      if (!rrhh && suc) q = q.eq("sucursal_id", suc as string)
-      const [{ data }, { data: ps }, { data: ss }] = await Promise.all([
-        q,
+      setEsRRHH(rrhh)
+      const [{ data: ps }, { data: ss }, ger] = await Promise.all([
         supabase.from("puestos").select("id, nombre"),
         supabase.from("sucursales").select("id, nombre").order("nombre"),
+        rrhh
+          ? supabase.from("empleados").select("id, nombre, apellido, sucursal_id, puesto_id").eq("activo", true).eq("rol", "gerente_sucursal").order("apellido")
+          : Promise.resolve({ data: [] as Emp[] }),
       ])
-      setEmpleados((data as Emp[]) || [])
       setPuestos(Object.fromEntries(((ps || []) as any[]).map((p) => [p.id, p.nombre])))
       setSucursales((ss || []) as any[])
+      setGerentes((ger.data as Emp[]) || [])
+      setListo(true)
     })()
   }, [navigate])
 
+  // Una sola consulta trae la semana del equipo visible: RRHH ve a todos; cada encargado, los que RRHH le asignó
+  // (o su sucursal si no hay configuración). El plan elegido por sucursal es el de mayor estado y versión.
   useEffect(() => {
-    if (!empleados.length) return
-    const ids = empleados.map((e) => e.id)
-    const ini = dias[0], fin = dias[6]
+    if (!listo) return
+    setCargando(true)
     ;(async () => {
-      const [v, m] = await Promise.all([
-        supabase.from("solicitudes_vacaciones").select("empleado_id, fecha_inicio, fecha_fin, estado")
-          .in("empleado_id", ids).in("estado", ["aprobada", "gozadas"]).lte("fecha_inicio", fin).gte("fecha_fin", ini),
-        supabase.from("ausencias_medicas").select("empleado_id, fecha_inicio, fecha_fin")
-          .in("empleado_id", ids).lte("fecha_inicio", fin).gte("fecha_fin", ini),
-      ])
-      setAusencias([
-        ...((v.data || []) as any[]).map((r) => ({ empleado_id: r.empleado_id, desde: r.fecha_inicio, hasta: r.fecha_fin, tipo: "Vacaciones" as const })),
-        ...((m.data || []) as any[]).map((r) => ({ empleado_id: r.empleado_id, desde: r.fecha_inicio, hasta: r.fecha_fin, tipo: "Licencia médica" as const })),
-      ])
+      const { data, error } = await (supabase as any).rpc("panel_encargado_semana", {
+        p_semana: dias[0], p_gerente: verComo === "none" ? null : verComo,
+      })
+      setCargando(false)
+      if (error) { setErrorSemana(error.message); setEmpleados([]); setTurnos([]); setPlanes([]); setAusencias([]); return }
+      setErrorSemana(null)
+      setEmpleados((data?.empleados || []) as Emp[])
+      setTurnos((data?.turnos || []) as TurnoSem[])
+      setPlanes((data?.planes || []) as PlanSem[])
+      setAusencias((data?.ausencias || []) as Aus[])
     })()
-  }, [empleados, dias])
-
-  // Turnos planificados en Horario 2: una versión por sucursal (la de mayor estado y versión).
-  useEffect(() => {
-    if (!empleados.length) return
-    ;(async () => {
-      let qp = (supabase as any).from("h2_planes").select("id, sucursal_id, estado, version").eq("semana_inicio", dias[0])
-      if (!esRRHH && miSuc) qp = qp.eq("sucursal_id", miSuc)
-      const { data: pl } = await qp
-      const elegidos = elegirPlanes((pl || []) as PlanSem[])
-      setPlanes(elegidos)
-      if (!elegidos.length) { setTurnos([]); return }
-      const { data: tu } = await (supabase as any).from("h2_turnos")
-        .select("empleado_id, fecha, hora_entrada, hora_salida, descanso_inicio, descanso_fin, puesto_id, sucursal_id")
-        .in("plan_id", elegidos.map((p) => p.id))
-      const ids = new Set(empleados.map((e) => e.id))
-      setTurnos(((tu || []) as TurnoSem[]).filter((t) => ids.has(t.empleado_id)))
-    })()
-  }, [empleados, dias, esRRHH, miSuc])
+  }, [listo, dias, verComo, recarga])
 
   const nomSuc = (id?: string | null) => sucursales.find((x) => x.id === id)?.nombre || "Sin sucursal"
-  const equipo = esRRHH && filtroSuc !== "todas" ? empleados.filter((e) => e.sucursal_id === filtroSuc) : empleados
-  const idsEquipo = new Set(equipo.map((e) => e.id))
-  const turnosEquipo = turnos.filter((t) => idsEquipo.has(t.empleado_id))
-  const ausEquipo = ausencias.filter((a) => idsEquipo.has(a.empleado_id))
-  const planesVista = esRRHH && filtroSuc !== "todas" ? planes.filter((p) => p.sucursal_id === filtroSuc) : planes
-  const ausenteEl = (id: string, d: string) => ausEquipo.find((a) => a.empleado_id === id && a.desde <= d && d <= a.hasta)
-  const totalMin = dias.reduce((acc, d) => acc + resumenDia(turnosEquipo, d).minutos, 0)
-  const conTurno = new Set(turnosEquipo.map((t) => t.empleado_id)).size
-  const corto = (id: string) => { const e = empleados.find((x) => x.id === id); return e ? `${e.apellido.split(" ")[0]} ${e.nombre.charAt(0)}.` : "—" }
+  const empDe = (id: string) => empleados.find((x) => x.id === id)
+  const corto = (id: string) => { const e = empDe(id); return e ? `${e.apellido.split(" ")[0]} ${e.nombre.charAt(0)}.` : "—" }
+  const nom = (id: string) => { const e = empDe(id); return e ? `${e.apellido}, ${e.nombre}` : "—" }
 
-  const nom = (id: string) => { const e = empleados.find((x) => x.id === id); return e ? `${e.apellido}, ${e.nombre}` : "—" }
-  const ausentesDia = (d: string) => ausEquipo.filter((a) => a.desde <= d && d <= a.hasta)
-  const maxAus = Math.max(0, ...dias.map((d) => ausentesDia(d).length))
+  const grupos = useMemo(() => porSucursal(empleados, turnos, ausencias).sort((a, b) =>
+    a.sucursal_id === null ? 1 : b.sucursal_id === null ? -1 : nomSuc(a.sucursal_id).localeCompare(nomSuc(b.sucursal_id))
+  ), [empleados, turnos, ausencias, sucursales])
+  const gruposVista = filtroSuc === "todas" ? grupos : grupos.filter((g) => (g.sucursal_id ?? "sin") === filtroSuc)
+  const idsVista = new Set(gruposVista.flatMap((g) => g.empleados))
+  // Los turnos de quien está de vacaciones o licencia ese día no cuentan: se muestran como anotación abajo.
+  const { activos } = separarAusentes(gruposVista.flatMap((g) => g.turnos), ausencias)
+  const ausVista = ausencias.filter((a) => idsVista.has(a.empleado_id))
+  const totalMin = dias.reduce((acc, d) => acc + resumenDia(activos, d).minutos, 0)
+  const conTurno = new Set(activos.map((t) => t.empleado_id)).size
+  const planDe = (suc: string | null) => planes.find((p) => p.sucursal_id === suc)
+  const gerenteVista = gerentes.find((g) => g.id === verComo)
 
   const enviar = async () => {
     if (form.empleado === "none" || form.elemento === "none") { toast.error("Elegí empleado y elemento"); return }
@@ -154,6 +144,21 @@ export default function PreviewPanelEncargado2() {
     { t: "Control de insumos", i: Package, u: "/admin/insumos" },
   ]
 
+  const EncabezadoSucursal = ({ suc, personas }: { suc: string | null; personas: number }) => {
+    const p = planDe(suc)
+    const turnosSuc = separarAusentes(gruposVista.find((g) => g.sucursal_id === suc)?.turnos || [], ausencias).activos
+    const min = dias.reduce((acc, d) => acc + resumenDia(turnosSuc, d).minutos, 0)
+    return (
+      <div className="flex flex-wrap items-center gap-2 border-b pb-1">
+        <Building2 className="h-4 w-4 text-primary" />
+        <span className="font-semibold">{nomSuc(suc)}</span>
+        {suc && (p ? <Badge className={ESTADO_PLAN[p.estado]?.c}>{ESTADO_PLAN[p.estado]?.t || p.estado}{p.version && p.version > 1 ? ` · v${p.version}` : ""}</Badge>
+          : <Badge variant="outline">Sin horario en Horario 2</Badge>)}
+        <span className="text-xs text-muted-foreground">{personas} {personas === 1 ? "persona" : "personas"} · {fmtHoras(min)} planificadas</span>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-muted/30 p-4 md:p-6">
       <div className="mx-auto max-w-6xl space-y-4">
@@ -162,10 +167,32 @@ export default function PreviewPanelEncargado2() {
             <h1 className="text-2xl font-bold">Hola, {nombre}</h1>
             <p className="text-sm text-muted-foreground">Panel de encargado · versión 2 (prueba)</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/preview-panel-encargado")}>
-            <ArrowLeftRight className="mr-1 h-4 w-4" /> Ver versión clásica
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {esRRHH && (
+              <Button variant="outline" size="sm" onClick={() => setEquiposAbierto(true)}>
+                <UserCog className="mr-1 h-4 w-4" /> Qué ve cada encargado
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => navigate("/preview-panel-encargado")}>
+              <ArrowLeftRight className="mr-1 h-4 w-4" /> Ver versión clásica
+            </Button>
+          </div>
         </div>
+
+        {esRRHH && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-card p-2 text-sm">
+            <Eye className="h-4 w-4 text-primary" />
+            <span>Ver el panel como:</span>
+            <Select value={verComo} onValueChange={(v) => { setVerComo(v); setFiltroSuc("todas") }}>
+              <SelectTrigger className="h-8 w-72"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">RRHH (todos los empleados)</SelectItem>
+                {gerentes.map((g) => <SelectItem key={g.id} value={g.id}>{g.apellido}, {g.nombre} · {nomSuc(g.sucursal_id)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {gerenteVista && <span className="text-xs text-muted-foreground">Ves exactamente a los {empleados.length} empleados que ve este encargado.</span>}
+          </div>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 space-y-0">
@@ -174,23 +201,14 @@ export default function PreviewPanelEncargado2() {
               <CardDescription>
                 Semana del {format(semana, "d 'de' MMMM", { locale: es })} al {format(addDays(semana, 6), "d 'de' MMMM", { locale: es })}
               </CardDescription>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {planesVista.length === 0 ? (
-                  <Badge variant="outline">Sin horario cargado en Horario 2</Badge>
-                ) : planesVista.map((p) => (
-                  <Badge key={p.id} className={ESTADO_PLAN[p.estado]?.c}>
-                    {esRRHH ? `${nomSuc(p.sucursal_id)}: ` : ""}{ESTADO_PLAN[p.estado]?.t || p.estado}{p.version && p.version > 1 ? ` · v${p.version}` : ""}
-                  </Badge>
-                ))}
-              </div>
             </div>
             <div className="flex flex-wrap items-center gap-1">
-              {esRRHH && (
+              {grupos.length > 1 && (
                 <Select value={filtroSuc} onValueChange={setFiltroSuc}>
                   <SelectTrigger className="h-9 w-48"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todas">Todas las sucursales</SelectItem>
-                    {sucursales.map((x) => <SelectItem key={x.id} value={x.id}>{x.nombre}</SelectItem>)}
+                    {grupos.map((g) => <SelectItem key={g.sucursal_id ?? "sin"} value={g.sucursal_id ?? "sin"}>{nomSuc(g.sucursal_id)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
@@ -200,12 +218,15 @@ export default function PreviewPanelEncargado2() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {errorSemana && <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm">No se pudo cargar la semana: {errorSemana}</div>}
+            {cargando && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando la semana…</div>}
+
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
               {[
-                { i: Users, t: "Personas con turno", v: `${conTurno} de ${equipo.length}` },
+                { i: Users, t: "Personas con turno", v: `${conTurno} de ${idsVista.size}` },
                 { i: Clock, t: "Horas planificadas", v: fmtHoras(totalMin) },
-                { i: Calendar, t: "Turnos en la semana", v: String(turnosEquipo.length) },
-                { i: TriangleAlert, t: "Ausencias", v: String(new Set(ausEquipo.map((a) => a.empleado_id)).size) },
+                { i: Calendar, t: "Turnos en la semana", v: String(activos.length) },
+                { i: TriangleAlert, t: "De vacaciones o licencia", v: String(new Set(ausVista.map((a) => a.empleado_id)).size) },
               ].map((k) => (
                 <div key={k.t} className="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
                   <k.i className="h-5 w-5 shrink-0 text-primary" />
@@ -214,79 +235,96 @@ export default function PreviewPanelEncargado2() {
               ))}
             </div>
 
-            {ausEquipo.length > 0 && (
-              <div className="flex items-start gap-2 rounded-md border border-accent/40 bg-accent/10 p-3 text-sm">
-                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <span>
-                  Esta semana hay {new Set(ausEquipo.filter((a) => a.tipo === "Vacaciones").map((a) => a.empleado_id)).size} persona(s) de vacaciones
-                  y {new Set(ausEquipo.filter((a) => a.tipo === "Licencia médica").map((a) => a.empleado_id)).size} con licencia médica. No les asignes turno esos días.
-                </span>
-              </div>
-            )}
-
             <Tabs defaultValue="dia">
               <TabsList>
                 <TabsTrigger value="dia">Por día</TabsTrigger>
                 <TabsTrigger value="persona">Por persona</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="dia">
-                <div className="mb-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+              <TabsContent value="dia" className="space-y-5">
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Sun className="h-3 w-3" /> Turno mañana (entra antes de las 10)</span>
                   <span className="flex items-center gap-1"><Moon className="h-3 w-3" /> Turno tarde (entra desde las 10)</span>
+                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Abajo de cada día: quién está de vacaciones o licencia</span>
                 </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7">
-                  {dias.map((d) => {
-                    const r = resumenDia(turnosEquipo, d)
-                    const a = ausentesDia(d)
-                    const nivel = a.length === 0 ? "border-border" : a.length === maxAus && a.length > 1 ? "border-destructive/60" : "border-accent/60"
-                    const abierto = diaAbierto === d
-                    const lista = abierto ? r.turnos : r.turnos.slice(0, 6)
-                    return (
-                      <div key={d} className={`flex flex-col rounded-md border-2 bg-muted/30 p-2 text-xs ${nivel}`}>
-                        <div className="flex items-baseline justify-between gap-1">
-                          <span className="font-semibold capitalize">{format(new Date(d + "T00:00:00"), "EEE d", { locale: es })}</span>
-                          <span className="text-muted-foreground">{r.personas} pers.</span>
-                        </div>
-                        {r.personas > 0 ? (
-                          <>
-                            <div className="mt-0.5 font-medium text-primary">{r.desde} a {r.hasta}</div>
-                            <div className="mt-1 flex gap-2 text-muted-foreground">
-                              <span className="flex items-center gap-0.5" title="Turno mañana (entran antes de las 10)"><Sun className="h-3 w-3" />{r.manana}</span>
-                              <span className="flex items-center gap-0.5" title="Turno tarde (entran desde las 10)"><Moon className="h-3 w-3" />{r.tarde}</span>
-                            </div>
-                            <div className="mt-2 space-y-1">
-                              {lista.map((t, i) => {
-                                const choca = ausenteEl(t.empleado_id, d)
-                                return (
-                                  <div key={i} className={`rounded px-1.5 py-1 ${choca ? "border border-destructive/60 bg-destructive/10" : "bg-primary/10"}`}
-                                    title={`${nom(t.empleado_id)}${t.puesto_id && puestos[t.puesto_id] ? ` · ${puestos[t.puesto_id]}` : ""}${choca ? ` · tiene ${choca.tipo.toLowerCase()} ese día` : ""}`}>
-                                    <div className="truncate font-medium">{corto(t.empleado_id)}</div>
-                                    <div className="text-muted-foreground">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
-                                    {choca && <div className="mt-0.5 inline-block rounded bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">Tiene {choca.tipo === "Vacaciones" ? "vacaciones" : "licencia"}</div>}
+                {!cargando && gruposVista.length === 0 && <div className="text-sm text-muted-foreground">No hay empleados para mostrar.</div>}
+                {gruposVista.map((g) => {
+                  const { activos: act, conAusencia } = separarAusentes(g.turnos, ausencias)
+                  return (
+                    <section key={g.sucursal_id ?? "sin"} className="space-y-2">
+                      <EncabezadoSucursal suc={g.sucursal_id} personas={g.empleados.length} />
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7">
+                        {dias.map((d) => {
+                          const r = resumenDia(act, d)
+                          // Anotación inferior: ausentes de la sucursal ese día y, si tenían turno cargado, cuál era.
+                          const aus = g.ausencias.filter((a) => a.desde <= d && d <= a.hasta)
+                          const conTurnoAus = conAusencia.filter((t) => t.fecha === d)
+                          const ausIds = [...new Set([...aus.map((a) => a.empleado_id), ...conTurnoAus.map((t) => t.empleado_id)])]
+                          const clave = `${g.sucursal_id}-${d}`
+                          const abiertoDia = diaAbierto === clave
+                          const lista = abiertoDia ? r.turnos : r.turnos.slice(0, 6)
+                          return (
+                            <div key={d} className="flex flex-col rounded-md border-2 border-border bg-muted/30 p-2 text-xs">
+                              <div className="flex items-baseline justify-between gap-1">
+                                <span className="font-semibold capitalize">{format(new Date(d + "T00:00:00"), "EEE d", { locale: es })}</span>
+                                <span className="text-muted-foreground">{r.personas} pers.</span>
+                              </div>
+                              {r.personas > 0 ? (
+                                <>
+                                  <div className="mt-0.5 font-medium text-primary">{r.desde} a {r.hasta}</div>
+                                  <div className="mt-1 flex gap-2 text-muted-foreground">
+                                    <span className="flex items-center gap-0.5" title="Turno mañana (entran antes de las 10)"><Sun className="h-3 w-3" />{r.manana}</span>
+                                    <span className="flex items-center gap-0.5" title="Turno tarde (entran desde las 10)"><Moon className="h-3 w-3" />{r.tarde}</span>
                                   </div>
-                                )
-                              })}
-                              {r.turnos.length > 6 && (
-                                <button className="w-full text-center text-primary hover:underline" onClick={() => setDiaAbierto(abierto ? null : d)}>
-                                  {abierto ? "Ver menos" : `+${r.turnos.length - 6} más`}
-                                </button>
+                                  <div className="mt-2 space-y-1">
+                                    {lista.map((t, i) => {
+                                      const e = empDe(t.empleado_id)
+                                      const prestado = e && e.sucursal_id !== g.sucursal_id
+                                      return (
+                                        <div key={i} className="rounded bg-primary/10 px-1.5 py-1"
+                                          title={`${nom(t.empleado_id)}${t.puesto_id && puestos[t.puesto_id] ? ` · ${puestos[t.puesto_id]}` : ""}`}>
+                                          <div className="truncate font-medium">{corto(t.empleado_id)}</div>
+                                          <div className="text-muted-foreground">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
+                                          {prestado && <div className="truncate text-[10px] text-secondary">de {nomSuc(e?.sucursal_id)}</div>}
+                                        </div>
+                                      )
+                                    })}
+                                    {r.turnos.length > 6 && (
+                                      <button className="w-full text-center text-primary hover:underline" onClick={() => setDiaAbierto(abiertoDia ? null : clave)}>
+                                        {abiertoDia ? "Ver menos" : `+${r.turnos.length - 6} más`}
+                                      </button>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="mt-1 text-muted-foreground">Sin turnos</div>
+                              )}
+                              {ausIds.length > 0 && (
+                                <div className="mt-auto border-t border-dashed pt-1.5">
+                                  <div className="mb-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">No trabajan</div>
+                                  {ausIds.map((id) => {
+                                    const a = ausenciaDel(ausencias, id, d)
+                                    const tt = conTurnoAus.find((t) => t.empleado_id === id)
+                                    const vac = a?.tipo === "Vacaciones"
+                                    return (
+                                      <div key={id} className="flex items-start gap-1 py-0.5" title={`${nom(id)} · ${a?.tipo}`}>
+                                        {vac ? <Calendar className="mt-0.5 h-3 w-3 shrink-0 text-secondary" /> : <HeartPulse className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />}
+                                        <div className="min-w-0">
+                                          <div className="truncate"><span className="font-medium">{corto(id)}</span> <span className="text-muted-foreground">· {vac ? "vacaciones" : "licencia"}</span></div>
+                                          {tt && <div className="text-[10px] text-destructive">tenía turno {hm(tt.hora_entrada)}–{hm(tt.hora_salida)}</div>}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
                               )}
                             </div>
-                          </>
-                        ) : (
-                          <div className="mt-1 text-muted-foreground">Sin turnos</div>
-                        )}
-                        {a.map((x, i) => (
-                          <div key={i} className="mt-1 flex items-center gap-1 truncate rounded bg-accent/15 px-1.5 py-1" title={`${nom(x.empleado_id)} · ${x.tipo}`}>
-                            {x.tipo === "Vacaciones" ? <Calendar className="h-3 w-3 shrink-0" /> : <HeartPulse className="h-3 w-3 shrink-0 text-destructive" />}
-                            <span className="truncate">{corto(x.empleado_id)}</span>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
-                    )
-                  })}
-                </div>
+                    </section>
+                  )
+                })}
               </TabsContent>
 
               <TabsContent value="persona">
@@ -299,44 +337,50 @@ export default function PreviewPanelEncargado2() {
                         <th className="p-2 text-right">Semana</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {equipo.map((e) => {
-                        const r = resumenPersona(turnosEquipo, e.id, dias)
-                        return (
-                          <tr key={e.id} className="border-t align-top">
-                            <td className="p-2">
-                              <div className="whitespace-nowrap font-medium">{e.apellido}, {e.nombre}</div>
-                              <div className="text-[10px] text-muted-foreground">{(e.puesto_id && puestos[e.puesto_id]) || "Sin puesto"}{esRRHH ? ` · ${nomSuc(e.sucursal_id)}` : ""}</div>
-                            </td>
-                            {dias.map((d) => {
-                              const aus = ausenteEl(e.id, d)
-                              const l = r.porDia[d]
-                              return (
-                                <td key={d} className="p-1 text-center">
-                                  {aus ? (
-                                    <span className="inline-flex items-center gap-1 rounded bg-accent/15 px-1.5 py-1">
-                                      {aus.tipo === "Vacaciones" ? <Calendar className="h-3 w-3" /> : <HeartPulse className="h-3 w-3 text-destructive" />}
-                                      {aus.tipo === "Vacaciones" ? "Vacaciones" : "Licencia"}
-                                    </span>
-                                  ) : l.length ? l.map((t, i) => (
-                                    <div key={i} className="rounded bg-primary/10 px-1.5 py-1">
-                                      <div className="whitespace-nowrap font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
-                                      {t.descanso_inicio && <div className="flex items-center justify-center gap-0.5 whitespace-nowrap text-[10px] text-muted-foreground"><Coffee className="h-2.5 w-2.5" />{hm(t.descanso_inicio)}{t.descanso_fin ? `–${hm(t.descanso_fin)}` : ""}</div>}
-                                      {t.puesto_id && t.puesto_id !== e.puesto_id && puestos[t.puesto_id] && <div className="truncate text-[10px] text-muted-foreground">{puestos[t.puesto_id]}</div>}
-                                      {t.sucursal_id && e.sucursal_id && t.sucursal_id !== e.sucursal_id && <div className="truncate text-[10px] text-secondary">en {nomSuc(t.sucursal_id)}</div>}
-                                    </div>
-                                  )) : <span className="text-muted-foreground">Franco</span>}
-                                </td>
-                              )
-                            })}
-                            <td className="whitespace-nowrap p-2 text-right">
-                              <div className="font-semibold">{fmtHoras(r.minutos)}</div>
-                              <div className="text-[10px] text-muted-foreground">{r.diasTrabajo} {r.diasTrabajo === 1 ? "día" : "días"}</div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
+                    {gruposVista.map((g) => (
+                      <tbody key={g.sucursal_id ?? "sin"}>
+                        <tr className="border-t bg-primary/5">
+                          <td colSpan={dias.length + 2} className="p-2"><EncabezadoSucursal suc={g.sucursal_id} personas={g.empleados.length} /></td>
+                        </tr>
+                        {g.empleados.map((id) => {
+                          const e = empDe(id)!
+                          const r = resumenPersona(activos, e.id, dias)
+                          return (
+                            <tr key={e.id} className="border-t align-top">
+                              <td className="p-2">
+                                <div className="whitespace-nowrap font-medium">{e.apellido}, {e.nombre}</div>
+                                <div className="text-[10px] text-muted-foreground">{(e.puesto_id && puestos[e.puesto_id]) || "Sin puesto"}</div>
+                              </td>
+                              {dias.map((d) => {
+                                const aus = ausenciaDel(ausencias, e.id, d)
+                                const l = r.porDia[d]
+                                return (
+                                  <td key={d} className="p-1 text-center">
+                                    {aus ? (
+                                      <span className="inline-flex items-center gap-1 rounded bg-accent/15 px-1.5 py-1">
+                                        {aus.tipo === "Vacaciones" ? <Calendar className="h-3 w-3" /> : <HeartPulse className="h-3 w-3 text-destructive" />}
+                                        {aus.tipo === "Vacaciones" ? "Vacaciones" : "Licencia"}
+                                      </span>
+                                    ) : l.length ? l.map((t, i) => (
+                                      <div key={i} className="rounded bg-primary/10 px-1.5 py-1">
+                                        <div className="whitespace-nowrap font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
+                                        {t.descanso_inicio && <div className="flex items-center justify-center gap-0.5 whitespace-nowrap text-[10px] text-muted-foreground"><Coffee className="h-2.5 w-2.5" />{hm(t.descanso_inicio)}{t.descanso_fin ? `–${hm(t.descanso_fin)}` : ""}</div>}
+                                        {t.puesto_id && t.puesto_id !== e.puesto_id && puestos[t.puesto_id] && <div className="truncate text-[10px] text-muted-foreground">{puestos[t.puesto_id]}</div>}
+                                        {t.sucursal_id && t.sucursal_id !== e.sucursal_id && <div className="truncate text-[10px] text-secondary">en {nomSuc(t.sucursal_id)}</div>}
+                                      </div>
+                                    )) : <span className="text-muted-foreground">Franco</span>}
+                                  </td>
+                                )
+                              })}
+                              <td className="whitespace-nowrap p-2 text-right">
+                                <div className="font-semibold">{fmtHoras(r.minutos)}</div>
+                                <div className="text-[10px] text-muted-foreground">{r.diasTrabajo} {r.diasTrabajo === 1 ? "día" : "días"}</div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    ))}
                   </table>
                 </div>
               </TabsContent>
@@ -427,6 +471,11 @@ export default function PreviewPanelEncargado2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {esRRHH && (
+        <EquiposEncargadosDialog open={equiposAbierto} onOpenChange={setEquiposAbierto} gerentes={gerentes} sucursales={sucursales}
+          gerenteInicial={verComo === "none" ? null : verComo} onSaved={() => setRecarga((x) => x + 1)} />
+      )}
     </div>
   )
 }

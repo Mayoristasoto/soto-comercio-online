@@ -1,31 +1,33 @@
 import { describe, expect, test } from "bun:test";
-import { elegirPlanes, duracionMin, resumenDia, resumenPersona, fmtHoras } from "../src/lib/panelEncargadoSemana";
+import { separarAusentes, porSucursal, resumenDia } from "../src/lib/panelEncargadoSemana";
 
-const t = (empleado_id: string, fecha: string, e: string, s: string) => ({ empleado_id, fecha, hora_entrada: e, hora_salida: s });
+const t = (empleado_id: string, fecha: string, sucursal_id: string | null = null) =>
+  ({ empleado_id, fecha, hora_entrada: "07:30", hora_salida: "15:30", sucursal_id });
 
-describe("semana del panel de encargado", () => {
-  test("elige una versión por sucursal: publicado gana a un borrador más nuevo", () => {
-    const r = elegirPlanes([
-      { id: "a", sucursal_id: "s1", estado: "publicado", version: 1 },
-      { id: "b", sucursal_id: "s1", estado: "borrador", version: 2 },
-      { id: "c", sucursal_id: "s2", estado: "borrador", version: 1 },
-      { id: "d", sucursal_id: "s2", estado: "borrador", version: 3 },
-    ]);
-    expect(r.map(p => p.id).sort()).toEqual(["a", "d"]);
+describe("vacaciones fuera de la columna", () => {
+  const aus = [{ empleado_id: "cast", desde: "2026-11-16", hasta: "2026-11-22", tipo: "Vacaciones" }];
+  test("el turno de quien está de vacaciones no cuenta en la columna del día", () => {
+    const { activos, conAusencia } = separarAusentes([t("cast", "2026-11-21"), t("voik", "2026-11-21")], aus);
+    expect(resumenDia(activos, "2026-11-21").personas).toBe(1);
+    expect(conAusencia.map(x => [x.empleado_id, x.tipo])).toEqual([["cast", "Vacaciones"]]);
   });
-  test("turno que cruza la medianoche dura 8 h", () => {
-    expect(duracionMin(t("e", "2026-11-23", "22:00:00", "06:00:00"))).toBe(480);
+  test("fuera del rango de vacaciones el turno sigue en la columna", () => {
+    expect(separarAusentes([t("cast", "2026-11-23")], aus).activos).toHaveLength(1);
   });
-  test("resumen del día: personas, franja horaria y mañana (antes de 10) / tarde (desde 10)", () => {
-    const r = resumenDia([t("a", "2026-11-23", "07:30", "15:30"), t("b", "2026-11-23", "10:30", "18:30"), t("c", "2026-11-23", "12:00", "20:00"), t("a", "2026-11-24", "07:30", "15:30")], "2026-11-23");
-    expect(r.personas).toBe(3);
-    expect([r.desde, r.hasta]).toEqual(["07:30", "20:00"]);
-    expect([r.manana, r.tarde]).toEqual([1, 2]);
+});
+
+describe("separado por sucursal", () => {
+  const emps = [{ id: "a", sucursal_id: "JM" }, { id: "b", sucursal_id: "OL" }, { id: "c", sucursal_id: null }];
+  test("cada persona queda en la sucursal asignada y el turno en la sucursal donde se trabaja", () => {
+    const g = porSucursal(emps, [t("a", "2026-11-16"), t("b", "2026-11-16", "JM"), t("c", "2026-11-16")], []);
+    const jm = g.find(x => x.sucursal_id === "JM")!;
+    expect(jm.empleados).toEqual(["a"]);
+    expect(jm.turnos.map(x => x.empleado_id)).toEqual(["a", "b"]);
+    expect(g.find(x => x.sucursal_id === "OL")!.turnos).toHaveLength(0);
+    expect(g.find(x => x.sucursal_id === null)!.empleados).toEqual(["c"]);
   });
-  test("resumen por persona: horas y días con turno en la semana", () => {
-    const dias = ["2026-11-23", "2026-11-24", "2026-11-25"];
-    const r = resumenPersona([t("a", "2026-11-23", "07:30", "15:30"), t("a", "2026-11-25", "08:00", "12:30"), t("b", "2026-11-23", "07:30", "15:30")], "a", dias);
-    expect(r.diasTrabajo).toBe(2);
-    expect(fmtHoras(r.minutos)).toBe("12 h 30");
+  test("las ausencias van a la sucursal del empleado", () => {
+    const g = porSucursal(emps, [], [{ empleado_id: "b", desde: "2026-11-16", hasta: "2026-11-16", tipo: "Vacaciones" }]);
+    expect(g.find(x => x.sucursal_id === "OL")!.ausencias).toHaveLength(1);
   });
 });

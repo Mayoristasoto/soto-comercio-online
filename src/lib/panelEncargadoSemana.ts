@@ -66,3 +66,41 @@ export function resumenPersona(turnos: TurnoSem[], empleadoId: string, dias: str
   }
   return { porDia, minutos, diasTrabajo };
 }
+
+export interface AusSem { empleado_id: string; desde: string; hasta: string; tipo: string }
+export interface EmpSem { id: string; sucursal_id: string | null }
+
+export const ausenciaDel = (aus: AusSem[], empleadoId: string, fecha: string) =>
+  aus.find(a => a.empleado_id === empleadoId && a.desde <= fecha && fecha <= a.hasta);
+
+/**
+ * Saca de la planificación los turnos de quien está de vacaciones o licencia ese día:
+ * no cuentan en personas ni horas y quedan aparte para mostrarlos como anotación.
+ */
+export function separarAusentes(turnos: TurnoSem[], aus: AusSem[]) {
+  const activos: TurnoSem[] = [], conAusencia: (TurnoSem & { tipo: string })[] = [];
+  for (const t of turnos) {
+    const a = ausenciaDel(aus, t.empleado_id, t.fecha);
+    if (a) conAusencia.push({ ...t, tipo: a.tipo }); else activos.push(t);
+  }
+  return { activos, conAusencia };
+}
+
+export interface GrupoSucursal { sucursal_id: string | null; empleados: string[]; turnos: TurnoSem[]; ausencias: AusSem[] }
+
+/**
+ * Agrupa por sucursal: cada turno va a la sucursal donde se trabaja (la del turno o, si falta, la del empleado);
+ * cada persona y sus ausencias van a la sucursal asignada al empleado.
+ */
+export function porSucursal(empleados: EmpSem[], turnos: TurnoSem[], aus: AusSem[]): GrupoSucursal[] {
+  const sucDe = new Map(empleados.map(e => [e.id, e.sucursal_id ?? null]));
+  const grupos = new Map<string | null, GrupoSucursal>();
+  const g = (s: string | null) => {
+    if (!grupos.has(s)) grupos.set(s, { sucursal_id: s, empleados: [], turnos: [], ausencias: [] });
+    return grupos.get(s)!;
+  };
+  for (const e of empleados) g(e.sucursal_id ?? null).empleados.push(e.id);
+  for (const t of turnos) g(t.sucursal_id ?? sucDe.get(t.empleado_id) ?? null).turnos.push(t);
+  for (const a of aus) if (sucDe.has(a.empleado_id)) g(sucDe.get(a.empleado_id) ?? null).ausencias.push(a);
+  return [...grupos.values()];
+}
