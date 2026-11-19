@@ -151,8 +151,7 @@ export default function PreviewPanelEncargado2() {
                 })}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => navigate("/admin/mi-planificacion-semanal")}>Armar la semana</Button>
-                <Button variant="outline" onClick={() => navigate("/rrhh/horario-2")}>Abrir Horario 2 (reemplazos y disponibles)</Button>
+                <Button onClick={() => navigate("/encargado/ajustar-horarios")}>Ajustar horarios de mi equipo</Button>
               </div>
             </CardContent>
           </Card>
