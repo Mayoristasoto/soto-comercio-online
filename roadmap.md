@@ -82,3 +82,11 @@
 - [x] Kiosco modo prueba para admin_rrhh sin reconocimiento facial (desde dashboard)
 - [ ] Banco de horas: UI RRHH (saldos, ajustes manuales, reglas) — pendiente definir reglas
 - [x] Horario 2: selección múltiple de turnos (Ctrl+clic) y arrastre conjunto estilo Excel vía prepararMovimientoMultiple; pendiente verificar guardado con sesión real.
+
+## Panel de Encargado 2: equipo visible y vista por sucursal
+- [x] RRHH elige qué empleados ve cada encargado, de cualquier sucursal ("Qué ve cada encargado"); sin configurar, ve su sucursal.
+- [x] RRHH puede ver el panel como un encargado.
+- [x] Planificación separada por sucursal (por día y por persona).
+- [x] Quien está de vacaciones o licencia sale de la columna y queda como nota "No trabajan" abajo, avisando si tenía turno.
+- [x] "Ajustar horarios" usa el mismo equipo; el encargado puede pedir cambios para esa gente.
+- [ ] Verificar con sesión real de un encargado: Supabase externo no permite iniciar sesión desde acá.

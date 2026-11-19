@@ -285,7 +285,7 @@ export default function PreviewPanelEncargado2() {
                                           title={`${nom(t.empleado_id)}${t.puesto_id && puestos[t.puesto_id] ? ` · ${puestos[t.puesto_id]}` : ""}`}>
                                           <div className="truncate font-medium">{corto(t.empleado_id)}</div>
                                           <div className="text-muted-foreground">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
-                                          {prestado && <div className="truncate text-[10px] text-secondary">de {nomSuc(e?.sucursal_id)}</div>}
+                                          {prestado && <div className="truncate text-[10px] font-medium text-primary">de {nomSuc(e?.sucursal_id)}</div>}
                                         </div>
                                       )
                                     })}
@@ -308,9 +308,10 @@ export default function PreviewPanelEncargado2() {
                                     const vac = a?.tipo === "Vacaciones"
                                     return (
                                       <div key={id} className="flex items-start gap-1 py-0.5" title={`${nom(id)} · ${a?.tipo}`}>
-                                        {vac ? <Calendar className="mt-0.5 h-3 w-3 shrink-0 text-secondary" /> : <HeartPulse className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />}
+                                        {vac ? <Calendar className="mt-0.5 h-3 w-3 shrink-0 text-primary" /> : <HeartPulse className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />}
                                         <div className="min-w-0">
-                                          <div className="truncate"><span className="font-medium">{corto(id)}</span> <span className="text-muted-foreground">· {vac ? "vacaciones" : "licencia"}</span></div>
+                                          <div className="truncate font-medium">{corto(id)}</div>
+                                          <div className="text-[10px] text-muted-foreground">{vac ? "Vacaciones" : "Licencia médica"}</div>
                                           {tt && <div className="text-[10px] text-destructive">tenía turno {hm(tt.hora_entrada)}–{hm(tt.hora_salida)}</div>}
                                         </div>
                                       </div>
@@ -366,7 +367,7 @@ export default function PreviewPanelEncargado2() {
                                         <div className="whitespace-nowrap font-semibold">{hm(t.hora_entrada)}–{hm(t.hora_salida)}</div>
                                         {t.descanso_inicio && <div className="flex items-center justify-center gap-0.5 whitespace-nowrap text-[10px] text-muted-foreground"><Coffee className="h-2.5 w-2.5" />{hm(t.descanso_inicio)}{t.descanso_fin ? `–${hm(t.descanso_fin)}` : ""}</div>}
                                         {t.puesto_id && t.puesto_id !== e.puesto_id && puestos[t.puesto_id] && <div className="truncate text-[10px] text-muted-foreground">{puestos[t.puesto_id]}</div>}
-                                        {t.sucursal_id && t.sucursal_id !== e.sucursal_id && <div className="truncate text-[10px] text-secondary">en {nomSuc(t.sucursal_id)}</div>}
+                                        {t.sucursal_id && t.sucursal_id !== e.sucursal_id && <div className="truncate text-[10px] font-medium text-primary">en {nomSuc(t.sucursal_id)}</div>}
                                       </div>
                                     )) : <span className="text-muted-foreground">Franco</span>}
                                   </td>
