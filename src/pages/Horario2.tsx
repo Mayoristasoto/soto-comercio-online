@@ -29,7 +29,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 const Grad = ({ n }: { n: number }) => <defs>{COLS.map((c, i) => <linearGradient key={i} id={`g${n}-${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity={0.95} /><stop offset="100%" stopColor={c} stopOpacity={0.35} /></linearGradient>)}</defs>;
 const TT = { contentStyle: { borderRadius: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", boxShadow: "0 8px 24px -8px hsl(var(--primary) / 0.35)" } };
 const COLS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--info))"];
-import { validarTurnos, habilitadosEfectivos, horariosFrecuentes, validarTurnoNuevo, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
+import { validarTurnos, habilitadosEfectivos, RESTRICCION_PUESTOS_HABILITADOS, horariosFrecuentes, validarTurnoNuevo, calcularCobertura, avisosCobertura, finDescanso, prepararMovimientoTurno, TurnoH2, AusenciaH2, ReglaCobertura } from "@/lib/horario2";
 
 const db = supabase as any;
 const ESTADOS: Record<string, { label: string; cls: string }> = {
@@ -722,7 +722,7 @@ function Habilitados({ empleados, puestos, habil, recargar }: any) {
     if (error) return err(error); recargar();
   };
   const lista = empleados.filter((e: any) => `${e.apellido} ${e.nombre}`.toLowerCase().includes(q.toLowerCase()));
-  return <Card><CardHeader><CardTitle className="text-base">Puestos que puede cubrir cada empleado</CardTitle><Input placeholder="Buscar empleado" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" /></CardHeader>
+  return <Card><CardHeader><CardTitle className="text-base">Puestos que puede cubrir cada empleado</CardTitle>{!RESTRICCION_PUESTOS_HABILITADOS && <p className="text-xs rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-foreground">Restricción desactivada temporalmente: cualquier empleado puede cubrir cualquier puesto. Lo que marques acá se guarda y vuelve a valer cuando se reactive.</p>}<Input placeholder="Buscar empleado" value={q} onChange={e => setQ(e.target.value)} className="max-w-xs" /></CardHeader>
     <CardContent className="overflow-x-auto"><table className="text-xs"><thead><tr><th className="text-left p-1">Empleado</th>{puestos.map((p: any) => <th key={p.id} className="p-1 font-normal">{p.nombre}</th>)}</tr></thead>
       <tbody>{lista.map((e: any) => <tr key={e.id} className="border-t"><td className="p-1 whitespace-nowrap">{e.apellido}, {e.nombre}</td>{puestos.map((p: any) => <td key={p.id} className="text-center"><Checkbox checked={(habil[e.id] || []).includes(p.id)} onCheckedChange={v => toggle(e.id, p.id, !!v)} /></td>)}</tr>)}</tbody></table></CardContent></Card>;
 }
