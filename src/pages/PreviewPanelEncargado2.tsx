@@ -308,11 +308,11 @@ export default function PreviewPanelEncargado2() {
                                     const vac = a?.tipo === "Vacaciones"
                                     return (
                                       <div key={id} className="flex items-start gap-1 py-0.5" title={`${nom(id)} · ${a?.tipo}`}>
-                                        {vac ? <Calendar className="mt-0.5 h-3 w-3 shrink-0 text-primary" /> : <HeartPulse className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />}
+                                        {vac ? <Calendar className="mt-0.5 h-3 w-3 shrink-0 text-primary" /> : <HeartPulse className="mt-0.5 h-3 w-3 shrink-0 text-accent" />}
                                         <div className="min-w-0">
                                           <div className="truncate font-medium">{corto(id)}</div>
                                           <div className="text-[10px] text-muted-foreground">{vac ? "Vacaciones" : "Licencia médica"}</div>
-                                          {tt && <div className="text-[10px] text-destructive">tenía turno {hm(tt.hora_entrada)}–{hm(tt.hora_salida)}</div>}
+                                          {tt && <div className="mt-0.5 rounded bg-destructive/20 px-1 text-[10px] font-medium text-foreground">tenía turno {hm(tt.hora_entrada)}–{hm(tt.hora_salida)}</div>}
                                         </div>
                                       </div>
                                     )
@@ -359,7 +359,7 @@ export default function PreviewPanelEncargado2() {
                                   <td key={d} className="p-1 text-center">
                                     {aus ? (
                                       <span className="inline-flex items-center gap-1 rounded bg-accent/15 px-1.5 py-1">
-                                        {aus.tipo === "Vacaciones" ? <Calendar className="h-3 w-3" /> : <HeartPulse className="h-3 w-3 text-destructive" />}
+                                        {aus.tipo === "Vacaciones" ? <Calendar className="h-3 w-3" /> : <HeartPulse className="h-3 w-3 text-accent" />}
                                         {aus.tipo === "Vacaciones" ? "Vacaciones" : "Licencia"}
                                       </span>
                                     ) : l.length ? l.map((t, i) => (
