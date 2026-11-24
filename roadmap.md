@@ -91,4 +91,4 @@
 - [x] "Ajustar horarios" usa el mismo equipo; el encargado puede pedir cambios para esa gente.
 - [ ] Verificar con sesión real de un encargado: Supabase externo no permite iniciar sesión desde acá.
 
-- [ ] Panel de Encargado 2: en la planificación semanal, función para que el encargado agregue personal para el domingo (pendiente de definir con el usuario)
+- [x] Panel de Encargado 2: en la planificación semanal, función para que el encargado agregue personal para el domingo (pendiente de definir con el usuario)

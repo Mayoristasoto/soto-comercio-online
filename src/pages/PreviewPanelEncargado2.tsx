@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { resumenDia, resumenPersona, fmtHoras, hm, PlanSem, TurnoSem, separarAusentes, porSucursal, ausenciaDel } from "@/lib/panelEncargadoSemana"
+import { PersonalDomingo } from "@/components/encargado/PersonalDomingo"
 import { EquiposEncargadosDialog } from "@/components/encargado/EquiposEncargadosDialog"
 import { toast } from "sonner"
 import { addDays, format, startOfWeek } from "date-fns"
@@ -294,6 +295,8 @@ export default function PreviewPanelEncargado2() {
                 </div>
               ))}
             </div>
+
+            <PersonalDomingo fecha={dias[6]} empleados={empleados.filter((e) => idsVista.has(e.id))} yoId={yoId} esRRHH={esRRHH} />
 
             <Tabs defaultValue="dia">
               <TabsList>

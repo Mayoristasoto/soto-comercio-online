@@ -3392,6 +3392,77 @@ export type Database = {
           },
         ]
       }
+      domingo_personal: {
+        Row: {
+          cargado_por: string | null
+          comentario_rrhh: string | null
+          created_at: string
+          empleado_id: string
+          estado: string
+          fecha: string
+          hora_entrada: string
+          hora_salida: string
+          id: string
+          observaciones: string | null
+          updated_at: string
+        }
+        Insert: {
+          cargado_por?: string | null
+          comentario_rrhh?: string | null
+          created_at?: string
+          empleado_id: string
+          estado?: string
+          fecha: string
+          hora_entrada: string
+          hora_salida: string
+          id?: string
+          observaciones?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cargado_por?: string | null
+          comentario_rrhh?: string | null
+          created_at?: string
+          empleado_id?: string
+          estado?: string
+          fecha?: string
+          hora_entrada?: string
+          hora_salida?: string
+          id?: string
+          observaciones?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domingo_personal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "domingo_personal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_basic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "domingo_personal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_carga_trabajo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "domingo_personal_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados_payroll_completo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empleado_access_log: {
         Row: {
           access_type: string | null
