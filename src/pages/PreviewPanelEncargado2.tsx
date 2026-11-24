@@ -55,6 +55,9 @@ export default function PreviewPanelEncargado2() {
   const [cargando, setCargando] = useState(true)
   const [errorSemana, setErrorSemana] = useState<string | null>(null)
   const [recarga, setRecarga] = useState(0)
+  const [yoId, setYoId] = useState<string | null>(null)
+  const [confirmacion, setConfirmacion] = useState<any>(null)
+  const [confirmando, setConfirmando] = useState(false)
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => format(addDays(semana, i), "yyyy-MM-dd")), [semana])
 
@@ -62,8 +65,9 @@ export default function PreviewPanelEncargado2() {
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { navigate("/auth?redirect=/preview-panel-encargado-2", { replace: true }); return }
-      const { data: yo } = await supabase.from("empleados").select("nombre").eq("user_id", user.id).maybeSingle()
+      const { data: yo } = await supabase.from("empleados").select("id, nombre").eq("user_id", user.id).maybeSingle()
       setNombre(yo?.nombre || "Encargado")
+      setYoId((yo as any)?.id ?? null)
       const { data: rol } = await (supabase as any).rpc("current_user_role")
       const rrhh = rol === "admin_rrhh"
       setEsRRHH(rrhh)
@@ -99,6 +103,29 @@ export default function PreviewPanelEncargado2() {
       setAusencias((data?.ausencias || []) as Aus[])
     })()
   }, [listo, dias, verComo, recarga])
+
+  useEffect(() => {
+    if (!yoId) return
+    ;(async () => {
+      const { data } = await (supabase as any).from("solicitudes_generales").select("id, created_at, datos")
+        .eq("empleado_id", yoId).eq("tipo_solicitud", "confirmacion_semana").eq("datos->>semana", dias[0])
+        .order("created_at", { ascending: false }).limit(1)
+      setConfirmacion(data?.[0] ?? null)
+    })()
+  }, [yoId, dias])
+
+  const confirmarSemana = async () => {
+    if (!yoId) return
+    setConfirmando(true)
+    const { data, error } = await (supabase as any).from("solicitudes_generales").insert({
+      empleado_id: yoId, tipo_solicitud: "confirmacion_semana", fecha_solicitud: format(new Date(), "yyyy-MM-dd"),
+      estado: "aprobada", descripcion: `Semana del ${format(semana, "d/M")} confirmada sin cambios`,
+      datos: { semana: dias[0], personas: idsVista.size, minutos: totalMin, origen: "panel_encargado_2" },
+    }).select("id, created_at, datos").single()
+    setConfirmando(false)
+    if (error) { toast.error(error.message); return }
+    setConfirmacion(data); toast.success("Semana confirmada. RRHH ya lo ve.")
+  }
 
   const nomSuc = (id?: string | null) => sucursales.find((x) => x.id === id)?.nombre || "Sin sucursal"
   const empDe = (id: string) => empleados.find((x) => x.id === id)
@@ -193,6 +220,39 @@ export default function PreviewPanelEncargado2() {
             {gerenteVista && <span className="text-xs text-muted-foreground">Ves exactamente a los {empleados.length} empleados que ve este encargado.</span>}
           </div>
         )}
+
+        <Card className="border-2 border-primary/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
+              <CalendarRange className="h-5 w-5 text-primary" />
+              Semana del {format(semana, "EEE d/M", { locale: es })} al {format(addDays(semana, 6), "EEE d/M", { locale: es })}
+              {confirmacion ? <Badge className="bg-primary text-primary-foreground">Confirmada sin cambios</Badge>
+                : <Badge className="bg-accent text-accent-foreground">Pendiente de confirmar</Badge>}
+            </CardTitle>
+            <CardDescription>
+              {idsVista.size} colaboradores · {fmtHoras(totalMin)} planificadas · {new Set(ausVista.map((a) => a.empleado_id)).size} con vacaciones o licencia
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {ausVista.length > 0 && (
+              <div className="rounded-md border border-accent/50 bg-accent/10 p-2 text-sm">
+                <TriangleAlert className="mr-1 inline h-4 w-4 text-accent" />
+                {ausVista.map((a, i) => <span key={i}>{i > 0 ? " · " : ""}{nom(a.empleado_id)}: {a.tipo} del {a.desde.slice(8)}/{a.desde.slice(5, 7)} al {a.hasta.slice(8)}/{a.hasta.slice(5, 7)}</span>)}
+              </div>
+            )}
+            {confirmacion ? (
+              <p className="text-sm text-muted-foreground">Confirmaste el {new Date(confirmacion.created_at).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })}. Si surge algo, igual podés pedir un cambio.</p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {!confirmacion && (
+                <Button size="lg" disabled={confirmando || !yoId || cargando} onClick={confirmarSemana}>
+                  {confirmando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null} Confirmar sin cambios
+                </Button>
+              )}
+              <Button size="lg" variant="outline" onClick={() => navigate("/encargado/ajustar-horarios")}>Hay algún cambio</Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 space-y-0">
