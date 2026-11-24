@@ -136,6 +136,14 @@ export default function EntregasEmpleados() {
   } | null>(null);
   const [selPlantillaId, setSelPlantillaId] = useState<string>("");
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+  const [selItems, setSelItems] = useState<Set<string>>(new Set());
+  const [selCeldas, setSelCeldas] = useState<Set<string>>(new Set());
+  const toggleEn = (setter: typeof setSeleccion, id: string) =>
+    setter((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   const [loteOpen, setLoteOpen] = useState(false);
   const [lotePlantilla, setLotePlantilla] = useState<string>("item");
   const [detalleInput, setDetalleInput] = useState<string>("");
@@ -391,15 +399,23 @@ export default function EntregasEmpleados() {
 
   const constanciasLote = useMemo(() => {
     const out: { empleado: Empleado; item: Item; reg: Registro }[] = [];
+    const hayGrupo = seleccion.size > 0 || selItems.size > 0;
+    const visibles = new Set(empleadosFiltrados.map((e) => e.id));
     for (const e of empleados) {
-      if (!seleccion.has(e.id)) continue;
       for (const it of items) {
-        const reg = mapa.get(`${e.id}:${it.id}`);
+        const key = `${e.id}:${it.id}`;
+        const porGrupo =
+          hayGrupo &&
+          (seleccion.size > 0 ? seleccion.has(e.id) : visibles.has(e.id)) &&
+          (selItems.size === 0 || selItems.has(it.id));
+        if (!porGrupo && !selCeldas.has(key)) continue;
+        const reg = mapa.get(key);
         if (reg?.estado === "entregado") out.push({ empleado: e, item: it, reg });
       }
     }
     return out;
-  }, [empleados, items, mapa, seleccion]);
+  }, [empleados, empleadosFiltrados, items, mapa, seleccion, selItems, selCeldas]);
+  const haySeleccion = seleccion.size > 0 || selItems.size > 0 || selCeldas.size > 0;
 
   const imprimirLote = async () => {
     const paginas: string[] = [];
@@ -568,7 +584,14 @@ export default function EntregasEmpleados() {
                     </th>
                     {items.map((it) => (
                       <th key={it.id} className="px-2 py-2 text-center min-w-[90px] sticky top-0 bg-muted z-20 border-b">
-                        {it.nombre}
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{it.nombre}</span>
+                          <Checkbox
+                            checked={selItems.has(it.id)}
+                            onCheckedChange={() => toggleEn(setSelItems, it.id)}
+                            aria-label={`Seleccionar columna ${it.nombre}`}
+                          />
+                        </div>
                       </th>
                     ))}
                     {items.length === 0 && (
@@ -604,11 +627,21 @@ export default function EntregasEmpleados() {
                         const estado: Estado = reg?.estado ?? "pendiente";
                         return (
                           <td key={it.id} className="px-1 py-1 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                            {estado === "entregado" && (
+                              <Checkbox
+                                checked={selCeldas.has(`${emp.id}:${it.id}`)}
+                                onCheckedChange={() => toggleEn(setSelCeldas, `${emp.id}:${it.id}`)}
+                                aria-label={`Seleccionar ${it.nombre} de ${emp.apellido}`}
+                                className="h-3.5 w-3.5"
+                              />
+                            )}
                             <CeldaEstado
                               estado={estado}
                               registro={reg}
                               onClick={() => cambiarEstado(emp, it)}
                             />
+                            </div>
                           </td>
                         );
                       })}
@@ -630,12 +663,12 @@ export default function EntregasEmpleados() {
 
             <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground items-center shrink-0">
               <Leyenda />
-              {seleccion.size > 0 && (
+              {haySeleccion && (
                 <div className="flex items-center gap-2">
                   <Button size="sm" onClick={() => setLoteOpen(true)}>
-                    <Printer className="h-4 w-4 mr-1" /> Imprimir constancias ({seleccion.size})
+                    <Printer className="h-4 w-4 mr-1" /> Imprimir constancias ({constanciasLote.length})
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setSeleccion(new Set())}>
+                  <Button size="sm" variant="ghost" onClick={() => { setSeleccion(new Set()); setSelItems(new Set()); setSelCeldas(new Set()); }}>
                     Limpiar
                   </Button>
                 </div>
@@ -721,7 +754,7 @@ export default function EntregasEmpleados() {
             <DialogHeader>
               <DialogTitle>Imprimir constancias juntas</DialogTitle>
               <DialogDescription>
-                {seleccion.size} empleados seleccionados · {constanciasLote.length} elementos
+                {new Set(constanciasLote.map((c) => c.empleado.id)).size} empleados · {constanciasLote.length} constancias
                 entregados. Se imprime una constancia por página.
               </DialogDescription>
             </DialogHeader>
