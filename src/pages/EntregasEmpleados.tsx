@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -134,6 +135,9 @@ export default function EntregasEmpleados() {
     registroId: string;
   } | null>(null);
   const [selPlantillaId, setSelPlantillaId] = useState<string>("");
+  const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+  const [loteOpen, setLoteOpen] = useState(false);
+  const [lotePlantilla, setLotePlantilla] = useState<string>("item");
   const [detalleInput, setDetalleInput] = useState<string>("");
   const [detallePrompt, setDetallePrompt] = useState<{
     empleado: Empleado;
@@ -369,6 +373,82 @@ export default function EntregasEmpleados() {
     setPrintPrompt(null);
   };
 
+  const toggleSel = (id: string) =>
+    setSeleccion((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const todosSel =
+    empleadosFiltrados.length > 0 && empleadosFiltrados.every((e) => seleccion.has(e.id));
+  const toggleTodos = () =>
+    setSeleccion((prev) => {
+      const n = new Set(prev);
+      if (todosSel) empleadosFiltrados.forEach((e) => n.delete(e.id));
+      else empleadosFiltrados.forEach((e) => n.add(e.id));
+      return n;
+    });
+
+  const constanciasLote = useMemo(() => {
+    const out: { empleado: Empleado; item: Item; reg: Registro }[] = [];
+    for (const e of empleados) {
+      if (!seleccion.has(e.id)) continue;
+      for (const it of items) {
+        const reg = mapa.get(`${e.id}:${it.id}`);
+        if (reg?.estado === "entregado") out.push({ empleado: e, item: it, reg });
+      }
+    }
+    return out;
+  }, [empleados, items, mapa, seleccion]);
+
+  const imprimirLote = async () => {
+    const paginas: string[] = [];
+    const ids: string[] = [];
+    let sinPlantilla = 0;
+    for (const { empleado, item, reg } of constanciasLote) {
+      const pid = lotePlantilla === "item" ? item.plantilla_id ?? plantillas[0]?.id : lotePlantilla;
+      const plantilla = plantillas.find((p) => p.id === pid);
+      if (!plantilla) { sinPlantilla++; continue; }
+      paginas.push(
+        renderPlantilla(plantilla.template_html ?? "", {
+          empleado_nombre: `${empleado.nombre} ${empleado.apellido}`,
+          legajo: empleado.legajo ?? "",
+          fecha: reg.fecha_entrega
+            ? new Date(reg.fecha_entrega).toLocaleDateString("es-AR")
+            : new Date().toLocaleDateString("es-AR"),
+          item: item.nombre,
+          tipo_elemento: plantilla.tipo_elemento,
+          observaciones: reg.observaciones ?? "",
+          detalle: reg.detalle ?? "",
+        })
+      );
+      ids.push(reg.id);
+    }
+    if (paginas.length === 0) {
+      toast.error("No hay constancias para imprimir");
+      return;
+    }
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast.error("El navegador bloqueó la ventana de impresión");
+      return;
+    }
+    w.document.write(
+      `<html><head><title>Constancias de entrega</title><style>@media print{@page{margin:20mm}body{margin:0}} .pg{page-break-after:always;break-after:page}.pg:last-child{page-break-after:auto;break-after:auto}</style></head><body>${paginas
+        .map((h) => `<div class="pg">${h}</div>`)
+        .join("")}</body></html>`
+    );
+    w.document.close();
+    w.focus();
+    w.print();
+    if (sinPlantilla) toast.warning(`${sinPlantilla} constancias sin plantilla no se imprimieron`);
+    setLoteOpen(false);
+    await supabase
+      .from("entregas_empleado")
+      .update({ comprobante_impreso: true, comprobante_impreso_at: new Date().toISOString() })
+      .in("id", ids.filter((i) => !i.startsWith("tmp-")));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -477,7 +557,14 @@ export default function EntregasEmpleados() {
                 <thead className="sticky top-0 z-20">
                   <tr>
                     <th className="text-left px-3 py-2 sticky left-0 top-0 bg-muted z-30 min-w-[240px] border-r border-b">
-                      Empleado
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={todosSel}
+                          onCheckedChange={toggleTodos}
+                          aria-label="Seleccionar todos"
+                        />
+                        Empleado
+                      </div>
                     </th>
                     {items.map((it) => (
                       <th key={it.id} className="px-2 py-2 text-center min-w-[90px] sticky top-0 bg-muted z-20 border-b">
@@ -495,12 +582,21 @@ export default function EntregasEmpleados() {
                   {empleadosFiltrados.map((emp) => (
                     <tr key={emp.id} className="border-t hover:bg-muted/30">
                       <td className="px-3 py-2 sticky left-0 bg-background z-10 border-r">
-                        <div className="font-medium">
-                          {emp.apellido}, {emp.nombre}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {emp.sucursales?.nombre ?? "Sin sucursal"}
-                          {emp.puesto ? ` · ${emp.puesto}` : ""}
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={seleccion.has(emp.id)}
+                            onCheckedChange={() => toggleSel(emp.id)}
+                            aria-label={`Seleccionar ${emp.apellido}`}
+                          />
+                          <div>
+                            <div className="font-medium">
+                              {emp.apellido}, {emp.nombre}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {emp.sucursales?.nombre ?? "Sin sucursal"}
+                              {emp.puesto ? ` · ${emp.puesto}` : ""}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       {items.map((it) => {
@@ -534,6 +630,16 @@ export default function EntregasEmpleados() {
 
             <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground items-center shrink-0">
               <Leyenda />
+              {seleccion.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => setLoteOpen(true)}>
+                    <Printer className="h-4 w-4 mr-1" /> Imprimir constancias ({seleccion.size})
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSeleccion(new Set())}>
+                    Limpiar
+                  </Button>
+                </div>
+              )}
               <div className="ml-auto flex gap-3">
                 <Badge variant="outline">{resumen.total} empleados</Badge>
                 <Badge variant="destructive">{resumen.faltantes} con faltantes</Badge>
@@ -609,6 +715,47 @@ export default function EntregasEmpleados() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={loteOpen} onOpenChange={setLoteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Imprimir constancias juntas</DialogTitle>
+              <DialogDescription>
+                {seleccion.size} empleados seleccionados · {constanciasLote.length} elementos
+                entregados. Se imprime una constancia por página.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Plantilla</Label>
+              <Select value={lotePlantilla} onValueChange={setLotePlantilla}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="item">La asignada a cada elemento</SelectItem>
+                  {plantillas.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {constanciasLote.length === 0 && (
+                <p className="text-xs text-destructive">
+                  Los empleados elegidos no tienen elementos entregados.
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setLoteOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={imprimirLote} disabled={constanciasLote.length === 0}>
+                <Printer className="h-4 w-4 mr-1" /> Imprimir
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog
           open={!!detallePrompt}
