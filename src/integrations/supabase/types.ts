@@ -9345,6 +9345,7 @@ export type Database = {
       notificaciones: {
         Row: {
           created_at: string | null
+          fijada: boolean
           id: string
           leida: boolean | null
           mensaje: string
@@ -9357,6 +9358,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          fijada?: boolean
           id?: string
           leida?: boolean | null
           mensaje: string
@@ -9369,6 +9371,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          fijada?: boolean
           id?: string
           leida?: boolean | null
           mensaje?: string

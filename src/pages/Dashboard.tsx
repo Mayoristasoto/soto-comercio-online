@@ -31,6 +31,7 @@ import { CoberturaSucursales } from "@/components/dashboard/CoberturaSucursales"
 import { IncidenciasHoy } from "@/components/dashboard/IncidenciasHoy"
 import { AgendaEntrevistasResumen } from "@/components/dashboard/AgendaEntrevistasResumen"
 import { DashboardEncargado } from "@/components/dashboard/DashboardEncargado"
+import { MisNotificacionesPendientes } from "@/components/dashboard/MisNotificacionesPendientes"
 import { PWAInstallPrompt, PWAUpdatePrompt } from "@/components/PWAInstall"
 
 interface UserInfo {
@@ -295,6 +296,8 @@ export default function Dashboard() {
           </a>
         </div>
       )}
+      {/* Avisos personales: solo para Gonzalo Justiniano */}
+      {isAdmin && userInfo?.id === '96baa3f9-ceeb-4a6d-a60c-97afa8aaa7b4' && <MisNotificacionesPendientes />}
       {isAdmin && <NotasEstudioCard />}
 
       {/* Estado del personal hoy */}
