@@ -31,6 +31,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import ConfigAutogestion from "@/components/admin/ConfigAutogestion"
 import ConfigTelegramAccesos from "@/components/admin/ConfigTelegramAccesos"
+import ConfigTiposAvisos from "@/components/admin/ConfigTiposAvisos"
 
 type TabId =
   | "fichero"
@@ -45,6 +46,7 @@ type TabId =
   | "ia"
   | "activaciones"
   | "telegram"
+  | "avisos"
 
 const GRUPOS: { titulo: string; items: { id: TabId; label: string; icon: any }[] }[] = [
   {
@@ -63,6 +65,7 @@ const GRUPOS: { titulo: string; items: { id: TabId; label: string; icon: any }[]
       { id: "autogestion", label: "Autogestión del kiosco", icon: Monitor },
       { id: "plantillas", label: "Plantillas de documentos", icon: FileSignature },
       { id: "activaciones", label: "Activaciones (reglamento, avisos)", icon: ShieldCheck },
+      { id: "avisos", label: "Tipos de avisos", icon: Send },
     ],
   },
   {
@@ -238,6 +241,7 @@ export default function Configuracion() {
           {tab === "accesos-rol" && <AccesosRolesPanel />}
 
           {tab === "telegram" && <ConfigTelegramAccesos />}
+          {tab === "avisos" && <ConfigTiposAvisos />}
 
           {tab === "comercial" && <SistemaComercialConfig />}
 

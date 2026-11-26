@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { categoriaDe } from "@/lib/notificacionesCategorias"
 import { Bell, Check, Pin, PinOff, ArrowRight } from "lucide-react"
 
 interface Notif { id: string; titulo: string; mensaje: string; leida: boolean; fijada: boolean; created_at: string; metadata: any }
@@ -29,8 +30,10 @@ export function MisNotificacionesPendientes() {
       const cargar = async () => {
         const { data } = await (supabase as any).from("notificaciones").select("*")
           .eq("usuario_id", user.id).or("leida.eq.false,fijada.eq.true")
-          .order("created_at", { ascending: false }).limit(100)
-        if (activo) setItems(data || [])
+          .order("created_at", { ascending: false }).limit(300)
+        const { data: pr } = await (supabase as any).from("notificaciones_preferencias").select("categoria, habilitado").eq("usuario_id", user.id)
+        const off = new Set((pr || []).filter((r: any) => !r.habilitado).map((r: any) => r.categoria))
+        if (activo) setItems((data || []).filter((n: any) => n.fijada || !off.has(categoriaDe(n))).slice(0, 100))
       }
       await cargar()
       channel = supabase.channel(`dash-notif-${Math.random().toString(36).slice(2)}`)

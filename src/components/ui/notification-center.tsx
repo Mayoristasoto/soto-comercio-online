@@ -1,3 +1,4 @@
+import { categoriaDe } from "@/lib/notificacionesCategorias";
 import { useState, useEffect } from "react";
 import { Bell, X, Check, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -214,8 +215,10 @@ export function useNotifications() {
       if (!user || !activo) return;
       const cargar = async () => {
         const { data } = await supabase.from("notificaciones").select("*")
-          .eq("usuario_id", user.id).order("created_at", { ascending: false }).limit(50);
-        if (activo) setNotifications((data || []).map(mapear));
+          .eq("usuario_id", user.id).order("created_at", { ascending: false }).limit(200);
+        const { data: pr } = await (supabase as any).from("notificaciones_preferencias").select("categoria, habilitado").eq("usuario_id", user.id);
+        const off = new Set((pr || []).filter((r: any) => !r.habilitado).map((r: any) => r.categoria));
+        if (activo) setNotifications((data || []).filter((r: any) => !off.has(categoriaDe(r))).slice(0, 50).map(mapear));
       };
       await cargar();
       channel = supabase

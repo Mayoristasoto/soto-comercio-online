@@ -9384,6 +9384,27 @@ export type Database = {
         }
         Relationships: []
       }
+      notificaciones_preferencias: {
+        Row: {
+          categoria: string
+          habilitado: boolean
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          categoria: string
+          habilitado?: boolean
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          categoria?: string
+          habilitado?: boolean
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       notificaciones_salida: {
         Row: {
           created_at: string
