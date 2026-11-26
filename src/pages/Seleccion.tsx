@@ -28,9 +28,11 @@ export default function Seleccion() {
   const [fB, setFB] = useState("todas");
   const [fE, setFE] = useState("activos");
   const [fMin, setFMin] = useState(0);
+  const [fL, setFL] = useState("todos");
   const [q, setQ] = useState("");
   const [abierta, setAbierta] = useState<any>(null);
   const [carga, setCarga] = useState(false);
+  const [tab, setTab] = useState("ranking");
   const [subiendo, setSubiendo] = useState(false);
 
   const cargar = useCallback(async () => {
@@ -46,12 +48,24 @@ export default function Seleccion() {
   const filtradas = useMemo(() => {
     const t = q.trim().toLowerCase();
     return ordenarRanking(posts.filter((p) =>
+      (fL === "todos" || (fL === "sin" ? !p.lote : p.lote === fL)) &&
       (fB === "todas" || (fB === "general" ? !p.busqueda_id : p.busqueda_id === fB)) &&
       (fE === "todos" || (fE === "activos" ? !["descartado", "base_talentos"].includes(p.estado) : p.estado === fE)) &&
       (!fMin || (p.score ?? 0) >= fMin) &&
       (!t || `${p.candidatos?.nombre} ${p.candidatos?.apellido} ${p.candidatos?.localidad} ${p.candidatos?.dni}`.toLowerCase().includes(t))
     ));
-  }, [posts, fB, fE, fMin, q]);
+  }, [posts, fB, fE, fMin, q, fL]);
+
+  const lotes = useMemo(() => {
+    const m = new Map<string, { n: number; suma: number; ev: number; fecha: string }>();
+    for (const p of posts) if (p.lote) {
+      const x = m.get(p.lote) || { n: 0, suma: 0, ev: 0, fecha: p.created_at };
+      x.n++; if (p.score != null) { x.suma += Number(p.score); x.ev++; }
+      if (p.created_at < x.fecha) x.fecha = p.created_at;
+      m.set(p.lote, x);
+    }
+    return [...m.entries()].map(([nombre, x]) => ({ nombre, ...x })).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }, [posts]);
 
   const kpi = useMemo(() => ({
     total: posts.length,
@@ -64,7 +78,7 @@ export default function Seleccion() {
     const filas = filtradas.map((p, i) => ({
       Ranking: i + 1, Puntaje: p.score ?? "", Nombre: p.candidatos?.nombre, Apellido: p.candidatos?.apellido,
       Teléfono: p.candidatos?.telefono, Email: p.candidatos?.email, DNI: p.candidatos?.dni, Localidad: p.candidatos?.localidad,
-      Búsqueda: p.ats_busquedas?.titulo || "General", Estado: estadoLabel(p.estado), Origen: p.origen,
+      Búsqueda: p.ats_busquedas?.titulo || "General", Lote: p.lote || "", Estado: estadoLabel(p.estado), Origen: p.origen,
       Fecha: new Date(p.created_at).toLocaleDateString("es-AR"),
     }));
     const wb = XLSX.utils.book_new();
@@ -77,6 +91,7 @@ export default function Seleccion() {
     const f = new FormData(e.currentTarget);
     const files = (f.getAll("cvs") as File[]).filter((x) => x.size);
     const busqueda_id = f.get("busqueda") === "none" ? null : String(f.get("busqueda"));
+    const lote = String(f.get("lote") || "").trim().slice(0, 80) || null;
     if (!files.length) return toast.error("Elegí al menos un CV");
     setSubiendo(true);
     let ok = 0;
@@ -89,7 +104,7 @@ export default function Seleccion() {
         const path = `${c.id}/${crypto.randomUUID()}.${ext}`;
         const up = await supabase.storage.from("cvs-candidatos").upload(path, file);
         if (up.error) throw up.error;
-        const { data: p, error: e2 } = await db.from("ats_postulaciones").insert({ candidato_id: c.id, busqueda_id, origen: "manual", cv_path: path, cv_nombre: file.name }).select("id").single();
+        const { data: p, error: e2 } = await db.from("ats_postulaciones").insert({ candidato_id: c.id, busqueda_id, origen: "manual", lote, cv_path: path, cv_nombre: file.name }).select("id").single();
         if (e2) throw e2;
         if (/^(pdf|jpe?g|png|webp)$/.test(ext || "")) {
           const { data: r } = await supabase.functions.invoke("ats-evaluar-cv", { body: { postulacion_id: p.id } });
@@ -126,8 +141,8 @@ export default function Seleccion() {
         ))}
       </div>
 
-      <Tabs defaultValue="ranking">
-        <TabsList className="h-auto flex-wrap justify-start"><TabsTrigger value="ranking">Ranking</TabsTrigger><TabsTrigger value="busquedas">Búsquedas y criterios</TabsTrigger><TabsTrigger value="plantillas">Plantillas de WhatsApp</TabsTrigger></TabsList>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="h-auto flex-wrap justify-start"><TabsTrigger value="ranking">Ranking</TabsTrigger><TabsTrigger value="cargas">Procesos de carga</TabsTrigger><TabsTrigger value="busquedas">Búsquedas y criterios</TabsTrigger><TabsTrigger value="plantillas">Plantillas de WhatsApp</TabsTrigger></TabsList>
         <TabsContent value="ranking" className="mt-4 space-y-3">
           <div className="flex flex-wrap items-end gap-2">
             <div className="relative"><Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-56 pl-8" placeholder="Nombre, DNI, localidad" value={q} onChange={(e) => setQ(e.target.value)} /></div>
@@ -142,6 +157,10 @@ export default function Seleccion() {
             <Select value={String(fMin)} onValueChange={(v) => setFMin(Number(v))}>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>{[0, 50, 65, 75, 85].map((n) => <SelectItem key={n} value={String(n)}>{n ? `Puntaje ≥ ${n}` : "Cualquier puntaje"}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={fL} onValueChange={setFL}>
+              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="todos">Todos los CVs</SelectItem><SelectItem value="sin">Sin proceso de carga</SelectItem>{lotes.map((l) => <SelectItem key={l.nombre} value={l.nombre}>{l.nombre}</SelectItem>)}</SelectContent>
             </Select>
             <div className="ml-auto flex gap-2">
               <Button variant="outline" onClick={exportar}><FileSpreadsheet className="mr-1 h-4 w-4" /> Excel</Button>
@@ -159,11 +178,32 @@ export default function Seleccion() {
                     <TableCell><p className="font-medium">{p.candidatos?.nombre} {p.candidatos?.apellido}</p><p className="text-xs text-muted-foreground">{p.candidatos?.telefono} {p.candidatos?.localidad ? `· ${p.candidatos.localidad}` : ""}</p></TableCell>
                     <TableCell>{p.ats_busquedas?.titulo || <span className="text-muted-foreground">General</span>}</TableCell>
                     <TableCell><Badge variant="outline">{estadoLabel(p.estado)}</Badge></TableCell>
-                    <TableCell className="text-sm">{p.origen === "web" ? "Web" : "Carga RRHH"}</TableCell>
+                    <TableCell className="text-sm">{p.origen === "web" ? "Web" : "Carga RRHH"}{p.lote && <p className="text-xs text-muted-foreground">{p.lote}</p>}</TableCell>
                     <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("es-AR")}</TableCell>
                   </TableRow>
                 ))}
                 {!filtradas.length && <TableRow><TableCell colSpan={7} className="py-8 text-center text-muted-foreground">No hay postulaciones con estos filtros.</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+        <TabsContent value="cargas" className="mt-4 space-y-3">
+          <div className="flex justify-end"><Button onClick={() => setCarga(true)}><Upload className="mr-1 h-4 w-4" /> Nueva carga de CVs</Button></div>
+          <Card>
+            <Table>
+              <TableHeader><TableRow><TableHead>Proceso</TableHead><TableHead>Fecha</TableHead><TableHead>CVs</TableHead><TableHead>Evaluados</TableHead><TableHead>Puntaje promedio</TableHead><TableHead /></TableRow></TableHeader>
+              <TableBody>
+                {lotes.map((l) => (
+                  <TableRow key={l.nombre}>
+                    <TableCell className="font-medium">{l.nombre}</TableCell>
+                    <TableCell className="text-sm">{new Date(l.fecha).toLocaleDateString("es-AR")}</TableCell>
+                    <TableCell>{l.n}</TableCell>
+                    <TableCell>{l.ev}</TableCell>
+                    <TableCell>{l.ev ? Math.round(l.suma / l.ev) : "—"}</TableCell>
+                    <TableCell className="text-right"><Button size="sm" variant="outline" onClick={() => { setFL(l.nombre); setFE("todos"); setTab("ranking"); }}>Ver en ranking</Button></TableCell>
+                  </TableRow>
+                ))}
+                {!lotes.length && <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">Todavía no hay procesos de carga. Creá uno con "Nueva carga de CVs".</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -176,6 +216,10 @@ export default function Seleccion() {
         <DialogContent>
           <DialogHeader><DialogTitle>Cargar CVs recibidos</DialogTitle></DialogHeader>
           <form onSubmit={cargarManual} className="space-y-3">
+            <div className="space-y-1"><Label>Nombre del proceso de carga</Label>
+              <Input name="lote" list="lotes-existentes" required maxLength={80} placeholder='Ej: "Carga noviembre"' />
+              <datalist id="lotes-existentes">{lotes.map((l) => <option key={l.nombre} value={l.nombre} />)}</datalist>
+            </div>
             <div className="space-y-1"><Label>Búsqueda</Label>
               <select name="busqueda" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
                 <option value="none">Postulación general</option>

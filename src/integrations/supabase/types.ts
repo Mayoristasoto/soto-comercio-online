@@ -880,6 +880,7 @@ export type Database = {
           estado: string
           evaluado_at: string | null
           id: string
+          lote: string | null
           mensaje: string | null
           origen: string
           score: number | null
@@ -894,6 +895,7 @@ export type Database = {
           estado?: string
           evaluado_at?: string | null
           id?: string
+          lote?: string | null
           mensaje?: string | null
           origen?: string
           score?: number | null
@@ -908,6 +910,7 @@ export type Database = {
           estado?: string
           evaluado_at?: string | null
           id?: string
+          lote?: string | null
           mensaje?: string | null
           origen?: string
           score?: number | null
