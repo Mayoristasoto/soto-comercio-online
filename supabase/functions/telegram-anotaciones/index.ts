@@ -107,6 +107,18 @@ Deno.serve(async (req) => {
       await supabase.from('agenda_personal').update({ avisado: true }).eq('id', p.id);
       enviados++;
     }
+    // Avisos de solicitudes nuevas a RRHH (cada uno al chat autorizado de su destinatario)
+    const { data: avisos } = await supabase.from('notificaciones').select('id, usuario_id, titulo, mensaje')
+      .eq('telegram_pendiente', true).limit(30);
+    for (const a of avisos ?? []) {
+      const { data: emp } = await supabase.from('empleados').select('id').eq('user_id', a.usuario_id).maybeSingle();
+      const { data: tg } = emp ? await supabase.from('telegram_autorizados').select('chat_id')
+        .eq('empleado_id', emp.id).eq('activo', true).maybeSingle() : { data: null };
+      const destino = tg?.chat_id ?? CHAT.trim();
+      if (destino) await api('sendMessage', { chat_id: destino, text: `🔔 <b>${a.titulo}</b>\n${a.mensaje}`, parse_mode: 'HTML' });
+      await supabase.from('notificaciones').update({ telegram_pendiente: false }).eq('id', a.id);
+      enviados++;
+    }
     return new Response(JSON.stringify({ enviados }), { headers: { 'Content-Type': 'application/json' } });
   }
 

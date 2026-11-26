@@ -9349,6 +9349,7 @@ export type Database = {
           leida: boolean | null
           mensaje: string
           metadata: Json | null
+          telegram_pendiente: boolean
           tipo: string
           titulo: string
           updated_at: string | null
@@ -9360,6 +9361,7 @@ export type Database = {
           leida?: boolean | null
           mensaje: string
           metadata?: Json | null
+          telegram_pendiente?: boolean
           tipo: string
           titulo: string
           updated_at?: string | null
@@ -9371,6 +9373,7 @@ export type Database = {
           leida?: boolean | null
           mensaje?: string
           metadata?: Json | null
+          telegram_pendiente?: boolean
           tipo?: string
           titulo?: string
           updated_at?: string | null

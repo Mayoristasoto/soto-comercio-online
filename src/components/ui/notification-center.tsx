@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Notification {
   id: string;
@@ -163,6 +164,11 @@ export function NotificationCenter({
                             })}
                           </span>
 
+                          {notification.actionUrl && (
+                            <a href={notification.actionUrl} onClick={() => onMarkAsRead(notification.id)} className="text-xs font-medium text-primary hover:underline">
+                              Ver
+                            </a>
+                          )}
                           {!notification.read && (
                             <Button
                               variant="ghost"
@@ -187,44 +193,60 @@ export function NotificationCenter({
   );
 }
 
-// Hook para gestionar notificaciones
+// Hook para gestionar notificaciones (guardadas en la base, en tiempo real)
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let activo = true;
+    const mapear = (r: any): Notification => ({
+      id: r.id,
+      type: String(r.tipo || "").startsWith("solicitud_") ? "warning" : "info",
+      title: r.titulo,
+      message: r.mensaje,
+      timestamp: new Date(r.created_at),
+      read: !!r.leida,
+      actionUrl: r.metadata?.url,
+    });
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !activo) return;
+      const cargar = async () => {
+        const { data } = await supabase.from("notificaciones").select("*")
+          .eq("usuario_id", user.id).order("created_at", { ascending: false }).limit(50);
+        if (activo) setNotifications((data || []).map(mapear));
+      };
+      await cargar();
+      channel = supabase
+        .channel(`notif-${user.id}-${Math.random().toString(36).slice(2)}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "notificaciones", filter: `usuario_id=eq.${user.id}` }, cargar)
+        .subscribe();
+    })();
+    return () => { activo = false; if (channel) supabase.removeChannel(channel); };
+  }, []);
+
   const addNotification = (notification: Omit<Notification, "id" | "timestamp" | "read">) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: crypto.randomUUID(),
-      timestamp: new Date(),
-      read: false,
-    };
-    setNotifications((prev) => [newNotification, ...prev]);
+    setNotifications((prev) => [{ ...notification, id: crypto.randomUUID(), timestamp: new Date(), read: false }, ...prev]);
   };
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+  const markAsRead = async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    await supabase.from("notificaciones").update({ leida: true }).eq("id", id);
   };
-
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    const ids = notifications.filter((n) => !n.read).map((n) => n.id);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (ids.length) await supabase.from("notificaciones").update({ leida: true }).in("id", ids);
   };
-
-  const clear = (id: string) => {
+  const clear = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    await supabase.from("notificaciones").delete().eq("id", id);
   };
-
-  const clearAll = () => {
+  const clearAll = async () => {
+    const ids = notifications.map((n) => n.id);
     setNotifications([]);
+    if (ids.length) await supabase.from("notificaciones").delete().in("id", ids);
   };
 
-  return {
-    notifications,
-    addNotification,
-    markAsRead,
-    markAllAsRead,
-    clear,
-    clearAll,
-  };
+  return { notifications, addNotification, markAsRead, markAllAsRead, clear, clearAll };
 }

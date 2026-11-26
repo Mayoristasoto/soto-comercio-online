@@ -92,3 +92,7 @@
 - [ ] Verificar con sesión real de un encargado: Supabase externo no permite iniciar sesión desde acá.
 
 - [x] Panel de Encargado 2: en la planificación semanal, función para que el encargado agregue personal para el domingo (pendiente de definir con el usuario)
+
+## Notificaciones de solicitudes
+- [x] Aviso a RRHH en la campanita y por Telegram cuando un empleado pide adelanto, vacaciones, permisos, licencias, elementos o cambios de horario.
+- [ ] Sumar avisos por mail, WhatsApp y Discord (el usuario lo pidió para más adelante).
